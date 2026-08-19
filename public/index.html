@@ -1,16 +1,16 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>🍪 Sariel's - Galleta Domo WEB3</title>
-    <!-- ✅ Ruta CORRECTA para CSS en Vercel -->
-    <link rel="stylesheet" href="/styles.css">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍪</text></svg>">
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍪</text></svg>" />
 </head>
 <body>
     <div id="app">
-        <!-- Header con marca -->
+
+        <!-- ===== HEADER ===== -->
         <header class="header">
             <div class="header-content">
                 <div class="logo">
@@ -30,9 +30,10 @@
             </div>
         </header>
 
-        <!-- Main Content -->
+        <!-- ===== MAIN ===== -->
         <main class="main">
             <div class="container">
+
                 <!-- Wallet Info -->
                 <div id="walletInfo" class="wallet-info hidden">
                     <div class="wallet-details">
@@ -44,7 +45,8 @@
 
                 <!-- Grid de Paneles -->
                 <div class="grid-3">
-                    <!-- Panel de Compra -->
+
+                    <!-- Panel Compra -->
                     <section class="panel panel-buy">
                         <div class="panel-header">
                             <h2>🛒 Comprar Domo</h2>
@@ -58,7 +60,7 @@
                                 </div>
                                 <div class="domo-controls">
                                     <div class="quantity-control">
-                                        <button id="decreaseQty" class="qty-btn">-</button>
+                                        <button id="decreaseQty" class="qty-btn">−</button>
                                         <span id="domoQuantity" class="qty-value">1</span>
                                         <button id="increaseQty" class="qty-btn">+</button>
                                     </div>
@@ -75,7 +77,7 @@
                         </div>
                     </section>
 
-                    <!-- Panel de Estado -->
+                    <!-- Panel Estado -->
                     <section class="panel panel-status">
                         <div class="panel-header">
                             <h2>📊 Tu Estado</h2>
@@ -94,9 +96,9 @@
                                 <div class="status-item">
                                     <span class="status-label">Progreso Canje</span>
                                     <div class="progress-bar">
-                                        <div id="progressFill" class="progress-fill" style="width: 0%"></div>
+                                        <div id="progressFill" class="progress-fill" style="width: 0%;"></div>
                                     </div>
-                                    <span id="progressText" class="progress-text">0/12</span>
+                                    <span id="progressText" class="progress-text">0 / 12</span>
                                 </div>
                                 <div class="status-item">
                                     <span class="status-label">NFT Canjeado</span>
@@ -112,7 +114,7 @@
                         </div>
                     </section>
 
-                    <!-- Panel de Historial -->
+                    <!-- Panel Historial -->
                     <section class="panel panel-history">
                         <div class="panel-header">
                             <h2>📜 Historial</h2>
@@ -127,23 +129,39 @@
                             </button>
                         </div>
                     </section>
-                </div>
-            </div>
+
+                </div><!-- /.grid-3 -->
+            </div><!-- /.container -->
         </main>
 
-        <!-- Footer con marca -->
+        <!-- ===== FOOTER ===== -->
         <footer class="footer">
             <div class="footer-content">
                 <p class="footer-brand">✦ Sariel's · Sabor al Paladar ✦</p>
                 <p>🍪 Galleta Domo · Powered by Polygon</p>
-                <p class="footer-small">Sistema automatizado de tokens y NFTs</p>
+                <p class="footer-small">
+                    <a href="/terminos.html" target="_blank" style="color: #D4A857; text-decoration: none; border-bottom: 1px dotted rgba(212,168,87,0.3);">
+                        📜 Términos y Condiciones
+                    </a>
+                    &nbsp;·&nbsp;
+                    <a href="/privacidad.html" target="_blank" style="color: #D4A857; text-decoration: none; border-bottom: 1px dotted rgba(212,168,87,0.3);">
+                        🔒 Privacidad
+                    </a>
+                </p>
+                <p class="footer-small" style="font-size: 0.65rem; opacity: 0.4; margin-top: 4px;">
+                    Es.stoks · Csariel's · WEB3
+                </p>
             </div>
         </footer>
-    </div>
 
-    <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/web3@1.8.0/dist/web3.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
-    <script src="/app.js"></script>
+    </div><!-- /#app -->
+
+    <!-- ===== SCRIPTS ===== -->
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.8.0/dist/web3.min.js">
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js">
+    </script>
+    <script src="/app.js">
+    </script>
 </body>
 </html>
