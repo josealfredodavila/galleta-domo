@@ -1,0 +1,171 @@
+<!-- features/live/live.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>🔴 Muro Live · Sariel's</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/features/live/live.css" />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍪</text></svg>" />
+</head>
+<body>
+    <div id="app">
+
+        <!-- ===== HEADER ===== -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <span class="logo-icon">🍪</span>
+                    <div class="logo-text">
+                        <h1>Sariel's</h1>
+                        <span class="logo-sub">Sabor al Paladar · WEB3</span>
+                    </div>
+                </div>
+                <div class="header-info">
+                    <span class="network-badge">🟢 Polygon</span>
+                    <span class="live-badge">🔴 EN VIVO</span>
+                    <button id="connectWallet" class="btn-connect">
+                        <span class="btn-icon">🔗</span>
+                        Conectar Wallet
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- ===== MURO LIVE ===== -->
+        <main class="main">
+            <div class="container">
+                <div class="live-container">
+
+                    <!-- ===== NAVEGACIÓN ===== -->
+                    <div class="live-nav">
+                        <button class="nav-btn active" id="btnExplorar">📺 Explorar</button>
+                        <button class="nav-btn" id="btnMisTransmisiones">🎥 Mis transmisiones</button>
+                        <button class="nav-btn" id="btnCrear">➕ Crear transmisión</button>
+                    </div>
+
+                    <!-- ===== PANEL DE EXPLORAR ===== -->
+                    <div id="panelExplorar" class="live-panel active">
+                        <div class="live-grid" id="liveGrid">
+                            <div class="loading-spinner">
+                                <span>Cargando transmisiones activas...</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ===== PANEL DE MIS TRANSMISIONES ===== -->
+                    <div id="panelMisTransmisiones" class="live-panel hidden">
+                        <div class="mis-transmisiones" id="misTransmisiones">
+                            <div class="loading-spinner">
+                                <span>Cargando tus transmisiones...</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ===== PANEL DE CREAR TRANSMISIÓN ===== -->
+                    <div id="panelCrear" class="live-panel hidden">
+                        <div class="crear-live">
+                            <h2>🎥 Crear nueva transmisión</h2>
+                            
+                            <div class="form-group">
+                                <label for="liveTitulo">Título de la transmisión</label>
+                                <input type="text" id="liveTitulo" placeholder="Ej: Degustación de domos especiales" maxlength="100" />
+                            </div>
+
+                            <div class="form-group">
+                                <label for="liveDescripcion">Descripción</label>
+                                <textarea id="liveDescripcion" placeholder="Describe tu transmisión..." maxlength="500" rows="3"></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Privacidad</label>
+                                <div class="privacidad-opciones">
+                                    <label class="radio-label">
+                                        <input type="radio" name="privacidad" value="publico" checked />
+                                        🌍 Público
+                                    </label>
+                                    <label class="radio-label">
+                                        <input type="radio" name="privacidad" value="privado" />
+                                        🔒 Privado
+                                    </label>
+                                    <label class="radio-label">
+                                        <input type="radio" name="privacidad" value="por_invitacion" />
+                                        📩 Por invitación
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>
+                                    <input type="checkbox" id="cobroActivo" />
+                                    💰 Activar cobro por algoritmo
+                                </label>
+                                <span class="info-text">Se cobrará automáticamente según métricas de visualización</span>
+                            </div>
+
+                            <button id="btnCrearLive" class="btn-primary">🚀 Iniciar transmisión</button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </main>
+
+        <!-- ===== MODAL: VISUALIZAR TRANSMISIÓN ===== -->
+        <div id="modalLive" class="modal-live hidden">
+            <div class="modal-live-content">
+                <div class="modal-live-header">
+                    <h3 id="modalLiveTitulo">Transmisión en vivo</h3>
+                    <button id="cerrarModalLive" class="modal-cerrar">✕</button>
+                </div>
+                <div class="modal-live-body">
+                    <div id="livePlayer" class="live-player">
+                        <div class="live-placeholder">
+                            <span class="icono">📺</span>
+                            <p>Cargando transmisión...</p>
+                        </div>
+                    </div>
+                    <div class="live-info">
+                        <div class="live-host">
+                            <img id="liveHostFoto" src="/default-avatar.png" alt="Host" />
+                            <span id="liveHostNombre">Usuario</span>
+                        </div>
+                        <div class="live-metrics">
+                            <span id="liveEspectadores">👁️ 0</span>
+                            <span id="liveDuracion">⏱️ 00:00</span>
+                        </div>
+                    </div>
+                    <div class="live-chat" id="liveChat">
+                        <div class="chat-messages" id="liveChatMessages">
+                            <p class="empty-message">Sin mensajes aún</p>
+                        </div>
+                        <div class="chat-input-live">
+                            <input type="text" id="liveChatInput" placeholder="Escribe un mensaje..." />
+                            <button id="liveChatSend">➤</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== FOOTER ===== -->
+        <footer class="footer">
+            <div class="footer-content">
+                <p class="footer-brand">✦ Sariel's · Sabor al Paladar ✦</p>
+                <p>🍪 Galleta Domo · Powered by Polygon</p>
+                <p class="footer-small">
+                    <a href="/terminos.html" target="_blank">📜 Términos y Condiciones</a>
+                </p>
+            </div>
+        </footer>
+
+    </div>
+
+    <!-- ===== SCRIPTS ===== -->
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.8.0/dist/web3.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/app.js"></script>
+    <script src="/features/live/live.js"></script>
+</body>
+</html>
