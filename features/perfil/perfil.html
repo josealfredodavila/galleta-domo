@@ -1,0 +1,147 @@
+<!-- features/perfil/perfil.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>👤 Perfil · Sariel's</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/features/perfil/perfil.css" />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍪</text></svg>" />
+</head>
+<body>
+    <div id="app">
+
+        <!-- ===== HEADER ===== -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <span class="logo-icon">🍪</span>
+                    <div class="logo-text">
+                        <h1>Sariel's</h1>
+                        <span class="logo-sub">Sabor al Paladar · WEB3</span>
+                    </div>
+                </div>
+                <div class="header-info">
+                    <span class="network-badge">🟢 Polygon</span>
+                    <button id="connectWallet" class="btn-connect">
+                        <span class="btn-icon">🔗</span>
+                        Conectar Wallet
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- ===== PERFIL ===== -->
+        <main class="main">
+            <div class="container">
+                <div class="perfil-container">
+
+                    <!-- Cabecera del perfil -->
+                    <div class="perfil-header">
+                        <div class="foto-perfil">
+                            <img id="fotoPerfil" src="/default-avatar.png" alt="Foto de perfil" />
+                            <button id="cambiarFoto" class="btn-camara">📸</button>
+                            <input type="file" id="inputFoto" accept="image/*" hidden />
+                        </div>
+                        <div class="perfil-info">
+                            <h2 id="nombreUsuario">Usuario</h2>
+                            <p class="wallet-info-perfil">🔗 <span id="walletPerfil">0x1234...5678</span></p>
+                            <div class="estado-perfil">
+                                <span class="estado-indicador" id="estadoIndicador"></span>
+                                <span id="estadoTexto">Conectado</span>
+                            </div>
+                        </div>
+                        <div class="perfil-acciones">
+                            <button class="btn-editar" id="editarPerfil">✏️ Editar</button>
+                            <button class="btn-agregar" id="agregarAmigos">👥 Agregar Amigos</button>
+                        </div>
+                    </div>
+
+                    <!-- Estadísticas -->
+                    <div class="perfil-stats">
+                        <div class="stat-item">
+                            <span class="stat-label">🍪 Domos</span>
+                            <span class="stat-value" id="statsDomos">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">💰 Tokens</span>
+                            <span class="stat-value" id="statsTokens">0/12</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">🏆 NFT</span>
+                            <span class="stat-value" id="statsNft">No</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">👥 Amigos</span>
+                            <span class="stat-value" id="statsAmigos">0</span>
+                        </div>
+                    </div>
+
+                    <!-- Esim -->
+                    <div class="perfil-esim">
+                        <h3>📱 Esim</h3>
+                        <div class="esim-controls">
+                            <button id="btnWifi" class="btn-esim activo">📶 WiFi</button>
+                            <button id="btnDatos" class="btn-esim">📡 Datos</button>
+                        </div>
+                        <p class="esim-estado">Estado: <span id="esimEstado">Conectado por WiFi</span></p>
+                    </div>
+
+                    <!-- Seguridad -->
+                    <div class="perfil-seguridad">
+                        <h3>🔒 Seguridad</h3>
+                        <div class="seguridad-items">
+                            <div class="seguridad-item">
+                                <span>🔐 Verificación en 2 pasos</span>
+                                <label class="switch">
+                                    <input type="checkbox" id="toggle2fa" />
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="seguridad-item">
+                                <span>✅ Verificación de identidad</span>
+                                <span class="badge" id="verificadoBadge">Pendiente</span>
+                            </div>
+                            <div class="seguridad-item">
+                                <span>🚫 Anti-hakeo activo</span>
+                                <span class="badge ok">Activado</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Contactos -->
+                    <div class="perfil-contactos">
+                        <h3>👥 Contactos</h3>
+                        <div class="contactos-actions">
+                            <button id="importarContactos">📱 Importar de celular</button>
+                            <button id="agregarContacto">➕ Agregar manual</button>
+                            <button id="recomendados">🌟 Recomendados</button>
+                        </div>
+                        <div id="listaContactos" class="lista-contactos">
+                            <p class="empty-message">No hay contactos aún</p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </main>
+
+        <!-- ===== FOOTER ===== -->
+        <footer class="footer">
+            <div class="footer-content">
+                <p class="footer-brand">✦ Sariel's · Sabor al Paladar ✦</p>
+                <p>🍪 Galleta Domo · Powered by Polygon</p>
+                <p class="footer-small">
+                    <a href="/terminos.html" target="_blank">📜 Términos y Condiciones</a>
+                </p>
+            </div>
+        </footer>
+
+    </div>
+
+    <!-- ===== SCRIPTS ===== -->
+    <script src="/app.js"></script>
+    <script src="/features/perfil/perfil.js"></script>
+</body>
+</html>
