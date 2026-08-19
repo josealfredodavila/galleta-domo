@@ -2,10 +2,10 @@
   "name": "galleta-domo",
   "version": "1.0.0",
   "description": "Sistema de tokenización de domos de galleta en Polygon",
-  "main": "backend/server.js",
+  "main": "server.js",
   "scripts": {
-    "start": "node backend/server.js",
-    "dev": "nodemon backend/server.js",
+    "start": "node server.js",
+    "dev": "nodemon server.js",
     "deploy": "hardhat run scripts/deploy.js --network polygon"
   },
   "dependencies": {
@@ -18,10 +18,18 @@
     "jsonwebtoken": "^9.0.0",
     "web3": "^1.8.0",
     "ethers": "^5.7.0",
-    "qrcode": "^1.5.1"
+    "qrcode": "^1.5.1",
+    "body-parser": "^1.20.2",
+    "express-rate-limit": "^6.7.0",
+    "helmet": "^7.0.0"
   },
   "devDependencies": {
     "nodemon": "^2.0.20",
-    "hardhat": "^2.13.0"
-  }
+    "hardhat": "^2.13.0",
+    "@nomiclabs/hardhat-waffle": "^2.0.3",
+    "@nomiclabs/hardhat-ethers": "^2.2.1"
+  },
+  "keywords": ["polygon", "token", "nft", "blockchain", "galleta"],
+  "author": "Tu Nombre",
+  "license": "MIT"
 }
