@@ -1,22 +1,21 @@
-// server.js - VERSIÓN DE PRUEBA (sin MongoDB)
+// server.js - SOLO API PARA RAILWAY
 const express = require('express');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Health check (para Railway)
+// Solo rutas API
 app.get('/api/health', (req, res) => {
-    res.json({
-        status: 'OK',
-        timestamp: new Date().toISOString(),
-        message: 'Servidor funcionando correctamente'
-    });
+    res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
-// Ruta principal
-app.get('/', (req, res) => {
-    res.send('🚀 Servidor de Sariel\'s funcionando correctamente');
+// Ruta de prueba
+app.get('/api/test', (req, res) => {
+    res.json({ message: 'Backend de Sariel\'s funcionando' });
 });
+
+// NO SIRVAS ARCHIVOS ESTÁTICOS AQUÍ
+// app.use(express.static('public')); ← ELIMINA ESTO
 
 app.listen(PORT, () => {
-    console.log(`✅ Servidor corriendo en puerto ${PORT}`);
+    console.log(`✅ API corriendo en puerto ${PORT}`);
 });
