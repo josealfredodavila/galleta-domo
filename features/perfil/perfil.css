@@ -1,0 +1,554 @@
+/* features/perfil/perfil.css */
+
+.perfil-container {
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+/* ========================================
+   CABECERA DEL PERFIL
+   ======================================== */
+.perfil-header {
+    display: flex;
+    align-items: center;
+    gap: 40px;
+    padding: 30px;
+    background: var(--verde-bosque);
+    border-radius: var(--radius);
+    border: 1px solid var(--border-color);
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+}
+
+/* ----- Foto de perfil ----- */
+.foto-perfil {
+    position: relative;
+    width: 150px;
+    height: 150px;
+    flex-shrink: 0;
+}
+
+.foto-perfil img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 4px solid var(--dorado);
+    background: var(--verde-bosque-dark);
+}
+
+.btn-camara {
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+    background: var(--dorado);
+    color: var(--verde-bosque-dark);
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-camara:hover {
+    transform: scale(1.1);
+    box-shadow: var(--glow-dorado);
+}
+
+/* ----- Información del perfil ----- */
+.perfil-info {
+    flex: 1;
+}
+
+.perfil-info h2 {
+    color: var(--dorado);
+    font-size: 1.8rem;
+    margin-bottom: 5px;
+}
+
+.wallet-info-perfil {
+    color: var(--texto-claro);
+    font-size: 0.9rem;
+    font-family: 'Courier New', monospace;
+    opacity: 0.7;
+}
+
+.estado-perfil {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.estado-indicador {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+
+.estado-indicador.conectado {
+    background: #00b894;
+    box-shadow: 0 0 10px rgba(0, 184, 148, 0.4);
+}
+
+.estado-indicador.ausente {
+    background: #fdcb6e;
+    box-shadow: 0 0 10px rgba(253, 203, 110, 0.3);
+}
+
+.estado-indicador.ocupado {
+    background: #e17055;
+    box-shadow: 0 0 10px rgba(225, 112, 85, 0.3);
+}
+
+/* ----- Acciones del perfil ----- */
+.perfil-acciones {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.perfil-acciones button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 30px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    font-size: 0.9rem;
+}
+
+.btn-editar {
+    background: linear-gradient(135deg, var(--dorado), var(--dorado-light));
+    color: var(--verde-bosque-dark);
+}
+
+.btn-editar:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--glow-dorado);
+}
+
+.btn-agregar {
+    background: rgba(212, 168, 87, 0.12);
+    color: var(--dorado);
+    border: 1px solid var(--border-color) !important;
+}
+
+.btn-agregar:hover {
+    background: rgba(212, 168, 87, 0.2);
+    border-color: var(--dorado) !important;
+}
+
+/* ========================================
+   ESTADÍSTICAS
+   ======================================== */
+.perfil-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.stat-item {
+    background: var(--verde-bosque);
+    padding: 20px;
+    text-align: center;
+    border-radius: var(--radius);
+    border: 1px solid var(--border-color);
+    transition: var(--transition);
+}
+
+.stat-item:hover {
+    border-color: var(--dorado);
+    transform: translateY(-2px);
+}
+
+.stat-label {
+    display: block;
+    font-size: 0.75rem;
+    opacity: 0.6;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--texto-claro);
+}
+
+.stat-value {
+    display: block;
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--dorado);
+    margin-top: 5px;
+}
+
+/* ========================================
+   ESIM
+   ======================================== */
+.perfil-esim {
+    background: var(--verde-bosque);
+    padding: 25px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border-color);
+    margin-bottom: 30px;
+}
+
+.perfil-esim h3 {
+    color: var(--dorado);
+    margin-bottom: 15px;
+    font-size: 1.1rem;
+}
+
+.esim-controls {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.btn-esim {
+    padding: 8px 24px;
+    border: 2px solid var(--border-color);
+    background: transparent;
+    color: var(--texto-claro);
+    border-radius: 30px;
+    cursor: pointer;
+    transition: var(--transition);
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.btn-esim:hover {
+    border-color: var(--dorado);
+    color: var(--dorado);
+}
+
+.btn-esim.activo {
+    border-color: var(--dorado);
+    color: var(--dorado);
+    background: rgba(212, 168, 87, 0.1);
+}
+
+.esim-estado {
+    color: var(--texto-claro);
+    font-size: 0.9rem;
+}
+
+.esim-estado span {
+    color: var(--dorado);
+    font-weight: 600;
+}
+
+/* ========================================
+   SEGURIDAD
+   ======================================== */
+.perfil-seguridad {
+    background: var(--verde-bosque);
+    padding: 25px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border-color);
+    margin-bottom: 30px;
+}
+
+.perfil-seguridad h3 {
+    color: var(--dorado);
+    margin-bottom: 15px;
+    font-size: 1.1rem;
+}
+
+.seguridad-items {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.seguridad-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(212, 168, 87, 0.05);
+}
+
+.seguridad-item:last-child {
+    border-bottom: none;
+}
+
+.seguridad-item span {
+    color: var(--texto-claro);
+    font-size: 0.95rem;
+}
+
+.badge {
+    padding: 4px 16px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    background: rgba(212, 168, 87, 0.1);
+    color: var(--dorado);
+}
+
+.badge.ok {
+    background: rgba(0, 184, 148, 0.15);
+    color: #00b894;
+}
+
+/* ----- Toggle Switch ----- */
+.switch {
+    position: relative;
+    width: 50px;
+    height: 28px;
+    flex-shrink: 0;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #2d4a3f;
+    border-radius: 30px;
+    transition: var(--transition);
+}
+
+.slider::before {
+    content: '';
+    position: absolute;
+    height: 20px;
+    width: 20px;
+    left: 4px;
+    bottom: 4px;
+    background: white;
+    border-radius: 50%;
+    transition: var(--transition);
+}
+
+.switch input:checked + .slider {
+    background: var(--dorado);
+}
+
+.switch input:checked + .slider::before {
+    transform: translateX(22px);
+}
+
+/* ========================================
+   CONTACTOS
+   ======================================== */
+.perfil-contactos {
+    background: var(--verde-bosque);
+    padding: 25px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border-color);
+}
+
+.perfil-contactos h3 {
+    color: var(--dorado);
+    margin-bottom: 15px;
+    font-size: 1.1rem;
+}
+
+.contactos-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+
+.contactos-actions button {
+    padding: 8px 18px;
+    border: 1px solid var(--border-color);
+    background: transparent;
+    color: var(--texto-claro);
+    border-radius: 30px;
+    cursor: pointer;
+    transition: var(--transition);
+    font-size: 0.85rem;
+}
+
+.contactos-actions button:hover {
+    border-color: var(--dorado);
+    color: var(--dorado);
+    background: rgba(212, 168, 87, 0.05);
+}
+
+.lista-contactos {
+    max-height: 350px;
+    overflow-y: auto;
+}
+
+/* ----- Item de contacto ----- */
+.contacto-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 12px 10px;
+    border-bottom: 1px solid rgba(212, 168, 87, 0.05);
+    transition: var(--transition);
+    border-radius: 8px;
+}
+
+.contacto-item:hover {
+    background: rgba(212, 168, 87, 0.05);
+}
+
+.contacto-item img {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--border-color);
+}
+
+.contacto-item .info {
+    flex: 1;
+}
+
+.contacto-item .nombre {
+    font-weight: 600;
+    color: var(--blanco);
+    font-size: 1rem;
+}
+
+.contacto-item .estado-texto {
+    font-size: 0.75rem;
+    opacity: 0.5;
+    color: var(--texto-claro);
+}
+
+.contacto-item .acciones {
+    display: flex;
+    gap: 8px;
+}
+
+.contacto-item .acciones button {
+    background: none;
+    border: none;
+    color: var(--texto-claro);
+    cursor: pointer;
+    font-size: 1.1rem;
+    transition: var(--transition);
+    padding: 4px 8px;
+    border-radius: 8px;
+}
+
+.contacto-item .acciones button:hover {
+    background: rgba(212, 168, 87, 0.1);
+    color: var(--dorado);
+}
+
+.contacto-item .acciones button.bloquear:hover {
+    background: rgba(225, 112, 85, 0.15);
+    color: #e17055;
+}
+
+/* ========================================
+   MENSAJES VACIOS
+   ======================================== */
+.empty-message {
+    text-align: center;
+    opacity: 0.4;
+    padding: 30px 0;
+    font-size: 0.95rem;
+    color: var(--texto-claro);
+}
+
+/* ========================================
+   RESPONSIVE
+   ======================================== */
+@media (max-width: 900px) {
+    .perfil-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .perfil-header {
+        flex-direction: column;
+        text-align: center;
+        gap: 20px;
+        padding: 25px 20px;
+    }
+    
+    .perfil-acciones {
+        margin-left: 0;
+        justify-content: center;
+        width: 100%;
+    }
+    
+    .perfil-acciones button {
+        flex: 1;
+        min-width: 120px;
+    }
+    
+    .perfil-info h2 {
+        font-size: 1.5rem;
+    }
+    
+    .foto-perfil {
+        width: 120px;
+        height: 120px;
+    }
+}
+
+@media (max-width: 500px) {
+    .perfil-stats {
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+    
+    .stat-item {
+        padding: 15px;
+    }
+    
+    .stat-value {
+        font-size: 1.4rem;
+    }
+    
+    .perfil-header {
+        padding: 20px 15px;
+    }
+    
+    .foto-perfil {
+        width: 100px;
+        height: 100px;
+    }
+    
+    .btn-camara {
+        width: 34px;
+        height: 34px;
+        font-size: 1rem;
+        bottom: 2px;
+        right: 2px;
+    }
+    
+    .contactos-actions {
+        flex-direction: column;
+    }
+    
+    .contactos-actions button {
+        width: 100%;
+        text-align: center;
+    }
+    
+    .seguridad-item {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+}
+
+@media (max-width: 400px) {
+    .perfil-stats {
+        grid-template-columns: 1fr;
+    }
+}
