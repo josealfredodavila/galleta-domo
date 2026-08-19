@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Galleta Domo - Sistema de Tokens</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🍪 Sistema Galleta Domo</h1>
+            <p class="subtitle">Compra domos y acumula tokens en Polygon</p>
+        </header>
+
+        <div class="main-content">
+            <!-- Panel de Conexión -->
+            <section class="panel connect-panel">
+                <h2>Conectar Wallet</h2>
+                <button id="connectWallet" class="btn-primary">
+                    Conectar MetaMask
+                </button>
+                <div id="walletInfo" class="wallet-info"></div>
+            </section>
+
+            <!-- Panel de Compra -->
+            <section class="panel buy-panel">
+                <h2>Comprar Domo</h2>
+                <div class="domo-card">
+                    <div class="domo-preview">
+                        <span class="domo-emoji">🍪</span>
+                        <span class="domo-price">75 MATIC</span>
+                    </div>
+                    <button id="buyDomo" class="btn-success" disabled>
+                        Comprar Domo
+                    </button>
+                    <div id="qrContainer" class="qr-container hidden">
+                        <h3>QR del Domo</h3>
+                        <div id="qrCode"></div>
+                        <p class="qr-info">Escanea para recibir tu token</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Panel de Estado -->
+            <section class="panel status-panel">
+                <h2>Tu Estado</h2>
+                <div class="status-grid">
+                    <div class="status-item">
+                        <span class="label">Domos Comprados</span>
+                        <span id="domosCount" class="value">0</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="label">Tokens Acumulados</span>
+                        <span id="tokensCount" class="value">0</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="label">¿Puede Canjear?</span>
+                        <span id="canCanjear" class="value">No</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="label">NFT Canjeado</span>
+                        <span id="haCanjeado" class="value">No</span>
+                    </div>
+                </div>
+                <button id="canjearNft" class="btn-canjear" disabled>
+                    🔥 Canjear NFT (12 tokens)
+                </button>
+            </section>
+
+            <!-- Panel de Historial -->
+            <section class="panel history-panel">
+                <h2>Historial de Transacciones</h2>
+                <div id="transactionHistory" class="history-list">
+                    <p class="empty-message">No hay transacciones aún</p>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.8.0/dist/web3.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
