@@ -3,12 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🍪 Galleta Domo</title>
-    <!-- Cambia la ruta de CSS -->
+    <title>🍪 Sariel's - Galleta Domo WEB3</title>
     <link rel="stylesheet" href="/styles.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍪</text></svg>">
 </head>
 <body>
-    <!-- CONTENIDO HTML -->
+    <div id="app">
+        <!-- Header con marca -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <span class="logo-icon">🍪</span>
+                    <div class="logo-text">
+                        <h1>Sariel's</h1>
+                        <span class="logo-sub">Sabor al Paladar · WEB3</span>
+                    </div>
+                </div>
+                <div class="header-info">
+                    <span class="network-badge">🟢 Polygon</span>
+                    <button id="connectWallet" class="btn-connect">
+                        <span class="btn-icon">🔗</span>
+                        Conectar Wallet
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Resto del contenido igual... -->
+        <!-- ... -->
+
+        <!-- Footer con marca -->
+        <footer class="footer">
+            <div class="footer-content">
+                <p class="footer-brand">✦ Sariel's · Sabor al Paladar ✦</p>
+                <p>🍪 Galleta Domo · Powered by Polygon</p>
+                <p class="footer-small">Sistema automatizado de tokens y NFTs</p>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.8.0/dist/web3.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <script src="/app.js"></script>
 </body>
 </html>
