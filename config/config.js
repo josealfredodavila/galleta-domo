@@ -1,5 +1,20 @@
 // config/config.js
 require('dotenv').config();
+const fs = require('fs');
+const path = require('path');
+
+// Cargar ABI solo si existe
+let contractABI = [];
+try {
+    const abiPath = path.join(__dirname, '../contracts/abi/GalletaTokenABI.json');
+    if (fs.existsSync(abiPath)) {
+        contractABI = require(abiPath);
+    } else {
+        console.warn('⚠️ Archivo ABI no encontrado. El contrato no estará disponible.');
+    }
+} catch (error) {
+    console.warn('⚠️ Error cargando ABI:', error.message);
+}
 
 module.exports = {
     // ========================================
@@ -39,16 +54,16 @@ module.exports = {
     polygon: {
         rpcUrl: process.env.POLYGON_RPC || 'https://polygon-mainnet.g.alchemy.com/v2/demo',
         chainId: 137,
-        gasPrice: 50000000000, // 50 Gwei
+        gasPrice: 50000000000,
         gasLimit: 3000000
     },
 
     // ========================================
-    // CONTRATO
+    // CONTRATO (AHORA OPCIONAL)
     // ========================================
     contract: {
         address: process.env.CONTRACT_ADDRESS || '0x...',
-        abi: require('../contracts/abi/GalletaTokenABI.json')
+        abi: contractABI  // ← Ya no falla si no existe
     },
 
     // ========================================
@@ -95,10 +110,10 @@ module.exports = {
     business: {
         nombre: 'Sariel\'s',
         eslogan: 'Sabor al Paladar · WEB3',
-        precioDomo: 75, // MATIC
+        precioDomo: 75,
         tokensPorDomo: 1,
         tokensParaCanje: 12,
-        comisionP2P: 0.01, // 1%
+        comisionP2P: 0.01,
         dominio: process.env.DOMINIO || 'https://galleta-domo.vercel.app',
         email: process.env.BUSINESS_EMAIL || 'csarielscontacto@gmail.com'
     },
@@ -108,10 +123,10 @@ module.exports = {
     // ========================================
     security: {
         rateLimit: {
-            windowMs: 15 * 60 * 1000, // 15 minutos
-            max: 100 // requests por IP
+            windowMs: 15 * 60 * 1000,
+            max: 100
         },
-        uploadLimit: 20 * 1024 * 1024, // 20MB
+        uploadLimit: 20 * 1024 * 1024,
         cors: {
             origin: '*',
             credentials: true
@@ -132,17 +147,17 @@ module.exports = {
     },
 
     // ========================================
-    // MURO LIVE (COBRO POR ALGORITMO)
+    // MURO LIVE
     // ========================================
     muroLive: {
         cobroPorAlgoritmo: {
             activo: true,
-            costePorEspectador: 0.05, // MATIC por espectador
-            costePorMinuto: 0.02, // MATIC por minuto
-            umbralVisualizaciones: 100, // mínimo para activar cobro
-            comision: 0.01 // 1%
+            costePorEspectador: 0.05,
+            costePorMinuto: 0.02,
+            umbralVisualizaciones: 100,
+            comision: 0.01
         },
-        maxDuration: 3600, // 1 hora máxima
+        maxDuration: 3600,
         maxSpectators: 1000
     },
 
@@ -150,7 +165,7 @@ module.exports = {
     // ALMACENAMIENTO
     // ========================================
     storage: {
-        provider: process.env.STORAGE_PROVIDER || 'supabase', // 'supabase' o 'local'
+        provider: process.env.STORAGE_PROVIDER || 'supabase',
         localPath: './public/uploads'
     }
 };
