@@ -2,6 +2,8 @@
 const User = require('../models/User');
 const Message = require('../models/Message');
 const Post = require('../models/Post');
+const LiveStream = require('../models/LiveStream');
+const livekitServer = require('./livekitServer');
 
 module.exports = (io) => {
 
@@ -31,15 +33,15 @@ module.exports = (io) => {
                 const user = await User.findById(userId).populate('contactos');
                 if (user && user.contactos) {
                     user.contactos.forEach(contacto => {
-                        io.to(`user_${contacto._id}`).emit('user_online', { 
+                        io.to(`user_${contacto._id}`).emit('user_online', {
                             userId: userId,
-                            nombre: user.nombre 
+                            nombre: user.nombre
                         });
                     });
                 }
 
             } catch (error) {
-                console.error('Error en autenticación:', error);
+                console.error('❌ Error en autenticación:', error);
             }
         });
 
@@ -93,7 +95,7 @@ module.exports = (io) => {
                 });
 
             } catch (error) {
-                console.error('Error enviando mensaje:', error);
+                console.error('❌ Error enviando mensaje:', error);
                 socket.emit('message_error', { error: 'Error al enviar mensaje' });
             }
         });
@@ -107,7 +109,7 @@ module.exports = (io) => {
                     fechaLeido: new Date()
                 });
             } catch (error) {
-                console.error('Error marcando como leído:', error);
+                console.error('❌ Error marcando como leído:', error);
             }
         });
 
@@ -129,7 +131,7 @@ module.exports = (io) => {
                     }
                 );
             } catch (error) {
-                console.error('Error marcando conversación como leída:', error);
+                console.error('❌ Error marcando conversación como leída:', error);
             }
         });
 
@@ -175,7 +177,7 @@ module.exports = (io) => {
                 socket.emit('post_created', { success: true, postId: nuevoPost._id });
 
             } catch (error) {
-                console.error('Error publicando:', error);
+                console.error('❌ Error publicando:', error);
                 socket.emit('post_error', { error: 'Error al publicar' });
             }
         });
@@ -199,7 +201,148 @@ module.exports = (io) => {
                 });
 
             } catch (error) {
-                console.error('Error reaccionando:', error);
+                console.error('❌ Error reaccionando:', error);
+            }
+        });
+
+        // ========================================
+        // MURO LIVE - TRANSMISIONES
+        // ========================================
+
+        // Iniciar transmisión
+        socket.on('start_stream', async (data) => {
+            try {
+                const { streamId } = data;
+                const userId = socket.userId;
+
+                const stream = await LiveStream.findOne({ _id: streamId, usuario: userId });
+                if (!stream) {
+                    socket.emit('stream_error', { error: 'Transmisión no encontrada' });
+                    return;
+                }
+
+                if (stream.estado === 'en_vivo') {
+                    socket.emit('stream_error', { error: 'La transmisión ya está en vivo' });
+                    return;
+                }
+
+                await stream.iniciar();
+
+                // Crear sala en LiveKit
+                await livekitServer.createRoom(stream.livekitRoomName);
+
+                // Actualizar estado del usuario
+                await User.findByIdAndUpdate(userId, {
+                    'live.activo': true,
+                    'live.streamId': stream._id
+                });
+
+                // Notificar a contactos
+                const user = await User.findById(userId).populate('contactos');
+                if (user && user.contactos) {
+                    user.contactos.forEach(contacto => {
+                        io.to(`user_${contacto._id}`).emit('live_started', {
+                            streamId: stream._id,
+                            usuario: {
+                                _id: userId,
+                                nombre: user.nombre,
+                                fotoPerfil: user.fotoPerfil
+                            },
+                            titulo: stream.titulo,
+                            roomId: stream.roomId
+                        });
+                    });
+                }
+
+                socket.emit('stream_started', {
+                    success: true,
+                    streamId: stream._id,
+                    roomName: stream.livekitRoomName
+                });
+
+            } catch (error) {
+                console.error('❌ Error iniciando transmisión:', error);
+                socket.emit('stream_error', { error: 'Error al iniciar transmisión' });
+            }
+        });
+
+        // Finalizar transmisión
+        socket.on('stop_stream', async (data) => {
+            try {
+                const { streamId } = data;
+                const userId = socket.userId;
+
+                const stream = await LiveStream.findOne({ _id: streamId, usuario: userId });
+                if (!stream) {
+                    socket.emit('stream_error', { error: 'Transmisión no encontrada' });
+                    return;
+                }
+
+                await stream.finalizar();
+
+                // Eliminar sala de LiveKit
+                await livekitServer.deleteRoom(stream.livekitRoomName);
+
+                // Actualizar estado del usuario
+                await User.findByIdAndUpdate(userId, {
+                    'live.activo': false,
+                    'live.streamId': null
+                });
+
+                // Notificar a contactos
+                io.emit('live_stopped', {
+                    streamId: stream._id,
+                    usuarioId: userId
+                });
+
+                socket.emit('stream_stopped', {
+                    success: true,
+                    streamId: stream._id
+                });
+
+            } catch (error) {
+                console.error('❌ Error finalizando transmisión:', error);
+                socket.emit('stream_error', { error: 'Error al finalizar transmisión' });
+            }
+        });
+
+        // Actualizar métricas de audiencia (Muro Live - Cobro por Algoritmo)
+        socket.on('update_view_metrics', async (data) => {
+            try {
+                const { streamId, visualizaciones, alcance, engagement } = data;
+                const userId = socket.userId;
+
+                const stream = await LiveStream.findOne({ _id: streamId, usuario: userId });
+                if (!stream) return;
+
+                // Actualizar métricas
+                stream.cobroPorAlgoritmo.metricas = {
+                    visualizaciones: visualizaciones || stream.cobroPorAlgoritmo.metricas.visualizaciones,
+                    alcance: alcance || stream.cobroPorAlgoritmo.metricas.alcance,
+                    engagement: engagement || stream.cobroPorAlgoritmo.metricas.engagement
+                };
+
+                // Incrementar contadores
+                if (stream.cobroPorAlgoritmo.activo) {
+                    const umbral = stream.cobroPorAlgoritmo.umbralVisualizaciones || 100;
+                    if (visualizaciones >= umbral) {
+                        // Cobro por algoritmo activado automáticamente
+                        const resultado = await LiveStream.calcularCobroAlgoritmo(stream._id);
+                        
+                        // Notificar al usuario
+                        socket.emit('algoritmo_cobro', {
+                            streamId: stream._id,
+                            totalCobrado: resultado.cobroPorAlgoritmo.totalCobrado,
+                            neto: resultado.ganancias.neto,
+                            metricas: resultado.cobroPorAlgoritmo.metricas
+                        });
+                    }
+                }
+
+                await stream.save();
+
+            } catch (error) {
+                console.error('❌ Error actualizando métricas:', error);
             }
         });
 
@@ -217,7 +360,7 @@ module.exports = (io) => {
                     nombre: await User.findById(userId).select('nombre')
                 });
             } catch (error) {
-                console.error('Error en typing:', error);
+                console.error('❌ Error en typing:', error);
             }
         });
 
@@ -229,7 +372,7 @@ module.exports = (io) => {
                     de: socket.userId
                 });
             } catch (error) {
-                console.error('Error en stop typing:', error);
+                console.error('❌ Error en stop typing:', error);
             }
         });
 
@@ -242,9 +385,30 @@ module.exports = (io) => {
 
             if (socket.userId) {
                 try {
+                    // Verificar si tiene transmisión activa
+                    const streamActivo = await LiveStream.findOne({
+                        usuario: socket.userId,
+                        estado: { $in: ['en_vivo', 'pausado'] }
+                    });
+
+                    if (streamActivo) {
+                        // Finalizar transmisión automáticamente
+                        await streamActivo.finalizar();
+                        await livekitServer.deleteRoom(streamActivo.livekitRoomName);
+                        
+                        // Notificar
+                        io.emit('live_stopped', {
+                            streamId: streamActivo._id,
+                            usuarioId: socket.userId
+                        });
+                    }
+
+                    // Actualizar estado del usuario
                     await User.findByIdAndUpdate(socket.userId, {
                         estado: 'ausente',
-                        ultimaConexion: new Date()
+                        ultimaConexion: new Date(),
+                        'live.activo': false,
+                        'live.streamId': null
                     });
 
                     // Notificar a contactos
@@ -258,7 +422,7 @@ module.exports = (io) => {
                         });
                     }
                 } catch (error) {
-                    console.error('Error en desconexión:', error);
+                    console.error('❌ Error en desconexión:', error);
                 }
             }
         });
