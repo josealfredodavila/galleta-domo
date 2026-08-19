@@ -1,0 +1,109 @@
+<!-- features/muro/muro.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>📱 Muro · Sariel's</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/features/muro/muro.css" />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍪</text></svg>" />
+</head>
+<body>
+    <div id="app">
+
+        <!-- ===== HEADER ===== -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <span class="logo-icon">🍪</span>
+                    <div class="logo-text">
+                        <h1>Sariel's</h1>
+                        <span class="logo-sub">Sabor al Paladar · WEB3</span>
+                    </div>
+                </div>
+                <div class="header-info">
+                    <span class="network-badge">🟢 Polygon</span>
+                    <button id="connectWallet" class="btn-connect">
+                        <span class="btn-icon">🔗</span>
+                        Conectar Wallet
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- ===== MURO ===== -->
+        <main class="main">
+            <div class="container">
+                <div class="muro-container">
+
+                    <!-- Navegación del muro -->
+                    <div class="muro-nav">
+                        <button class="nav-btn active" id="btnFeed">📱 Feed</button>
+                        <button class="nav-btn" id="btnMisPublicaciones">📝 Mis publicaciones</button>
+                        <button class="nav-btn" id="btnVentas">💰 Ventas de tokens</button>
+                    </div>
+
+                    <!-- ===== CREAR PUBLICACIÓN ===== -->
+                    <div class="crear-publicacion">
+                        <div class="crear-header">
+                            <img id="crearFotoPerfil" src="/default-avatar.png" alt="Tu foto" />
+                            <input type="text" id="inputPublicacion" placeholder="¿Qué estás pensando?" />
+                        </div>
+                        <div class="crear-acciones">
+                            <button id="btnFoto" class="crear-btn">📸 Foto</button>
+                            <button id="btnVideo" class="crear-btn">🎥 Video</button>
+                            <button id="btnVender" class="crear-btn">💰 Vender tokens</button>
+                            <button id="btnPublicar" class="crear-btn publicar">Publicar</button>
+                        </div>
+                        <!-- Campos adicionales para venta -->
+                        <div id="ventaCampos" class="venta-campos hidden">
+                            <input type="number" id="ventaCantidad" placeholder="Cantidad de tokens" min="1" />
+                            <input type="number" id="ventaPrecio" placeholder="Precio por token (pesos)" min="1" />
+                        </div>
+                        <!-- Previsualización de archivo -->
+                        <div id="previewContainer" class="preview-container hidden">
+                            <img id="previewImage" src="" alt="Previsualización" />
+                            <button id="eliminarPreview" class="eliminar-preview">✕</button>
+                        </div>
+                        <input type="file" id="inputFile" accept="image/*,video/*" hidden />
+                    </div>
+
+                    <!-- ===== FEED DE PUBLICACIONES ===== -->
+                    <div id="feedPublicaciones" class="feed-publicaciones">
+                        <!-- Las publicaciones se cargan aquí dinámicamente -->
+                        <div class="loading-spinner">
+                            <span>Cargando publicaciones...</span>
+                        </div>
+                    </div>
+
+                    <!-- Botón cargar más -->
+                    <button id="cargarMas" class="btn-cargar-mas hidden">
+                        Cargar más publicaciones
+                    </button>
+
+                </div>
+            </div>
+        </main>
+
+        <!-- ===== FOOTER ===== -->
+        <footer class="footer">
+            <div class="footer-content">
+                <p class="footer-brand">✦ Sariel's · Sabor al Paladar ✦</p>
+                <p>🍪 Galleta Domo · Powered by Polygon</p>
+                <p class="footer-small">
+                    <a href="/terminos.html" target="_blank">📜 Términos y Condiciones</a>
+                </p>
+            </div>
+        </footer>
+
+    </div>
+
+    <!-- ===== SCRIPTS ===== -->
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.8.0/dist/web3.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <script src="/app.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/features/muro/muro.js"></script>
+</body>
+</html>
