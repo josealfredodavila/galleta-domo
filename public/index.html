@@ -34,19 +34,32 @@
         <main class="main">
             <div class="container">
 
-                <!-- Wallet Info -->
+                <!-- ===== MENU DE NAVEGACIÓN PRINCIPAL ===== -->
+                <nav class="main-nav">
+                    <a href="/" class="nav-link active">🏠 Inicio</a>
+                    <a href="/features/muro/muro.html" class="nav-link">📱 Muro</a>
+                    <a href="/features/perfil/perfil.html" class="nav-link">👤 Perfil</a>
+                    <a href="/features/mensajes/mensajes.html" class="nav-link">💬 Mensajes</a>
+                    <a href="/features/live/live.html" class="nav-link live-link">🔴 Live</a>
+                </nav>
+
+                <!-- ===== WALLET INFO ===== -->
                 <div id="walletInfo" class="wallet-info hidden">
                     <div class="wallet-details">
                         <span class="wallet-label">Wallet:</span>
                         <span id="walletAddress" class="wallet-address"></span>
                         <span class="wallet-status online">● Conectado</span>
                     </div>
+                    <div class="wallet-actions">
+                        <button id="btnPerfil" class="btn-small">👤 Perfil</button>
+                        <button id="btnLogout" class="btn-small logout">🚪 Salir</button>
+                    </div>
                 </div>
 
-                <!-- Grid de Paneles -->
+                <!-- ===== GRID DE PANELES ===== -->
                 <div class="grid-3">
 
-                    <!-- Panel Compra -->
+                    <!-- ===== PANEL DE COMPRA ===== -->
                     <section class="panel panel-buy">
                         <div class="panel-header">
                             <h2>🛒 Comprar Domo</h2>
@@ -67,6 +80,9 @@
                                     <button id="buyDomo" class="btn-primary" disabled>
                                         Comprar Domo
                                     </button>
+                                    <button id="buyDomoCrypto" class="btn-secondary" disabled>
+                                        💳 Pagar con Crypto
+                                    </button>
                                 </div>
                                 <div id="qrContainer" class="qr-container hidden">
                                     <h3>📱 QR del Domo</h3>
@@ -77,7 +93,7 @@
                         </div>
                     </section>
 
-                    <!-- Panel Estado -->
+                    <!-- ===== PANEL DE ESTADO ===== -->
                     <section class="panel panel-status">
                         <div class="panel-header">
                             <h2>📊 Tu Estado</h2>
@@ -86,22 +102,22 @@
                         <div class="panel-body">
                             <div class="status-grid">
                                 <div class="status-item">
-                                    <span class="status-label">Domos Comprados</span>
+                                    <span class="status-label">🍪 Domos</span>
                                     <span id="domosCount" class="status-value">0</span>
                                 </div>
                                 <div class="status-item">
-                                    <span class="status-label">Tokens Acumulados</span>
+                                    <span class="status-label">💰 Tokens</span>
                                     <span id="tokensCount" class="status-value">0</span>
                                 </div>
                                 <div class="status-item">
-                                    <span class="status-label">Progreso Canje</span>
+                                    <span class="status-label">📊 Progreso</span>
                                     <div class="progress-bar">
                                         <div id="progressFill" class="progress-fill" style="width: 0%;"></div>
                                     </div>
                                     <span id="progressText" class="progress-text">0 / 12</span>
                                 </div>
                                 <div class="status-item">
-                                    <span class="status-label">NFT Canjeado</span>
+                                    <span class="status-label">🏆 NFT</span>
                                     <span id="haCanjeado" class="status-value">No</span>
                                 </div>
                             </div>
@@ -114,7 +130,7 @@
                         </div>
                     </section>
 
-                    <!-- Panel Historial -->
+                    <!-- ===== PANEL DE HISTORIAL ===== -->
                     <section class="panel panel-history">
                         <div class="panel-header">
                             <h2>📜 Historial</h2>
@@ -130,8 +146,32 @@
                         </div>
                     </section>
 
-                </div><!-- /.grid-3 -->
-            </div><!-- /.container -->
+                </div>
+
+                <!-- ===== ACCESO RÁPIDO ===== -->
+                <div class="quick-access">
+                    <h3>🚀 Acceso Rápido</h3>
+                    <div class="quick-grid">
+                        <a href="/features/muro/muro.html" class="quick-card">
+                            <span class="icon">📱</span>
+                            <span>Ir al Muro</span>
+                        </a>
+                        <a href="/features/perfil/perfil.html" class="quick-card">
+                            <span class="icon">👤</span>
+                            <span>Mi Perfil</span>
+                        </a>
+                        <a href="/features/mensajes/mensajes.html" class="quick-card">
+                            <span class="icon">💬</span>
+                            <span>Mensajes</span>
+                        </a>
+                        <a href="/features/live/live.html" class="quick-card live-card">
+                            <span class="icon">🔴</span>
+                            <span>Muro Live</span>
+                        </a>
+                    </div>
+                </div>
+
+            </div>
         </main>
 
         <!-- ===== FOOTER ===== -->
@@ -140,13 +180,9 @@
                 <p class="footer-brand">✦ Sariel's · Sabor al Paladar ✦</p>
                 <p>🍪 Galleta Domo · Powered by Polygon</p>
                 <p class="footer-small">
-                    <a href="/terminos.html" target="_blank" style="color: #D4A857; text-decoration: none; border-bottom: 1px dotted rgba(212,168,87,0.3);">
-                        📜 Términos y Condiciones
-                    </a>
+                    <a href="/terminos.html" target="_blank">📜 Términos y Condiciones</a>
                     &nbsp;·&nbsp;
-                    <a href="/privacidad.html" target="_blank" style="color: #D4A857; text-decoration: none; border-bottom: 1px dotted rgba(212,168,87,0.3);">
-                        🔒 Privacidad
-                    </a>
+                    <a href="/privacidad.html" target="_blank">🔒 Privacidad</a>
                 </p>
                 <p class="footer-small" style="font-size: 0.65rem; opacity: 0.4; margin-top: 4px;">
                     Es.stoks · Csariel's · WEB3
@@ -154,12 +190,14 @@
             </div>
         </footer>
 
-    </div><!-- /#app -->
+    </div>
 
     <!-- ===== SCRIPTS ===== -->
     <script src="https://cdn.jsdelivr.net/npm/web3@1.8.0/dist/web3.min.js">
     </script>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js">
+    </script>
+    <script src="/socket.io/socket.io.js">
     </script>
     <script src="/app.js">
     </script>
