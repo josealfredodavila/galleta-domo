@@ -5,13 +5,11 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js",
-    "build": "npm install"
+    "dev": "nodemon server.js"
   },
   "dependencies": {
     "axios": "^1.6.0",
     "bcryptjs": "^2.4.3",
-    "cloudflare": "^3.0.0",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "ethers": "^5.7.2",
@@ -19,7 +17,6 @@
     "express-rate-limit": "^6.10.0",
     "helmet": "^7.0.0",
     "jsonwebtoken": "^9.0.0",
-    "livekit-server-sdk": "^1.0.0",
     "mongoose": "^7.5.0",
     "multer": "^1.4.5-lts.1",
     "qrcode": "^1.5.3",
@@ -28,9 +25,6 @@
     "web3": "^1.10.0"
   },
   "devDependencies": {
-    "@nomiclabs/hardhat-ethers": "^2.2.3",
-    "@nomiclabs/hardhat-waffle": "^2.0.5",
-    "hardhat": "^2.17.0",
     "nodemon": "^3.0.1"
   },
   "keywords": [
@@ -39,10 +33,7 @@
     "nft",
     "tokens",
     "streaming",
-    "webrtc",
-    "livekit",
-    "nowpayments",
-    "supabase"
+    "webrtc"
   ],
   "author": "Sariel's",
   "license": "MIT"
