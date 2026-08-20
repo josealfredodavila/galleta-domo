@@ -7,6 +7,98 @@
     <link rel="stylesheet" href="/styles.css" />
     <!-- ===== FAVICON OFICIAL CSARIEL'S ===== -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+    <style>
+        /* ===== ESTILOS PARA EL CHECKBOX Y BOTÓN ===== */
+        .wallet-connect-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            background: rgba(15, 45, 26, 0.2);
+            padding: 8px 16px;
+            border-radius: 12px;
+            border: 1px solid rgba(212, 168, 87, 0.08);
+        }
+        .wallet-connect-wrapper .terminos-check {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            white-space: nowrap;
+        }
+        .wallet-connect-wrapper .terminos-check input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #D4AF37;
+            cursor: pointer;
+            flex-shrink: 0;
+            appearance: none;
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(212, 168, 87, 0.3);
+            border-radius: 4px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        .wallet-connect-wrapper .terminos-check input[type="checkbox"]:checked {
+            background: #D4AF37;
+            border-color: #D4AF37;
+        }
+        .wallet-connect-wrapper .terminos-check input[type="checkbox"]:checked::after {
+            content: "✓";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #05080f;
+            font-size: 12px;
+            font-weight: 700;
+        }
+        .wallet-connect-wrapper .terminos-check input[type="checkbox"]:hover {
+            border-color: #D4AF37;
+        }
+        .wallet-connect-wrapper .terminos-check a {
+            color: #D4AF37;
+            text-decoration: underline;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .wallet-connect-wrapper .terminos-check a:hover {
+            color: #b8923a;
+        }
+        .wallet-connect-wrapper .btn-connect {
+            margin-left: auto;
+            flex-shrink: 0;
+        }
+        .wallet-connect-wrapper .btn-connect:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+        .wallet-connect-wrapper .btn-connect:disabled:hover {
+            box-shadow: none !important;
+            transform: none !important;
+        }
+
+        @media (max-width: 768px) {
+            .wallet-connect-wrapper {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 8px;
+            }
+            .wallet-connect-wrapper .terminos-check {
+                white-space: normal;
+                font-size: 0.65rem;
+            }
+            .wallet-connect-wrapper .btn-connect {
+                margin-left: 0;
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
 </head>
 <body>
 
@@ -28,10 +120,20 @@
                 </a>
                 <div class="header-info">
                     <span class="network-badge">🟢 Polygon</span>
-                    <button id="connectWallet" class="btn-connect">
-                        <span class="btn-icon">🔗</span>
-                        Conectar Wallet
-                    </button>
+                    <!-- ===== WRAPPER CON CHECKBOX + BOTÓN ===== -->
+                    <div class="wallet-connect-wrapper">
+                        <label class="terminos-check" id="terminosLabel">
+                            <input type="checkbox" id="aceptoTerminos" />
+                            <span>
+                                Acepto los 
+                                <a href="/terminos.html" target="_blank">Términos y Condiciones</a>
+                            </span>
+                        </label>
+                        <button id="connectWallet" class="btn-connect" disabled>
+                            <span class="btn-icon">🔗</span>
+                            Conectar Wallet
+                        </button>
+                    </div>
                 </div>
             </div>
         </header>
@@ -206,6 +308,53 @@
     <script src="/socket.io/socket.io.js">
     </script>
     <script src="/app.js">
+    </script>
+    <script>
+        // ================================================================
+        // LÓGICA DEL CHECKBOX DE TÉRMINOS
+        // ================================================================
+        document.addEventListener('DOMContentLoaded', function() {
+            const checkbox = document.getElementById('aceptoTerminos');
+            const connectBtn = document.getElementById('connectWallet');
+
+            // Función para actualizar el estado del botón
+            function actualizarBoton() {
+                if (checkbox.checked) {
+                    connectBtn.disabled = false;
+                    connectBtn.style.opacity = '1';
+                    connectBtn.style.cursor = 'pointer';
+                } else {
+                    connectBtn.disabled = true;
+                    connectBtn.style.opacity = '0.4';
+                    connectBtn.style.cursor = 'not-allowed';
+                }
+            }
+
+            // Escuchar cambios en el checkbox
+            checkbox.addEventListener('change', actualizarBoton);
+
+            // Si el usuario intenta hacer clic en el botón deshabilitado
+            connectBtn.addEventListener('click', function(e) {
+                if (this.disabled) {
+                    e.preventDefault();
+                    // Resaltar el checkbox
+                    checkbox.style.borderColor = '#ff3366';
+                    checkbox.style.boxShadow = '0 0 20px rgba(255, 51, 102, 0.3)';
+                    setTimeout(() => {
+                        checkbox.style.borderColor = '';
+                        checkbox.style.boxShadow = '';
+                    }, 1500);
+                    // Scroll al checkbox
+                    document.getElementById('terminosLabel').scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center'
+                    });
+                }
+            });
+
+            // Estado inicial
+            actualizarBoton();
+        });
     </script>
 </body>
 </html>
