@@ -175,10 +175,18 @@
             transition: var(--transition);
             font-family: 'Inter', sans-serif;
             font-weight: 500;
+            cursor: pointer;
+            background: transparent;
+            border: none;
         }
         .header-actions .nav-link:hover {
             color: var(--gold);
             background: rgba(212, 175, 55, 0.05);
+        }
+        .header-actions .nav-link.active {
+            color: var(--gold);
+            background: rgba(212, 175, 55, 0.1);
+            border: 1px solid rgba(212, 175, 55, 0.2);
         }
         .header-actions .nav-link.live {
             color: var(--danger);
@@ -186,6 +194,10 @@
         .header-actions .nav-link.internet {
             color: var(--gold);
             background: rgba(212, 175, 55, 0.05);
+        }
+        .header-actions .nav-link.admin {
+            color: var(--gold);
+            border: 1px solid var(--gold);
         }
 
         .network-badge {
@@ -247,21 +259,17 @@
             box-shadow: 0 4px 20px rgba(0, 214, 143, 0.2);
         }
         .btn-success:hover { transform: translateY(-2px); box-shadow: 0 0 30px rgba(0, 214, 143, 0.3); }
-        .btn-internet {
-            background: linear-gradient(135deg, var(--gold), var(--gold-light));
-            color: var(--space);
-            animation: pulse-internet 2s ease-in-out infinite;
-            box-shadow: 0 4px 20px rgba(212, 175, 55, 0.2);
+        .btn-danger {
+            background: rgba(255, 51, 102, 0.1);
+            color: var(--danger);
+            border: 1px solid rgba(255, 51, 102, 0.2);
         }
-        @keyframes pulse-internet {
-            0%, 100% { box-shadow: 0 0 20px rgba(212, 175, 55, 0.2); }
-            50% { box-shadow: 0 0 40px rgba(212, 175, 55, 0.4); }
-        }
+        .btn-danger:hover { background: rgba(255, 51, 102, 0.2); }
 
         /* ===== DOMO CARD ===== */
         .domo-card { text-align: center; }
 
-        /* ===== CUBO BRONCE WEB3 (Reemplaza la galleta) ===== */
+        /* ===== CUBO BRONCE WEB3 ===== */
         .domo-cubo {
             display: inline-block;
             width: 80px;
@@ -519,6 +527,54 @@
             padding: 10px;
         }
 
+        /* ===== TABS ===== */
+        .tabs-container {
+            margin-bottom: 20px;
+        }
+        .tabs {
+            display: flex;
+            gap: 4px;
+            background: var(--glass-bg);
+            border-radius: var(--radius);
+            padding: 4px;
+            border: 1px solid var(--glass-border);
+            overflow-x: auto;
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 10px 16px;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.75rem;
+            font-weight: 600;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: var(--transition);
+            white-space: nowrap;
+        }
+        .tab-btn:hover {
+            color: var(--text-primary);
+            background: rgba(212, 175, 55, 0.05);
+        }
+        .tab-btn.active {
+            background: rgba(212, 175, 55, 0.15);
+            color: var(--gold);
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.05);
+        }
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         /* ===== GRID ===== */
         .grid-2 {
             display: grid;
@@ -547,6 +603,8 @@
             justify-content: space-between;
             align-items: center;
             background: rgba(212, 175, 55, 0.03);
+            flex-wrap: wrap;
+            gap: 8px;
         }
         .panel-header h2 {
             font-size: 0.85rem;
@@ -565,7 +623,7 @@
         }
         .panel-body { padding: 18px; }
 
-        /* ===== INTERNET PACKS (MINI) ===== */
+        /* ===== INTERNET PACKS ===== */
         .internet-mini {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
@@ -617,6 +675,178 @@
             box-shadow: 0 0 20px rgba(212, 175, 55, 0.2);
         }
 
+        /* ===== QR GENERATOR (dentro del tab) ===== */
+        .qr-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 16px;
+        }
+        .qr-card {
+            background: rgba(0,0,0,0.2);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            transition: var(--transition);
+        }
+        .qr-card:hover {
+            border-color: var(--gold);
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-gold);
+        }
+        .qr-card canvas, .qr-card img {
+            width: 150px;
+            height: 150px;
+            border-radius: 8px;
+            background: white;
+            padding: 8px;
+        }
+        .qr-card .qr-id {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.5rem;
+            color: var(--text-muted);
+            margin-top: 8px;
+            word-break: break-all;
+        }
+        .qr-card .qr-status {
+            font-size: 0.6rem;
+            margin-top: 4px;
+            padding: 2px 10px;
+            border-radius: 12px;
+            display: inline-block;
+        }
+        .qr-card .qr-status.usado {
+            background: rgba(255, 51, 102, 0.1);
+            color: var(--danger);
+            border: 1px solid rgba(255, 51, 102, 0.2);
+        }
+        .qr-card .qr-status.disponible {
+            background: rgba(0, 184, 148, 0.1);
+            color: var(--success);
+            border: 1px solid rgba(0, 184, 148, 0.2);
+        }
+        .qr-card .qr-actions {
+            display: flex;
+            gap: 6px;
+            justify-content: center;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+        .qr-card .qr-actions .btn { font-size: 0.5rem; padding: 3px 10px; }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .form-group label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+        .form-group input, .form-group select {
+            padding: 10px 14px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            outline: none;
+            transition: var(--transition);
+        }
+        .form-group input:focus, .form-group select:focus {
+            border-color: var(--gold);
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.05);
+        }
+        .form-group select option { background: var(--green-deep); }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-muted);
+        }
+        .empty-state .icon { font-size: 3rem; display: block; margin-bottom: 12px; }
+        .empty-state h3 { font-family: 'Orbitron', monospace; color: var(--text-secondary); font-size: 1rem; }
+        .empty-state p { font-size: 0.85rem; }
+
+        /* ===== QR AUTH SCREEN ===== */
+        #qrAuthScreen {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(5, 8, 15, 0.95);
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            backdrop-filter: blur(20px);
+        }
+        #qrAuthScreen.show {
+            display: flex;
+        }
+        #qrAuthScreen .auth-box {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            padding: 40px;
+            max-width: 420px;
+            width: 90%;
+            text-align: center;
+            box-shadow: var(--shadow-gold-strong);
+        }
+        #qrAuthScreen .auth-box h2 {
+            font-family: 'Orbitron', monospace;
+            color: var(--gold);
+            font-size: 1.4rem;
+            margin-bottom: 8px;
+        }
+        #qrAuthScreen .auth-box p {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-bottom: 20px;
+        }
+        #qrAuthScreen .auth-box input {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(0,0,0,0.4);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            outline: none;
+            transition: var(--transition);
+            margin-bottom: 12px;
+        }
+        #qrAuthScreen .auth-box input:focus {
+            border-color: var(--gold);
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.1);
+        }
+        #qrAuthScreen .auth-box .btn {
+            width: 100%;
+            justify-content: center;
+            padding: 12px;
+            font-size: 0.85rem;
+        }
+        #qrAuthScreen .auth-box .error-msg {
+            color: var(--danger);
+            font-size: 0.8rem;
+            margin-top: 8px;
+            min-height: 20px;
+        }
+        #qrAuthScreen .auth-box .hint {
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            margin-top: 12px;
+            opacity: 0.5;
+        }
+
         /* ===== TOAST ===== */
         .toast {
             position: fixed;
@@ -659,6 +889,7 @@
         .footer-links a { color: var(--text-muted); text-decoration: none; transition: var(--transition); }
         .footer-links a:hover { color: var(--gold); }
 
+        /* ===== RESPONSIVE ===== */
         @media (max-width: 600px) {
             .app { padding: 12px 14px; }
             .hero h1 { font-size: 1.4rem; }
@@ -683,6 +914,10 @@
             .domo-cubo .cubo .cara.top { transform: rotateX(90deg) translateZ(30px); }
             .domo-cubo .cubo .cara.bottom { transform: rotateX(-90deg) translateZ(30px); }
             .domo-cubo .cubo .cara .esstoks { font-size: 0.5rem; }
+            .qr-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+            .form-row { grid-template-columns: 1fr; }
+            .tabs { gap: 2px; }
+            .tab-btn { font-size: 0.65rem; padding: 8px 10px; }
         }
 
         @media (max-width: 400px) {
@@ -699,6 +934,7 @@
             .domo-cubo .cubo .cara.top { transform: rotateX(90deg) translateZ(25px); }
             .domo-cubo .cubo .cara.bottom { transform: rotateX(-90deg) translateZ(25px); }
             .domo-cubo .cubo .cara .esstoks { font-size: 0.4rem; }
+            .qr-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -714,181 +950,263 @@
 
         <!-- ===== HEADER ===== -->
         <header class="header">
-            <a href="/" class="logo">
+            <a href="#" class="logo" onclick="cambiarTab('inicio')">
                 <span class="logo-hex">◈</span>
                 <span class="logo-text">Sariel<span>'s</span></span>
                 <span class="logo-badge">✦ WEB3</span>
             </a>
             <div class="header-actions">
                 <span class="network-badge"><span class="dot"></span> Polygon</span>
-                <a href="/features/muro/muro.html" class="nav-link">📱 Muro</a>
-                <a href="/features/perfil/perfil.html" class="nav-link">👤 Perfil</a>
-                <a href="/features/mensajes/contactos.html" class="nav-link">👥 Contactos</a>
-                <a href="/features/live/live.html" class="nav-link live">🔴 Live</a>
-                <a href="/features/internet/internet.html" class="nav-link internet">🌐 Internet</a>
+                <button class="nav-link active" onclick="cambiarTab('inicio')">🏠 Inicio</button>
+                <button class="nav-link admin" onclick="abrirQRAdmin()">📱 Admin QR</button>
             </div>
         </header>
 
         <!-- ===== HERO ===== -->
-        <section class="hero">
+        <section class="hero" id="heroSection">
             <h1>◈ Bienvenido a Sariel's</h1>
             <p>Compra domos físicos, acumula <strong>Es.stoks</strong>, canjea NFTs y conecta con tu comunidad en un ecosistema Web3 sin custodia.</p>
         </section>
 
-        <!-- ===== AUTH + WALLET ===== -->
-        <div class="auth-section">
-            <!-- Registro -->
-            <div class="auth-card" id="registerCard">
-                <h3>📝 Regístrate gratis</h3>
-                <div class="sub">Crea tu cuenta con email o teléfono</div>
-                <input type="email" id="regEmail" placeholder="Correo electrónico" />
-                <input type="tel" id="regPhone" placeholder="Teléfono (opcional)" />
-                <input type="password" id="regPassword" placeholder="Contraseña" />
-                <input type="text" id="regName" placeholder="Nombre (opcional)" />
-                <button class="btn btn-gold" onclick="registrarUsuario()">🚀 Crear cuenta</button>
-                <p style="font-size:0.6rem;color:var(--text-muted);margin-top:8px;text-align:center;">
-                    ¿Ya tienes cuenta? <a href="#" onclick="mostrarLogin()" style="color:var(--gold);">Inicia sesión</a>
-                </p>
-            </div>
-
-            <!-- Login -->
-            <div class="auth-card" id="loginCard" style="display:none;">
-                <h3>🔑 Iniciar sesión</h3>
-                <div class="sub">Entra con tu email o wallet</div>
-                <input type="email" id="loginEmail" placeholder="Correo electrónico" />
-                <input type="password" id="loginPassword" placeholder="Contraseña" />
-                <button class="btn btn-outline" onclick="iniciarSesion()" style="width:100%;justify-content:center;">🔓 Iniciar sesión</button>
-                <p style="font-size:0.6rem;color:var(--text-muted);margin-top:8px;text-align:center;">
-                    ¿No tienes cuenta? <a href="#" onclick="mostrarRegistro()" style="color:var(--gold);">Regístrate</a>
-                </p>
+        <!-- ===== TABS ===== -->
+        <div class="tabs-container">
+            <div class="tabs">
+                <button class="tab-btn active" onclick="cambiarTab('inicio')">🏠 Tienda</button>
+                <button class="tab-btn" onclick="cambiarTab('internet')">🌐 Internet</button>
+                <button class="tab-btn admin" onclick="cambiarTab('admin')" style="border:1px solid var(--gold);">🔒 Admin QR</button>
             </div>
         </div>
 
-        <!-- ===== WALLET CONNECT ===== -->
-        <div style="max-width: 500px; margin: 0 auto 30px auto;">
-            <div class="wallet-connect-wrapper" id="walletConnectWrapper">
-                <button id="connectWallet" class="btn btn-gold btn-connect" onclick="conectarWallet()">
-                    🔗 Conectar Wallet
-                </button>
+        <!-- ===== TAB: INICIO (Tienda) ===== -->
+        <div id="tab-inicio" class="tab-content active">
+
+            <!-- ===== AUTH + WALLET ===== -->
+            <div class="auth-section">
+                <div class="auth-card" id="registerCard">
+                    <h3>📝 Regístrate gratis</h3>
+                    <div class="sub">Crea tu cuenta con email o teléfono</div>
+                    <input type="email" id="regEmail" placeholder="Correo electrónico" />
+                    <input type="tel" id="regPhone" placeholder="Teléfono (opcional)" />
+                    <input type="password" id="regPassword" placeholder="Contraseña" />
+                    <input type="text" id="regName" placeholder="Nombre (opcional)" />
+                    <button class="btn btn-gold" onclick="registrarUsuario()">🚀 Crear cuenta</button>
+                    <p style="font-size:0.6rem;color:var(--text-muted);margin-top:8px;text-align:center;">
+                        ¿Ya tienes cuenta? <a href="#" onclick="mostrarLogin()" style="color:var(--gold);">Inicia sesión</a>
+                    </p>
+                </div>
+
+                <div class="auth-card" id="loginCard" style="display:none;">
+                    <h3>🔑 Iniciar sesión</h3>
+                    <div class="sub">Entra con tu email o wallet</div>
+                    <input type="email" id="loginEmail" placeholder="Correo electrónico" />
+                    <input type="password" id="loginPassword" placeholder="Contraseña" />
+                    <button class="btn btn-outline" onclick="iniciarSesion()" style="width:100%;justify-content:center;">🔓 Iniciar sesión</button>
+                    <p style="font-size:0.6rem;color:var(--text-muted);margin-top:8px;text-align:center;">
+                        ¿No tienes cuenta? <a href="#" onclick="mostrarRegistro()" style="color:var(--gold);">Regístrate</a>
+                    </p>
+                </div>
             </div>
 
-            <!-- Estado de wallet -->
-            <div class="wallet-status-bar" id="walletStatusBar">
-                <div class="info">
-                    <span class="dot"></span>
-                    <span class="status-text" id="walletStatusText">Conectado</span>
-                    <span class="address" id="walletAddressDisplay">0x1234...5678</span>
+            <!-- ===== WALLET CONNECT ===== -->
+            <div style="max-width: 500px; margin: 0 auto 30px auto;">
+                <div class="wallet-connect-wrapper" id="walletConnectWrapper">
+                    <button id="connectWallet" class="btn btn-gold btn-connect" onclick="conectarWallet()">
+                        🔗 Conectar Wallet
+                    </button>
                 </div>
-                <button class="btn btn-outline btn-sm" id="btnDisconnectWallet">🚪 Desconectar</button>
+
+                <div class="wallet-status-bar" id="walletStatusBar">
+                    <div class="info">
+                        <span class="dot"></span>
+                        <span class="status-text" id="walletStatusText">Conectado</span>
+                        <span class="address" id="walletAddressDisplay">0x1234...5678</span>
+                    </div>
+                    <button class="btn btn-outline btn-sm" id="btnDisconnectWallet">🚪 Desconectar</button>
+                </div>
             </div>
-        </div>
 
-        <!-- ===== GRID: DOMOS + INTERNET ===== -->
-        <div class="grid-2">
+            <!-- ===== GRID: DOMOS ===== -->
+            <div class="grid-2">
 
-            <!-- ===== PANEL: COMPRAR DOMO ===== -->
-            <section class="panel">
-                <div class="panel-header">
-                    <h2>🛒 Comprar Domo</h2>
-                    <span class="panel-badge">Nuevo</span>
-                </div>
-                <div class="panel-body">
-                    <div class="domo-card">
-                        <!-- CUBO BRONCE WEB3 (Reemplaza la galleta) -->
-                        <div class="domo-cubo">
-                            <div class="cubo">
-                                <div class="cara front">
-                                    <span class="esstoks">Es.stoks</span>
-                                </div>
-                                <div class="cara back">
-                                    <span class="esstoks">◈</span>
-                                </div>
-                                <div class="cara right">
-                                    <span class="esstoks">TOK</span>
-                                </div>
-                                <div class="cara left">
-                                    <span class="esstoks">◈</span>
-                                </div>
-                                <div class="cara top">
-                                    <span class="esstoks">✦</span>
-                                </div>
-                                <div class="cara bottom">
-                                    <span class="esstoks">◈</span>
+                <!-- PANEL: COMPRAR DOMO -->
+                <section class="panel">
+                    <div class="panel-header">
+                        <h2>🛒 Comprar Domo</h2>
+                        <span class="panel-badge">Nuevo</span>
+                    </div>
+                    <div class="panel-body">
+                        <div class="domo-card">
+                            <div class="domo-cubo">
+                                <div class="cubo">
+                                    <div class="cara front"><span class="esstoks">Es.stoks</span></div>
+                                    <div class="cara back"><span class="esstoks">◈</span></div>
+                                    <div class="cara right"><span class="esstoks">TOK</span></div>
+                                    <div class="cara left"><span class="esstoks">◈</span></div>
+                                    <div class="cara top"><span class="esstoks">✦</span></div>
+                                    <div class="cara bottom"><span class="esstoks">◈</span></div>
                                 </div>
                             </div>
-                        </div>
 
-                        <!-- PRECIO EN MXN -->
-                        <span class="domo-price">
-                            75 MXN
-                            <span class="pago">💵 Efectivo / Transferencia</span>
-                        </span>
+                            <span class="domo-price">
+                                75 MXN
+                                <span class="pago">💵 Efectivo / Transferencia</span>
+                            </span>
 
-                        <div class="qty-control">
-                            <button class="qty-btn" id="decreaseQty">−</button>
-                            <span class="qty-value" id="domoQuantity">1</span>
-                            <button class="qty-btn" id="increaseQty">+</button>
-                        </div>
-                        <button class="btn btn-gold" style="width:100%;justify-content:center;" id="buyDomo" disabled>Comprar Domo</button>
-                        <button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:6px;" id="buyDomoCrypto" disabled>💳 Pagar con Crypto</button>
-                        <div id="qrContainer" style="margin-top:12px;display:none;">
-                            <div id="qrCode"></div>
-                            <p class="qr-info">Escanea para recibir tu <strong>Es.stoks</strong></p>
+                            <div class="qty-control">
+                                <button class="qty-btn" id="decreaseQty">−</button>
+                                <span class="qty-value" id="domoQuantity">1</span>
+                                <button class="qty-btn" id="increaseQty">+</button>
+                            </div>
+                            <button class="btn btn-gold" style="width:100%;justify-content:center;" id="buyDomo" disabled>Comprar Domo</button>
+                            <button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:6px;" id="buyDomoCrypto" disabled>💳 Pagar con Crypto</button>
+                            <div id="qrContainer" style="margin-top:12px;display:none;">
+                                <div id="qrCode"></div>
+                                <p class="qr-info">Escanea para recibir tu <strong>Es.stoks</strong></p>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </section>
+                </section>
 
-            <!-- ===== PANEL: INTERNET / SIM ===== -->
-            <section class="panel">
+                <!-- PANEL: ESTADO -->
+                <section class="panel">
+                    <div class="panel-header">
+                        <h2>📊 Tu Estado</h2>
+                        <span class="panel-badge">Actualizado</span>
+                    </div>
+                    <div class="panel-body">
+                        <div class="status-grid">
+                            <div class="status-item">
+                                <div class="status-label">🍪 Domos</div>
+                                <div class="status-value" id="domosCount">0</div>
+                            </div>
+                            <div class="status-item">
+                                <div class="status-label">💰 Es.stoks</div>
+                                <div class="status-value" id="tokensCount">0</div>
+                            </div>
+                            <div class="status-item" style="grid-column: span 2;">
+                                <div class="status-label">📊 Progreso NFT</div>
+                                <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%;"></div></div>
+                                <span style="font-size:0.7rem;color:var(--text-muted);" id="progressText">0 / 12</span>
+                            </div>
+                            <div class="status-item" style="grid-column: span 2;">
+                                <div class="status-label">🏆 NFT</div>
+                                <div class="status-value" id="haCanjeado">No</div>
+                            </div>
+                        </div>
+                        <button class="btn btn-gold" style="width:100%;justify-content:center;margin-top:12px;" id="canjearNft" disabled>🔥 Canjear NFT (12 Es.stoks)</button>
+                        <div id="canjeInfo" style="display:none;margin-top:8px;padding:8px;background:rgba(0,184,148,0.1);border-radius:8px;text-align:center;font-size:0.7rem;color:#00b894;">✅ NFT canjeado exitosamente</div>
+                    </div>
+                </section>
+            </div>
+        </div>
+
+        <!-- ===== TAB: INTERNET ===== -->
+        <div id="tab-internet" class="tab-content">
+            <div class="panel">
                 <div class="panel-header">
                     <h2>🌐 Internet & SIM</h2>
                     <span class="panel-badge">Activa ahora</span>
                 </div>
                 <div class="panel-body">
                     <div class="internet-mini" id="internetMiniGrid">
-                        <!-- Los paquetes se cargan desde localStorage o predeterminados -->
+                        <!-- Los paquetes se cargan desde localStorage -->
                     </div>
                     <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
                         <input id="netPhoneMini" placeholder="📱 Número o ID" style="flex:1;padding:8px 12px;background:rgba(0,0,0,0.3);border:1px solid var(--glass-border);border-radius:10px;color:white;outline:none;font-size:0.75rem;min-width:120px;" />
                         <button class="btn btn-success" onclick="comprarInternetMini()" style="flex-shrink:0;">🚀 Activar</button>
                     </div>
                     <div id="netStatusMini" style="font-size:0.65rem;color:var(--text-muted);margin-top:8px;min-height:18px;"></div>
-                    <a href="/features/internet/internet.html" style="font-size:0.7rem;color:var(--gold);text-decoration:underline;display:inline-block;margin-top:6px;">Ver todos los paquetes →</a>
                 </div>
-            </section>
+            </div>
         </div>
 
-        <!-- ===== PANEL: ESTADO ===== -->
-        <section class="panel" style="margin-bottom:20px;">
-            <div class="panel-header">
-                <h2>📊 Tu Estado</h2>
-                <span class="panel-badge">Actualizado</span>
-            </div>
-            <div class="panel-body">
-                <div class="status-grid">
-                    <div class="status-item">
-                        <div class="status-label">🍪 Domos</div>
-                        <div class="status-value" id="domosCount">0</div>
+        <!-- ===== TAB: ADMIN QR (con contraseña) ===== -->
+        <div id="tab-admin" class="tab-content">
+            <div class="panel">
+                <div class="panel-header">
+                    <h2>📱 Generador de QRs</h2>
+                    <span class="panel-badge">🔒 Protegido</span>
+                </div>
+                <div class="panel-body">
+                    <!-- Si no está autenticado, mostrar pantalla de login -->
+                    <div id="qrAdminLogin" style="text-align:center;padding:20px;">
+                        <div style="font-size:3rem;margin-bottom:8px;">🔒</div>
+                        <h3 style="font-family:'Orbitron',monospace;color:var(--gold);margin-bottom:8px;">Acceso restringido</h3>
+                        <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:16px;">Ingresa la contraseña para administrar QRs</p>
+                        <div style="max-width:320px;margin:0 auto;">
+                            <input type="password" id="qrAdminPassword" placeholder="Contraseña" style="width:100%;padding:10px 14px;background:rgba(0,0,0,0.3);border:1px solid var(--glass-border);border-radius:10px;color:var(--text-primary);font-size:0.9rem;outline:none;margin-bottom:10px;" />
+                            <button class="btn btn-gold" onclick="verificarPasswordAdmin()" style="width:100%;justify-content:center;">🔓 Acceder</button>
+                            <div id="qrAdminError" style="color:var(--danger);font-size:0.8rem;margin-top:8px;min-height:20px;"></div>
+                            <div style="font-size:0.6rem;color:var(--text-muted);margin-top:12px;opacity:0.5;">🔑 Pista: El nombre de la marca + año actual</div>
+                        </div>
                     </div>
-                    <div class="status-item">
-                        <div class="status-label">💰 Es.stoks</div>
-                        <div class="status-value" id="tokensCount">0</div>
-                    </div>
-                    <div class="status-item" style="grid-column: span 2;">
-                        <div class="status-label">📊 Progreso NFT</div>
-                        <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%;"></div></div>
-                        <span style="font-size:0.7rem;color:var(--text-muted);" id="progressText">0 / 12</span>
-                    </div>
-                    <div class="status-item" style="grid-column: span 2;">
-                        <div class="status-label">🏆 NFT</div>
-                        <div class="status-value" id="haCanjeado">No</div>
+
+                    <!-- Contenido del admin (oculto hasta autenticar) -->
+                    <div id="qrAdminContent" style="display:none;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
+                            <span style="font-size:0.7rem;color:var(--text-muted);">🔓 Sesión activa</span>
+                            <button class="btn btn-outline btn-sm" onclick="cerrarSesionAdmin()" style="border-color:rgba(255,51,102,0.3);color:var(--danger);">🚪 Cerrar sesión</button>
+                        </div>
+
+                        <!-- Generar QR -->
+                        <div style="margin-bottom:20px;">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Cantidad de QRs</label>
+                                    <input type="number" id="qrCantidad" value="1" min="1" max="50" />
+                                </div>
+                                <div class="form-group">
+                                    <label>Producto</label>
+                                    <select id="qrProducto">
+                                        <option value="domo">🍪 Domo de galleta</option>
+                                        <option value="internet">🌐 Internet / SIM</option>
+                                        <option value="promocion">🎁 Promoción especial</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <button class="btn btn-gold" onclick="generarQRs()" style="width:100%;justify-content:center;padding:12px;">
+                                🚀 Generar QRs
+                            </button>
+                            <div id="generacionStatus" style="font-size:0.7rem;color:var(--text-muted);text-align:center;min-height:20px;margin-top:4px;"></div>
+                        </div>
+
+                        <!-- Lista de QRs -->
+                        <div>
+                            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+                                <h4 style="font-size:0.8rem;color:var(--gold);">📋 QRs generados</h4>
+                                <span class="panel-badge" id="qrTotal">0 QRs</span>
+                            </div>
+                            <div class="qr-grid" id="qrGrid">
+                                <div class="empty-state">
+                                    <span class="icon">📭</span>
+                                    <h3>No hay QRs generados</h3>
+                                    <p>Genera QRs para tus domos y pégalos dentro de cada producto</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Simular escaneo -->
+                        <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--glass-border);">
+                            <h4 style="font-size:0.8rem;color:var(--gold);margin-bottom:12px;">📲 Simular escaneo</h4>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>ID del QR</label>
+                                    <input type="text" id="qrEscaneado" placeholder="DOMO-1702900000-abc123-0" />
+                                </div>
+                                <div class="form-group">
+                                    <label>Wallet del cliente</label>
+                                    <input type="text" id="qrWallet" placeholder="0x1234...5678" />
+                                </div>
+                            </div>
+                            <button class="btn btn-success" onclick="simularEscaneo()" style="width:100%;justify-content:center;padding:12px;">
+                                🔍 Simular escaneo
+                            </button>
+                            <div id="escaneoStatus" style="font-size:0.7rem;color:var(--text-muted);text-align:center;min-height:20px;margin-top:4px;"></div>
+                        </div>
                     </div>
                 </div>
-                <button class="btn btn-gold" style="width:100%;justify-content:center;margin-top:12px;" id="canjearNft" disabled>🔥 Canjear NFT (12 Es.stoks)</button>
-                <div id="canjeInfo" style="display:none;margin-top:8px;padding:8px;background:rgba(0,184,148,0.1);border-radius:8px;text-align:center;font-size:0.7rem;color:#00b894;">✅ NFT canjeado exitosamente</div>
             </div>
-        </section>
+        </div>
 
         <!-- ===== FOOTER ===== -->
         <footer class="footer">
@@ -906,14 +1224,11 @@
     <!-- ===== SCRIPTS ===== -->
     <script src="https://cdn.jsdelivr.net/npm/web3@1.8.0/dist/web3.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="/app.js"></script>
     <script>
         // ================================================================
-        // WEB3 - CONEXIÓN REAL CON METAMASK
+        // CONFIGURACIÓN
         // ================================================================
-        let web3 = null;
-        let userAccount = null;
+        const QR_ADMIN_PASSWORD = 'Sariel2025'; // Cambia esta contraseña
 
         // ================================================================
         // TOAST
@@ -929,8 +1244,236 @@
         }
 
         // ================================================================
-        // CONECTAR WALLET
+        // TABS
         // ================================================================
+        function cambiarTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById('tab-' + tab).classList.add('active');
+            document.querySelector(`.tab-btn[onclick="cambiarTab('${tab}')"]`).classList.add('active');
+        }
+
+        // ================================================================
+        // ADMIN QR - AUTENTICACIÓN
+        // ================================================================
+        function verificarPasswordAdmin() {
+            const input = document.getElementById('qrAdminPassword');
+            const error = document.getElementById('qrAdminError');
+            const password = input.value.trim();
+
+            if (password === QR_ADMIN_PASSWORD) {
+                document.getElementById('qrAdminLogin').style.display = 'none';
+                document.getElementById('qrAdminContent').style.display = 'block';
+                localStorage.setItem('sariels_qr_auth', 'true');
+                renderizarQRs();
+                showToast('✅ Acceso concedido al panel de QRs');
+            } else {
+                error.textContent = '❌ Contraseña incorrecta. Intenta de nuevo.';
+                input.value = '';
+                input.focus();
+                setTimeout(() => { error.textContent = ''; }, 3000);
+            }
+        }
+
+        function cerrarSesionAdmin() {
+            localStorage.removeItem('sariels_qr_auth');
+            document.getElementById('qrAdminLogin').style.display = 'block';
+            document.getElementById('qrAdminContent').style.display = 'none';
+            document.getElementById('qrAdminPassword').value = '';
+            showToast('🔒 Sesión cerrada');
+        }
+
+        function abrirQRAdmin() {
+            cambiarTab('admin');
+            // Verificar si ya está autenticado
+            if (localStorage.getItem('sariels_qr_auth') === 'true') {
+                document.getElementById('qrAdminLogin').style.display = 'none';
+                document.getElementById('qrAdminContent').style.display = 'block';
+                renderizarQRs();
+            } else {
+                document.getElementById('qrAdminLogin').style.display = 'block';
+                document.getElementById('qrAdminContent').style.display = 'none';
+            }
+        }
+
+        // ================================================================
+        // QRs - CRUD
+        // ================================================================
+        function cargarQRs() {
+            const saved = localStorage.getItem('sariels_qrs');
+            if (saved) {
+                try { return JSON.parse(saved); } catch (e) {}
+            }
+            return [];
+        }
+
+        function guardarQRs(qrs) {
+            localStorage.setItem('sariels_qrs', JSON.stringify(qrs));
+        }
+
+        function renderizarQRs() {
+            const qrs = cargarQRs();
+            const grid = document.getElementById('qrGrid');
+            const total = document.getElementById('qrTotal');
+
+            total.textContent = `${qrs.length} QRs`;
+
+            if (qrs.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-state" style="grid-column:1/-1;">
+                        <span class="icon">📭</span>
+                        <h3>No hay QRs generados</h3>
+                        <p>Genera QRs para tus domos y pégalos dentro de cada producto</p>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = qrs.map(qr => `
+                <div class="qr-card" id="qr-${qr.id}">
+                    <div id="qr-${qr.id}-canvas"></div>
+                    <div class="qr-id">${qr.id}</div>
+                    <div class="qr-status ${qr.usado ? 'usado' : 'disponible'}">
+                        ${qr.usado ? '❌ Usado' : '✅ Disponible'}
+                    </div>
+                    <div style="font-size:0.5rem;color:var(--text-muted);margin-top:2px;">
+                        ${qr.fecha ? new Date(qr.fecha).toLocaleDateString() : ''}
+                    </div>
+                    <div class="qr-actions">
+                        ${!qr.usado ? `<button class="btn btn-success btn-sm" onclick="marcarUsado('${qr.id}')">✅ Marcar usado</button>` : ''}
+                        <button class="btn btn-outline btn-sm" onclick="descargarQR('${qr.id}')">📥 Descargar</button>
+                        <button class="btn btn-danger btn-sm" onclick="eliminarQR('${qr.id}')">🗑️</button>
+                    </div>
+                </div>
+            `).join('');
+
+            qrs.forEach(qr => {
+                const container = document.getElementById(`qr-${qr.id}-canvas`);
+                if (container) {
+                    container.innerHTML = '';
+                    try {
+                        new QRCode(container, {
+                            text: JSON.stringify({ qrId: qr.id, producto: qr.producto || 'domo' }),
+                            width: 150,
+                            height: 150,
+                            colorDark: '#0F2D1A',
+                            colorLight: '#ffffff'
+                        });
+                    } catch (e) {
+                        container.innerHTML = '<div style="width:150px;height:150px;background:#f0f0f0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:0.7rem;color:#999;">QR</div>';
+                    }
+                }
+            });
+        }
+
+        function generarQRs() {
+            const cantidad = parseInt(document.getElementById('qrCantidad').value) || 1;
+            const producto = document.getElementById('qrProducto').value;
+            const status = document.getElementById('generacionStatus');
+
+            if (cantidad < 1 || cantidad > 50) {
+                showToast('⚠️ La cantidad debe ser entre 1 y 50', 'error');
+                return;
+            }
+
+            const qrs = cargarQRs();
+            const timestamp = Date.now();
+            const random = Math.random().toString(36).substring(2, 8);
+
+            for (let i = 0; i < cantidad; i++) {
+                qrs.push({
+                    id: `${producto.toUpperCase()}-${timestamp}-${random}-${i}`,
+                    producto: producto,
+                    usado: false,
+                    fecha: new Date().toISOString()
+                });
+            }
+
+            guardarQRs(qrs);
+            renderizarQRs();
+            status.textContent = `✅ ${cantidad} QR${cantidad > 1 ? 's' : ''} generado${cantidad > 1 ? 's' : ''}`;
+            showToast(`✅ ${cantidad} QR${cantidad > 1 ? 's' : ''} generado${cantidad > 1 ? 's' : ''}`);
+            setTimeout(() => { status.textContent = ''; }, 4000);
+        }
+
+        function marcarUsado(id) {
+            const qrs = cargarQRs();
+            const qr = qrs.find(q => q.id === id);
+            if (qr) {
+                qr.usado = true;
+                guardarQRs(qrs);
+                renderizarQRs();
+                showToast(`✅ QR ${id} marcado como usado`);
+            }
+        }
+
+        function eliminarQR(id) {
+            if (!confirm(`¿Eliminar QR ${id}?`)) return;
+            let qrs = cargarQRs();
+            qrs = qrs.filter(q => q.id !== id);
+            guardarQRs(qrs);
+            renderizarQRs();
+            showToast(`🗑️ QR ${id} eliminado`);
+        }
+
+        function descargarQR(id) {
+            const canvas = document.querySelector(`#qr-${id}-canvas canvas`);
+            if (canvas) {
+                const link = document.createElement('a');
+                link.download = `qr-${id}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                showToast(`📥 Descargando QR ${id}`);
+            } else {
+                showToast('⚠️ No se pudo descargar el QR', 'error');
+            }
+        }
+
+        function simularEscaneo() {
+            const qrId = document.getElementById('qrEscaneado').value.trim();
+            const wallet = document.getElementById('qrWallet').value.trim();
+            const status = document.getElementById('escaneoStatus');
+
+            if (!qrId) {
+                showToast('⚠️ Ingresa un ID de QR', 'error');
+                return;
+            }
+
+            const qrs = cargarQRs();
+            const qr = qrs.find(q => q.id === qrId);
+
+            if (!qr) {
+                status.textContent = '❌ QR no encontrado';
+                showToast('❌ QR no encontrado', 'error');
+                return;
+            }
+
+            if (qr.usado) {
+                status.textContent = '❌ Este QR ya fue utilizado';
+                showToast('❌ QR ya usado', 'error');
+                return;
+            }
+
+            if (!wallet) {
+                status.textContent = '⚠️ Ingresa una wallet para el escaneo';
+                showToast('⚠️ Ingresa una wallet', 'error');
+                return;
+            }
+
+            qr.usado = true;
+            guardarQRs(qrs);
+            renderizarQRs();
+
+            status.textContent = `✅ QR ${qrId} escaneado y canjeado para ${wallet.slice(0, 6)}...${wallet.slice(-4)}`;
+            showToast(`✅ QR canjeado exitosamente`);
+        }
+
+        // ================================================================
+        // WALLET
+        // ================================================================
+        let web3 = null;
+        let userAccount = null;
+
         async function conectarWallet() {
             const connectBtn = document.getElementById('connectWallet');
 
@@ -941,16 +1484,12 @@
 
             try {
                 const accounts = await window.ethereum.request({ method: 'eth_accounts' });
-
                 if (accounts && accounts.length > 0) {
                     userAccount = accounts[0];
                     actualizarUIWallet(userAccount);
-                    showToast('✅ Wallet ya conectada');
                     return;
                 }
-            } catch (error) {
-                console.warn('Error verificando cuentas:', error);
-            }
+            } catch (error) {}
 
             try {
                 connectBtn.disabled = true;
@@ -961,20 +1500,15 @@
                     userAccount = newAccounts[0];
                     actualizarUIWallet(userAccount);
                     showToast('✅ Wallet conectada');
-                    connectBtn.disabled = false;
-                    connectBtn.textContent = '🔗 Conectar Wallet';
                 }
             } catch (error) {
-                console.error('Error conectando wallet:', error);
                 showToast('❌ Error al conectar wallet', 'error');
+            } finally {
                 connectBtn.disabled = false;
                 connectBtn.textContent = '🔗 Conectar Wallet';
             }
         }
 
-        // ================================================================
-        // ACTUALIZAR UI DE WALLET
-        // ================================================================
         function actualizarUIWallet(wallet) {
             document.getElementById('connectWallet').style.display = 'none';
             document.getElementById('walletStatusBar').style.display = 'flex';
@@ -982,11 +1516,9 @@
             document.getElementById('walletStatusText').textContent = 'Conectado';
             document.getElementById('buyDomo').disabled = false;
             document.getElementById('buyDomoCrypto').disabled = false;
+            localStorage.setItem('sariels_wallet', wallet);
         }
 
-        // ================================================================
-        // DESCONECTAR WALLET
-        // ================================================================
         function desconectarWallet() {
             userAccount = null;
             localStorage.removeItem('sariels_wallet');
@@ -1000,7 +1532,7 @@
         }
 
         // ================================================================
-        // REGISTRO / LOGIN
+        // AUTH (registro/login)
         // ================================================================
         function mostrarLogin() {
             document.getElementById('registerCard').style.display = 'none';
@@ -1015,29 +1547,82 @@
         function registrarUsuario() {
             const email = document.getElementById('regEmail').value.trim();
             const password = document.getElementById('regPassword').value.trim();
-
             if (!email || !password) {
                 showToast('⚠️ Correo y contraseña son obligatorios', 'error');
                 return;
             }
-
             showToast('✅ Cuenta creada. ¡Bienvenido a Sariel\'s!');
         }
 
         function iniciarSesion() {
             const email = document.getElementById('loginEmail').value.trim();
             const password = document.getElementById('loginPassword').value.trim();
-
             if (!email || !password) {
                 showToast('⚠️ Correo y contraseña son obligatorios', 'error');
                 return;
             }
-
             showToast('✅ Sesión iniciada correctamente');
         }
 
         // ================================================================
-        // STARS (CON PAUSA Y MENOS ESTRELLAS EN MÓVIL)
+        // INTERNET PACKS
+        // ================================================================
+        function cargarPacksMini() {
+            const saved = localStorage.getItem('sariels_internet_packs');
+            let packs = [];
+            if (saved) {
+                try { packs = JSON.parse(saved); } catch (e) {}
+            }
+            if (!packs || packs.length === 0) {
+                packs = [
+                    { id: 1, nombre: 'Básico', datos: '3 GB', dias: 7, precioMXN: 79, color: '#8ba3c7' },
+                    { id: 2, nombre: 'Chido', datos: '10 GB', dias: 15, precioMXN: 169, color: '#f7d44a' },
+                    { id: 3, nombre: 'Pro', datos: '30 GB', dias: 30, precioMXN: 299, color: '#00ff88' },
+                    { id: 4, nombre: 'Ilimitado', datos: 'Ilimitado', dias: 30, precioMXN: 549, color: '#a855f7' }
+                ];
+            }
+            return packs.slice(0, 4);
+        }
+
+        function renderInternetMini() {
+            const grid = document.getElementById('internetMiniGrid');
+            const packs = cargarPacksMini();
+            grid.innerHTML = packs.map(p => `
+                <div class="pack-mini" onclick="seleccionarPackMini(${p.id})" id="packMini-${p.id}">
+                    <div class="name">${p.nombre}</div>
+                    <div class="data">${p.datos}</div>
+                    <div class="price">$${p.precioMXN} MXN</div>
+                    <button class="btn btn-gold" style="font-size:0.65rem;padding:3px 8px;">Seleccionar</button>
+                </div>
+            `).join('');
+        }
+
+        let selectedPackMini = null;
+
+        function seleccionarPackMini(id) {
+            const packs = cargarPacksMini();
+            selectedPackMini = packs.find(p => p.id === id);
+            document.querySelectorAll('.pack-mini').forEach(el => el.style.borderColor = 'var(--glass-border)');
+            document.getElementById('packMini-' + id).style.borderColor = 'var(--gold)';
+            showToast(`📦 ${selectedPackMini.nombre} seleccionado: ${selectedPackMini.datos} por $${selectedPackMini.precioMXN} MXN`);
+        }
+
+        function comprarInternetMini() {
+            const phone = document.getElementById('netPhoneMini').value.trim();
+            if (!selectedPackMini) {
+                showToast('⚠️ Selecciona un paquete primero', 'error');
+                return;
+            }
+            if (!phone) {
+                showToast('⚠️ Ingresa tu número o ID', 'error');
+                return;
+            }
+            showToast(`✅ Orden generada para ${phone}: ${selectedPackMini.nombre} - $${selectedPackMini.precioMXN} MXN`);
+            document.getElementById('netStatusMini').innerHTML = `📌 Orden generada. Realiza el pago para activar.`;
+        }
+
+        // ================================================================
+        // STARS
         // ================================================================
         function initStars() {
             const canvas = document.getElementById('stars-canvas');
@@ -1094,95 +1679,33 @@
                 animId = requestAnimationFrame(draw);
             }
 
-            function pauseAnimation() {
-                isVisible = false;
-            }
-
-            function resumeAnimation() {
-                isVisible = true;
-            }
+            function pauseAnimation() { isVisible = false; }
+            function resumeAnimation() { isVisible = true; }
 
             resize();
             draw();
 
             window.addEventListener('resize', resize);
-
             document.addEventListener('visibilitychange', function() {
-                if (document.hidden) {
-                    pauseAnimation();
-                } else {
-                    resumeAnimation();
-                }
+                if (document.hidden) pauseAnimation();
+                else resumeAnimation();
             });
 
             return { pauseAnimation, resumeAnimation };
         }
 
         // ================================================================
-        // INTERNET MINI (desde localStorage)
+        // QTY
         // ================================================================
-        function cargarPacksMini() {
-            const saved = localStorage.getItem('sariels_internet_packs');
-            let packs = [];
-            if (saved) {
-                try { packs = JSON.parse(saved); } catch (e) {}
-            }
-            if (!packs || packs.length === 0) {
-                packs = [
-                    { id: 1, nombre: 'Básico', datos: '3 GB', dias: 7, precioMXN: 79, precioUSD: 4, color: '#8ba3c7' },
-                    { id: 2, nombre: 'Chido', datos: '10 GB', dias: 15, precioMXN: 169, precioUSD: 8.5, color: '#f7d44a' },
-                    { id: 3, nombre: 'Pro', datos: '30 GB', dias: 30, precioMXN: 299, precioUSD: 15, color: '#00ff88' },
-                    { id: 4, nombre: 'Ilimitado', datos: 'Ilimitado', dias: 30, precioMXN: 549, precioUSD: 28, color: '#a855f7' }
-                ];
-            }
-            return packs.slice(0, 4);
-        }
-
-        function renderInternetMini() {
-            const grid = document.getElementById('internetMiniGrid');
-            const packs = cargarPacksMini();
-            grid.innerHTML = packs.map(p => `
-                <div class="pack-mini" onclick="seleccionarPackMini(${p.id})" id="packMini-${p.id}">
-                    <div class="name">${p.nombre}</div>
-                    <div class="data">${p.datos}</div>
-                    <div class="price">$${p.precioMXN} MXN</div>
-                    <button class="btn btn-gold" style="font-size:0.65rem;padding:3px 8px;">Seleccionar</button>
-                </div>
-            `).join('');
-        }
-
-        let selectedPackMini = null;
-
-        function seleccionarPackMini(id) {
-            const packs = cargarPacksMini();
-            selectedPackMini = packs.find(p => p.id === id);
-            document.querySelectorAll('.pack-mini').forEach(el => el.style.borderColor = 'var(--glass-border)');
-            document.getElementById('packMini-' + id).style.borderColor = 'var(--gold)';
-            showToast(`📦 ${selectedPackMini.nombre} seleccionado: ${selectedPackMini.datos} por $${selectedPackMini.precioMXN} MXN`);
-        }
-
-        function comprarInternetMini() {
-            const phone = document.getElementById('netPhoneMini').value.trim();
-            if (!selectedPackMini) {
-                showToast('⚠️ Selecciona un paquete primero', 'error');
-                return;
-            }
-            if (!phone) {
-                showToast('⚠️ Ingresa tu número o ID', 'error');
-                return;
-            }
-            showToast(`✅ Orden generada para ${phone}: ${selectedPackMini.nombre} - $${selectedPackMini.precioMXN} MXN`);
-            document.getElementById('netStatusMini').innerHTML = `📌 Orden generada. Realiza el pago para activar.`;
-        }
+        let qty = 1;
 
         // ================================================================
         // INICIALIZAR
         // ================================================================
         document.addEventListener('DOMContentLoaded', function() {
-            const stars = initStars();
+            initStars();
             renderInternetMini();
 
-            let qty = 1;
             document.getElementById('decreaseQty').addEventListener('click', () => {
                 if (qty > 1) { qty--; document.getElementById('domoQuantity').textContent = qty; }
             });
@@ -1190,26 +1713,43 @@
                 if (qty < 10) { qty++; document.getElementById('domoQuantity').textContent = qty; }
             });
 
-            document.getElementById('registerCard').style.display = 'block';
-            document.getElementById('loginCard').style.display = 'none';
-
             document.getElementById('btnDisconnectWallet').addEventListener('click', desconectarWallet);
 
             const savedWallet = localStorage.getItem('sariels_wallet');
             if (savedWallet) {
                 userAccount = savedWallet;
-                document.getElementById('connectWallet').style.display = 'none';
-                document.getElementById('walletStatusBar').style.display = 'flex';
-                document.getElementById('walletAddressDisplay').textContent = savedWallet.slice(0, 6) + '...' + savedWallet.slice(-4);
-                document.getElementById('walletStatusText').textContent = 'Conectado';
-                document.getElementById('buyDomo').disabled = false;
-                document.getElementById('buyDomoCrypto').disabled = false;
+                actualizarUIWallet(savedWallet);
             }
 
+            // Enter para autenticar admin
+            document.getElementById('qrAdminPassword').addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') verificarPasswordAdmin();
+            });
+
+            // Enter para escanear
+            document.getElementById('qrEscaneado').addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') simularEscaneo();
+            });
+            document.getElementById('qrWallet').addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') simularEscaneo();
+            });
+
             console.log('◈ Sariel\'s - Ecosistema WEB3');
-            console.log('📦 Paquetes de Internet cargados:', cargarPacksMini().length);
+            console.log('🔑 Contraseña admin QR: Sariel2025');
         });
 
+        // Exponer funciones globales
+        window.cambiarTab = cambiarTab;
+        window.abrirQRAdmin = abrirQRAdmin;
+        window.verificarPasswordAdmin = verificarPasswordAdmin;
+        window.cerrarSesionAdmin = cerrarSesionAdmin;
+        window.generarQRs = generarQRs;
+        window.marcarUsado = marcarUsado;
+        window.eliminarQR = eliminarQR;
+        window.descargarQR = descargarQR;
+        window.simularEscaneo = simularEscaneo;
+        window.conectarWallet = conectarWallet;
+        window.desconectarWallet = desconectarWallet;
         window.registrarUsuario = registrarUsuario;
         window.iniciarSesion = iniciarSesion;
         window.mostrarLogin = mostrarLogin;
@@ -1217,8 +1757,6 @@
         window.comprarInternetMini = comprarInternetMini;
         window.seleccionarPackMini = seleccionarPackMini;
         window.showToast = showToast;
-        window.conectarWallet = conectarWallet;
-        window.desconectarWallet = desconectarWallet;
         window.actualizarUIWallet = actualizarUIWallet;
     </script>
 </body>
