@@ -274,10 +274,12 @@
             color: var(--gold);
             font-size: 0.85rem;
             font-weight: 600;
+            letter-spacing: 1px;
         }
         .trending-section .header .actualizado {
             font-size: 0.55rem;
             color: var(--text-muted);
+            letter-spacing: 0.5px;
         }
         .trending-tags {
             display: flex;
@@ -294,6 +296,7 @@
             cursor: pointer;
             transition: var(--transition);
             font-family: 'Inter', sans-serif;
+            letter-spacing: 0.3px;
         }
         .trending-tags .tag:hover {
             background: rgba(212, 175, 55, 0.15);
@@ -338,6 +341,7 @@
             justify-content: center;
             font-size: 1.2rem;
             color: white;
+            font-family: 'Orbitron', monospace;
         }
         .post-form .form-header .nombre {
             font-weight: 600;
@@ -377,18 +381,20 @@
         }
         .post-form .form-actions .tools {
             display: flex;
-            gap: 6px;
+            gap: 4px;
         }
         .post-form .form-actions .tools button {
             background: none;
             border: none;
             color: var(--text-muted);
-            font-size: 1.1rem;
+            font-size: 0.9rem;
             cursor: pointer;
             transition: var(--transition);
-            padding: 4px 8px;
+            padding: 4px 10px;
             border-radius: 8px;
             font-family: 'Inter', sans-serif;
+            font-weight: 400;
+            letter-spacing: 0.5px;
         }
         .post-form .form-actions .tools button:hover {
             color: var(--gold);
@@ -405,6 +411,7 @@
             font-size: 0.7rem;
             cursor: pointer;
             transition: var(--transition);
+            letter-spacing: 1px;
         }
         .btn-publicar:hover {
             transform: translateY(-2px);
@@ -456,6 +463,7 @@
             font-size: 1.2rem;
             overflow: hidden;
             flex-shrink: 0;
+            font-family: 'Orbitron', monospace;
         }
         .post-card .post-avatar img {
             width: 100%;
@@ -467,29 +475,46 @@
             font-weight: 700;
             color: var(--gold);
             font-size: 0.85rem;
+            letter-spacing: 0.5px;
         }
-        .post-card .post-author .verified {
+        .post-card .post-author .badge-verificado {
             font-size: 0.5rem;
             background: rgba(212, 175, 55, 0.15);
             color: var(--gold);
-            padding: 1px 8px;
-            border-radius: 10px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-family: 'Orbitron', monospace;
             margin-left: 6px;
-            font-family: 'Inter', sans-serif;
+            border: 1px solid rgba(212, 175, 55, 0.1);
+            letter-spacing: 0.5px;
+        }
+        .post-card .post-author .badge-anclado {
+            font-size: 0.5rem;
+            background: rgba(212, 175, 55, 0.08);
+            color: var(--gold);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-family: 'Orbitron', monospace;
+            margin-left: 6px;
+            border: 1px solid rgba(212, 175, 55, 0.1);
+            letter-spacing: 0.5px;
         }
         .post-card .post-date {
             font-size: 0.65rem;
             color: var(--text-muted);
+            letter-spacing: 0.3px;
         }
         .post-card .post-content {
             color: var(--text-secondary);
             font-size: 0.9rem;
             line-height: 1.7;
             margin-bottom: 12px;
+            word-wrap: break-word;
         }
         .post-card .post-content .hashtag {
             color: var(--gold);
             cursor: pointer;
+            transition: var(--transition);
         }
         .post-card .post-content .hashtag:hover {
             text-decoration: underline;
@@ -501,18 +526,98 @@
             color: var(--text-muted);
             padding: 8px 0;
             border-top: 1px solid var(--glass-border);
+            letter-spacing: 0.3px;
         }
+        .post-card .post-stats span {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* ===== ENCUESTAS ===== */
+        .post-card .post-encuesta {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            padding: 14px;
+            margin: 10px 0;
+            border: 1px solid rgba(212, 175, 55, 0.08);
+            transition: var(--transition);
+        }
+        .post-card .post-encuesta:hover {
+            border-color: rgba(212, 175, 55, 0.15);
+        }
+        .post-card .post-encuesta .pregunta {
+            font-weight: 600;
+            color: var(--gold);
+            font-size: 0.8rem;
+            margin-bottom: 8px;
+            letter-spacing: 0.3px;
+        }
+        .post-card .post-encuesta .opcion {
+            margin: 4px 0;
+            cursor: pointer;
+            padding: 6px 10px;
+            border-radius: 8px;
+            transition: var(--transition);
+            background: rgba(255, 255, 255, 0.03);
+        }
+        .post-card .post-encuesta .opcion:hover {
+            background: rgba(212, 175, 55, 0.05);
+        }
+        .post-card .post-encuesta .opcion .barra {
+            width: 100%;
+            height: 4px;
+            background: rgba(212, 175, 55, 0.08);
+            border-radius: 2px;
+            margin-top: 4px;
+            overflow: hidden;
+        }
+        .post-card .post-encuesta .opcion .barra .fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--gold-dark), var(--gold), var(--gold-light));
+            border-radius: 2px;
+            transition: width 0.5s ease;
+        }
+        .post-card .post-encuesta .total-votos {
+            font-size: 0.55rem;
+            color: var(--text-muted);
+            margin-top: 6px;
+            letter-spacing: 0.3px;
+        }
+
+        /* ===== MEDIA ===== */
+        .post-card .post-media {
+            margin: 12px -20px 12px -20px;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .post-card .post-media img {
+            width: 100%;
+            max-height: 400px;
+            object-fit: cover;
+            transition: var(--transition-slow);
+        }
+        .post-card .post-media img:hover {
+            transform: scale(1.02);
+        }
+        .post-card .post-media video {
+            width: 100%;
+            max-height: 400px;
+        }
+
+        /* ===== ACCIONES ===== */
         .post-card .post-actions {
             display: flex;
-            gap: 4px;
+            gap: 2px;
             flex-wrap: wrap;
             padding-top: 8px;
+            border-top: 1px solid var(--glass-border);
         }
         .post-card .post-actions button {
             background: none;
             border: none;
             color: var(--text-muted);
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             cursor: pointer;
             transition: var(--transition);
             font-family: 'Inter', sans-serif;
@@ -521,6 +626,7 @@
             display: flex;
             align-items: center;
             gap: 4px;
+            letter-spacing: 0.3px;
         }
         .post-card .post-actions button:hover {
             color: var(--gold);
@@ -530,22 +636,72 @@
             color: var(--danger);
         }
         .post-card .post-actions button .count {
-            font-size: 0.65rem;
+            font-size: 0.6rem;
             color: var(--text-muted);
         }
 
-        /* ===== COMENTARIOS ===== */
-        .comentarios {
-            margin-top: 12px;
-            padding-top: 12px;
-            border-top: 1px solid var(--glass-border);
+        /* ===== VENTA ===== */
+        .post-card .post-venta {
+            background: rgba(212, 175, 55, 0.05);
+            border: 1px solid rgba(212, 175, 55, 0.1);
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
         }
-        .comentarios .comentario {
+        .post-card .post-venta .precio {
+            font-family: 'Orbitron', monospace;
+            color: var(--gold);
+            font-size: 1.1rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+        .post-card .post-venta .cantidad {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            letter-spacing: 0.3px;
+        }
+        .post-card .post-venta .btn-comprar {
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            color: var(--space);
+            border: none;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-family: 'Orbitron', monospace;
+            font-size: 0.6rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--transition);
+            letter-spacing: 0.5px;
+        }
+        .post-card .post-venta .btn-comprar:hover {
+            transform: scale(1.05);
+            box-shadow: var(--shadow-gold);
+        }
+
+        /* ===== COMENTARIOS ===== */
+        .post-card .post-comentarios {
+            margin-top: 12px;
+            border-top: 1px solid rgba(212, 175, 55, 0.06);
+            padding-top: 12px;
+        }
+        .post-card .post-comentarios .comentario {
             display: flex;
             gap: 10px;
             padding: 8px 0;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.04);
+            transition: var(--transition);
         }
-        .comentarios .comentario .avatar {
+        .post-card .post-comentarios .comentario:hover {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 8px;
+            padding-left: 4px;
+        }
+        .post-card .post-comentarios .comentario .avatar {
             width: 28px;
             height: 28px;
             border-radius: 50%;
@@ -553,59 +709,63 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 0.7rem;
+            font-size: 0.6rem;
             color: white;
+            font-weight: 700;
             flex-shrink: 0;
+            font-family: 'Orbitron', monospace;
         }
-        .comentarios .comentario .body {
+        .post-card .post-comentarios .comentario .texto {
             flex: 1;
-        }
-        .comentarios .comentario .body .nombre {
-            font-size: 0.7rem;
-            font-weight: 600;
-            color: var(--text-primary);
-        }
-        .comentarios .comentario .body .texto {
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-        }
-        .comentarios .comentario .body .fecha {
-            font-size: 0.55rem;
+            font-size: 0.8rem;
             color: var(--text-muted);
         }
-        .comentarios .input-comentario {
+        .post-card .post-comentarios .comentario .texto strong {
+            color: var(--text-secondary);
+        }
+        .post-card .post-comentarios .comentario .texto .fecha {
+            font-size: 0.55rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+            letter-spacing: 0.3px;
+        }
+        .post-card .post-comentarios .input-comentario {
             display: flex;
             gap: 8px;
             margin-top: 8px;
         }
-        .comentarios .input-comentario input {
+        .post-card .post-comentarios .input-comentario input {
             flex: 1;
-            padding: 6px 12px;
-            background: rgba(0, 0, 0, 0.25);
-            border: 1px solid var(--glass-border);
+            padding: 8px 14px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(212, 175, 55, 0.1);
             border-radius: 20px;
             color: var(--text-primary);
-            font-size: 0.75rem;
+            font-size: 0.8rem;
+            font-family: 'Inter', sans-serif;
             outline: none;
             transition: var(--transition);
-            font-family: 'Inter', sans-serif;
         }
-        .comentarios .input-comentario input:focus {
+        .post-card .post-comentarios .input-comentario input:focus {
+            outline: none;
             border-color: var(--gold);
+            background: rgba(255, 255, 255, 0.08);
         }
-        .comentarios .input-comentario button {
-            padding: 4px 14px;
-            border-radius: 20px;
+        .post-card .post-comentarios .input-comentario button {
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            color: var(--space);
             border: none;
-            background: rgba(212, 175, 55, 0.15);
-            color: var(--gold);
-            font-size: 0.65rem;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-family: 'Orbitron', monospace;
+            font-size: 0.6rem;
+            font-weight: 700;
             cursor: pointer;
             transition: var(--transition);
-            font-family: 'Inter', sans-serif;
+            letter-spacing: 0.5px;
         }
-        .comentarios .input-comentario button:hover {
-            background: rgba(212, 175, 55, 0.25);
+        .post-card .post-comentarios .input-comentario button:hover {
+            transform: scale(1.05);
         }
 
         /* ===== EMPTY STATE ===== */
@@ -615,17 +775,45 @@
             color: var(--text-muted);
         }
         .empty-state .icon {
-            font-size: 3rem;
+            font-size: 2.5rem;
             display: block;
             margin-bottom: 16px;
+            font-family: 'Orbitron', monospace;
+            color: var(--gold);
+            opacity: 0.4;
+            letter-spacing: 2px;
         }
         .empty-state h3 {
             font-family: 'Orbitron', monospace;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             color: var(--text-secondary);
+            letter-spacing: 1px;
+            font-weight: 400;
         }
         .empty-state p {
             font-size: 0.85rem;
+            letter-spacing: 0.3px;
+        }
+
+        /* ===== LOADING ===== */
+        .loading-spinner {
+            text-align: center;
+            padding: 40px 0;
+            color: var(--text-muted);
+        }
+        .loading-spinner .spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(212, 175, 55, 0.08);
+            border-top: 3px solid var(--gold);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 12px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
         /* ===== TOAST ===== */
@@ -648,9 +836,38 @@
             max-width: 400px;
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
+            letter-spacing: 0.3px;
         }
         .toast.show { transform: translateY(0); opacity: 1; }
         .toast.error { border-color: var(--danger); color: var(--danger); }
+        .toast.warning { border-color: var(--warning); color: var(--warning); }
+
+        /* ===== MODO CLARO ===== */
+        body.modo-claro {
+            background: #f0f4f8;
+            color: #05080f;
+        }
+        body.modo-claro .post-card {
+            background: rgba(255, 255, 255, 0.7);
+        }
+        body.modo-claro .post-form {
+            background: rgba(255, 255, 255, 0.7);
+        }
+        body.modo-claro .trending-section {
+            background: rgba(255, 255, 255, 0.7);
+        }
+        body.modo-claro .post-card .post-content {
+            color: #1a2a3a;
+        }
+        body.modo-claro .post-card .post-date {
+            color: #6a8a9a;
+        }
+        body.modo-claro .post-card .post-comentarios .comentario .texto {
+            color: #4a6a7a;
+        }
+        body.modo-claro .post-card .post-comentarios .comentario .texto strong {
+            color: #0a1a2a;
+        }
 
         /* ===== FOOTER ===== */
         .footer {
@@ -665,25 +882,38 @@
             font-size: 0.7rem;
             color: var(--text-muted);
             padding-bottom: 8px;
+            letter-spacing: 0.3px;
         }
-        .footer .brand { color: var(--gold); font-weight: 600; }
+        .footer .brand { color: var(--gold); font-weight: 600; letter-spacing: 1px; }
         .footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
         .footer-links a { color: var(--text-muted); text-decoration: none; transition: var(--transition); }
         .footer-links a:hover { color: var(--gold); }
 
         /* ===== RESPONSIVE ===== */
-        @media (max-width: 600px) {
+        @media (max-width: 768px) {
             .app { padding: 12px 14px; }
-            .post-form { padding: 14px 16px; }
             .post-card { padding: 14px 16px; }
-            .post-card .post-content { font-size: 0.8rem; }
-            .main-nav .nav-link { font-size: 0.6rem; padding: 6px 10px; }
-            .header .logo-text { font-size: 1rem; }
-            .header .logo-hex { font-size: 1.4rem; }
-            .trending-section { padding: 12px 16px; }
-            .trending-tags .tag { font-size: 0.6rem; padding: 3px 10px; }
+            .post-card .post-content { font-size: 0.85rem; }
+            .post-form { padding: 14px 16px; }
             .post-form .form-actions { flex-direction: column; align-items: stretch; }
             .post-form .form-actions .tools { justify-content: center; }
+            .trending-section { padding: 12px 16px; }
+            .trending-tags .tag { font-size: 0.6rem; padding: 3px 10px; }
+            .post-card .post-venta { flex-direction: column; align-items: stretch; text-align: center; }
+            .post-card .post-venta .btn-comprar { width: 100%; }
+            .post-card .post-media { margin: 8px -16px 8px -16px; }
+        }
+
+        @media (max-width: 480px) {
+            .post-card .post-actions { gap: 2px; }
+            .post-card .post-actions button { font-size: 0.6rem; padding: 3px 8px; }
+            .post-card .post-actions button .count { font-size: 0.5rem; }
+            .post-card .post-media { margin: 6px -14px 6px -14px; }
+            .post-card .post-header { gap: 8px; }
+            .post-card .post-avatar { width: 32px; height: 32px; font-size: 0.9rem; }
+            .post-card .post-author { font-size: 0.75rem; }
+            .post-form .form-header .avatar { width: 32px; height: 32px; font-size: 0.9rem; }
+            .main-nav .nav-link { font-size: 0.55rem; padding: 4px 8px; }
         }
     </style>
 </head>
@@ -745,19 +975,19 @@
             <textarea id="postContent" placeholder="¿Qué está pasando en tu mundo?"></textarea>
             <div class="form-actions">
                 <div class="tools">
-                    <button onclick="insertarHashtag()" title="Agregar hashtag">#</button>
-                    <button onclick="insertarEmoji()" title="Agregar emoji">😊</button>
-                    <button onclick="agregarImagen()" title="Agregar imagen">🖼️</button>
-                    <button onclick="agregarEncuesta()" title="Crear encuesta">📊</button>
+                    <button onclick="insertarHashtag()"># Hashtag</button>
+                    <button onclick="insertarEmoji()">◆ Emoji</button>
+                    <button onclick="agregarImagen()">◇ Imagen</button>
+                    <button onclick="agregarEncuesta()">◈ Encuesta</button>
                 </div>
-                <button class="btn-publicar" id="btnPublicar">🚀 Publicar</button>
+                <button class="btn-publicar" id="btnPublicar">⟡ Publicar</button>
             </div>
         </div>
 
         <!-- ===== FEED ===== -->
         <div id="feedContainer">
             <div class="empty-state">
-                <span class="icon">📭</span>
+                <span class="icon">◈</span>
                 <h3>Sin publicaciones</h3>
                 <p>Sé el primero en compartir algo</p>
             </div>
@@ -767,7 +997,7 @@
         <footer class="footer">
             <span><span class="brand">◈ Sariel's</span> · Sabor al Paladar · WEB3</span>
             <div class="footer-links">
-                <a href="/terminos.html">📜 Términos</a>
+                <a href="/terminos.html">◈ Términos</a>
                 <span style="opacity:0.3;">⚡ Polygon</span>
             </div>
         </footer>
@@ -789,7 +1019,6 @@
         document.addEventListener('DOMContentLoaded', function() {
             initStars();
 
-            // Cargar datos del perfil para mostrar nombre en el formulario
             const perfil = localStorage.getItem('sariels_perfil');
             if (perfil) {
                 try {
@@ -802,7 +1031,7 @@
             }
 
             console.log('◈ Sariel\'s - Muro Ultra Mega Pro');
-            console.log('🚀 Competencia de Silicon Valley');
+            console.log('⧫ Diseño premium sin emojis');
         });
 
         function initStars() {
@@ -875,9 +1104,12 @@
             return { pauseAnimation, resumeAnimation };
         }
 
-        // Funciones de herramientas del muro
+        // ================================================================
+        // HERRAMIENTAS
+        // ================================================================
         function insertarHashtag() {
             const textarea = document.getElementById('postContent');
+            if (!textarea) return;
             const cursorPos = textarea.selectionStart;
             const textBefore = textarea.value.substring(0, cursorPos);
             const textAfter = textarea.value.substring(cursorPos);
@@ -885,13 +1117,14 @@
             textarea.focus();
             textarea.selectionStart = cursorPos + 1;
             textarea.selectionEnd = cursorPos + 1;
-            showToast('✎ Hashtag agregado');
+            showToast('Hashtag agregado');
         }
 
         function insertarEmoji() {
-            const emojis = ['😊', '🔥', '✨', '🌟', '💎', '🚀', '🎯', '🏆', '⭐', '💫'];
+            const emojis = ['◆', '◇', '◈', '✦', '★', '☆', '⊚', '◉', '◊', '⬡'];
             const emoji = emojis[Math.floor(Math.random() * emojis.length)];
             const textarea = document.getElementById('postContent');
+            if (!textarea) return;
             const cursorPos = textarea.selectionStart;
             const textBefore = textarea.value.substring(0, cursorPos);
             const textAfter = textarea.value.substring(cursorPos);
@@ -902,11 +1135,11 @@
         }
 
         function agregarImagen() {
-            showToast('🖼️ Función de imágenes próximamente');
+            showToast('◆ Función de imágenes próximamente');
         }
 
         function agregarEncuesta() {
-            showToast('📊 Función de encuestas próximamente');
+            showToast('◈ Función de encuestas próximamente');
         }
 
         function showToast(msg, type = '') {
