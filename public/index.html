@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>◈ Sariel's · Ecosistema WEB3</title>
     <link rel="stylesheet" href="/styles.css" />
-    <!-- ===== FUENTES: INTER + ORBITRON ===== -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet" />
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
 
@@ -164,7 +163,6 @@
             flex-wrap: wrap;
         }
 
-        /* ===== HEADER LINKS ===== */
         .header-actions .nav-link {
             font-size: 0.7rem;
             padding: 4px 12px;
@@ -761,7 +759,7 @@
         <!-- ===== WALLET CONNECT ===== -->
         <div style="max-width: 500px; margin: 0 auto 30px auto;">
             <div class="wallet-connect-wrapper" id="walletConnectWrapper">
-                <button id="connectWallet" class="btn btn-gold btn-connect" onclick="abrirModalTerminos()">
+                <button id="connectWallet" class="btn btn-gold btn-connect" onclick="conectarWallet()">
                     🔗 Conectar Wallet
                 </button>
             </div>
@@ -948,9 +946,90 @@
         }
 
         // ================================================================
+        // CONECTAR WALLET CON VERIFICACIÓN DE ESTADO
+        // ================================================================
+        async function conectarWallet() {
+            const connectBtn = document.getElementById('connectWallet');
+
+            // 1. Verificar si MetaMask está instalado
+            if (!window.ethereum) {
+                showToast('⚠️ Instala MetaMask para continuar', 'error');
+                return;
+            }
+
+            // 2. Verificar si ya hay una cuenta conectada
+            try {
+                const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+
+                if (accounts && accounts.length > 0) {
+                    // ✅ YA HAY UNA CUENTA CONECTADA
+                    userAccount = accounts[0];
+                    const termsAccepted = localStorage.getItem('sariels_terms_accepted');
+                    if (termsAccepted === 'true') {
+                        // Ya está todo listo
+                        actualizarUIWallet(userAccount);
+                        showToast('✅ Wallet ya conectada');
+                        return;
+                    } else {
+                        // Tiene wallet pero no ha aceptado términos → abrir modal
+                        abrirModalTerminos();
+                        return;
+                    }
+                }
+            } catch (error) {
+                console.warn('Error verificando cuentas:', error);
+            }
+
+            // 3. NO hay cuenta conectada → intentar conectar
+            try {
+                connectBtn.disabled = true;
+                connectBtn.textContent = '⏳ Conectando...';
+
+                const newAccounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                if (newAccounts && newAccounts.length > 0) {
+                    userAccount = newAccounts[0];
+                    const termsAccepted = localStorage.getItem('sariels_terms_accepted');
+                    if (termsAccepted === 'true') {
+                        actualizarUIWallet(userAccount);
+                        showToast('✅ Wallet conectada');
+                        connectBtn.disabled = false;
+                        connectBtn.textContent = '🔗 Conectar Wallet';
+                    } else {
+                        // Abrir modal para aceptar términos
+                        abrirModalTerminos();
+                        connectBtn.disabled = false;
+                        connectBtn.textContent = '🔗 Conectar Wallet';
+                    }
+                }
+            } catch (error) {
+                console.error('Error conectando wallet:', error);
+                showToast('❌ Error al conectar wallet', 'error');
+                connectBtn.disabled = false;
+                connectBtn.textContent = '🔗 Conectar Wallet';
+            }
+        }
+
+        // ================================================================
+        // ACTUALIZAR UI DE WALLET
+        // ================================================================
+        function actualizarUIWallet(wallet) {
+            document.getElementById('connectWallet').style.display = 'none';
+            document.getElementById('walletStatusBar').style.display = 'flex';
+            document.getElementById('walletAddressDisplay').textContent = wallet.slice(0, 6) + '...' + wallet.slice(-4);
+            document.getElementById('walletStatusText').textContent = 'Conectado';
+            document.getElementById('buyDomo').disabled = false;
+            document.getElementById('buyDomoCrypto').disabled = false;
+        }
+
+        // ================================================================
         // MODAL DE TÉRMINOS
         // ================================================================
         function abrirModalTerminos() {
+            // Solo abrir si la wallet está conectada
+            if (!userAccount) {
+                showToast('⚠️ Primero conecta tu wallet', 'error');
+                return;
+            }
             document.getElementById('termsModal').classList.add('active');
             document.querySelectorAll('#termsModal .checks input[type="checkbox"]').forEach(cb => cb.checked = false);
             document.getElementById('btnAceptarContinuar').disabled = true;
@@ -971,7 +1050,7 @@
         });
 
         // ================================================================
-        // CONECTAR WALLET Y FIRMAR (REAL)
+        // ACEPTAR Y FIRMAR WALLET
         // ================================================================
         async function aceptarYFirmar() {
             const btn = document.getElementById('btnAceptarContinuar');
@@ -988,17 +1067,14 @@
                     return;
                 }
 
-                if (!window.ethereum) {
-                    showToast('⚠️ Instala MetaMask para continuar', 'error');
+                if (!userAccount) {
+                    showToast('⚠️ No hay wallet conectada', 'error');
                     btn.disabled = false;
                     btn.textContent = '✅ Aceptar y Firmar Wallet';
                     return;
                 }
 
                 web3 = new Web3(window.ethereum);
-                await window.ethereum.request({ method: 'eth_requestAccounts' });
-                const accounts = await web3.eth.getAccounts();
-                userAccount = accounts[0];
 
                 const message = `Acepto los Términos y Condiciones de Sariel's Ecosystem\n\n` +
                     `Wallet: ${userAccount}\n` +
@@ -1013,19 +1089,13 @@
                 console.log('✅ Wallet conectada:', userAccount);
                 console.log('📝 Firma:', signature);
 
-                document.getElementById('walletStatusBar').style.display = 'flex';
-                document.getElementById('walletAddressDisplay').textContent = userAccount.slice(0, 6) + '...' + userAccount.slice(-4);
-                document.getElementById('walletStatusText').textContent = 'Conectado';
-                document.getElementById('buyDomo').disabled = false;
-                document.getElementById('buyDomoCrypto').disabled = false;
-
-                document.getElementById('connectWallet').style.display = 'none';
+                actualizarUIWallet(userAccount);
 
                 localStorage.setItem('sariels_wallet', userAccount);
                 localStorage.setItem('sariels_signature', signature);
                 localStorage.setItem('sariels_terms_accepted', 'true');
 
-                // Notificar al backend (solo para registro)
+                // Notificar al backend
                 try {
                     await fetch('/api/auth/terms-accepted', {
                         method: 'POST',
@@ -1109,7 +1179,7 @@
         }
 
         // ================================================================
-        // STARS (CON PAUSA)
+        // STARS (CON PAUSA Y MENOS ESTRELLAS EN MÓVIL)
         // ================================================================
         function initStars() {
             const canvas = document.getElementById('stars-canvas');
@@ -1266,8 +1336,7 @@
             document.getElementById('registerCard').style.display = 'block';
             document.getElementById('loginCard').style.display = 'none';
 
-            // Conectar wallet
-            document.getElementById('connectWallet').addEventListener('click', abrirModalTerminos);
+            // Desconectar wallet
             document.getElementById('btnDisconnectWallet').addEventListener('click', desconectarWallet);
 
             // Verificar si ya hay wallet conectada
@@ -1298,7 +1367,9 @@
         window.abrirModalTerminos = abrirModalTerminos;
         window.cerrarModalTerminos = cerrarModalTerminos;
         window.aceptarYFirmar = aceptarYFirmar;
+        window.conectarWallet = conectarWallet;
         window.desconectarWallet = desconectarWallet;
+        window.actualizarUIWallet = actualizarUIWallet;
     </script>
 </body>
 </html>
