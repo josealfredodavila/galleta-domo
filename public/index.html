@@ -1006,7 +1006,14 @@
             </a>
             <div class="header-actions">
                 <span class="network-badge"><span class="dot"></span> Polygon</span>
+                <!-- ===== ENLACES A FEATURES ===== -->
+                <a href="/features/muro/muro.html" class="nav-link">📱 Muro</a>
+                <a href="/features/perfil/perfil.html" class="nav-link">👤 Perfil</a>
+                <a href="/features/mensajes/contactos.html" class="nav-link">👥 Contactos</a>
+                <a href="/features/live/live.html" class="nav-link">🔴 Live</a>
+                <a href="/features/internet/internet.html" class="nav-link">🌐 Internet</a>
                 <button class="nav-link active" onclick="cambiarTab('inicio')">🏠 Inicio</button>
+                <!-- ===== ADMIN QR ===== -->
                 <button class="nav-link admin" onclick="abrirQRAdmin()">📱 Admin QR</button>
                 <a href="/qr-generator.html" class="nav-link admin" target="_blank">🔗 QR Generator</a>
             </div>
@@ -1264,6 +1271,7 @@
         <footer class="footer">
             <span><span class="brand">◈ Sariel's</span> · Sabor al Paladar · WEB3</span>
             <div class="footer-links">
+                <a href="/terminos.html">📜 Términos</a>
                 <span style="opacity:0.3;">⚡ Polygon</span>
             </div>
         </footer>
@@ -1578,7 +1586,6 @@
                 return;
             }
             showToast(`✅ Orden generada: ${qty} domo(s) por ${qty * 75} MXN. Realiza el pago para recibir tus Es.stoks`);
-            // Actualizar estado
             let domos = parseInt(localStorage.getItem('sariels_domos') || '0');
             domos += qty;
             localStorage.setItem('sariels_domos', domos.toString());
@@ -1761,7 +1768,7 @@
         }
 
         // ================================================================
-        // INTERNET PACKS - ⚠️ NO TOCAR - Se mantiene igual
+        // INTERNET PACKS
         // ================================================================
         function cargarPacksMini() {
             const saved = localStorage.getItem('sariels_internet_packs');
