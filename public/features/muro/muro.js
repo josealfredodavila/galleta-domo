@@ -239,7 +239,10 @@ document.addEventListener('DOMContentLoaded', function() {
     window.toggleLike = async function(postId) {
         try {
             const token = localStorage.getItem('galleta_token');
-            if (!token) return;
+            if (!token) {
+                alert('Conecta tu wallet primero');
+                return;
+            }
 
             const response = await fetch('/api/muro/reaccion', {
                 method: 'POST',
@@ -250,12 +253,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 body: JSON.stringify({ postId, reaccion: 'meGusta' })
             });
 
-            if (response.ok) {
-                const data = await response.json();
-                actualizarReacciones(postId, data.reacciones);
+            if (!response.ok) {
+                const error = await response.json();
+                console.error('Error en like:', error);
+                return;
             }
+
+            const data = await response.json();
+            actualizarReacciones(postId, data.reacciones);
+
         } catch (error) {
             console.error('Error en like:', error);
+            alert('❌ Error al procesar la reacción');
         }
     };
 
@@ -286,7 +295,7 @@ document.addEventListener('DOMContentLoaded', function() {
     async function cargarComentarios(postId) {
         try {
             const token = localStorage.getItem('galleta_token');
-            const response = await fetch(`/api/muro/${postId}/comentarios`, {
+            const response = await fetch(`/api/muro/${postId}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -325,7 +334,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
         try {
             const token = localStorage.getItem('galleta_token');
-            const response = await fetch(`/api/muro/comentario`, {
+            if (!token) {
+                alert('Conecta tu wallet primero');
+                return;
+            }
+
+            const response = await fetch('/api/muro/comentario', {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -337,9 +351,13 @@ document.addEventListener('DOMContentLoaded', function() {
             if (response.ok) {
                 input.value = '';
                 cargarComentarios(postId);
+            } else {
+                const error = await response.json();
+                alert(`❌ ${error.error || 'Error al comentar'}`);
             }
         } catch (error) {
             console.error('Error enviando comentario:', error);
+            alert('❌ Error al enviar comentario');
         }
     };
 
