@@ -1,0 +1,359 @@
+<!-- public/features/perfil/perfil.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>◈ Perfil · Sariel's</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <!-- ===== FAVICON OFICIAL CSARIEL'S ===== -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+    <style>
+        /* ===== ESTILOS ESPECÍFICOS DEL PERFIL ===== */
+        .perfil-container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        /* ===== TARJETA DE PERFIL ===== */
+        .perfil-card {
+            background: rgba(15, 45, 26, 0.3);
+            border: 1px solid rgba(212, 175, 55, 0.15);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(10px);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            flex-wrap: wrap;
+        }
+        .perfil-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #0F2D1A, #D4AF37);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            font-weight: 700;
+            color: white;
+            overflow: hidden;
+            border: 3px solid #D4AF37;
+            flex-shrink: 0;
+        }
+        .perfil-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .perfil-info {
+            flex: 1;
+            min-width: 200px;
+        }
+        .perfil-info .nombre {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #D4AF37;
+        }
+        .perfil-info .handle {
+            color: #8ba3c7;
+            font-size: 0.9rem;
+        }
+        .perfil-info .bio {
+            color: #e8f0f8;
+            font-size: 0.95rem;
+            margin-top: 6px;
+        }
+
+        /* ===== ESTADÍSTICAS ===== */
+        .perfil-stats {
+            display: flex;
+            gap: 32px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+        .perfil-stats .stat {
+            text-align: center;
+        }
+        .perfil-stats .stat .numero {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #D4AF37;
+        }
+        .perfil-stats .stat .label {
+            font-size: 0.7rem;
+            color: #4a6a8a;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* ===== BOTÓN EDITAR ===== */
+        .btn-editar {
+            background: rgba(212, 175, 55, 0.1);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            color: #D4AF37;
+            padding: 8px 20px;
+            border-radius: 30px;
+            font-family: 'Orbitron', monospace;
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .btn-editar:hover {
+            background: rgba(212, 175, 55, 0.2);
+        }
+
+        /* ===== SECCIÓN DE TOKENS ===== */
+        .tokens-section {
+            background: rgba(15, 45, 26, 0.2);
+            border: 1px solid rgba(212, 175, 55, 0.1);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+        }
+        .tokens-section h3 {
+            font-family: 'Orbitron', monospace;
+            color: #D4AF37;
+            font-size: 1rem;
+            margin-bottom: 12px;
+        }
+        .tokens-section .token-bar {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .tokens-section .token-bar .bar {
+            flex: 1;
+            height: 8px;
+            background: rgba(212, 175, 55, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .tokens-section .token-bar .bar .fill {
+            height: 100%;
+            background: linear-gradient(90deg, #D4AF37, #b8923a);
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+        .tokens-section .token-bar .text {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.8rem;
+            color: #D4AF37;
+            min-width: 60px;
+            text-align: right;
+        }
+
+        /* ===== eSIM ===== */
+        .esim-section {
+            background: rgba(15, 45, 26, 0.2);
+            border: 1px solid rgba(0, 229, 255, 0.1);
+            border-radius: 16px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+        }
+        .esim-section h3 {
+            font-family: 'Orbitron', monospace;
+            color: #00e5ff;
+            font-size: 1rem;
+            margin-bottom: 12px;
+        }
+        .esim-section .esim-status {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .esim-section .esim-status .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #00b894;
+            animation: pulse-dot 1.5s ease-in-out infinite;
+        }
+        .esim-section .esim-status .dot.inactive {
+            background: #4a6a8a;
+            animation: none;
+        }
+        .esim-section .esim-status .text {
+            color: #e8f0f8;
+            font-size: 0.9rem;
+        }
+        .esim-section .esim-status .text strong {
+            color: #00e5ff;
+        }
+
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.8); }
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .perfil-card {
+                flex-direction: column;
+                text-align: center;
+                padding: 18px;
+            }
+            .perfil-stats {
+                justify-content: center;
+                gap: 20px;
+            }
+            .tokens-section .token-bar {
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ===== FONDO ESTELAR ===== -->
+    <canvas id="stars-canvas"></canvas>
+    <div class="nebula nebula-1"></div>
+    <div class="nebula nebula-2"></div>
+    <div class="nebula nebula-3"></div>
+
+    <div id="app">
+
+        <!-- ===== HEADER CON LOGOTIPO OFICIAL ===== -->
+        <header class="header">
+            <div class="header-content">
+                <a href="/" class="logo">
+                    <span class="logo-icon"><span class="hex">◈</span></span>
+                    <span class="logo-text">Sariel's</span>
+                    <span class="logo-badge">✦ WEB3</span>
+                </a>
+                <div class="header-info">
+                    <span class="network-badge">🟢 Polygon</span>
+                    <button id="connectWallet" class="btn-connect">
+                        <span class="btn-icon">🔗</span>
+                        Conectar Wallet
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- ===== PERFIL ===== -->
+        <main class="main">
+            <div class="container">
+                <div class="perfil-container">
+
+                    <!-- ===== MENU DE NAVEGACIÓN ===== -->
+                    <nav class="main-nav">
+                        <a href="/" class="nav-link">🏠 Inicio</a>
+                        <a href="/features/muro/muro.html" class="nav-link">📱 Muro</a>
+                        <a href="/features/perfil/perfil.html" class="nav-link active">👤 Perfil</a>
+                        <a href="/features/mensajes/contactos.html" class="nav-link">👥 Contactos</a>
+                        <a href="/features/live/live.html" class="nav-link live-link">🔴 Live</a>
+                    </nav>
+
+                    <!-- ===== WALLET INFO ===== -->
+                    <div id="walletInfo" class="wallet-info hidden">
+                        <div class="wallet-details">
+                            <span class="wallet-label">Wallet:</span>
+                            <span id="walletAddress" class="wallet-address"></span>
+                            <span class="wallet-status online">● Conectado</span>
+                        </div>
+                        <div class="wallet-actions">
+                            <button id="btnPerfil" class="btn-small">👤 Perfil</button>
+                            <button id="btnLogout" class="btn-small logout">🚪 Salir</button>
+                        </div>
+                    </div>
+
+                    <!-- ===== TARJETA DE PERFIL ===== -->
+                    <div class="perfil-card">
+                        <div class="perfil-avatar" id="perfilAvatar">
+                            <span>👤</span>
+                        </div>
+                        <div class="perfil-info">
+                            <div class="nombre" id="perfilNombre">Usuario</div>
+                            <div class="handle" id="perfilHandle">@usuario</div>
+                            <div class="bio" id="perfilBio">⚡ Explorador del ecosistema Sariel's</div>
+                            <div class="perfil-stats">
+                                <div class="stat">
+                                    <div class="numero" id="statTokens">0</div>
+                                    <div class="label">Tokens</div>
+                                </div>
+                                <div class="stat">
+                                    <div class="numero" id="statContactos">0</div>
+                                    <div class="label">Contactos</div>
+                                </div>
+                                <div class="stat">
+                                    <div class="numero" id="statNFT">0</div>
+                                    <div class="label">NFT</div>
+                                </div>
+                            </div>
+                            <button class="btn-editar" onclick="alert('Editar perfil')">✏️ Editar perfil</button>
+                        </div>
+                    </div>
+
+                    <!-- ===== SECCIÓN DE TOKENS ===== -->
+                    <div class="tokens-section">
+                        <h3>💰 Progreso de Tokens</h3>
+                        <div class="token-bar">
+                            <div class="bar">
+                                <div class="fill" id="tokenProgress" style="width: 0%;"></div>
+                            </div>
+                            <span class="text" id="tokenText">0/12</span>
+                        </div>
+                        <p style="color:#4a6a8a;font-size:0.8rem;margin-top:8px;">
+                            Acumula 12 tokens para canjear tu NFT
+                        </p>
+                    </div>
+
+                    <!-- ===== eSIM ===== -->
+                    <div class="esim-section">
+                        <h3>📶 eSIM Csariel's</h3>
+                        <div class="esim-status">
+                            <span class="dot inactive" id="esimDot"></span>
+                            <span class="text" id="esimText">
+                                <strong>Inactiva</strong> · Sin datos activos
+                            </span>
+                        </div>
+                        <button class="btn-editar" style="margin-top:12px;" onclick="alert('Activar eSIM')">
+                            📲 Activar eSIM
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+        </main>
+
+        <!-- ===== FOOTER ===== -->
+        <footer class="footer">
+            <div class="footer-content">
+                <p class="footer-brand">✦ Sariel's · Sabor al Paladar ✦</p>
+                <p>◈ Galleta Domo · Powered by Polygon</p>
+                <p class="footer-small">
+                    <a href="/terminos.html" target="_blank">📜 Términos y Condiciones</a>
+                    &nbsp;·&nbsp;
+                    <a href="/privacidad.html" target="_blank">🔒 Privacidad</a>
+                </p>
+            </div>
+        </footer>
+
+    </div>
+
+    <!-- ===== SCRIPTS ===== -->
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.8.0/dist/web3.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/app.js"></script>
+    <script>
+        // ===== LÓGICA DEL PERFIL =====
+        document.addEventListener('DOMContentLoaded', function() {
+            // Simular datos del perfil
+            const tokenProgress = document.getElementById('tokenProgress');
+            const tokenText = document.getElementById('tokenText');
+
+            // Simular 5 tokens de 12
+            const tokens = 5;
+            const progreso = (tokens / 12) * 100;
+            tokenProgress.style.width = progreso + '%';
+            tokenText.textContent = tokens + '/12';
+        });
+    </script>
+</body>
+</html>
