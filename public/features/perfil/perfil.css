@@ -1,499 +1,366 @@
-/* public/features/perfil/perfil.css */
-
 /* ================================================================
-   ESTILOS ESPECÍFICOS DEL PERFIL
+   PERFIL ULTRA PREMIUM - SARIEL'S
+   LÓGICA COMPLETA
    ================================================================ */
 
-.perfil-container {
-    max-width: 900px;
-    margin: 0 auto;
+// ================================================================
+// TOAST
+// ================================================================
+function showToast(msg, type = '') {
+    let t = document.getElementById('toast');
+    if (!t) {
+        t = document.createElement('div');
+        t.id = 'toast';
+        t.className = 'toast';
+        document.body.appendChild(t);
+    }
+    t.textContent = msg;
+    t.className = 'toast show';
+    if (type === 'error') t.classList.add('error');
+    else t.classList.remove('error');
+    clearTimeout(t._timeout);
+    t._timeout = setTimeout(() => t.classList.remove('show'), 3500);
 }
 
-/* ================================================================
-   TARJETA DE PERFIL
-   ================================================================ */
-
-.perfil-card {
-    background: rgba(15, 45, 26, 0.3);
-    border: 1px solid rgba(212, 175, 55, 0.15);
-    border-radius: 16px;
-    padding: 24px;
-    backdrop-filter: blur(10px);
-    margin-bottom: 20px;
-    display: flex;
-    align-items: center;
-    gap: 24px;
-    flex-wrap: wrap;
+// ================================================================
+// DATOS DEL PERFIL
+// ================================================================
+function cargarPerfil() {
+    const saved = localStorage.getItem('sariels_perfil');
+    if (saved) {
+        try {
+            return JSON.parse(saved);
+        } catch (e) {}
+    }
+    return {
+        nombre: 'Explorador',
+        handle: 'explorador',
+        bio: '⚡ Construyendo el futuro descentralizado',
+        edad: '24 años',
+        estudio: 'Ingeniería',
+        musica: 'Electronic · Jazz',
+        viajes: 'Viajero',
+        ubicacion: 'CDMX, México',
+        estadoCivil: 'Soltera(o)',
+        avatar: '◈',
+        portada: '',
+        tokens: 5,
+        contactos: 12,
+        nft: 1,
+        seguidores: 42
+    };
 }
 
-.perfil-avatar {
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #0F2D1A, #D4AF37);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 2rem;
-    font-weight: 700;
-    color: white;
-    overflow: hidden;
-    border: 3px solid #D4AF37;
-    flex-shrink: 0;
-    position: relative;
-    cursor: pointer;
+function guardarPerfilData(data) {
+    localStorage.setItem('sariels_perfil', JSON.stringify(data));
 }
 
-.perfil-avatar img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
+// ================================================================
+// RENDERIZAR PERFIL
+// ================================================================
+function renderizarPerfil() {
+    const data = cargarPerfil();
 
-.perfil-avatar .edit-badge {
-    position: absolute;
-    bottom: -2px;
-    right: -2px;
-    background: #D4AF37;
-    color: #05080f;
-    border-radius: 50%;
-    width: 24px;
-    height: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.6rem;
-    border: 2px solid #05080f;
-}
+    // Datos básicos
+    const nombreEl = document.getElementById('displayNombre');
+    const handleEl = document.getElementById('displayHandle');
+    const bioEl = document.getElementById('displayBio');
+    const avatarEl = document.getElementById('avatarEmoji');
 
-.perfil-info {
-    flex: 1;
-    min-width: 200px;
-}
+    if (nombreEl) nombreEl.textContent = data.nombre;
+    if (handleEl) handleEl.textContent = '@' + data.handle;
+    if (bioEl) bioEl.textContent = data.bio;
+    if (avatarEl) avatarEl.textContent = data.avatar || '◈';
 
-.perfil-info .nombre {
-    font-family: 'Orbitron', monospace;
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: #D4AF37;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-}
+    // Detalles
+    const detalles = {
+        'displayEdad': data.edad,
+        'displayEstudio': data.estudio,
+        'displayMusica': data.musica,
+        'displayViajes': data.viajes,
+        'displayUbicacion': data.ubicacion,
+        'displayEstadoCivil': data.estadoCivil
+    };
+    Object.keys(detalles).forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = detalles[id];
+    });
 
-.perfil-info .nombre .verified-badge {
-    font-size: 0.5rem;
-    background: rgba(212, 175, 55, 0.15);
-    color: #D4AF37;
-    padding: 2px 10px;
-    border-radius: 12px;
-    font-family: 'Orbitron', monospace;
-    letter-spacing: 1px;
-}
+    // Estadísticas
+    const stats = {
+        'statTokens': data.tokens || 0,
+        'statContactos': data.contactos || 0,
+        'statNFT': data.nft || 0,
+        'statSeguidores': data.seguidores || 0
+    };
+    Object.keys(stats).forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = stats[id];
+    });
 
-.perfil-info .handle {
-    color: #8ba3c7;
-    font-size: 0.9rem;
-    margin-top: 2px;
-}
+    // Tokens
+    const tokens = data.tokens || 0;
+    const maxTokens = 12;
+    const progreso = Math.min((tokens / maxTokens) * 100, 100);
+    const progressEl = document.getElementById('tokenProgress');
+    const textEl = document.getElementById('tokenText');
+    const cantidadEl = document.getElementById('tokenCantidad');
+    if (progressEl) progressEl.style.width = progreso + '%';
+    if (textEl) textEl.textContent = tokens + '/' + maxTokens;
+    if (cantidadEl) cantidadEl.textContent = tokens;
 
-.perfil-info .bio {
-    color: #e8f0f8;
-    font-size: 0.95rem;
-    margin-top: 6px;
-    line-height: 1.5;
-}
-
-.perfil-info .bio .edit-bio {
-    color: #4a6a8a;
-    font-size: 0.7rem;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.perfil-info .bio .edit-bio:hover {
-    color: #D4AF37;
-}
-
-/* ================================================================
-   ESTADÍSTICAS
-   ================================================================ */
-
-.perfil-stats {
-    display: flex;
-    gap: 32px;
-    margin-top: 12px;
-    flex-wrap: wrap;
-}
-
-.perfil-stats .stat {
-    text-align: center;
-    cursor: default;
-}
-
-.perfil-stats .stat .numero {
-    font-family: 'Orbitron', monospace;
-    font-size: 1.3rem;
-    font-weight: 700;
-    color: #D4AF37;
-}
-
-.perfil-stats .stat .label {
-    font-size: 0.7rem;
-    color: #4a6a8a;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-}
-
-/* ================================================================
-   BOTÓN EDITAR
-   ================================================================ */
-
-.btn-editar {
-    background: rgba(212, 175, 55, 0.1);
-    border: 1px solid rgba(212, 175, 55, 0.2);
-    color: #D4AF37;
-    padding: 8px 20px;
-    border-radius: 30px;
-    font-family: 'Orbitron', monospace;
-    font-size: 0.7rem;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.btn-editar:hover {
-    background: rgba(212, 175, 55, 0.2);
-    transform: scale(1.02);
-}
-
-.btn-editar.danger {
-    border-color: rgba(255, 51, 102, 0.2);
-    color: #ff3366;
-}
-
-.btn-editar.danger:hover {
-    background: rgba(255, 51, 102, 0.1);
-}
-
-/* ================================================================
-   SECCIÓN DE TOKENS
-   ================================================================ */
-
-.tokens-section {
-    background: rgba(15, 45, 26, 0.2);
-    border: 1px solid rgba(212, 175, 55, 0.1);
-    border-radius: 16px;
-    padding: 20px;
-    margin-bottom: 20px;
-    backdrop-filter: blur(10px);
-}
-
-.tokens-section .section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 12px;
-}
-
-.tokens-section .section-header h3 {
-    font-family: 'Orbitron', monospace;
-    color: #D4AF37;
-    font-size: 1rem;
-}
-
-.tokens-section .section-header .token-count {
-    font-family: 'Orbitron', monospace;
-    font-size: 1.2rem;
-    font-weight: 700;
-    color: #D4AF37;
-}
-
-.tokens-section .token-bar {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-}
-
-.tokens-section .token-bar .bar {
-    flex: 1;
-    height: 8px;
-    background: rgba(212, 175, 55, 0.1);
-    border-radius: 4px;
-    overflow: hidden;
-}
-
-.tokens-section .token-bar .bar .fill {
-    height: 100%;
-    background: linear-gradient(90deg, #D4AF37, #b8923a);
-    border-radius: 4px;
-    transition: width 0.5s ease;
-}
-
-.tokens-section .token-bar .text {
-    font-family: 'Orbitron', monospace;
-    font-size: 0.8rem;
-    color: #D4AF37;
-    min-width: 50px;
-    text-align: right;
-}
-
-.tokens-section .token-info {
-    font-size: 0.75rem;
-    color: #4a6a8a;
-    margin-top: 8px;
-}
-
-.tokens-section .token-info .highlight {
-    color: #D4AF37;
-    font-weight: 600;
-}
-
-/* ================================================================
-   SECCIÓN eSIM
-   ================================================================ */
-
-.esim-section {
-    background: rgba(15, 45, 26, 0.2);
-    border: 1px solid rgba(0, 229, 255, 0.1);
-    border-radius: 16px;
-    padding: 20px;
-    backdrop-filter: blur(10px);
-}
-
-.esim-section .section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 12px;
-}
-
-.esim-section .section-header h3 {
-    font-family: 'Orbitron', monospace;
-    color: #00e5ff;
-    font-size: 1rem;
-}
-
-.esim-section .section-header .esim-status-badge {
-    font-size: 0.6rem;
-    padding: 4px 14px;
-    border-radius: 20px;
-    font-family: 'Orbitron', monospace;
-}
-
-.esim-section .section-header .esim-status-badge.activa {
-    background: rgba(0, 184, 148, 0.15);
-    color: #00b894;
-    border: 1px solid rgba(0, 184, 148, 0.2);
-}
-
-.esim-section .section-header .esim-status-badge.inactiva {
-    background: rgba(74, 106, 138, 0.15);
-    color: #4a6a8a;
-    border: 1px solid rgba(74, 106, 138, 0.2);
-}
-
-.esim-section .esim-status {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.esim-section .esim-status .dot {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    background: #00b894;
-    animation: pulse-dot 1.5s ease-in-out infinite;
-}
-
-.esim-section .esim-status .dot.inactive {
-    background: #4a6a8a;
-    animation: none;
-}
-
-.esim-section .esim-status .text {
-    color: #e8f0f8;
-    font-size: 0.9rem;
-}
-
-.esim-section .esim-status .text strong {
-    color: #00e5ff;
-}
-
-.esim-section .esim-datos {
-    display: flex;
-    gap: 24px;
-    margin-top: 12px;
-    flex-wrap: wrap;
-}
-
-.esim-section .esim-datos .dato {
-    text-align: center;
-}
-
-.esim-section .esim-datos .dato .numero {
-    font-family: 'Orbitron', monospace;
-    font-size: 1rem;
-    font-weight: 700;
-    color: #D4AF37;
-}
-
-.esim-section .esim-datos .dato .label {
-    font-size: 0.55rem;
-    color: #4a6a8a;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-@keyframes pulse-dot {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.5; transform: scale(0.8); }
-}
-
-/* ================================================================
-   SECCIÓN CONTACTOS (dentro del perfil)
-   ================================================================ */
-
-.contactos-mini {
-    background: rgba(15, 45, 26, 0.15);
-    border: 1px solid rgba(212, 175, 55, 0.05);
-    border-radius: 12px;
-    padding: 16px;
-    margin-top: 16px;
-}
-
-.contactos-mini .mini-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 8px;
-}
-
-.contactos-mini .mini-header h4 {
-    font-family: 'Orbitron', monospace;
-    color: #8ba3c7;
-    font-size: 0.7rem;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-}
-
-.contactos-mini .mini-header .ver-todos {
-    color: #4a6a8a;
-    font-size: 0.65rem;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.contactos-mini .mini-header .ver-todos:hover {
-    color: #D4AF37;
-}
-
-.contactos-mini .mini-lista {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-}
-
-.contactos-mini .mini-lista .contacto-item {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    background: rgba(255, 255, 255, 0.03);
-    padding: 4px 12px 4px 6px;
-    border-radius: 20px;
-    border: 1px solid rgba(212, 175, 55, 0.05);
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.contactos-mini .mini-lista .contacto-item:hover {
-    border-color: rgba(212, 175, 55, 0.2);
-    background: rgba(255, 255, 255, 0.05);
-}
-
-.contactos-mini .mini-lista .contacto-item .avatar {
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #0F2D1A, #D4AF37);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.5rem;
-    color: white;
-    font-weight: 700;
-}
-
-.contactos-mini .mini-lista .contacto-item .nombre {
-    font-size: 0.7rem;
-    color: #e8f0f8;
-}
-
-/* ================================================================
-   RESPONSIVE
-   ================================================================ */
-
-@media (max-width: 768px) {
-    .perfil-card {
-        flex-direction: column;
-        text-align: center;
-        padding: 18px;
+    // Portada
+    if (data.portada) {
+        const img = document.getElementById('portadaImg');
+        if (img) {
+            img.src = data.portada;
+            img.style.display = 'block';
+        }
     }
 
-    .perfil-info .nombre {
-        justify-content: center;
+    // Huella Digital
+    const huella = Math.min(tokens * 5 + 20, 100);
+    const barraEl = document.getElementById('huellaBarra');
+    const nivelEl = document.getElementById('huellaNivel');
+    const descEl = document.getElementById('huellaDescripcion');
+    if (barraEl) barraEl.style.width = huella + '%';
+    if (nivelEl) {
+        const niveles = ['⚡ Baja', '◈ Media', '✦ Alta', '◉ Muy Alta', '★ Excelente'];
+        const idx = Math.min(Math.floor(huella / 25), 4);
+        nivelEl.textContent = niveles[idx];
+    }
+    if (descEl) {
+        descEl.textContent = huella + '% · ' + 
+            (huella > 70 ? 'Contribuyente activo' : 
+             huella > 40 ? 'Explorador' : 
+             'Iniciando');
     }
 
-    .perfil-stats {
-        justify-content: center;
-        gap: 20px;
-    }
+    // Amigos sugeridos
+    renderizarAmigos();
+}
 
-    .tokens-section .token-bar {
-        flex-wrap: wrap;
-    }
+// ================================================================
+// AMIGOS SUGERIDOS
+// ================================================================
+function renderizarAmigos() {
+    const amigos = [
+        { nombre: 'CryptoQueen', handle: 'cryptoq', avatar: '👑' },
+        { nombre: 'BlockBuilder', handle: 'blockb', avatar: '🔷' },
+        { nombre: 'TokenMaster', handle: 'tokenm', avatar: '💎' },
+        { nombre: 'Web3Nomad', handle: 'web3n', avatar: '🌐' },
+        { nombre: 'NFTArtist', handle: 'nfta', avatar: '🎨' },
+        { nombre: 'DeFiWizard', handle: 'defiw', avatar: '🧙' }
+    ];
 
-    .esim-section .esim-datos {
-        justify-content: center;
-    }
+    const grid = document.getElementById('amigosGrid');
+    if (!grid) return;
 
-    .perfil-avatar {
-        width: 64px;
-        height: 64px;
-        font-size: 1.5rem;
+    grid.innerHTML = amigos.map(a => `
+        <div class="amigo-card">
+            <div class="avatar">${a.avatar}</div>
+            <div class="nombre">${a.nombre}</div>
+            <div class="handle">@${a.handle}</div>
+            <button class="btn-seguir" onclick="seguirAmigo(this)">✦ Seguir</button>
+        </div>
+    `).join('');
+}
+
+function seguirAmigo(btn) {
+    if (!btn) return;
+    if (btn.textContent === '✦ Siguiendo') {
+        btn.textContent = '✦ Seguir';
+        btn.classList.remove('siguiendo');
+        showToast('👋 Dejaste de seguir a este usuario');
+    } else {
+        btn.textContent = '✦ Siguiendo';
+        btn.classList.add('siguiendo');
+        showToast('✅ Ahora sigues a este usuario');
     }
 }
 
-@media (max-width: 480px) {
-    .perfil-stats {
-        gap: 14px;
-    }
+// ================================================================
+// MODAL EDITAR PERFIL
+// ================================================================
+function abrirModalEditar() {
+    const data = cargarPerfil();
+    const inputs = {
+        'inputNombre': data.nombre || '',
+        'inputHandle': data.handle || '',
+        'inputBio': data.bio || '',
+        'inputEdad': data.edad || '',
+        'inputEstudio': data.estudio || '',
+        'inputMusica': data.musica || '',
+        'inputViajes': data.viajes || '',
+        'inputUbicacion': data.ubicacion || '',
+        'inputEstadoCivil': data.estadoCivil || 'Soltera(o)'
+    };
+    Object.keys(inputs).forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = inputs[id];
+    });
+    const modal = document.getElementById('modalEditar');
+    if (modal) modal.classList.add('show');
+}
 
-    .perfil-stats .stat .numero {
-        font-size: 1rem;
-    }
+function cerrarModal() {
+    const modal = document.getElementById('modalEditar');
+    if (modal) modal.classList.remove('show');
+}
 
-    .perfil-stats .stat .label {
-        font-size: 0.55rem;
-    }
+function guardarPerfil() {
+    const data = cargarPerfil();
+    const campos = {
+        nombre: 'inputNombre',
+        handle: 'inputHandle',
+        bio: 'inputBio',
+        edad: 'inputEdad',
+        estudio: 'inputEstudio',
+        musica: 'inputMusica',
+        viajes: 'inputViajes',
+        ubicacion: 'inputUbicacion',
+        estadoCivil: 'inputEstadoCivil'
+    };
+    Object.keys(campos).forEach(key => {
+        const el = document.getElementById(campos[key]);
+        if (el) {
+            const val = el.value.trim();
+            if (key === 'handle') {
+                data[key] = val.replace('@', '') || data[key];
+            } else {
+                data[key] = val || data[key];
+            }
+        }
+    });
 
-    .perfil-info .nombre {
-        font-size: 1.2rem;
-    }
+    guardarPerfilData(data);
+    renderizarPerfil();
+    cerrarModal();
+    showToast('✅ Perfil actualizado correctamente');
+}
 
-    .esim-section .esim-status {
-        flex-wrap: wrap;
-    }
-
-    .contactos-mini .mini-lista {
-        justify-content: center;
+// ================================================================
+// PORTADA Y AVATAR
+// ================================================================
+function cambiarPortada() {
+    const url = prompt('📸 Ingresa la URL de tu nueva portada:');
+    if (url && url.trim()) {
+        const data = cargarPerfil();
+        data.portada = url.trim();
+        guardarPerfilData(data);
+        renderizarPerfil();
+        showToast('✅ Portada actualizada');
     }
 }
+
+function cambiarAvatar() {
+    const emoji = prompt('✎ Elige un emoji para tu avatar (ej: ◈, ✦, ★, ◆):', '◈');
+    if (emoji && emoji.trim()) {
+        const data = cargarPerfil();
+        data.avatar = emoji.trim();
+        guardarPerfilData(data);
+        renderizarPerfil();
+        showToast('✅ Avatar actualizado');
+    }
+}
+
+// ================================================================
+// eSIM
+// ================================================================
+let esimActivo = false;
+
+function toggleESIM() {
+    esimActivo = !esimActivo;
+    const status = document.getElementById('esimStatus');
+    const info = document.getElementById('esimInfo');
+    const btn = document.querySelector('.conectividad-card:first-child .btn-accion');
+    if (!status || !info) return;
+
+    if (esimActivo) {
+        status.textContent = 'Activa';
+        status.className = 'status active';
+        info.innerHTML = '<strong>📶 Conectado</strong> · Datos móviles activos';
+        if (btn) btn.textContent = '📴 Desactivar eSIM';
+        showToast('📶 eSIM activada correctamente');
+    } else {
+        status.textContent = 'Inactiva';
+        status.className = 'status inactive';
+        info.textContent = 'Sin datos activos';
+        if (btn) btn.textContent = '📲 Activar eSIM';
+        showToast('📶 eSIM desactivada');
+    }
+}
+
+// ================================================================
+// WiFi
+// ================================================================
+let wifiActivo = false;
+
+function toggleWiFi() {
+    wifiActivo = !wifiActivo;
+    const status = document.getElementById('wifiStatus');
+    const info = document.getElementById('wifiInfo');
+    const btn = document.querySelector('.conectividad-card:last-child .btn-accion');
+    if (!status || !info) return;
+
+    if (wifiActivo) {
+        status.textContent = 'Conectado';
+        status.className = 'status active';
+        info.innerHTML = '<strong>🛜 Conectado</strong> · Ahorrando datos móviles';
+        if (btn) btn.textContent = '🛜 Desconectar WiFi';
+        showToast('🛜 WiFi conectado');
+    } else {
+        status.textContent = 'Desconectado';
+        status.className = 'status inactive';
+        info.textContent = 'Ahorra tus datos móviles';
+        if (btn) btn.textContent = '🛜 Conectar WiFi';
+        showToast('🛜 WiFi desconectado');
+    }
+}
+
+// ================================================================
+// BLOQUEAR USUARIO
+// ================================================================
+function bloquearUsuario() {
+    if (confirm('¿Estás seguro de bloquear a este usuario?')) {
+        showToast('✅ Usuario bloqueado correctamente');
+    }
+}
+
+// ================================================================
+// INICIALIZAR
+// ================================================================
+document.addEventListener('DOMContentLoaded', function() {
+    renderizarPerfil();
+
+    // Cerrar modal con Escape
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') cerrarModal();
+    });
+
+    // Cerrar modal haciendo clic fuera
+    const modal = document.getElementById('modalEditar');
+    if (modal) {
+        modal.addEventListener('click', function(e) {
+            if (e.target === this) cerrarModal();
+        });
+    }
+
+    console.log('◈ Sariel\'s - Perfil Ultra Premium');
+    console.log('📊 Datos cargados desde localStorage');
+});
+
+// ================================================================
+// EXPONER FUNCIONES GLOBALES
+// ================================================================
+window.showToast = showToast;
+window.renderizarPerfil = renderizarPerfil;
+window.abrirModalEditar = abrirModalEditar;
+window.cerrarModal = cerrarModal;
+window.guardarPerfil = guardarPerfil;
+window.cambiarPortada = cambiarPortada;
+window.cambiarAvatar = cambiarAvatar;
+window.toggleESIM = toggleESIM;
+window.toggleWiFi = toggleWiFi;
+window.bloquearUsuario = bloquearUsuario;
+window.seguirAmigo = seguirAmigo;
