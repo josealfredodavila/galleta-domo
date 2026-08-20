@@ -1,4 +1,3 @@
-<!-- public/features/muro/muro.html -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -6,45 +5,437 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>◈ Muro · Sariel's</title>
     <link rel="stylesheet" href="/styles.css" />
-    <!-- ===== FAVICON OFICIAL CSARIEL'S ===== -->
+    <link rel="stylesheet" href="/features/muro/muro.css" />
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <style>
-        /* ===== ESTILOS ESPECÍFICOS DEL MURO ===== */
-        .muro-container {
-            max-width: 900px;
-            margin: 0 auto;
+        /* ================================================================
+           MURO ULTRA MEGA PRO - SARIEL'S
+           ================================================================ */
+
+        :root {
+            --gold: #D4AF37;
+            --gold-dark: #b8923a;
+            --gold-light: #e8c84a;
+            --gold-bright: #f0d060;
+            --green-deep: #0F2D1A;
+            --green-mid: #1a4a2a;
+            --green-bright: #2a6a3a;
+            --space: #05080f;
+            --text-primary: #f0f4f8;
+            --text-secondary: #c0d8e8;
+            --text-muted: #8aa8b8;
+            --glass-bg: rgba(15, 45, 26, 0.55);
+            --glass-border: rgba(212, 175, 55, 0.15);
+            --shadow-gold: 0 8px 32px rgba(212, 175, 55, 0.25);
+            --shadow-gold-strong: 0 0 60px rgba(212, 175, 55, 0.15);
+            --radius: 16px;
+            --radius-xl: 24px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-slow: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            --success: #00d68f;
+            --danger: #ff3366;
+            --warning: #f7d44a;
+            --cyan: #00e5ff;
+            --purple: #a855f7;
+            --pink: #ec4899;
         }
 
-        /* ===== BOTÓN PUBLICAR ===== */
-        .btn-publicar {
-            background: linear-gradient(135deg, #D4AF37, #b8923a);
-            color: #05080f;
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: var(--space);
+            color: var(--text-primary);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            min-height: 100vh;
+            line-height: 1.6;
+            background-image: 
+                radial-gradient(ellipse at 20% 50%, rgba(26, 74, 42, 0.4) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 50%, rgba(212, 175, 55, 0.08) 0%, transparent 60%);
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* ===== FONDO ESTELAR ===== */
+        #stars-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+            will-change: transform;
+        }
+
+        .nebula {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(120px);
+            opacity: 0.12;
+            pointer-events: none;
+            z-index: 0;
+            animation: nebula-drift 25s ease-in-out infinite alternate;
+            will-change: transform;
+        }
+        .nebula-1 { width: 700px; height: 700px; background: var(--green-bright); top: -15%; right: -15%; }
+        .nebula-2 { width: 600px; height: 600px; background: var(--gold-light); bottom: -15%; left: -15%; animation-delay: -8s; opacity: 0.06; }
+        .nebula-3 { width: 500px; height: 500px; background: var(--purple); top: 50%; left: 50%; transform: translate(-50%, -50%); animation-delay: -15s; opacity: 0.04; }
+
+        @keyframes nebula-drift {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(40px, -30px) scale(1.15); }
+        }
+
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: var(--space); }
+        ::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 2px; }
+
+        /* ===== APP ===== */
+        .app {
+            position: relative;
+            z-index: 1;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 16px 20px 30px;
+            contain: layout style;
+        }
+
+        /* ===== HEADER ===== */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0 14px;
+            border-bottom: 1px solid var(--glass-border);
+            flex-wrap: wrap;
+            gap: 10px;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(5, 8, 15, 0.92);
+            border-radius: var(--radius) var(--radius) 0 0;
+            contain: layout style;
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            transition: var(--transition);
+        }
+        .logo:hover { opacity: 0.85; }
+        .logo-hex {
+            font-size: 1.8rem;
+            color: var(--gold);
+            font-weight: 800;
+            font-family: 'Orbitron', monospace;
+            text-shadow: 0 0 30px rgba(212, 175, 55, 0.3);
+            animation: glow-pulse 3s ease-in-out infinite;
+            will-change: text-shadow;
+        }
+        @keyframes glow-pulse {
+            0%, 100% { text-shadow: 0 0 30px rgba(212, 175, 55, 0.3); }
+            50% { text-shadow: 0 0 60px rgba(212, 175, 55, 0.6); }
+        }
+        .logo-text {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: 2px;
+        }
+        .logo-text span { color: var(--gold); }
+        .logo-badge {
+            font-size: 0.45rem;
+            background: linear-gradient(135deg, var(--gold), var(--gold-light));
+            color: var(--space);
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .network-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.6rem;
+            color: var(--gold);
+            background: rgba(212, 175, 55, 0.1);
+            padding: 4px 12px;
+            border-radius: 20px;
+            border: 1px solid rgba(212, 175, 55, 0.15);
+        }
+        .network-badge .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--success);
+            animation: pulse-dot 2s infinite;
+            will-change: transform, opacity;
+        }
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.3; transform: scale(0.8); }
+        }
+
+        /* ===== NAVEGACIÓN ===== */
+        .main-nav {
+            display: flex;
+            gap: 4px;
+            background: rgba(15, 45, 26, 0.3);
+            border-radius: var(--radius);
+            padding: 4px;
+            border: 1px solid var(--glass-border);
+            margin: 16px 0 20px;
+            overflow-x: auto;
+            flex-wrap: nowrap;
+            -webkit-overflow-scrolling: touch;
+            contain: layout style;
+        }
+        .main-nav .nav-link {
+            padding: 8px 16px;
+            border-radius: 12px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.7rem;
+            font-weight: 500;
+            transition: var(--transition);
+            white-space: nowrap;
+            font-family: 'Inter', sans-serif;
+            background: transparent;
             border: none;
-            padding: 10px 24px;
+            cursor: pointer;
+            position: relative;
+        }
+        .main-nav .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: 2px;
+            left: 50%;
+            width: 0;
+            height: 2px;
+            background: var(--gold);
+            transition: var(--transition);
+            transform: translateX(-50%);
+            border-radius: 2px;
+        }
+        .main-nav .nav-link:hover::after,
+        .main-nav .nav-link.active::after {
+            width: 60%;
+        }
+        .main-nav .nav-link:hover {
+            color: var(--text-primary);
+            background: rgba(212, 175, 55, 0.05);
+        }
+        .main-nav .nav-link.active {
+            background: rgba(212, 175, 55, 0.12);
+            color: var(--gold);
+        }
+        .main-nav .nav-link.live {
+            color: var(--danger);
+        }
+        .main-nav .nav-link.live:hover {
+            background: rgba(255, 51, 102, 0.08);
+        }
+
+        /* ===== TRENDING TOPICS ===== */
+        .trending-section {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-xl);
+            padding: 16px 20px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            transition: var(--transition-slow);
+        }
+        .trending-section:hover {
+            border-color: rgba(212, 175, 55, 0.2);
+            box-shadow: var(--shadow-gold);
+        }
+        .trending-section .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .trending-section .header h3 {
+            font-family: 'Orbitron', monospace;
+            color: var(--gold);
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        .trending-section .header .actualizado {
+            font-size: 0.55rem;
+            color: var(--text-muted);
+        }
+        .trending-tags {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .trending-tags .tag {
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            background: rgba(212, 175, 55, 0.08);
+            border: 1px solid rgba(212, 175, 55, 0.08);
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: var(--transition);
+            font-family: 'Inter', sans-serif;
+        }
+        .trending-tags .tag:hover {
+            background: rgba(212, 175, 55, 0.15);
+            border-color: rgba(212, 175, 55, 0.2);
+            color: var(--gold);
+            transform: translateY(-2px);
+        }
+        .trending-tags .tag .count {
+            font-size: 0.55rem;
+            color: var(--text-muted);
+            margin-left: 4px;
+        }
+
+        /* ===== FORMULARIO ===== */
+        .post-form {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-xl);
+            padding: 20px 24px;
+            margin-bottom: 24px;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            transition: var(--transition-slow);
+        }
+        .post-form:hover {
+            border-color: rgba(212, 175, 55, 0.2);
+            box-shadow: var(--shadow-gold);
+        }
+        .post-form .form-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        .post-form .form-header .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--green-deep), var(--gold));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            color: white;
+        }
+        .post-form .form-header .nombre {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 0.85rem;
+        }
+        .post-form .form-header .handle {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+        .post-form textarea {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(0, 0, 0, 0.25);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            font-family: 'Inter', sans-serif;
+            resize: vertical;
+            min-height: 80px;
+            transition: var(--transition);
+            outline: none;
+        }
+        .post-form textarea:focus {
+            border-color: var(--gold);
+            box-shadow: 0 0 30px rgba(212, 175, 55, 0.05);
+            background: rgba(0, 0, 0, 0.35);
+        }
+        .post-form .form-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 12px;
+        }
+        .post-form .form-actions .tools {
+            display: flex;
+            gap: 6px;
+        }
+        .post-form .form-actions .tools button {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: var(--transition);
+            padding: 4px 8px;
+            border-radius: 8px;
+            font-family: 'Inter', sans-serif;
+        }
+        .post-form .form-actions .tools button:hover {
+            color: var(--gold);
+            background: rgba(212, 175, 55, 0.05);
+        }
+        .btn-publicar {
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            color: var(--space);
+            border: none;
+            padding: 8px 24px;
             border-radius: 30px;
             font-family: 'Orbitron', monospace;
             font-weight: 700;
-            font-size: 0.8rem;
+            font-size: 0.7rem;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: var(--transition);
         }
         .btn-publicar:hover {
-            transform: scale(1.02);
-            box-shadow: 0 0 30px rgba(212, 175, 55, 0.3);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-gold);
+        }
+        .btn-publicar:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none !important;
         }
 
-        /* ===== TARJETA DE PUBLICACIÓN ===== */
+        /* ===== POST CARD ===== */
         .post-card {
-            background: rgba(15, 45, 26, 0.3);
-            border: 1px solid rgba(212, 175, 55, 0.15);
-            border-radius: 16px;
-            padding: 20px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-xl);
+            padding: 20px 24px;
             margin-bottom: 16px;
-            backdrop-filter: blur(10px);
-            transition: all 0.3s ease;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            transition: var(--transition-slow);
+            animation: fadeInUp 0.4s ease;
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         .post-card:hover {
-            border-color: rgba(212, 175, 55, 0.3);
+            border-color: rgba(212, 175, 55, 0.2);
+            box-shadow: var(--shadow-gold);
+            transform: translateY(-2px);
         }
         .post-card .post-header {
             display: flex;
@@ -53,17 +444,18 @@
             margin-bottom: 10px;
         }
         .post-card .post-avatar {
-            width: 40px;
-            height: 40px;
+            width: 44px;
+            height: 44px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #0F2D1A, #D4AF37);
+            background: linear-gradient(135deg, var(--green-deep), var(--gold));
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: 700;
             color: white;
-            font-size: 1rem;
+            font-size: 1.2rem;
             overflow: hidden;
+            flex-shrink: 0;
         }
         .post-card .post-avatar img {
             width: 100%;
@@ -73,43 +465,154 @@
         .post-card .post-author {
             font-family: 'Orbitron', monospace;
             font-weight: 700;
-            color: #D4AF37;
-            font-size: 0.9rem;
+            color: var(--gold);
+            font-size: 0.85rem;
+        }
+        .post-card .post-author .verified {
+            font-size: 0.5rem;
+            background: rgba(212, 175, 55, 0.15);
+            color: var(--gold);
+            padding: 1px 8px;
+            border-radius: 10px;
+            margin-left: 6px;
+            font-family: 'Inter', sans-serif;
         }
         .post-card .post-date {
-            font-size: 0.7rem;
-            color: #4a6a8a;
+            font-size: 0.65rem;
+            color: var(--text-muted);
         }
         .post-card .post-content {
-            color: #e8f0f8;
-            font-size: 0.95rem;
-            line-height: 1.6;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.7;
             margin-bottom: 12px;
+        }
+        .post-card .post-content .hashtag {
+            color: var(--gold);
+            cursor: pointer;
+        }
+        .post-card .post-content .hashtag:hover {
+            text-decoration: underline;
+        }
+        .post-card .post-stats {
+            display: flex;
+            gap: 16px;
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            padding: 8px 0;
+            border-top: 1px solid var(--glass-border);
         }
         .post-card .post-actions {
             display: flex;
-            gap: 16px;
-            border-top: 1px solid rgba(212, 175, 55, 0.08);
-            padding-top: 12px;
+            gap: 4px;
+            flex-wrap: wrap;
+            padding-top: 8px;
         }
         .post-card .post-actions button {
             background: none;
             border: none;
-            color: #4a6a8a;
-            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-size: 0.75rem;
             cursor: pointer;
-            transition: all 0.3s ease;
-            font-family: 'Space Grotesk', sans-serif;
+            transition: var(--transition);
+            font-family: 'Inter', sans-serif;
+            padding: 4px 12px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
         }
         .post-card .post-actions button:hover {
-            color: #D4AF37;
+            color: var(--gold);
+            background: rgba(212, 175, 55, 0.05);
+        }
+        .post-card .post-actions button.liked {
+            color: var(--danger);
+        }
+        .post-card .post-actions button .count {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+        }
+
+        /* ===== COMENTARIOS ===== */
+        .comentarios {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--glass-border);
+        }
+        .comentarios .comentario {
+            display: flex;
+            gap: 10px;
+            padding: 8px 0;
+        }
+        .comentarios .comentario .avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--green-deep), var(--gold));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            color: white;
+            flex-shrink: 0;
+        }
+        .comentarios .comentario .body {
+            flex: 1;
+        }
+        .comentarios .comentario .body .nombre {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        .comentarios .comentario .body .texto {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+        .comentarios .comentario .body .fecha {
+            font-size: 0.55rem;
+            color: var(--text-muted);
+        }
+        .comentarios .input-comentario {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .comentarios .input-comentario input {
+            flex: 1;
+            padding: 6px 12px;
+            background: rgba(0, 0, 0, 0.25);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            color: var(--text-primary);
+            font-size: 0.75rem;
+            outline: none;
+            transition: var(--transition);
+            font-family: 'Inter', sans-serif;
+        }
+        .comentarios .input-comentario input:focus {
+            border-color: var(--gold);
+        }
+        .comentarios .input-comentario button {
+            padding: 4px 14px;
+            border-radius: 20px;
+            border: none;
+            background: rgba(212, 175, 55, 0.15);
+            color: var(--gold);
+            font-size: 0.65rem;
+            cursor: pointer;
+            transition: var(--transition);
+            font-family: 'Inter', sans-serif;
+        }
+        .comentarios .input-comentario button:hover {
+            background: rgba(212, 175, 55, 0.25);
         }
 
         /* ===== EMPTY STATE ===== */
         .empty-state {
             text-align: center;
             padding: 60px 20px;
-            color: #4a6a8a;
+            color: var(--text-muted);
         }
         .empty-state .icon {
             font-size: 3rem;
@@ -119,51 +622,68 @@
         .empty-state h3 {
             font-family: 'Orbitron', monospace;
             font-size: 1.2rem;
-            color: #8ba3c7;
+            color: var(--text-secondary);
         }
         .empty-state p {
-            font-size: 0.9rem;
+            font-size: 0.85rem;
         }
 
-        /* ===== FORMULARIO DE PUBLICACIÓN ===== */
-        .post-form {
-            background: rgba(15, 45, 26, 0.25);
-            border: 1px solid rgba(212, 175, 55, 0.15);
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 24px;
+        /* ===== TOAST ===== */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: var(--green-deep);
+            border: 1px solid var(--gold);
+            color: var(--gold);
+            padding: 14px 28px;
+            border-radius: 14px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            box-shadow: var(--shadow-gold-strong);
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 9999;
+            max-width: 400px;
             backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
         }
-        .post-form textarea {
-            width: 100%;
-            padding: 12px 16px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(212, 175, 55, 0.15);
-            border-radius: 12px;
-            color: #e8f0f8;
-            font-size: 0.95rem;
-            font-family: 'Space Grotesk', sans-serif;
-            resize: vertical;
-            min-height: 80px;
-            transition: all 0.3s ease;
-        }
-        .post-form textarea:focus {
-            outline: none;
-            border-color: #D4AF37;
-            background: rgba(255, 255, 255, 0.08);
-        }
-        .post-form .form-actions {
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.error { border-color: var(--danger); color: var(--danger); }
+
+        /* ===== FOOTER ===== */
+        .footer {
+            margin-top: 30px;
+            padding-top: 16px;
+            border-top: 1px solid var(--glass-border);
             display: flex;
-            justify-content: flex-end;
-            margin-top: 12px;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            padding-bottom: 8px;
         }
+        .footer .brand { color: var(--gold); font-weight: 600; }
+        .footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
+        .footer-links a { color: var(--text-muted); text-decoration: none; transition: var(--transition); }
+        .footer-links a:hover { color: var(--gold); }
 
         /* ===== RESPONSIVE ===== */
-        @media (max-width: 768px) {
-            .muro-container { padding: 0 12px; }
-            .post-card { padding: 14px; }
-            .post-card .post-content { font-size: 0.85rem; }
-            .post-form { padding: 14px; }
+        @media (max-width: 600px) {
+            .app { padding: 12px 14px; }
+            .post-form { padding: 14px 16px; }
+            .post-card { padding: 14px 16px; }
+            .post-card .post-content { font-size: 0.8rem; }
+            .main-nav .nav-link { font-size: 0.6rem; padding: 6px 10px; }
+            .header .logo-text { font-size: 1rem; }
+            .header .logo-hex { font-size: 1.4rem; }
+            .trending-section { padding: 12px 16px; }
+            .trending-tags .tag { font-size: 0.6rem; padding: 3px 10px; }
+            .post-form .form-actions { flex-direction: column; align-items: stretch; }
+            .post-form .form-actions .tools { justify-content: center; }
         }
     </style>
 </head>
@@ -175,147 +695,229 @@
     <div class="nebula nebula-2"></div>
     <div class="nebula nebula-3"></div>
 
-    <div id="app">
+    <div class="app">
 
-        <!-- ===== HEADER CON LOGOTIPO OFICIAL ===== -->
+        <!-- ===== HEADER ===== -->
         <header class="header">
-            <div class="header-content">
-                <a href="/" class="logo">
-                    <span class="logo-icon"><span class="hex">◈</span></span>
-                    <span class="logo-text">Sariel's</span>
-                    <span class="logo-badge">✦ WEB3</span>
-                </a>
-                <div class="header-info">
-                    <span class="network-badge">🟢 Polygon</span>
-                    <button id="connectWallet" class="btn-connect">
-                        <span class="btn-icon">🔗</span>
-                        Conectar Wallet
-                    </button>
-                </div>
+            <a href="/" class="logo">
+                <span class="logo-hex">◈</span>
+                <span class="logo-text">Sariel<span>'s</span></span>
+                <span class="logo-badge">✦ WEB3</span>
+            </a>
+            <div class="header-actions">
+                <span class="network-badge"><span class="dot"></span> Polygon</span>
             </div>
         </header>
 
-        <!-- ===== MURO ===== -->
-        <main class="main">
-            <div class="container">
-                <div class="muro-container">
+        <!-- ===== NAVEGACIÓN ===== -->
+        <nav class="main-nav">
+            <a href="/" class="nav-link">⌂ Inicio</a>
+            <a href="/features/muro/muro.html" class="nav-link active">◇ Muro</a>
+            <a href="/features/perfil/perfil.html" class="nav-link">◆ Perfil</a>
+            <a href="/features/mensajes/contactos.html" class="nav-link">◈ Contactos</a>
+            <a href="/features/live/live.html" class="nav-link live">◉ Live</a>
+        </nav>
 
-                    <!-- ===== MENU DE NAVEGACIÓN ===== -->
-                    <nav class="main-nav">
-                        <a href="/" class="nav-link">🏠 Inicio</a>
-                        <a href="/features/muro/muro.html" class="nav-link active">📱 Muro</a>
-                        <a href="/features/perfil/perfil.html" class="nav-link">👤 Perfil</a>
-                        <a href="/features/mensajes/contactos.html" class="nav-link">👥 Contactos</a>
-                        <a href="/features/live/live.html" class="nav-link live-link">🔴 Live</a>
-                    </nav>
+        <!-- ===== TRENDING TOPICS ===== -->
+        <div class="trending-section">
+            <div class="header">
+                <h3>◈ Tendencia ahora</h3>
+                <span class="actualizado">Actualizado</span>
+            </div>
+            <div class="trending-tags" id="trendingTags">
+                <span class="tag">#Sariels <span class="count">124</span></span>
+                <span class="tag">#GalletaDomo <span class="count">87</span></span>
+                <span class="tag">#Web3 <span class="count">56</span></span>
+                <span class="tag">#EsStoks <span class="count">43</span></span>
+                <span class="tag">#NFT <span class="count">31</span></span>
+            </div>
+        </div>
 
-                    <!-- ===== WALLET INFO ===== -->
-                    <div id="walletInfo" class="wallet-info hidden">
-                        <div class="wallet-details">
-                            <span class="wallet-label">Wallet:</span>
-                            <span id="walletAddress" class="wallet-address"></span>
-                            <span class="wallet-status online">● Conectado</span>
-                        </div>
-                        <div class="wallet-actions">
-                            <button id="btnPerfil" class="btn-small">👤 Perfil</button>
-                            <button id="btnLogout" class="btn-small logout">🚪 Salir</button>
-                        </div>
-                    </div>
-
-                    <!-- ===== FORMULARIO DE PUBLICACIÓN ===== -->
-                    <div class="post-form">
-                        <textarea id="postContent" placeholder="¿Qué estás pensando?"></textarea>
-                        <div class="form-actions">
-                            <button class="btn-publicar" id="btnPublicar">📤 Publicar</button>
-                        </div>
-                    </div>
-
-                    <!-- ===== FEED DE PUBLICACIONES ===== -->
-                    <div id="feedContainer">
-                        <div class="empty-state">
-                            <span class="icon">📭</span>
-                            <h3>Sin publicaciones</h3>
-                            <p>Sé el primero en publicar algo</p>
-                        </div>
-                    </div>
-
+        <!-- ===== FORMULARIO ===== -->
+        <div class="post-form">
+            <div class="form-header">
+                <div class="avatar">◈</div>
+                <div>
+                    <div class="nombre" id="userNombre">Explorador</div>
+                    <div class="handle" id="userHandle">@explorador</div>
                 </div>
             </div>
-        </main>
+            <textarea id="postContent" placeholder="¿Qué está pasando en tu mundo?"></textarea>
+            <div class="form-actions">
+                <div class="tools">
+                    <button onclick="insertarHashtag()" title="Agregar hashtag">#</button>
+                    <button onclick="insertarEmoji()" title="Agregar emoji">😊</button>
+                    <button onclick="agregarImagen()" title="Agregar imagen">🖼️</button>
+                    <button onclick="agregarEncuesta()" title="Crear encuesta">📊</button>
+                </div>
+                <button class="btn-publicar" id="btnPublicar">🚀 Publicar</button>
+            </div>
+        </div>
+
+        <!-- ===== FEED ===== -->
+        <div id="feedContainer">
+            <div class="empty-state">
+                <span class="icon">📭</span>
+                <h3>Sin publicaciones</h3>
+                <p>Sé el primero en compartir algo</p>
+            </div>
+        </div>
 
         <!-- ===== FOOTER ===== -->
         <footer class="footer">
-            <div class="footer-content">
-                <p class="footer-brand">✦ Sariel's · Sabor al Paladar ✦</p>
-                <p>◈ Galleta Domo · Powered by Polygon</p>
-                <p class="footer-small">
-                    <a href="/terminos.html" target="_blank">📜 Términos y Condiciones</a>
-                    &nbsp;·&nbsp;
-                    <a href="/privacidad.html" target="_blank">🔒 Privacidad</a>
-                </p>
+            <span><span class="brand">◈ Sariel's</span> · Sabor al Paladar · WEB3</span>
+            <div class="footer-links">
+                <a href="/terminos.html">📜 Términos</a>
+                <span style="opacity:0.3;">⚡ Polygon</span>
             </div>
         </footer>
 
     </div>
 
+    <!-- ===== TOAST ===== -->
+    <div class="toast" id="toast"></div>
+
     <!-- ===== SCRIPTS ===== -->
     <script src="https://cdn.jsdelivr.net/npm/web3@1.8.0/dist/web3.min.js"></script>
-    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <script src="/app.js"></script>
+    <script src="/features/muro/muro.js"></script>
     <script>
-        // ===== LÓGICA DEL MURO =====
+        // ================================================================
+        // INICIALIZACIÓN ADICIONAL
+        // ================================================================
         document.addEventListener('DOMContentLoaded', function() {
-            const btnPublicar = document.getElementById('btnPublicar');
-            const postContent = document.getElementById('postContent');
-            const feedContainer = document.getElementById('feedContainer');
+            initStars();
 
-            // Cargar publicaciones al iniciar
-            cargarPublicaciones();
+            // Cargar datos del perfil para mostrar nombre en el formulario
+            const perfil = localStorage.getItem('sariels_perfil');
+            if (perfil) {
+                try {
+                    const data = JSON.parse(perfil);
+                    const nombreEl = document.getElementById('userNombre');
+                    const handleEl = document.getElementById('userHandle');
+                    if (nombreEl) nombreEl.textContent = data.nombre || 'Explorador';
+                    if (handleEl) handleEl.textContent = '@' + (data.handle || 'explorador');
+                } catch (e) {}
+            }
 
-            btnPublicar.addEventListener('click', function() {
-                const contenido = postContent.value.trim();
-                if (!contenido) {
-                    alert('Escribe algo para publicar');
+            console.log('◈ Sariel\'s - Muro Ultra Mega Pro');
+            console.log('🚀 Competencia de Silicon Valley');
+        });
+
+        function initStars() {
+            const canvas = document.getElementById('stars-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            let width, height, stars = [];
+            let animId = null;
+            let isVisible = true;
+
+            const isMobile = window.innerWidth < 600;
+            const STAR_COUNT = isMobile ? 40 : 100;
+
+            function resize() {
+                width = window.innerWidth;
+                height = window.innerHeight;
+                canvas.width = width;
+                canvas.height = height;
+                createStars();
+            }
+
+            function createStars() {
+                stars = [];
+                for (let i = 0; i < STAR_COUNT; i++) {
+                    stars.push({
+                        x: Math.random() * width,
+                        y: Math.random() * height,
+                        radius: Math.random() * 0.8 + 0.2,
+                        speed: Math.random() * 0.005 + 0.002,
+                        opacity: Math.random() * 0.5 + 0.2,
+                        twinklePhase: Math.random() * Math.PI * 2
+                    });
+                }
+            }
+
+            function draw() {
+                if (!isVisible) {
+                    animId = requestAnimationFrame(draw);
                     return;
                 }
+                ctx.clearRect(0, 0, width, height);
+                for (let star of stars) {
+                    const opacity = star.opacity * (0.6 + 0.4 * Math.sin(star.twinklePhase));
+                    ctx.beginPath();
+                    ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
+                    ctx.fill();
+                    star.twinklePhase += 0.02;
+                    star.y += star.speed;
+                    if (star.y > height) {
+                        star.y = 0;
+                        star.x = Math.random() * width;
+                    }
+                }
+                animId = requestAnimationFrame(draw);
+            }
 
-                // Aquí se conectará con el backend
-                // Por ahora, simulamos una publicación
-                agregarPublicacion(contenido);
-                postContent.value = '';
+            function pauseAnimation() { isVisible = false; }
+            function resumeAnimation() { isVisible = true; }
+
+            resize();
+            draw();
+
+            window.addEventListener('resize', resize);
+            document.addEventListener('visibilitychange', function() {
+                if (document.hidden) pauseAnimation();
+                else resumeAnimation();
             });
 
-            function agregarPublicacion(contenido) {
-                const emptyState = feedContainer.querySelector('.empty-state');
-                if (emptyState) emptyState.remove();
+            return { pauseAnimation, resumeAnimation };
+        }
 
-                const post = document.createElement('div');
-                post.className = 'post-card';
-                post.innerHTML = `
-                    <div class="post-header">
-                        <div class="post-avatar">
-                            <span>👤</span>
-                        </div>
-                        <div>
-                            <div class="post-author">Usuario</div>
-                            <div class="post-date">Ahora mismo</div>
-                        </div>
-                    </div>
-                    <div class="post-content">${contenido}</div>
-                    <div class="post-actions">
-                        <button>❤️ 0</button>
-                        <button>💬 0</button>
-                        <button>🔗 Compartir</button>
-                    </div>
-                `;
-                feedContainer.prepend(post);
-            }
+        // Funciones de herramientas del muro
+        function insertarHashtag() {
+            const textarea = document.getElementById('postContent');
+            const cursorPos = textarea.selectionStart;
+            const textBefore = textarea.value.substring(0, cursorPos);
+            const textAfter = textarea.value.substring(cursorPos);
+            textarea.value = textBefore + '#' + textAfter;
+            textarea.focus();
+            textarea.selectionStart = cursorPos + 1;
+            textarea.selectionEnd = cursorPos + 1;
+            showToast('✎ Hashtag agregado');
+        }
 
-            async function cargarPublicaciones() {
-                // Aquí se cargarán las publicaciones del backend
-                // Por ahora, mostramos el estado vacío
-            }
-        });
+        function insertarEmoji() {
+            const emojis = ['😊', '🔥', '✨', '🌟', '💎', '🚀', '🎯', '🏆', '⭐', '💫'];
+            const emoji = emojis[Math.floor(Math.random() * emojis.length)];
+            const textarea = document.getElementById('postContent');
+            const cursorPos = textarea.selectionStart;
+            const textBefore = textarea.value.substring(0, cursorPos);
+            const textAfter = textarea.value.substring(cursorPos);
+            textarea.value = textBefore + emoji + textAfter;
+            textarea.focus();
+            textarea.selectionStart = cursorPos + 1;
+            textarea.selectionEnd = cursorPos + 1;
+        }
+
+        function agregarImagen() {
+            showToast('🖼️ Función de imágenes próximamente');
+        }
+
+        function agregarEncuesta() {
+            showToast('📊 Función de encuestas próximamente');
+        }
+
+        function showToast(msg, type = '') {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.className = 'toast show';
+            if (type === 'error') t.classList.add('error');
+            else t.classList.remove('error');
+            clearTimeout(t._timeout);
+            t._timeout = setTimeout(() => t.classList.remove('show'), 3500);
+        }
     </script>
 </body>
 </html>
