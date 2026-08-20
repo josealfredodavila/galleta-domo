@@ -363,18 +363,37 @@
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
             gap: 10px;
+            max-height: 400px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+        .calendario-grid::-webkit-scrollbar {
+            width: 4px;
+        }
+        .calendario-grid::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 2px;
+        }
+        .calendario-grid::-webkit-scrollbar-thumb {
+            background: var(--gold);
+            border-radius: 2px;
         }
         .evento-card {
-            background: rgba(0, 0, 0, 0.2);
-            border: 1px solid var(--glass-border);
+            background: rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: 12px;
             padding: 12px 14px;
             transition: var(--transition);
             cursor: pointer;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
         }
         .evento-card:hover {
-            border-color: rgba(212, 175, 55, 0.2);
-            transform: translateY(-2px);
+            border-color: rgba(212, 175, 55, 0.3);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 40px rgba(212, 175, 55, 0.15);
+            background: rgba(255, 255, 255, 0.10);
         }
         .evento-card .fecha {
             font-size: 0.55rem;
@@ -400,6 +419,12 @@
             border-radius: 10px;
             background: rgba(212, 175, 55, 0.05);
             display: inline-block;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .evento-card .recordatorio:hover {
+            background: rgba(212, 175, 55, 0.15);
+            color: var(--gold);
         }
 
         /* ===== LIVE GRID ===== */
@@ -602,6 +627,7 @@
             text-align: center;
             padding: 60px 20px;
             color: var(--text-muted);
+            grid-column: 1 / -1;
         }
         .empty-state .icon {
             font-size: 2.5rem;
@@ -622,6 +648,29 @@
         .empty-state p {
             font-size: 0.85rem;
             letter-spacing: 0.3px;
+        }
+        .empty-state .btn-crear-live-empty {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: linear-gradient(135deg, var(--live-red), #d63031);
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 30px;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: var(--transition);
+            letter-spacing: 0.5px;
+            box-shadow: var(--live-glow);
+            animation: pulse-live-header 1.5s ease-in-out infinite;
+            margin-top: 16px;
+        }
+        .empty-state .btn-crear-live-empty:hover {
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 0 60px rgba(255, 0, 68, 0.4);
         }
 
         /* ===== TOAST ===== */
@@ -857,14 +906,14 @@
             .btn-crear-live { width: 100%; justify-content: center; font-size: 0.7rem; padding: 10px 20px; }
             .modal-live { padding: 12px; }
             .modal-live-body { padding: 12px; gap: 12px; }
-            .calendario-grid { grid-template-columns: 1fr 1fr; }
+            .calendario-grid { grid-template-columns: 1fr 1fr; max-height: 300px; }
             .live-header { flex-direction: column; align-items: stretch; }
             .live-header .live-stats { justify-content: center; }
         }
 
         @media (max-width: 480px) {
             .live-grid { grid-template-columns: 1fr; }
-            .calendario-grid { grid-template-columns: 1fr; }
+            .calendario-grid { grid-template-columns: 1fr; max-height: 250px; }
             .live-card .live-thumbnail .live-badge { font-size: 0.45rem; padding: 2px 10px; }
             .live-card .live-thumbnail .live-viewers { font-size: 0.6rem; padding: 2px 10px; }
             .live-card .live-info .live-title { font-size: 0.75rem; }
@@ -915,23 +964,23 @@
                 <button class="ver-todos" onclick="showToast('◈ Cargando todos los eventos...')">Ver todos →</button>
             </div>
             <div class="calendario-grid">
-                <div class="evento-card" onclick="showToast('🔔 Recordatorio: Degustación de domos')">
+                <div class="evento-card" onclick="showToast('◉ Recordatorio: Degustación de domos')">
                     <div class="fecha">✦ 25 AGO · 19:00</div>
                     <div class="titulo">Degustación de domos especiales</div>
                     <div class="host">por Ana Martínez</div>
-                    <span class="recordatorio">🔔 Recordar</span>
+                    <span class="recordatorio" onclick="event.stopPropagation();showToast('◉ Recordatorio agregado')">◉ Recordar</span>
                 </div>
-                <div class="evento-card" onclick="showToast('🔔 Recordatorio: Torneo de tokens')">
+                <div class="evento-card" onclick="showToast('◉ Recordatorio: Torneo de tokens')">
                     <div class="fecha">✦ 27 AGO · 16:00</div>
                     <div class="titulo">Torneo de tokens en vivo</div>
                     <div class="host">por Carlos López</div>
-                    <span class="recordatorio">🔔 Recordar</span>
+                    <span class="recordatorio" onclick="event.stopPropagation();showToast('◉ Recordatorio agregado')">◉ Recordar</span>
                 </div>
-                <div class="evento-card" onclick="showToast('🔔 Recordatorio: Sesión musical')">
+                <div class="evento-card" onclick="showToast('◉ Recordatorio: Sesión musical')">
                     <div class="fecha">✦ 29 AGO · 21:00</div>
                     <div class="titulo">Sesión musical con Sariel's</div>
                     <div class="host">por María García</div>
-                    <span class="recordatorio">🔔 Recordar</span>
+                    <span class="recordatorio" onclick="event.stopPropagation();showToast('◉ Recordatorio agregado')">◉ Recordar</span>
                 </div>
             </div>
         </div>
@@ -954,6 +1003,9 @@
                 <span class="icon">◈</span>
                 <h3>Sin transmisiones activas</h3>
                 <p>Inicia una transmisión para compartir en vivo</p>
+                <button class="btn-crear-live-empty" onclick="crearTransmision()">
+                    <span>◉</span> Iniciar transmisión
+                </button>
             </div>
         </div>
 
@@ -1011,6 +1063,12 @@
         // ================================================================
         document.addEventListener('DOMContentLoaded', function() {
             initStars();
+
+            // Verificar token
+            const token = localStorage.getItem('galleta_token');
+            if (!token) {
+                window.location.href = '/';
+            }
 
             console.log('◈ Sariel\'s - Live Ultra Mega Pro');
             console.log('◉ Transmisiones en vivo listas');
