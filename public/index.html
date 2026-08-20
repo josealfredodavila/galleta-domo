@@ -1761,7 +1761,7 @@
         }
 
         // ================================================================
-        // INTERNET PACKS
+        // INTERNET PACKS - ⚠️ NO TOCAR - Se mantiene igual
         // ================================================================
         function cargarPacksMini() {
             const saved = localStorage.getItem('sariels_internet_packs');
@@ -1814,7 +1814,6 @@
                 showToast('⚠️ Ingresa tu número o ID', 'error');
                 return;
             }
-            // Guardar orden
             const orders = JSON.parse(localStorage.getItem('sariels_internet_orders') || '[]');
             orders.push({
                 phone: phone,
@@ -1928,17 +1927,14 @@
                 actualizarUIWallet(savedWallet);
             }
 
-            // Enter para CAPA 1
             document.getElementById('qrAdminPassword').addEventListener('keydown', function(e) {
                 if (e.key === 'Enter') verificarPasswordAdmin();
             });
 
-            // Enter para CAPA 2
             document.getElementById('qrGeneratePassword').addEventListener('keydown', function(e) {
                 if (e.key === 'Enter') verificarPasswordGenerar();
             });
 
-            // Verificar sesión de admin
             if (localStorage.getItem('sariels_qr_auth') === 'true') {
                 document.getElementById('qrAdminLogin').style.display = 'none';
                 document.getElementById('qrAdminContent').style.display = 'block';
@@ -1958,7 +1954,9 @@
             console.log('🔑 CAPA 2 (Generar):', QR_GENERATE_PASSWORD);
         });
 
-        // Exponer funciones globales
+        // ================================================================
+        // EXPONER FUNCIONES GLOBALES
+        // ================================================================
         window.cambiarTab = cambiarTab;
         window.abrirQRAdmin = abrirQRAdmin;
         window.verificarPasswordAdmin = verificarPasswordAdmin;
