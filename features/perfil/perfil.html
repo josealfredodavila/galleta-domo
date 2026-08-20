@@ -6,7 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>👤 Perfil · Sariel's</title>
     <link rel="stylesheet" href="/styles.css" />
-    <link rel="stylesheet" href="/features/perfil/perfil.css" />
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍪</text></svg>" />
 </head>
 <body>
@@ -32,98 +31,129 @@
             </div>
         </header>
 
-        <!-- ===== PERFIL ===== -->
+        <!-- ===== PERFIL MEJORADO ===== -->
         <main class="main">
             <div class="container">
-                <div class="perfil-container">
 
-                    <!-- Cabecera del perfil -->
-                    <div class="perfil-header">
-                        <div class="foto-perfil">
-                            <img id="fotoPerfil" src="/default-avatar.png" alt="Foto de perfil" />
-                            <button id="cambiarFoto" class="btn-camara">📸</button>
-                            <input type="file" id="inputFoto" accept="image/*" hidden />
-                        </div>
-                        <div class="perfil-info">
-                            <h2 id="nombreUsuario">Usuario</h2>
-                            <p class="wallet-info-perfil">🔗 <span id="walletPerfil">0x1234...5678</span></p>
-                            <div class="estado-perfil">
-                                <span class="estado-indicador" id="estadoIndicador"></span>
-                                <span id="estadoTexto">Conectado</span>
-                            </div>
-                        </div>
-                        <div class="perfil-acciones">
-                            <button class="btn-editar" id="editarPerfil">✏️ Editar</button>
-                            <button class="btn-agregar" id="agregarAmigos">👥 Agregar Amigos</button>
-                        </div>
+                <!-- ===== PERFIL ===== -->
+                <div class="profile-card">
+                    <div class="profile-avatar" id="profileAvatar">
+                        <span id="avatarText">👤</span>
+                        <div class="edit-badge"><i class="fas fa-camera"></i></div>
                     </div>
-
-                    <!-- Estadísticas -->
-                    <div class="perfil-stats">
-                        <div class="stat-item">
-                            <span class="stat-label">🍪 Domos</span>
-                            <span class="stat-value" id="statsDomos">0</span>
+                    <div class="profile-info">
+                        <div class="name" id="profileName">Usuario</div>
+                        <div class="sub" id="profileSub">⚡ Sariel's · Miembro Activo</div>
+                        <div class="member-tag">
+                            <i class="fas fa-user-check"></i> <span id="memberSince">Miembro desde 2024</span>
                         </div>
-                        <div class="stat-item">
-                            <span class="stat-label">💰 Tokens</span>
-                            <span class="stat-value" id="statsTokens">0/12</span>
+                        <div class="profile-verification">
+                            <span id="verificationBadge">
+                                <i class="fas fa-times-circle"></i> No verificado
+                            </span>
+                            <button class="btn btn-gold btn-sm" id="btnVerifySmall" style="font-size:0.45rem;padding:2px 8px;">
+                                <i class="fas fa-check-circle"></i> Verificar
+                            </button>
                         </div>
-                        <div class="stat-item">
-                            <span class="stat-label">🏆 NFT</span>
-                            <span class="stat-value" id="statsNft">No</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-label">👥 Amigos</span>
-                            <span class="stat-value" id="statsAmigos">0</span>
-                        </div>
+                        <button class="btn-edit-profile" onclick="abrirEditorPerfil()">
+                            <i class="fas fa-pen"></i> Editar perfil
+                        </button>
                     </div>
-
-                    <!-- Esim -->
-                    <div class="perfil-esim">
-                        <h3>📱 Esim</h3>
-                        <div class="esim-controls">
-                            <button id="btnWifi" class="btn-esim activo">📶 WiFi</button>
-                            <button id="btnDatos" class="btn-esim">📡 Datos</button>
-                        </div>
-                        <p class="esim-estado">Estado: <span id="esimEstado">Conectado por WiFi</span></p>
+                    <div class="profile-stats">
+                        <div class="stat"><div class="number" id="statContactos">0</div><div class="label">Contactos</div></div>
+                        <div class="stat"><div class="number" id="statTokens">0</div><div class="label">Tokens</div></div>
+                        <div class="stat"><div class="number" id="statNft">0</div><div class="label">NFT</div></div>
+                        <div class="stat"><div class="number" id="statSeguidores">0</div><div class="label">Seguidores</div></div>
                     </div>
-
-                    <!-- Seguridad -->
-                    <div class="perfil-seguridad">
-                        <h3>🔒 Seguridad</h3>
-                        <div class="seguridad-items">
-                            <div class="seguridad-item">
-                                <span>🔐 Verificación en 2 pasos</span>
-                                <label class="switch">
-                                    <input type="checkbox" id="toggle2fa" />
-                                    <span class="slider"></span>
-                                </label>
-                            </div>
-                            <div class="seguridad-item">
-                                <span>✅ Verificación de identidad</span>
-                                <span class="badge" id="verificadoBadge">Pendiente</span>
-                            </div>
-                            <div class="seguridad-item">
-                                <span>🚫 Anti-hakeo activo</span>
-                                <span class="badge ok">Activado</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Contactos -->
-                    <div class="perfil-contactos">
-                        <h3>👥 Contactos</h3>
-                        <div class="contactos-actions">
-                            <button id="importarContactos">📱 Importar de celular</button>
-                            <button id="agregarContacto">➕ Agregar manual</button>
-                            <button id="recomendados">🌟 Recomendados</button>
-                        </div>
-                        <div id="listaContactos" class="lista-contactos">
-                            <p class="empty-message">No hay contactos aún</p>
-                        </div>
-                    </div>
-
                 </div>
+
+                <!-- ===== eSIM DASHBOARD ===== -->
+                <div class="esim-dashboard" id="esimDashboard">
+                    <div class="esim-header">
+                        <span class="title">🌐 Mi eSIM Sariel's</span>
+                        <span class="status-badge-esim inactiva" id="esimStatusBadge">● Inactiva</span>
+                    </div>
+                    <div class="datos-row" id="esimDatosRow">
+                        <div class="dato-item">
+                            <div class="numero" id="esimRestantes">--</div>
+                            <div class="label">MB Restantes</div>
+                        </div>
+                        <div class="dato-item">
+                            <div class="numero" id="esimConsumidos">--</div>
+                            <div class="label">MB Consumidos</div>
+                        </div>
+                        <div class="dato-item">
+                            <div class="numero" id="esimTotal">--</div>
+                            <div class="label">MB Total</div>
+                        </div>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="fill" id="esimProgress" style="width:0%"></div>
+                    </div>
+                    <div class="esim-actions">
+                        <button class="btn btn-gold" id="btnActivarEsim">
+                            <i class="fas fa-sim-card"></i> Activar eSIM
+                        </button>
+                        <button class="btn btn-primary" id="btnRecargar" style="display:none;">
+                            <i class="fas fa-plus"></i> Recargar
+                        </button>
+                        <button class="btn btn-outline" id="btnVerHistorial" style="display:none;">
+                            <i class="fas fa-history"></i> Historial
+                        </button>
+                    </div>
+                    <div style="margin-top:6px;font-size:0.5rem;color:var(--text-muted);text-align:center;font-family:'Orbitron',monospace;" id="esimFechaRenovacion">
+                        Renovación: --
+                    </div>
+                </div>
+
+                <!-- ===== WALLET ===== -->
+                <div class="wallet-section" id="walletSection">
+                    <button class="btn btn-sm btn-primary" id="btnConnectWallet">
+                        <i class="fas fa-plug"></i> Conectar Wallet
+                    </button>
+                    <button class="btn btn-sm btn-gold" id="btnDisconnectWallet" style="display:none;">
+                        <i class="fas fa-power-off"></i> Desconectar
+                    </button>
+                    <span class="wallet-address" id="walletAddressDisplay">--</span>
+                    <span class="wallet-badge disconnected" id="walletStatusBadge">● Desconectado</span>
+                </div>
+
+                <!-- ===== TABS ===== -->
+                <div class="tabs">
+                    <button class="tab active" data-tab="contactos" onclick="cambiarTab('contactos')">
+                        <i class="fas fa-users"></i> Contactos
+                    </button>
+                    <button class="tab" data-tab="solicitudes" onclick="cambiarTab('solicitudes')">
+                        <i class="fas fa-user-plus"></i> Solicitudes
+                        <span class="badge hidden" id="badgeSolicitudes">0</span>
+                    </button>
+                    <button class="tab" data-tab="descubrir" onclick="cambiarTab('descubrir')">
+                        <i class="fas fa-compass"></i> Descubrir
+                    </button>
+                    <button class="tab" data-tab="grupos" onclick="cambiarTab('grupos')">
+                        <i class="fas fa-layer-group"></i> Grupos
+                    </button>
+                    <button class="tab" data-tab="bloqueados" onclick="cambiarTab('bloqueados')">
+                        <i class="fas fa-ban"></i> Bloqueados
+                    </button>
+                </div>
+
+                <!-- ===== CONTACTOS ===== -->
+                <div id="tab-contactos">
+                    <div class="search-filter-bar">
+                        <input type="text" id="searchContactos" placeholder="🔍 Buscar contactos..." oninput="filtrarContactos()">
+                        <button class="filter-btn active" data-filter="todos" onclick="filtrarContactosPor('todos')">Todos</button>
+                        <button class="filter-btn" data-filter="online" onclick="filtrarContactosPor('online')">🟢 En línea</button>
+                        <button class="filter-btn" data-filter="favoritos" onclick="filtrarContactosPor('favoritos')">⭐ Favoritos</button>
+                        <button class="filter-btn" data-filter="recientes" onclick="filtrarContactosPor('recientes')">🕐 Recientes</button>
+                    </div>
+                    <div class="contact-list" id="listaContactos"></div>
+                </div>
+                <div id="tab-solicitudes" style="display:none;"><div id="listaSolicitudes"></div></div>
+                <div id="tab-descubrir" style="display:none;"><div id="listaDescubrir"></div></div>
+                <div id="tab-grupos" style="display:none;"><div id="listaGrupos"></div></div>
+                <div id="tab-bloqueados" style="display:none;"><div id="listaBloqueados"></div></div>
+
             </div>
         </main>
 
@@ -134,6 +164,8 @@
                 <p>🍪 Galleta Domo · Powered by Polygon</p>
                 <p class="footer-small">
                     <a href="/terminos.html" target="_blank">📜 Términos y Condiciones</a>
+                    &nbsp;·&nbsp;
+                    <a href="/privacidad.html" target="_blank">🔒 Privacidad</a>
                 </p>
             </div>
         </footer>
@@ -141,6 +173,7 @@
     </div>
 
     <!-- ===== SCRIPTS ===== -->
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.8.0/dist/web3.min.js"></script>
     <script src="/app.js"></script>
     <script src="/features/perfil/perfil.js"></script>
 </body>
