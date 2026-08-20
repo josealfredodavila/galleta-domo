@@ -1,0 +1,407 @@
+/* public/features/muro/muro.css */
+
+/* ================================================================
+   ESTILOS ESPECÍFICOS DEL MURO
+   ================================================================ */
+
+.muro-container {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+/* ================================================================
+   FORMULARIO DE PUBLICACIÓN
+   ================================================================ */
+
+.post-form {
+    background: rgba(15, 45, 26, 0.25);
+    border: 1px solid rgba(212, 175, 55, 0.15);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 24px;
+    backdrop-filter: blur(10px);
+}
+
+.post-form textarea {
+    width: 100%;
+    padding: 12px 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(212, 175, 55, 0.15);
+    border-radius: 12px;
+    color: #e8f0f8;
+    font-size: 0.95rem;
+    font-family: 'Space Grotesk', sans-serif;
+    resize: vertical;
+    min-height: 80px;
+    transition: all 0.3s ease;
+}
+
+.post-form textarea:focus {
+    outline: none;
+    border-color: #D4AF37;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.post-form .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 12px;
+    gap: 10px;
+}
+
+/* ================================================================
+   BOTONES
+   ================================================================ */
+
+.btn-publicar {
+    background: linear-gradient(135deg, #D4AF37, #b8923a);
+    color: #05080f;
+    border: none;
+    padding: 10px 24px;
+    border-radius: 30px;
+    font-family: 'Orbitron', monospace;
+    font-weight: 700;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-publicar:hover {
+    transform: scale(1.02);
+    box-shadow: 0 0 30px rgba(212, 175, 55, 0.3);
+}
+
+.btn-publicar:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+.btn-adjuntar {
+    background: rgba(212, 175, 55, 0.1);
+    border: 1px solid rgba(212, 175, 55, 0.15);
+    color: #D4AF37;
+    padding: 10px 16px;
+    border-radius: 30px;
+    font-family: 'Orbitron', monospace;
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-adjuntar:hover {
+    background: rgba(212, 175, 55, 0.2);
+}
+
+/* ================================================================
+   TARJETA DE PUBLICACIÓN
+   ================================================================ */
+
+.post-card {
+    background: rgba(15, 45, 26, 0.3);
+    border: 1px solid rgba(212, 175, 55, 0.15);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 16px;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+}
+
+.post-card:hover {
+    border-color: rgba(212, 175, 55, 0.3);
+}
+
+.post-card .post-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.post-card .post-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #0F2D1A, #D4AF37);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    color: white;
+    font-size: 1rem;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.post-card .post-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.post-card .post-author {
+    font-family: 'Orbitron', monospace;
+    font-weight: 700;
+    color: #D4AF37;
+    font-size: 0.9rem;
+}
+
+.post-card .post-author .badge-verificado {
+    font-size: 0.5rem;
+    background: rgba(212, 175, 55, 0.15);
+    color: #D4AF37;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-family: 'Orbitron', monospace;
+    margin-left: 6px;
+}
+
+.post-card .post-date {
+    font-size: 0.7rem;
+    color: #4a6a8a;
+}
+
+.post-card .post-content {
+    color: #e8f0f8;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin-bottom: 12px;
+    word-wrap: break-word;
+}
+
+.post-card .post-media {
+    margin: 12px -20px 12px -20px;
+}
+
+.post-card .post-media img {
+    width: 100%;
+    max-height: 400px;
+    object-fit: cover;
+}
+
+.post-card .post-media video {
+    width: 100%;
+    max-height: 400px;
+}
+
+.post-card .post-actions {
+    display: flex;
+    gap: 16px;
+    border-top: 1px solid rgba(212, 175, 55, 0.08);
+    padding-top: 12px;
+    flex-wrap: wrap;
+}
+
+.post-card .post-actions button {
+    background: none;
+    border: none;
+    color: #4a6a8a;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: 'Space Grotesk', sans-serif;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.post-card .post-actions button:hover {
+    color: #D4AF37;
+}
+
+.post-card .post-actions button.liked {
+    color: #ff3366;
+}
+
+.post-card .post-actions button .count {
+    font-size: 0.7rem;
+    opacity: 0.6;
+}
+
+.post-card .post-venta {
+    background: rgba(212, 175, 55, 0.05);
+    border: 1px solid rgba(212, 175, 55, 0.1);
+    border-radius: 12px;
+    padding: 12px 16px;
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.post-card .post-venta .precio {
+    font-family: 'Orbitron', monospace;
+    color: #D4AF37;
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.post-card .post-venta .cantidad {
+    color: #8ba3c7;
+    font-size: 0.85rem;
+}
+
+.post-card .post-venta .btn-comprar {
+    background: linear-gradient(135deg, #D4AF37, #b8923a);
+    color: #05080f;
+    border: none;
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-family: 'Orbitron', monospace;
+    font-size: 0.6rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.post-card .post-venta .btn-comprar:hover {
+    transform: scale(1.05);
+}
+
+/* ================================================================
+   COMENTARIOS
+   ================================================================ */
+
+.post-card .post-comentarios {
+    margin-top: 12px;
+    border-top: 1px solid rgba(212, 175, 55, 0.06);
+    padding-top: 12px;
+}
+
+.post-card .post-comentarios .comentario {
+    display: flex;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(212, 175, 55, 0.04);
+}
+
+.post-card .post-comentarios .comentario .avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #0F2D1A, #D4AF37);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.6rem;
+    color: white;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.post-card .post-comentarios .comentario .texto {
+    flex: 1;
+    font-size: 0.8rem;
+    color: #8ba3c7;
+}
+
+.post-card .post-comentarios .comentario .texto strong {
+    color: #e8f0f8;
+}
+
+.post-card .post-comentarios .input-comentario {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.post-card .post-comentarios .input-comentario input {
+    flex: 1;
+    padding: 8px 14px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(212, 175, 55, 0.1);
+    border-radius: 20px;
+    color: #e8f0f8;
+    font-size: 0.8rem;
+    font-family: 'Space Grotesk', sans-serif;
+}
+
+.post-card .post-comentarios .input-comentario input:focus {
+    outline: none;
+    border-color: #D4AF37;
+}
+
+.post-card .post-comentarios .input-comentario button {
+    background: linear-gradient(135deg, #D4AF37, #b8923a);
+    color: #05080f;
+    border: none;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-family: 'Orbitron', monospace;
+    font-size: 0.6rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+/* ================================================================
+   EMPTY STATE
+   ================================================================ */
+
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #4a6a8a;
+}
+
+.empty-state .icon {
+    font-size: 3rem;
+    display: block;
+    margin-bottom: 16px;
+}
+
+.empty-state h3 {
+    font-family: 'Orbitron', monospace;
+    font-size: 1.2rem;
+    color: #8ba3c7;
+}
+
+.empty-state p {
+    font-size: 0.9rem;
+}
+
+/* ================================================================
+   LOADING SPINNER
+   ================================================================ */
+
+.loading-spinner {
+    text-align: center;
+    padding: 40px 0;
+    color: #4a6a8a;
+}
+
+.loading-spinner .spinner {
+    display: inline-block;
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(212, 175, 55, 0.1);
+    border-top: 3px solid #D4AF37;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 12px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* ================================================================
+   RESPONSIVE
+   ================================================================ */
+
+@media (max-width: 768px) {
+    .muro-container { padding: 0 12px; }
+    .post-card { padding: 14px; }
+    .post-card .post-content { font-size: 0.85rem; }
+    .post-form { padding: 14px; }
+    .post-card .post-venta { flex-direction: column; align-items: stretch; text-align: center; }
+    .post-card .post-venta .btn-comprar { width: 100%; }
+}
+
+@media (max-width: 480px) {
+    .post-card .post-actions { gap: 8px; }
+    .post-card .post-actions button { font-size: 0.7rem; }
+    .post-card .post-media { margin: 8px -14px 8px -14px; }
+}
