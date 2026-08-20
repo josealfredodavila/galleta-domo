@@ -179,7 +179,7 @@ window.cerrarModalTransmision = function() {
     // Limpiar chat
     const messages = document.querySelector('.chat-messages');
     if (messages) {
-        messages.innerHTML = `<div class="empty-message">Sin mensajes aún</div>`;
+        messages.innerHTML = `<div class="empty-message">Sin mensajes aún</div>';
     }
 };
 
@@ -354,6 +354,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 cerrarModalTransmision();
             }
         });
+    }
+
+    // Verificar token
+    const token = localStorage.getItem('galleta_token');
+    if (!token) {
+        window.location.href = '/';
     }
 
     console.log('◈ Sariel\'s - Live Ultra Mega Pro');
