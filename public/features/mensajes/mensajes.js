@@ -1,6 +1,6 @@
 /* ================================================================
    MENSAJES ULTRA MEGA PRO - SARIEL'S
-   Lógica premium competitiva con Silicon Valley
+   Lógica premium - Sin redirección agresiva
    ================================================================ */
 
 // ================================================================
@@ -45,6 +45,18 @@ const btnEnviar = document.getElementById('btnEnviar');
 const chatNombre = document.querySelector('.chat-nombre');
 const chatEstado = document.querySelector('.chat-estado');
 const chatAvatar = document.querySelector('.chat-avatar');
+
+// ================================================================
+// VERIFICAR AUTENTICACIÓN (SIN REDIRECCIÓN)
+// ================================================================
+function verificarAutenticacion() {
+    const token = localStorage.getItem('galleta_token');
+    if (!token) {
+        showToast('⚠️ Conecta tu wallet para usar mensajería', 'warning');
+        return false;
+    }
+    return true;
+}
 
 // ================================================================
 // CONEXIÓN A SOCKET.IO
@@ -115,7 +127,6 @@ function mostrarNotificacionMensaje(data) {
     const mensaje = data.mensaje?.contenido || 'Nuevo mensaje';
     
     if (document.hidden) {
-        // Notificación del navegador
         if (Notification.permission === 'granted') {
             new Notification(`◈ ${usuario}`, {
                 body: mensaje,
@@ -133,6 +144,11 @@ function mostrarNotificacionMensaje(data) {
 async function cargarConversaciones() {
     try {
         const token = localStorage.getItem('galleta_token');
+        if (!token) {
+            cargarConversacionesEjemplo();
+            return;
+        }
+
         const response = await fetch('/api/mensajes/conversaciones', {
             headers: {
                 'Authorization': `Bearer ${token}`
@@ -186,7 +202,99 @@ async function cargarConversaciones() {
 
     } catch (error) {
         console.error('Error cargando conversaciones:', error);
+        cargarConversacionesEjemplo();
     }
+}
+
+// ================================================================
+// CONVERSACIONES DE EJEMPLO (MODO DEMO)
+// ================================================================
+function cargarConversacionesEjemplo() {
+    conversacionesList.innerHTML = `
+        <div class="conv-item active" data-id="1" onclick="seleccionarConversacionDemo(1)">
+            <div class="conv-avatar">✦</div>
+            <div class="conv-info">
+                <div class="conv-nombre">Ana Martínez</div>
+                <div class="conv-msg">Hola, ¿cómo estás?</div>
+            </div>
+            <div class="conv-meta">
+                <div class="conv-hora">14:30</div>
+                <span class="conv-badge">2</span>
+            </div>
+        </div>
+        <div class="conv-item" data-id="2" onclick="seleccionarConversacionDemo(2)">
+            <div class="conv-avatar">◆</div>
+            <div class="conv-info">
+                <div class="conv-nombre">Carlos López</div>
+                <div class="conv-msg">Nos vemos mañana</div>
+            </div>
+            <div class="conv-meta">
+                <div class="conv-hora">12:15</div>
+            </div>
+        </div>
+        <div class="conv-item" data-id="3" onclick="seleccionarConversacionDemo(3)">
+            <div class="conv-avatar">◈</div>
+            <div class="conv-info">
+                <div class="conv-nombre">María García</div>
+                <div class="conv-msg">Gracias por tu ayuda</div>
+            </div>
+            <div class="conv-meta">
+                <div class="conv-hora">Ayer</div>
+            </div>
+        </div>
+    `;
+    showToast('◈ Modo demostración - Conversaciones de ejemplo', 'warning');
+}
+
+function seleccionarConversacionDemo(id) {
+    const mensajesDemo = {
+        1: [
+            { tipo: 'recibido', texto: 'Hola, ¿cómo estás?', hora: '14:25' },
+            { tipo: 'enviado', texto: '¡Hola! Todo bien, ¿y tú?', hora: '14:27', leido: true },
+            { tipo: 'recibido', texto: 'Bien, quería preguntarte sobre los tokens', hora: '14:28' },
+            { tipo: 'enviado', texto: 'Claro, ¿qué necesitas saber?', hora: '14:30', leido: true }
+        ],
+        2: [
+            { tipo: 'recibido', texto: '¿Confirmamos la reunión?', hora: '12:10' },
+            { tipo: 'enviado', texto: 'Sí, a las 5 pm', hora: '12:12', leido: true },
+            { tipo: 'recibido', texto: 'Nos vemos mañana', hora: '12:15' }
+        ],
+        3: [
+            { tipo: 'enviado', texto: '¿Necesitas ayuda con algo más?', hora: '10:00', leido: true },
+            { tipo: 'recibido', texto: 'Gracias por tu ayuda', hora: '10:05' }
+        ]
+    };
+
+    const mensajes = mensajesDemo[id] || [];
+    const container = document.getElementById('chatMessages');
+    container.innerHTML = '';
+
+    if (mensajes.length === 0) {
+        container.innerHTML = `
+            <div class="empty-chat">
+                <span class="icon">◈</span>
+                <h3>Sin mensajes</h3>
+                <p>Inicia la conversación</p>
+            </div>
+        `;
+        return;
+    }
+
+    mensajes.forEach(msg => {
+        const div = document.createElement('div');
+        div.className = `msg ${msg.tipo}`;
+        div.innerHTML = `
+            ${msg.texto}
+            <span class="msg-hora">${msg.hora}</span>
+            ${msg.leido ? '<span class="msg-leido">✓✓ Leído</span>' : ''}
+        `;
+        container.appendChild(div);
+    });
+    container.scrollTop = container.scrollHeight;
+
+    document.querySelectorAll('.conv-item').forEach(el => el.classList.remove('active'));
+    const selected = document.querySelector(`.conv-item[data-id="${id}"]`);
+    if (selected) selected.classList.add('active');
 }
 
 // ================================================================
@@ -195,6 +303,10 @@ async function cargarConversaciones() {
 window.abrirConversacion = async function(contactoId) {
     try {
         const token = localStorage.getItem('galleta_token');
+        if (!token) {
+            seleccionarConversacionDemo(contactoId);
+            return;
+        }
 
         const response = await fetch(`/api/perfil/${contactoId}`, {
             headers: {
@@ -244,6 +356,11 @@ async function cargarMensajes(contactoId, page = 1) {
 
     try {
         const token = localStorage.getItem('galleta_token');
+        if (!token) {
+            cargandoMensajes = false;
+            return;
+        }
+
         const response = await fetch(`/api/mensajes/${contactoId}?page=${page}&limit=50`, {
             headers: {
                 'Authorization': `Bearer ${token}`
@@ -305,12 +422,10 @@ function crearElementoMensaje(mensaje, scroll = true) {
     
     let contenido = '';
     
-    // Contenido del mensaje
     if (mensaje.contenido) {
         contenido += `<span class="msg-text">${mensaje.contenido}</span>`;
     }
     
-    // Archivo adjunto
     if (mensaje.archivo) {
         const ext = mensaje.archivo.split('.').pop().toLowerCase();
         if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
@@ -334,12 +449,10 @@ function crearElementoMensaje(mensaje, scroll = true) {
         }
     }
     
-    // Comprobante
     if (mensaje.tipo === 'comprobante') {
         contenido += `<div class="msg-comprobante">◈ Comprobante de pago</div>`;
     }
     
-    // Reacciones
     if (mensaje.reacciones && Object.keys(mensaje.reacciones).length > 0) {
         const reaccionesStr = Object.entries(mensaje.reacciones)
             .map(([emoji, count]) => `${emoji} ${count}`)
@@ -347,7 +460,6 @@ function crearElementoMensaje(mensaje, scroll = true) {
         contenido += `<div class="msg-reacciones">${reaccionesStr}</div>`;
     }
     
-    // Hora
     contenido += `<span class="msg-hora">${formatearHora(fecha)}</span>`;
     
     div.innerHTML = contenido;
@@ -399,7 +511,6 @@ async function enviarMensaje() {
         agregarMensajeAlChat(data.mensaje);
         cargarConversaciones();
 
-        // Indicador de typing
         if (socket) {
             socket.emit('typing', {
                 userId: conversacionActual._id,
@@ -441,6 +552,7 @@ function mostrarIndicadorEscritura(userName) {
 async function marcarMensajesComoLeidos(contactoId) {
     try {
         const token = localStorage.getItem('galleta_token');
+        if (!token) return;
         await fetch(`/api/mensajes/leer/${contactoId}`, {
             method: 'PUT',
             headers: {
@@ -486,15 +598,23 @@ function actualizarEstadoContacto(userId, online) {
 // ================================================================
 // NUEVA CONVERSACIÓN
 // ================================================================
-async function nuevaConversacion() {
+window.nuevaConversacion = function() {
     const wallet = prompt('◈ Ingresa la dirección wallet del usuario:');
     if (!wallet || wallet.length < 10) {
         showToast('⚠️ Ingresa una wallet válida', 'warning');
         return;
     }
+    buscarYAgregarConversacion(wallet);
+};
 
+async function buscarYAgregarConversacion(wallet) {
     try {
         const token = localStorage.getItem('galleta_token');
+        if (!token) {
+            showToast('⚠️ Conecta tu wallet para iniciar conversaciones', 'warning');
+            return;
+        }
+
         const response = await fetch(`/api/perfil/buscar?wallet=${wallet}`, {
             headers: {
                 'Authorization': `Bearer ${token}`
@@ -561,45 +681,12 @@ function cargarModo() {
 // ================================================================
 // INICIALIZAR
 // ================================================================
-document.addEventListener('DOMContentLoaded', async function() {
+document.addEventListener('DOMContentLoaded', function() {
     cargarModo();
-
-    try {
-        const token = localStorage.getItem('galleta_token');
-        if (!token) {
-            window.location.href = '/';
-            return;
-        }
-
-        const response = await fetch('/api/perfil', {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
-
-        if (response.ok) {
-            usuarioActual = await response.json();
-            localStorage.setItem('userId', usuarioActual._id);
-        }
-    } catch (error) {
-        console.error('Error cargando usuario:', error);
-    }
-
+    verificarAutenticacion();
     conectarSocket();
-    await cargarConversaciones();
+    cargarConversaciones();
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const contactoId = urlParams.get('contacto');
-    if (contactoId) {
-        await abrirConversacion(contactoId);
-    }
-
-    if (!conversacionActual) {
-        chatInput.disabled = true;
-        btnEnviar.disabled = true;
-    }
-
-    // Eventos
     btnEnviar.addEventListener('click', enviarMensaje);
 
     chatInput.addEventListener('keydown', function(e) {
@@ -609,7 +696,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     });
 
-    // Scroll infinito
     chatMessages.addEventListener('scroll', function() {
         if (this.scrollTop === 0) {
             cargarMasMensajes();
@@ -645,12 +731,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     btnModo.onclick = toggleModo;
     document.body.appendChild(btnModo);
 
-    // Notificaciones
     if ('Notification' in window && Notification.permission === 'default') {
         Notification.requestPermission();
     }
 
-    // Verificar wallet
+    // Verificar wallet (solo UI, sin redirigir)
     const token = localStorage.getItem('galleta_token');
     const connectBtn = document.getElementById('connectWallet');
     if (token && connectBtn) {
@@ -660,13 +745,14 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     if (connectBtn) {
         connectBtn.addEventListener('click', function() {
-            window.location.href = '/';
+            if (confirm('⚠️ ¿Quieres ir al inicio para conectar tu wallet?')) {
+                window.location.href = '/';
+            }
         });
     }
 
-    console.log('◈ Sariel\'s - Mensajes Ultra Mega Pro');
+    console.log('◈ Sariel\'s - Mensajes Ultra Mega Pro (sin redirección)');
     console.log('◆ Conversaciones cargadas');
-    console.log('◉ Innovaciones: Reacciones, Archivos, Scroll infinito, Modo oscuro, Notificaciones');
 });
 
 // ================================================================
