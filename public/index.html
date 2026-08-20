@@ -98,6 +98,46 @@
                 justify-content: center;
             }
         }
+
+        /* ===== FOOTER CON INFORMACIÓN DE PAGO ===== */
+        .footer-pagos {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(212, 168, 87, 0.08);
+            font-size: 0.65rem;
+            color: var(--text-secondary);
+        }
+        .footer-pagos .pago-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .footer-pagos .pago-item .label {
+            font-weight: 600;
+            color: var(--gold-cosmic);
+            min-width: 60px;
+        }
+        .footer-pagos .pago-item .valor {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.6rem;
+            color: var(--text-primary);
+            word-break: break-all;
+        }
+        .footer-pagos .pago-item .copy-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 0.7rem;
+            transition: all 0.3s ease;
+        }
+        .footer-pagos .pago-item .copy-btn:hover {
+            color: var(--gold-cosmic);
+        }
     </style>
 </head>
 <body>
@@ -282,12 +322,38 @@
             </div>
         </main>
 
-        <!-- ===== FOOTER LIMPIO (SIN ENLACES ADICIONALES) ===== -->
+        <!-- ===== FOOTER CON INFORMACIÓN DE PAGO ===== -->
         <footer class="footer">
             <div class="footer-content">
                 <p class="footer-brand">✦ Sariel's · Sabor al Paladar ✦</p>
                 <p>◈ Galleta Domo · Powered by Polygon</p>
-                <p class="footer-small" style="font-size: 0.65rem; opacity: 0.4; margin-top: 4px;">
+
+                <div class="footer-pagos">
+                    <div class="pago-item">
+                        <span class="label">🏦 Banco:</span>
+                        <span class="valor">Arcus</span>
+                    </div>
+                    <div class="pago-item">
+                        <span class="label">🔢 CLABE:</span>
+                        <span class="valor" id="clabeValue">706969899812898548</span>
+                        <button class="copy-btn" onclick="copiarTexto('clabeValue')" title="Copiar CLABE">📋</button>
+                    </div>
+                    <div class="pago-item" style="margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(212, 168, 87, 0.05);">
+                        <span class="label">🟢 USDT/USDC:</span>
+                        <span class="valor" id="walletValue">0x45c6455AA01356609D96b659c6eB880B7e1D046D</span>
+                        <button class="copy-btn" onclick="copiarTexto('walletValue')" title="Copiar wallet">📋</button>
+                    </div>
+                    <div class="pago-item">
+                        <span class="label">🔗 Red:</span>
+                        <span class="valor">Polygon</span>
+                    </div>
+                    <div class="pago-item" style="font-size: 0.55rem; color: var(--text-muted); opacity: 0.6;">
+                        <span class="label">⚠️</span>
+                        <span>Únicamente enviar USDC/USDT por red Polygon. Otras redes podrían perderse.</span>
+                    </div>
+                </div>
+
+                <p class="footer-small" style="font-size: 0.65rem; opacity: 0.4; margin-top: 12px;">
                     Es.stoks · Csariel's · WEB3
                 </p>
             </div>
@@ -344,6 +410,24 @@
 
             actualizarBoton();
         });
+
+        // ================================================================
+        // FUNCIÓN PARA COPIAR TEXTO
+        // ================================================================
+        function copiarTexto(id) {
+            const elemento = document.getElementById(id);
+            const texto = elemento.textContent;
+            navigator.clipboard.writeText(texto).then(() => {
+                const btn = elemento.parentElement.querySelector('.copy-btn');
+                const originalText = btn.textContent;
+                btn.textContent = '✅';
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                }, 2000);
+            }).catch(() => {
+                alert('📋 Copia manual: ' + texto);
+            });
+        }
     </script>
 </body>
 </html>
