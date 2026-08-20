@@ -1,12 +1,69 @@
-/* public/features/mensajes/contactos.css */
+/* ================================================================
+   CONTACTOS ULTRA MEGA PRO - SARIEL'S
+   Estilos premium competitivos con Silicon Valley
+   ================================================================ */
+
+/* ===== VARIABLES GLOBALES ===== */
+:root {
+    --gold: #D4AF37;
+    --gold-dark: #b8923a;
+    --gold-light: #e8c84a;
+    --gold-bright: #f0d060;
+    --green-deep: #0F2D1A;
+    --green-mid: #1a4a2a;
+    --green-bright: #2a6a3a;
+    --space: #05080f;
+    --text-primary: #f0f4f8;
+    --text-secondary: #c0d8e8;
+    --text-muted: #8aa8b8;
+    --glass-bg: rgba(15, 45, 26, 0.55);
+    --glass-border: rgba(212, 175, 55, 0.15);
+    --shadow-gold: 0 8px 32px rgba(212, 175, 55, 0.25);
+    --shadow-gold-strong: 0 0 60px rgba(212, 175, 55, 0.15);
+    --radius: 16px;
+    --radius-xl: 24px;
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-slow: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    --success: #00d68f;
+    --danger: #ff3366;
+    --warning: #f7d44a;
+    --cyan: #00e5ff;
+    --purple: #a855f7;
+    --pink: #ec4899;
+    --live-red: #ff0044;
+}
 
 /* ================================================================
-   ESTILOS ESPECÍFICOS DE CONTACTOS
+   CONTACTOS CONTAINER
    ================================================================ */
 
 .contactos-container {
     max-width: 900px;
     margin: 0 auto;
+}
+
+/* ================================================================
+   CONTADORES
+   ================================================================ */
+
+.contactos-stats {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    letter-spacing: 0.3px;
+}
+
+.contactos-stats span {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.contactos-stats .numero {
+    color: var(--gold);
+    font-family: 'Orbitron', monospace;
 }
 
 /* ================================================================
@@ -16,44 +73,48 @@
 .search-bar {
     display: flex;
     gap: 12px;
-    margin-bottom: 20px;
+    margin-bottom: 16px;
     flex-wrap: wrap;
 }
 
 .search-bar input {
     flex: 1;
-    padding: 12px 16px;
+    padding: 10px 16px;
     background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(212, 175, 55, 0.15);
+    border: 1px solid var(--glass-border);
     border-radius: 30px;
-    color: #e8f0f8;
-    font-size: 0.95rem;
-    font-family: 'Space Grotesk', sans-serif;
-    transition: all 0.3s ease;
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    font-family: 'Inter', sans-serif;
+    transition: var(--transition);
+    outline: none;
     min-width: 200px;
 }
 
 .search-bar input:focus {
     outline: none;
-    border-color: #D4AF37;
+    border-color: var(--gold);
     background: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 0 30px rgba(212, 175, 55, 0.05);
 }
 
 .search-bar input::placeholder {
-    color: #4a6a8a;
+    color: var(--text-muted);
+    letter-spacing: 0.3px;
 }
 
 .search-bar .btn-agregar {
-    background: linear-gradient(135deg, #D4AF37, #b8923a);
-    color: #05080f;
+    background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+    color: var(--space);
     border: none;
-    padding: 12px 24px;
+    padding: 10px 24px;
     border-radius: 30px;
     font-family: 'Orbitron', monospace;
     font-weight: 700;
-    font-size: 0.8rem;
+    font-size: 0.7rem;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: var(--transition);
+    letter-spacing: 0.5px;
     white-space: nowrap;
     display: flex;
     align-items: center;
@@ -62,7 +123,7 @@
 
 .search-bar .btn-agregar:hover {
     transform: scale(1.02);
-    box-shadow: 0 0 30px rgba(212, 175, 55, 0.3);
+    box-shadow: var(--shadow-gold);
 }
 
 .search-bar .btn-agregar:disabled {
@@ -77,32 +138,33 @@
 
 .filtros {
     display: flex;
-    gap: 8px;
-    margin-bottom: 20px;
+    gap: 6px;
+    margin-bottom: 16px;
     flex-wrap: wrap;
 }
 
 .filtros .filtro {
-    padding: 6px 16px;
-    border: 1px solid rgba(212, 175, 55, 0.15);
+    padding: 5px 14px;
+    border: 1px solid var(--glass-border);
     border-radius: 20px;
     background: transparent;
-    color: #4a6a8a;
+    color: var(--text-muted);
     font-family: 'Orbitron', monospace;
-    font-size: 0.65rem;
+    font-size: 0.6rem;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: var(--transition);
+    letter-spacing: 0.3px;
 }
 
 .filtros .filtro:hover {
     border-color: rgba(212, 175, 55, 0.3);
-    color: #e8f0f8;
+    color: var(--text-secondary);
 }
 
 .filtros .filtro.active {
     background: rgba(212, 175, 55, 0.1);
-    border-color: #D4AF37;
-    color: #D4AF37;
+    border-color: var(--gold);
+    color: var(--gold);
 }
 
 /* ================================================================
@@ -110,8 +172,8 @@
    ================================================================ */
 
 .contactos-list {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: 1fr;
     gap: 8px;
 }
 
@@ -122,35 +184,40 @@
 .contacto-card {
     display: flex;
     align-items: center;
-    gap: 16px;
-    padding: 14px 18px;
-    background: rgba(15, 45, 26, 0.2);
-    border: 1px solid rgba(212, 175, 55, 0.08);
-    border-radius: 12px;
-    transition: all 0.3s ease;
+    gap: 14px;
+    padding: 12px 16px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius);
+    transition: var(--transition-slow);
     cursor: default;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
 }
 
 .contacto-card:hover {
     border-color: rgba(212, 175, 55, 0.2);
-    background: rgba(15, 45, 26, 0.3);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-gold);
 }
 
 .contacto-card .contacto-avatar {
-    width: 48px;
-    height: 48px;
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #0F2D1A, #D4AF37);
+    background: linear-gradient(135deg, var(--green-deep), var(--gold));
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: 700;
     color: white;
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     overflow: hidden;
     flex-shrink: 0;
+    font-family: 'Orbitron', monospace;
+    position: relative;
     border: 2px solid transparent;
-    transition: all 0.3s ease;
+    transition: var(--transition);
 }
 
 .contacto-card .contacto-avatar img {
@@ -160,32 +227,44 @@
 }
 
 .contacto-card .contacto-avatar.online {
-    border-color: #00b894;
+    border-color: var(--success);
 }
 
 .contacto-card .contacto-avatar.offline {
-    border-color: #4a6a8a;
+    border-color: var(--text-muted);
     opacity: 0.6;
 }
 
 .contacto-card .contacto-avatar.favorito {
-    border-color: #D4AF37;
+    border-color: var(--gold);
+}
+
+.contacto-card .contacto-avatar .online-dot {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--success);
+    border: 2px solid var(--space);
 }
 
 .contacto-card .contacto-avatar .favorito-badge {
     position: absolute;
-    bottom: -2px;
-    right: -2px;
-    background: #D4AF37;
-    color: #05080f;
+    top: -4px;
+    right: -4px;
+    font-size: 0.55rem;
+    background: var(--gold);
+    color: var(--space);
     border-radius: 50%;
     width: 18px;
     height: 18px;
-    font-size: 0.5rem;
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 2px solid #05080f;
+    border: 2px solid var(--space);
+    font-family: 'Orbitron', monospace;
 }
 
 .contacto-card .contacto-info {
@@ -195,8 +274,9 @@
 
 .contacto-card .contacto-info .nombre {
     font-weight: 600;
-    color: #e8f0f8;
-    font-size: 1rem;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    letter-spacing: 0.3px;
     display: flex;
     align-items: center;
     gap: 6px;
@@ -205,24 +285,27 @@
 
 .contacto-card .contacto-info .nombre .verified {
     font-size: 0.5rem;
-    background: rgba(212, 175, 55, 0.15);
-    color: #D4AF37;
+    background: rgba(212, 175, 55, 0.1);
+    color: var(--gold);
     padding: 1px 8px;
-    border-radius: 12px;
+    border-radius: 10px;
     font-family: 'Orbitron', monospace;
+    letter-spacing: 0.5px;
+    border: 1px solid rgba(212, 175, 55, 0.1);
 }
 
 .contacto-card .contacto-info .estado {
-    font-size: 0.75rem;
-    color: #4a6a8a;
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    letter-spacing: 0.3px;
 }
 
 .contacto-card .contacto-info .estado.online {
-    color: #00b894;
+    color: var(--success);
 }
 
 .contacto-card .contacto-info .estado.offline {
-    color: #4a6a8a;
+    color: var(--text-muted);
 }
 
 .contacto-card .contacto-info .contacto-meta {
@@ -234,53 +317,55 @@
 
 .contacto-card .contacto-info .contacto-meta span {
     font-size: 0.6rem;
-    color: #4a6a8a;
+    color: var(--text-muted);
     display: flex;
     align-items: center;
     gap: 4px;
+    letter-spacing: 0.2px;
 }
 
 .contacto-card .contacto-actions {
     display: flex;
-    gap: 4px;
+    gap: 2px;
     flex-shrink: 0;
 }
 
 .contacto-card .contacto-actions button {
     background: none;
     border: none;
-    color: #4a6a8a;
-    font-size: 1.1rem;
+    color: var(--text-muted);
+    font-size: 0.9rem;
     cursor: pointer;
-    transition: all 0.3s ease;
-    padding: 6px 8px;
+    transition: var(--transition);
+    padding: 4px 8px;
     border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
+    font-family: 'Inter', sans-serif;
 }
 
 .contacto-card .contacto-actions button:hover {
-    background: rgba(212, 175, 55, 0.1);
-    color: #D4AF37;
+    background: rgba(212, 175, 55, 0.05);
+    color: var(--gold);
 }
 
 .contacto-card .contacto-actions button.mensaje:hover {
-    color: #00b894;
+    color: var(--success);
 }
 
 .contacto-card .contacto-actions button.favorito.active {
-    color: #D4AF37;
+    color: var(--gold);
 }
 
 .contacto-card .contacto-actions button.eliminar:hover {
-    background: rgba(255, 51, 102, 0.1);
-    color: #ff3366;
+    background: rgba(255, 51, 102, 0.08);
+    color: var(--danger);
 }
 
 .contacto-card .contacto-actions button.bloquear:hover {
-    background: rgba(255, 51, 102, 0.1);
-    color: #ff3366;
+    background: rgba(255, 51, 102, 0.08);
+    color: var(--danger);
 }
 
 /* ================================================================
@@ -301,13 +386,13 @@
 .solicitudes-section .solicitudes-header h3 {
     font-family: 'Orbitron', monospace;
     font-size: 0.8rem;
-    color: #8ba3c7;
+    color: var(--text-secondary);
     text-transform: uppercase;
     letter-spacing: 1px;
 }
 
 .solicitudes-section .solicitudes-header .badge-solicitudes {
-    background: #ff3366;
+    background: var(--danger);
     color: white;
     font-size: 0.6rem;
     padding: 2px 10px;
@@ -318,19 +403,24 @@
 .solicitud-card {
     display: flex;
     align-items: center;
-    gap: 16px;
-    padding: 12px 16px;
+    gap: 14px;
+    padding: 10px 14px;
     background: rgba(212, 175, 55, 0.05);
-    border: 1px solid rgba(212, 175, 55, 0.1);
-    border-radius: 12px;
+    border: 1px solid rgba(212, 175, 55, 0.08);
+    border-radius: var(--radius);
     margin-bottom: 8px;
+    transition: var(--transition);
+}
+
+.solicitud-card:hover {
+    border-color: rgba(212, 175, 55, 0.15);
 }
 
 .solicitud-card .solicitud-avatar {
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #0F2D1A, #D4AF37);
+    background: linear-gradient(135deg, var(--green-deep), var(--gold));
     display: flex;
     align-items: center;
     justify-content: center;
@@ -339,6 +429,7 @@
     font-size: 1rem;
     flex-shrink: 0;
     overflow: hidden;
+    font-family: 'Orbitron', monospace;
 }
 
 .solicitud-card .solicitud-avatar img {
@@ -353,18 +444,19 @@
 
 .solicitud-card .solicitud-info .nombre {
     font-weight: 600;
-    color: #e8f0f8;
-    font-size: 0.9rem;
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    letter-spacing: 0.3px;
 }
 
 .solicitud-card .solicitud-info .mensaje {
     font-size: 0.7rem;
-    color: #4a6a8a;
+    color: var(--text-muted);
 }
 
 .solicitud-card .solicitud-actions {
     display: flex;
-    gap: 6px;
+    gap: 4px;
     flex-shrink: 0;
 }
 
@@ -375,29 +467,29 @@
     height: 32px;
     font-size: 0.8rem;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: var(--transition);
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
 .solicitud-card .solicitud-actions .btn-aceptar {
-    background: rgba(0, 184, 148, 0.15);
-    color: #00b894;
+    background: rgba(0, 214, 143, 0.12);
+    color: var(--success);
 }
 
 .solicitud-card .solicitud-actions .btn-aceptar:hover {
-    background: rgba(0, 184, 148, 0.25);
+    background: rgba(0, 214, 143, 0.2);
     transform: scale(1.05);
 }
 
 .solicitud-card .solicitud-actions .btn-rechazar {
-    background: rgba(255, 51, 102, 0.1);
-    color: #ff3366;
+    background: rgba(255, 51, 102, 0.08);
+    color: var(--danger);
 }
 
 .solicitud-card .solicitud-actions .btn-rechazar:hover {
-    background: rgba(255, 51, 102, 0.2);
+    background: rgba(255, 51, 102, 0.15);
     transform: scale(1.05);
 }
 
@@ -408,29 +500,37 @@
 .empty-state {
     text-align: center;
     padding: 60px 20px;
-    color: #4a6a8a;
+    color: var(--text-muted);
+    grid-column: 1 / -1;
 }
 
 .empty-state .icon {
-    font-size: 3rem;
+    font-size: 2.5rem;
     display: block;
-    margin-bottom: 16px;
+    margin-bottom: 12px;
+    font-family: 'Orbitron', monospace;
+    color: var(--gold);
+    opacity: 0.4;
+    letter-spacing: 2px;
 }
 
 .empty-state h3 {
     font-family: 'Orbitron', monospace;
-    font-size: 1.2rem;
-    color: #8ba3c7;
+    color: var(--text-secondary);
+    font-size: 1rem;
+    letter-spacing: 1px;
+    font-weight: 400;
 }
 
 .empty-state p {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
+    letter-spacing: 0.3px;
 }
 
 .empty-state .btn-accion {
     margin-top: 12px;
-    background: linear-gradient(135deg, #D4AF37, #b8923a);
-    color: #05080f;
+    background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+    color: var(--space);
     border: none;
     padding: 8px 24px;
     border-radius: 30px;
@@ -438,12 +538,58 @@
     font-weight: 700;
     font-size: 0.7rem;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: var(--transition);
+    letter-spacing: 0.5px;
 }
 
 .empty-state .btn-accion:hover {
     transform: scale(1.02);
-    box-shadow: 0 0 30px rgba(212, 175, 55, 0.3);
+    box-shadow: var(--shadow-gold);
+}
+
+/* ================================================================
+   MODO CLARO
+   ================================================================ */
+
+body.modo-claro {
+    background: #f0f4f8;
+    color: #05080f;
+}
+
+body.modo-claro .contacto-card {
+    background: rgba(255, 255, 255, 0.7);
+}
+
+body.modo-claro .contacto-card .contacto-info .nombre {
+    color: #0a1a2a;
+}
+
+body.modo-claro .contacto-card .contacto-info .estado {
+    color: #4a6a7a;
+}
+
+body.modo-claro .contacto-card .contacto-info .contacto-meta span {
+    color: #6a8a9a;
+}
+
+body.modo-claro .solicitud-card {
+    background: rgba(255, 255, 255, 0.6);
+}
+
+body.modo-claro .solicitud-card .solicitud-info .nombre {
+    color: #0a1a2a;
+}
+
+body.modo-claro .search-bar input {
+    color: #0a1a2a;
+}
+
+body.modo-claro .filtros .filtro {
+    color: #4a6a7a;
+}
+
+body.modo-claro .filtros .filtro.active {
+    color: var(--gold);
 }
 
 /* ================================================================
@@ -451,15 +597,16 @@
    ================================================================ */
 
 @media (max-width: 768px) {
-    .contactos-container { padding: 0 12px; }
+    .contactos-container { padding: 0; }
     .search-bar { flex-direction: column; }
     .search-bar .btn-agregar { width: 100%; justify-content: center; }
-    .contacto-card { padding: 12px 14px; flex-wrap: wrap; gap: 10px; }
-    .contacto-actions { width: 100%; justify-content: flex-end; padding-top: 4px; border-top: 1px solid rgba(212, 175, 55, 0.05); }
+    .contacto-card { padding: 10px 12px; flex-wrap: wrap; gap: 10px; }
+    .contacto-card .contacto-actions { width: 100%; justify-content: flex-end; padding-top: 6px; border-top: 1px solid var(--glass-border); }
     .filtros { gap: 4px; }
-    .filtros .filtro { font-size: 0.55rem; padding: 4px 12px; }
+    .filtros .filtro { font-size: 0.55rem; padding: 3px 10px; }
     .solicitud-card { flex-wrap: wrap; gap: 10px; }
-    .solicitud-actions { width: 100%; justify-content: flex-end; }
+    .solicitud-card .solicitud-actions { width: 100%; justify-content: flex-end; }
+    .contactos-stats { font-size: 0.6rem; gap: 12px; }
 }
 
 @media (max-width: 480px) {
@@ -469,27 +616,32 @@
         font-size: 0.9rem;
     }
     .contacto-card .contacto-info .nombre {
-        font-size: 0.85rem;
+        font-size: 0.8rem;
     }
     .contacto-card .contacto-info .estado {
-        font-size: 0.65rem;
+        font-size: 0.55rem;
     }
     .contacto-card .contacto-actions button {
-        font-size: 0.9rem;
-        padding: 4px 6px;
+        font-size: 0.8rem;
+        padding: 2px 6px;
     }
     .search-bar input {
-        font-size: 0.85rem;
-        padding: 10px 14px;
+        font-size: 0.8rem;
+        padding: 8px 12px;
     }
     .search-bar .btn-agregar {
-        font-size: 0.7rem;
-        padding: 10px 16px;
+        font-size: 0.65rem;
+        padding: 8px 14px;
     }
     .empty-state .icon {
-        font-size: 2.5rem;
+        font-size: 2rem;
     }
     .empty-state h3 {
-        font-size: 1rem;
+        font-size: 0.9rem;
+    }
+    .solicitud-card .solicitud-avatar {
+        width: 32px;
+        height: 32px;
+        font-size: 0.8rem;
     }
 }
