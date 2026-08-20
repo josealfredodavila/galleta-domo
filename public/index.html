@@ -267,11 +267,6 @@
             margin-top: 2px;
             flex-shrink: 0;
         }
-        .wallet-connect-wrapper .terms-check a {
-            color: var(--gold);
-            text-decoration: underline;
-            font-weight: 500;
-        }
         .wallet-connect-wrapper .btn-connect {
             width: 100%;
             justify-content: center;
@@ -639,13 +634,13 @@
             </div>
         </div>
 
-        <!-- ===== WALLET CONNECT (CON CHECKBOX VINCULANTE) ===== -->
+        <!-- ===== WALLET CONNECT (SOLO CHECKBOX - SIN ENLACE A TÉRMINOS) ===== -->
         <div style="max-width: 500px; margin: 0 auto 30px auto;">
             <div class="wallet-connect-wrapper">
                 <label class="terms-check">
                     <input type="checkbox" id="walletTerms" />
                     <span>
-                        Acepto los <a href="/terminos.html" target="_blank">Términos y Condiciones Web3</a>, el Aviso de Privacidad (LFPDPPP), la comisión del <strong>1% en operaciones P2P/TOK</strong>, el modelo <strong>No Custodial</strong> en Polygon y el cumplimiento de obligaciones fiscales (SAT).
+                        Acepto los Términos y Condiciones Web3, el Aviso de Privacidad (LFPDPPP), la comisión del <strong>1% en operaciones P2P/TOK</strong>, el modelo <strong>No Custodial</strong> en Polygon y el cumplimiento de obligaciones fiscales (SAT).
                     </span>
                 </label>
                 <button id="connectWallet" class="btn btn-gold btn-connect" disabled>
@@ -747,10 +742,7 @@
         <footer class="footer">
             <span><span class="brand">◈ Sariel's</span> · Sabor al Paladar · WEB3</span>
             <div class="footer-links">
-                <a href="/terminos.html">📜 Términos</a>
-                <a href="/privacidad.html">🔒 Privacidad</a>
-                <span style="opacity:0.3;">|</span>
-                <span>⚡ Polygon</span>
+                <span style="opacity:0.3;">⚡ Polygon</span>
             </div>
         </footer>
 
@@ -883,7 +875,7 @@
                 connectBtn.disabled = !this.checked;
             });
 
-            // Evento del botón Conectar Wallet (NUEVO)
+            // Evento del botón Conectar Wallet
             connectBtn.addEventListener('click', conectarYFirmarWallet);
 
             // Desconectar wallet
