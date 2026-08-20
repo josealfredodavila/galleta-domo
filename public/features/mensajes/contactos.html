@@ -1129,6 +1129,29 @@
             });
             cargarContactosSimulados();
         }
+
+        // ================================================================
+        // VERIFICAR WALLET - SIN REDIRECCIÓN AGRESIVA
+        // ================================================================
+        const token = localStorage.getItem('galleta_token');
+        const connectBtn = document.getElementById('connectWallet');
+
+        if (connectBtn) {
+            if (token) {
+                connectBtn.textContent = '✅ Conectado';
+                connectBtn.disabled = true;
+            } else {
+                connectBtn.textContent = '◈ Conectar Wallet';
+                connectBtn.disabled = false;
+                connectBtn.addEventListener('click', function() {
+                    if (confirm('⚠️ Necesitas conectar tu wallet para ver contactos.\n¿Quieres ir al inicio para conectar?')) {
+                        window.location.href = '/';
+                    }
+                });
+            }
+        } else {
+            console.warn('⚠️ Botón connectWallet no encontrado en el DOM');
+        }
     </script>
 </body>
 </html>
