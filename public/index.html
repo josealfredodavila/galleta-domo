@@ -255,113 +255,6 @@
             50% { box-shadow: 0 0 40px rgba(212, 175, 55, 0.4); }
         }
 
-        /* ===== MODAL DE TÉRMINOS ===== */
-        .modal-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.85);
-            backdrop-filter: blur(12px);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-            padding: 20px;
-        }
-        .modal-overlay.active {
-            display: flex;
-        }
-        .modal-content {
-            background: var(--green-deep);
-            border: 2px solid var(--gold);
-            border-radius: var(--radius);
-            max-width: 500px;
-            width: 100%;
-            max-height: 90vh;
-            overflow-y: auto;
-            padding: 28px 24px;
-            box-shadow: var(--shadow-gold-strong);
-        }
-        .modal-content h2 {
-            font-family: 'Orbitron', monospace;
-            color: var(--gold);
-            font-size: 1.1rem;
-            margin-bottom: 4px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .modal-content .sub {
-            color: var(--text-muted);
-            font-size: 0.7rem;
-            margin-bottom: 16px;
-        }
-        .modal-content .resumen {
-            background: rgba(0, 0, 0, 0.4);
-            border: 1px solid var(--glass-border);
-            border-radius: 12px;
-            padding: 14px;
-            font-size: 0.7rem;
-            color: var(--text-secondary);
-            margin-bottom: 16px;
-        }
-        .modal-content .resumen strong {
-            color: var(--gold);
-        }
-        .modal-content .checks {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-        .modal-content .checks label {
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
-            font-size: 0.7rem;
-            color: var(--text-secondary);
-            cursor: pointer;
-            line-height: 1.4;
-        }
-        .modal-content .checks label input[type="checkbox"] {
-            width: 16px;
-            height: 16px;
-            accent-color: var(--gold);
-            margin-top: 2px;
-            cursor: pointer;
-            flex-shrink: 0;
-        }
-        .modal-content .checks label strong {
-            color: var(--text-primary);
-        }
-        .modal-content .checks label .highlight {
-            color: var(--gold);
-        }
-        .modal-actions {
-            display: flex;
-            gap: 10px;
-        }
-        .modal-actions .btn {
-            flex: 1;
-            justify-content: center;
-            padding: 10px;
-            font-size: 0.7rem;
-        }
-        .modal-actions .btn-reject {
-            background: rgba(255, 51, 102, 0.1);
-            color: var(--danger);
-            border: 1px solid rgba(255, 51, 102, 0.2);
-        }
-        .modal-actions .btn-reject:hover {
-            background: rgba(255, 51, 102, 0.2);
-        }
-        .modal-content .warning {
-            font-size: 0.6rem;
-            color: var(--warning);
-            text-align: center;
-            margin-top: 12px;
-            opacity: 0.7;
-        }
-
         /* ===== WALLET CONNECT ===== */
         .wallet-connect-wrapper {
             display: flex;
@@ -677,7 +570,6 @@
             .auth-section { grid-template-columns: 1fr; }
             .wallet-status-bar { flex-direction: column; align-items: stretch; text-align: center; }
             .wallet-status-bar .info { justify-content: center; }
-            .modal-content { padding: 20px 16px; }
             .header-actions .nav-link { font-size: 0.6rem; padding: 2px 8px; }
             .panel-badge { font-size: 0.6rem; }
             .status-label { font-size: 0.6rem; }
@@ -756,7 +648,7 @@
             </div>
         </div>
 
-        <!-- ===== WALLET CONNECT ===== -->
+        <!-- ===== WALLET CONNECT (SIN CHECKBOX) ===== -->
         <div style="max-width: 500px; margin: 0 auto 30px auto;">
             <div class="wallet-connect-wrapper" id="walletConnectWrapper">
                 <button id="connectWallet" class="btn btn-gold btn-connect" onclick="conectarWallet()">
@@ -772,59 +664,6 @@
                     <span class="address" id="walletAddressDisplay">0x1234...5678</span>
                 </div>
                 <button class="btn btn-outline btn-sm" id="btnDisconnectWallet">🚪 Desconectar</button>
-            </div>
-        </div>
-
-        <!-- ===== MODAL DE TÉRMINOS ===== -->
-        <div class="modal-overlay" id="termsModal">
-            <div class="modal-content">
-                <h2>📜 Términos y Condiciones</h2>
-                <div class="sub">Sariel's Ecosystem — Muro Live · Pasarela de Pagos</div>
-
-                <div class="resumen">
-                    <p style="font-weight:600;color:var(--gold);margin-bottom:6px;">📋 Resumen del Acuerdo:</p>
-                    <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:4px;">
-                        <li>🔒 <strong>Modelo No Custodial:</strong> Tú controlas tus activos. Nosotros no tenemos acceso a tus claves privadas.</li>
-                        <li>💰 <strong>Comisión 1%:</strong> Se aplica sobre ventas de Es.stoks para cubrir costos operativos.</li>
-                        <li>⚡ <strong>Irreversibilidad:</strong> Las transacciones en blockchain son finales e irrevocables.</li>
-                        <li>🏛️ <strong>Jurisdicción:</strong> Puebla, México. Renuncia a fuero extranjero.</li>
-                    </ul>
-                </div>
-
-                <div class="checks">
-                    <label>
-                        <input type="checkbox" id="checkTerms" />
-                        He leído y acepto los <strong>Términos y Condiciones Generales</strong> de Sariel's Ecosystem.
-                    </label>
-                    <label>
-                        <input type="checkbox" id="checkFees" />
-                        Acepto la <strong class="highlight">Política de Comisiones (1% sobre ventas de Es.stoks)</strong>.
-                    </label>
-                    <label>
-                        <input type="checkbox" id="checkNonCustodial" />
-                        Comprendo que las transacciones son <strong>irreversibles</strong> y operan bajo modelo <strong>no custodial</strong>.
-                    </label>
-                    <label>
-                        <input type="checkbox" id="checkSat" />
-                        Declaro que cumplo con mis <strong>obligaciones fiscales ante el SAT</strong>.
-                    </label>
-                    <label>
-                        <input type="checkbox" id="checkPrivacy" />
-                        He leído y acepto el <strong>Aviso de Privacidad conforme a la LFPDPPP</strong>.
-                    </label>
-                    <label>
-                        <input type="checkbox" id="checkJurisdiction" />
-                        Acepto la <strong>jurisdicción de Puebla, México</strong> para cualquier controversia.
-                    </label>
-                </div>
-
-                <div class="modal-actions">
-                    <button class="btn btn-reject" onclick="cerrarModalTerminos()">✕ Rechazar</button>
-                    <button class="btn btn-gold" id="btnAceptarContinuar" disabled onclick="aceptarYFirmar()">
-                        ✅ Aceptar y Firmar Wallet
-                    </button>
-                </div>
-                <div class="warning" id="modalWarning">⚠️ Debes aceptar <strong>TODOS</strong> los puntos para continuar</div>
             </div>
         </div>
 
@@ -946,7 +785,7 @@
         }
 
         // ================================================================
-        // CONECTAR WALLET CON VERIFICACIÓN DE ESTADO
+        // CONECTAR WALLET
         // ================================================================
         async function conectarWallet() {
             const connectBtn = document.getElementById('connectWallet');
@@ -962,25 +801,16 @@
                 const accounts = await window.ethereum.request({ method: 'eth_accounts' });
 
                 if (accounts && accounts.length > 0) {
-                    // ✅ YA HAY UNA CUENTA CONECTADA
                     userAccount = accounts[0];
-                    const termsAccepted = localStorage.getItem('sariels_terms_accepted');
-                    if (termsAccepted === 'true') {
-                        // Ya está todo listo
-                        actualizarUIWallet(userAccount);
-                        showToast('✅ Wallet ya conectada');
-                        return;
-                    } else {
-                        // Tiene wallet pero no ha aceptado términos → abrir modal
-                        abrirModalTerminos();
-                        return;
-                    }
+                    actualizarUIWallet(userAccount);
+                    showToast('✅ Wallet ya conectada');
+                    return;
                 }
             } catch (error) {
                 console.warn('Error verificando cuentas:', error);
             }
 
-            // 3. NO hay cuenta conectada → intentar conectar
+            // 3. NO hay cuenta conectada → conectar
             try {
                 connectBtn.disabled = true;
                 connectBtn.textContent = '⏳ Conectando...';
@@ -988,18 +818,10 @@
                 const newAccounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
                 if (newAccounts && newAccounts.length > 0) {
                     userAccount = newAccounts[0];
-                    const termsAccepted = localStorage.getItem('sariels_terms_accepted');
-                    if (termsAccepted === 'true') {
-                        actualizarUIWallet(userAccount);
-                        showToast('✅ Wallet conectada');
-                        connectBtn.disabled = false;
-                        connectBtn.textContent = '🔗 Conectar Wallet';
-                    } else {
-                        // Abrir modal para aceptar términos
-                        abrirModalTerminos();
-                        connectBtn.disabled = false;
-                        connectBtn.textContent = '🔗 Conectar Wallet';
-                    }
+                    actualizarUIWallet(userAccount);
+                    showToast('✅ Wallet conectada');
+                    connectBtn.disabled = false;
+                    connectBtn.textContent = '🔗 Conectar Wallet';
                 }
             } catch (error) {
                 console.error('Error conectando wallet:', error);
@@ -1022,116 +844,11 @@
         }
 
         // ================================================================
-        // MODAL DE TÉRMINOS
-        // ================================================================
-        function abrirModalTerminos() {
-            // Solo abrir si la wallet está conectada
-            if (!userAccount) {
-                showToast('⚠️ Primero conecta tu wallet', 'error');
-                return;
-            }
-            document.getElementById('termsModal').classList.add('active');
-            document.querySelectorAll('#termsModal .checks input[type="checkbox"]').forEach(cb => cb.checked = false);
-            document.getElementById('btnAceptarContinuar').disabled = true;
-            document.getElementById('modalWarning').style.display = 'block';
-        }
-
-        function cerrarModalTerminos() {
-            document.getElementById('termsModal').classList.remove('active');
-        }
-
-        document.querySelectorAll('#termsModal .checks input[type="checkbox"]').forEach(cb => {
-            cb.addEventListener('change', function() {
-                const allChecked = document.querySelectorAll('#termsModal .checks input[type="checkbox"]');
-                const todasMarcadas = Array.from(allChecked).every(c => c.checked);
-                document.getElementById('btnAceptarContinuar').disabled = !todasMarcadas;
-                document.getElementById('modalWarning').style.display = todasMarcadas ? 'none' : 'block';
-            });
-        });
-
-        // ================================================================
-        // ACEPTAR Y FIRMAR WALLET
-        // ================================================================
-        async function aceptarYFirmar() {
-            const btn = document.getElementById('btnAceptarContinuar');
-            btn.disabled = true;
-            btn.textContent = '⏳ Firmando...';
-
-            try {
-                const allChecked = document.querySelectorAll('#termsModal .checks input[type="checkbox"]');
-                const todasMarcadas = Array.from(allChecked).every(c => c.checked);
-                if (!todasMarcadas) {
-                    showToast('⚠️ Debes aceptar todos los puntos', 'error');
-                    btn.disabled = false;
-                    btn.textContent = '✅ Aceptar y Firmar Wallet';
-                    return;
-                }
-
-                if (!userAccount) {
-                    showToast('⚠️ No hay wallet conectada', 'error');
-                    btn.disabled = false;
-                    btn.textContent = '✅ Aceptar y Firmar Wallet';
-                    return;
-                }
-
-                web3 = new Web3(window.ethereum);
-
-                const message = `Acepto los Términos y Condiciones de Sariel's Ecosystem\n\n` +
-                    `Wallet: ${userAccount}\n` +
-                    `Fecha: ${new Date().toISOString()}\n` +
-                    `Jurisdicción: Puebla, México.\n\n` +
-                    `Al firmar este mensaje, acepto el modelo no custodial, ` +
-                    `la comisión del 1% sobre ventas de Es.stoks, la irreversibilidad de las ` +
-                    `transacciones en Polygon y declaro cumplir con mis obligaciones fiscales (SAT).`;
-
-                const signature = await web3.eth.personal.sign(message, userAccount, '');
-
-                console.log('✅ Wallet conectada:', userAccount);
-                console.log('📝 Firma:', signature);
-
-                actualizarUIWallet(userAccount);
-
-                localStorage.setItem('sariels_wallet', userAccount);
-                localStorage.setItem('sariels_signature', signature);
-                localStorage.setItem('sariels_terms_accepted', 'true');
-
-                // Notificar al backend
-                try {
-                    await fetch('/api/auth/terms-accepted', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            wallet: userAccount,
-                            signature: signature,
-                            timestamp: new Date().toISOString()
-                        })
-                    });
-                } catch (e) {
-                    console.warn('⚠️ No se pudo notificar al backend:', e);
-                }
-
-                cerrarModalTerminos();
-                showToast('✅ Wallet conectada y términos firmados');
-
-            } catch (error) {
-                console.error('Error en conexión/firma:', error);
-                showToast('❌ Error: ' + (error.message || 'El usuario rechazó la firma'), 'error');
-                btn.disabled = false;
-                btn.textContent = '✅ Aceptar y Firmar Wallet';
-                userAccount = null;
-            }
-        }
-
-        // ================================================================
         // DESCONECTAR WALLET
         // ================================================================
         function desconectarWallet() {
             userAccount = null;
             localStorage.removeItem('sariels_wallet');
-            localStorage.removeItem('sariels_signature');
-            localStorage.removeItem('sariels_terms_accepted');
             document.getElementById('connectWallet').style.display = 'inline-flex';
             document.getElementById('connectWallet').disabled = false;
             document.getElementById('connectWallet').textContent = '🔗 Conectar Wallet';
@@ -1341,8 +1058,7 @@
 
             // Verificar si ya hay wallet conectada
             const savedWallet = localStorage.getItem('sariels_wallet');
-            const termsAccepted = localStorage.getItem('sariels_terms_accepted');
-            if (savedWallet && termsAccepted === 'true') {
+            if (savedWallet) {
                 userAccount = savedWallet;
                 document.getElementById('connectWallet').style.display = 'none';
                 document.getElementById('walletStatusBar').style.display = 'flex';
@@ -1364,9 +1080,6 @@
         window.comprarInternetMini = comprarInternetMini;
         window.seleccionarPackMini = seleccionarPackMini;
         window.showToast = showToast;
-        window.abrirModalTerminos = abrirModalTerminos;
-        window.cerrarModalTerminos = cerrarModalTerminos;
-        window.aceptarYFirmar = aceptarYFirmar;
         window.conectarWallet = conectarWallet;
         window.desconectarWallet = desconectarWallet;
         window.actualizarUIWallet = actualizarUIWallet;
