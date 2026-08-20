@@ -1,0 +1,321 @@
+<!-- public/features/muro/muro.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>◈ Muro · Sariel's</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <!-- ===== FAVICON OFICIAL CSARIEL'S ===== -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+    <style>
+        /* ===== ESTILOS ESPECÍFICOS DEL MURO ===== */
+        .muro-container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        /* ===== BOTÓN PUBLICAR ===== */
+        .btn-publicar {
+            background: linear-gradient(135deg, #D4AF37, #b8923a);
+            color: #05080f;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 30px;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .btn-publicar:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 30px rgba(212, 175, 55, 0.3);
+        }
+
+        /* ===== TARJETA DE PUBLICACIÓN ===== */
+        .post-card {
+            background: rgba(15, 45, 26, 0.3);
+            border: 1px solid rgba(212, 175, 55, 0.15);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 16px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+        .post-card:hover {
+            border-color: rgba(212, 175, 55, 0.3);
+        }
+        .post-card .post-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+        .post-card .post-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #0F2D1A, #D4AF37);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: white;
+            font-size: 1rem;
+            overflow: hidden;
+        }
+        .post-card .post-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .post-card .post-author {
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            color: #D4AF37;
+            font-size: 0.9rem;
+        }
+        .post-card .post-date {
+            font-size: 0.7rem;
+            color: #4a6a8a;
+        }
+        .post-card .post-content {
+            color: #e8f0f8;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            margin-bottom: 12px;
+        }
+        .post-card .post-actions {
+            display: flex;
+            gap: 16px;
+            border-top: 1px solid rgba(212, 175, 55, 0.08);
+            padding-top: 12px;
+        }
+        .post-card .post-actions button {
+            background: none;
+            border: none;
+            color: #4a6a8a;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Space Grotesk', sans-serif;
+        }
+        .post-card .post-actions button:hover {
+            color: #D4AF37;
+        }
+
+        /* ===== EMPTY STATE ===== */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #4a6a8a;
+        }
+        .empty-state .icon {
+            font-size: 3rem;
+            display: block;
+            margin-bottom: 16px;
+        }
+        .empty-state h3 {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.2rem;
+            color: #8ba3c7;
+        }
+        .empty-state p {
+            font-size: 0.9rem;
+        }
+
+        /* ===== FORMULARIO DE PUBLICACIÓN ===== */
+        .post-form {
+            background: rgba(15, 45, 26, 0.25);
+            border: 1px solid rgba(212, 175, 55, 0.15);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 24px;
+            backdrop-filter: blur(10px);
+        }
+        .post-form textarea {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(212, 175, 55, 0.15);
+            border-radius: 12px;
+            color: #e8f0f8;
+            font-size: 0.95rem;
+            font-family: 'Space Grotesk', sans-serif;
+            resize: vertical;
+            min-height: 80px;
+            transition: all 0.3s ease;
+        }
+        .post-form textarea:focus {
+            outline: none;
+            border-color: #D4AF37;
+            background: rgba(255, 255, 255, 0.08);
+        }
+        .post-form .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 12px;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .muro-container { padding: 0 12px; }
+            .post-card { padding: 14px; }
+            .post-card .post-content { font-size: 0.85rem; }
+            .post-form { padding: 14px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ===== FONDO ESTELAR ===== -->
+    <canvas id="stars-canvas"></canvas>
+    <div class="nebula nebula-1"></div>
+    <div class="nebula nebula-2"></div>
+    <div class="nebula nebula-3"></div>
+
+    <div id="app">
+
+        <!-- ===== HEADER CON LOGOTIPO OFICIAL ===== -->
+        <header class="header">
+            <div class="header-content">
+                <a href="/" class="logo">
+                    <span class="logo-icon"><span class="hex">◈</span></span>
+                    <span class="logo-text">Sariel's</span>
+                    <span class="logo-badge">✦ WEB3</span>
+                </a>
+                <div class="header-info">
+                    <span class="network-badge">🟢 Polygon</span>
+                    <button id="connectWallet" class="btn-connect">
+                        <span class="btn-icon">🔗</span>
+                        Conectar Wallet
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- ===== MURO ===== -->
+        <main class="main">
+            <div class="container">
+                <div class="muro-container">
+
+                    <!-- ===== MENU DE NAVEGACIÓN ===== -->
+                    <nav class="main-nav">
+                        <a href="/" class="nav-link">🏠 Inicio</a>
+                        <a href="/features/muro/muro.html" class="nav-link active">📱 Muro</a>
+                        <a href="/features/perfil/perfil.html" class="nav-link">👤 Perfil</a>
+                        <a href="/features/mensajes/contactos.html" class="nav-link">👥 Contactos</a>
+                        <a href="/features/live/live.html" class="nav-link live-link">🔴 Live</a>
+                    </nav>
+
+                    <!-- ===== WALLET INFO ===== -->
+                    <div id="walletInfo" class="wallet-info hidden">
+                        <div class="wallet-details">
+                            <span class="wallet-label">Wallet:</span>
+                            <span id="walletAddress" class="wallet-address"></span>
+                            <span class="wallet-status online">● Conectado</span>
+                        </div>
+                        <div class="wallet-actions">
+                            <button id="btnPerfil" class="btn-small">👤 Perfil</button>
+                            <button id="btnLogout" class="btn-small logout">🚪 Salir</button>
+                        </div>
+                    </div>
+
+                    <!-- ===== FORMULARIO DE PUBLICACIÓN ===== -->
+                    <div class="post-form">
+                        <textarea id="postContent" placeholder="¿Qué estás pensando?"></textarea>
+                        <div class="form-actions">
+                            <button class="btn-publicar" id="btnPublicar">📤 Publicar</button>
+                        </div>
+                    </div>
+
+                    <!-- ===== FEED DE PUBLICACIONES ===== -->
+                    <div id="feedContainer">
+                        <div class="empty-state">
+                            <span class="icon">📭</span>
+                            <h3>Sin publicaciones</h3>
+                            <p>Sé el primero en publicar algo</p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </main>
+
+        <!-- ===== FOOTER ===== -->
+        <footer class="footer">
+            <div class="footer-content">
+                <p class="footer-brand">✦ Sariel's · Sabor al Paladar ✦</p>
+                <p>◈ Galleta Domo · Powered by Polygon</p>
+                <p class="footer-small">
+                    <a href="/terminos.html" target="_blank">📜 Términos y Condiciones</a>
+                    &nbsp;·&nbsp;
+                    <a href="/privacidad.html" target="_blank">🔒 Privacidad</a>
+                </p>
+            </div>
+        </footer>
+
+    </div>
+
+    <!-- ===== SCRIPTS ===== -->
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.8.0/dist/web3.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/app.js"></script>
+    <script>
+        // ===== LÓGICA DEL MURO =====
+        document.addEventListener('DOMContentLoaded', function() {
+            const btnPublicar = document.getElementById('btnPublicar');
+            const postContent = document.getElementById('postContent');
+            const feedContainer = document.getElementById('feedContainer');
+
+            // Cargar publicaciones al iniciar
+            cargarPublicaciones();
+
+            btnPublicar.addEventListener('click', function() {
+                const contenido = postContent.value.trim();
+                if (!contenido) {
+                    alert('Escribe algo para publicar');
+                    return;
+                }
+
+                // Aquí se conectará con el backend
+                // Por ahora, simulamos una publicación
+                agregarPublicacion(contenido);
+                postContent.value = '';
+            });
+
+            function agregarPublicacion(contenido) {
+                const emptyState = feedContainer.querySelector('.empty-state');
+                if (emptyState) emptyState.remove();
+
+                const post = document.createElement('div');
+                post.className = 'post-card';
+                post.innerHTML = `
+                    <div class="post-header">
+                        <div class="post-avatar">
+                            <span>👤</span>
+                        </div>
+                        <div>
+                            <div class="post-author">Usuario</div>
+                            <div class="post-date">Ahora mismo</div>
+                        </div>
+                    </div>
+                    <div class="post-content">${contenido}</div>
+                    <div class="post-actions">
+                        <button>❤️ 0</button>
+                        <button>💬 0</button>
+                        <button>🔗 Compartir</button>
+                    </div>
+                `;
+                feedContainer.prepend(post);
+            }
+
+            async function cargarPublicaciones() {
+                // Aquí se cargarán las publicaciones del backend
+                // Por ahora, mostramos el estado vacío
+            }
+        });
+    </script>
+</body>
+</html>
