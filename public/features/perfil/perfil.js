@@ -1,1409 +1,367 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>◈ Perfil · Sariel's</title>
-    <link rel="stylesheet" href="/styles.css" />
-    <link rel="stylesheet" href="/features/perfil/perfil.css" />
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
-    <style>
-        /* ================================================================
-           PERFIL ULTRA MEGA PRO - SARIEL'S
-           Diseño competitivo con Silicon Valley
-           ================================================================ */
+/* ================================================================
+   PERFIL ULTRA MEGA PRO - SARIEL'S
+   Lógica premium competitiva con Silicon Valley
+   ================================================================ */
 
-        /* ===== RESET + BASE ===== */
-        :root {
-            --gold: #D4AF37;
-            --gold-dark: #b8923a;
-            --gold-light: #e8c84a;
-            --gold-bright: #f0d060;
-            --green-deep: #0F2D1A;
-            --green-mid: #1a4a2a;
-            --green-bright: #2a6a3a;
-            --space: #05080f;
-            --text-primary: #f0f4f8;
-            --text-secondary: #c0d8e8;
-            --text-muted: #8aa8b8;
-            --glass-bg: rgba(15, 45, 26, 0.55);
-            --glass-border: rgba(212, 175, 55, 0.15);
-            --shadow-gold: 0 8px 32px rgba(212, 175, 55, 0.25);
-            --shadow-gold-strong: 0 0 60px rgba(212, 175, 55, 0.15);
-            --radius: 16px;
-            --radius-xl: 24px;
-            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            --transition-slow: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-            --success: #00d68f;
-            --danger: #ff3366;
-            --warning: #f7d44a;
-            --cyan: #00e5ff;
-            --purple: #a855f7;
-            --pink: #ec4899;
-        }
+// ================================================================
+// TOAST
+// ================================================================
+function showToast(msg, type = '') {
+    let t = document.getElementById('toast');
+    if (!t) {
+        t = document.createElement('div');
+        t.id = 'toast';
+        t.className = 'toast';
+        document.body.appendChild(t);
+    }
+    t.textContent = msg;
+    t.className = 'toast show';
+    if (type === 'error') t.classList.add('error');
+    else t.classList.remove('error');
+    clearTimeout(t._timeout);
+    t._timeout = setTimeout(() => t.classList.remove('show'), 3500);
+}
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+// ================================================================
+// DATOS DEL PERFIL (localStorage)
+// ================================================================
+function cargarPerfil() {
+    const saved = localStorage.getItem('sariels_perfil');
+    if (saved) {
+        try {
+            return JSON.parse(saved);
+        } catch (e) {}
+    }
+    return {
+        nombre: 'Explorador',
+        handle: 'explorador',
+        bio: '⚡ Construyendo el futuro descentralizado en Sariel\'s',
+        edad: '24 años',
+        estudio: 'Ingeniería',
+        musica: 'Electronic · Jazz',
+        viajes: 'Viajero',
+        ubicacion: 'CDMX, México',
+        estadoCivil: 'Soltera(o)',
+        avatar: '◈',
+        portada: '',
+        tokens: 5,
+        contactos: 12,
+        nft: 1,
+        seguidores: 42
+    };
+}
 
-        body {
-            background: var(--space);
-            color: var(--text-primary);
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            min-height: 100vh;
-            line-height: 1.6;
-            background-image: 
-                radial-gradient(ellipse at 20% 50%, rgba(26, 74, 42, 0.4) 0%, transparent 60%),
-                radial-gradient(ellipse at 80% 50%, rgba(212, 175, 55, 0.08) 0%, transparent 60%);
-            padding: 0;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-        }
+function guardarPerfilData(data) {
+    localStorage.setItem('sariels_perfil', JSON.stringify(data));
+}
 
-        /* ===== FONDO ESTELAR OPTIMIZADO ===== */
-        #stars-canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 0;
-            pointer-events: none;
-            will-change: transform;
-        }
+// ================================================================
+// RENDERIZAR PERFIL
+// ================================================================
+function renderizarPerfil() {
+    const data = cargarPerfil();
 
-        .nebula {
-            position: fixed;
-            border-radius: 50%;
-            filter: blur(120px);
-            opacity: 0.12;
-            pointer-events: none;
-            z-index: 0;
-            animation: nebula-drift 25s ease-in-out infinite alternate;
-            will-change: transform;
-        }
-        .nebula-1 { width: 700px; height: 700px; background: var(--green-bright); top: -15%; right: -15%; }
-        .nebula-2 { width: 600px; height: 600px; background: var(--gold-light); bottom: -15%; left: -15%; animation-delay: -8s; opacity: 0.06; }
-        .nebula-3 { width: 500px; height: 500px; background: var(--purple); top: 50%; left: 50%; transform: translate(-50%, -50%); animation-delay: -15s; opacity: 0.04; }
+    // Nombre y handle
+    const nombreEl = document.getElementById('displayNombre');
+    const handleEl = document.getElementById('displayHandle');
+    const bioEl = document.getElementById('displayBio');
+    const avatarEl = document.getElementById('avatarEmoji');
 
-        @keyframes nebula-drift {
-            0% { transform: translate(0, 0) scale(1); }
-            100% { transform: translate(40px, -30px) scale(1.15); }
-        }
+    if (nombreEl) nombreEl.textContent = data.nombre;
+    if (handleEl) handleEl.textContent = '@' + data.handle;
+    if (bioEl) bioEl.textContent = data.bio;
+    if (avatarEl) avatarEl.textContent = data.avatar || '◈';
 
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: var(--space); }
-        ::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 2px; }
+    // Detalles
+    const detalles = {
+        'displayEdad': data.edad,
+        'displayEstudio': data.estudio,
+        'displayMusica': data.musica,
+        'displayViajes': data.viajes,
+        'displayUbicacion': data.ubicacion,
+        'displayEstadoCivil': data.estadoCivil
+    };
+    Object.keys(detalles).forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = detalles[id];
+    });
 
-        /* ===== APP CONTAINER ===== */
-        .app {
-            position: relative;
-            z-index: 1;
-            max-width: 1100px;
-            margin: 0 auto;
-            padding: 16px 20px 30px;
-            contain: layout style;
-        }
+    // Estadísticas
+    const stats = {
+        'statTokens': data.tokens || 0,
+        'statContactos': data.contactos || 0,
+        'statNFT': data.nft || 0,
+        'statSeguidores': data.seguidores || 0
+    };
+    Object.keys(stats).forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = stats[id];
+    });
 
-        /* ===== HEADER ===== */
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 0 14px;
-            border-bottom: 1px solid var(--glass-border);
-            flex-wrap: wrap;
-            gap: 10px;
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            background: rgba(5, 8, 15, 0.92);
-            border-radius: var(--radius) var(--radius) 0 0;
-            contain: layout style;
-        }
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            text-decoration: none;
-            transition: var(--transition);
-        }
-        .logo:hover { opacity: 0.85; }
-        .logo-hex {
-            font-size: 1.8rem;
-            color: var(--gold);
-            font-weight: 800;
-            font-family: 'Orbitron', monospace;
-            text-shadow: 0 0 30px rgba(212, 175, 55, 0.3);
-            animation: glow-pulse 3s ease-in-out infinite;
-            will-change: text-shadow;
-        }
-        @keyframes glow-pulse {
-            0%, 100% { text-shadow: 0 0 30px rgba(212, 175, 55, 0.3); }
-            50% { text-shadow: 0 0 60px rgba(212, 175, 55, 0.6); }
-        }
-        .logo-text {
-            font-family: 'Orbitron', monospace;
-            font-size: 1.2rem;
-            font-weight: 700;
-            color: var(--text-primary);
-            letter-spacing: 2px;
-        }
-        .logo-text span { color: var(--gold); }
-        .logo-badge {
-            font-size: 0.45rem;
-            background: linear-gradient(135deg, var(--gold), var(--gold-light));
-            color: var(--space);
-            padding: 2px 10px;
-            border-radius: 20px;
-            font-weight: 700;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-        }
-        .header-actions {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-        .network-badge {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 0.6rem;
-            color: var(--gold);
-            background: rgba(212, 175, 55, 0.1);
-            padding: 4px 12px;
-            border-radius: 20px;
-            border: 1px solid rgba(212, 175, 55, 0.15);
-        }
-        .network-badge .dot {
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background: var(--success);
-            animation: pulse-dot 2s infinite;
-            will-change: transform, opacity;
-        }
-        @keyframes pulse-dot {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.3; transform: scale(0.8); }
-        }
+    // Tokens
+    const tokens = data.tokens || 0;
+    const maxTokens = 12;
+    const progreso = Math.min((tokens / maxTokens) * 100, 100);
+    const progressEl = document.getElementById('tokenProgress');
+    const textEl = document.getElementById('tokenText');
+    const cantidadEl = document.getElementById('tokenCantidad');
+    if (progressEl) progressEl.style.width = progreso + '%';
+    if (textEl) textEl.textContent = tokens + '/' + maxTokens;
+    if (cantidadEl) cantidadEl.textContent = tokens;
 
-        /* ===== NAVEGACIÓN PRINCIPAL ===== */
-        .main-nav {
-            display: flex;
-            gap: 4px;
-            background: rgba(15, 45, 26, 0.3);
-            border-radius: var(--radius);
-            padding: 4px;
-            border: 1px solid var(--glass-border);
-            margin: 16px 0 20px;
-            overflow-x: auto;
-            flex-wrap: nowrap;
-            -webkit-overflow-scrolling: touch;
-            contain: layout style;
+    // Portada
+    if (data.portada) {
+        const img = document.getElementById('portadaImg');
+        if (img) {
+            img.src = data.portada;
+            img.style.display = 'block';
         }
-        .main-nav .nav-link {
-            padding: 8px 16px;
-            border-radius: 12px;
-            color: var(--text-muted);
-            text-decoration: none;
-            font-size: 0.7rem;
-            font-weight: 500;
-            transition: var(--transition);
-            white-space: nowrap;
-            font-family: 'Inter', sans-serif;
-            background: transparent;
-            border: none;
-            cursor: pointer;
-            position: relative;
-        }
-        .main-nav .nav-link::after {
-            content: '';
-            position: absolute;
-            bottom: 2px;
-            left: 50%;
-            width: 0;
-            height: 2px;
-            background: var(--gold);
-            transition: var(--transition);
-            transform: translateX(-50%);
-            border-radius: 2px;
-        }
-        .main-nav .nav-link:hover::after,
-        .main-nav .nav-link.active::after {
-            width: 60%;
-        }
-        .main-nav .nav-link:hover {
-            color: var(--text-primary);
-            background: rgba(212, 175, 55, 0.05);
-        }
-        .main-nav .nav-link.active {
-            background: rgba(212, 175, 55, 0.12);
-            color: var(--gold);
-        }
-        .main-nav .nav-link.live {
-            color: var(--danger);
-        }
-        .main-nav .nav-link.live:hover {
-            background: rgba(255, 51, 102, 0.08);
-        }
+    }
 
-        /* ===== PERFIL CARD ===== */
-        .perfil-card {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius-xl);
-            overflow: hidden;
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            margin-bottom: 20px;
-            transition: var(--transition-slow);
-            contain: layout style;
-        }
-        .perfil-card:hover {
-            border-color: rgba(212, 175, 55, 0.3);
-            box-shadow: var(--shadow-gold);
-            transform: translateY(-2px);
-        }
+    // Huella Digital
+    const huella = Math.min(tokens * 5 + 20, 100);
+    const barraEl = document.getElementById('huellaBarra');
+    const nivelEl = document.getElementById('huellaNivel');
+    const descEl = document.getElementById('huellaDescripcion');
+    if (barraEl) barraEl.style.width = huella + '%';
+    if (nivelEl) {
+        const niveles = ['⚡ Baja', '◈ Media', '✦ Alta', '◉ Muy Alta', '★ Excelente'];
+        const idx = Math.min(Math.floor(huella / 25), 4);
+        nivelEl.textContent = niveles[idx];
+    }
+    if (descEl) {
+        descEl.textContent = huella + '% · ' + 
+            (huella > 70 ? 'Contribuyente activo' : 
+             huella > 40 ? 'Explorador' : 
+             'Iniciando');
+    }
 
-        /* ===== PORTADA ===== */
-        .perfil-portada {
-            width: 100%;
-            height: 200px;
-            background: linear-gradient(135deg, #0a1a10, #1a3d2a, #2a5a3a, #0a1a10);
-            background-size: 400% 400%;
-            animation: gradient-shift 15s ease infinite;
-            position: relative;
-            overflow: hidden;
-            cursor: pointer;
-            will-change: transform;
-        }
-        @keyframes gradient-shift {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-        .perfil-portada img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transition: var(--transition-slow);
-        }
-        .perfil-portada:hover img {
-            transform: scale(1.02);
-        }
-        .perfil-portada .overlay-gradient {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 60%;
-            background: linear-gradient(transparent, rgba(5, 8, 15, 0.85));
-        }
-        .perfil-portada .btn-cambiar-portada {
-            position: absolute;
-            bottom: 16px;
-            right: 20px;
-            padding: 6px 16px;
-            border-radius: 20px;
-            font-size: 0.6rem;
-            background: rgba(0, 0, 0, 0.5);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: var(--text-muted);
-            cursor: pointer;
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            transition: var(--transition);
-            font-family: 'Inter', sans-serif;
-            opacity: 0;
-            transform: translateY(10px);
-        }
-        .perfil-portada:hover .btn-cambiar-portada {
-            opacity: 1;
-            transform: translateY(0);
-        }
-        .perfil-portada .btn-cambiar-portada:hover {
-            background: rgba(0, 0, 0, 0.7);
-            color: var(--text-primary);
-        }
+    // Amigos sugeridos
+    renderizarAmigos();
+}
 
-        /* ===== INFO PERFIL ===== */
-        .perfil-info {
-            padding: 0 28px 24px;
-            position: relative;
-            margin-top: -48px;
-        }
-        .perfil-avatar {
-            width: 88px;
-            height: 88px;
-            border-radius: 50%;
-            border: 3px solid var(--gold);
-            background: var(--space);
-            overflow: hidden;
-            position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2.4rem;
-            color: var(--gold);
-            background: linear-gradient(135deg, #0a1a10, #1a3d2a);
-            cursor: pointer;
-            transition: var(--transition);
-            box-shadow: 0 0 40px rgba(212, 175, 55, 0.15);
-            will-change: transform;
-        }
-        .perfil-avatar:hover {
-            transform: scale(1.03);
-            box-shadow: 0 0 60px rgba(212, 175, 55, 0.25);
-        }
-        .perfil-avatar img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        .perfil-avatar .btn-cambiar-foto {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: rgba(0, 0, 0, 0.75);
-            color: white;
-            font-size: 0.5rem;
-            padding: 4px;
-            text-align: center;
-            cursor: pointer;
-            backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
-            font-family: 'Inter', sans-serif;
-            border: none;
-            width: 100%;
-            opacity: 0;
-            transition: var(--transition);
-        }
-        .perfil-avatar:hover .btn-cambiar-foto {
-            opacity: 1;
-        }
-        .perfil-nombre-area {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            flex-wrap: wrap;
-            gap: 12px;
-            margin-top: 10px;
-        }
-        .perfil-nombre-area .nombre-group {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-        .perfil-nombre-area .nombre {
-            font-family: 'Orbitron', monospace;
-            font-size: 1.6rem;
-            font-weight: 700;
-            color: var(--gold);
-            text-shadow: 0 0 30px rgba(212, 175, 55, 0.1);
-        }
-        .perfil-nombre-area .verified-badge {
-            font-size: 0.5rem;
-            background: rgba(212, 175, 55, 0.15);
-            color: var(--gold);
-            padding: 2px 12px;
-            border-radius: 20px;
-            font-family: 'Orbitron', monospace;
-            letter-spacing: 1px;
-            border: 1px solid rgba(212, 175, 55, 0.2);
-        }
-        .perfil-nombre-area .handle {
-            color: var(--text-muted);
-            font-size: 0.85rem;
-        }
-        .perfil-nombre-area .btn-editar {
-            padding: 8px 22px;
-            border-radius: 30px;
-            font-size: 0.7rem;
-            border: 1px solid var(--glass-border);
-            background: transparent;
-            color: var(--text-secondary);
-            cursor: pointer;
-            transition: var(--transition);
-            font-family: 'Inter', sans-serif;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .perfil-nombre-area .btn-editar:hover {
-            border-color: var(--gold);
-            color: var(--gold);
-            background: rgba(212, 175, 55, 0.05);
-            transform: translateY(-1px);
-        }
+// ================================================================
+// AMIGOS SUGERIDOS
+// ================================================================
+function renderizarAmigos() {
+    const amigos = [
+        { nombre: 'CryptoQueen', handle: 'cryptoq', avatar: '👑' },
+        { nombre: 'BlockBuilder', handle: 'blockb', avatar: '🔷' },
+        { nombre: 'TokenMaster', handle: 'tokenm', avatar: '💎' },
+        { nombre: 'Web3Nomad', handle: 'web3n', avatar: '🌐' },
+        { nombre: 'NFTArtist', handle: 'nfta', avatar: '🎨' },
+        { nombre: 'DeFiWizard', handle: 'defiw', avatar: '🧙' }
+    ];
 
-        .perfil-bio {
-            color: var(--text-secondary);
-            font-size: 0.9rem;
-            margin: 8px 0 4px;
-            line-height: 1.6;
-        }
+    const grid = document.getElementById('amigosGrid');
+    if (!grid) return;
 
-        /* ===== DETALLES DEL PERFIL ===== */
-        .perfil-detalles {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px 24px;
-            margin: 14px 0 10px;
-            font-size: 0.75rem;
-            color: var(--text-muted);
-        }
-        @media (max-width: 500px) {
-            .perfil-detalles {
-                grid-template-columns: 1fr;
+    grid.innerHTML = amigos.map(a => `
+        <div class="amigo-card">
+            <div class="avatar">${a.avatar}</div>
+            <div class="nombre">${a.nombre}</div>
+            <div class="handle">@${a.handle}</div>
+            <button class="btn-seguir" onclick="seguirAmigo(this)">✦ Seguir</button>
+        </div>
+    `).join('');
+}
+
+function seguirAmigo(btn) {
+    if (!btn) return;
+    if (btn.textContent === '✦ Siguiendo') {
+        btn.textContent = '✦ Seguir';
+        btn.classList.remove('siguiendo');
+        showToast('👋 Dejaste de seguir a este usuario');
+    } else {
+        btn.textContent = '✦ Siguiendo';
+        btn.classList.add('siguiendo');
+        showToast('✅ Ahora sigues a este usuario');
+    }
+}
+
+// ================================================================
+// MODAL EDITAR
+// ================================================================
+function abrirModalEditar() {
+    const data = cargarPerfil();
+    const inputs = {
+        'inputNombre': data.nombre || '',
+        'inputHandle': data.handle || '',
+        'inputBio': data.bio || '',
+        'inputEdad': data.edad || '',
+        'inputEstudio': data.estudio || '',
+        'inputMusica': data.musica || '',
+        'inputViajes': data.viajes || '',
+        'inputUbicacion': data.ubicacion || '',
+        'inputEstadoCivil': data.estadoCivil || 'Soltera(o)'
+    };
+    Object.keys(inputs).forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = inputs[id];
+    });
+    const modal = document.getElementById('modalEditar');
+    if (modal) modal.classList.add('show');
+}
+
+function cerrarModal() {
+    const modal = document.getElementById('modalEditar');
+    if (modal) modal.classList.remove('show');
+}
+
+function guardarPerfil() {
+    const data = cargarPerfil();
+    const campos = {
+        nombre: 'inputNombre',
+        handle: 'inputHandle',
+        bio: 'inputBio',
+        edad: 'inputEdad',
+        estudio: 'inputEstudio',
+        musica: 'inputMusica',
+        viajes: 'inputViajes',
+        ubicacion: 'inputUbicacion',
+        estadoCivil: 'inputEstadoCivil'
+    };
+    Object.keys(campos).forEach(key => {
+        const el = document.getElementById(campos[key]);
+        if (el) {
+            const val = el.value.trim();
+            if (key === 'handle') {
+                data[key] = val.replace('@', '') || data[key];
+            } else {
+                data[key] = val || data[key];
             }
         }
-        .perfil-detalles .detalle {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 6px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
-            transition: var(--transition);
-        }
-        .perfil-detalles .detalle:hover {
-            border-bottom-color: rgba(212, 175, 55, 0.1);
-        }
-        .perfil-detalles .detalle .icon {
-            font-size: 0.9rem;
-            opacity: 0.6;
-            width: 22px;
-            text-align: center;
-        }
-        .perfil-detalles .detalle .valor {
-            color: var(--text-secondary);
-        }
+    });
 
-        /* ===== ESTADÍSTICAS ===== */
-        .perfil-stats {
-            display: flex;
-            gap: 32px;
-            margin: 14px 0 10px;
-            flex-wrap: wrap;
-        }
-        .perfil-stats .stat {
-            text-align: center;
-            cursor: default;
-            transition: var(--transition);
-            padding: 4px 12px;
-            border-radius: 12px;
-        }
-        .perfil-stats .stat:hover {
-            background: rgba(212, 175, 55, 0.05);
-        }
-        .perfil-stats .stat .numero {
-            font-family: 'Orbitron', monospace;
-            font-size: 1.2rem;
-            font-weight: 700;
-            color: var(--gold);
-            transition: var(--transition);
-        }
-        .perfil-stats .stat:hover .numero {
-            color: var(--gold-light);
-        }
-        .perfil-stats .stat .label {
-            font-size: 0.6rem;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
+    guardarPerfilData(data);
+    renderizarPerfil();
+    cerrarModal();
+    showToast('✅ Perfil actualizado correctamente');
+}
 
-        /* ===== MEDIDOR DE HUELLA DIGITAL ===== */
-        .huella-digital {
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 12px;
-            padding: 16px 20px;
-            margin: 14px 0 0;
-            border: 1px solid rgba(212, 175, 55, 0.08);
-            transition: var(--transition);
-        }
-        .huella-digital:hover {
-            border-color: rgba(212, 175, 55, 0.15);
-        }
-        .huella-digital .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 0.7rem;
-            color: var(--text-muted);
-        }
-        .huella-digital .header .titulo {
-            font-weight: 600;
-            color: var(--text-secondary);
-        }
-        .huella-digital .header .nivel {
-            font-family: 'Orbitron', monospace;
-            font-size: 0.8rem;
-            color: var(--gold);
-            transition: var(--transition);
-        }
-        .huella-digital .barra {
-            width: 100%;
-            height: 4px;
-            background: rgba(212, 175, 55, 0.08);
-            border-radius: 2px;
-            margin: 8px 0 6px;
-            overflow: hidden;
-        }
-        .huella-digital .barra .fill {
-            height: 100%;
-            border-radius: 2px;
-            transition: width 1.2s ease;
-            background: linear-gradient(90deg, var(--green-deep), var(--gold), var(--gold-light));
-            will-change: width;
-        }
-        .huella-digital .descripcion {
-            font-size: 0.65rem;
-            color: var(--text-muted);
-            display: flex;
-            justify-content: space-between;
-        }
-        .huella-digital .descripcion .etiqueta {
-            opacity: 0.6;
-        }
-        .huella-digital .descripcion .valor {
-            color: var(--text-secondary);
-        }
+// ================================================================
+// PORTADA Y AVATAR
+// ================================================================
+function cambiarPortada() {
+    const url = prompt('📸 Ingresa la URL de tu nueva portada:');
+    if (url && url.trim()) {
+        const data = cargarPerfil();
+        data.portada = url.trim();
+        guardarPerfilData(data);
+        renderizarPerfil();
+        showToast('✅ Portada actualizada');
+    }
+}
 
-        /* ===== ACCIONES DEL PERFIL ===== */
-        .perfil-acciones {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            margin-top: 16px;
-            padding-top: 16px;
-            border-top: 1px solid var(--glass-border);
-        }
-        .perfil-acciones .btn-accion {
-            padding: 7px 18px;
-            border-radius: 20px;
-            font-size: 0.65rem;
-            border: 1px solid var(--glass-border);
-            background: transparent;
-            color: var(--text-muted);
-            cursor: pointer;
-            transition: var(--transition);
-            font-family: 'Inter', sans-serif;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            position: relative;
-            overflow: hidden;
-        }
-        .perfil-acciones .btn-accion::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.1), transparent);
-            transition: var(--transition-slow);
-        }
-        .perfil-acciones .btn-accion:hover::before {
-            left: 100%;
-        }
-        .perfil-acciones .btn-accion:hover {
-            border-color: var(--gold);
-            color: var(--gold);
-        }
-        .perfil-acciones .btn-accion.danger {
-            border-color: rgba(255, 51, 102, 0.2);
-            color: var(--danger);
-        }
-        .perfil-acciones .btn-accion.danger:hover {
-            background: rgba(255, 51, 102, 0.1);
-        }
-        .perfil-acciones .btn-accion.success {
-            border-color: rgba(0, 214, 143, 0.2);
-            color: var(--success);
-        }
-        .perfil-acciones .btn-accion.success:hover {
-            background: rgba(0, 214, 143, 0.1);
-        }
+function cambiarAvatar() {
+    const emoji = prompt('✎ Elige un emoji para tu avatar (ej: ◈, ✦, ★, ◆):', '◈');
+    if (emoji && emoji.trim()) {
+        const data = cargarPerfil();
+        data.avatar = emoji.trim();
+        guardarPerfilData(data);
+        renderizarPerfil();
+        showToast('✅ Avatar actualizado');
+    }
+}
 
-        /* ===== SECCIÓN TOKENS ===== */
-        .tokens-section {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius-xl);
-            padding: 20px 24px;
-            margin-bottom: 16px;
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            transition: var(--transition-slow);
-        }
-        .tokens-section:hover {
-            border-color: rgba(212, 175, 55, 0.2);
-            box-shadow: var(--shadow-gold);
-        }
-        .tokens-section .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-            border: none;
-            padding: 0;
-            background: transparent;
-            backdrop-filter: none;
-            position: static;
-        }
-        .tokens-section .header h3 {
-            font-family: 'Orbitron', monospace;
-            color: var(--gold);
-            font-size: 0.95rem;
-            font-weight: 600;
-        }
-        .tokens-section .header .cantidad {
-            font-family: 'Orbitron', monospace;
-            font-size: 1.2rem;
-            color: var(--gold-light);
-            transition: var(--transition);
-        }
-        .tokens-section .token-bar {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-        .tokens-section .token-bar .bar {
-            flex: 1;
-            height: 8px;
-            background: rgba(212, 175, 55, 0.08);
-            border-radius: 4px;
-            overflow: hidden;
-        }
-        .tokens-section .token-bar .bar .fill {
-            height: 100%;
-            background: linear-gradient(90deg, var(--gold-dark), var(--gold), var(--gold-light));
-            border-radius: 4px;
-            transition: width 0.8s ease;
-            box-shadow: 0 0 20px rgba(212, 175, 55, 0.1);
-            will-change: width;
-        }
-        .tokens-section .token-bar .text {
-            font-family: 'Orbitron', monospace;
-            font-size: 0.75rem;
-            color: var(--text-muted);
-            min-width: 44px;
-            text-align: right;
-        }
-        .tokens-section .sub {
-            font-size: 0.7rem;
-            color: var(--text-muted);
-            margin-top: 10px;
-        }
-        .tokens-section .sub strong {
-            color: var(--gold);
-        }
+// ================================================================
+// eSIM
+// ================================================================
+let esimActivo = false;
 
-        /* ===== CONECTIVIDAD ===== */
-        .conectividad-section {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
-            margin-bottom: 16px;
-        }
-        @media (max-width: 600px) {
-            .conectividad-section {
-                grid-template-columns: 1fr;
-            }
-        }
-        .conectividad-card {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius-xl);
-            padding: 18px 20px;
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            transition: var(--transition-slow);
-        }
-        .conectividad-card:hover {
-            border-color: rgba(212, 175, 55, 0.15);
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-gold);
-        }
-        .conectividad-card .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 6px;
-            border: none;
-            padding: 0;
-            background: transparent;
-            backdrop-filter: none;
-            position: static;
-        }
-        .conectividad-card .header h4 {
-            font-family: 'Orbitron', monospace;
-            font-size: 0.7rem;
-            color: var(--text-secondary);
-            font-weight: 500;
-        }
-        .conectividad-card .header .status {
-            font-size: 0.6rem;
-            padding: 2px 12px;
-            border-radius: 12px;
-            font-weight: 500;
-        }
-        .conectividad-card .header .status.active {
-            color: var(--success);
-            background: rgba(0, 214, 143, 0.12);
-        }
-        .conectividad-card .header .status.inactive {
-            color: var(--text-muted);
-            background: rgba(255, 255, 255, 0.05);
-        }
-        .conectividad-card .info {
-            font-size: 0.75rem;
-            color: var(--text-muted);
-        }
-        .conectividad-card .btn-accion {
-            margin-top: 12px;
-            padding: 6px 16px;
-            border-radius: 20px;
-            font-size: 0.6rem;
-            border: 1px solid var(--glass-border);
-            background: transparent;
-            color: var(--text-secondary);
-            cursor: pointer;
-            transition: var(--transition);
-            font-family: 'Inter', sans-serif;
-        }
-        .conectividad-card .btn-accion:hover {
-            border-color: var(--gold);
-            color: var(--gold);
-        }
+function toggleESIM() {
+    esimActivo = !esimActivo;
+    const status = document.getElementById('esimStatus');
+    const info = document.getElementById('esimInfo');
+    const btn = document.querySelector('.conectividad-card:first-child .btn-accion');
+    if (!status || !info) return;
 
-        /* ===== AMIGOS SUGERIDOS ===== */
-        .amigos-section {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius-xl);
-            padding: 20px 24px;
-            margin-bottom: 16px;
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            transition: var(--transition-slow);
-        }
-        .amigos-section:hover {
-            border-color: rgba(212, 175, 55, 0.15);
-            box-shadow: var(--shadow-gold);
-        }
-        .amigos-section .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 14px;
-            border: none;
-            padding: 0;
-            background: transparent;
-            backdrop-filter: none;
-            position: static;
-        }
-        .amigos-section .header h3 {
-            font-family: 'Orbitron', monospace;
-            color: var(--text-secondary);
-            font-size: 0.85rem;
-        }
-        .amigos-section .header .btn-ver-todos {
-            font-size: 0.6rem;
-            color: var(--text-muted);
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-family: 'Inter', sans-serif;
-            transition: var(--transition);
-        }
-        .amigos-section .header .btn-ver-todos:hover {
-            color: var(--gold);
-        }
-        .amigos-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-            gap: 12px;
-        }
-        .amigo-card {
-            background: rgba(0, 0, 0, 0.25);
-            border-radius: 14px;
-            padding: 14px;
-            text-align: center;
-            border: 1px solid var(--glass-border);
-            transition: var(--transition);
-        }
-        .amigo-card:hover {
-            border-color: rgba(212, 175, 55, 0.2);
-            transform: translateY(-3px);
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
-        }
-        .amigo-card .avatar {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--green-deep), var(--gold));
-            margin: 0 auto 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.3rem;
-            color: white;
-            transition: var(--transition);
-        }
-        .amigo-card:hover .avatar {
-            transform: scale(1.05);
-        }
-        .amigo-card .nombre {
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: var(--text-primary);
-        }
-        .amigo-card .handle {
-            font-size: 0.55rem;
-            color: var(--text-muted);
-        }
-        .amigo-card .btn-seguir {
-            margin-top: 8px;
-            padding: 4px 14px;
-            border-radius: 14px;
-            font-size: 0.55rem;
-            border: 1px solid var(--glass-border);
-            background: transparent;
-            color: var(--text-muted);
-            cursor: pointer;
-            transition: var(--transition);
-            font-family: 'Inter', sans-serif;
-        }
-        .amigo-card .btn-seguir:hover {
-            border-color: var(--gold);
-            color: var(--gold);
-        }
-        .amigo-card .btn-seguir.siguiendo {
-            border-color: var(--success);
-            color: var(--success);
-        }
+    if (esimActivo) {
+        status.textContent = 'Activa';
+        status.className = 'status active';
+        info.innerHTML = '<strong>📶 Conectado</strong> · Datos móviles activos';
+        if (btn) btn.textContent = '📴 Desactivar eSIM';
+        showToast('📶 eSIM activada correctamente');
+    } else {
+        status.textContent = 'Inactiva';
+        status.className = 'status inactive';
+        info.textContent = 'Sin datos activos';
+        if (btn) btn.textContent = '📲 Activar eSIM';
+        showToast('📶 eSIM desactivada');
+    }
+}
 
-        /* ===== TOAST ===== */
-        .toast {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            background: var(--green-deep);
-            border: 1px solid var(--gold);
-            color: var(--gold);
-            padding: 14px 28px;
-            border-radius: 14px;
-            font-size: 0.8rem;
-            font-weight: 500;
-            box-shadow: var(--shadow-gold-strong);
-            transform: translateY(100px);
-            opacity: 0;
-            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-            z-index: 9999;
-            max-width: 400px;
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-        }
-        .toast.show { transform: translateY(0); opacity: 1; }
-        .toast.error { border-color: var(--danger); color: var(--danger); }
+// ================================================================
+// WiFi
+// ================================================================
+let wifiActivo = false;
 
-        /* ===== MODAL ===== */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(5, 8, 15, 0.9);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            animation: fadeIn 0.3s ease;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        .modal-overlay.show {
-            display: flex;
-        }
-        .modal {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius-xl);
-            padding: 32px;
-            max-width: 520px;
-            width: 92%;
-            max-height: 85vh;
-            overflow-y: auto;
-            box-shadow: var(--shadow-gold-strong);
-            animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        @keyframes slideUp {
-            from { transform: translateY(30px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-        .modal .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        .modal .modal-header h2 {
-            font-family: 'Orbitron', monospace;
-            color: var(--gold);
-            font-size: 1.2rem;
-        }
-        .modal .modal-header .btn-cerrar {
-            background: none;
-            border: none;
-            color: var(--text-muted);
-            font-size: 1.6rem;
-            cursor: pointer;
-            font-family: 'Inter', sans-serif;
-            transition: var(--transition);
-            line-height: 1;
-        }
-        .modal .modal-header .btn-cerrar:hover {
-            color: var(--text-primary);
-            transform: rotate(90deg);
-        }
-        .modal .form-group {
-            margin-bottom: 16px;
-        }
-        .modal .form-group label {
-            display: block;
-            font-size: 0.75rem;
-            color: var(--text-muted);
-            margin-bottom: 4px;
-            font-weight: 500;
-        }
-        .modal .form-group input,
-        .modal .form-group select,
-        .modal .form-group textarea {
-            width: 100%;
-            padding: 10px 14px;
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid var(--glass-border);
-            border-radius: 10px;
-            color: var(--text-primary);
-            font-size: 0.85rem;
-            outline: none;
-            transition: var(--transition);
-            font-family: 'Inter', sans-serif;
-        }
-        .modal .form-group input:focus,
-        .modal .form-group select:focus,
-        .modal .form-group textarea:focus {
-            border-color: var(--gold);
-            box-shadow: 0 0 30px rgba(212, 175, 55, 0.05);
-        }
-        .modal .form-group textarea {
-            resize: vertical;
-            min-height: 60px;
-        }
-        .modal .btn-guardar {
-            width: 100%;
-            padding: 12px;
-            border-radius: 30px;
-            border: none;
-            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
-            color: var(--space);
-            font-weight: 700;
-            font-size: 0.85rem;
-            cursor: pointer;
-            transition: var(--transition);
-            font-family: 'Inter', sans-serif;
-        }
-        .modal .btn-guardar:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-gold);
-        }
-        .modal .btn-guardar:active {
-            transform: scale(0.98);
-        }
+function toggleWiFi() {
+    wifiActivo = !wifiActivo;
+    const status = document.getElementById('wifiStatus');
+    const info = document.getElementById('wifiInfo');
+    const btn = document.querySelector('.conectividad-card:last-child .btn-accion');
+    if (!status || !info) return;
 
-        /* ===== FOOTER ===== */
-        .footer {
-            margin-top: 30px;
-            padding-top: 16px;
-            border-top: 1px solid var(--glass-border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 10px;
-            font-size: 0.7rem;
-            color: var(--text-muted);
-            padding-bottom: 8px;
-        }
-        .footer .brand { color: var(--gold); font-weight: 600; }
-        .footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
-        .footer-links a { color: var(--text-muted); text-decoration: none; transition: var(--transition); }
-        .footer-links a:hover { color: var(--gold); }
+    if (wifiActivo) {
+        status.textContent = 'Conectado';
+        status.className = 'status active';
+        info.innerHTML = '<strong>🛜 Conectado</strong> · Ahorrando datos móviles';
+        if (btn) btn.textContent = '🛜 Desconectar WiFi';
+        showToast('🛜 WiFi conectado');
+    } else {
+        status.textContent = 'Desconectado';
+        status.className = 'status inactive';
+        info.textContent = 'Ahorra tus datos móviles';
+        if (btn) btn.textContent = '🛜 Conectar WiFi';
+        showToast('🛜 WiFi desconectado');
+    }
+}
 
-        /* ===== RESPONSIVE ===== */
-        @media (max-width: 600px) {
-            .app { padding: 12px 14px; }
-            .perfil-portada { height: 140px; }
-            .perfil-info { padding: 0 16px 16px; margin-top: -36px; }
-            .perfil-avatar { width: 68px; height: 68px; font-size: 1.8rem; }
-            .perfil-nombre-area .nombre { font-size: 1.2rem; }
-            .perfil-stats { gap: 16px; }
-            .perfil-stats .stat .numero { font-size: 1rem; }
-            .main-nav .nav-link { font-size: 0.6rem; padding: 6px 10px; }
-            .header .logo-text { font-size: 1rem; }
-            .header .logo-hex { font-size: 1.4rem; }
-            .conectividad-section { grid-template-columns: 1fr; }
-            .amigos-grid { grid-template-columns: repeat(2, 1fr); }
-            .modal { padding: 24px; }
-        }
+// ================================================================
+// BLOQUEAR USUARIO
+// ================================================================
+function bloquearUsuario() {
+    if (confirm('¿Estás seguro de bloquear a este usuario?')) {
+        showToast('✅ Usuario bloqueado correctamente');
+    }
+}
 
-        @media (max-width: 400px) {
-            .amigos-grid { grid-template-columns: 1fr; }
-            .perfil-nombre-area .nombre-group { flex-direction: column; align-items: flex-start; }
-        }
+// ================================================================
+// INICIALIZAR
+// ================================================================
+document.addEventListener('DOMContentLoaded', function() {
+    renderizarPerfil();
 
-        /* ===== UTILITY ===== */
-        .hidden { display: none !important; }
-        .text-gold { color: var(--gold); }
-        .text-muted { color: var(--text-muted); }
-        .mt-1 { margin-top: 8px; }
-        .mb-1 { margin-bottom: 8px; }
-    </style>
-</head>
-<body>
+    // Cerrar modal con Escape
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') cerrarModal();
+    });
 
-    <!-- ===== FONDO ESTELAR ===== -->
-    <canvas id="stars-canvas"></canvas>
-    <div class="nebula nebula-1"></div>
-    <div class="nebula nebula-2"></div>
-    <div class="nebula nebula-3"></div>
-
-    <div class="app">
-
-        <!-- ===== HEADER ===== -->
-        <header class="header">
-            <a href="/" class="logo">
-                <span class="logo-hex">◈</span>
-                <span class="logo-text">Sariel<span>'s</span></span>
-                <span class="logo-badge">✦ WEB3</span>
-            </a>
-            <div class="header-actions">
-                <span class="network-badge"><span class="dot"></span> Polygon</span>
-            </div>
-        </header>
-
-        <!-- ===== NAVEGACIÓN ===== -->
-        <nav class="main-nav">
-            <a href="/" class="nav-link">⌂ Inicio</a>
-            <a href="/features/muro/muro.html" class="nav-link">◇ Muro</a>
-            <a href="/features/perfil/perfil.html" class="nav-link active">◆ Perfil</a>
-            <a href="/features/mensajes/contactos.html" class="nav-link">◈ Contactos</a>
-            <a href="/features/live/live.html" class="nav-link live">◉ Live</a>
-        </nav>
-
-        <!-- ===== PERFIL ===== -->
-        <div class="perfil-card">
-            <!-- Portada -->
-            <div class="perfil-portada" id="portadaContainer" onclick="cambiarPortada()">
-                <img id="portadaImg" src="" alt="Portada" style="display:none;" />
-                <div class="overlay-gradient"></div>
-                <button class="btn-cambiar-portada">✎ Cambiar portada</button>
-            </div>
-
-            <!-- Info -->
-            <div class="perfil-info">
-                <div class="perfil-avatar" id="avatarContainer" onclick="cambiarAvatar()">
-                    <span id="avatarEmoji">◈</span>
-                    <button class="btn-cambiar-foto">✎ Cambiar foto</button>
-                </div>
-
-                <div class="perfil-nombre-area">
-                    <div class="nombre-group">
-                        <div class="nombre" id="displayNombre">Explorador</div>
-                        <span class="verified-badge">✦ Verificado</span>
-                    </div>
-                    <div>
-                        <div class="handle" id="displayHandle">@explorador</div>
-                        <button class="btn-editar" onclick="abrirModalEditar()">✎ Editar</button>
-                    </div>
-                </div>
-
-                <div class="perfil-bio" id="displayBio">⚡ Construyendo el futuro descentralizado en Sariel's</div>
-
-                <!-- Detalles -->
-                <div class="perfil-detalles" id="detallesContainer">
-                    <div class="detalle"><span class="icon">⊚</span> <span class="valor" id="displayEdad">24 años</span></div>
-                    <div class="detalle"><span class="icon">◈</span> <span class="valor" id="displayEstudio">Ingeniería</span></div>
-                    <div class="detalle"><span class="icon">♫</span> <span class="valor" id="displayMusica">Electronic · Jazz</span></div>
-                    <div class="detalle"><span class="icon">✈</span> <span class="valor" id="displayViajes">Viajero</span></div>
-                    <div class="detalle"><span class="icon">◉</span> <span class="valor" id="displayUbicacion">CDMX, México</span></div>
-                    <div class="detalle"><span class="icon">◊</span> <span class="valor" id="displayEstadoCivil">Soltera(o)</span></div>
-                </div>
-
-                <!-- Estadísticas -->
-                <div class="perfil-stats">
-                    <div class="stat">
-                        <div class="numero" id="statTokens">0</div>
-                        <div class="label">Tokens</div>
-                    </div>
-                    <div class="stat">
-                        <div class="numero" id="statContactos">0</div>
-                        <div class="label">Contactos</div>
-                    </div>
-                    <div class="stat">
-                        <div class="numero" id="statNFT">0</div>
-                        <div class="label">NFT</div>
-                    </div>
-                    <div class="stat">
-                        <div class="numero" id="statSeguidores">0</div>
-                        <div class="label">Seguidores</div>
-                    </div>
-                </div>
-
-                <!-- Huella Digital -->
-                <div class="huella-digital">
-                    <div class="header">
-                        <span class="titulo">◈ Huella Digital</span>
-                        <span class="nivel" id="huellaNivel">⚡ Alta</span>
-                    </div>
-                    <div class="barra">
-                        <div class="fill" id="huellaBarra" style="width:75%;"></div>
-                    </div>
-                    <div class="descripcion">
-                        <span class="etiqueta">Actividad en la red</span>
-                        <span class="valor" id="huellaDescripcion">75% · Contribuyente activo</span>
-                    </div>
-                </div>
-
-                <!-- Acciones -->
-                <div class="perfil-acciones">
-                    <button class="btn-accion success" onclick="bloquearUsuario()">⊘ Bloquear</button>
-                    <button class="btn-accion" onclick="showToast('📋 Sugerencias cargadas')">✦ Sugerencias</button>
-                    <button class="btn-accion" onclick="showToast('📸 Subiendo foto...')">◈ Subir foto</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- ===== TOKENS ===== -->
-        <div class="tokens-section">
-            <div class="header">
-                <h3>◈ Progreso</h3>
-                <span class="cantidad" id="tokenCantidad">0</span>
-            </div>
-            <div class="token-bar">
-                <div class="bar">
-                    <div class="fill" id="tokenProgress" style="width:0%;"></div>
-                </div>
-                <span class="text" id="tokenText">0/12</span>
-            </div>
-            <div class="sub">Acumula <strong>12</strong> para canjear tu NFT</div>
-        </div>
-
-        <!-- ===== CONECTIVIDAD ===== -->
-        <div class="conectividad-section">
-            <div class="conectividad-card">
-                <div class="header">
-                    <h4>◈ eSIM</h4>
-                    <span class="status inactive" id="esimStatus">Inactiva</span>
-                </div>
-                <div class="info" id="esimInfo">Sin datos activos</div>
-                <button class="btn-accion" onclick="toggleESIM()">📲 Activar eSIM</button>
-            </div>
-            <div class="conectividad-card">
-                <div class="header">
-                    <h4>◉ WiFi</h4>
-                    <span class="status inactive" id="wifiStatus">Desconectado</span>
-                </div>
-                <div class="info" id="wifiInfo">Ahorra tus datos móviles</div>
-                <button class="btn-accion" onclick="toggleWiFi()">🛜 Conectar WiFi</button>
-            </div>
-        </div>
-
-        <!-- ===== AMIGOS SUGERIDOS ===== -->
-        <div class="amigos-section">
-            <div class="header">
-                <h3>◈ Amigos sugeridos</h3>
-                <button class="btn-ver-todos" onclick="showToast('📋 Cargando más sugerencias...')">Ver todos →</button>
-            </div>
-            <div class="amigos-grid" id="amigosGrid">
-                <!-- Generado por JS -->
-            </div>
-        </div>
-
-        <!-- ===== FOOTER ===== -->
-        <footer class="footer">
-            <span><span class="brand">◈ Sariel's</span> · Sabor al Paladar · WEB3</span>
-            <div class="footer-links">
-                <a href="/terminos.html">📜 Términos</a>
-                <span style="opacity:0.3;">⚡ Polygon</span>
-            </div>
-        </footer>
-
-    </div>
-
-    <!-- ===== MODAL EDITAR ===== -->
-    <div class="modal-overlay" id="modalEditar">
-        <div class="modal">
-            <div class="modal-header">
-                <h2>✎ Editar perfil</h2>
-                <button class="btn-cerrar" onclick="cerrarModal()">✕</button>
-            </div>
-            <div class="form-group">
-                <label>Nombre</label>
-                <input type="text" id="inputNombre" placeholder="Tu nombre" />
-            </div>
-            <div class="form-group">
-                <label>Usuario</label>
-                <input type="text" id="inputHandle" placeholder="@usuario" />
-            </div>
-            <div class="form-group">
-                <label>Biografía</label>
-                <textarea id="inputBio" placeholder="Cuéntanos sobre ti..."></textarea>
-            </div>
-            <div class="form-group">
-                <label>Edad</label>
-                <input type="text" id="inputEdad" placeholder="Ej: 24 años" />
-            </div>
-            <div class="form-group">
-                <label>Estudio / Trabajo</label>
-                <input type="text" id="inputEstudio" placeholder="Ej: Ingeniería" />
-            </div>
-            <div class="form-group">
-                <label>Gustos musicales</label>
-                <input type="text" id="inputMusica" placeholder="Ej: Electronic · Jazz" />
-            </div>
-            <div class="form-group">
-                <label>Viajes</label>
-                <input type="text" id="inputViajes" placeholder="Ej: Viajero" />
-            </div>
-            <div class="form-group">
-                <label>Ubicación</label>
-                <input type="text" id="inputUbicacion" placeholder="Ej: CDMX, México" />
-            </div>
-            <div class="form-group">
-                <label>Estado civil</label>
-                <select id="inputEstadoCivil">
-                    <option value="Soltera(o)">Soltera(o)</option>
-                    <option value="Casada(o)">Casada(o)</option>
-                    <option value="Unión libre">Unión libre</option>
-                    <option value="Divorciada(o)">Divorciada(o)</option>
-                    <option value="Viuda(o)">Viuda(o)</option>
-                    <option value="Prefiero no decir">Prefiero no decir</option>
-                </select>
-            </div>
-            <button class="btn-guardar" onclick="guardarPerfil()">💾 Guardar cambios</button>
-        </div>
-    </div>
-
-    <!-- ===== TOAST ===== -->
-    <div class="toast" id="toast"></div>
-
-    <!-- ===== SCRIPTS ===== -->
-    <script src="https://cdn.jsdelivr.net/npm/web3@1.8.0/dist/web3.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
-    <script src="/app.js"></script>
-    <script src="/features/perfil/perfil.js"></script>
-    <script>
-        // ================================================================
-        // INICIALIZACIÓN ADICIONAL
-        // ================================================================
-        document.addEventListener('DOMContentLoaded', function() {
-            // Cargar estrellas
-            initStars();
-
-            // Verificar si hay datos en localStorage y renderizar
-            if (localStorage.getItem('sariels_perfil')) {
-                if (typeof renderizarPerfil === 'function') {
-                    renderizarPerfil();
-                }
-            }
-
-            console.log('◈ Sariel\'s - Perfil Ultra Mega Pro');
-            console.log('🚀 Competencia de Silicon Valley');
+    // Cerrar modal haciendo clic fuera
+    const modal = document.getElementById('modalEditar');
+    if (modal) {
+        modal.addEventListener('click', function(e) {
+            if (e.target === this) cerrarModal();
         });
+    }
 
-        // Función para estrellas (optimizada)
-        function initStars() {
-            const canvas = document.getElementById('stars-canvas');
-            if (!canvas) return;
-            const ctx = canvas.getContext('2d');
-            let width, height, stars = [];
-            let animId = null;
-            let isVisible = true;
+    console.log('◈ Sariel\'s - Perfil Ultra Mega Pro');
+    console.log('🚀 Competencia de Silicon Valley');
+    console.log('📊 Datos cargados desde localStorage');
+});
 
-            const isMobile = window.innerWidth < 600;
-            const STAR_COUNT = isMobile ? 40 : 100;
-
-            function resize() {
-                width = window.innerWidth;
-                height = window.innerHeight;
-                canvas.width = width;
-                canvas.height = height;
-                createStars();
-            }
-
-            function createStars() {
-                stars = [];
-                for (let i = 0; i < STAR_COUNT; i++) {
-                    stars.push({
-                        x: Math.random() * width,
-                        y: Math.random() * height,
-                        radius: Math.random() * 0.8 + 0.2,
-                        speed: Math.random() * 0.005 + 0.002,
-                        opacity: Math.random() * 0.5 + 0.2,
-                        twinklePhase: Math.random() * Math.PI * 2
-                    });
-                }
-            }
-
-            function draw() {
-                if (!isVisible) {
-                    animId = requestAnimationFrame(draw);
-                    return;
-                }
-                ctx.clearRect(0, 0, width, height);
-                for (let star of stars) {
-                    const opacity = star.opacity * (0.6 + 0.4 * Math.sin(star.twinklePhase));
-                    ctx.beginPath();
-                    ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
-                    ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
-                    ctx.fill();
-                    star.twinklePhase += 0.02;
-                    star.y += star.speed;
-                    if (star.y > height) {
-                        star.y = 0;
-                        star.x = Math.random() * width;
-                    }
-                }
-                animId = requestAnimationFrame(draw);
-            }
-
-            function pauseAnimation() { isVisible = false; }
-            function resumeAnimation() { isVisible = true; }
-
-            resize();
-            draw();
-
-            window.addEventListener('resize', resize);
-            document.addEventListener('visibilitychange', function() {
-                if (document.hidden) pauseAnimation();
-                else resumeAnimation();
-            });
-
-            return { pauseAnimation, resumeAnimation };
-        }
-    </script>
-</body>
-</html>
+// ================================================================
+// EXPONER FUNCIONES GLOBALES
+// ================================================================
+window.showToast = showToast;
+window.renderizarPerfil = renderizarPerfil;
+window.abrirModalEditar = abrirModalEditar;
+window.cerrarModal = cerrarModal;
+window.guardarPerfil = guardarPerfil;
+window.cambiarPortada = cambiarPortada;
+window.cambiarAvatar = cambiarAvatar;
+window.toggleESIM = toggleESIM;
+window.toggleWiFi = toggleWiFi;
+window.bloquearUsuario = bloquearUsuario;
+window.seguirAmigo = seguirAmigo;
