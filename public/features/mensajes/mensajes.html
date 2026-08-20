@@ -1,0 +1,510 @@
+<!-- public/features/mensajes/mensajes.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>◈ Mensajes · Sariel's</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <!-- ===== FAVICON OFICIAL CSARIEL'S ===== -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+    <style>
+        /* ===== ESTILOS ESPECÍFICOS DE MENSAJES ===== */
+        .mensajes-container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        /* ===== PANEL DE CHAT (2 COLUMNAS) ===== */
+        .chat-panel {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 0;
+            background: rgba(15, 45, 26, 0.2);
+            border: 1px solid rgba(212, 175, 55, 0.08);
+            border-radius: 16px;
+            overflow: hidden;
+            min-height: 500px;
+            backdrop-filter: blur(10px);
+        }
+
+        /* ===== LISTA DE CONVERSACIONES ===== */
+        .conversaciones {
+            border-right: 1px solid rgba(212, 175, 55, 0.08);
+            background: rgba(0, 0, 0, 0.15);
+            overflow-y: auto;
+            max-height: 600px;
+        }
+        .conversaciones .header-conv {
+            padding: 16px 18px;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.08);
+            font-family: 'Orbitron', monospace;
+            font-size: 0.9rem;
+            color: #D4AF37;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .conversaciones .header-conv .btn-nuevo {
+            background: none;
+            border: none;
+            color: #4a6a8a;
+            cursor: pointer;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+        }
+        .conversaciones .header-conv .btn-nuevo:hover {
+            color: #D4AF37;
+        }
+
+        .conv-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.04);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .conv-item:hover {
+            background: rgba(212, 175, 55, 0.05);
+        }
+        .conv-item.active {
+            background: rgba(212, 175, 55, 0.08);
+        }
+        .conv-item .conv-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #0F2D1A, #D4AF37);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: white;
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+        .conv-item .conv-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .conv-item .conv-info .conv-nombre {
+            font-weight: 600;
+            color: #e8f0f8;
+            font-size: 0.9rem;
+        }
+        .conv-item .conv-info .conv-msg {
+            font-size: 0.75rem;
+            color: #4a6a8a;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .conv-item .conv-meta {
+            text-align: right;
+            flex-shrink: 0;
+        }
+        .conv-item .conv-meta .conv-hora {
+            font-size: 0.65rem;
+            color: #4a6a8a;
+        }
+        .conv-item .conv-meta .conv-badge {
+            background: #D4AF37;
+            color: #05080f;
+            font-size: 0.6rem;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 12px;
+            display: inline-block;
+            margin-top: 2px;
+        }
+
+        /* ===== AREA DEL CHAT ===== */
+        .chat-area {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            min-height: 500px;
+        }
+        .chat-area .chat-header {
+            padding: 14px 20px;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.08);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .chat-area .chat-header .chat-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #0F2D1A, #D4AF37);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: white;
+            font-size: 0.9rem;
+            flex-shrink: 0;
+        }
+        .chat-area .chat-header .chat-nombre {
+            font-weight: 600;
+            color: #e8f0f8;
+            font-size: 1rem;
+        }
+        .chat-area .chat-header .chat-estado {
+            font-size: 0.7rem;
+            color: #4a6a8a;
+        }
+        .chat-area .chat-header .chat-estado.online {
+            color: #00b894;
+        }
+
+        /* ===== MENSAJES ===== */
+        .chat-messages {
+            flex: 1;
+            padding: 16px 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 400px;
+        }
+        .msg {
+            max-width: 75%;
+            padding: 10px 16px;
+            border-radius: 16px;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            animation: fadeIn 0.3s ease;
+        }
+        .msg.enviado {
+            align-self: flex-end;
+            background: linear-gradient(135deg, #D4AF37, #b8923a);
+            color: #05080f;
+            border-bottom-right-radius: 4px;
+        }
+        .msg.recibido {
+            align-self: flex-start;
+            background: rgba(255, 255, 255, 0.06);
+            color: #e8f0f8;
+            border-bottom-left-radius: 4px;
+        }
+        .msg .msg-hora {
+            font-size: 0.6rem;
+            opacity: 0.5;
+            display: block;
+            margin-top: 4px;
+            text-align: right;
+        }
+        .msg.enviado .msg-hora {
+            color: #05080f;
+        }
+        .msg.recibido .msg-hora {
+            color: #4a6a8a;
+        }
+
+        /* ===== INPUT DEL CHAT ===== */
+        .chat-input {
+            display: flex;
+            gap: 8px;
+            padding: 12px 16px;
+            border-top: 1px solid rgba(212, 175, 55, 0.08);
+            background: rgba(0, 0, 0, 0.1);
+        }
+        .chat-input input {
+            flex: 1;
+            padding: 10px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(212, 175, 55, 0.1);
+            border-radius: 30px;
+            color: #e8f0f8;
+            font-size: 0.9rem;
+            font-family: 'Space Grotesk', sans-serif;
+            transition: all 0.3s ease;
+        }
+        .chat-input input:focus {
+            outline: none;
+            border-color: #D4AF37;
+            background: rgba(255, 255, 255, 0.08);
+        }
+        .chat-input input::placeholder {
+            color: #4a6a8a;
+        }
+        .chat-input .btn-enviar {
+            background: linear-gradient(135deg, #D4AF37, #b8923a);
+            color: #05080f;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .chat-input .btn-enviar:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 30px rgba(212, 175, 55, 0.3);
+        }
+
+        /* ===== EMPTY STATE ===== */
+        .empty-chat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            color: #4a6a8a;
+            text-align: center;
+            padding: 40px 20px;
+        }
+        .empty-chat .icon {
+            font-size: 3rem;
+            display: block;
+            margin-bottom: 12px;
+        }
+        .empty-chat h3 {
+            font-family: 'Orbitron', monospace;
+            color: #8ba3c7;
+            font-size: 1rem;
+        }
+        .empty-chat p {
+            font-size: 0.85rem;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .mensajes-container { padding: 0 12px; }
+            .chat-panel {
+                grid-template-columns: 1fr;
+                min-height: auto;
+            }
+            .conversaciones {
+                border-right: none;
+                border-bottom: 1px solid rgba(212, 175, 55, 0.08);
+                max-height: 200px;
+            }
+            .chat-area { min-height: 400px; }
+            .msg { max-width: 90%; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ===== FONDO ESTELAR ===== -->
+    <canvas id="stars-canvas"></canvas>
+    <div class="nebula nebula-1"></div>
+    <div class="nebula nebula-2"></div>
+    <div class="nebula nebula-3"></div>
+
+    <div id="app">
+
+        <!-- ===== HEADER CON LOGOTIPO OFICIAL ===== -->
+        <header class="header">
+            <div class="header-content">
+                <a href="/" class="logo">
+                    <span class="logo-icon"><span class="hex">◈</span></span>
+                    <span class="logo-text">Sariel's</span>
+                    <span class="logo-badge">✦ WEB3</span>
+                </a>
+                <div class="header-info">
+                    <span class="network-badge">🟢 Polygon</span>
+                    <button id="connectWallet" class="btn-connect">
+                        <span class="btn-icon">🔗</span>
+                        Conectar Wallet
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- ===== MENSAJES ===== -->
+        <main class="main">
+            <div class="container">
+                <div class="mensajes-container">
+
+                    <!-- ===== MENU DE NAVEGACIÓN ===== -->
+                    <nav class="main-nav">
+                        <a href="/" class="nav-link">🏠 Inicio</a>
+                        <a href="/features/muro/muro.html" class="nav-link">📱 Muro</a>
+                        <a href="/features/perfil/perfil.html" class="nav-link">👤 Perfil</a>
+                        <a href="/features/mensajes/contactos.html" class="nav-link">👥 Contactos</a>
+                        <a href="/features/mensajes/mensajes.html" class="nav-link active">💬 Mensajes</a>
+                        <a href="/features/live/live.html" class="nav-link live-link">🔴 Live</a>
+                    </nav>
+
+                    <!-- ===== WALLET INFO ===== -->
+                    <div id="walletInfo" class="wallet-info hidden">
+                        <div class="wallet-details">
+                            <span class="wallet-label">Wallet:</span>
+                            <span id="walletAddress" class="wallet-address"></span>
+                            <span class="wallet-status online">● Conectado</span>
+                        </div>
+                        <div class="wallet-actions">
+                            <button id="btnPerfil" class="btn-small">👤 Perfil</button>
+                            <button id="btnLogout" class="btn-small logout">🚪 Salir</button>
+                        </div>
+                    </div>
+
+                    <!-- ===== CHAT PANEL ===== -->
+                    <div class="chat-panel">
+
+                        <!-- ===== CONVERSACIONES ===== -->
+                        <div class="conversaciones">
+                            <div class="header-conv">
+                                <span>💬 Conversaciones</span>
+                                <button class="btn-nuevo" onclick="alert('Nueva conversación')">✏️</button>
+                            </div>
+                            <div id="conversacionesList">
+                                <div class="conv-item active" data-id="1">
+                                    <div class="conv-avatar">👩</div>
+                                    <div class="conv-info">
+                                        <div class="conv-nombre">Ana Martínez</div>
+                                        <div class="conv-msg">Hola, ¿cómo estás?</div>
+                                    </div>
+                                    <div class="conv-meta">
+                                        <div class="conv-hora">14:30</div>
+                                        <span class="conv-badge">2</span>
+                                    </div>
+                                </div>
+                                <div class="conv-item" data-id="2">
+                                    <div class="conv-avatar">👨</div>
+                                    <div class="conv-info">
+                                        <div class="conv-nombre">Carlos López</div>
+                                        <div class="conv-msg">Nos vemos mañana</div>
+                                    </div>
+                                    <div class="conv-meta">
+                                        <div class="conv-hora">12:15</div>
+                                    </div>
+                                </div>
+                                <div class="conv-item" data-id="3">
+                                    <div class="conv-avatar">👩</div>
+                                    <div class="conv-info">
+                                        <div class="conv-nombre">María García</div>
+                                        <div class="conv-msg">Gracias por tu ayuda</div>
+                                    </div>
+                                    <div class="conv-meta">
+                                        <div class="conv-hora">Ayer</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ===== AREA DE CHAT ===== -->
+                        <div class="chat-area">
+                            <div class="chat-header">
+                                <div class="chat-avatar">👩</div>
+                                <div>
+                                    <div class="chat-nombre">Ana Martínez</div>
+                                    <div class="chat-estado online">🟢 En línea</div>
+                                </div>
+                            </div>
+
+                            <div class="chat-messages" id="chatMessages">
+                                <div class="msg recibido">
+                                    Hola, ¿cómo estás?
+                                    <span class="msg-hora">14:25</span>
+                                </div>
+                                <div class="msg enviado">
+                                    ¡Hola! Todo bien, ¿y tú?
+                                    <span class="msg-hora">14:27</span>
+                                </div>
+                                <div class="msg recibido">
+                                    Bien, quería preguntarte sobre los tokens
+                                    <span class="msg-hora">14:28</span>
+                                </div>
+                                <div class="msg enviado">
+                                    Claro, ¿qué necesitas saber?
+                                    <span class="msg-hora">14:30</span>
+                                </div>
+                            </div>
+
+                            <div class="chat-input">
+                                <input type="text" id="chatInput" placeholder="Escribe un mensaje..." />
+                                <button class="btn-enviar" id="btnEnviar">📤 Enviar</button>
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+            </div>
+        </main>
+
+        <!-- ===== FOOTER ===== -->
+        <footer class="footer">
+            <div class="footer-content">
+                <p class="footer-brand">✦ Sariel's · Sabor al Paladar ✦</p>
+                <p>◈ Galleta Domo · Powered by Polygon</p>
+                <p class="footer-small">
+                    <a href="/terminos.html" target="_blank">📜 Términos y Condiciones</a>
+                    &nbsp;·&nbsp;
+                    <a href="/privacidad.html" target="_blank">🔒 Privacidad</a>
+                </p>
+            </div>
+        </footer>
+
+    </div>
+
+    <!-- ===== SCRIPTS ===== -->
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.8.0/dist/web3.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/app.js"></script>
+    <script>
+        // ===== LÓGICA DE MENSAJES =====
+        document.addEventListener('DOMContentLoaded', function() {
+            const chatInput = document.getElementById('chatInput');
+            const btnEnviar = document.getElementById('btnEnviar');
+            const chatMessages = document.getElementById('chatMessages');
+            const convItems = document.querySelectorAll('.conv-item');
+
+            // Seleccionar conversación
+            convItems.forEach(item => {
+                item.addEventListener('click', function() {
+                    convItems.forEach(i => i.classList.remove('active'));
+                    this.classList.add('active');
+                    // Aquí se cargarían los mensajes de la conversación
+                });
+            });
+
+            // Enviar mensaje
+            function enviarMensaje() {
+                const texto = chatInput.value.trim();
+                if (!texto) return;
+
+                const msg = document.createElement('div');
+                msg.className = 'msg enviado';
+                msg.innerHTML = `
+                    ${texto}
+                    <span class="msg-hora">${new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+                `;
+                chatMessages.appendChild(msg);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+                chatInput.value = '';
+
+                // Simular respuesta
+                setTimeout(() => {
+                    const respuesta = document.createElement('div');
+                    respuesta.className = 'msg recibido';
+                    respuesta.innerHTML = `
+                        👍 Recibido
+                        <span class="msg-hora">${new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+                    `;
+                    chatMessages.appendChild(respuesta);
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                }, 1000);
+            }
+
+            btnEnviar.addEventListener('click', enviarMensaje);
+            chatInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') enviarMensaje();
+            });
+        });
+    </script>
+</body>
+</html>
