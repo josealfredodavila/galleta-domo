@@ -179,6 +179,27 @@
             50% { box-shadow: 0 0 40px rgba(0, 214, 143, 0.4); }
         }
 
+        /* ===== TERMINOS CHECKBOX ===== */
+        .terms-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            margin: 8px 0;
+        }
+        .terms-checkbox input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: var(--gold);
+            cursor: pointer;
+        }
+        .terms-checkbox a {
+            color: var(--gold);
+            text-decoration: underline;
+            font-weight: 500;
+        }
+
         /* ===== MAIN ===== */
         .main {
             padding: 20px 0;
@@ -495,7 +516,14 @@
                 <input type="tel" id="regPhone" placeholder="Teléfono (opcional)" />
                 <input type="password" id="regPassword" placeholder="Contraseña" />
                 <input type="text" id="regName" placeholder="Nombre (opcional)" />
-                <button class="btn btn-gold" onclick="registrarUsuario()">🚀 Crear cuenta</button>
+                <!-- ===== CHECKBOX DE TÉRMINOS ===== -->
+                <div class="terms-checkbox">
+                    <input type="checkbox" id="regTerms" />
+                    <label for="regTerms">
+                        Acepto los <a href="/terminos.html" target="_blank">Términos y Condiciones</a>
+                    </label>
+                </div>
+                <button class="btn btn-gold" onclick="registrarUsuario()" id="btnRegistrar" disabled>🚀 Crear cuenta</button>
                 <p style="font-size:0.6rem;color:var(--text-muted);margin-top:8px;text-align:center;">
                     ¿Ya tienes cuenta? <a href="#" onclick="mostrarLogin()" style="color:var(--gold);">Inicia sesión</a>
                 </p>
@@ -507,7 +535,14 @@
                 <div class="sub">Entra con tu email o wallet</div>
                 <input type="email" id="loginEmail" placeholder="Correo electrónico" />
                 <input type="password" id="loginPassword" placeholder="Contraseña" />
-                <button class="btn btn-outline" onclick="iniciarSesion()" style="width:100%;justify-content:center;">🔓 Iniciar sesión</button>
+                <!-- ===== CHECKBOX DE TÉRMINOS ===== -->
+                <div class="terms-checkbox">
+                    <input type="checkbox" id="loginTerms" />
+                    <label for="loginTerms">
+                        Acepto los <a href="/terminos.html" target="_blank">Términos y Condiciones</a>
+                    </label>
+                </div>
+                <button class="btn btn-outline" onclick="iniciarSesion()" id="btnLogin" disabled style="width:100%;justify-content:center;">🔓 Iniciar sesión</button>
                 <p style="font-size:0.6rem;color:var(--text-muted);margin-top:8px;text-align:center;">
                     ¿No tienes cuenta? <a href="#" onclick="mostrarRegistro()" style="color:var(--gold);">Regístrate</a>
                 </p>
@@ -515,14 +550,20 @@
         </div>
 
         <!-- ===== WALLET CONNECT ===== -->
-        <div class="wallet-connect" id="walletSection">
+        <div class="wallet-connect">
             <div class="info">
                 <span class="dot" id="walletDot"></span>
                 <span id="walletStatus">Desconectado</span>
                 <span class="address" id="walletAddress">--</span>
             </div>
-            <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                <button class="btn btn-gold btn-sm" id="btnConnectWallet">🔗 Conectar Wallet</button>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                <div class="terms-checkbox" style="margin:0;">
+                    <input type="checkbox" id="walletTerms" />
+                    <label for="walletTerms">
+                        Acepto <a href="/terminos.html" target="_blank">Términos</a>
+                    </label>
+                </div>
+                <button class="btn btn-gold btn-sm" id="btnConnectWallet" disabled>🔗 Conectar Wallet</button>
                 <button class="btn btn-outline btn-sm" id="btnDisconnectWallet" style="display:none;">🚪 Desconectar</button>
             </div>
         </div>
@@ -642,20 +683,35 @@
         }
 
         // ================================================================
+        // CHECKBOX LÓGICA
+        // ================================================================
+        function setupCheckbox(checkboxId, buttonId) {
+            const checkbox = document.getElementById(checkboxId);
+            const button = document.getElementById(buttonId);
+            if (!checkbox || !button) return;
+
+            checkbox.addEventListener('change', function() {
+                button.disabled = !this.checked;
+            });
+
+            // Si el checkbox no está marcado, el botón se deshabilita
+            if (!checkbox.checked) {
+                button.disabled = true;
+            }
+        }
+
+        // ================================================================
         // REGISTRO / LOGIN
         // ================================================================
         function registrarUsuario() {
             const email = document.getElementById('regEmail').value.trim();
             const password = document.getElementById('regPassword').value.trim();
-            const name = document.getElementById('regName').value.trim();
-            const phone = document.getElementById('regPhone').value.trim();
 
             if (!email || !password) {
                 showToast('⚠️ Correo y contraseña son obligatorios', 'error');
                 return;
             }
 
-            // Simular registro (conectar con backend)
             showToast('✅ Cuenta creada. ¡Bienvenido a Sariel\'s!');
             // Aquí iría la llamada a /api/auth/register
         }
@@ -700,7 +756,7 @@
                     { id: 4, nombre: 'Ilimitado', datos: 'Ilimitado', dias: 30, precioMXN: 549, precioUSD: 28, color: '#a855f7' }
                 ];
             }
-            return packs.slice(0, 4); // Mostrar solo 4 en el index
+            return packs.slice(0, 4);
         }
 
         function renderInternetMini() {
@@ -788,6 +844,11 @@
             initStars();
             renderInternetMini();
 
+            // Setup checkboxes
+            setupCheckbox('regTerms', 'btnRegistrar');
+            setupCheckbox('loginTerms', 'btnLogin');
+            setupCheckbox('walletTerms', 'btnConnectWallet');
+
             // QTY
             let qty = 1;
             document.getElementById('decreaseQty').addEventListener('click', () => {
@@ -797,8 +858,12 @@
                 if (qty < 10) { qty++; document.getElementById('domoQuantity').textContent = qty; }
             });
 
-            // Wallet connect (placeholder)
+            // Wallet connect
             document.getElementById('btnConnectWallet').addEventListener('click', function() {
+                if (!document.getElementById('walletTerms').checked) {
+                    showToast('⚠️ Acepta los Términos y Condiciones primero', 'error');
+                    return;
+                }
                 showToast('🔗 Conectando wallet... (simulación)');
                 document.getElementById('walletDot').className = 'dot connected';
                 document.getElementById('walletStatus').textContent = 'Conectado';
@@ -836,6 +901,7 @@
         window.comprarInternetMini = comprarInternetMini;
         window.seleccionarPackMini = seleccionarPackMini;
         window.showToast = showToast;
+        window.setupCheckbox = setupCheckbox;
     </script>
 </body>
 </html>
