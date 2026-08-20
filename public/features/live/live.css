@@ -1,12 +1,80 @@
-/* public/features/live/live.css */
+/* ================================================================
+   LIVE ULTRA MEGA PRO - SARIEL'S
+   Estilos premium competitivos con Silicon Valley
+   ================================================================ */
+
+/* ===== VARIABLES GLOBALES ===== */
+:root {
+    --gold: #D4AF37;
+    --gold-dark: #b8923a;
+    --gold-light: #e8c84a;
+    --gold-bright: #f0d060;
+    --green-deep: #0F2D1A;
+    --green-mid: #1a4a2a;
+    --green-bright: #2a6a3a;
+    --space: #05080f;
+    --text-primary: #f0f4f8;
+    --text-secondary: #c0d8e8;
+    --text-muted: #8aa8b8;
+    --glass-bg: rgba(15, 45, 26, 0.55);
+    --glass-border: rgba(212, 175, 55, 0.15);
+    --shadow-gold: 0 8px 32px rgba(212, 175, 55, 0.25);
+    --shadow-gold-strong: 0 0 60px rgba(212, 175, 55, 0.15);
+    --radius: 16px;
+    --radius-xl: 24px;
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-slow: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    --success: #00d68f;
+    --danger: #ff3366;
+    --warning: #f7d44a;
+    --cyan: #00e5ff;
+    --purple: #a855f7;
+    --pink: #ec4899;
+    --live-red: #ff0044;
+    --live-glow: 0 0 40px rgba(255, 0, 68, 0.3);
+}
 
 /* ================================================================
-   ESTILOS ESPECÍFICOS DE LIVE
+   LIVE CONTAINER
    ================================================================ */
 
 .live-container {
     max-width: 1000px;
     margin: 0 auto;
+}
+
+/* ================================================================
+   LIVE HEADER
+   ================================================================ */
+
+.live-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.live-header h2 {
+    font-family: 'Orbitron', monospace;
+    color: var(--gold);
+    font-size: 1.2rem;
+    letter-spacing: 1px;
+}
+
+.live-header .live-stats {
+    display: flex;
+    gap: 16px;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    letter-spacing: 0.3px;
+}
+
+.live-header .live-stats span {
+    display: flex;
+    align-items: center;
+    gap: 4px;
 }
 
 /* ================================================================
@@ -16,23 +84,24 @@
 .btn-crear-live {
     display: inline-flex;
     align-items: center;
-    gap: 10px;
-    background: linear-gradient(135deg, #ff3366, #d63031);
+    gap: 8px;
+    background: linear-gradient(135deg, var(--live-red), #d63031);
     color: white;
     border: none;
-    padding: 12px 28px;
+    padding: 10px 24px;
     border-radius: 30px;
     font-family: 'Orbitron', monospace;
     font-weight: 700;
-    font-size: 0.85rem;
+    font-size: 0.75rem;
     cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 20px rgba(255, 51, 102, 0.2);
+    transition: var(--transition);
+    letter-spacing: 0.5px;
+    box-shadow: var(--live-glow);
 }
 
 .btn-crear-live:hover {
-    transform: scale(1.02);
-    box-shadow: 0 8px 40px rgba(255, 51, 102, 0.3);
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 0 60px rgba(255, 0, 68, 0.4);
 }
 
 .btn-crear-live:disabled {
@@ -42,22 +111,23 @@
 }
 
 /* ================================================================
-   LIVE BADGE EN HEADER
+   LIVE BADGE HEADER
    ================================================================ */
 
 .live-badge-header {
-    background: rgba(255, 51, 102, 0.15);
-    color: #ff3366;
-    padding: 4px 14px;
+    font-size: 0.55rem;
+    background: var(--live-red);
+    color: white;
+    padding: 3px 12px;
     border-radius: 20px;
-    font-size: 0.65rem;
-    font-weight: 700;
     font-family: 'Orbitron', monospace;
-    border: 1px solid rgba(255, 51, 102, 0.3);
-    animation: pulse-badge-live 2s ease-in-out infinite;
+    font-weight: 700;
+    letter-spacing: 1px;
+    animation: pulse-live-header 1.5s ease-in-out infinite;
+    box-shadow: var(--live-glow);
 }
 
-@keyframes pulse-badge-live {
+@keyframes pulse-live-header {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.5; }
 }
@@ -70,7 +140,7 @@
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 20px;
-    margin-top: 20px;
+    margin-top: 4px;
 }
 
 /* ================================================================
@@ -78,26 +148,27 @@
    ================================================================ */
 
 .live-card {
-    background: rgba(15, 45, 26, 0.25);
-    border: 1px solid rgba(212, 175, 55, 0.1);
-    border-radius: 16px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-xl);
     overflow: hidden;
-    transition: all 0.3s ease;
+    transition: var(--transition-slow);
     cursor: pointer;
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
 }
 
 .live-card:hover {
     transform: translateY(-4px);
     border-color: rgba(212, 175, 55, 0.25);
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+    box-shadow: var(--shadow-gold);
 }
 
 .live-card .live-thumbnail {
     position: relative;
     width: 100%;
     padding-top: 56.25%;
-    background: linear-gradient(135deg, #0F2D1A, #05080f);
+    background: linear-gradient(135deg, #0a1a10, #1a3d2a);
     overflow: hidden;
 }
 
@@ -105,7 +176,7 @@
     position: absolute;
     top: 12px;
     left: 12px;
-    background: #ff3366;
+    background: var(--live-red);
     color: white;
     font-family: 'Orbitron', monospace;
     font-size: 0.55rem;
@@ -116,7 +187,9 @@
     align-items: center;
     gap: 6px;
     text-transform: uppercase;
+    letter-spacing: 0.5px;
     z-index: 2;
+    box-shadow: var(--live-glow);
 }
 
 .live-card .live-thumbnail .live-badge .dot {
@@ -138,11 +211,12 @@
     right: 12px;
     background: rgba(0, 0, 0, 0.7);
     color: white;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     padding: 4px 12px;
     border-radius: 20px;
     backdrop-filter: blur(4px);
-    font-family: 'Space Grotesk', sans-serif;
+    font-family: 'Inter', sans-serif;
+    letter-spacing: 0.3px;
     z-index: 2;
 }
 
@@ -151,8 +225,8 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    font-size: 3.5rem;
-    opacity: 0.6;
+    font-size: 3rem;
+    opacity: 0.5;
     z-index: 1;
 }
 
@@ -163,25 +237,48 @@
     z-index: 1;
 }
 
+.live-card .live-thumbnail .live-qr-btn {
+    position: absolute;
+    bottom: 12px;
+    left: 12px;
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: white;
+    padding: 4px 10px;
+    border-radius: 16px;
+    font-size: 0.55rem;
+    cursor: pointer;
+    transition: var(--transition);
+    font-family: 'Inter', sans-serif;
+    backdrop-filter: blur(4px);
+    z-index: 2;
+}
+
+.live-card .live-thumbnail .live-qr-btn:hover {
+    background: rgba(0, 0, 0, 0.8);
+    border-color: var(--gold);
+}
+
 .live-card .live-info {
     padding: 14px 16px;
 }
 
 .live-card .live-info .live-title {
     font-weight: 600;
-    color: #e8f0f8;
-    font-size: 0.95rem;
+    color: var(--text-primary);
+    font-size: 0.9rem;
     margin-bottom: 4px;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
+    letter-spacing: 0.3px;
 }
 
 .live-card .live-info .live-title .tag {
     font-size: 0.55rem;
     background: rgba(212, 175, 55, 0.1);
-    color: #D4AF37;
+    color: var(--gold);
     padding: 1px 8px;
     border-radius: 12px;
     font-family: 'Orbitron', monospace;
@@ -199,7 +296,7 @@
     width: 28px;
     height: 28px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #0F2D1A, #D4AF37);
+    background: linear-gradient(135deg, var(--green-deep), var(--gold));
     display: flex;
     align-items: center;
     justify-content: center;
@@ -217,12 +314,13 @@
 }
 
 .live-card .live-info .live-host .host-name {
-    font-size: 0.8rem;
-    color: #8ba3c7;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    letter-spacing: 0.3px;
 }
 
 .live-card .live-info .live-host .host-name .verified {
-    color: #D4AF37;
+    color: var(--gold);
     font-size: 0.55rem;
 }
 
@@ -231,13 +329,133 @@
     gap: 16px;
     margin-top: 8px;
     font-size: 0.65rem;
-    color: #4a6a8a;
+    color: var(--text-muted);
 }
 
 .live-card .live-info .live-meta span {
     display: flex;
     align-items: center;
     gap: 4px;
+}
+
+.live-card .live-info .live-tags {
+    display: flex;
+    gap: 4px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+}
+
+.live-card .live-info .live-tags .tag {
+    font-size: 0.5rem;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: rgba(212, 175, 55, 0.08);
+    border: 1px solid rgba(212, 175, 55, 0.05);
+    color: var(--text-muted);
+    letter-spacing: 0.3px;
+}
+
+.live-card .live-info .live-tags .tag.live-tag {
+    background: rgba(255, 0, 68, 0.08);
+    border-color: rgba(255, 0, 68, 0.1);
+    color: var(--live-red);
+}
+
+/* ================================================================
+   CALENDARIO DE EVENTOS
+   ================================================================ */
+
+.calendario-section {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-xl);
+    padding: 18px 20px;
+    margin-bottom: 20px;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    transition: var(--transition-slow);
+}
+
+.calendario-section:hover {
+    border-color: rgba(212, 175, 55, 0.15);
+    box-shadow: var(--shadow-gold);
+}
+
+.calendario-section .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.calendario-section .header h3 {
+    font-family: 'Orbitron', monospace;
+    color: var(--gold);
+    font-size: 0.85rem;
+    letter-spacing: 1px;
+}
+
+.calendario-section .header .ver-todos {
+    font-size: 0.6rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: var(--transition);
+    font-family: 'Inter', sans-serif;
+    background: none;
+    border: none;
+}
+
+.calendario-section .header .ver-todos:hover {
+    color: var(--gold);
+}
+
+.calendario-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+}
+
+.evento-card {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 12px 14px;
+    transition: var(--transition);
+    cursor: pointer;
+}
+
+.evento-card:hover {
+    border-color: rgba(212, 175, 55, 0.2);
+    transform: translateY(-2px);
+}
+
+.evento-card .fecha {
+    font-size: 0.55rem;
+    color: var(--gold);
+    font-family: 'Orbitron', monospace;
+    letter-spacing: 0.5px;
+}
+
+.evento-card .titulo {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 4px 0;
+}
+
+.evento-card .host {
+    font-size: 0.6rem;
+    color: var(--text-muted);
+}
+
+.evento-card .recordatorio {
+    font-size: 0.5rem;
+    color: var(--text-muted);
+    margin-top: 4px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: rgba(212, 175, 55, 0.05);
+    display: inline-block;
 }
 
 /* ================================================================
@@ -258,18 +476,25 @@
 
 .modal-live.active {
     display: flex;
+    animation: modalFadeIn 0.3s ease;
+}
+
+@keyframes modalFadeIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
 }
 
 .modal-live-content {
     background: rgba(15, 45, 26, 0.95);
     border: 1px solid rgba(212, 175, 55, 0.15);
-    border-radius: 20px;
+    border-radius: var(--radius-xl);
     max-width: 900px;
     width: 100%;
     max-height: 90vh;
     overflow: hidden;
     display: flex;
     flex-direction: column;
+    box-shadow: var(--shadow-gold-strong);
 }
 
 .modal-live-header {
@@ -283,27 +508,28 @@
 .modal-live-header .modal-live-title {
     font-family: 'Orbitron', monospace;
     font-size: 1rem;
-    color: #D4AF37;
+    color: var(--gold);
+    letter-spacing: 0.5px;
 }
 
 .modal-live-header .modal-live-title .live-dot {
-    color: #ff3366;
+    color: var(--live-red);
     animation: pulse-dot-live 1.5s ease-in-out infinite;
 }
 
 .modal-live-header .btn-cerrar-modal {
     background: none;
     border: none;
-    color: #4a6a8a;
+    color: var(--text-muted);
     font-size: 1.5rem;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: var(--transition);
     padding: 4px 8px;
     border-radius: 8px;
 }
 
 .modal-live-header .btn-cerrar-modal:hover {
-    color: #e8f0f8;
+    color: var(--text-primary);
     background: rgba(255, 255, 255, 0.05);
 }
 
@@ -332,7 +558,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    color: #4a6a8a;
+    color: var(--text-muted);
 }
 
 .live-player .player-placeholder .icon {
@@ -343,6 +569,7 @@
 
 .live-player .player-placeholder p {
     font-size: 0.9rem;
+    letter-spacing: 0.3px;
 }
 
 .live-player video {
@@ -372,7 +599,7 @@
     color: white;
     font-size: 1rem;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: var(--transition);
     padding: 4px 8px;
     border-radius: 6px;
 }
@@ -400,9 +627,10 @@
 
 .live-chat .chat-messages .empty-message {
     text-align: center;
-    color: #4a6a8a;
+    color: var(--text-muted);
     font-size: 0.85rem;
     padding: 20px 0;
+    letter-spacing: 0.3px;
 }
 
 .live-chat .chat-message {
@@ -411,16 +639,16 @@
 }
 
 .live-chat .chat-message .user {
-    color: #D4AF37;
+    color: var(--gold);
     font-weight: 600;
 }
 
 .live-chat .chat-message .text {
-    color: #e8f0f8;
+    color: var(--text-secondary);
 }
 
 .live-chat .chat-message .time {
-    color: #4a6a8a;
+    color: var(--text-muted);
     font-size: 0.55rem;
     margin-left: 6px;
 }
@@ -438,26 +666,29 @@
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(212, 175, 55, 0.1);
     border-radius: 20px;
-    color: #e8f0f8;
+    color: var(--text-primary);
     font-size: 0.85rem;
-    font-family: 'Space Grotesk', sans-serif;
+    font-family: 'Inter', sans-serif;
+    outline: none;
+    transition: var(--transition);
 }
 
 .live-chat .chat-input-live input:focus {
     outline: none;
-    border-color: #D4AF37;
+    border-color: var(--gold);
+    background: rgba(255, 255, 255, 0.08);
 }
 
 .live-chat .chat-input-live button {
-    background: linear-gradient(135deg, #D4AF37, #b8923a);
-    color: #05080f;
+    background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+    color: var(--space);
     border: none;
     border-radius: 50%;
     width: 36px;
     height: 36px;
     font-size: 0.9rem;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: var(--transition);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -465,33 +696,103 @@
 
 .live-chat .chat-input-live button:hover {
     transform: scale(1.05);
-    box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+    box-shadow: var(--shadow-gold);
 }
 
 /* ================================================================
-   ESTADO VACÍO
+   EMPTY STATE
    ================================================================ */
 
 .empty-state {
     text-align: center;
     padding: 60px 20px;
-    color: #4a6a8a;
+    color: var(--text-muted);
 }
 
 .empty-state .icon {
-    font-size: 3rem;
+    font-size: 2.5rem;
     display: block;
     margin-bottom: 16px;
+    font-family: 'Orbitron', monospace;
+    color: var(--gold);
+    opacity: 0.4;
+    letter-spacing: 2px;
 }
 
 .empty-state h3 {
     font-family: 'Orbitron', monospace;
-    font-size: 1.2rem;
-    color: #8ba3c7;
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+    letter-spacing: 1px;
+    font-weight: 400;
 }
 
 .empty-state p {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
+    letter-spacing: 0.3px;
+}
+
+/* ================================================================
+   TOAST
+   ================================================================ */
+
+.toast {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    background: var(--green-deep);
+    border: 1px solid var(--gold);
+    color: var(--gold);
+    padding: 14px 28px;
+    border-radius: 14px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    box-shadow: var(--shadow-gold-strong);
+    transform: translateY(100px);
+    opacity: 0;
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 9999;
+    max-width: 400px;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    letter-spacing: 0.3px;
+}
+
+.toast.show { transform: translateY(0); opacity: 1; }
+.toast.error { border-color: var(--danger); color: var(--danger); }
+.toast.warning { border-color: var(--warning); color: var(--warning); }
+
+/* ================================================================
+   MODO CLARO
+   ================================================================ */
+
+body.modo-claro {
+    background: #f0f4f8;
+    color: #05080f;
+}
+
+body.modo-claro .live-card {
+    background: rgba(255, 255, 255, 0.7);
+}
+
+body.modo-claro .calendario-section {
+    background: rgba(255, 255, 255, 0.7);
+}
+
+body.modo-claro .live-card .live-info .live-title {
+    color: #0a1a2a;
+}
+
+body.modo-claro .live-card .live-info .live-host .host-name {
+    color: #4a6a7a;
+}
+
+body.modo-claro .live-card .live-info .live-meta {
+    color: #6a8a9a;
+}
+
+body.modo-claro .evento-card .titulo {
+    color: #0a1a2a;
 }
 
 /* ================================================================
@@ -502,6 +803,7 @@
     .modal-live-body {
         grid-template-columns: 1fr;
         max-height: none;
+        padding: 14px;
     }
 
     .live-chat {
@@ -516,19 +818,24 @@
 @media (max-width: 768px) {
     .live-container { padding: 0 12px; }
     .live-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
-    .live-card .live-info .live-title { font-size: 0.85rem; }
-    .btn-crear-live { width: 100%; justify-content: center; font-size: 0.75rem; padding: 10px 20px; }
+    .live-card .live-info .live-title { font-size: 0.8rem; }
+    .btn-crear-live { width: 100%; justify-content: center; font-size: 0.7rem; padding: 10px 20px; }
     .modal-live { padding: 12px; }
     .modal-live-body { padding: 12px; gap: 12px; }
+    .calendario-grid { grid-template-columns: 1fr 1fr; }
+    .live-header { flex-direction: column; align-items: stretch; }
+    .live-header .live-stats { justify-content: center; }
 }
 
 @media (max-width: 480px) {
     .live-grid { grid-template-columns: 1fr; }
+    .calendario-grid { grid-template-columns: 1fr; }
     .live-card .live-thumbnail .live-badge { font-size: 0.45rem; padding: 2px 10px; }
-    .live-card .live-thumbnail .live-viewers { font-size: 0.65rem; padding: 2px 10px; }
-    .live-card .live-info .live-title { font-size: 0.8rem; }
+    .live-card .live-thumbnail .live-viewers { font-size: 0.6rem; padding: 2px 10px; }
+    .live-card .live-info .live-title { font-size: 0.75rem; }
     .modal-live-header { padding: 12px 16px; }
     .modal-live-header .modal-live-title { font-size: 0.85rem; }
     .live-chat .chat-input-live input { font-size: 0.75rem; }
     .live-chat .chat-input-live button { width: 32px; height: 32px; font-size: 0.7rem; }
+    .main-nav .nav-link { font-size: 0.55rem; padding: 4px 8px; }
 }
