@@ -34,19 +34,13 @@
     --live-glow: 0 0 40px rgba(255, 0, 68, 0.3);
 }
 
-/* ================================================================
-   LIVE CONTAINER
-   ================================================================ */
-
+/* ===== LIVE CONTAINER ===== */
 .live-container {
     max-width: 1000px;
     margin: 0 auto;
 }
 
-/* ================================================================
-   LIVE HEADER
-   ================================================================ */
-
+/* ===== LIVE HEADER ===== */
 .live-header {
     display: flex;
     justify-content: space-between;
@@ -77,10 +71,7 @@
     gap: 4px;
 }
 
-/* ================================================================
-   BOTÓN CREAR TRANSMISIÓN
-   ================================================================ */
-
+/* ===== BOTÓN CREAR ===== */
 .btn-crear-live {
     display: inline-flex;
     align-items: center;
@@ -110,10 +101,7 @@
     transform: none !important;
 }
 
-/* ================================================================
-   LIVE BADGE HEADER
-   ================================================================ */
-
+/* ===== LIVE BADGE ===== */
 .live-badge-header {
     font-size: 0.55rem;
     background: var(--live-red);
@@ -132,10 +120,7 @@
     50% { opacity: 0.5; }
 }
 
-/* ================================================================
-   GRID DE TRANSMISIONES
-   ================================================================ */
-
+/* ===== LIVE GRID ===== */
 .live-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -143,10 +128,7 @@
     margin-top: 4px;
 }
 
-/* ================================================================
-   TARJETA DE TRANSMISIÓN
-   ================================================================ */
-
+/* ===== LIVE CARD ===== */
 .live-card {
     background: var(--glass-bg);
     border: 1px solid var(--glass-border);
@@ -307,12 +289,6 @@
     flex-shrink: 0;
 }
 
-.live-card .live-info .live-host .host-avatar img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
 .live-card .live-info .live-host .host-name {
     font-size: 0.75rem;
     color: var(--text-muted);
@@ -361,10 +337,7 @@
     color: var(--live-red);
 }
 
-/* ================================================================
-   CALENDARIO DE EVENTOS
-   ================================================================ */
-
+/* ===== CALENDARIO ===== */
 .calendario-section {
     background: var(--glass-bg);
     border: 1px solid var(--glass-border);
@@ -458,10 +431,7 @@
     display: inline-block;
 }
 
-/* ================================================================
-   MODAL DE TRANSMISIÓN
-   ================================================================ */
-
+/* ===== MODAL ===== */
 .modal-live {
     position: fixed;
     inset: 0;
@@ -476,12 +446,6 @@
 
 .modal-live.active {
     display: flex;
-    animation: modalFadeIn 0.3s ease;
-}
-
-@keyframes modalFadeIn {
-    from { opacity: 0; transform: scale(0.95); }
-    to { opacity: 1; transform: scale(1); }
 }
 
 .modal-live-content {
@@ -542,7 +506,6 @@
     overflow: hidden;
 }
 
-/* ===== REPRODUCTOR ===== */
 .live-player {
     background: #05080f;
     border-radius: 12px;
@@ -572,43 +535,6 @@
     letter-spacing: 0.3px;
 }
 
-.live-player video {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.live-player .player-controls {
-    position: absolute;
-    bottom: 12px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    gap: 12px;
-    background: rgba(0, 0, 0, 0.7);
-    padding: 8px 16px;
-    border-radius: 30px;
-    backdrop-filter: blur(4px);
-}
-
-.live-player .player-controls button {
-    background: none;
-    border: none;
-    color: white;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: var(--transition);
-    padding: 4px 8px;
-    border-radius: 6px;
-}
-
-.live-player .player-controls button:hover {
-    background: rgba(255, 255, 255, 0.1);
-}
-
-/* ===== CHAT DE LIVE ===== */
 .live-chat {
     display: flex;
     flex-direction: column;
@@ -699,10 +625,7 @@
     box-shadow: var(--shadow-gold);
 }
 
-/* ================================================================
-   EMPTY STATE
-   ================================================================ */
-
+/* ===== EMPTY STATE ===== */
 .empty-state {
     text-align: center;
     padding: 60px 20px;
@@ -732,10 +655,7 @@
     letter-spacing: 0.3px;
 }
 
-/* ================================================================
-   TOAST
-   ================================================================ */
-
+/* ===== TOAST ===== */
 .toast {
     position: fixed;
     bottom: 30px;
@@ -762,61 +682,19 @@
 .toast.error { border-color: var(--danger); color: var(--danger); }
 .toast.warning { border-color: var(--warning); color: var(--warning); }
 
-/* ================================================================
-   MODO CLARO
-   ================================================================ */
-
-body.modo-claro {
-    background: #f0f4f8;
-    color: #05080f;
-}
-
-body.modo-claro .live-card {
-    background: rgba(255, 255, 255, 0.7);
-}
-
-body.modo-claro .calendario-section {
-    background: rgba(255, 255, 255, 0.7);
-}
-
-body.modo-claro .live-card .live-info .live-title {
-    color: #0a1a2a;
-}
-
-body.modo-claro .live-card .live-info .live-host .host-name {
-    color: #4a6a7a;
-}
-
-body.modo-claro .live-card .live-info .live-meta {
-    color: #6a8a9a;
-}
-
-body.modo-claro .evento-card .titulo {
-    color: #0a1a2a;
-}
-
-/* ================================================================
-   RESPONSIVE
-   ================================================================ */
-
+/* ===== RESPONSIVE ===== */
 @media (max-width: 900px) {
     .modal-live-body {
         grid-template-columns: 1fr;
         max-height: none;
         padding: 14px;
     }
-
-    .live-chat {
-        max-height: 250px;
-    }
-
-    .live-chat .chat-messages {
-        max-height: 150px;
-    }
+    .live-chat { max-height: 250px; }
+    .live-chat .chat-messages { max-height: 150px; }
 }
 
 @media (max-width: 768px) {
-    .live-container { padding: 0 12px; }
+    .app { padding: 12px 14px; }
     .live-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
     .live-card .live-info .live-title { font-size: 0.8rem; }
     .btn-crear-live { width: 100%; justify-content: center; font-size: 0.7rem; padding: 10px 20px; }
