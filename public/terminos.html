@@ -102,9 +102,76 @@
         .terminos-container .footer-tyc strong {
             color: var(--gold-cosmic);
         }
+
+        /* ================================================================
+           CHECKBOX DE ACEPTACIÓN
+           ================================================================ */
+        .aceptacion-container {
+            margin-top: 30px;
+            padding: 20px;
+            background: rgba(212, 168, 87, 0.05);
+            border: 1px solid rgba(212, 168, 87, 0.15);
+            border-radius: 12px;
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+        }
+        .aceptacion-container input[type="checkbox"] {
+            width: 22px;
+            height: 22px;
+            margin-top: 2px;
+            accent-color: #D4AF37;
+            cursor: pointer;
+            flex-shrink: 0;
+            appearance: none;
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(212, 168, 87, 0.3);
+            border-radius: 4px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        .aceptacion-container input[type="checkbox"]:checked {
+            background: #D4AF37;
+            border-color: #D4AF37;
+        }
+        .aceptacion-container input[type="checkbox"]:checked::after {
+            content: "✓";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #05080f;
+            font-size: 14px;
+            font-weight: 700;
+        }
+        .aceptacion-container input[type="checkbox"]:hover {
+            border-color: #D4AF37;
+        }
+        .aceptacion-container label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            cursor: pointer;
+        }
+        .aceptacion-container label strong {
+            color: var(--gold-cosmic);
+        }
+        .aceptacion-container label a {
+            color: #D4AF37;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+        .aceptacion-container label a:hover {
+            color: #b8923a;
+        }
+
+        /* ================================================================
+           BOTÓN VOLVER (con estado deshabilitado)
+           ================================================================ */
         .btn-volver {
             display: inline-block;
-            margin-top: 30px;
+            margin-top: 20px;
             padding: 12px 32px;
             background: linear-gradient(135deg, var(--gold-cosmic), #b8923a);
             color: #0a0c10;
@@ -116,8 +183,14 @@
             border: none;
             cursor: pointer;
             font-family: 'Orbitron', monospace;
+            opacity: 0.5;
+            pointer-events: none;
         }
-        .btn-volver:hover {
+        .btn-volver.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .btn-volver.active:hover {
             transform: scale(1.03);
             box-shadow: 0 0 30px rgba(212, 168, 87, 0.25);
         }
@@ -128,6 +201,7 @@
             .terminos-container h1 { font-size: 1.5rem; }
             .terminos-container h2 { font-size: 1rem; }
             .terminos-container h3 { font-size: 0.9rem; }
+            .aceptacion-container { flex-direction: column; align-items: center; text-align: center; }
         }
     </style>
 </head>
@@ -351,8 +425,21 @@
                         <p style="margin-top: 6px; font-size: 0.75rem; opacity: 0.5;">Es.stoks · Csariel's · WEB3</p>
                     </div>
 
+                    <!-- ===== CHECKBOX DE ACEPTACIÓN ===== -->
+                    <div class="aceptacion-container">
+                        <input type="checkbox" id="aceptoTerminos" />
+                        <label for="aceptoTerminos">
+                            <strong>He leído y acepto los Términos y Condiciones</strong> de <strong>Csariel's</strong>.
+                            Entiendo que al aceptar, me comprometo a cumplir con todas las disposiciones aquí establecidas.
+                            <br /><br />
+                            <span style="font-size: 0.85rem; opacity: 0.7;">
+                                📌 Esta aceptación es requerida para poder utilizar la plataforma, conectar tu wallet y participar en el ecosistema.
+                            </span>
+                        </label>
+                    </div>
+
                     <div class="text-center">
-                        <a href="/" class="btn-volver">← Volver a la plataforma</a>
+                        <a href="/" class="btn-volver" id="btnVolver">← Volver a la plataforma</a>
                     </div>
 
                 </div>
@@ -364,5 +451,38 @@
     <!-- ===== SCRIPTS ===== -->
     <script src="https://cdn.jsdelivr.net/npm/web3@1.8.0/dist/web3.min.js"></script>
     <script src="/app.js"></script>
+    <script>
+        // ================================================================
+        // LÓGICA DEL CHECKBOX DE ACEPTACIÓN
+        // ================================================================
+        document.addEventListener('DOMContentLoaded', function() {
+            const checkbox = document.getElementById('aceptoTerminos');
+            const btnVolver = document.getElementById('btnVolver');
+
+            checkbox.addEventListener('change', function() {
+                if (this.checked) {
+                    btnVolver.classList.add('active');
+                } else {
+                    btnVolver.classList.remove('active');
+                }
+            });
+
+            // También permitir que el botón redirija al hacer clic si está activo
+            btnVolver.addEventListener('click', function(e) {
+                if (!checkbox.checked) {
+                    e.preventDefault();
+                    // Pequeña animación de advertencia
+                    checkbox.style.borderColor = '#ff3366';
+                    checkbox.style.boxShadow = '0 0 20px rgba(255, 51, 102, 0.3)';
+                    setTimeout(() => {
+                        checkbox.style.borderColor = '';
+                        checkbox.style.boxShadow = '';
+                    }, 1500);
+                    return;
+                }
+                // Si está activo, la redirección funciona normalmente
+            });
+        });
+    </script>
 </body>
 </html>
