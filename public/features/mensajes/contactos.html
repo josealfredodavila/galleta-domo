@@ -874,7 +874,7 @@
     <script src="/features/mensajes/contactos.js"></script>
     <script>
         // ================================================================
-        // CONTACTOS - LÓGICA ADICIONAL
+        // CONTACTOS - LÓGICA ADICIONAL - SIN REDIRECCIÓN
         // ================================================================
 
         // ================================================================
@@ -882,12 +882,14 @@
         // ================================================================
         function showToast(msg, type = '') {
             const t = document.getElementById('toast');
-            t.textContent = msg;
-            t.className = 'toast show';
-            if (type === 'error') t.classList.add('error');
-            else t.classList.remove('error');
-            clearTimeout(t._timeout);
-            t._timeout = setTimeout(() => t.classList.remove('show'), 3500);
+            if (t) {
+                t.textContent = msg;
+                t.className = 'toast show';
+                if (type === 'error') t.classList.add('error');
+                else t.classList.remove('error');
+                clearTimeout(t._timeout);
+                t._timeout = setTimeout(() => t.classList.remove('show'), 3500);
+            }
         }
 
         // ================================================================
@@ -896,14 +898,48 @@
         document.addEventListener('DOMContentLoaded', function() {
             initStars();
 
-            // Verificar token
+            // Verificar token - SIN REDIRIGIR
             const token = localStorage.getItem('galleta_token');
             if (!token) {
                 showToast('⚠️ Conecta tu wallet para ver contactos', 'warning');
+            } else {
+                console.log('✅ Token encontrado');
             }
 
             // Cargar contactos simulados
             cargarContactosSimulados();
+
+            // Configurar filtros
+            document.querySelectorAll('.filtro').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.filtro').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    const filtro = this.dataset.filtro;
+                    showToast(`◈ Filtro: ${this.textContent.trim()}`);
+                    filtrarContactos(filtro);
+                });
+            });
+
+            // Configurar búsqueda
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                searchInput.addEventListener('input', function() {
+                    const query = this.value.toLowerCase().trim();
+                    filtrarContactosPorBusqueda(query);
+                });
+            }
+
+            // Configurar botón agregar
+            const btnAgregar = document.getElementById('btnAgregar');
+            if (btnAgregar) {
+                btnAgregar.addEventListener('click', function() {
+                    const nombre = prompt('◈ Nombre del contacto:');
+                    if (nombre && nombre.trim()) {
+                        showToast(`◆ Contacto ${nombre.trim()} agregado`);
+                        agregarContactoSimulado(nombre.trim());
+                    }
+                });
+            }
 
             console.log('◈ Sariel\'s - Contactos Ultra Mega Pro');
             console.log('◆ Lista de contactos cargada');
@@ -982,25 +1018,41 @@
         // ================================================================
         // CONTACTOS SIMULADOS
         // ================================================================
-        function cargarContactosSimulados() {
-            const contactos = [
-                { id: 1, nombre: 'Ana Martínez', estado: 'online', avatar: '✦', verificado: true, favorito: true },
-                { id: 2, nombre: 'Carlos López', estado: 'offline', avatar: '◆', verificado: false, favorito: false },
-                { id: 3, nombre: 'María García', estado: 'online', avatar: '◈', verificado: true, favorito: false },
-                { id: 4, nombre: 'Juan Pérez', estado: 'offline', avatar: '◇', verificado: false, favorito: false },
-                { id: 5, nombre: 'Sofia Ramírez', estado: 'online', avatar: '✦', verificado: true, favorito: true }
-            ];
+        let contactosSimulados = [
+            { id: 1, nombre: 'Ana Martínez', estado: 'online', avatar: '✦', verificado: true, favorito: true },
+            { id: 2, nombre: 'Carlos López', estado: 'offline', avatar: '◆', verificado: false, favorito: false },
+            { id: 3, nombre: 'María García', estado: 'online', avatar: '◈', verificado: true, favorito: false },
+            { id: 4, nombre: 'Juan Pérez', estado: 'offline', avatar: '◇', verificado: false, favorito: false },
+            { id: 5, nombre: 'Sofia Ramírez', estado: 'online', avatar: '✦', verificado: true, favorito: true }
+        ];
 
+        function cargarContactosSimulados() {
             const list = document.getElementById('contactosList');
             const totalEl = document.getElementById('totalContactos');
             const onlineEl = document.getElementById('onlineContactos');
 
-            // Actualizar contadores
-            if (totalEl) totalEl.textContent = contactos.length;
-            if (onlineEl) onlineEl.textContent = contactos.filter(c => c.estado === 'online').length;
+            if (totalEl) totalEl.textContent = contactosSimulados.length;
+            if (onlineEl) onlineEl.textContent = contactosSimulados.filter(c => c.estado === 'online').length;
 
-            // Renderizar
-            list.innerHTML = contactos.map(c => `
+            renderizarContactos(contactosSimulados);
+        }
+
+        function renderizarContactos(lista) {
+            const list = document.getElementById('contactosList');
+            if (!list) return;
+
+            if (!lista || lista.length === 0) {
+                list.innerHTML = `
+                    <div class="empty-state">
+                        <span class="icon">◈</span>
+                        <h3>Sin contactos</h3>
+                        <p>Comienza a agregar personas a tu red</p>
+                    </div>
+                `;
+                return;
+            }
+
+            list.innerHTML = lista.map(c => `
                 <div class="contacto-card" data-id="${c.id}">
                     <div class="contacto-avatar ${c.estado} ${c.favorito ? 'favorito' : ''}">
                         ${c.avatar}
@@ -1017,57 +1069,65 @@
                         </div>
                         <div class="contacto-meta">
                             <span>◈ 0x7F3a...9Bc2</span>
-                            <span>◈ Último mensaje</span>
                         </div>
                     </div>
                     <div class="contacto-actions">
                         <button class="mensaje" onclick="showToast('◈ Abriendo conversación con ${c.nombre}')">◈</button>
-                        <button class="favorito ${c.favorito ? 'active' : ''}" onclick="showToast('◆ ${c.favorito ? 'Quitado de' : 'Agregado a'} favoritos')">◆</button>
+                        <button class="favorito ${c.favorito ? 'active' : ''}" onclick="toggleFavoritoSimulado(${c.id})">◆</button>
                         <button class="bloquear" onclick="showToast('⊘ Usuario bloqueado')">⊘</button>
-                        <button class="eliminar" onclick="showToast('✕ Contacto eliminado')">✕</button>
+                        <button class="eliminar" onclick="eliminarContactoSimulado(${c.id})">✕</button>
                     </div>
                 </div>
             `).join('');
         }
 
-        // ================================================================
-        // FILTROS
-        // ================================================================
-        document.querySelectorAll('.filtro').forEach(btn => {
-            btn.addEventListener('click', function() {
-                document.querySelectorAll('.filtro').forEach(b => b.classList.remove('active'));
-                this.classList.add('active');
-                const filtro = this.dataset.filtro;
-                showToast(`◈ Filtro: ${this.textContent.trim()}`);
-            });
-        });
-
-        // ================================================================
-        // BÚSQUEDA
-        // ================================================================
-        const searchInput = document.getElementById('searchInput');
-        if (searchInput) {
-            searchInput.addEventListener('input', function() {
-                const query = this.value.toLowerCase().trim();
-                const cards = document.querySelectorAll('.contacto-card');
-                cards.forEach(card => {
-                    const nombre = card.querySelector('.nombre')?.textContent?.toLowerCase() || '';
-                    card.style.display = nombre.includes(query) ? 'flex' : 'none';
-                });
-            });
+        function filtrarContactos(filtro) {
+            let lista = [...contactosSimulados];
+            if (filtro === 'online') {
+                lista = lista.filter(c => c.estado === 'online');
+            } else if (filtro === 'favoritos') {
+                lista = lista.filter(c => c.favorito);
+            }
+            renderizarContactos(lista);
         }
 
-        // ================================================================
-        // AGREGAR CONTACTO
-        // ================================================================
-        const btnAgregar = document.getElementById('btnAgregar');
-        if (btnAgregar) {
-            btnAgregar.addEventListener('click', function() {
-                const nombre = prompt('◈ Nombre del contacto:');
-                if (nombre && nombre.trim()) {
-                    showToast(`◆ Contacto ${nombre.trim()} agregado`);
-                }
+        function filtrarContactosPorBusqueda(query) {
+            if (!query) {
+                renderizarContactos(contactosSimulados);
+                return;
+            }
+            const lista = contactosSimulados.filter(c => 
+                c.nombre.toLowerCase().includes(query)
+            );
+            renderizarContactos(lista);
+        }
+
+        function toggleFavoritoSimulado(id) {
+            const contacto = contactosSimulados.find(c => c.id === id);
+            if (contacto) {
+                contacto.favorito = !contacto.favorito;
+                cargarContactosSimulados();
+                showToast(contacto.favorito ? '◆ Agregado a favoritos' : '◆ Favorito eliminado');
+            }
+        }
+
+        function eliminarContactoSimulado(id) {
+            if (!confirm('¿Eliminar este contacto?')) return;
+            contactosSimulados = contactosSimulados.filter(c => c.id !== id);
+            cargarContactosSimulados();
+            showToast('✕ Contacto eliminado');
+        }
+
+        function agregarContactoSimulado(nombre) {
+            contactosSimulados.push({
+                id: Date.now(),
+                nombre: nombre,
+                estado: 'offline',
+                avatar: '✦',
+                verificado: false,
+                favorito: false
             });
+            cargarContactosSimulados();
         }
     </script>
 </body>
