@@ -44,12 +44,49 @@ const liveCount = document.getElementById('liveCount');
 const totalViewers = document.getElementById('totalViewers');
 
 // ================================================================
+// VERIFICAR AUTENTICACIÓN (SIN REDIRECCIÓN AGRESIVA)
+// ================================================================
+function verificarAutenticacion() {
+    const token = localStorage.getItem('galleta_token');
+    const userId = localStorage.getItem('userId');
+    
+    // Si no hay token, mostrar mensaje pero NO redirigir
+    if (!token) {
+        showToast('⚠️ Conecta tu wallet para usar Live', 'warning');
+        return false;
+    }
+    
+    // Si hay userId, consideramos que está autenticado
+    if (userId) {
+        return true;
+    }
+    
+    // Intentar obtener userId del token
+    try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        if (payload && payload.id) {
+            localStorage.setItem('userId', payload.id);
+            return true;
+        }
+    } catch (e) {
+        console.warn('Token inválido, pero continuamos en modo demo');
+        return true; // Permitir modo demo
+    }
+    
+    return true; // Permitir modo demo si falla la verificación
+}
+
+// ================================================================
 // CREAR TRANSMISIÓN
 // ================================================================
 window.crearTransmision = function() {
     const token = localStorage.getItem('galleta_token');
     if (!token) {
         showToast('⚠️ Conecta tu wallet primero', 'error');
+        // Intentar redirigir al index para conectar wallet
+        if (confirm('¿Quieres ir a conectar tu wallet?')) {
+            window.location.href = '/';
+        }
         return;
     }
 
@@ -179,7 +216,7 @@ window.cerrarModalTransmision = function() {
     // Limpiar chat
     const messages = document.querySelector('.chat-messages');
     if (messages) {
-        messages.innerHTML = `<div class="empty-message">Sin mensajes aún</div>';
+        messages.innerHTML = `<div class="empty-message">Sin mensajes aún</div>`;
     }
 };
 
@@ -325,9 +362,16 @@ window.generarQRLive = function() {
 };
 
 // ================================================================
-// EVENTOS
+// INICIALIZAR
 // ================================================================
 document.addEventListener('DOMContentLoaded', function() {
+    // Verificar autenticación sin redirigir agresivamente
+    const autenticado = verificarAutenticacion();
+    
+    if (!autenticado) {
+        showToast('⚠️ Conecta tu wallet para usar Live', 'warning');
+    }
+
     // Enter para enviar mensaje
     const chatInput = document.getElementById('chatInput');
     if (chatInput) {
@@ -354,12 +398,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 cerrarModalTransmision();
             }
         });
-    }
-
-    // Verificar token
-    const token = localStorage.getItem('galleta_token');
-    if (!token) {
-        window.location.href = '/';
     }
 
     console.log('◈ Sariel\'s - Live Ultra Mega Pro');
