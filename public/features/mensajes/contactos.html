@@ -1,4 +1,3 @@
-<!-- public/features/mensajes/contactos.html -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -6,207 +5,601 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>◈ Contactos · Sariel's</title>
     <link rel="stylesheet" href="/styles.css" />
-    <!-- ===== FAVICON OFICIAL CSARIEL'S ===== -->
+    <link rel="stylesheet" href="/features/mensajes/contactos.css" />
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <style>
-        /* ===== ESTILOS ESPECÍFICOS DE CONTACTOS ===== */
+        /* ================================================================
+           CONTACTOS ULTRA MEGA PRO - SARIEL'S
+           ================================================================ */
+
+        :root {
+            --gold: #D4AF37;
+            --gold-dark: #b8923a;
+            --gold-light: #e8c84a;
+            --gold-bright: #f0d060;
+            --green-deep: #0F2D1A;
+            --green-mid: #1a4a2a;
+            --green-bright: #2a6a3a;
+            --space: #05080f;
+            --text-primary: #f0f4f8;
+            --text-secondary: #c0d8e8;
+            --text-muted: #8aa8b8;
+            --glass-bg: rgba(15, 45, 26, 0.55);
+            --glass-border: rgba(212, 175, 55, 0.15);
+            --shadow-gold: 0 8px 32px rgba(212, 175, 55, 0.25);
+            --shadow-gold-strong: 0 0 60px rgba(212, 175, 55, 0.15);
+            --radius: 16px;
+            --radius-xl: 24px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-slow: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            --success: #00d68f;
+            --danger: #ff3366;
+            --warning: #f7d44a;
+            --cyan: #00e5ff;
+            --purple: #a855f7;
+            --pink: #ec4899;
+            --live-red: #ff0044;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: var(--space);
+            color: var(--text-primary);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            min-height: 100vh;
+            line-height: 1.6;
+            background-image: 
+                radial-gradient(ellipse at 20% 50%, rgba(26, 74, 42, 0.4) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 50%, rgba(212, 175, 55, 0.08) 0%, transparent 60%);
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* ===== FONDO ESTELAR ===== */
+        #stars-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+            will-change: transform;
+        }
+
+        .nebula {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(120px);
+            opacity: 0.12;
+            pointer-events: none;
+            z-index: 0;
+            animation: nebula-drift 25s ease-in-out infinite alternate;
+            will-change: transform;
+        }
+        .nebula-1 { width: 700px; height: 700px; background: var(--green-bright); top: -15%; right: -15%; }
+        .nebula-2 { width: 600px; height: 600px; background: var(--gold-light); bottom: -15%; left: -15%; animation-delay: -8s; opacity: 0.06; }
+        .nebula-3 { width: 500px; height: 500px; background: var(--purple); top: 50%; left: 50%; transform: translate(-50%, -50%); animation-delay: -15s; opacity: 0.04; }
+
+        @keyframes nebula-drift {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(40px, -30px) scale(1.15); }
+        }
+
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: var(--space); }
+        ::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 2px; }
+
+        /* ===== APP ===== */
+        .app {
+            position: relative;
+            z-index: 1;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 16px 20px 30px;
+            contain: layout style;
+        }
+
+        /* ===== HEADER ===== */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0 14px;
+            border-bottom: 1px solid var(--glass-border);
+            flex-wrap: wrap;
+            gap: 10px;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(5, 8, 15, 0.92);
+            border-radius: var(--radius) var(--radius) 0 0;
+            contain: layout style;
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            transition: var(--transition);
+        }
+        .logo:hover { opacity: 0.85; }
+        .logo-hex {
+            font-size: 1.8rem;
+            color: var(--gold);
+            font-weight: 800;
+            font-family: 'Orbitron', monospace;
+            text-shadow: 0 0 30px rgba(212, 175, 55, 0.3);
+            animation: glow-pulse 3s ease-in-out infinite;
+            will-change: text-shadow;
+        }
+        @keyframes glow-pulse {
+            0%, 100% { text-shadow: 0 0 30px rgba(212, 175, 55, 0.3); }
+            50% { text-shadow: 0 0 60px rgba(212, 175, 55, 0.6); }
+        }
+        .logo-text {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: 2px;
+        }
+        .logo-text span { color: var(--gold); }
+        .logo-badge {
+            font-size: 0.45rem;
+            background: linear-gradient(135deg, var(--gold), var(--gold-light));
+            color: var(--space);
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .network-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.6rem;
+            color: var(--gold);
+            background: rgba(212, 175, 55, 0.1);
+            padding: 4px 12px;
+            border-radius: 20px;
+            border: 1px solid rgba(212, 175, 55, 0.15);
+        }
+        .network-badge .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--success);
+            animation: pulse-dot 2s infinite;
+            will-change: transform, opacity;
+        }
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.3; transform: scale(0.8); }
+        }
+
+        /* ===== NAVEGACIÓN ===== */
+        .main-nav {
+            display: flex;
+            gap: 4px;
+            background: rgba(15, 45, 26, 0.3);
+            border-radius: var(--radius);
+            padding: 4px;
+            border: 1px solid var(--glass-border);
+            margin: 16px 0 20px;
+            overflow-x: auto;
+            flex-wrap: nowrap;
+            -webkit-overflow-scrolling: touch;
+            contain: layout style;
+        }
+        .main-nav .nav-link {
+            padding: 8px 16px;
+            border-radius: 12px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.7rem;
+            font-weight: 500;
+            transition: var(--transition);
+            white-space: nowrap;
+            font-family: 'Inter', sans-serif;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            position: relative;
+        }
+        .main-nav .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: 2px;
+            left: 50%;
+            width: 0;
+            height: 2px;
+            background: var(--gold);
+            transition: var(--transition);
+            transform: translateX(-50%);
+            border-radius: 2px;
+        }
+        .main-nav .nav-link:hover::after,
+        .main-nav .nav-link.active::after {
+            width: 60%;
+        }
+        .main-nav .nav-link:hover {
+            color: var(--text-primary);
+            background: rgba(212, 175, 55, 0.05);
+        }
+        .main-nav .nav-link.active {
+            background: rgba(212, 175, 55, 0.12);
+            color: var(--gold);
+        }
+        .main-nav .nav-link.live {
+            color: var(--live-red);
+        }
+        .main-nav .nav-link.live:hover {
+            background: rgba(255, 0, 68, 0.08);
+        }
+
+        /* ===== CONTACTOS CONTAINER ===== */
         .contactos-container {
             max-width: 900px;
             margin: 0 auto;
+        }
+
+        /* ===== CONTADORES ===== */
+        .contactos-stats {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 16px;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            letter-spacing: 0.3px;
+        }
+        .contactos-stats span {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .contactos-stats .numero {
+            color: var(--gold);
+            font-family: 'Orbitron', monospace;
         }
 
         /* ===== BUSCADOR ===== */
         .search-bar {
             display: flex;
             gap: 12px;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
             flex-wrap: wrap;
         }
         .search-bar input {
             flex: 1;
-            padding: 12px 16px;
+            padding: 10px 16px;
             background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(212, 175, 55, 0.15);
+            border: 1px solid var(--glass-border);
             border-radius: 30px;
-            color: #e8f0f8;
-            font-size: 0.95rem;
-            font-family: 'Space Grotesk', sans-serif;
-            transition: all 0.3s ease;
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            font-family: 'Inter', sans-serif;
+            transition: var(--transition);
+            outline: none;
             min-width: 200px;
         }
         .search-bar input:focus {
             outline: none;
-            border-color: #D4AF37;
+            border-color: var(--gold);
             background: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 0 30px rgba(212, 175, 55, 0.05);
         }
         .search-bar input::placeholder {
-            color: #4a6a8a;
+            color: var(--text-muted);
+            letter-spacing: 0.3px;
         }
         .search-bar .btn-agregar {
-            background: linear-gradient(135deg, #D4AF37, #b8923a);
-            color: #05080f;
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            color: var(--space);
             border: none;
-            padding: 12px 24px;
+            padding: 10px 24px;
             border-radius: 30px;
             font-family: 'Orbitron', monospace;
             font-weight: 700;
-            font-size: 0.8rem;
+            font-size: 0.7rem;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: var(--transition);
+            letter-spacing: 0.5px;
             white-space: nowrap;
         }
         .search-bar .btn-agregar:hover {
             transform: scale(1.02);
-            box-shadow: 0 0 30px rgba(212, 175, 55, 0.3);
+            box-shadow: var(--shadow-gold);
         }
 
         /* ===== FILTROS ===== */
         .filtros {
             display: flex;
-            gap: 8px;
-            margin-bottom: 20px;
+            gap: 6px;
+            margin-bottom: 16px;
             flex-wrap: wrap;
         }
         .filtros .filtro {
-            padding: 6px 16px;
-            border: 1px solid rgba(212, 175, 55, 0.15);
+            padding: 5px 14px;
+            border: 1px solid var(--glass-border);
             border-radius: 20px;
             background: transparent;
-            color: #4a6a8a;
+            color: var(--text-muted);
             font-family: 'Orbitron', monospace;
-            font-size: 0.65rem;
+            font-size: 0.6rem;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: var(--transition);
+            letter-spacing: 0.3px;
         }
         .filtros .filtro:hover {
             border-color: rgba(212, 175, 55, 0.3);
-            color: #e8f0f8;
+            color: var(--text-secondary);
         }
         .filtros .filtro.active {
             background: rgba(212, 175, 55, 0.1);
-            border-color: #D4AF37;
-            color: #D4AF37;
+            border-color: var(--gold);
+            color: var(--gold);
         }
 
         /* ===== LISTA DE CONTACTOS ===== */
         .contactos-list {
-            display: flex;
-            flex-direction: column;
+            display: grid;
+            grid-template-columns: 1fr;
             gap: 8px;
         }
 
         .contacto-card {
             display: flex;
             align-items: center;
-            gap: 16px;
-            padding: 14px 18px;
-            background: rgba(15, 45, 26, 0.2);
-            border: 1px solid rgba(212, 175, 55, 0.08);
-            border-radius: 12px;
-            transition: all 0.3s ease;
+            gap: 14px;
+            padding: 12px 16px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            transition: var(--transition-slow);
             cursor: pointer;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
         }
         .contacto-card:hover {
             border-color: rgba(212, 175, 55, 0.2);
-            background: rgba(15, 45, 26, 0.3);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-gold);
         }
-        .contacto-avatar {
-            width: 48px;
-            height: 48px;
+        .contacto-card .contacto-avatar {
+            width: 44px;
+            height: 44px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #0F2D1A, #D4AF37);
+            background: linear-gradient(135deg, var(--green-deep), var(--gold));
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: 700;
             color: white;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             overflow: hidden;
             flex-shrink: 0;
+            font-family: 'Orbitron', monospace;
+            position: relative;
             border: 2px solid transparent;
+            transition: var(--transition);
         }
-        .contacto-avatar img {
+        .contacto-card .contacto-avatar img {
             width: 100%;
             height: 100%;
             object-fit: cover;
         }
-        .contacto-avatar.online {
-            border-color: #00b894;
+        .contacto-card .contacto-avatar.online {
+            border-color: var(--success);
         }
-        .contacto-avatar.offline {
-            border-color: #4a6a8a;
+        .contacto-card .contacto-avatar.offline {
+            border-color: var(--text-muted);
             opacity: 0.6;
         }
-        .contacto-info {
-            flex: 1;
+        .contacto-card .contacto-avatar .online-dot {
+            position: absolute;
+            bottom: 2px;
+            right: 2px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--success);
+            border: 2px solid var(--space);
         }
-        .contacto-info .nombre {
-            font-weight: 600;
-            color: #e8f0f8;
-            font-size: 1rem;
-        }
-        .contacto-info .estado {
-            font-size: 0.75rem;
-            color: #4a6a8a;
-        }
-        .contacto-info .estado.online {
-            color: #00b894;
-        }
-        .contacto-actions {
+        .contacto-card .contacto-avatar .favorito-badge {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            font-size: 0.6rem;
+            background: var(--gold);
+            color: var(--space);
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
             display: flex;
-            gap: 8px;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid var(--space);
+        }
+        .contacto-card .contacto-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .contacto-card .contacto-info .nombre {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            letter-spacing: 0.3px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .contacto-card .contacto-info .nombre .verified {
+            font-size: 0.5rem;
+            background: rgba(212, 175, 55, 0.1);
+            color: var(--gold);
+            padding: 1px 8px;
+            border-radius: 10px;
+            font-family: 'Orbitron', monospace;
+            letter-spacing: 0.5px;
+            border: 1px solid rgba(212, 175, 55, 0.1);
+        }
+        .contacto-card .contacto-info .estado {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            letter-spacing: 0.3px;
+        }
+        .contacto-card .contacto-info .estado.online {
+            color: var(--success);
+        }
+        .contacto-card .contacto-info .contacto-meta {
+            display: flex;
+            gap: 12px;
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+            flex-wrap: wrap;
+        }
+        .contacto-card .contacto-actions {
+            display: flex;
+            gap: 4px;
             flex-shrink: 0;
         }
-        .contacto-actions button {
+        .contacto-card .contacto-actions button {
             background: none;
             border: none;
-            color: #4a6a8a;
-            font-size: 1.1rem;
+            color: var(--text-muted);
+            font-size: 0.9rem;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: var(--transition);
             padding: 4px 8px;
             border-radius: 8px;
+            font-family: 'Inter', sans-serif;
         }
-        .contacto-actions button:hover {
-            background: rgba(212, 175, 55, 0.1);
-            color: #D4AF37;
+        .contacto-card .contacto-actions button:hover {
+            background: rgba(212, 175, 55, 0.05);
+            color: var(--gold);
         }
-        .contacto-actions button.mensaje:hover {
-            color: #00b894;
+        .contacto-card .contacto-actions button.mensaje:hover {
+            color: var(--success);
         }
-        .contacto-actions button.eliminar:hover {
-            color: #ff3366;
+        .contacto-card .contacto-actions button.favorito.active {
+            color: var(--gold);
+        }
+        .contacto-card .contacto-actions button.eliminar:hover {
+            color: var(--danger);
+        }
+        .contacto-card .contacto-actions button.bloquear:hover {
+            color: var(--danger);
         }
 
         /* ===== EMPTY STATE ===== */
         .empty-state {
             text-align: center;
             padding: 60px 20px;
-            color: #4a6a8a;
+            color: var(--text-muted);
+            grid-column: 1 / -1;
         }
         .empty-state .icon {
-            font-size: 3rem;
+            font-size: 2.5rem;
             display: block;
-            margin-bottom: 16px;
+            margin-bottom: 12px;
+            font-family: 'Orbitron', monospace;
+            color: var(--gold);
+            opacity: 0.4;
+            letter-spacing: 2px;
         }
         .empty-state h3 {
             font-family: 'Orbitron', monospace;
-            font-size: 1.2rem;
-            color: #8ba3c7;
+            color: var(--text-secondary);
+            font-size: 1rem;
+            letter-spacing: 1px;
+            font-weight: 400;
         }
         .empty-state p {
-            font-size: 0.9rem;
+            font-size: 0.85rem;
+            letter-spacing: 0.3px;
         }
+
+        /* ===== TOAST ===== */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: var(--green-deep);
+            border: 1px solid var(--gold);
+            color: var(--gold);
+            padding: 14px 28px;
+            border-radius: 14px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            box-shadow: var(--shadow-gold-strong);
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 9999;
+            max-width: 400px;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            letter-spacing: 0.3px;
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.error { border-color: var(--danger); color: var(--danger); }
+
+        /* ===== FOOTER ===== */
+        .footer {
+            margin-top: 30px;
+            padding-top: 16px;
+            border-top: 1px solid var(--glass-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            padding-bottom: 8px;
+            letter-spacing: 0.3px;
+        }
+        .footer .brand { color: var(--gold); font-weight: 600; letter-spacing: 1px; }
+        .footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
+        .footer-links a { color: var(--text-muted); text-decoration: none; transition: var(--transition); }
+        .footer-links a:hover { color: var(--gold); }
 
         /* ===== RESPONSIVE ===== */
         @media (max-width: 768px) {
-            .contactos-container { padding: 0 12px; }
+            .app { padding: 12px 14px; }
+            .contactos-container { padding: 0; }
             .search-bar { flex-direction: column; }
-            .search-bar .btn-agregar { width: 100%; text-align: center; }
-            .contacto-card { padding: 12px 14px; flex-wrap: wrap; }
-            .contacto-actions { width: 100%; justify-content: flex-end; }
+            .search-bar .btn-agregar { width: 100%; text-align: center; justify-content: center; }
+            .contacto-card { padding: 10px 12px; flex-wrap: wrap; }
+            .contacto-card .contacto-actions { width: 100%; justify-content: flex-end; padding-top: 4px; border-top: 1px solid var(--glass-border); }
             .filtros { gap: 4px; }
-            .filtros .filtro { font-size: 0.55rem; padding: 4px 12px; }
+            .filtros .filtro { font-size: 0.55rem; padding: 3px 10px; }
+            .main-nav .nav-link { font-size: 0.6rem; padding: 6px 10px; }
+            .header .logo-text { font-size: 1rem; }
+            .header .logo-hex { font-size: 1.4rem; }
+            .contactos-stats { font-size: 0.6rem; gap: 12px; }
+        }
+
+        @media (max-width: 480px) {
+            .contacto-card .contacto-avatar { width: 36px; height: 36px; font-size: 0.9rem; }
+            .contacto-card .contacto-info .nombre { font-size: 0.8rem; }
+            .contacto-card .contacto-info .estado { font-size: 0.55rem; }
+            .contacto-card .contacto-actions button { font-size: 0.8rem; padding: 2px 6px; }
+            .main-nav .nav-link { font-size: 0.55rem; padding: 4px 8px; }
         }
     </style>
 </head>
@@ -218,193 +611,174 @@
     <div class="nebula nebula-2"></div>
     <div class="nebula nebula-3"></div>
 
-    <div id="app">
+    <div class="app">
 
-        <!-- ===== HEADER CON LOGOTIPO OFICIAL ===== -->
+        <!-- ===== HEADER ===== -->
         <header class="header">
-            <div class="header-content">
-                <a href="/" class="logo">
-                    <span class="logo-icon"><span class="hex">◈</span></span>
-                    <span class="logo-text">Sariel's</span>
-                    <span class="logo-badge">✦ WEB3</span>
-                </a>
-                <div class="header-info">
-                    <span class="network-badge">🟢 Polygon</span>
-                    <button id="connectWallet" class="btn-connect">
-                        <span class="btn-icon">🔗</span>
-                        Conectar Wallet
-                    </button>
-                </div>
+            <a href="/" class="logo">
+                <span class="logo-hex">◈</span>
+                <span class="logo-text">Sariel<span>'s</span></span>
+                <span class="logo-badge">✦ WEB3</span>
+            </a>
+            <div class="header-actions">
+                <span class="network-badge"><span class="dot"></span> Polygon</span>
             </div>
         </header>
 
+        <!-- ===== NAVEGACIÓN ===== -->
+        <nav class="main-nav">
+            <a href="/" class="nav-link">⌂ Inicio</a>
+            <a href="/features/muro/muro.html" class="nav-link">◇ Muro</a>
+            <a href="/features/perfil/perfil.html" class="nav-link">◆ Perfil</a>
+            <a href="/features/mensajes/contactos.html" class="nav-link active">◈ Contactos</a>
+            <a href="/features/mensajes/mensajes.html" class="nav-link">◈ Mensajes</a>
+            <a href="/features/live/live.html" class="nav-link live">◉ Live</a>
+        </nav>
+
         <!-- ===== CONTACTOS ===== -->
-        <main class="main">
-            <div class="container">
-                <div class="contactos-container">
+        <div class="contactos-container">
 
-                    <!-- ===== MENU DE NAVEGACIÓN ===== -->
-                    <nav class="main-nav">
-                        <a href="/" class="nav-link">🏠 Inicio</a>
-                        <a href="/features/muro/muro.html" class="nav-link">📱 Muro</a>
-                        <a href="/features/perfil/perfil.html" class="nav-link">👤 Perfil</a>
-                        <a href="/features/mensajes/contactos.html" class="nav-link active">👥 Contactos</a>
-                        <a href="/features/live/live.html" class="nav-link live-link">🔴 Live</a>
-                    </nav>
+            <!-- ===== CONTADORES ===== -->
+            <div class="contactos-stats">
+                <span>◈ Total: <span class="numero" id="totalContactos">0</span></span>
+                <span>◉ En línea: <span class="numero" id="onlineContactos">0</span></span>
+            </div>
 
-                    <!-- ===== WALLET INFO ===== -->
-                    <div id="walletInfo" class="wallet-info hidden">
-                        <div class="wallet-details">
-                            <span class="wallet-label">Wallet:</span>
-                            <span id="walletAddress" class="wallet-address"></span>
-                            <span class="wallet-status online">● Conectado</span>
-                        </div>
-                        <div class="wallet-actions">
-                            <button id="btnPerfil" class="btn-small">👤 Perfil</button>
-                            <button id="btnLogout" class="btn-small logout">🚪 Salir</button>
-                        </div>
-                    </div>
+            <!-- ===== BUSCADOR ===== -->
+            <div class="search-bar">
+                <input type="text" id="searchInput" placeholder="◈ Buscar contactos..." />
+                <button class="btn-agregar" id="btnAgregar">◆ Agregar contacto</button>
+            </div>
 
-                    <!-- ===== BUSCADOR ===== -->
-                    <div class="search-bar">
-                        <input type="text" id="searchInput" placeholder="🔍 Buscar contactos..." />
-                        <button class="btn-agregar" id="btnAgregar">➕ Agregar contacto</button>
-                    </div>
+            <!-- ===== FILTROS ===== -->
+            <div class="filtros">
+                <button class="filtro active" data-filtro="todos">◈ Todos</button>
+                <button class="filtro" data-filtro="online">◉ En línea</button>
+                <button class="filtro" data-filtro="favoritos">◆ Favoritos</button>
+                <button class="filtro" data-filtro="recientes">⟡ Recientes</button>
+            </div>
 
-                    <!-- ===== FILTROS ===== -->
-                    <div class="filtros">
-                        <button class="filtro active" data-filtro="todos">Todos</button>
-                        <button class="filtro" data-filtro="online">🟢 En línea</button>
-                        <button class="filtro" data-filtro="favoritos">⭐ Favoritos</button>
-                        <button class="filtro" data-filtro="recientes">🕐 Recientes</button>
-                    </div>
-
-                    <!-- ===== LISTA DE CONTACTOS ===== -->
-                    <div class="contactos-list" id="contactosList">
-                        <div class="empty-state">
-                            <span class="icon">👤</span>
-                            <h3>Sin contactos</h3>
-                            <p>Comienza a agregar personas a tu red</p>
-                        </div>
-                    </div>
-
+            <!-- ===== LISTA DE CONTACTOS ===== -->
+            <div class="contactos-list" id="contactosList">
+                <div class="empty-state">
+                    <span class="icon">◈</span>
+                    <h3>Sin contactos</h3>
+                    <p>Comienza a agregar personas a tu red</p>
                 </div>
             </div>
-        </main>
+
+        </div>
 
         <!-- ===== FOOTER ===== -->
         <footer class="footer">
-            <div class="footer-content">
-                <p class="footer-brand">✦ Sariel's · Sabor al Paladar ✦</p>
-                <p>◈ Galleta Domo · Powered by Polygon</p>
-                <p class="footer-small">
-                    <a href="/terminos.html" target="_blank">📜 Términos y Condiciones</a>
-                    &nbsp;·&nbsp;
-                    <a href="/privacidad.html" target="_blank">🔒 Privacidad</a>
-                </p>
+            <span><span class="brand">◈ Sariel's</span> · Sabor al Paladar · WEB3</span>
+            <div class="footer-links">
+                <a href="/terminos.html">◈ Términos</a>
+                <span style="opacity:0.3;">⚡ Polygon</span>
             </div>
         </footer>
 
     </div>
 
+    <!-- ===== TOAST ===== -->
+    <div class="toast" id="toast"></div>
+
     <!-- ===== SCRIPTS ===== -->
     <script src="https://cdn.jsdelivr.net/npm/web3@1.8.0/dist/web3.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <script src="/app.js"></script>
+    <script src="/features/mensajes/contactos.js"></script>
     <script>
-        // ===== LÓGICA DE CONTACTOS =====
+        // ================================================================
+        // CONTACTOS - LÓGICA ADICIONAL
+        // ================================================================
+
+        // ================================================================
+        // INICIALIZAR
+        // ================================================================
         document.addEventListener('DOMContentLoaded', function() {
-            const searchInput = document.getElementById('searchInput');
-            const contactosList = document.getElementById('contactosList');
-            const btnAgregar = document.getElementById('btnAgregar');
+            initStars();
 
-            // Datos de ejemplo
-            let contactos = [
-                { id: 1, nombre: 'Ana Martínez', estado: 'online', avatar: '👩' },
-                { id: 2, nombre: 'Carlos López', estado: 'offline', avatar: '👨' },
-                { id: 3, nombre: 'María García', estado: 'online', avatar: '👩' },
-                { id: 4, nombre: 'Juan Pérez', estado: 'offline', avatar: '👨' },
-            ];
+            // Verificar token
+            const token = localStorage.getItem('galleta_token');
+            if (!token) {
+                window.location.href = '/';
+            }
 
-            // Renderizar contactos
-            function renderizarContactos(lista) {
-                if (lista.length === 0) {
-                    contactosList.innerHTML = `
-                        <div class="empty-state">
-                            <span class="icon">👤</span>
-                            <h3>Sin contactos</h3>
-                            <p>Comienza a agregar personas a tu red</p>
-                        </div>
-                    `;
+            console.log('◈ Sariel\'s - Contactos Ultra Mega Pro');
+            console.log('◆ Lista de contactos cargada');
+        });
+
+        function initStars() {
+            const canvas = document.getElementById('stars-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            let width, height, stars = [];
+            let animId = null;
+            let isVisible = true;
+
+            const isMobile = window.innerWidth < 600;
+            const STAR_COUNT = isMobile ? 40 : 100;
+
+            function resize() {
+                width = window.innerWidth;
+                height = window.innerHeight;
+                canvas.width = width;
+                canvas.height = height;
+                createStars();
+            }
+
+            function createStars() {
+                stars = [];
+                for (let i = 0; i < STAR_COUNT; i++) {
+                    stars.push({
+                        x: Math.random() * width,
+                        y: Math.random() * height,
+                        radius: Math.random() * 0.8 + 0.2,
+                        speed: Math.random() * 0.005 + 0.002,
+                        opacity: Math.random() * 0.5 + 0.2,
+                        twinklePhase: Math.random() * Math.PI * 2
+                    });
+                }
+            }
+
+            function draw() {
+                if (!isVisible) {
+                    animId = requestAnimationFrame(draw);
                     return;
                 }
-
-                contactosList.innerHTML = lista.map(c => `
-                    <div class="contacto-card">
-                        <div class="contacto-avatar ${c.estado}">
-                            <span>${c.avatar || '👤'}</span>
-                        </div>
-                        <div class="contacto-info">
-                            <div class="nombre">${c.nombre}</div>
-                            <div class="estado ${c.estado}">${c.estado === 'online' ? '🟢 En línea' : '⚪ Desconectado'}</div>
-                        </div>
-                        <div class="contacto-actions">
-                            <button class="mensaje" title="Enviar mensaje">💬</button>
-                            <button class="favorito" title="Agregar a favoritos">⭐</button>
-                            <button class="eliminar" title="Eliminar contacto">✕</button>
-                        </div>
-                    </div>
-                `).join('');
+                ctx.clearRect(0, 0, width, height);
+                for (let star of stars) {
+                    const opacity = star.opacity * (0.6 + 0.4 * Math.sin(star.twinklePhase));
+                    ctx.beginPath();
+                    ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
+                    ctx.fill();
+                    star.twinklePhase += 0.02;
+                    star.y += star.speed;
+                    if (star.y > height) {
+                        star.y = 0;
+                        star.x = Math.random() * width;
+                    }
+                }
+                animId = requestAnimationFrame(draw);
             }
 
-            // Filtrar contactos
-            function filtrarContactos(filtro) {
-                let lista = [...contactos];
-                if (filtro === 'online') {
-                    lista = lista.filter(c => c.estado === 'online');
-                } else if (filtro === 'favoritos') {
-                    lista = lista.filter(c => c.favorito);
-                } else if (filtro === 'recientes') {
-                    lista = lista.sort((a, b) => a.id - b.id);
-                }
-                renderizarContactos(lista);
-            }
+            function pauseAnimation() { isVisible = false; }
+            function resumeAnimation() { isVisible = true; }
 
-            // Buscar contactos
-            searchInput.addEventListener('input', function() {
-                const query = this.value.toLowerCase();
-                const filtrados = contactos.filter(c => 
-                    c.nombre.toLowerCase().includes(query)
-                );
-                renderizarContactos(filtrados);
+            resize();
+            draw();
+
+            window.addEventListener('resize', resize);
+            document.addEventListener('visibilitychange', function() {
+                if (document.hidden) pauseAnimation();
+                else resumeAnimation();
             });
 
-            // Filtros
-            document.querySelectorAll('.filtro').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    document.querySelectorAll('.filtro').forEach(b => b.classList.remove('active'));
-                    this.classList.add('active');
-                    filtrarContactos(this.dataset.filtro);
-                });
-            });
-
-            // Agregar contacto (simulado)
-            btnAgregar.addEventListener('click', function() {
-                const nombre = prompt('Nombre del contacto:');
-                if (nombre && nombre.trim()) {
-                    contactos.push({
-                        id: Date.now(),
-                        nombre: nombre.trim(),
-                        estado: 'offline',
-                        avatar: '👤'
-                    });
-                    renderizarContactos(contactos);
-                }
-            });
-
-            // Render inicial
-            renderizarContactos(contactos);
-        });
+            return { pauseAnimation, resumeAnimation };
+        }
     </script>
 </body>
 </html>
