@@ -1,6 +1,6 @@
 /* ================================================================
    CONTACTOS ULTRA MEGA PRO - SARIEL'S
-   Lógica premium competitiva con Silicon Valley
+   Lógica premium - Sin redirección agresiva
    ================================================================ */
 
 // ================================================================
@@ -42,6 +42,36 @@ const btnAgregar = document.getElementById('btnAgregar');
 const filtros = document.querySelectorAll('.filtro');
 const totalContactos = document.getElementById('totalContactos');
 const onlineContactos = document.getElementById('onlineContactos');
+
+// ================================================================
+// VERIFICAR AUTENTICACIÓN (SIN REDIRECCIÓN AGRESIVA)
+// ================================================================
+function verificarAutenticacion() {
+    const token = localStorage.getItem('galleta_token');
+    const userId = localStorage.getItem('userId');
+    
+    if (!token) {
+        showToast('⚠️ Conecta tu wallet para ver contactos', 'warning');
+        return false;
+    }
+    
+    if (userId) {
+        return true;
+    }
+    
+    try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        if (payload && payload.id) {
+            localStorage.setItem('userId', payload.id);
+            return true;
+        }
+    } catch (e) {
+        console.warn('Token inválido, pero continuamos en modo demo');
+        return true;
+    }
+    
+    return true;
+}
 
 // ================================================================
 // CONEXIÓN A SOCKET.IO
@@ -98,13 +128,14 @@ function conectarSocket() {
 }
 
 // ================================================================
-// CARGAR CONTACTOS
+// CARGAR CONTACTOS (SIN REDIRECCIÓN)
 // ================================================================
 async function cargarContactos() {
     try {
         const token = localStorage.getItem('galleta_token');
         if (!token) {
-            window.location.href = '/';
+            // No redirigir, solo mostrar contactos de ejemplo
+            cargarContactosEjemplo();
             return;
         }
 
@@ -118,7 +149,9 @@ async function cargarContactos() {
             if (response.status === 401) {
                 localStorage.removeItem('galleta_token');
                 localStorage.removeItem('userId');
-                window.location.href = '/';
+                // NO redirigir, solo mostrar ejemplo
+                cargarContactosEjemplo();
+                return;
             }
             throw new Error('Error al cargar contactos');
         }
@@ -131,7 +164,24 @@ async function cargarContactos() {
     } catch (error) {
         console.error('Error cargando contactos:', error);
         showToast('❌ Error al cargar contactos', 'error');
+        cargarContactosEjemplo();
     }
+}
+
+// ================================================================
+// CONTACTOS DE EJEMPLO (MODO DEMO)
+// ================================================================
+function cargarContactosEjemplo() {
+    contactos = [
+        { _id: '1', nombre: 'Ana Martínez', estado: 'conectado', esFavorito: true, verificado: true, walletAddress: '0x7F3a...9Bc2' },
+        { _id: '2', nombre: 'Carlos López', estado: 'desconectado', esFavorito: false, verificado: false, walletAddress: '0x8A4b...3Cd1' },
+        { _id: '3', nombre: 'María García', estado: 'conectado', esFavorito: false, verificado: true, walletAddress: '0x9B5c...4De2' },
+        { _id: '4', nombre: 'Juan Pérez', estado: 'desconectado', esFavorito: false, verificado: false, walletAddress: '0x1C6d...5Ef3' },
+        { _id: '5', nombre: 'Sofia Ramírez', estado: 'conectado', esFavorito: true, verificado: true, walletAddress: '0x2D7e...6Fg4' }
+    ];
+    actualizarContadores();
+    aplicarFiltros();
+    showToast('◈ Modo demostración - Contactos de ejemplo', 'warning');
 }
 
 // ================================================================
@@ -151,11 +201,11 @@ function actualizarContadores() {
 function renderizarContactos(lista) {
     if (!lista || lista.length === 0) {
         contactosList.innerHTML = `
-            <div class="empty-state" style="grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--text-muted);">
-                <span class="icon" style="font-size:2.5rem;display:block;margin-bottom:12px;font-family:'Orbitron',monospace;color:var(--gold);opacity:0.4;letter-spacing:2px;">◈</span>
-                <h3 style="font-family:'Orbitron',monospace;color:var(--text-secondary);font-size:1rem;letter-spacing:1px;font-weight:400;">Sin contactos</h3>
-                <p style="font-size:0.85rem;letter-spacing:0.3px;">Comienza a agregar personas a tu red</p>
-                <button class="btn-accion" onclick="abrirAgregarContacto()" style="margin-top:16px;padding:8px 24px;border-radius:30px;border:1px solid var(--glass-border);background:transparent;color:var(--text-secondary);cursor:pointer;transition:all 0.3s ease;font-family:'Inter',sans-serif;">◈ Agregar contacto</button>
+            <div class="empty-state">
+                <span class="icon">◈</span>
+                <h3>Sin contactos</h3>
+                <p>Comienza a agregar personas a tu red</p>
+                <button class="btn-accion" onclick="abrirAgregarContacto()">◈ Agregar contacto</button>
             </div>
         `;
         return;
@@ -168,7 +218,7 @@ function renderizarContactos(lista) {
         return `
             <div class="contacto-card" data-id="${contacto._id}">
                 <div class="contacto-avatar ${esOnline ? 'online' : 'offline'} ${esFavorito ? 'favorito' : ''}">
-                    ${contacto.fotoPerfil ? `<img src="${contacto.fotoPerfil}" alt="${contacto.nombre}" />` : (contacto.nombre ? contacto.nombre[0].toUpperCase() : '✦')}
+                    ${contacto.nombre ? contacto.nombre[0].toUpperCase() : '✦'}
                     ${esOnline ? '<span class="online-dot"></span>' : ''}
                     ${esFavorito ? '<span class="favorito-badge">◆</span>' : ''}
                 </div>
@@ -181,8 +231,7 @@ function renderizarContactos(lista) {
                         ${esOnline ? '◉ En línea' : '◈ Desconectado'}
                     </div>
                     <div class="contacto-meta">
-                        <span>◈ ${contacto.walletAddress ? contacto.walletAddress.slice(0, 10) + '...' : 'Sin wallet'}</span>
-                        ${contacto.ultimoMensaje ? `<span>◈ ${contacto.ultimoMensaje.slice(0, 20)}${contacto.ultimoMensaje.length > 20 ? '...' : ''}</span>` : ''}
+                        <span>◈ ${contacto.walletAddress || 'Sin wallet'}</span>
                     </div>
                 </div>
                 <div class="contacto-actions">
@@ -218,14 +267,6 @@ function aplicarFiltros() {
 
         return matchBusqueda && matchFiltro;
     });
-
-    if (filtroActual === 'recientes') {
-        contactosFiltrados.sort((a, b) => {
-            const fechaA = a.ultimoMensaje ? new Date(a.ultimoMensaje) : new Date(0);
-            const fechaB = b.ultimoMensaje ? new Date(b.ultimoMensaje) : new Date(0);
-            return fechaB - fechaA;
-        });
-    }
 
     renderizarContactos(contactosFiltrados);
 }
@@ -272,6 +313,14 @@ window.toggleFavorito = async function(contactoId) {
         const contacto = contactos.find(c => c._id === contactoId);
         if (!contacto) return;
 
+        if (!token) {
+            contacto.esFavorito = !contacto.esFavorito;
+            actualizarContadores();
+            aplicarFiltros();
+            showToast(contacto.esFavorito ? '◆ Agregado a favoritos' : '◆ Favorito eliminado');
+            return;
+        }
+
         const response = await fetch('/api/contactos/favorito', {
             method: 'POST',
             headers: {
@@ -285,7 +334,7 @@ window.toggleFavorito = async function(contactoId) {
         });
 
         if (response.ok) {
-            showToast(contacto.esFavorito ? '◆ Favorito eliminado' : '◆ Agregado a favoritos');
+            showToast(contacto.esFavorito ? '◆ Agregado a favoritos' : '◆ Favorito eliminado');
             cargarContactos();
         } else {
             throw new Error('Error al actualizar favorito');
@@ -301,6 +350,11 @@ window.bloquearContacto = async function(contactoId) {
 
     try {
         const token = localStorage.getItem('galleta_token');
+        if (!token) {
+            showToast('✅ Usuario bloqueado (modo demo)', 'warning');
+            return;
+        }
+
         const response = await fetch('/api/perfil/bloquear', {
             method: 'POST',
             headers: {
@@ -327,6 +381,14 @@ window.eliminarContacto = async function(contactoId) {
 
     try {
         const token = localStorage.getItem('galleta_token');
+        if (!token) {
+            contactos = contactos.filter(c => c._id !== contactoId);
+            actualizarContadores();
+            aplicarFiltros();
+            showToast('✅ Contacto eliminado (modo demo)');
+            return;
+        }
+
         const response = await fetch(`/api/contactos/${contactoId}`, {
             method: 'DELETE',
             headers: {
@@ -361,6 +423,25 @@ window.abrirAgregarContacto = function() {
 async function buscarYAgregarContacto(wallet) {
     try {
         const token = localStorage.getItem('galleta_token');
+        if (!token) {
+            // Modo demo: agregar contacto simulado
+            const nombre = prompt('◈ Nombre del contacto (modo demo):');
+            if (nombre && nombre.trim()) {
+                contactos.push({
+                    _id: Date.now().toString(),
+                    nombre: nombre.trim(),
+                    estado: 'desconectado',
+                    esFavorito: false,
+                    verificado: false,
+                    walletAddress: wallet
+                });
+                actualizarContadores();
+                aplicarFiltros();
+                showToast(`✅ Contacto ${nombre.trim()} agregado (modo demo)`);
+            }
+            return;
+        }
+
         const response = await fetch(`/api/perfil/buscar?wallet=${wallet}`, {
             headers: {
                 'Authorization': `Bearer ${token}`
@@ -449,32 +530,16 @@ function cargarModo() {
 // ================================================================
 // INICIALIZAR
 // ================================================================
-document.addEventListener('DOMContentLoaded', async function() {
+document.addEventListener('DOMContentLoaded', function() {
     cargarModo();
-
-    try {
-        const token = localStorage.getItem('galleta_token');
-        if (!token) {
-            window.location.href = '/';
-            return;
-        }
-
-        const response = await fetch('/api/perfil', {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
-
-        if (response.ok) {
-            usuarioActual = await response.json();
-            localStorage.setItem('userId', usuarioActual._id);
-        }
-    } catch (error) {
-        console.error('Error cargando usuario:', error);
-    }
-
+    
+    // Verificar autenticación sin redirigir
+    const autenticado = verificarAutenticacion();
+    
     conectarSocket();
-    await cargarContactos();
+    
+    // Cargar contactos (con fallback a ejemplo)
+    cargarContactos();
 
     // Botón de modo oscuro
     const btnModo = document.createElement('button');
@@ -500,7 +565,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     btnModo.onclick = toggleModo;
     document.body.appendChild(btnModo);
 
-    // Verificar wallet
+    // Verificar wallet (solo UI, sin redirigir)
     const token = localStorage.getItem('galleta_token');
     const connectBtn = document.getElementById('connectWallet');
     if (token && connectBtn) {
