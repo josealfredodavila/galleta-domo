@@ -8,7 +8,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet" />
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <style>
-        /* ===== ESTILOS ===== */
+        /* ================================================================
+           ESTILOS PROFESIONALES - GENERADOR DE QRs
+           ================================================================ */
         :root {
             --gold: #D4AF37;
             --gold-dark: #b8923a;
@@ -510,7 +512,7 @@
             <div class="status-bar" id="statusBar">
                 <span>🔌 Servidor: <span id="serverStatus" class="offline">Desconectado</span></span>
                 <span id="qrCount">📋 0 QRs generados</span>
-                <span id="apiUrlDisplay">🌐 API: <span id="apiUrlText">https://galleta-domo.up.railway.app/api</span></span>
+                <span id="apiUrlDisplay">🌐 API: <span id="apiUrlText">https://galleta-domo.up.railway.app</span></span>
             </div>
 
             <!-- ===== PANEL: GENERAR QR ===== -->
@@ -600,10 +602,10 @@
         const QR_ACCESS_PASSWORD = 'Sariel2025';
         const QR_GENERATE_PASSWORD = 'Generar2025';
 
-        // API URL - Usa Railway en producción, localhost en desarrollo
+        // 🔥 URL CORRECTA DE LA API EN RAILWAY (sin /api al final)
         const API_URL = window.location.hostname === 'localhost' 
-            ? 'http://localhost:3001/api' 
-            : 'https://galleta-domo.up.railway.app/api';
+            ? 'http://localhost:3001' 
+            : 'https://galleta-domo.up.railway.app';
 
         let generateUnlocked = false;
         let token = localStorage.getItem('galleta_token') || null;
@@ -759,7 +761,6 @@
                 });
 
                 if (!response.ok) {
-                    // Si no hay token o está expirado, cargar desde localStorage
                     renderizarQRsLocal();
                     return;
                 }
@@ -779,7 +780,7 @@
         }
 
         // ================================================================
-        // RENDERIZAR QRs (desde API o localStorage)
+        // RENDERIZAR QRs
         // ================================================================
         function renderizarQRs(qrs) {
             const grid = document.getElementById('qrGrid');
@@ -894,7 +895,6 @@
                 const data = await response.json();
 
                 if (data.success) {
-                    // Guardar localmente también
                     const qrs = cargarQRsLocal();
                     data.qrs.forEach(qr => {
                         qrs.push({
@@ -912,12 +912,10 @@
                     status.textContent = `✅ ${data.qrs.length} QR${data.qrs.length > 1 ? 's' : ''} generado${data.qrs.length > 1 ? 's' : ''} en el servidor`;
                     showToast(`✅ ${data.qrs.length} QR${data.qrs.length > 1 ? 's' : ''} generado${data.qrs.length > 1 ? 's' : ''}`);
                 } else {
-                    // Fallback: generar localmente
                     generarQRsLocal(cantidad, producto);
                 }
             } catch (error) {
                 console.error('Error generando QRs:', error);
-                // Fallback: generar localmente
                 generarQRsLocal(cantidad, producto);
             }
 
@@ -969,7 +967,6 @@
                     await cargarQRsDesdeAPI();
                     showToast(`✅ QR ${id} marcado como usado`);
                 } else {
-                    // Fallback: marcar localmente
                     marcarUsadoLocal(id);
                 }
             } catch (error) {
@@ -1045,18 +1042,15 @@
         // ENTER PARA AUTENTICAR
         // ================================================================
         document.addEventListener('DOMContentLoaded', function() {
-            // Verificar CAPA 1
             if (!verificarSesionQR()) {
                 document.getElementById('qrAuthScreen').style.display = 'flex';
                 document.getElementById('qrContent').style.display = 'none';
             }
 
-            // Enter para CAPA 1
             document.getElementById('qrPasswordInput').addEventListener('keydown', function(e) {
                 if (e.key === 'Enter') verificarPasswordQR();
             });
 
-            // Enter para CAPA 2
             document.getElementById('qrGeneratePassword').addEventListener('keydown', function(e) {
                 if (e.key === 'Enter') verificarPasswordGenerar();
             });
