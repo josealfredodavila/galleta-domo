@@ -1006,16 +1006,14 @@
             </a>
             <div class="header-actions">
                 <span class="network-badge"><span class="dot"></span> Polygon</span>
-                <!-- ===== ENLACES A FEATURES ===== -->
-                <a href="/features/muro/muro.html" class="nav-link">📱 Muro</a>
-                <a href="/features/perfil/perfil.html" class="nav-link">👤 Perfil</a>
-                <a href="/features/mensajes/contactos.html" class="nav-link">👥 Contactos</a>
-                <a href="/features/live/live.html" class="nav-link">🔴 Live</a>
-                <a href="/features/internet/internet.html" class="nav-link">🌐 Internet</a>
-                <button class="nav-link active" onclick="cambiarTab('inicio')">🏠 Inicio</button>
-                <!-- ===== ADMIN QR ===== -->
-                <button class="nav-link admin" onclick="abrirQRAdmin()">📱 Admin QR</button>
-                <a href="/qr-generator.html" class="nav-link admin" target="_blank">🔗 QR Generator</a>
+                <a href="/features/muro/muro.html" class="nav-link">◇ Muro</a>
+                <a href="/features/perfil/perfil.html" class="nav-link">◆ Perfil</a>
+                <a href="/features/mensajes/contactos.html" class="nav-link">◈ Contactos</a>
+                <a href="/features/live/live.html" class="nav-link">◉ Live</a>
+                <a href="/features/internet/internet.html" class="nav-link">◈ Internet</a>
+                <button class="nav-link active" onclick="cambiarTab('inicio')">⌂ Inicio</button>
+                <button class="nav-link admin" onclick="abrirQRAdmin()">◈ Admin QR</button>
+                <a href="/qr-generator.html" class="nav-link admin" target="_blank">◈ QR Generator</a>
             </div>
         </header>
 
@@ -1028,9 +1026,9 @@
         <!-- ===== TABS ===== -->
         <div class="tabs-container">
             <div class="tabs">
-                <button class="tab-btn active" onclick="cambiarTab('inicio')">🏠 Tienda</button>
-                <button class="tab-btn" onclick="cambiarTab('internet')">🌐 Internet</button>
-                <button class="tab-btn admin" onclick="cambiarTab('admin')" style="border:1px solid var(--gold);">🔒 Admin QR</button>
+                <button class="tab-btn active" onclick="cambiarTab('inicio')">⌂ Tienda</button>
+                <button class="tab-btn" onclick="cambiarTab('internet')">◈ Internet</button>
+                <button class="tab-btn admin" onclick="cambiarTab('admin')" style="border:1px solid var(--gold);">◈ Admin QR</button>
             </div>
         </div>
 
@@ -1040,24 +1038,24 @@
             <!-- ===== AUTH + WALLET ===== -->
             <div class="auth-section">
                 <div class="auth-card" id="registerCard">
-                    <h3>📝 Regístrate gratis</h3>
+                    <h3>◈ Regístrate gratis</h3>
                     <div class="sub">Crea tu cuenta con email o teléfono</div>
                     <input type="email" id="regEmail" placeholder="Correo electrónico" />
                     <input type="tel" id="regPhone" placeholder="Teléfono (opcional)" />
                     <input type="password" id="regPassword" placeholder="Contraseña" />
                     <input type="text" id="regName" placeholder="Nombre (opcional)" />
-                    <button class="btn btn-gold" onclick="registrarUsuario()">🚀 Crear cuenta</button>
+                    <button class="btn btn-gold" onclick="registrarUsuario()">⟡ Crear cuenta</button>
                     <p style="font-size:0.6rem;color:var(--text-muted);margin-top:8px;text-align:center;">
                         ¿Ya tienes cuenta? <a href="#" onclick="mostrarLogin()" style="color:var(--gold);">Inicia sesión</a>
                     </p>
                 </div>
 
                 <div class="auth-card" id="loginCard" style="display:none;">
-                    <h3>🔑 Iniciar sesión</h3>
+                    <h3>◈ Iniciar sesión</h3>
                     <div class="sub">Entra con tu email o wallet</div>
                     <input type="email" id="loginEmail" placeholder="Correo electrónico" />
                     <input type="password" id="loginPassword" placeholder="Contraseña" />
-                    <button class="btn btn-outline" onclick="iniciarSesion()" style="width:100%;justify-content:center;">🔓 Iniciar sesión</button>
+                    <button class="btn btn-outline" onclick="iniciarSesion()" style="width:100%;justify-content:center;">◈ Iniciar sesión</button>
                     <p style="font-size:0.6rem;color:var(--text-muted);margin-top:8px;text-align:center;">
                         ¿No tienes cuenta? <a href="#" onclick="mostrarRegistro()" style="color:var(--gold);">Regístrate</a>
                     </p>
@@ -1068,7 +1066,7 @@
             <div style="max-width: 500px; margin: 0 auto 30px auto;">
                 <div class="wallet-connect-wrapper" id="walletConnectWrapper">
                     <button id="connectWallet" class="btn btn-gold btn-connect" onclick="conectarWallet()">
-                        🔗 Conectar Wallet
+                        ◈ Conectar Wallet
                     </button>
                 </div>
 
@@ -1078,7 +1076,7 @@
                         <span class="status-text" id="walletStatusText">Conectado</span>
                         <span class="address" id="walletAddressDisplay">0x1234...5678</span>
                     </div>
-                    <button class="btn btn-outline btn-sm" id="btnDisconnectWallet">🚪 Desconectar</button>
+                    <button class="btn btn-outline btn-sm" id="btnDisconnectWallet">◈ Desconectar</button>
                 </div>
             </div>
 
@@ -1088,7 +1086,7 @@
                 <!-- PANEL: COMPRAR DOMO -->
                 <section class="panel">
                     <div class="panel-header">
-                        <h2>🛒 Comprar Domo</h2>
+                        <h2>◈ Comprar Domo</h2>
                         <span class="panel-badge">Nuevo</span>
                     </div>
                     <div class="panel-body">
@@ -1106,7 +1104,7 @@
 
                             <span class="domo-price">
                                 75 MXN
-                                <span class="pago">💵 Efectivo / Transferencia</span>
+                                <span class="pago">◈ Efectivo / Transferencia</span>
                             </span>
 
                             <div class="qty-control">
@@ -1115,7 +1113,7 @@
                                 <button class="qty-btn" id="increaseQty">+</button>
                             </div>
                             <button class="btn btn-gold" style="width:100%;justify-content:center;" id="buyDomo" disabled onclick="comprarDomo()">Comprar Domo</button>
-                            <button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:6px;" id="buyDomoCrypto" disabled onclick="comprarDomoCrypto()">💳 Pagar con Crypto</button>
+                            <button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:6px;" id="buyDomoCrypto" disabled onclick="comprarDomoCrypto()">◈ Pagar con Crypto</button>
                             <div id="qrContainer" style="margin-top:12px;display:none;">
                                 <div id="qrCode"></div>
                                 <p class="qr-info">Escanea para recibir tu <strong>Es.stoks</strong></p>
@@ -1127,30 +1125,30 @@
                 <!-- PANEL: ESTADO -->
                 <section class="panel">
                     <div class="panel-header">
-                        <h2>📊 Tu Estado</h2>
+                        <h2>◈ Tu Estado</h2>
                         <span class="panel-badge">Actualizado</span>
                     </div>
                     <div class="panel-body">
                         <div class="status-grid">
                             <div class="status-item">
-                                <div class="status-label">🍪 Domos</div>
+                                <div class="status-label">◈ Domos</div>
                                 <div class="status-value" id="domosCount">0</div>
                             </div>
                             <div class="status-item">
-                                <div class="status-label">💰 Es.stoks</div>
+                                <div class="status-label">◈ Es.stoks</div>
                                 <div class="status-value" id="tokensCount">0</div>
                             </div>
                             <div class="status-item" style="grid-column: span 2;">
-                                <div class="status-label">📊 Progreso NFT</div>
+                                <div class="status-label">◈ Progreso NFT</div>
                                 <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%;"></div></div>
                                 <span style="font-size:0.7rem;color:var(--text-muted);" id="progressText">0 / 12</span>
                             </div>
                             <div class="status-item" style="grid-column: span 2;">
-                                <div class="status-label">🏆 NFT</div>
+                                <div class="status-label">◈ NFT</div>
                                 <div class="status-value" id="haCanjeado">No</div>
                             </div>
                         </div>
-                        <button class="btn btn-gold" style="width:100%;justify-content:center;margin-top:12px;" id="canjearNft" disabled onclick="canjearNFT()">🔥 Canjear NFT (12 Es.stoks)</button>
+                        <button class="btn btn-gold" style="width:100%;justify-content:center;margin-top:12px;" id="canjearNft" disabled onclick="canjearNFT()">⟡ Canjear NFT (12 Es.stoks)</button>
                         <div id="canjeInfo" style="display:none;margin-top:8px;padding:8px;background:rgba(0,184,148,0.1);border-radius:8px;text-align:center;font-size:0.7rem;color:#00b894;">✅ NFT canjeado exitosamente</div>
                     </div>
                 </section>
@@ -1161,7 +1159,7 @@
         <div id="tab-internet" class="tab-content">
             <div class="panel">
                 <div class="panel-header">
-                    <h2>🌐 Internet & SIM</h2>
+                    <h2>◈ Internet & SIM</h2>
                     <span class="panel-badge">Activa ahora</span>
                 </div>
                 <div class="panel-body">
@@ -1169,8 +1167,8 @@
                         <!-- Los paquetes se cargan desde localStorage -->
                     </div>
                     <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
-                        <input id="netPhoneMini" placeholder="📱 Número o ID" style="flex:1;padding:8px 12px;background:rgba(0,0,0,0.3);border:1px solid var(--glass-border);border-radius:10px;color:white;outline:none;font-size:0.75rem;min-width:120px;" />
-                        <button class="btn btn-success" onclick="comprarInternetMini()" style="flex-shrink:0;">🚀 Activar</button>
+                        <input id="netPhoneMini" placeholder="◈ Número o ID" style="flex:1;padding:8px 12px;background:rgba(0,0,0,0.3);border:1px solid var(--glass-border);border-radius:10px;color:white;outline:none;font-size:0.75rem;min-width:120px;" />
+                        <button class="btn btn-success" onclick="comprarInternetMini()" style="flex-shrink:0;">⟡ Activar</button>
                     </div>
                     <div id="netStatusMini" style="font-size:0.65rem;color:var(--text-muted);margin-top:8px;min-height:18px;"></div>
                 </div>
@@ -1181,20 +1179,20 @@
         <div id="tab-admin" class="tab-content">
             <div class="panel">
                 <div class="panel-header">
-                    <h2>📱 Generador de QRs</h2>
-                    <span class="panel-badge warning">🔒 Doble seguridad</span>
+                    <h2>◈ Generador de QRs</h2>
+                    <span class="panel-badge warning">◈ Doble seguridad</span>
                 </div>
                 <div class="panel-body">
                     <!-- CAPA 1: Login de acceso -->
                     <div id="qrAdminLogin" style="text-align:center;padding:20px;">
-                        <div style="font-size:3rem;margin-bottom:8px;">🔒</div>
+                        <div style="font-size:3rem;margin-bottom:8px;">◈</div>
                         <h3 style="font-family:'Orbitron',monospace;color:var(--gold);margin-bottom:8px;">Acceso restringido</h3>
                         <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:16px;">Ingresa la contraseña para administrar QRs</p>
                         <div style="max-width:320px;margin:0 auto;">
                             <input type="password" id="qrAdminPassword" placeholder="Contraseña de acceso" style="width:100%;padding:10px 14px;background:rgba(0,0,0,0.3);border:1px solid var(--glass-border);border-radius:10px;color:var(--text-primary);font-size:0.9rem;outline:none;margin-bottom:10px;" />
-                            <button class="btn btn-gold" onclick="verificarPasswordAdmin()" style="width:100%;justify-content:center;">🔓 Acceder</button>
+                            <button class="btn btn-gold" onclick="verificarPasswordAdmin()" style="width:100%;justify-content:center;">◈ Acceder</button>
                             <div id="qrAdminError" style="color:var(--danger);font-size:0.8rem;margin-top:8px;min-height:20px;"></div>
-                            <div style="font-size:0.6rem;color:var(--text-muted);margin-top:12px;opacity:0.5;">🔑 Pista: El nombre de la marca + año actual</div>
+                            <div style="font-size:0.6rem;color:var(--text-muted);margin-top:12px;opacity:0.5;">◑ Pista: El nombre de la marca + año actual</div>
                         </div>
                     </div>
 
@@ -1203,20 +1201,20 @@
 
                         <!-- CAPA 2: Contraseña para generar -->
                         <div id="qrGenerateLock">
-                            <span class="icon">🔐</span>
+                            <span class="icon">◈</span>
                             <h4>Contraseña de generación</h4>
                             <p>Para generar nuevos QRs necesitas la <strong>contraseña de administrador</strong></p>
                             <input type="password" id="qrGeneratePassword" placeholder="Contraseña para generar" />
-                            <button class="btn btn-warning" onclick="verificarPasswordGenerar()">🔓 Desbloquear generación</button>
+                            <button class="btn btn-warning" onclick="verificarPasswordGenerar()">◈ Desbloquear generación</button>
                             <div class="error-msg" id="qrGenerateError"></div>
-                            <div style="font-size:0.55rem;color:var(--text-muted);margin-top:8px;opacity:0.5;">🔑 Pista: La palabra "Generar" + año actual</div>
+                            <div style="font-size:0.55rem;color:var(--text-muted);margin-top:8px;opacity:0.5;">◑ Pista: La palabra "Generar" + año actual</div>
                         </div>
 
                         <!-- Formulario de generación (oculto hasta CAPA 2) -->
                         <div id="qrGenerateForm" style="display:none;">
                             <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
-                                <span style="font-size:0.7rem;color:var(--text-muted);">🔓 Generación desbloqueada</span>
-                                <button class="btn btn-outline btn-sm" onclick="bloquearGeneracion()" style="border-color:rgba(255,51,102,0.3);color:var(--danger);">🔒 Bloquear generación</button>
+                                <span style="font-size:0.7rem;color:var(--text-muted);">◈ Generación desbloqueada</span>
+                                <button class="btn btn-outline btn-sm" onclick="bloquearGeneracion()" style="border-color:rgba(255,51,102,0.3);color:var(--danger);">◈ Bloquear generación</button>
                             </div>
 
                             <div style="margin-bottom:20px;">
@@ -1228,14 +1226,14 @@
                                     <div class="form-group">
                                         <label>Producto</label>
                                         <select id="qrProducto">
-                                            <option value="domo">🍪 Domo de galleta</option>
-                                            <option value="internet">🌐 Internet / SIM</option>
-                                            <option value="promocion">🎁 Promoción especial</option>
+                                            <option value="domo">◈ Domo de galleta</option>
+                                            <option value="internet">◈ Internet / SIM</option>
+                                            <option value="promocion">◈ Promoción especial</option>
                                         </select>
                                     </div>
                                 </div>
                                 <button class="btn btn-gold" onclick="generarQRs()" style="width:100%;justify-content:center;padding:12px;">
-                                    🚀 Generar QRs
+                                    ⟡ Generar QRs
                                 </button>
                                 <div id="generacionStatus" style="font-size:0.7rem;color:var(--text-muted);text-align:center;min-height:20px;margin-top:4px;"></div>
                             </div>
@@ -1243,20 +1241,20 @@
 
                         <!-- Bloqueado -->
                         <div id="qrGenerateBloqueado" style="display:none;text-align:center;padding:20px;color:var(--text-muted);">
-                            <span style="font-size:2rem;display:block;margin-bottom:8px;">🔒</span>
+                            <span style="font-size:2rem;display:block;margin-bottom:8px;">◈</span>
                             <p>La generación de QRs está bloqueada.<br />Ingresa la contraseña para habilitar.</p>
-                            <button class="btn btn-outline btn-sm" onclick="mostrarLockGenerar()" style="margin-top:8px;">🔓 Desbloquear</button>
+                            <button class="btn btn-outline btn-sm" onclick="mostrarLockGenerar()" style="margin-top:8px;">◈ Desbloquear</button>
                         </div>
 
                         <!-- Lista de QRs -->
                         <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--glass-border);">
                             <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
-                                <h4 style="font-size:0.8rem;color:var(--gold);">📋 QRs generados</h4>
+                                <h4 style="font-size:0.8rem;color:var(--gold);">◈ QRs generados</h4>
                                 <span class="panel-badge" id="qrTotal">0 QRs</span>
                             </div>
                             <div class="qr-grid" id="qrGrid">
                                 <div class="empty-state">
-                                    <span class="icon">📭</span>
+                                    <span class="icon">◈</span>
                                     <h3>No hay QRs generados</h3>
                                     <p>Genera QRs para tus domos y pégalos dentro de cada producto</p>
                                 </div>
@@ -1271,7 +1269,7 @@
         <footer class="footer">
             <span><span class="brand">◈ Sariel's</span> · Sabor al Paladar · WEB3</span>
             <div class="footer-links">
-                <a href="/terminos.html">📜 Términos</a>
+                <a href="/terminos.html">◈ Términos</a>
                 <span style="opacity:0.3;">⚡ Polygon</span>
             </div>
         </footer>
@@ -1331,7 +1329,7 @@
                 localStorage.setItem('sariels_qr_auth', 'true');
                 renderizarQRs();
                 mostrarLockGenerar();
-                showToast('✅ Acceso concedido al panel de QRs');
+                showToast('◈ Acceso concedido al panel de QRs');
             } else {
                 error.textContent = '❌ Contraseña incorrecta. Intenta de nuevo.';
                 input.value = '';
@@ -1352,7 +1350,7 @@
             document.getElementById('qrGenerateBloqueado').style.display = 'none';
             document.getElementById('qrGeneratePassword').value = '';
             document.getElementById('qrGenerateError').textContent = '';
-            showToast('🔒 Sesión cerrada');
+            showToast('◈ Sesión cerrada');
         }
 
         function abrirQRAdmin() {
@@ -1404,7 +1402,7 @@
                 document.getElementById('qrGenerateBloqueado').style.display = 'none';
                 error.textContent = '';
                 localStorage.setItem('sariels_qr_generate', 'true');
-                showToast('✅ Generación de QRs desbloqueada');
+                showToast('◈ Generación de QRs desbloqueada');
             } else {
                 error.textContent = '❌ Contraseña de generación incorrecta';
                 input.value = '';
@@ -1421,7 +1419,7 @@
             document.getElementById('qrGenerateForm').style.display = 'none';
             document.getElementById('qrGenerateBloqueado').style.display = 'none';
             document.getElementById('qrGeneratePassword').value = '';
-            showToast('🔒 Generación bloqueada');
+            showToast('◈ Generación bloqueada');
         }
 
         // ================================================================
@@ -1449,7 +1447,7 @@
             if (qrs.length === 0) {
                 grid.innerHTML = `
                     <div class="empty-state" style="grid-column:1/-1;">
-                        <span class="icon">📭</span>
+                        <span class="icon">◈</span>
                         <h3>No hay QRs generados</h3>
                         <p>Genera QRs para tus domos y pégalos dentro de cada producto</p>
                     </div>
@@ -1469,8 +1467,8 @@
                     </div>
                     <div class="qr-actions">
                         ${!qr.usado ? `<button class="btn btn-success btn-sm" onclick="marcarUsado('${qr.id}')">✅ Marcar usado</button>` : ''}
-                        <button class="btn btn-outline btn-sm" onclick="descargarQR('${qr.id}')">📥 Descargar</button>
-                        <button class="btn btn-danger btn-sm" onclick="eliminarQR('${qr.id}')">🗑️</button>
+                        <button class="btn btn-outline btn-sm" onclick="descargarQR('${qr.id}')">◈ Descargar</button>
+                        <button class="btn btn-danger btn-sm" onclick="eliminarQR('${qr.id}')">✕ Eliminar</button>
                     </div>
                 </div>
             `).join('');
@@ -1557,7 +1555,7 @@
             qrs = qrs.filter(q => q.id !== id);
             guardarQRs(qrs);
             renderizarQRs();
-            showToast(`🗑️ QR ${id} eliminado`);
+            showToast(`✕ QR ${id} eliminado`);
         }
 
         // ================================================================
@@ -1570,7 +1568,7 @@
                 link.download = `qr-${id}.png`;
                 link.href = canvas.toDataURL('image/png');
                 link.click();
-                showToast(`📥 Descargando QR ${id}`);
+                showToast(`◈ Descargando QR ${id}`);
             } else {
                 showToast('⚠️ No se pudo descargar el QR', 'error');
             }
@@ -1598,7 +1596,7 @@
                 showToast('⚠️ Conecta tu wallet primero', 'error');
                 return;
             }
-            showToast(`💳 Procesando pago crypto para ${qty} domo(s)...`);
+            showToast(`◈ Procesando pago crypto para ${qty} domo(s)...`);
             setTimeout(() => {
                 showToast(`✅ Pago crypto completado. Recibiste ${qty * 10} Es.stoks`);
                 let tokens = parseInt(localStorage.getItem('sariels_tokens') || '0');
@@ -1629,7 +1627,7 @@
             localStorage.setItem('sariels_nft', 'true');
             document.getElementById('canjeInfo').style.display = 'block';
             actualizarEstado();
-            showToast('🏆 NFT canjeado exitosamente');
+            showToast('◈ NFT canjeado exitosamente');
         }
 
         // ================================================================
@@ -1688,7 +1686,7 @@
                 showToast('❌ Error al conectar wallet', 'error');
             } finally {
                 connectBtn.disabled = false;
-                connectBtn.textContent = '🔗 Conectar Wallet';
+                connectBtn.textContent = '◈ Conectar Wallet';
             }
         }
 
@@ -1707,11 +1705,11 @@
             localStorage.removeItem('sariels_wallet');
             document.getElementById('connectWallet').style.display = 'inline-flex';
             document.getElementById('connectWallet').disabled = false;
-            document.getElementById('connectWallet').textContent = '🔗 Conectar Wallet';
+            document.getElementById('connectWallet').textContent = '◈ Conectar Wallet';
             document.getElementById('walletStatusBar').style.display = 'none';
             document.getElementById('buyDomo').disabled = true;
             document.getElementById('buyDomoCrypto').disabled = true;
-            showToast('🔌 Wallet desconectada');
+            showToast('◈ Wallet desconectada');
         }
 
         // ================================================================
@@ -1808,7 +1806,7 @@
             selectedPackMini = packs.find(p => p.id === id);
             document.querySelectorAll('.pack-mini').forEach(el => el.classList.remove('selected'));
             document.getElementById('packMini-' + id).classList.add('selected');
-            showToast(`📦 ${selectedPackMini.nombre} seleccionado: ${selectedPackMini.datos} por $${selectedPackMini.precioMXN} MXN`);
+            showToast(`◈ ${selectedPackMini.nombre} seleccionado: ${selectedPackMini.datos} por $${selectedPackMini.precioMXN} MXN`);
         }
 
         function comprarInternetMini() {
@@ -1957,8 +1955,8 @@
             }
 
             console.log('◈ Sariel\'s - Ecosistema WEB3');
-            console.log('🔑 CAPA 1 (Acceso):', QR_ACCESS_PASSWORD);
-            console.log('🔑 CAPA 2 (Generar):', QR_GENERATE_PASSWORD);
+            console.log('◑ CAPA 1 (Acceso):', QR_ACCESS_PASSWORD);
+            console.log('◑ CAPA 2 (Generar):', QR_GENERATE_PASSWORD);
         });
 
         // ================================================================
