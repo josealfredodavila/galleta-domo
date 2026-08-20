@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>◈ Sariel's · WEB3 Ecosystem</title>
+    <title>◈ Sariel's · Ecosistema WEB3</title>
     <link rel="stylesheet" href="/styles.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
     <style>
         /* ================================================================
-           ESTILOS PROFESIONALES
+           ESTILOS MODERNOS - SARIEL'S ECOSYSTEM
            ================================================================ */
         :root {
             --gold: #D4AF37;
@@ -26,6 +27,8 @@
             --shadow-gold: 0 8px 32px rgba(212, 175, 55, 0.15);
             --radius: 16px;
             --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --success: #00b894;
+            --danger: #ff3366;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -41,30 +44,60 @@
                 radial-gradient(ellipse at 80% 50%, rgba(212, 175, 55, 0.05) 0%, transparent 60%);
         }
 
-        /* ===== SCROLL ===== */
+        /* ===== FONDO ESTELAR ===== */
+        #stars-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .nebula {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(120px);
+            opacity: 0.10;
+            pointer-events: none;
+            z-index: 0;
+            animation: nebula-drift 25s ease-in-out infinite alternate;
+        }
+        .nebula-1 { width: 700px; height: 700px; background: var(--green-deep); top: -15%; right: -15%; }
+        .nebula-2 { width: 600px; height: 600px; background: var(--gold); bottom: -15%; left: -15%; animation-delay: -8s; opacity: 0.05; }
+
+        @keyframes nebula-drift {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(40px, -30px) scale(1.15); }
+        }
+
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: var(--space); }
         ::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 3px; }
 
+        .app {
+            position: relative;
+            z-index: 1;
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 16px 24px 30px;
+        }
+
         /* ===== HEADER ===== */
         .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0 16px;
+            border-bottom: 1px solid var(--glass-border);
+            flex-wrap: wrap;
+            gap: 12px;
+            backdrop-filter: blur(10px);
             position: sticky;
             top: 0;
             z-index: 100;
             background: rgba(5, 8, 15, 0.85);
-            backdrop-filter: blur(20px);
-            border-bottom: 1px solid var(--glass-border);
-            padding: 12px 0;
-        }
-        .header-inner {
-            max-width: 1280px;
-            margin: 0 auto;
-            padding: 0 24px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 12px;
         }
         .logo {
             display: flex;
@@ -99,41 +132,18 @@
         .header-actions {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
             flex-wrap: wrap;
-        }
-        .network-badge {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 0.6rem;
-            color: var(--gold);
-            background: rgba(212, 175, 55, 0.08);
-            padding: 4px 14px;
-            border-radius: 20px;
-            border: 1px solid rgba(212, 175, 55, 0.15);
-            font-weight: 500;
-        }
-        .network-badge .dot {
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background: #00b894;
-            animation: pulse-dot 2s infinite;
-        }
-        @keyframes pulse-dot {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.3; }
         }
 
         /* ===== BOTONES ===== */
         .btn {
             display: inline-flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
             padding: 8px 20px;
             border-radius: 30px;
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             font-weight: 600;
             border: none;
             cursor: pointer;
@@ -153,102 +163,141 @@
             border: 1px solid var(--glass-border);
         }
         .btn-outline:hover { border-color: var(--gold); color: var(--gold); }
-        .btn-sm { padding: 4px 12px; font-size: 0.6rem; }
-
-        /* ===== TERMINOS CHECKBOX ===== */
-        .terms-wrapper {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 0.65rem;
-            color: var(--text-muted);
+        .btn-sm { padding: 4px 12px; font-size: 0.55rem; }
+        .btn-success {
+            background: linear-gradient(135deg, #00b894, #00897b);
+            color: white;
         }
-        .terms-wrapper input[type="checkbox"] {
-            width: 16px;
-            height: 16px;
-            accent-color: var(--gold);
-            cursor: pointer;
+        .btn-success:hover { box-shadow: 0 0 30px rgba(0, 184, 148, 0.3); }
+        .btn-internet {
+            background: linear-gradient(135deg, var(--gold), #00d68f);
+            color: var(--space);
+            animation: pulse-internet 2s ease-in-out infinite;
         }
-        .terms-wrapper a {
-            color: var(--gold);
-            text-decoration: underline;
-            font-weight: 500;
+        @keyframes pulse-internet {
+            0%, 100% { box-shadow: 0 0 20px rgba(0, 214, 143, 0.2); }
+            50% { box-shadow: 0 0 40px rgba(0, 214, 143, 0.4); }
         }
 
         /* ===== MAIN ===== */
         .main {
-            max-width: 1280px;
-            margin: 0 auto;
-            padding: 24px;
+            padding: 20px 0;
         }
 
-        /* ===== NAV ===== */
-        .main-nav {
-            display: flex;
-            gap: 4px;
+        /* ===== HERO ===== */
+        .hero {
+            text-align: center;
+            padding: 40px 20px 30px;
             background: var(--glass-bg);
             border: 1px solid var(--glass-border);
             border-radius: var(--radius);
-            padding: 6px;
-            margin-bottom: 24px;
-            flex-wrap: wrap;
+            margin-bottom: 30px;
             backdrop-filter: blur(10px);
         }
-        .main-nav a {
-            padding: 8px 18px;
-            border-radius: 10px;
-            font-size: 0.7rem;
-            font-weight: 500;
-            color: var(--text-muted);
-            text-decoration: none;
-            transition: var(--transition);
-        }
-        .main-nav a:hover { color: var(--text-primary); background: rgba(255,255,255,0.03); }
-        .main-nav a.active {
+        .hero h1 {
+            font-family: 'Orbitron', monospace;
+            font-size: 2rem;
             color: var(--gold);
-            background: rgba(212, 175, 55, 0.08);
+            margin-bottom: 8px;
         }
-        .main-nav a.live {
-            background: linear-gradient(135deg, rgba(255, 51, 102, 0.15), rgba(214, 48, 49, 0.1));
-            color: #ff3366;
+        .hero p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            max-width: 600px;
+            margin: 0 auto 16px;
         }
 
-        /* ===== WALLET INFO ===== */
-        .wallet-info {
+        /* ===== REGISTRO / LOGIN ===== */
+        .auth-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        @media (max-width: 768px) {
+            .auth-section { grid-template-columns: 1fr; }
+        }
+        .auth-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            padding: 24px;
+            backdrop-filter: blur(10px);
+        }
+        .auth-card h3 {
+            font-family: 'Orbitron', monospace;
+            color: var(--gold);
+            font-size: 0.95rem;
+            margin-bottom: 12px;
+        }
+        .auth-card .sub {
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            margin-bottom: 16px;
+        }
+        .auth-card input {
+            width: 100%;
+            padding: 10px 14px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            margin-bottom: 10px;
+            outline: none;
+            transition: var(--transition);
+        }
+        .auth-card input:focus { border-color: var(--gold); }
+        .auth-card .btn {
+            width: 100%;
+            justify-content: center;
+            padding: 10px;
+        }
+
+        /* ===== WALLET CONNECT ===== */
+        .wallet-connect {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            padding: 16px 20px;
+            margin-bottom: 30px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius);
-            padding: 12px 20px;
-            margin-bottom: 24px;
-            backdrop-filter: blur(10px);
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 12px;
+            backdrop-filter: blur(10px);
         }
-        .wallet-info .address {
+        .wallet-connect .info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .wallet-connect .info .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #4a6a8a;
+        }
+        .wallet-connect .info .dot.connected {
+            background: var(--success);
+        }
+        .wallet-connect .address {
             font-family: 'Orbitron', monospace;
             font-size: 0.7rem;
             color: var(--gold);
         }
-        .wallet-info .status {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 0.6rem;
-            color: #00b894;
-        }
 
         /* ===== GRID ===== */
-        .grid-3 {
+        .grid-2 {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: 1fr 1fr;
             gap: 20px;
-            margin-bottom: 24px;
+            margin-bottom: 30px;
         }
-        @media (max-width: 1024px) { .grid-3 { grid-template-columns: 1fr 1fr; } }
-        @media (max-width: 700px) { .grid-3 { grid-template-columns: 1fr; } }
+        @media (max-width: 768px) {
+            .grid-2 { grid-template-columns: 1fr; }
+        }
 
         .panel {
             background: var(--glass-bg);
@@ -256,18 +305,16 @@
             border-radius: var(--radius);
             overflow: hidden;
             backdrop-filter: blur(10px);
-            transition: var(--transition);
         }
-        .panel:hover { border-color: rgba(212, 175, 55, 0.2); }
         .panel-header {
-            padding: 16px 20px;
+            padding: 14px 18px;
             border-bottom: 1px solid var(--glass-border);
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
         .panel-header h2 {
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             font-weight: 600;
             color: var(--gold);
         }
@@ -280,54 +327,75 @@
             font-weight: 600;
             text-transform: uppercase;
         }
-        .panel-body { padding: 20px; }
+        .panel-body { padding: 18px; }
 
-        /* ===== DOMO CARD ===== */
+        /* ===== DOMO ===== */
         .domo-card { text-align: center; }
-        .domo-emoji { font-size: 4rem; display: block; margin-bottom: 8px; }
-        .domo-price { font-size: 1.2rem; color: var(--gold); font-weight: 600; }
-        .quantity-control {
+        .domo-emoji { font-size: 3.5rem; display: block; margin-bottom: 4px; }
+        .domo-price { font-size: 1.1rem; color: var(--gold); font-weight: 600; }
+        .qty-control {
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 16px;
-            margin: 16px 0;
+            gap: 14px;
+            margin: 12px 0;
         }
         .qty-btn {
-            width: 36px;
-            height: 36px;
+            width: 32px;
+            height: 32px;
             border-radius: 50%;
             border: 1px solid var(--glass-border);
             background: transparent;
             color: var(--text-primary);
-            font-size: 1.1rem;
+            font-size: 1rem;
             cursor: pointer;
             transition: var(--transition);
         }
         .qty-btn:hover { border-color: var(--gold); }
-        .qty-value { font-size: 1.2rem; font-weight: 600; color: var(--gold); min-width: 30px; }
+        .qty-value { font-size: 1.1rem; font-weight: 600; color: var(--gold); min-width: 30px; }
+
+        /* ===== INTERNET PACKS (MINI) ===== */
+        .internet-mini {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 10px;
+        }
+        .pack-mini {
+            background: rgba(0,0,0,0.2);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .pack-mini:hover { border-color: var(--gold); transform: translateY(-2px); }
+        .pack-mini .name { font-weight: 600; font-size: 0.8rem; color: var(--text-primary); }
+        .pack-mini .data { font-size: 1.2rem; font-weight: 700; color: var(--gold); }
+        .pack-mini .price { font-size: 0.7rem; color: var(--text-muted); }
+        .pack-mini .btn { width: 100%; margin-top: 6px; justify-content: center; font-size: 0.5rem; padding: 4px 8px; }
 
         /* ===== STATUS ===== */
         .status-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 10px;
+            gap: 8px;
         }
         .status-item {
             background: rgba(0,0,0,0.15);
-            padding: 12px;
+            padding: 10px;
             border-radius: 10px;
             text-align: center;
         }
-        .status-label { font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
-        .status-value { font-size: 1.2rem; font-weight: 700; color: var(--gold); }
+        .status-label { font-size: 0.55rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+        .status-value { font-size: 1.1rem; font-weight: 700; color: var(--gold); }
         .progress-bar {
             width: 100%;
             height: 4px;
             background: rgba(212, 175, 55, 0.1);
             border-radius: 2px;
             overflow: hidden;
-            margin: 6px 0;
+            margin: 4px 0;
         }
         .progress-fill {
             height: 100%;
@@ -335,113 +403,6 @@
             border-radius: 2px;
             transition: width 0.5s;
         }
-
-        /* ===== FOOTER PROFESIONAL ===== */
-        .footer {
-            margin-top: 40px;
-            padding-top: 24px;
-            border-top: 1px solid var(--glass-border);
-        }
-        .footer-grid {
-            display: grid;
-            grid-template-columns: 2fr 1fr;
-            gap: 32px;
-            max-width: 1280px;
-            margin: 0 auto;
-            padding: 0 24px;
-        }
-        @media (max-width: 768px) { .footer-grid { grid-template-columns: 1fr; gap: 20px; } }
-
-        .footer-brand { font-size: 1.1rem; font-weight: 700; color: var(--gold); }
-        .footer-brand span { color: var(--text-primary); }
-
-        .payment-section {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius);
-            padding: 20px 24px;
-            backdrop-filter: blur(10px);
-        }
-        .payment-section .title {
-            font-size: 0.7rem;
-            font-weight: 600;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 12px;
-        }
-        .payment-row {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 6px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.03);
-            flex-wrap: wrap;
-        }
-        .payment-row:last-child { border-bottom: none; }
-        .payment-row .label {
-            font-size: 0.6rem;
-            font-weight: 600;
-            color: var(--text-muted);
-            min-width: 60px;
-        }
-        .payment-row .value {
-            font-family: 'Orbitron', monospace;
-            font-size: 0.65rem;
-            color: var(--text-primary);
-            word-break: break-all;
-            flex: 1;
-        }
-        .payment-row .copy-btn {
-            background: rgba(212, 175, 55, 0.08);
-            border: none;
-            color: var(--gold);
-            padding: 4px 10px;
-            border-radius: 6px;
-            font-size: 0.6rem;
-            cursor: pointer;
-            transition: var(--transition);
-            font-weight: 500;
-        }
-        .payment-row .copy-btn:hover { background: rgba(212, 175, 55, 0.2); }
-
-        .payment-warning {
-            font-size: 0.55rem;
-            color: var(--text-muted);
-            margin-top: 8px;
-            padding: 8px 12px;
-            background: rgba(255, 51, 102, 0.05);
-            border-radius: 8px;
-            border-left: 3px solid rgba(255, 51, 102, 0.3);
-        }
-
-        .footer-links {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-        .footer-links a {
-            color: var(--text-muted);
-            text-decoration: none;
-            font-size: 0.7rem;
-            transition: var(--transition);
-        }
-        .footer-links a:hover { color: var(--gold); }
-
-        .footer-bottom {
-            text-align: center;
-            padding-top: 16px;
-            margin-top: 16px;
-            border-top: 1px solid var(--glass-border);
-            font-size: 0.55rem;
-            color: var(--text-muted);
-            max-width: 1280px;
-            margin-left: auto;
-            margin-right: auto;
-            padding-left: 24px;
-            padding-right: 24px;
-        }
-        .footer-bottom .gold { color: var(--gold); }
 
         /* ===== TOAST ===== */
         .toast {
@@ -460,190 +421,206 @@
             opacity: 0;
             transition: all 0.4s ease;
             z-index: 9999;
+            max-width: 400px;
         }
-        .toast.show {
-            transform: translateY(0);
-            opacity: 1;
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.error { border-color: var(--danger); color: var(--danger); }
+
+        /* ===== FOOTER ===== */
+        .footer {
+            margin-top: 30px;
+            padding-top: 16px;
+            border-top: 1px solid var(--glass-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            font-size: 0.55rem;
+            color: var(--text-muted);
+        }
+        .footer .brand { color: var(--gold); font-weight: 600; }
+        .footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
+        .footer-links a { color: var(--text-muted); text-decoration: none; transition: var(--transition); }
+        .footer-links a:hover { color: var(--gold); }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 600px) {
+            .app { padding: 12px 14px; }
+            .hero h1 { font-size: 1.4rem; }
+            .wallet-connect { flex-direction: column; align-items: stretch; text-align: center; }
+            .pack-mini { padding: 10px; }
+            .internet-mini { grid-template-columns: repeat(2, 1fr); }
         }
     </style>
 </head>
 <body>
 
-    <!-- ===== HEADER ===== -->
-    <header class="header">
-        <div class="header-inner">
+    <!-- ===== FONDO ESTELAR ===== -->
+    <canvas id="stars-canvas"></canvas>
+    <div class="nebula nebula-1"></div>
+    <div class="nebula nebula-2"></div>
+
+    <div class="app">
+
+        <!-- ===== HEADER ===== -->
+        <header class="header">
             <a href="/" class="logo">
                 <span class="logo-hex">◈</span>
                 <span class="logo-text">Sariel<span>'s</span></span>
                 <span class="logo-badge">✦ WEB3</span>
             </a>
             <div class="header-actions">
-                <span class="network-badge"><span class="dot"></span> Polygon</span>
-                <div class="terms-wrapper">
-                    <input type="checkbox" id="aceptoTerminos" />
-                    <label for="aceptoTerminos">Acepto <a href="/terminos.html" target="_blank">Términos</a></label>
+                <a href="/features/muro/muro.html" class="btn btn-outline btn-sm">📱 Muro</a>
+                <a href="/features/perfil/perfil.html" class="btn btn-outline btn-sm">👤 Perfil</a>
+                <a href="/features/mensajes/contactos.html" class="btn btn-outline btn-sm">👥 Contactos</a>
+                <a href="/features/live/live.html" class="btn btn-outline btn-sm">🔴 Live</a>
+                <a href="/features/internet/internet.html" class="btn btn-internet btn-sm">🌐 Internet</a>
+            </div>
+        </header>
+
+        <!-- ===== HERO ===== -->
+        <section class="hero">
+            <h1>◈ Bienvenido a Sariel's</h1>
+            <p>Compra domos, acumula tokens Es.stoks, canjea NFTs y conecta con tu comunidad. Todo en un ecosistema web3 sin custodia.</p>
+        </section>
+
+        <!-- ===== AUTH + WALLET ===== -->
+        <div class="auth-section">
+            <!-- Registro -->
+            <div class="auth-card">
+                <h3>📝 Regístrate gratis</h3>
+                <div class="sub">Crea tu cuenta con email o teléfono</div>
+                <input type="email" id="regEmail" placeholder="Correo electrónico" />
+                <input type="tel" id="regPhone" placeholder="Teléfono (opcional)" />
+                <input type="password" id="regPassword" placeholder="Contraseña" />
+                <input type="text" id="regName" placeholder="Nombre (opcional)" />
+                <button class="btn btn-gold" onclick="registrarUsuario()">🚀 Crear cuenta</button>
+                <p style="font-size:0.6rem;color:var(--text-muted);margin-top:8px;text-align:center;">
+                    ¿Ya tienes cuenta? <a href="#" onclick="mostrarLogin()" style="color:var(--gold);">Inicia sesión</a>
+                </p>
+            </div>
+
+            <!-- Login -->
+            <div class="auth-card" id="loginCard">
+                <h3>🔑 Iniciar sesión</h3>
+                <div class="sub">Entra con tu email o wallet</div>
+                <input type="email" id="loginEmail" placeholder="Correo electrónico" />
+                <input type="password" id="loginPassword" placeholder="Contraseña" />
+                <button class="btn btn-outline" onclick="iniciarSesion()" style="width:100%;justify-content:center;">🔓 Iniciar sesión</button>
+                <p style="font-size:0.6rem;color:var(--text-muted);margin-top:8px;text-align:center;">
+                    ¿No tienes cuenta? <a href="#" onclick="mostrarRegistro()" style="color:var(--gold);">Regístrate</a>
+                </p>
+            </div>
+        </div>
+
+        <!-- ===== WALLET CONNECT ===== -->
+        <div class="wallet-connect" id="walletSection">
+            <div class="info">
+                <span class="dot" id="walletDot"></span>
+                <span id="walletStatus">Desconectado</span>
+                <span class="address" id="walletAddress">--</span>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button class="btn btn-gold btn-sm" id="btnConnectWallet">🔗 Conectar Wallet</button>
+                <button class="btn btn-outline btn-sm" id="btnDisconnectWallet" style="display:none;">🚪 Desconectar</button>
+            </div>
+        </div>
+
+        <!-- ===== GRID: DOMOS + INTERNET ===== -->
+        <div class="grid-2">
+
+            <!-- ===== PANEL: COMPRAR DOMO ===== -->
+            <section class="panel">
+                <div class="panel-header">
+                    <h2>🍪 Comprar Domo</h2>
+                    <span class="panel-badge">Nuevo</span>
                 </div>
-                <button id="connectWallet" class="btn btn-gold" disabled>
-                    🔗 Conectar Wallet
-                </button>
-            </div>
+                <div class="panel-body">
+                    <div class="domo-card">
+                        <span class="domo-emoji">🍪</span>
+                        <span class="domo-price">75 MATIC</span>
+                        <div class="qty-control">
+                            <button class="qty-btn" id="decreaseQty">−</button>
+                            <span class="qty-value" id="domoQuantity">1</span>
+                            <button class="qty-btn" id="increaseQty">+</button>
+                        </div>
+                        <button class="btn btn-gold" style="width:100%;justify-content:center;" id="buyDomo" disabled>Comprar Domo</button>
+                        <button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:6px;" id="buyDomoCrypto" disabled>💳 Pagar con Crypto</button>
+                        <div id="qrContainer" style="margin-top:12px;display:none;">
+                            <div id="qrCode"></div>
+                            <p style="font-size:0.55rem;color:var(--text-muted);margin-top:4px;">Escanea para recibir tu token</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ===== PANEL: INTERNET / SIM ===== -->
+            <section class="panel">
+                <div class="panel-header">
+                    <h2>🌐 Internet & SIM</h2>
+                    <span class="panel-badge">Activa ahora</span>
+                </div>
+                <div class="panel-body">
+                    <div class="internet-mini" id="internetMiniGrid">
+                        <!-- Los paquetes se cargan desde localStorage o predeterminados -->
+                    </div>
+                    <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
+                        <input id="netPhoneMini" placeholder="📱 Número o ID" style="flex:1;padding:8px 12px;background:rgba(0,0,0,0.3);border:1px solid var(--glass-border);border-radius:10px;color:white;outline:none;font-size:0.75rem;min-width:120px;" />
+                        <button class="btn btn-success" onclick="comprarInternetMini()" style="flex-shrink:0;">🚀 Activar</button>
+                    </div>
+                    <div id="netStatusMini" style="font-size:0.65rem;color:var(--text-muted);margin-top:8px;min-height:18px;"></div>
+                    <a href="/features/internet/internet.html" style="font-size:0.55rem;color:var(--gold);text-decoration:underline;display:inline-block;margin-top:6px;">Ver todos los paquetes →</a>
+                </div>
+            </section>
         </div>
-    </header>
 
-    <!-- ===== MAIN ===== -->
-    <main class="main">
-        <div class="container">
-
-            <!-- ===== NAV ===== -->
-            <nav class="main-nav">
-                <a href="/" class="active">🏠 Inicio</a>
-                <a href="/features/muro/muro.html">📱 Muro</a>
-                <a href="/features/perfil/perfil.html">👤 Perfil</a>
-                <a href="/features/mensajes/contactos.html">👥 Contactos</a>
-                <a href="/features/live/live.html" class="live">🔴 Live</a>
-            </nav>
-
-            <!-- ===== WALLET INFO ===== -->
-            <div id="walletInfo" class="wallet-info hidden">
-                <span class="address" id="walletAddress">0x1234...5678</span>
-                <span class="status">● Conectado</span>
+        <!-- ===== PANEL: ESTADO ===== -->
+        <section class="panel" style="margin-bottom:20px;">
+            <div class="panel-header">
+                <h2>📊 Tu Estado</h2>
+                <span class="panel-badge">Actualizado</span>
             </div>
-
-            <!-- ===== GRID ===== -->
-            <div class="grid-3">
-
-                <!-- COMPRA -->
-                <section class="panel">
-                    <div class="panel-header">
-                        <h2>🛒 Comprar Domo</h2>
-                        <span class="panel-badge">Nuevo</span>
+            <div class="panel-body">
+                <div class="status-grid">
+                    <div class="status-item">
+                        <div class="status-label">🍪 Domos</div>
+                        <div class="status-value" id="domosCount">0</div>
                     </div>
-                    <div class="panel-body">
-                        <div class="domo-card">
-                            <span class="domo-emoji">🍪</span>
-                            <span class="domo-price">75 MATIC</span>
-                            <div class="quantity-control">
-                                <button id="decreaseQty" class="qty-btn">−</button>
-                                <span id="domoQuantity" class="qty-value">1</span>
-                                <button id="increaseQty" class="qty-btn">+</button>
-                            </div>
-                            <button id="buyDomo" class="btn btn-gold" style="width:100%;justify-content:center;" disabled>Comprar Domo</button>
-                            <button id="buyDomoCrypto" class="btn btn-outline" style="width:100%;justify-content:center;margin-top:8px;" disabled>💳 Pagar con Crypto</button>
-                            <div id="qrContainer" class="qr-container hidden" style="margin-top:12px;">
-                                <div id="qrCode"></div>
-                                <p style="font-size:0.55rem;color:var(--text-muted);margin-top:6px;">Escanea para recibir tu token</p>
-                            </div>
-                        </div>
+                    <div class="status-item">
+                        <div class="status-label">💰 Tokens</div>
+                        <div class="status-value" id="tokensCount">0</div>
                     </div>
-                </section>
-
-                <!-- ESTADO -->
-                <section class="panel">
-                    <div class="panel-header">
-                        <h2>📊 Tu Estado</h2>
-                        <span class="panel-badge">Actualizado</span>
+                    <div class="status-item" style="grid-column: span 2;">
+                        <div class="status-label">📊 Progreso NFT</div>
+                        <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%;"></div></div>
+                        <span style="font-size:0.6rem;color:var(--text-muted);" id="progressText">0 / 12</span>
                     </div>
-                    <div class="panel-body">
-                        <div class="status-grid">
-                            <div class="status-item">
-                                <div class="status-label">🍪 Domos</div>
-                                <div class="status-value" id="domosCount">0</div>
-                            </div>
-                            <div class="status-item">
-                                <div class="status-label">💰 Tokens</div>
-                                <div class="status-value" id="tokensCount">0</div>
-                            </div>
-                            <div class="status-item" style="grid-column: span 2;">
-                                <div class="status-label">📊 Progreso</div>
-                                <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%;"></div></div>
-                                <span style="font-size:0.65rem;color:var(--text-muted);" id="progressText">0 / 12</span>
-                            </div>
-                            <div class="status-item" style="grid-column: span 2;">
-                                <div class="status-label">🏆 NFT</div>
-                                <div class="status-value" id="haCanjeado">No</div>
-                            </div>
-                        </div>
-                        <button id="canjearNft" class="btn btn-gold" style="width:100%;justify-content:center;margin-top:12px;" disabled>🔥 Canjear NFT (12 tokens)</button>
-                        <div id="canjeInfo" class="hidden" style="margin-top:8px;padding:8px;background:rgba(0,184,148,0.1);border-radius:8px;text-align:center;font-size:0.7rem;color:#00b894;">✅ NFT canjeado exitosamente</div>
+                    <div class="status-item" style="grid-column: span 2;">
+                        <div class="status-label">🏆 NFT</div>
+                        <div class="status-value" id="haCanjeado">No</div>
                     </div>
-                </section>
-
-                <!-- HISTORIAL -->
-                <section class="panel">
-                    <div class="panel-header">
-                        <h2>📜 Historial</h2>
-                        <span class="panel-badge">Últimos</span>
-                    </div>
-                    <div class="panel-body">
-                        <div id="transactionHistory" style="max-height:200px;overflow-y:auto;">
-                            <p style="text-align:center;color:var(--text-muted);font-size:0.7rem;padding:16px 0;">No hay transacciones aún</p>
-                        </div>
-                        <button id="loadMoreHistory" class="btn btn-outline" style="width:100%;justify-content:center;margin-top:8px;display:none;">Cargar más</button>
-                    </div>
-                </section>
-
+                </div>
+                <button class="btn btn-gold" style="width:100%;justify-content:center;margin-top:12px;" id="canjearNft" disabled>🔥 Canjear NFT (12 tokens)</button>
+                <div id="canjeInfo" style="display:none;margin-top:8px;padding:8px;background:rgba(0,184,148,0.1);border-radius:8px;text-align:center;font-size:0.7rem;color:#00b894;">✅ NFT canjeado exitosamente</div>
             </div>
+        </section>
 
-            <!-- QUICK ACCESS -->
-            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:24px;">
-                <a href="/features/muro/muro.html" style="background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--radius);padding:16px;text-align:center;text-decoration:none;color:var(--text-secondary);font-size:0.7rem;transition:var(--transition);">📱 Ir al Muro</a>
-                <a href="/features/perfil/perfil.html" style="background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--radius);padding:16px;text-align:center;text-decoration:none;color:var(--text-secondary);font-size:0.7rem;transition:var(--transition);">👤 Mi Perfil</a>
-                <a href="/features/mensajes/contactos.html" style="background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--radius);padding:16px;text-align:center;text-decoration:none;color:var(--text-secondary);font-size:0.7rem;transition:var(--transition);">👥 Contactos</a>
-                <a href="/features/live/live.html" style="background:rgba(255,51,102,0.05);border:1px solid rgba(255,51,102,0.1);border-radius:var(--radius);padding:16px;text-align:center;text-decoration:none;color:#ff3366;font-size:0.7rem;transition:var(--transition);">🔴 Muro Live</a>
-            </div>
-
-        </div>
-    </main>
-
-    <!-- ===== FOOTER PROFESIONAL ===== -->
-    <footer class="footer">
-        <div class="footer-grid">
-            <div>
-                <div class="footer-brand">Sariel<span>'s</span></div>
-                <p style="color:var(--text-muted);font-size:0.7rem;margin-top:4px;">Sabor al Paladar · WEB3 Ecosystem</p>
-                <p style="color:var(--text-muted);font-size:0.6rem;margin-top:2px;">◈ Galleta Domo · Powered by Polygon</p>
-            </div>
+        <!-- ===== FOOTER ===== -->
+        <footer class="footer">
+            <span><span class="brand">◈ Sariel's</span> · Sabor al Paladar · WEB3</span>
             <div class="footer-links">
-                <a href="/terminos.html" target="_blank">📜 Términos y Condiciones</a>
-                <a href="/privacidad.html" target="_blank">🔒 Privacidad</a>
+                <a href="/terminos.html">📜 Términos</a>
+                <a href="/privacidad.html">🔒 Privacidad</a>
+                <span style="opacity:0.3;">|</span>
+                <span>⚡ Polygon</span>
             </div>
-        </div>
+        </footer>
 
-        <!-- PAYMENT SECTION -->
-        <div style="max-width:1280px;margin:16px auto 0;padding:0 24px;">
-            <div class="payment-section">
-                <div class="title">💳 Información de Pago</div>
-                <div class="payment-row">
-                    <span class="label">Banco</span>
-                    <span class="value">Arcus</span>
-                </div>
-                <div class="payment-row">
-                    <span class="label">CLABE</span>
-                    <span class="value" id="clabeValue">706969899812898548</span>
-                    <button class="copy-btn" onclick="copiarTexto('clabeValue')">📋 Copiar</button>
-                </div>
-                <div class="payment-row" style="border-top:1px solid rgba(255,255,255,0.03);padding-top:8px;margin-top:4px;">
-                    <span class="label">USDT/USDC</span>
-                    <span class="value" id="walletValue">0x45c6455AA01356609D96b659c6eB880B7e1D046D</span>
-                    <button class="copy-btn" onclick="copiarTexto('walletValue')">📋 Copiar</button>
-                </div>
-                <div class="payment-row">
-                    <span class="label">Red</span>
-                    <span class="value">Polygon</span>
-                </div>
-                <div class="payment-warning">
-                    ⚠️ Únicamente enviar USDC/USDT por red Polygon. Otras redes podrían perderse.
-                </div>
-            </div>
-        </div>
-
-        <div class="footer-bottom">
-            <span class="gold">◈</span> Es.stoks · Csariel's · WEB3
-        </div>
-    </footer>
+    </div>
 
     <!-- ===== TOAST ===== -->
-    <div id="toast" class="toast"></div>
+    <div class="toast" id="toast"></div>
 
     <!-- ===== SCRIPTS ===== -->
     <script src="https://cdn.jsdelivr.net/npm/web3@1.8.0/dist/web3.min.js"></script>
@@ -651,52 +628,214 @@
     <script src="/socket.io/socket.io.js"></script>
     <script src="/app.js"></script>
     <script>
-        // ===== TOAST =====
-        function showToast(msg) {
+        // ================================================================
+        // TOAST
+        // ================================================================
+        function showToast(msg, type = '') {
             const t = document.getElementById('toast');
             t.textContent = msg;
-            t.classList.add('show');
+            t.className = 'toast show';
+            if (type === 'error') t.classList.add('error');
+            else t.classList.remove('error');
             clearTimeout(t._timeout);
-            t._timeout = setTimeout(() => t.classList.remove('show'), 2500);
+            t._timeout = setTimeout(() => t.classList.remove('show'), 3500);
         }
 
-        // ===== COPIAR =====
-        function copiarTexto(id) {
-            const val = document.getElementById(id).textContent;
-            navigator.clipboard.writeText(val).then(() => {
-                showToast('✅ Copiado al portapapeles');
-            }).catch(() => {
-                navigator.clipboard.writeText(val).then(() => {
-                    showToast('✅ Copiado');
-                }).catch(() => {
-                    prompt('Copia manual:', val);
-                });
-            });
-        }
+        // ================================================================
+        // REGISTRO / LOGIN
+        // ================================================================
+        function registrarUsuario() {
+            const email = document.getElementById('regEmail').value.trim();
+            const password = document.getElementById('regPassword').value.trim();
+            const name = document.getElementById('regName').value.trim();
+            const phone = document.getElementById('regPhone').value.trim();
 
-        // ===== TERMINOS =====
-        document.addEventListener('DOMContentLoaded', function() {
-            const cb = document.getElementById('aceptoTerminos');
-            const btn = document.getElementById('connectWallet');
-            function update() {
-                btn.disabled = !cb.checked;
+            if (!email || !password) {
+                showToast('⚠️ Correo y contraseña son obligatorios', 'error');
+                return;
             }
-            cb.addEventListener('change', update);
-            update();
 
-            btn.addEventListener('click', function(e) {
-                if (this.disabled) {
-                    e.preventDefault();
-                    cb.style.borderColor = '#ff3366';
-                    cb.style.boxShadow = '0 0 20px rgba(255,51,102,0.3)';
-                    setTimeout(() => {
-                        cb.style.borderColor = '';
-                        cb.style.boxShadow = '';
-                    }, 1500);
-                    document.querySelector('.terms-wrapper').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // Simular registro (conectar con backend)
+            showToast('✅ Cuenta creada. ¡Bienvenido a Sariel\'s!');
+            // Aquí iría la llamada a /api/auth/register
+        }
+
+        function iniciarSesion() {
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value.trim();
+
+            if (!email || !password) {
+                showToast('⚠️ Correo y contraseña son obligatorios', 'error');
+                return;
+            }
+
+            showToast('✅ Sesión iniciada correctamente');
+            // Aquí iría la llamada a /api/auth/login
+        }
+
+        function mostrarLogin() {
+            document.getElementById('loginCard').style.display = 'block';
+            document.querySelector('.auth-card:first-child').style.display = 'none';
+        }
+
+        function mostrarRegistro() {
+            document.querySelector('.auth-card:first-child').style.display = 'block';
+            document.getElementById('loginCard').style.display = 'none';
+        }
+
+        // ================================================================
+        // INTERNET MINI (desde localStorage)
+        // ================================================================
+        function cargarPacksMini() {
+            const saved = localStorage.getItem('sariels_internet_packs');
+            let packs = [];
+            if (saved) {
+                try { packs = JSON.parse(saved); } catch (e) {}
+            }
+            if (!packs || packs.length === 0) {
+                packs = [
+                    { id: 1, nombre: 'Básico', datos: '3 GB', dias: 7, precioMXN: 79, precioUSD: 4, color: '#8ba3c7' },
+                    { id: 2, nombre: 'Chido', datos: '10 GB', dias: 15, precioMXN: 169, precioUSD: 8.5, color: '#f7d44a' },
+                    { id: 3, nombre: 'Pro', datos: '30 GB', dias: 30, precioMXN: 299, precioUSD: 15, color: '#00ff88' },
+                    { id: 4, nombre: 'Ilimitado', datos: 'Ilimitado', dias: 30, precioMXN: 549, precioUSD: 28, color: '#a855f7' }
+                ];
+            }
+            return packs.slice(0, 4); // Mostrar solo 4 en el index
+        }
+
+        function renderInternetMini() {
+            const grid = document.getElementById('internetMiniGrid');
+            const packs = cargarPacksMini();
+            grid.innerHTML = packs.map(p => `
+                <div class="pack-mini" onclick="seleccionarPackMini(${p.id})" id="packMini-${p.id}">
+                    <div class="name">${p.nombre}</div>
+                    <div class="data">${p.datos}</div>
+                    <div class="price">$${p.precioMXN} MXN</div>
+                    <button class="btn btn-gold" style="font-size:0.5rem;padding:3px 8px;">Seleccionar</button>
+                </div>
+            `).join('');
+        }
+
+        let selectedPackMini = null;
+
+        function seleccionarPackMini(id) {
+            const packs = cargarPacksMini();
+            selectedPackMini = packs.find(p => p.id === id);
+            document.querySelectorAll('.pack-mini').forEach(el => el.style.borderColor = 'var(--glass-border)');
+            document.getElementById('packMini-' + id).style.borderColor = 'var(--gold)';
+            showToast(`📦 ${selectedPackMini.nombre} seleccionado: ${selectedPackMini.datos} por $${selectedPackMini.precioMXN} MXN`);
+        }
+
+        function comprarInternetMini() {
+            const phone = document.getElementById('netPhoneMini').value.trim();
+            if (!selectedPackMini) {
+                showToast('⚠️ Selecciona un paquete primero', 'error');
+                return;
+            }
+            if (!phone) {
+                showToast('⚠️ Ingresa tu número o ID', 'error');
+                return;
+            }
+            showToast(`✅ Orden generada para ${phone}: ${selectedPackMini.nombre} - $${selectedPackMini.precioMXN} MXN`);
+            document.getElementById('netStatusMini').innerHTML = `📌 Orden generada. Realiza el pago para activar.`;
+        }
+
+        // ================================================================
+        // STARS
+        // ================================================================
+        function initStars() {
+            const canvas = document.getElementById('stars-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            let width, height, stars = [];
+            const STAR_COUNT = 150;
+
+            function resize() { width = window.innerWidth; height = window.innerHeight; canvas.width = width; canvas.height = height; }
+            function createStars() {
+                stars = [];
+                for (let i = 0; i < STAR_COUNT; i++) {
+                    stars.push({
+                        x: Math.random() * width, y: Math.random() * height,
+                        radius: Math.random() * 1.2 + 0.2, speed: Math.random() * 0.01 + 0.005,
+                        opacity: Math.random() * 0.6 + 0.2, twinklePhase: Math.random() * Math.PI * 2
+                    });
                 }
+            }
+            function draw() {
+                ctx.clearRect(0, 0, width, height);
+                for (let star of stars) {
+                    const opacity = star.opacity * (0.6 + 0.4 * Math.sin(star.twinklePhase));
+                    ctx.beginPath();
+                    ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
+                    ctx.fill();
+                    star.twinklePhase += 0.02;
+                    star.y += star.speed;
+                    if (star.y > height) { star.y = 0; star.x = Math.random() * width; }
+                }
+                requestAnimationFrame(draw);
+            }
+            resize();
+            createStars();
+            draw();
+            window.addEventListener('resize', () => { resize(); createStars(); });
+        }
+
+        // ================================================================
+        // INICIALIZAR
+        // ================================================================
+        document.addEventListener('DOMContentLoaded', function() {
+            initStars();
+            renderInternetMini();
+
+            // QTY
+            let qty = 1;
+            document.getElementById('decreaseQty').addEventListener('click', () => {
+                if (qty > 1) { qty--; document.getElementById('domoQuantity').textContent = qty; }
             });
+            document.getElementById('increaseQty').addEventListener('click', () => {
+                if (qty < 10) { qty++; document.getElementById('domoQuantity').textContent = qty; }
+            });
+
+            // Wallet connect (placeholder)
+            document.getElementById('btnConnectWallet').addEventListener('click', function() {
+                showToast('🔗 Conectando wallet... (simulación)');
+                document.getElementById('walletDot').className = 'dot connected';
+                document.getElementById('walletStatus').textContent = 'Conectado';
+                document.getElementById('walletAddress').textContent = '0x1234...5678';
+                this.style.display = 'none';
+                document.getElementById('btnDisconnectWallet').style.display = 'inline-flex';
+                document.getElementById('buyDomo').disabled = false;
+                document.getElementById('buyDomoCrypto').disabled = false;
+                showToast('✅ Wallet conectada correctamente');
+            });
+
+            document.getElementById('btnDisconnectWallet').addEventListener('click', function() {
+                document.getElementById('walletDot').className = 'dot';
+                document.getElementById('walletStatus').textContent = 'Desconectado';
+                document.getElementById('walletAddress').textContent = '--';
+                this.style.display = 'none';
+                document.getElementById('btnConnectWallet').style.display = 'inline-flex';
+                document.getElementById('buyDomo').disabled = true;
+                document.getElementById('buyDomoCrypto').disabled = true;
+                showToast('🔌 Wallet desconectada');
+            });
+
+            // Login/Registro toggle
+            document.getElementById('loginCard').style.display = 'block';
+            document.querySelector('.auth-card:first-child').style.display = 'block';
+
+            console.log('◈ Sariel\'s - Ecosistema WEB3');
+            console.log('📦 Paquetes de Internet cargados:', cargarPacksMini().length);
         });
+
+        window.registrarUsuario = registrarUsuario;
+        window.iniciarSesion = iniciarSesion;
+        window.mostrarLogin = mostrarLogin;
+        window.mostrarRegistro = mostrarRegistro;
+        window.comprarInternetMini = comprarInternetMini;
+        window.seleccionarPackMini = seleccionarPackMini;
+        window.showToast = showToast;
     </script>
 </body>
 </html>
