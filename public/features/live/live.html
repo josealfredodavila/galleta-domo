@@ -1059,15 +1059,18 @@
     <script src="/features/live/live.js"></script>
     <script>
         // ================================================================
-        // INICIALIZACIÓN
+        // INICIALIZACIÓN - SIN REDIRECCIÓN AGRESIVA
         // ================================================================
         document.addEventListener('DOMContentLoaded', function() {
             initStars();
 
-            // Verificar token
+            // Verificar token - sin redirigir agresivamente
             const token = localStorage.getItem('galleta_token');
             if (!token) {
-                window.location.href = '/';
+                console.log('⚠️ Modo demostración - sin token');
+                showToast('⚠️ Conecta tu wallet para transmisiones en vivo', 'warning');
+            } else {
+                console.log('✅ Token encontrado');
             }
 
             console.log('◈ Sariel\'s - Live Ultra Mega Pro');
