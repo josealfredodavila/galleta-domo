@@ -282,14 +282,11 @@
             </div>
         </main>
 
-        <!-- ===== FOOTER SIN TÉRMINOS (YA ESTÁ EN EL HEADER) ===== -->
+        <!-- ===== FOOTER LIMPIO (SIN ENLACES ADICIONALES) ===== -->
         <footer class="footer">
             <div class="footer-content">
                 <p class="footer-brand">✦ Sariel's · Sabor al Paladar ✦</p>
                 <p>◈ Galleta Domo · Powered by Polygon</p>
-                <p class="footer-small">
-                    <a href="/privacidad.html" target="_blank">🔒 Privacidad</a>
-                </p>
                 <p class="footer-small" style="font-size: 0.65rem; opacity: 0.4; margin-top: 4px;">
                     Es.stoks · Csariel's · WEB3
                 </p>
@@ -315,7 +312,6 @@
             const checkbox = document.getElementById('aceptoTerminos');
             const connectBtn = document.getElementById('connectWallet');
 
-            // Función para actualizar el estado del botón
             function actualizarBoton() {
                 if (checkbox.checked) {
                     connectBtn.disabled = false;
@@ -328,21 +324,17 @@
                 }
             }
 
-            // Escuchar cambios en el checkbox
             checkbox.addEventListener('change', actualizarBoton);
 
-            // Si el usuario intenta hacer clic en el botón deshabilitado
             connectBtn.addEventListener('click', function(e) {
                 if (this.disabled) {
                     e.preventDefault();
-                    // Resaltar el checkbox
                     checkbox.style.borderColor = '#ff3366';
                     checkbox.style.boxShadow = '0 0 20px rgba(255, 51, 102, 0.3)';
                     setTimeout(() => {
                         checkbox.style.borderColor = '';
                         checkbox.style.boxShadow = '';
                     }, 1500);
-                    // Scroll al checkbox
                     document.getElementById('terminosLabel').scrollIntoView({
                         behavior: 'smooth',
                         block: 'center'
@@ -350,7 +342,6 @@
                 }
             });
 
-            // Estado inicial
             actualizarBoton();
         });
     </script>
