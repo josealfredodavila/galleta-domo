@@ -1,7 +1,39 @@
-/* public/features/muro/muro.css */
+/* ================================================================
+   MURO ULTRA MEGA PRO - SARIEL'S
+   Estilos premium competitivos con Silicon Valley
+   ================================================================ */
+
+/* ===== VARIABLES GLOBALES ===== */
+:root {
+    --gold: #D4AF37;
+    --gold-dark: #b8923a;
+    --gold-light: #e8c84a;
+    --gold-bright: #f0d060;
+    --green-deep: #0F2D1A;
+    --green-mid: #1a4a2a;
+    --green-bright: #2a6a3a;
+    --space: #05080f;
+    --text-primary: #f0f4f8;
+    --text-secondary: #c0d8e8;
+    --text-muted: #8aa8b8;
+    --glass-bg: rgba(15, 45, 26, 0.55);
+    --glass-border: rgba(212, 175, 55, 0.15);
+    --shadow-gold: 0 8px 32px rgba(212, 175, 55, 0.25);
+    --shadow-gold-strong: 0 0 60px rgba(212, 175, 55, 0.15);
+    --radius: 16px;
+    --radius-xl: 24px;
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-slow: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    --success: #00d68f;
+    --danger: #ff3366;
+    --warning: #f7d44a;
+    --cyan: #00e5ff;
+    --purple: #a855f7;
+    --pink: #ec4899;
+}
 
 /* ================================================================
-   ESTILOS ESPECÍFICOS DEL MURO
+   MURO CONTAINER
    ================================================================ */
 
 .muro-container {
@@ -10,43 +42,176 @@
 }
 
 /* ================================================================
+   TRENDING TOPICS
+   ================================================================ */
+
+.trending-section {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-xl);
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    transition: var(--transition-slow);
+}
+
+.trending-section:hover {
+    border-color: rgba(212, 175, 55, 0.2);
+    box-shadow: var(--shadow-gold);
+}
+
+.trending-section .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.trending-section .header h3 {
+    font-family: 'Orbitron', monospace;
+    color: var(--gold);
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.trending-section .header .actualizado {
+    font-size: 0.55rem;
+    color: var(--text-muted);
+}
+
+.trending-tags {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.trending-tags .tag {
+    padding: 4px 14px;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    background: rgba(212, 175, 55, 0.08);
+    border: 1px solid rgba(212, 175, 55, 0.08);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: var(--transition);
+    font-family: 'Inter', sans-serif;
+}
+
+.trending-tags .tag:hover {
+    background: rgba(212, 175, 55, 0.15);
+    border-color: rgba(212, 175, 55, 0.2);
+    color: var(--gold);
+    transform: translateY(-2px);
+}
+
+.trending-tags .tag .count {
+    font-size: 0.55rem;
+    color: var(--text-muted);
+    margin-left: 4px;
+}
+
+/* ================================================================
    FORMULARIO DE PUBLICACIÓN
    ================================================================ */
 
 .post-form {
-    background: rgba(15, 45, 26, 0.25);
-    border: 1px solid rgba(212, 175, 55, 0.15);
-    border-radius: 16px;
-    padding: 20px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-xl);
+    padding: 20px 24px;
     margin-bottom: 24px;
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    transition: var(--transition-slow);
+}
+
+.post-form:hover {
+    border-color: rgba(212, 175, 55, 0.2);
+    box-shadow: var(--shadow-gold);
+}
+
+.post-form .form-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.post-form .form-header .avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--green-deep), var(--gold));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    color: white;
+    transition: var(--transition);
+}
+
+.post-form .form-header .nombre {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.85rem;
+}
+
+.post-form .form-header .handle {
+    font-size: 0.7rem;
+    color: var(--text-muted);
 }
 
 .post-form textarea {
     width: 100%;
     padding: 12px 16px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(212, 175, 55, 0.15);
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid var(--glass-border);
     border-radius: 12px;
-    color: #e8f0f8;
-    font-size: 0.95rem;
-    font-family: 'Space Grotesk', sans-serif;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    font-family: 'Inter', sans-serif;
     resize: vertical;
     min-height: 80px;
-    transition: all 0.3s ease;
+    transition: var(--transition);
+    outline: none;
 }
 
 .post-form textarea:focus {
-    outline: none;
-    border-color: #D4AF37;
-    background: rgba(255, 255, 255, 0.08);
+    border-color: var(--gold);
+    box-shadow: 0 0 30px rgba(212, 175, 55, 0.05);
+    background: rgba(0, 0, 0, 0.35);
 }
 
 .post-form .form-actions {
     display: flex;
-    justify-content: flex-end;
-    margin-top: 12px;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
     gap: 10px;
+    margin-top: 12px;
+}
+
+.post-form .form-actions .tools {
+    display: flex;
+    gap: 6px;
+}
+
+.post-form .form-actions .tools button {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: var(--transition);
+    padding: 4px 8px;
+    border-radius: 8px;
+    font-family: 'Inter', sans-serif;
+}
+
+.post-form .form-actions .tools button:hover {
+    color: var(--gold);
+    background: rgba(212, 175, 55, 0.05);
 }
 
 /* ================================================================
@@ -54,25 +219,25 @@
    ================================================================ */
 
 .btn-publicar {
-    background: linear-gradient(135deg, #D4AF37, #b8923a);
-    color: #05080f;
+    background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+    color: var(--space);
     border: none;
-    padding: 10px 24px;
+    padding: 8px 24px;
     border-radius: 30px;
     font-family: 'Orbitron', monospace;
     font-weight: 700;
-    font-size: 0.8rem;
+    font-size: 0.7rem;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: var(--transition);
 }
 
 .btn-publicar:hover {
-    transform: scale(1.02);
-    box-shadow: 0 0 30px rgba(212, 175, 55, 0.3);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-gold);
 }
 
 .btn-publicar:disabled {
-    opacity: 0.5;
+    opacity: 0.4;
     cursor: not-allowed;
     transform: none !important;
 }
@@ -80,13 +245,13 @@
 .btn-adjuntar {
     background: rgba(212, 175, 55, 0.1);
     border: 1px solid rgba(212, 175, 55, 0.15);
-    color: #D4AF37;
+    color: var(--gold);
     padding: 10px 16px;
     border-radius: 30px;
     font-family: 'Orbitron', monospace;
     font-size: 0.7rem;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: var(--transition);
 }
 
 .btn-adjuntar:hover {
@@ -98,17 +263,26 @@
    ================================================================ */
 
 .post-card {
-    background: rgba(15, 45, 26, 0.3);
-    border: 1px solid rgba(212, 175, 55, 0.15);
-    border-radius: 16px;
-    padding: 20px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-xl);
+    padding: 20px 24px;
     margin-bottom: 16px;
-    backdrop-filter: blur(10px);
-    transition: all 0.3s ease;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    transition: var(--transition-slow);
+    animation: fadeInUp 0.4s ease;
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 .post-card:hover {
-    border-color: rgba(212, 175, 55, 0.3);
+    border-color: rgba(212, 175, 55, 0.2);
+    box-shadow: var(--shadow-gold);
+    transform: translateY(-2px);
 }
 
 .post-card .post-header {
@@ -119,18 +293,23 @@
 }
 
 .post-card .post-avatar {
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #0F2D1A, #D4AF37);
+    background: linear-gradient(135deg, var(--green-deep), var(--gold));
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: 700;
     color: white;
-    font-size: 1rem;
+    font-size: 1.2rem;
     overflow: hidden;
     flex-shrink: 0;
+    transition: var(--transition);
+}
+
+.post-card .post-avatar:hover {
+    transform: scale(1.05);
 }
 
 .post-card .post-avatar img {
@@ -142,41 +321,148 @@
 .post-card .post-author {
     font-family: 'Orbitron', monospace;
     font-weight: 700;
-    color: #D4AF37;
-    font-size: 0.9rem;
+    color: var(--gold);
+    font-size: 0.85rem;
 }
 
 .post-card .post-author .badge-verificado {
     font-size: 0.5rem;
     background: rgba(212, 175, 55, 0.15);
-    color: #D4AF37;
+    color: var(--gold);
     padding: 2px 8px;
     border-radius: 12px;
     font-family: 'Orbitron', monospace;
     margin-left: 6px;
+    border: 1px solid rgba(212, 175, 55, 0.1);
+}
+
+.post-card .post-author .badge-anclado {
+    font-size: 0.5rem;
+    background: rgba(212, 175, 55, 0.08);
+    color: var(--gold);
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-family: 'Orbitron', monospace;
+    margin-left: 6px;
+    border: 1px solid rgba(212, 175, 55, 0.1);
 }
 
 .post-card .post-date {
-    font-size: 0.7rem;
-    color: #4a6a8a;
+    font-size: 0.65rem;
+    color: var(--text-muted);
 }
 
 .post-card .post-content {
-    color: #e8f0f8;
-    font-size: 0.95rem;
-    line-height: 1.6;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.7;
     margin-bottom: 12px;
     word-wrap: break-word;
 }
 
+.post-card .post-content .hashtag {
+    color: var(--gold);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.post-card .post-content .hashtag:hover {
+    text-decoration: underline;
+}
+
+.post-card .post-stats {
+    display: flex;
+    gap: 16px;
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    padding: 8px 0;
+    border-top: 1px solid var(--glass-border);
+}
+
+.post-card .post-stats span {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* ================================================================
+   ENCUESTAS
+   ================================================================ */
+
+.post-card .post-encuesta {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
+    padding: 14px;
+    margin: 10px 0;
+    border: 1px solid rgba(212, 175, 55, 0.08);
+    transition: var(--transition);
+}
+
+.post-card .post-encuesta:hover {
+    border-color: rgba(212, 175, 55, 0.15);
+}
+
+.post-card .post-encuesta .pregunta {
+    font-weight: 600;
+    color: var(--gold);
+    font-size: 0.8rem;
+    margin-bottom: 8px;
+}
+
+.post-card .post-encuesta .opcion {
+    margin: 4px 0;
+    cursor: pointer;
+    padding: 6px 10px;
+    border-radius: 8px;
+    transition: var(--transition);
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.post-card .post-encuesta .opcion:hover {
+    background: rgba(212, 175, 55, 0.05);
+}
+
+.post-card .post-encuesta .opcion .barra {
+    width: 100%;
+    height: 4px;
+    background: rgba(212, 175, 55, 0.08);
+    border-radius: 2px;
+    margin-top: 4px;
+    overflow: hidden;
+}
+
+.post-card .post-encuesta .opcion .barra .fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--gold-dark), var(--gold), var(--gold-light));
+    border-radius: 2px;
+    transition: width 0.5s ease;
+}
+
+.post-card .post-encuesta .total-votos {
+    font-size: 0.55rem;
+    color: var(--text-muted);
+    margin-top: 6px;
+}
+
+/* ================================================================
+   MEDIA (IMÁGENES)
+   ================================================================ */
+
 .post-card .post-media {
     margin: 12px -20px 12px -20px;
+    border-radius: 12px;
+    overflow: hidden;
 }
 
 .post-card .post-media img {
     width: 100%;
     max-height: 400px;
     object-fit: cover;
+    transition: var(--transition-slow);
+}
+
+.post-card .post-media img:hover {
+    transform: scale(1.02);
 }
 
 .post-card .post-media video {
@@ -184,39 +470,50 @@
     max-height: 400px;
 }
 
+/* ================================================================
+   ACCIONES DE PUBLICACIÓN
+   ================================================================ */
+
 .post-card .post-actions {
     display: flex;
-    gap: 16px;
-    border-top: 1px solid rgba(212, 175, 55, 0.08);
-    padding-top: 12px;
+    gap: 4px;
     flex-wrap: wrap;
+    padding-top: 8px;
+    border-top: 1px solid var(--glass-border);
 }
 
 .post-card .post-actions button {
     background: none;
     border: none;
-    color: #4a6a8a;
-    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-size: 0.75rem;
     cursor: pointer;
-    transition: all 0.3s ease;
-    font-family: 'Space Grotesk', sans-serif;
+    transition: var(--transition);
+    font-family: 'Inter', sans-serif;
+    padding: 4px 12px;
+    border-radius: 20px;
     display: flex;
     align-items: center;
     gap: 4px;
 }
 
 .post-card .post-actions button:hover {
-    color: #D4AF37;
+    color: var(--gold);
+    background: rgba(212, 175, 55, 0.05);
 }
 
 .post-card .post-actions button.liked {
-    color: #ff3366;
+    color: var(--danger);
 }
 
 .post-card .post-actions button .count {
-    font-size: 0.7rem;
-    opacity: 0.6;
+    font-size: 0.65rem;
+    color: var(--text-muted);
 }
+
+/* ================================================================
+   SECCIÓN DE VENTA
+   ================================================================ */
 
 .post-card .post-venta {
     background: rgba(212, 175, 55, 0.05);
@@ -233,19 +530,19 @@
 
 .post-card .post-venta .precio {
     font-family: 'Orbitron', monospace;
-    color: #D4AF37;
+    color: var(--gold);
     font-size: 1.1rem;
     font-weight: 700;
 }
 
 .post-card .post-venta .cantidad {
-    color: #8ba3c7;
+    color: var(--text-muted);
     font-size: 0.85rem;
 }
 
 .post-card .post-venta .btn-comprar {
-    background: linear-gradient(135deg, #D4AF37, #b8923a);
-    color: #05080f;
+    background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+    color: var(--space);
     border: none;
     padding: 6px 16px;
     border-radius: 20px;
@@ -253,11 +550,12 @@
     font-size: 0.6rem;
     font-weight: 700;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: var(--transition);
 }
 
 .post-card .post-venta .btn-comprar:hover {
     transform: scale(1.05);
+    box-shadow: var(--shadow-gold);
 }
 
 /* ================================================================
@@ -275,13 +573,20 @@
     gap: 10px;
     padding: 8px 0;
     border-bottom: 1px solid rgba(212, 175, 55, 0.04);
+    transition: var(--transition);
+}
+
+.post-card .post-comentarios .comentario:hover {
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 8px;
+    padding-left: 4px;
 }
 
 .post-card .post-comentarios .comentario .avatar {
     width: 28px;
     height: 28px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #0F2D1A, #D4AF37);
+    background: linear-gradient(135deg, var(--green-deep), var(--gold));
     display: flex;
     align-items: center;
     justify-content: center;
@@ -294,11 +599,17 @@
 .post-card .post-comentarios .comentario .texto {
     flex: 1;
     font-size: 0.8rem;
-    color: #8ba3c7;
+    color: var(--text-muted);
 }
 
 .post-card .post-comentarios .comentario .texto strong {
-    color: #e8f0f8;
+    color: var(--text-secondary);
+}
+
+.post-card .post-comentarios .comentario .texto .fecha {
+    font-size: 0.55rem;
+    color: var(--text-muted);
+    margin-top: 2px;
 }
 
 .post-card .post-comentarios .input-comentario {
@@ -313,19 +624,22 @@
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(212, 175, 55, 0.1);
     border-radius: 20px;
-    color: #e8f0f8;
+    color: var(--text-primary);
     font-size: 0.8rem;
-    font-family: 'Space Grotesk', sans-serif;
+    font-family: 'Inter', sans-serif;
+    outline: none;
+    transition: var(--transition);
 }
 
 .post-card .post-comentarios .input-comentario input:focus {
     outline: none;
-    border-color: #D4AF37;
+    border-color: var(--gold);
+    background: rgba(255, 255, 255, 0.08);
 }
 
 .post-card .post-comentarios .input-comentario button {
-    background: linear-gradient(135deg, #D4AF37, #b8923a);
-    color: #05080f;
+    background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+    color: var(--space);
     border: none;
     padding: 6px 14px;
     border-radius: 20px;
@@ -333,6 +647,11 @@
     font-size: 0.6rem;
     font-weight: 700;
     cursor: pointer;
+    transition: var(--transition);
+}
+
+.post-card .post-comentarios .input-comentario button:hover {
+    transform: scale(1.05);
 }
 
 /* ================================================================
@@ -342,7 +661,7 @@
 .empty-state {
     text-align: center;
     padding: 60px 20px;
-    color: #4a6a8a;
+    color: var(--text-muted);
 }
 
 .empty-state .icon {
@@ -354,11 +673,11 @@
 .empty-state h3 {
     font-family: 'Orbitron', monospace;
     font-size: 1.2rem;
-    color: #8ba3c7;
+    color: var(--text-secondary);
 }
 
 .empty-state p {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
 }
 
 /* ================================================================
@@ -368,15 +687,15 @@
 .loading-spinner {
     text-align: center;
     padding: 40px 0;
-    color: #4a6a8a;
+    color: var(--text-muted);
 }
 
 .loading-spinner .spinner {
     display: inline-block;
     width: 40px;
     height: 40px;
-    border: 3px solid rgba(212, 175, 55, 0.1);
-    border-top: 3px solid #D4AF37;
+    border: 3px solid rgba(212, 175, 55, 0.08);
+    border-top: 3px solid var(--gold);
     border-radius: 50%;
     animation: spin 1s linear infinite;
     margin-bottom: 12px;
@@ -388,20 +707,96 @@
 }
 
 /* ================================================================
+   TOAST
+   ================================================================ */
+
+.toast {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    background: var(--green-deep);
+    border: 1px solid var(--gold);
+    color: var(--gold);
+    padding: 14px 28px;
+    border-radius: 14px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    box-shadow: var(--shadow-gold-strong);
+    transform: translateY(100px);
+    opacity: 0;
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 9999;
+    max-width: 400px;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.toast.show { transform: translateY(0); opacity: 1; }
+.toast.error { border-color: var(--danger); color: var(--danger); }
+.toast.warning { border-color: var(--warning); color: var(--warning); }
+
+/* ================================================================
+   MODO OSCURO/CLARO (overrides)
+   ================================================================ */
+
+body.modo-claro {
+    background: #f0f4f8;
+    color: #05080f;
+}
+
+body.modo-claro .post-card {
+    background: rgba(255, 255, 255, 0.7);
+}
+
+body.modo-claro .post-form {
+    background: rgba(255, 255, 255, 0.7);
+}
+
+body.modo-claro .trending-section {
+    background: rgba(255, 255, 255, 0.7);
+}
+
+body.modo-claro .post-card .post-content {
+    color: #1a2a3a;
+}
+
+body.modo-claro .post-card .post-date {
+    color: #6a8a9a;
+}
+
+body.modo-claro .post-card .post-comentarios .comentario .texto {
+    color: #4a6a7a;
+}
+
+body.modo-claro .post-card .post-comentarios .comentario .texto strong {
+    color: #0a1a2a;
+}
+
+/* ================================================================
    RESPONSIVE
    ================================================================ */
 
 @media (max-width: 768px) {
     .muro-container { padding: 0 12px; }
-    .post-card { padding: 14px; }
+    .post-card { padding: 14px 16px; }
     .post-card .post-content { font-size: 0.85rem; }
-    .post-form { padding: 14px; }
+    .post-form { padding: 14px 16px; }
     .post-card .post-venta { flex-direction: column; align-items: stretch; text-align: center; }
     .post-card .post-venta .btn-comprar { width: 100%; }
+    .post-card .post-media { margin: 8px -16px 8px -16px; }
+    .post-form .form-actions { flex-direction: column; align-items: stretch; }
+    .post-form .form-actions .tools { justify-content: center; }
+    .trending-section { padding: 12px 16px; }
+    .trending-tags .tag { font-size: 0.6rem; padding: 3px 10px; }
 }
 
 @media (max-width: 480px) {
-    .post-card .post-actions { gap: 8px; }
-    .post-card .post-actions button { font-size: 0.7rem; }
-    .post-card .post-media { margin: 8px -14px 8px -14px; }
+    .post-card .post-actions { gap: 4px; }
+    .post-card .post-actions button { font-size: 0.65rem; padding: 3px 8px; }
+    .post-card .post-actions button .count { font-size: 0.55rem; }
+    .post-card .post-media { margin: 6px -14px 6px -14px; }
+    .post-card .post-header { gap: 8px; }
+    .post-card .post-avatar { width: 32px; height: 32px; font-size: 0.9rem; }
+    .post-card .post-author { font-size: 0.75rem; }
+    .post-form .form-header .avatar { width: 32px; height: 32px; font-size: 0.9rem; }
 }
