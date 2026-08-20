@@ -1,0 +1,410 @@
+<!-- public/features/mensajes/contactos.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>◈ Contactos · Sariel's</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <!-- ===== FAVICON OFICIAL CSARIEL'S ===== -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+    <style>
+        /* ===== ESTILOS ESPECÍFICOS DE CONTACTOS ===== */
+        .contactos-container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        /* ===== BUSCADOR ===== */
+        .search-bar {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .search-bar input {
+            flex: 1;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(212, 175, 55, 0.15);
+            border-radius: 30px;
+            color: #e8f0f8;
+            font-size: 0.95rem;
+            font-family: 'Space Grotesk', sans-serif;
+            transition: all 0.3s ease;
+            min-width: 200px;
+        }
+        .search-bar input:focus {
+            outline: none;
+            border-color: #D4AF37;
+            background: rgba(255, 255, 255, 0.08);
+        }
+        .search-bar input::placeholder {
+            color: #4a6a8a;
+        }
+        .search-bar .btn-agregar {
+            background: linear-gradient(135deg, #D4AF37, #b8923a);
+            color: #05080f;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 30px;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+        .search-bar .btn-agregar:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 30px rgba(212, 175, 55, 0.3);
+        }
+
+        /* ===== FILTROS ===== */
+        .filtros {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .filtros .filtro {
+            padding: 6px 16px;
+            border: 1px solid rgba(212, 175, 55, 0.15);
+            border-radius: 20px;
+            background: transparent;
+            color: #4a6a8a;
+            font-family: 'Orbitron', monospace;
+            font-size: 0.65rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .filtros .filtro:hover {
+            border-color: rgba(212, 175, 55, 0.3);
+            color: #e8f0f8;
+        }
+        .filtros .filtro.active {
+            background: rgba(212, 175, 55, 0.1);
+            border-color: #D4AF37;
+            color: #D4AF37;
+        }
+
+        /* ===== LISTA DE CONTACTOS ===== */
+        .contactos-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .contacto-card {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 14px 18px;
+            background: rgba(15, 45, 26, 0.2);
+            border: 1px solid rgba(212, 175, 55, 0.08);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .contacto-card:hover {
+            border-color: rgba(212, 175, 55, 0.2);
+            background: rgba(15, 45, 26, 0.3);
+        }
+        .contacto-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #0F2D1A, #D4AF37);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: white;
+            font-size: 1.2rem;
+            overflow: hidden;
+            flex-shrink: 0;
+            border: 2px solid transparent;
+        }
+        .contacto-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .contacto-avatar.online {
+            border-color: #00b894;
+        }
+        .contacto-avatar.offline {
+            border-color: #4a6a8a;
+            opacity: 0.6;
+        }
+        .contacto-info {
+            flex: 1;
+        }
+        .contacto-info .nombre {
+            font-weight: 600;
+            color: #e8f0f8;
+            font-size: 1rem;
+        }
+        .contacto-info .estado {
+            font-size: 0.75rem;
+            color: #4a6a8a;
+        }
+        .contacto-info .estado.online {
+            color: #00b894;
+        }
+        .contacto-actions {
+            display: flex;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+        .contacto-actions button {
+            background: none;
+            border: none;
+            color: #4a6a8a;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            padding: 4px 8px;
+            border-radius: 8px;
+        }
+        .contacto-actions button:hover {
+            background: rgba(212, 175, 55, 0.1);
+            color: #D4AF37;
+        }
+        .contacto-actions button.mensaje:hover {
+            color: #00b894;
+        }
+        .contacto-actions button.eliminar:hover {
+            color: #ff3366;
+        }
+
+        /* ===== EMPTY STATE ===== */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #4a6a8a;
+        }
+        .empty-state .icon {
+            font-size: 3rem;
+            display: block;
+            margin-bottom: 16px;
+        }
+        .empty-state h3 {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.2rem;
+            color: #8ba3c7;
+        }
+        .empty-state p {
+            font-size: 0.9rem;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .contactos-container { padding: 0 12px; }
+            .search-bar { flex-direction: column; }
+            .search-bar .btn-agregar { width: 100%; text-align: center; }
+            .contacto-card { padding: 12px 14px; flex-wrap: wrap; }
+            .contacto-actions { width: 100%; justify-content: flex-end; }
+            .filtros { gap: 4px; }
+            .filtros .filtro { font-size: 0.55rem; padding: 4px 12px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ===== FONDO ESTELAR ===== -->
+    <canvas id="stars-canvas"></canvas>
+    <div class="nebula nebula-1"></div>
+    <div class="nebula nebula-2"></div>
+    <div class="nebula nebula-3"></div>
+
+    <div id="app">
+
+        <!-- ===== HEADER CON LOGOTIPO OFICIAL ===== -->
+        <header class="header">
+            <div class="header-content">
+                <a href="/" class="logo">
+                    <span class="logo-icon"><span class="hex">◈</span></span>
+                    <span class="logo-text">Sariel's</span>
+                    <span class="logo-badge">✦ WEB3</span>
+                </a>
+                <div class="header-info">
+                    <span class="network-badge">🟢 Polygon</span>
+                    <button id="connectWallet" class="btn-connect">
+                        <span class="btn-icon">🔗</span>
+                        Conectar Wallet
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- ===== CONTACTOS ===== -->
+        <main class="main">
+            <div class="container">
+                <div class="contactos-container">
+
+                    <!-- ===== MENU DE NAVEGACIÓN ===== -->
+                    <nav class="main-nav">
+                        <a href="/" class="nav-link">🏠 Inicio</a>
+                        <a href="/features/muro/muro.html" class="nav-link">📱 Muro</a>
+                        <a href="/features/perfil/perfil.html" class="nav-link">👤 Perfil</a>
+                        <a href="/features/mensajes/contactos.html" class="nav-link active">👥 Contactos</a>
+                        <a href="/features/live/live.html" class="nav-link live-link">🔴 Live</a>
+                    </nav>
+
+                    <!-- ===== WALLET INFO ===== -->
+                    <div id="walletInfo" class="wallet-info hidden">
+                        <div class="wallet-details">
+                            <span class="wallet-label">Wallet:</span>
+                            <span id="walletAddress" class="wallet-address"></span>
+                            <span class="wallet-status online">● Conectado</span>
+                        </div>
+                        <div class="wallet-actions">
+                            <button id="btnPerfil" class="btn-small">👤 Perfil</button>
+                            <button id="btnLogout" class="btn-small logout">🚪 Salir</button>
+                        </div>
+                    </div>
+
+                    <!-- ===== BUSCADOR ===== -->
+                    <div class="search-bar">
+                        <input type="text" id="searchInput" placeholder="🔍 Buscar contactos..." />
+                        <button class="btn-agregar" id="btnAgregar">➕ Agregar contacto</button>
+                    </div>
+
+                    <!-- ===== FILTROS ===== -->
+                    <div class="filtros">
+                        <button class="filtro active" data-filtro="todos">Todos</button>
+                        <button class="filtro" data-filtro="online">🟢 En línea</button>
+                        <button class="filtro" data-filtro="favoritos">⭐ Favoritos</button>
+                        <button class="filtro" data-filtro="recientes">🕐 Recientes</button>
+                    </div>
+
+                    <!-- ===== LISTA DE CONTACTOS ===== -->
+                    <div class="contactos-list" id="contactosList">
+                        <div class="empty-state">
+                            <span class="icon">👤</span>
+                            <h3>Sin contactos</h3>
+                            <p>Comienza a agregar personas a tu red</p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </main>
+
+        <!-- ===== FOOTER ===== -->
+        <footer class="footer">
+            <div class="footer-content">
+                <p class="footer-brand">✦ Sariel's · Sabor al Paladar ✦</p>
+                <p>◈ Galleta Domo · Powered by Polygon</p>
+                <p class="footer-small">
+                    <a href="/terminos.html" target="_blank">📜 Términos y Condiciones</a>
+                    &nbsp;·&nbsp;
+                    <a href="/privacidad.html" target="_blank">🔒 Privacidad</a>
+                </p>
+            </div>
+        </footer>
+
+    </div>
+
+    <!-- ===== SCRIPTS ===== -->
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.8.0/dist/web3.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/app.js"></script>
+    <script>
+        // ===== LÓGICA DE CONTACTOS =====
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('searchInput');
+            const contactosList = document.getElementById('contactosList');
+            const btnAgregar = document.getElementById('btnAgregar');
+
+            // Datos de ejemplo
+            let contactos = [
+                { id: 1, nombre: 'Ana Martínez', estado: 'online', avatar: '👩' },
+                { id: 2, nombre: 'Carlos López', estado: 'offline', avatar: '👨' },
+                { id: 3, nombre: 'María García', estado: 'online', avatar: '👩' },
+                { id: 4, nombre: 'Juan Pérez', estado: 'offline', avatar: '👨' },
+            ];
+
+            // Renderizar contactos
+            function renderizarContactos(lista) {
+                if (lista.length === 0) {
+                    contactosList.innerHTML = `
+                        <div class="empty-state">
+                            <span class="icon">👤</span>
+                            <h3>Sin contactos</h3>
+                            <p>Comienza a agregar personas a tu red</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                contactosList.innerHTML = lista.map(c => `
+                    <div class="contacto-card">
+                        <div class="contacto-avatar ${c.estado}">
+                            <span>${c.avatar || '👤'}</span>
+                        </div>
+                        <div class="contacto-info">
+                            <div class="nombre">${c.nombre}</div>
+                            <div class="estado ${c.estado}">${c.estado === 'online' ? '🟢 En línea' : '⚪ Desconectado'}</div>
+                        </div>
+                        <div class="contacto-actions">
+                            <button class="mensaje" title="Enviar mensaje">💬</button>
+                            <button class="favorito" title="Agregar a favoritos">⭐</button>
+                            <button class="eliminar" title="Eliminar contacto">✕</button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            // Filtrar contactos
+            function filtrarContactos(filtro) {
+                let lista = [...contactos];
+                if (filtro === 'online') {
+                    lista = lista.filter(c => c.estado === 'online');
+                } else if (filtro === 'favoritos') {
+                    lista = lista.filter(c => c.favorito);
+                } else if (filtro === 'recientes') {
+                    lista = lista.sort((a, b) => a.id - b.id);
+                }
+                renderizarContactos(lista);
+            }
+
+            // Buscar contactos
+            searchInput.addEventListener('input', function() {
+                const query = this.value.toLowerCase();
+                const filtrados = contactos.filter(c => 
+                    c.nombre.toLowerCase().includes(query)
+                );
+                renderizarContactos(filtrados);
+            });
+
+            // Filtros
+            document.querySelectorAll('.filtro').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.filtro').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    filtrarContactos(this.dataset.filtro);
+                });
+            });
+
+            // Agregar contacto (simulado)
+            btnAgregar.addEventListener('click', function() {
+                const nombre = prompt('Nombre del contacto:');
+                if (nombre && nombre.trim()) {
+                    contactos.push({
+                        id: Date.now(),
+                        nombre: nombre.trim(),
+                        estado: 'offline',
+                        avatar: '👤'
+                    });
+                    renderizarContactos(contactos);
+                }
+            });
+
+            // Render inicial
+            renderizarContactos(contactos);
+        });
+    </script>
+</body>
+</html>
