@@ -864,16 +864,13 @@
         function seleccionarConversacion(id) {
             conversacionActual = id;
 
-            // Actualizar active en lista
             document.querySelectorAll('.conv-item').forEach(el => el.classList.remove('active'));
             const selected = document.querySelector(`.conv-item[data-id="${id}"]`);
             if (selected) selected.classList.add('active');
 
-            // Actualizar nombre del chat
             const nombre = selected?.querySelector('.conv-nombre')?.textContent || 'Usuario';
             document.getElementById('chatNombre').textContent = nombre;
 
-            // Cargar mensajes
             const mensajes = mensajesPorConversacion[id] || [];
             const container = document.getElementById('chatMessages');
             container.innerHTML = '';
@@ -915,8 +912,6 @@
             if (!texto) return;
 
             const container = document.getElementById('chatMessages');
-
-            // Eliminar empty state si existe
             const empty = container.querySelector('.empty-chat');
             if (empty) empty.remove();
 
@@ -933,7 +928,6 @@
             container.scrollTop = container.scrollHeight;
             input.value = '';
 
-            // Guardar en conversación
             if (!mensajesPorConversacion[conversacionActual]) {
                 mensajesPorConversacion[conversacionActual] = [];
             }
@@ -944,7 +938,6 @@
                 leido: true
             });
 
-            // Simular respuesta
             setTimeout(() => {
                 const respuestas = [
                     '◈ Interesante, cuéntame más',
@@ -975,12 +968,34 @@
         }
 
         // ================================================================
+        // VERIFICAR WALLET - SIN REDIRECCIÓN AGRESIVA
+        // ================================================================
+        const token = localStorage.getItem('galleta_token');
+        const connectBtn = document.getElementById('connectWallet');
+
+        if (connectBtn) {
+            if (token) {
+                connectBtn.textContent = '✅ Conectado';
+                connectBtn.disabled = true;
+            } else {
+                connectBtn.textContent = '◈ Conectar Wallet';
+                connectBtn.disabled = false;
+                connectBtn.addEventListener('click', function() {
+                    if (confirm('⚠️ Necesitas conectar tu wallet para usar mensajería.\n¿Quieres ir al inicio para conectar?')) {
+                        window.location.href = '/';
+                    }
+                });
+            }
+        } else {
+            console.warn('⚠️ Botón connectWallet no encontrado en el DOM');
+        }
+
+        // ================================================================
         // INICIALIZAR
         // ================================================================
         document.addEventListener('DOMContentLoaded', function() {
             initStars();
 
-            // Eventos
             document.getElementById('btnEnviar').addEventListener('click', enviarMensaje);
             document.getElementById('chatInput').addEventListener('keydown', function(e) {
                 if (e.key === 'Enter') enviarMensaje();
