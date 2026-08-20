@@ -10,26 +10,30 @@
 
     <style>
         /* ================================================================
-           ESTILOS MODERNOS - SARIEL'S ECOSYSTEM
+           ESTILOS MODERNOS - SARIEL'S ECOSYSTEM (CON MÁS COLOR)
            ================================================================ */
         :root {
             --gold: #D4AF37;
             --gold-dark: #b8923a;
             --gold-light: #e8c84a;
+            --gold-bright: #f0d060;
             --green-deep: #0F2D1A;
-            --green-mid: #1a3d2a;
+            --green-mid: #1a4a2a;
+            --green-bright: #2a6a3a;
             --space: #05080f;
             --text-primary: #f0f4f8;
-            --text-secondary: #a0b8cc;
-            --text-muted: #5a7a8a;
-            --glass-bg: rgba(15, 45, 26, 0.4);
-            --glass-border: rgba(212, 175, 55, 0.1);
-            --shadow-gold: 0 8px 32px rgba(212, 175, 55, 0.15);
+            --text-secondary: #c0d8e8;
+            --text-muted: #8aa8b8;
+            --glass-bg: rgba(15, 45, 26, 0.5);
+            --glass-border: rgba(212, 175, 55, 0.2);
+            --shadow-gold: 0 8px 32px rgba(212, 175, 55, 0.25);
+            --shadow-gold-strong: 0 0 60px rgba(212, 175, 55, 0.15);
             --radius: 16px;
             --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            --success: #00b894;
+            --success: #00d68f;
             --danger: #ff3366;
             --warning: #f7d44a;
+            --cyan: #00e5ff;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -41,8 +45,8 @@
             min-height: 100vh;
             line-height: 1.6;
             background-image: 
-                radial-gradient(ellipse at 20% 50%, rgba(15, 45, 26, 0.3) 0%, transparent 60%),
-                radial-gradient(ellipse at 80% 50%, rgba(212, 175, 55, 0.05) 0%, transparent 60%);
+                radial-gradient(ellipse at 20% 50%, rgba(26, 74, 42, 0.4) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 50%, rgba(212, 175, 55, 0.08) 0%, transparent 60%);
         }
 
         /* ===== FONDO ESTELAR ===== */
@@ -60,13 +64,14 @@
             position: fixed;
             border-radius: 50%;
             filter: blur(120px);
-            opacity: 0.10;
+            opacity: 0.15;
             pointer-events: none;
             z-index: 0;
             animation: nebula-drift 25s ease-in-out infinite alternate;
         }
-        .nebula-1 { width: 700px; height: 700px; background: var(--green-deep); top: -15%; right: -15%; }
-        .nebula-2 { width: 600px; height: 600px; background: var(--gold); bottom: -15%; left: -15%; animation-delay: -8s; opacity: 0.05; }
+        .nebula-1 { width: 700px; height: 700px; background: var(--green-bright); top: -15%; right: -15%; }
+        .nebula-2 { width: 600px; height: 600px; background: var(--gold-light); bottom: -15%; left: -15%; animation-delay: -8s; opacity: 0.08; }
+        .nebula-3 { width: 500px; height: 500px; background: var(--cyan); top: 50%; left: 50%; transform: translate(-50%, -50%); animation-delay: -15s; opacity: 0.04; }
 
         @keyframes nebula-drift {
             0% { transform: translate(0, 0) scale(1); }
@@ -91,14 +96,25 @@
             justify-content: space-between;
             align-items: center;
             padding: 12px 0 16px;
-            border-bottom: 1px solid var(--glass-border);
+            border-bottom: 2px solid var(--glass-border);
             flex-wrap: wrap;
             gap: 12px;
             backdrop-filter: blur(10px);
             position: sticky;
             top: 0;
             z-index: 100;
-            background: rgba(5, 8, 15, 0.85);
+            background: rgba(5, 8, 15, 0.9);
+            box-shadow: 0 4px 30px rgba(0,0,0,0.3);
+        }
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--gold), var(--green-bright), var(--gold), transparent);
+            opacity: 0.4;
         }
         .logo {
             display: flex;
@@ -107,34 +123,65 @@
             text-decoration: none;
         }
         .logo-hex {
-            font-size: 1.8rem;
+            font-size: 2rem;
             color: var(--gold);
             font-weight: 800;
             font-family: 'Orbitron', monospace;
+            text-shadow: 0 0 30px rgba(212, 175, 55, 0.3);
+            animation: glow-pulse 3s ease-in-out infinite;
+        }
+        @keyframes glow-pulse {
+            0%, 100% { text-shadow: 0 0 30px rgba(212, 175, 55, 0.3); }
+            50% { text-shadow: 0 0 60px rgba(212, 175, 55, 0.6); }
         }
         .logo-text {
             font-family: 'Orbitron', monospace;
-            font-size: 1.2rem;
+            font-size: 1.3rem;
             font-weight: 700;
             color: var(--text-primary);
-            letter-spacing: 1px;
+            letter-spacing: 2px;
         }
         .logo-text span { color: var(--gold); }
         .logo-badge {
             font-size: 0.5rem;
-            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            background: linear-gradient(135deg, var(--gold), var(--gold-light));
             color: var(--space);
             padding: 2px 12px;
             border-radius: 20px;
             font-weight: 700;
             letter-spacing: 1px;
             text-transform: uppercase;
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.2);
         }
         .header-actions {
             display: flex;
             align-items: center;
             gap: 10px;
             flex-wrap: wrap;
+        }
+
+        .network-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.6rem;
+            color: var(--gold);
+            background: rgba(212, 175, 55, 0.1);
+            padding: 4px 14px;
+            border-radius: 20px;
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            font-weight: 500;
+        }
+        .network-badge .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--success);
+            animation: pulse-dot 2s infinite;
+        }
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.3; transform: scale(0.8); }
         }
 
         /* ===== BOTONES ===== */
@@ -155,6 +202,7 @@
         .btn-gold {
             background: linear-gradient(135deg, var(--gold), var(--gold-dark));
             color: var(--space);
+            box-shadow: 0 4px 20px rgba(212, 175, 55, 0.2);
         }
         .btn-gold:hover { transform: translateY(-2px); box-shadow: var(--shadow-gold); }
         .btn-gold:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; }
@@ -163,21 +211,23 @@
             color: var(--text-secondary);
             border: 1px solid var(--glass-border);
         }
-        .btn-outline:hover { border-color: var(--gold); color: var(--gold); }
+        .btn-outline:hover { border-color: var(--gold); color: var(--gold); box-shadow: 0 0 20px rgba(212, 175, 55, 0.1); }
         .btn-sm { padding: 4px 12px; font-size: 0.55rem; }
         .btn-success {
-            background: linear-gradient(135deg, #00b894, #00897b);
-            color: white;
+            background: linear-gradient(135deg, var(--success), #00a876);
+            color: var(--space);
+            box-shadow: 0 4px 20px rgba(0, 214, 143, 0.2);
         }
-        .btn-success:hover { box-shadow: 0 0 30px rgba(0, 184, 148, 0.3); }
+        .btn-success:hover { transform: translateY(-2px); box-shadow: 0 0 30px rgba(0, 214, 143, 0.3); }
         .btn-internet {
-            background: linear-gradient(135deg, var(--gold), #00d68f);
+            background: linear-gradient(135deg, var(--gold), var(--gold-light));
             color: var(--space);
             animation: pulse-internet 2s ease-in-out infinite;
+            box-shadow: 0 4px 20px rgba(212, 175, 55, 0.2);
         }
         @keyframes pulse-internet {
-            0%, 100% { box-shadow: 0 0 20px rgba(0, 214, 143, 0.2); }
-            50% { box-shadow: 0 0 40px rgba(0, 214, 143, 0.4); }
+            0%, 100% { box-shadow: 0 0 20px rgba(212, 175, 55, 0.2); }
+            50% { box-shadow: 0 0 40px rgba(212, 175, 55, 0.4); }
         }
 
         /* ===== MODAL DE TÉRMINOS ===== */
@@ -197,14 +247,14 @@
         }
         .modal-content {
             background: var(--green-deep);
-            border: 1px solid var(--gold);
+            border: 2px solid var(--gold);
             border-radius: var(--radius);
             max-width: 500px;
             width: 100%;
             max-height: 90vh;
             overflow-y: auto;
             padding: 28px 24px;
-            box-shadow: var(--shadow-gold);
+            box-shadow: var(--shadow-gold-strong);
         }
         .modal-content h2 {
             font-family: 'Orbitron', monospace;
@@ -221,7 +271,7 @@
             margin-bottom: 16px;
         }
         .modal-content .resumen {
-            background: rgba(0, 0, 0, 0.3);
+            background: rgba(0, 0, 0, 0.4);
             border: 1px solid var(--glass-border);
             border-radius: 12px;
             padding: 14px;
@@ -293,10 +343,11 @@
             align-items: center;
             gap: 12px;
             flex-wrap: wrap;
-            background: rgba(15, 45, 26, 0.2);
+            background: rgba(15, 45, 26, 0.3);
             padding: 8px 16px;
             border-radius: 12px;
             border: 1px solid var(--glass-border);
+            box-shadow: 0 0 30px rgba(212, 175, 55, 0.05);
         }
         .wallet-connect-wrapper .terms-check {
             display: flex;
@@ -305,7 +356,6 @@
             cursor: pointer;
             font-size: 0.65rem;
             color: var(--text-secondary);
-            white-space: nowrap;
         }
         .wallet-connect-wrapper .terms-check input[type="checkbox"] {
             width: 16px;
@@ -316,10 +366,12 @@
         .wallet-connect-wrapper .terms-check a {
             color: var(--gold);
             text-decoration: underline;
+            font-weight: 500;
         }
         .wallet-connect-wrapper .btn-connect {
             margin-left: auto;
             flex-shrink: 0;
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.1);
         }
         .wallet-connect-wrapper .btn-connect:disabled {
             opacity: 0.4;
@@ -339,12 +391,14 @@
             border-radius: var(--radius);
             margin-bottom: 30px;
             backdrop-filter: blur(10px);
+            box-shadow: var(--shadow-gold-strong);
         }
         .hero h1 {
             font-family: 'Orbitron', monospace;
-            font-size: 2rem;
+            font-size: 2.2rem;
             color: var(--gold);
             margin-bottom: 8px;
+            text-shadow: 0 0 40px rgba(212, 175, 55, 0.2);
         }
         .hero p {
             color: var(--text-secondary);
@@ -369,6 +423,7 @@
             border-radius: var(--radius);
             padding: 24px;
             backdrop-filter: blur(10px);
+            box-shadow: 0 0 30px rgba(0,0,0,0.2);
         }
         .auth-card h3 {
             font-family: 'Orbitron', monospace;
@@ -384,7 +439,7 @@
         .auth-card input {
             width: 100%;
             padding: 10px 14px;
-            background: rgba(0,0,0,0.3);
+            background: rgba(0,0,0,0.4);
             border: 1px solid var(--glass-border);
             border-radius: 10px;
             color: var(--text-primary);
@@ -393,7 +448,7 @@
             outline: none;
             transition: var(--transition);
         }
-        .auth-card input:focus { border-color: var(--gold); }
+        .auth-card input:focus { border-color: var(--gold); box-shadow: 0 0 20px rgba(212, 175, 55, 0.1); }
         .auth-card .btn {
             width: 100%;
             justify-content: center;
@@ -420,13 +475,17 @@
             border-radius: var(--radius);
             overflow: hidden;
             backdrop-filter: blur(10px);
+            box-shadow: 0 0 30px rgba(0,0,0,0.15);
+            transition: var(--transition);
         }
+        .panel:hover { border-color: rgba(212, 175, 55, 0.3); box-shadow: var(--shadow-gold); }
         .panel-header {
             padding: 14px 18px;
             border-bottom: 1px solid var(--glass-border);
             display: flex;
             justify-content: space-between;
             align-items: center;
+            background: rgba(212, 175, 55, 0.03);
         }
         .panel-header h2 {
             font-size: 0.85rem;
@@ -435,19 +494,20 @@
         }
         .panel-badge {
             font-size: 0.5rem;
-            background: rgba(212, 175, 55, 0.1);
+            background: rgba(212, 175, 55, 0.15);
             color: var(--gold);
             padding: 2px 10px;
             border-radius: 20px;
             font-weight: 600;
             text-transform: uppercase;
+            border: 1px solid rgba(212, 175, 55, 0.1);
         }
         .panel-body { padding: 18px; }
 
         /* ===== DOMO ===== */
         .domo-card { text-align: center; }
-        .domo-emoji { font-size: 3.5rem; display: block; margin-bottom: 4px; }
-        .domo-price { font-size: 1.1rem; color: var(--gold); font-weight: 600; }
+        .domo-emoji { font-size: 3.5rem; display: block; margin-bottom: 4px; filter: drop-shadow(0 0 20px rgba(212, 175, 55, 0.1)); }
+        .domo-price { font-size: 1.1rem; color: var(--gold); font-weight: 600; text-shadow: 0 0 20px rgba(212, 175, 55, 0.1); }
         .qty-control {
             display: flex;
             align-items: center;
@@ -466,7 +526,7 @@
             cursor: pointer;
             transition: var(--transition);
         }
-        .qty-btn:hover { border-color: var(--gold); }
+        .qty-btn:hover { border-color: var(--gold); box-shadow: 0 0 20px rgba(212, 175, 55, 0.1); }
         .qty-value { font-size: 1.1rem; font-weight: 600; color: var(--gold); min-width: 30px; }
 
         /* ===== INTERNET PACKS (MINI) ===== */
@@ -476,7 +536,7 @@
             gap: 10px;
         }
         .pack-mini {
-            background: rgba(0,0,0,0.2);
+            background: rgba(0,0,0,0.3);
             border: 1px solid var(--glass-border);
             border-radius: 12px;
             padding: 12px;
@@ -484,9 +544,9 @@
             cursor: pointer;
             transition: var(--transition);
         }
-        .pack-mini:hover { border-color: var(--gold); transform: translateY(-2px); }
+        .pack-mini:hover { border-color: var(--gold); transform: translateY(-3px); box-shadow: 0 0 30px rgba(212, 175, 55, 0.1); }
         .pack-mini .name { font-weight: 600; font-size: 0.8rem; color: var(--text-primary); }
-        .pack-mini .data { font-size: 1.2rem; font-weight: 700; color: var(--gold); }
+        .pack-mini .data { font-size: 1.2rem; font-weight: 700; color: var(--gold); text-shadow: 0 0 20px rgba(212, 175, 55, 0.1); }
         .pack-mini .price { font-size: 0.7rem; color: var(--text-muted); }
         .pack-mini .btn { width: 100%; margin-top: 6px; justify-content: center; font-size: 0.5rem; padding: 4px 8px; }
 
@@ -497,13 +557,14 @@
             gap: 8px;
         }
         .status-item {
-            background: rgba(0,0,0,0.15);
+            background: rgba(0,0,0,0.2);
             padding: 10px;
             border-radius: 10px;
             text-align: center;
+            border: 1px solid rgba(212, 175, 55, 0.05);
         }
         .status-label { font-size: 0.55rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
-        .status-value { font-size: 1.1rem; font-weight: 700; color: var(--gold); }
+        .status-value { font-size: 1.1rem; font-weight: 700; color: var(--gold); text-shadow: 0 0 20px rgba(212, 175, 55, 0.05); }
         .progress-bar {
             width: 100%;
             height: 4px;
@@ -517,6 +578,7 @@
             background: linear-gradient(90deg, var(--gold), var(--gold-light));
             border-radius: 2px;
             transition: width 0.5s;
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.2);
         }
 
         /* ===== TOAST ===== */
@@ -525,13 +587,13 @@
             bottom: 30px;
             right: 30px;
             background: var(--green-deep);
-            border: 1px solid var(--gold);
+            border: 2px solid var(--gold);
             color: var(--gold);
             padding: 12px 24px;
             border-radius: 12px;
             font-size: 0.8rem;
             font-weight: 500;
-            box-shadow: var(--shadow-gold);
+            box-shadow: var(--shadow-gold-strong);
             transform: translateY(100px);
             opacity: 0;
             transition: all 0.4s ease;
@@ -567,6 +629,7 @@
             .pack-mini { padding: 10px; }
             .internet-mini { grid-template-columns: repeat(2, 1fr); }
             .modal-content { padding: 20px 16px; }
+            .auth-section { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -576,6 +639,7 @@
     <canvas id="stars-canvas"></canvas>
     <div class="nebula nebula-1"></div>
     <div class="nebula nebula-2"></div>
+    <div class="nebula nebula-3"></div>
 
     <div class="app">
 
@@ -587,6 +651,7 @@
                 <span class="logo-badge">✦ WEB3</span>
             </a>
             <div class="header-actions">
+                <span class="network-badge"><span class="dot"></span> Polygon</span>
                 <a href="/features/muro/muro.html" class="btn btn-outline btn-sm">📱 Muro</a>
                 <a href="/features/perfil/perfil.html" class="btn btn-outline btn-sm">👤 Perfil</a>
                 <a href="/features/mensajes/contactos.html" class="btn btn-outline btn-sm">👥 Contactos</a>
@@ -666,7 +731,7 @@
                     <p style="font-weight:600;color:var(--gold);margin-bottom:6px;">📋 Resumen del Acuerdo:</p>
                     <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:4px;">
                         <li>🔒 <strong>Modelo No Custodial:</strong> Tú controlas tus activos. Nosotros no tenemos acceso a tus claves privadas.</li>
-                        <li>💰 <strong>Comisión 1%:</strong> Se aplica sobre ventas de TOK para cubrir costos operativos.</li>
+                        <li>💰 <strong>Comisión 1%:</strong> Se aplica sobre ventas de tokens para cubrir costos operativos.</li>
                         <li>⚡ <strong>Irreversibilidad:</strong> Las transacciones en blockchain son finales e irrevocables.</li>
                         <li>🏛️ <strong>Jurisdicción:</strong> Puebla, México. Renuncia a fuero extranjero.</li>
                     </ul>
@@ -792,10 +857,7 @@
         <footer class="footer">
             <span><span class="brand">◈ Sariel's</span> · Sabor al Paladar · WEB3</span>
             <div class="footer-links">
-                <a href="/terminos.html">📜 Términos</a>
-                <a href="/privacidad.html">🔒 Privacidad</a>
-                <span style="opacity:0.3;">|</span>
-                <span>⚡ Polygon</span>
+                <span style="opacity:0.3;">⚡ Polygon</span>
             </div>
         </footer>
 
@@ -861,7 +923,6 @@
             btn.textContent = '⏳ Conectando...';
 
             try {
-                // 1. Conectar a MetaMask
                 if (!window.ethereum) {
                     showToast('⚠️ Instala MetaMask para continuar', 'error');
                     btn.disabled = false;
@@ -874,7 +935,6 @@
                 const accounts = await web3.eth.getAccounts();
                 userAccount = accounts[0];
 
-                // 2. Generar mensaje a firmar
                 const message = `Acepto los Términos y Condiciones de Sariel's Ecosystem\n\n` +
                     `Wallet: ${userAccount}\n` +
                     `Fecha: ${new Date().toISOString()}\n` +
@@ -883,14 +943,11 @@
                     `la comisión del 1% sobre ventas, la irreversibilidad de las ` +
                     `transacciones y declaro cumplir con mis obligaciones fiscales.`;
 
-                // 3. Firmar mensaje con MetaMask
                 const signature = await web3.eth.personal.sign(message, userAccount, '');
 
-                // 4. Enviar firma al backend (simulado por ahora)
                 console.log('✅ Wallet conectada:', userAccount);
                 console.log('📝 Firma:', signature);
 
-                // 5. Actualizar UI
                 document.getElementById('walletTerms').checked = true;
                 document.getElementById('connectWallet').disabled = false;
                 document.getElementById('connectWallet').click();
@@ -898,7 +955,6 @@
 
                 showToast('✅ Wallet conectada y términos firmados');
 
-                // Guardar en localStorage
                 localStorage.setItem('sariels_wallet', userAccount);
                 localStorage.setItem('sariels_signature', signature);
 
@@ -961,18 +1017,14 @@
                 connectBtn.disabled = !this.checked;
             });
 
-            // Conectar wallet (botón principal)
             connectBtn.addEventListener('click', conectarWallet);
 
-            // Desconectar wallet
             document.getElementById('btnDisconnectWallet').addEventListener('click', desconectarWallet);
 
-            // Estado inicial
             if (!termsCheck.checked) {
                 connectBtn.disabled = true;
             }
 
-            // Verificar si ya hay wallet conectada
             const savedWallet = localStorage.getItem('sariels_wallet');
             if (savedWallet) {
                 userAccount = savedWallet;
@@ -1129,7 +1181,6 @@
             initStars();
             renderInternetMini();
 
-            // QTY
             let qty = 1;
             document.getElementById('decreaseQty').addEventListener('click', () => {
                 if (qty > 1) { qty--; document.getElementById('domoQuantity').textContent = qty; }
@@ -1138,7 +1189,6 @@
                 if (qty < 10) { qty++; document.getElementById('domoQuantity').textContent = qty; }
             });
 
-            // Login/Registro toggle
             document.getElementById('loginCard').style.display = 'block';
             document.querySelector('.auth-card:first-child').style.display = 'block';
 
@@ -1146,7 +1196,6 @@
             console.log('📦 Paquetes de Internet cargados:', cargarPacksMini().length);
         });
 
-        // Exponer funciones globales
         window.registrarUsuario = registrarUsuario;
         window.iniciarSesion = iniciarSesion;
         window.mostrarLogin = mostrarLogin;
