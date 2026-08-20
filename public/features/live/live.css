@@ -120,6 +120,131 @@
     50% { opacity: 0.5; }
 }
 
+/* ===== CALENDARIO ===== */
+.calendario-section {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-xl);
+    padding: 18px 20px;
+    margin-bottom: 20px;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    transition: var(--transition-slow);
+}
+
+.calendario-section:hover {
+    border-color: rgba(212, 175, 55, 0.15);
+    box-shadow: var(--shadow-gold);
+}
+
+.calendario-section .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.calendario-section .header h3 {
+    font-family: 'Orbitron', monospace;
+    color: var(--gold);
+    font-size: 0.85rem;
+    letter-spacing: 1px;
+}
+
+.calendario-section .header .ver-todos {
+    font-size: 0.6rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: var(--transition);
+    font-family: 'Inter', sans-serif;
+    background: none;
+    border: none;
+}
+
+.calendario-section .header .ver-todos:hover {
+    color: var(--gold);
+}
+
+/* ===== CALENDARIO GRID CON GLASSMORPHISM Y SCROLL ===== */
+.calendario-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+    max-height: 400px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.calendario-grid::-webkit-scrollbar {
+    width: 4px;
+}
+
+.calendario-grid::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 2px;
+}
+
+.calendario-grid::-webkit-scrollbar-thumb {
+    background: var(--gold);
+    border-radius: 2px;
+}
+
+/* ===== EVENTO CARD CON GLASSMORPHISM REAL ===== */
+.evento-card {
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 12px 14px;
+    transition: var(--transition);
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.evento-card:hover {
+    border-color: rgba(212, 175, 55, 0.3);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 40px rgba(212, 175, 55, 0.15);
+    background: rgba(255, 255, 255, 0.10);
+}
+
+.evento-card .fecha {
+    font-size: 0.55rem;
+    color: var(--gold);
+    font-family: 'Orbitron', monospace;
+    letter-spacing: 0.5px;
+}
+
+.evento-card .titulo {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 4px 0;
+}
+
+.evento-card .host {
+    font-size: 0.6rem;
+    color: var(--text-muted);
+}
+
+.evento-card .recordatorio {
+    font-size: 0.5rem;
+    color: var(--text-muted);
+    margin-top: 4px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: rgba(212, 175, 55, 0.05);
+    display: inline-block;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.evento-card .recordatorio:hover {
+    background: rgba(212, 175, 55, 0.15);
+    color: var(--gold);
+}
+
 /* ===== LIVE GRID ===== */
 .live-grid {
     display: grid;
@@ -337,98 +462,60 @@
     color: var(--live-red);
 }
 
-/* ===== CALENDARIO ===== */
-.calendario-section {
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
-    border-radius: var(--radius-xl);
-    padding: 18px 20px;
-    margin-bottom: 20px;
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    transition: var(--transition-slow);
+/* ===== EMPTY STATE ===== */
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-muted);
+    grid-column: 1 / -1;
 }
 
-.calendario-section:hover {
-    border-color: rgba(212, 175, 55, 0.15);
-    box-shadow: var(--shadow-gold);
-}
-
-.calendario-section .header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 12px;
-}
-
-.calendario-section .header h3 {
+.empty-state .icon {
+    font-size: 2.5rem;
+    display: block;
+    margin-bottom: 16px;
     font-family: 'Orbitron', monospace;
     color: var(--gold);
-    font-size: 0.85rem;
+    opacity: 0.4;
+    letter-spacing: 2px;
+}
+
+.empty-state h3 {
+    font-family: 'Orbitron', monospace;
+    font-size: 1.1rem;
+    color: var(--text-secondary);
     letter-spacing: 1px;
+    font-weight: 400;
 }
 
-.calendario-section .header .ver-todos {
-    font-size: 0.6rem;
-    color: var(--text-muted);
-    cursor: pointer;
-    transition: var(--transition);
-    font-family: 'Inter', sans-serif;
-    background: none;
+.empty-state p {
+    font-size: 0.85rem;
+    letter-spacing: 0.3px;
+}
+
+.empty-state .btn-crear-live-empty {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(135deg, var(--live-red), #d63031);
+    color: white;
     border: none;
-}
-
-.calendario-section .header .ver-todos:hover {
-    color: var(--gold);
-}
-
-.calendario-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 10px;
-}
-
-.evento-card {
-    background: rgba(0, 0, 0, 0.2);
-    border: 1px solid var(--glass-border);
-    border-radius: 12px;
-    padding: 12px 14px;
-    transition: var(--transition);
-    cursor: pointer;
-}
-
-.evento-card:hover {
-    border-color: rgba(212, 175, 55, 0.2);
-    transform: translateY(-2px);
-}
-
-.evento-card .fecha {
-    font-size: 0.55rem;
-    color: var(--gold);
+    padding: 10px 24px;
+    border-radius: 30px;
     font-family: 'Orbitron', monospace;
-    letter-spacing: 0.5px;
-}
-
-.evento-card .titulo {
+    font-weight: 700;
     font-size: 0.75rem;
-    font-weight: 600;
-    color: var(--text-primary);
-    margin: 4px 0;
+    cursor: pointer;
+    transition: var(--transition);
+    letter-spacing: 0.5px;
+    box-shadow: var(--live-glow);
+    animation: pulse-live-header 1.5s ease-in-out infinite;
+    margin-top: 16px;
 }
 
-.evento-card .host {
-    font-size: 0.6rem;
-    color: var(--text-muted);
-}
-
-.evento-card .recordatorio {
-    font-size: 0.5rem;
-    color: var(--text-muted);
-    margin-top: 4px;
-    padding: 2px 8px;
-    border-radius: 10px;
-    background: rgba(212, 175, 55, 0.05);
-    display: inline-block;
+.empty-state .btn-crear-live-empty:hover {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 0 60px rgba(255, 0, 68, 0.4);
 }
 
 /* ===== MODAL ===== */
@@ -625,36 +712,6 @@
     box-shadow: var(--shadow-gold);
 }
 
-/* ===== EMPTY STATE ===== */
-.empty-state {
-    text-align: center;
-    padding: 60px 20px;
-    color: var(--text-muted);
-}
-
-.empty-state .icon {
-    font-size: 2.5rem;
-    display: block;
-    margin-bottom: 16px;
-    font-family: 'Orbitron', monospace;
-    color: var(--gold);
-    opacity: 0.4;
-    letter-spacing: 2px;
-}
-
-.empty-state h3 {
-    font-family: 'Orbitron', monospace;
-    font-size: 1.1rem;
-    color: var(--text-secondary);
-    letter-spacing: 1px;
-    font-weight: 400;
-}
-
-.empty-state p {
-    font-size: 0.85rem;
-    letter-spacing: 0.3px;
-}
-
 /* ===== TOAST ===== */
 .toast {
     position: fixed;
@@ -682,6 +739,44 @@
 .toast.error { border-color: var(--danger); color: var(--danger); }
 .toast.warning { border-color: var(--warning); color: var(--warning); }
 
+/* ===== FOOTER ===== */
+.footer {
+    margin-top: 30px;
+    padding-top: 16px;
+    border-top: 1px solid var(--glass-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    padding-bottom: 8px;
+    letter-spacing: 0.3px;
+}
+
+.footer .brand {
+    color: var(--gold);
+    font-weight: 600;
+    letter-spacing: 1px;
+}
+
+.footer-links {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.footer-links a {
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: var(--transition);
+}
+
+.footer-links a:hover {
+    color: var(--gold);
+}
+
 /* ===== RESPONSIVE ===== */
 @media (max-width: 900px) {
     .modal-live-body {
@@ -689,31 +784,86 @@
         max-height: none;
         padding: 14px;
     }
-    .live-chat { max-height: 250px; }
-    .live-chat .chat-messages { max-height: 150px; }
+    .live-chat {
+        max-height: 250px;
+    }
+    .live-chat .chat-messages {
+        max-height: 150px;
+    }
 }
 
 @media (max-width: 768px) {
-    .app { padding: 12px 14px; }
-    .live-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
-    .live-card .live-info .live-title { font-size: 0.8rem; }
-    .btn-crear-live { width: 100%; justify-content: center; font-size: 0.7rem; padding: 10px 20px; }
-    .modal-live { padding: 12px; }
-    .modal-live-body { padding: 12px; gap: 12px; }
-    .calendario-grid { grid-template-columns: 1fr 1fr; }
-    .live-header { flex-direction: column; align-items: stretch; }
-    .live-header .live-stats { justify-content: center; }
+    .app {
+        padding: 12px 14px;
+    }
+    .live-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+    .live-card .live-info .live-title {
+        font-size: 0.8rem;
+    }
+    .btn-crear-live {
+        width: 100%;
+        justify-content: center;
+        font-size: 0.7rem;
+        padding: 10px 20px;
+    }
+    .modal-live {
+        padding: 12px;
+    }
+    .modal-live-body {
+        padding: 12px;
+        gap: 12px;
+    }
+    .calendario-grid {
+        grid-template-columns: 1fr 1fr;
+        max-height: 300px;
+    }
+    .live-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .live-header .live-stats {
+        justify-content: center;
+    }
 }
 
 @media (max-width: 480px) {
-    .live-grid { grid-template-columns: 1fr; }
-    .calendario-grid { grid-template-columns: 1fr; }
-    .live-card .live-thumbnail .live-badge { font-size: 0.45rem; padding: 2px 10px; }
-    .live-card .live-thumbnail .live-viewers { font-size: 0.6rem; padding: 2px 10px; }
-    .live-card .live-info .live-title { font-size: 0.75rem; }
-    .modal-live-header { padding: 12px 16px; }
-    .modal-live-header .modal-live-title { font-size: 0.85rem; }
-    .live-chat .chat-input-live input { font-size: 0.75rem; }
-    .live-chat .chat-input-live button { width: 32px; height: 32px; font-size: 0.7rem; }
-    .main-nav .nav-link { font-size: 0.55rem; padding: 4px 8px; }
+    .live-grid {
+        grid-template-columns: 1fr;
+    }
+    .calendario-grid {
+        grid-template-columns: 1fr;
+        max-height: 250px;
+    }
+    .live-card .live-thumbnail .live-badge {
+        font-size: 0.45rem;
+        padding: 2px 10px;
+    }
+    .live-card .live-thumbnail .live-viewers {
+        font-size: 0.6rem;
+        padding: 2px 10px;
+    }
+    .live-card .live-info .live-title {
+        font-size: 0.75rem;
+    }
+    .modal-live-header {
+        padding: 12px 16px;
+    }
+    .modal-live-header .modal-live-title {
+        font-size: 0.85rem;
+    }
+    .live-chat .chat-input-live input {
+        font-size: 0.75rem;
+    }
+    .live-chat .chat-input-live button {
+        width: 32px;
+        height: 32px;
+        font-size: 0.7rem;
+    }
+    .main-nav .nav-link {
+        font-size: 0.55rem;
+        padding: 4px 8px;
+    }
 }
