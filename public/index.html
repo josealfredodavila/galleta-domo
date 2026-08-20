@@ -34,6 +34,9 @@
             --danger: #ff3366;
             --warning: #f7d44a;
             --cyan: #00e5ff;
+            --bronze: #CD7F32;
+            --bronze-light: #D4A574;
+            --bronze-dark: #8B5A2B;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -255,6 +258,126 @@
             50% { box-shadow: 0 0 40px rgba(212, 175, 55, 0.4); }
         }
 
+        /* ===== DOMO CARD ===== */
+        .domo-card { text-align: center; }
+
+        /* ===== CUBO BRONCE WEB3 (Reemplaza la galleta) ===== */
+        .domo-cubo {
+            display: inline-block;
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 10px auto;
+            position: relative;
+            perspective: 400px;
+        }
+        .domo-cubo .cubo {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            animation: girarCubo 8s ease-in-out infinite;
+        }
+        .domo-cubo .cubo .cara {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            border: 2px solid var(--bronze-light);
+            background: linear-gradient(135deg, var(--bronze-dark), var(--bronze), var(--bronze-light));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            font-weight: 900;
+            color: var(--space);
+            text-shadow: 0 0 20px rgba(212, 175, 55, 0.2);
+            box-shadow: inset 0 0 30px rgba(212, 175, 55, 0.1), 0 0 20px rgba(205, 127, 50, 0.2);
+            border-radius: 4px;
+            font-family: 'Orbitron', monospace;
+        }
+        .domo-cubo .cubo .cara.front { transform: translateZ(40px); background: linear-gradient(135deg, #8B5A2B, #CD7F32, #D4A574); }
+        .domo-cubo .cubo .cara.back { transform: rotateY(180deg) translateZ(40px); background: linear-gradient(135deg, #7A4D25, #B8733A, #C49A6C); }
+        .domo-cubo .cubo .cara.right { transform: rotateY(90deg) translateZ(40px); background: linear-gradient(135deg, #9B6B3A, #D4A574, #E8C49A); }
+        .domo-cubo .cubo .cara.left { transform: rotateY(-90deg) translateZ(40px); background: linear-gradient(135deg, #6B4020, #A8683A, #C49A6C); }
+        .domo-cubo .cubo .cara.top { transform: rotateX(90deg) translateZ(40px); background: linear-gradient(135deg, #CD7F32, #E8C49A, #F0D4A8); }
+        .domo-cubo .cubo .cara.bottom { transform: rotateX(-90deg) translateZ(40px); background: linear-gradient(135deg, #5A3518, #8B5A2B, #B8733A); }
+
+        .domo-cubo .cubo .cara .texto {
+            font-size: 0.45rem;
+            font-weight: 700;
+            color: var(--space);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.6;
+            position: absolute;
+            bottom: 8px;
+            font-family: 'Orbitron', monospace;
+        }
+
+        @keyframes girarCubo {
+            0% { transform: rotateX(-20deg) rotateY(0deg); }
+            25% { transform: rotateX(-30deg) rotateY(90deg); }
+            50% { transform: rotateX(-20deg) rotateY(180deg); }
+            75% { transform: rotateX(-30deg) rotateY(270deg); }
+            100% { transform: rotateX(-20deg) rotateY(360deg); }
+        }
+
+        .domo-cubo .cubo .cara .esstoks {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.6rem;
+            font-weight: 900;
+            color: var(--space);
+            text-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+            letter-spacing: 1px;
+        }
+
+        .domo-price {
+            font-size: 1.1rem;
+            color: var(--gold);
+            font-weight: 600;
+            text-shadow: 0 0 20px rgba(212, 175, 55, 0.1);
+        }
+        .domo-price .moneda {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+        .domo-price .pago {
+            display: block;
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            font-weight: 400;
+            margin-top: 2px;
+        }
+
+        .qty-control {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            margin: 12px 0;
+        }
+        .qty-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 1px solid var(--glass-border);
+            background: transparent;
+            color: var(--text-primary);
+            font-size: 1rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .qty-btn:hover { border-color: var(--gold); box-shadow: 0 0 20px rgba(212, 175, 55, 0.1); }
+        .qty-value { font-size: 1.1rem; font-weight: 600; color: var(--gold); min-width: 30px; }
+
+        .qr-info {
+            font-size: 0.55rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+        .qr-info strong {
+            color: var(--gold);
+        }
+
         /* ===== WALLET CONNECT ===== */
         .wallet-connect-wrapper {
             display: flex;
@@ -442,31 +565,6 @@
         }
         .panel-body { padding: 18px; }
 
-        /* ===== DOMO ===== */
-        .domo-card { text-align: center; }
-        .domo-emoji { font-size: 3.5rem; display: block; margin-bottom: 4px; filter: drop-shadow(0 0 20px rgba(212, 175, 55, 0.1)); }
-        .domo-price { font-size: 1.1rem; color: var(--gold); font-weight: 600; text-shadow: 0 0 20px rgba(212, 175, 55, 0.1); }
-        .qty-control {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 14px;
-            margin: 12px 0;
-        }
-        .qty-btn {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            border: 1px solid var(--glass-border);
-            background: transparent;
-            color: var(--text-primary);
-            font-size: 1rem;
-            cursor: pointer;
-            transition: var(--transition);
-        }
-        .qty-btn:hover { border-color: var(--gold); box-shadow: 0 0 20px rgba(212, 175, 55, 0.1); }
-        .qty-value { font-size: 1.1rem; font-weight: 600; color: var(--gold); min-width: 30px; }
-
         /* ===== INTERNET PACKS (MINI) ===== */
         .internet-mini {
             display: grid;
@@ -576,6 +674,15 @@
             .footer { font-size: 0.6rem; }
             .pack-mini .btn { font-size: 0.55rem; }
             .btn-sm { font-size: 0.55rem; }
+            .domo-cubo { width: 60px; height: 60px; }
+            .domo-cubo .cubo .cara { width: 60px; height: 60px; font-size: 1.4rem; }
+            .domo-cubo .cubo .cara.front { transform: translateZ(30px); }
+            .domo-cubo .cubo .cara.back { transform: rotateY(180deg) translateZ(30px); }
+            .domo-cubo .cubo .cara.right { transform: rotateY(90deg) translateZ(30px); }
+            .domo-cubo .cubo .cara.left { transform: rotateY(-90deg) translateZ(30px); }
+            .domo-cubo .cubo .cara.top { transform: rotateX(90deg) translateZ(30px); }
+            .domo-cubo .cubo .cara.bottom { transform: rotateX(-90deg) translateZ(30px); }
+            .domo-cubo .cubo .cara .esstoks { font-size: 0.5rem; }
         }
 
         @media (max-width: 400px) {
@@ -583,6 +690,15 @@
             .pack-mini .data { font-size: 1rem; }
             .pack-mini .name { font-size: 0.7rem; }
             .pack-mini .price { font-size: 0.6rem; }
+            .domo-cubo { width: 50px; height: 50px; }
+            .domo-cubo .cubo .cara { width: 50px; height: 50px; font-size: 1.2rem; }
+            .domo-cubo .cubo .cara.front { transform: translateZ(25px); }
+            .domo-cubo .cubo .cara.back { transform: rotateY(180deg) translateZ(25px); }
+            .domo-cubo .cubo .cara.right { transform: rotateY(90deg) translateZ(25px); }
+            .domo-cubo .cubo .cara.left { transform: rotateY(-90deg) translateZ(25px); }
+            .domo-cubo .cubo .cara.top { transform: rotateX(90deg) translateZ(25px); }
+            .domo-cubo .cubo .cara.bottom { transform: rotateX(-90deg) translateZ(25px); }
+            .domo-cubo .cubo .cara .esstoks { font-size: 0.4rem; }
         }
     </style>
 </head>
@@ -616,7 +732,7 @@
         <!-- ===== HERO ===== -->
         <section class="hero">
             <h1>◈ Bienvenido a Sariel's</h1>
-            <p>Compra domos, acumula <strong>Es.stoks</strong>, canjea NFTs y conecta con tu comunidad en un ecosistema Web3 sin custodia.</p>
+            <p>Compra domos físicos, acumula <strong>Es.stoks</strong>, canjea NFTs y conecta con tu comunidad en un ecosistema Web3 sin custodia.</p>
         </section>
 
         <!-- ===== AUTH + WALLET ===== -->
@@ -648,7 +764,7 @@
             </div>
         </div>
 
-        <!-- ===== WALLET CONNECT (SIN CHECKBOX) ===== -->
+        <!-- ===== WALLET CONNECT ===== -->
         <div style="max-width: 500px; margin: 0 auto 30px auto;">
             <div class="wallet-connect-wrapper" id="walletConnectWrapper">
                 <button id="connectWallet" class="btn btn-gold btn-connect" onclick="conectarWallet()">
@@ -673,13 +789,41 @@
             <!-- ===== PANEL: COMPRAR DOMO ===== -->
             <section class="panel">
                 <div class="panel-header">
-                    <h2>🍪 Comprar Domo</h2>
+                    <h2>🛒 Comprar Domo</h2>
                     <span class="panel-badge">Nuevo</span>
                 </div>
                 <div class="panel-body">
                     <div class="domo-card">
-                        <span class="domo-emoji">🍪</span>
-                        <span class="domo-price">75 MATIC</span>
+                        <!-- CUBO BRONCE WEB3 (Reemplaza la galleta) -->
+                        <div class="domo-cubo">
+                            <div class="cubo">
+                                <div class="cara front">
+                                    <span class="esstoks">Es.stoks</span>
+                                </div>
+                                <div class="cara back">
+                                    <span class="esstoks">◈</span>
+                                </div>
+                                <div class="cara right">
+                                    <span class="esstoks">TOK</span>
+                                </div>
+                                <div class="cara left">
+                                    <span class="esstoks">◈</span>
+                                </div>
+                                <div class="cara top">
+                                    <span class="esstoks">✦</span>
+                                </div>
+                                <div class="cara bottom">
+                                    <span class="esstoks">◈</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- PRECIO EN MXN -->
+                        <span class="domo-price">
+                            75 MXN
+                            <span class="pago">💵 Efectivo / Transferencia</span>
+                        </span>
+
                         <div class="qty-control">
                             <button class="qty-btn" id="decreaseQty">−</button>
                             <span class="qty-value" id="domoQuantity">1</span>
@@ -689,7 +833,7 @@
                         <button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:6px;" id="buyDomoCrypto" disabled>💳 Pagar con Crypto</button>
                         <div id="qrContainer" style="margin-top:12px;display:none;">
                             <div id="qrCode"></div>
-                            <p style="font-size:0.55rem;color:var(--text-muted);margin-top:4px;">Escanea para recibir tu <strong>Es.stoks</strong></p>
+                            <p class="qr-info">Escanea para recibir tu <strong>Es.stoks</strong></p>
                         </div>
                     </div>
                 </div>
@@ -790,13 +934,11 @@
         async function conectarWallet() {
             const connectBtn = document.getElementById('connectWallet');
 
-            // 1. Verificar si MetaMask está instalado
             if (!window.ethereum) {
                 showToast('⚠️ Instala MetaMask para continuar', 'error');
                 return;
             }
 
-            // 2. Verificar si ya hay una cuenta conectada
             try {
                 const accounts = await window.ethereum.request({ method: 'eth_accounts' });
 
@@ -810,7 +952,6 @@
                 console.warn('Error verificando cuentas:', error);
             }
 
-            // 3. NO hay cuenta conectada → conectar
             try {
                 connectBtn.disabled = true;
                 connectBtn.textContent = '⏳ Conectando...';
@@ -1049,14 +1190,11 @@
                 if (qty < 10) { qty++; document.getElementById('domoQuantity').textContent = qty; }
             });
 
-            // Login toggle
             document.getElementById('registerCard').style.display = 'block';
             document.getElementById('loginCard').style.display = 'none';
 
-            // Desconectar wallet
             document.getElementById('btnDisconnectWallet').addEventListener('click', desconectarWallet);
 
-            // Verificar si ya hay wallet conectada
             const savedWallet = localStorage.getItem('sariels_wallet');
             if (savedWallet) {
                 userAccount = savedWallet;
@@ -1072,7 +1210,6 @@
             console.log('📦 Paquetes de Internet cargados:', cargarPacksMini().length);
         });
 
-        // Exponer funciones globales
         window.registrarUsuario = registrarUsuario;
         window.iniciarSesion = iniciarSesion;
         window.mostrarLogin = mostrarLogin;
