@@ -44,32 +44,14 @@ const totalContactos = document.getElementById('totalContactos');
 const onlineContactos = document.getElementById('onlineContactos');
 
 // ================================================================
-// VERIFICAR AUTENTICACIÓN (SIN REDIRECCIÓN AGRESIVA)
+// VERIFICAR AUTENTICACIÓN (SIN REDIRECCIÓN)
 // ================================================================
 function verificarAutenticacion() {
     const token = localStorage.getItem('galleta_token');
-    const userId = localStorage.getItem('userId');
-    
     if (!token) {
         showToast('⚠️ Conecta tu wallet para ver contactos', 'warning');
         return false;
     }
-    
-    if (userId) {
-        return true;
-    }
-    
-    try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        if (payload && payload.id) {
-            localStorage.setItem('userId', payload.id);
-            return true;
-        }
-    } catch (e) {
-        console.warn('Token inválido, pero continuamos en modo demo');
-        return true;
-    }
-    
     return true;
 }
 
@@ -134,7 +116,6 @@ async function cargarContactos() {
     try {
         const token = localStorage.getItem('galleta_token');
         if (!token) {
-            // No redirigir, solo mostrar contactos de ejemplo
             cargarContactosEjemplo();
             return;
         }
@@ -149,7 +130,6 @@ async function cargarContactos() {
             if (response.status === 401) {
                 localStorage.removeItem('galleta_token');
                 localStorage.removeItem('userId');
-                // NO redirigir, solo mostrar ejemplo
                 cargarContactosEjemplo();
                 return;
             }
@@ -181,7 +161,9 @@ function cargarContactosEjemplo() {
     ];
     actualizarContadores();
     aplicarFiltros();
-    showToast('◈ Modo demostración - Contactos de ejemplo', 'warning');
+    if (contactos.length > 0) {
+        showToast('◈ Modo demostración - Contactos de ejemplo', 'warning');
+    }
 }
 
 // ================================================================
@@ -424,7 +406,6 @@ async function buscarYAgregarContacto(wallet) {
     try {
         const token = localStorage.getItem('galleta_token');
         if (!token) {
-            // Modo demo: agregar contacto simulado
             const nombre = prompt('◈ Nombre del contacto (modo demo):');
             if (nombre && nombre.trim()) {
                 contactos.push({
@@ -532,13 +513,8 @@ function cargarModo() {
 // ================================================================
 document.addEventListener('DOMContentLoaded', function() {
     cargarModo();
-    
-    // Verificar autenticación sin redirigir
-    const autenticado = verificarAutenticacion();
-    
+    verificarAutenticacion();
     conectarSocket();
-    
-    // Cargar contactos (con fallback a ejemplo)
     cargarContactos();
 
     // Botón de modo oscuro
@@ -575,11 +551,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (connectBtn) {
         connectBtn.addEventListener('click', function() {
-            window.location.href = '/';
+            if (confirm('⚠️ ¿Quieres ir al inicio para conectar tu wallet?')) {
+                window.location.href = '/';
+            }
         });
     }
 
-    console.log('◈ Sariel\'s - Contactos Ultra Mega Pro');
+    console.log('◈ Sariel\'s - Contactos Ultra Mega Pro (sin redirección)');
     console.log('◆ Contactos cargados:', contactos.length);
 });
 
