@@ -54,6 +54,7 @@
             padding: 0;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
+            transition: background 0.5s ease, color 0.5s ease;
         }
 
         /* ===== FONDO ESTELAR ===== */
@@ -118,6 +119,7 @@
             background: rgba(5, 8, 15, 0.92);
             border-radius: var(--radius) var(--radius) 0 0;
             contain: layout style;
+            transition: background 0.5s ease, border-color 0.5s ease;
         }
         .logo {
             display: flex;
@@ -188,6 +190,33 @@
             50% { opacity: 0.3; transform: scale(0.8); }
         }
 
+        /* ===== TOKEN BADGE EN HEADER ===== */
+        .token-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(212, 175, 55, 0.1);
+            border: 1px solid rgba(212, 175, 55, 0.15);
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            color: var(--gold);
+            font-family: 'Orbitron', monospace;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .token-badge:hover {
+            background: rgba(212, 175, 55, 0.15);
+            border-color: rgba(212, 175, 55, 0.25);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-gold);
+        }
+        .token-badge #tokenBadgeCantidad {
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: var(--gold-bright);
+        }
+
         /* ===== NAVEGACIÓN ===== */
         .main-nav {
             display: flex;
@@ -201,6 +230,7 @@
             flex-wrap: nowrap;
             -webkit-overflow-scrolling: touch;
             contain: layout style;
+            transition: background 0.5s ease, border-color 0.5s ease;
         }
         .main-nav .nav-link {
             padding: 8px 16px;
@@ -718,6 +748,16 @@
             color: var(--text-muted);
         }
 
+        /* ===== BOTÓN ELIMINAR - SOLO AUTOR ===== */
+        .post-actions .btn-eliminar {
+            color: var(--text-muted);
+            transition: var(--transition);
+        }
+        .post-actions .btn-eliminar:hover {
+            color: var(--danger) !important;
+            background: rgba(255, 51, 102, 0.08) !important;
+        }
+
         /* ===== COMENTARIOS ===== */
         .post-card .post-comentarios {
             margin-top: 12px;
@@ -925,6 +965,97 @@
             cursor: not-allowed;
         }
 
+        /* ===== MODAL CONFIRMAR COMPRA ===== */
+        .modal-confirmacion .modal-body {
+            padding: 0;
+        }
+        .modal-confirmacion .btn-cancelar {
+            flex: 1;
+            padding: 10px;
+            border-radius: 30px;
+            border: 1px solid var(--glass-border);
+            background: transparent;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            font-weight: 500;
+            transition: var(--transition);
+        }
+        .modal-confirmacion .btn-cancelar:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .modal-confirmacion .btn-confirmar {
+            flex: 2;
+            padding: 10px;
+            border-radius: 30px;
+            border: none;
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            color: var(--space);
+            font-weight: 700;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: var(--transition);
+            font-family: 'Inter', sans-serif;
+        }
+        .modal-confirmacion .btn-confirmar:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-gold);
+        }
+
+        /* ===== BOTÓN TOGGLE MODO ===== */
+        .btn-toggle-modo {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 999;
+            padding: 12px 16px;
+            border-radius: 50%;
+            border: 1px solid var(--glass-border);
+            background: var(--glass-bg);
+            color: var(--gold);
+            cursor: pointer;
+            font-size: 1.2rem;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+        .btn-toggle-modo:hover {
+            transform: scale(1.1) rotate(15deg);
+            box-shadow: var(--shadow-gold);
+        }
+
+        /* ===== BOTÓN SCROLL TO TOP ===== */
+        .btn-scroll-top {
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            z-index: 999;
+            padding: 12px 16px;
+            border-radius: 50%;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            color: var(--gold);
+            cursor: pointer;
+            font-size: 1.2rem;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(20px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+        .btn-scroll-top.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+        .btn-scroll-top:hover {
+            transform: translateY(-4px) scale(1.05);
+            box-shadow: var(--shadow-gold);
+        }
+
         /* ===== EMPTY STATE ===== */
         .empty-state {
             text-align: center;
@@ -998,6 +1129,85 @@
         .footer-links a { color: var(--text-muted); text-decoration: none; transition: var(--transition); }
         .footer-links a:hover { color: var(--gold); }
 
+        /* ================================================================
+           MODO CLARO
+           ================================================================ */
+        body.modo-claro {
+            background: #f0f4f8;
+            color: #05080f;
+        }
+        body.modo-claro .header {
+            background: rgba(255, 255, 255, 0.92);
+            border-bottom-color: rgba(0, 0, 0, 0.08);
+        }
+        body.modo-claro .main-nav {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(0, 0, 0, 0.08);
+        }
+        body.modo-claro .post-card {
+            background: rgba(255, 255, 255, 0.7);
+            border-color: rgba(0, 0, 0, 0.08);
+        }
+        body.modo-claro .post-card:hover {
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+        }
+        body.modo-claro .post-form {
+            background: rgba(255, 255, 255, 0.7);
+        }
+        body.modo-claro .trending-section {
+            background: rgba(255, 255, 255, 0.7);
+        }
+        body.modo-claro .valor-mercado {
+            background: rgba(255, 255, 255, 0.7);
+        }
+        body.modo-claro .post-card .post-content {
+            color: #1a2a3a;
+        }
+        body.modo-claro .post-card .post-date {
+            color: #6a8a9a;
+        }
+        body.modo-claro .post-card .post-stats {
+            border-top-color: rgba(0, 0, 0, 0.08);
+        }
+        body.modo-claro .post-card .post-actions {
+            border-top-color: rgba(0, 0, 0, 0.08);
+        }
+        body.modo-claro .post-card .post-comentarios {
+            border-top-color: rgba(0, 0, 0, 0.06);
+        }
+        body.modo-claro .post-card .post-comentarios .comentario .texto {
+            color: #4a6a7a;
+        }
+        body.modo-claro .post-card .post-comentarios .comentario .texto strong {
+            color: #0a1a2a;
+        }
+        body.modo-claro .post-card .post-venta {
+            background: rgba(212, 175, 55, 0.08);
+            border-color: rgba(212, 175, 55, 0.15);
+        }
+        body.modo-claro .modal {
+            background: rgba(255, 255, 255, 0.9);
+        }
+        body.modo-claro .modal .form-group input,
+        body.modo-claro .modal .form-group select {
+            background: rgba(0, 0, 0, 0.05);
+        }
+        body.modo-claro .toast {
+            background: rgba(255, 255, 255, 0.9);
+            color: #05080f;
+            border-color: var(--gold);
+        }
+        body.modo-claro .token-badge {
+            background: rgba(212, 175, 55, 0.12);
+        }
+        body.modo-claro .btn-toggle-modo,
+        body.modo-claro .btn-scroll-top {
+            background: rgba(255, 255, 255, 0.8);
+        }
+        body.modo-claro .valor-mercado .btn-vender-token {
+            color: #05080f;
+        }
+
         /* ===== RESPONSIVE ===== */
         @media (max-width: 768px) {
             .app { padding: 12px 14px; }
@@ -1017,6 +1227,8 @@
             .header .logo-text { font-size: 1rem; }
             .header .logo-hex { font-size: 1.4rem; }
             .modal { padding: 20px; }
+            .btn-toggle-modo { bottom: 10px; left: 10px; padding: 10px 14px; font-size: 1rem; }
+            .btn-scroll-top { bottom: 70px; right: 10px; padding: 10px 14px; font-size: 1rem; }
         }
 
         @media (max-width: 480px) {
@@ -1030,6 +1242,8 @@
             .main-nav .nav-link { font-size: 0.55rem; padding: 4px 8px; }
             .valor-mercado .info .precio { font-size: 1.4rem; }
             .valor-mercado .info .detalles { flex-wrap: wrap; justify-content: center; }
+            .token-badge { font-size: 0.6rem; padding: 3px 10px; }
+            .token-badge #tokenBadgeCantidad { font-size: 0.75rem; }
         }
     </style>
 </head>
@@ -1052,6 +1266,10 @@
             </a>
             <div class="header-actions">
                 <span class="network-badge"><span class="dot"></span> Polygon</span>
+                <!-- NUEVO: Token Badge -->
+                <span class="token-badge" id="tokenBadge" onclick="verTokens()" title="Ver tus tokens">
+                    ◈ <span id="tokenBadgeCantidad">0</span> tokens
+                </span>
             </div>
         </header>
 
@@ -1073,6 +1291,9 @@
                     <span>◈ Oferta: <strong id="ofertaTotal">0</strong> tokens</span>
                     <span>◉ Demanda: <strong id="demandaTotal">0</strong></span>
                     <span id="tendenciaLabel">⟡ Tendencia: <strong id="tendenciaValor" class="up">Estable</strong></span>
+                </div>
+                <div style="font-size:0.6rem;color:var(--text-muted);margin-top:4px;">
+                    💡 1 Domo = 75 MXN = 12 tokens · 12 tokens = 1 NFT
                 </div>
             </div>
             <button class="btn-vender-token" onclick="abrirModalVenta()">◆ Vender tokens</button>
@@ -1156,8 +1377,45 @@
         </div>
     </div>
 
+    <!-- ===== MODAL CONFIRMAR COMPRA (NUEVO) ===== -->
+    <div class="modal-overlay" id="modalConfirmarCompra">
+        <div class="modal modal-confirmacion">
+            <div class="modal-header">
+                <h2>⟡ Confirmar compra</h2>
+                <button class="btn-cerrar" onclick="cerrarModalConfirmacion()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div style="text-align:center;padding:10px 0;">
+                    <div style="font-size:2rem;margin-bottom:8px;">🛒</div>
+                    <p style="color:var(--text-muted);font-size:0.9rem;">
+                        ¿Confirmas la compra de 
+                        <strong style="color:var(--gold);" id="confirmCantidad">1</strong> 
+                        token(s) a 
+                        <strong style="color:var(--gold);" id="confirmPrecio">75</strong> MXN c/u?
+                    </p>
+                    <div style="font-family:'Orbitron',monospace;color:var(--gold);font-size:1.8rem;margin:16px 0;padding:12px;background:rgba(212,175,55,0.05);border-radius:12px;border:1px solid rgba(212,175,55,0.1);">
+                        Total: <span id="confirmTotal">75</span> MXN
+                    </div>
+                    <div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:16px;">
+                        ⚡ Transacción en Polygon · Gas fees incluidos
+                    </div>
+                    <div style="display:flex;gap:10px;">
+                        <button class="btn-cancelar" onclick="cerrarModalConfirmacion()">Cancelar</button>
+                        <button class="btn-confirmar" id="btnConfirmarCompra">◆ Confirmar compra</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- ===== TOAST ===== -->
     <div class="toast" id="toast"></div>
+
+    <!-- ===== BOTÓN MODO OSCURO/CLARO (NUEVO) ===== -->
+    <button class="btn-toggle-modo" onclick="toggleModo()" title="Cambiar modo">🌙</button>
+
+    <!-- ===== BOTÓN SCROLL TO TOP (NUEVO) ===== -->
+    <button class="btn-scroll-top" onclick="scrollToTop()" title="Volver arriba">↑</button>
 
     <!-- ===== SCRIPTS ===== -->
     <script src="https://cdn.jsdelivr.net/npm/web3@1.8.0/dist/web3.min.js"></script>
@@ -1188,6 +1446,7 @@
         // ================================================================
         let ofertaTokens = [];
         let historialPrecios = [];
+        let idCompraPendiente = null;
 
         function cargarDatosMuro() {
             const saved = localStorage.getItem('sariels_muro_data');
@@ -1199,7 +1458,6 @@
                     return;
                 } catch (e) {}
             }
-            // Datos iniciales
             ofertaTokens = [];
             historialPrecios = [
                 { timestamp: Date.now() - 86400000, precio: 70, oferta: 5, demanda: 12 },
@@ -1223,12 +1481,9 @@
         function calcularPrecioDinamico() {
             const oferta = ofertaTokens.filter(t => !t.vendido).length;
             const demanda = ofertaTokens.filter(t => !t.vendido).length > 0 ? 
-                Math.floor(oferta * 1.8) + 5 : 5; // Demanda simulada
+                Math.floor(oferta * 1.8) + 5 : 5;
             
-            const totalTransacciones = ofertaTokens.length;
             const precioBase = 75;
-            
-            // Calcular factor de ajuste
             let factor = 1;
             if (demanda > oferta && oferta > 0) {
                 factor = 1 + ((demanda - oferta) / (demanda + oferta)) * 0.5;
@@ -1236,7 +1491,6 @@
                 factor = 1 - ((oferta - demanda) / (oferta + demanda)) * 0.3;
             }
             
-            // Límites
             let precio = Math.round(precioBase * factor);
             precio = Math.max(37.5, Math.min(150, precio));
             
@@ -1254,7 +1508,6 @@
             if (ofertaEl) ofertaEl.textContent = data.oferta;
             if (demandaEl) demandaEl.textContent = data.demanda;
             
-            // Tendencia
             if (historialPrecios.length > 1) {
                 const prev = historialPrecios[historialPrecios.length - 2]?.precio || data.precio;
                 if (data.precio > prev) {
@@ -1269,16 +1522,36 @@
                 }
             }
             
-            // Actualizar Es.stoks en trending
             const esStoksCount = document.getElementById('esStoksCount');
             if (esStoksCount) esStoksCount.textContent = data.oferta + data.demanda;
+            
+            actualizarTokenBadge();
+        }
+
+        // ================================================================
+        // TOKEN BADGE EN HEADER
+        // ================================================================
+        function actualizarTokenBadge() {
+            const tokens = parseInt(localStorage.getItem('sariels_tokens') || '0');
+            const badge = document.getElementById('tokenBadgeCantidad');
+            if (badge) {
+                badge.textContent = tokens;
+                badge.parentElement.style.transform = 'scale(1.1)';
+                setTimeout(() => {
+                    badge.parentElement.style.transform = 'scale(1)';
+                }, 300);
+            }
+        }
+
+        function verTokens() {
+            const tokens = parseInt(localStorage.getItem('sariels_tokens') || '0');
+            showToast(`◈ Tienes ${tokens} tokens (${Math.floor(tokens/12)} NFTs disponibles)`);
         }
 
         // ================================================================
         // OFERTA DE TOKENS
         // ================================================================
         function agregarOfertaToken(cantidad, precio, vendedor) {
-            const data = calcularPrecioDinamico();
             ofertaTokens.push({
                 id: Date.now(),
                 cantidad: cantidad,
@@ -1286,18 +1559,22 @@
                 vendedor: vendedor || 'Explorador',
                 fecha: new Date().toISOString(),
                 vendido: false,
-                comprador: null
+                comprador: null,
+                fechaVenta: null
             });
             guardarDatosMuro();
-            renderizarOfertas();
+            renderizarFeed();
             actualizarValorMercado();
             showToast(`◆ ${cantidad} tokens en venta a ${precio} MXN`);
         }
 
-        function comprarTokens(id) {
+        // ================================================================
+        // CONFIRMAR COMPRA - MODAL
+        // ================================================================
+        function mostrarConfirmacionCompra(id) {
             const token = ofertaTokens.find(t => t.id === id);
             if (!token || token.vendido) {
-                showToast('⚠️ Este token ya no está disponible', 'error');
+                showToast('⚠️ Token no disponible', 'error');
                 return;
             }
             
@@ -1307,59 +1584,203 @@
                 return;
             }
             
+            if (perfil.nombre === token.vendedor) {
+                showToast('⚠️ No puedes comprar tus propios tokens', 'warning');
+                return;
+            }
+            
+            idCompraPendiente = id;
+            
+            document.getElementById('confirmCantidad').textContent = token.cantidad;
+            document.getElementById('confirmPrecio').textContent = token.precio;
+            document.getElementById('confirmTotal').textContent = (token.cantidad * token.precio).toFixed(2);
+            
+            document.getElementById('modalConfirmarCompra').classList.add('show');
+        }
+
+        function cerrarModalConfirmacion() {
+            document.getElementById('modalConfirmarCompra').classList.remove('show');
+            idCompraPendiente = null;
+        }
+
+        function ejecutarCompraConfirmada() {
+            if (!idCompraPendiente) return;
+            
+            const id = idCompraPendiente;
+            const token = ofertaTokens.find(t => t.id === id);
+            
+            if (!token || token.vendido) {
+                showToast('⚠️ Token no disponible', 'error');
+                cerrarModalConfirmacion();
+                return;
+            }
+            
+            const perfil = JSON.parse(localStorage.getItem('sariels_perfil') || '{}');
+            if (!perfil.nombre) {
+                showToast('⚠️ Conecta tu wallet primero', 'error');
+                cerrarModalConfirmacion();
+                return;
+            }
+            
             token.vendido = true;
-            token.comprador = perfil.nombre || 'Comprador';
+            token.comprador = perfil.nombre;
+            token.fechaVenta = new Date().toISOString();
             guardarDatosMuro();
             
-            // Actualizar tokens del comprador en localStorage
             let tokens = parseInt(localStorage.getItem('sariels_tokens') || '0');
             tokens += token.cantidad;
             localStorage.setItem('sariels_tokens', tokens.toString());
             
-            renderizarOfertas();
+            const historial = JSON.parse(localStorage.getItem('sariels_historial_compras') || '[]');
+            historial.push({
+                id: Date.now(),
+                tokenId: token.id,
+                comprador: perfil.nombre,
+                vendedor: token.vendedor,
+                cantidad: token.cantidad,
+                precio: token.precio,
+                total: token.cantidad * token.precio,
+                fecha: new Date().toISOString()
+            });
+            localStorage.setItem('sariels_historial_compras', JSON.stringify(historial));
+            
+            cerrarModalConfirmacion();
+            renderizarFeed();
             actualizarValorMercado();
             showToast(`✅ Comprados ${token.cantidad} tokens por ${token.precio} MXN c/u`);
         }
 
+        function comprarTokens(id) {
+            mostrarConfirmacionCompra(id);
+        }
+
         // ================================================================
-        // RENDERIZAR OFERTAS
+        // ELIMINAR PUBLICACIÓN (SOLO AUTOR)
         // ================================================================
-        function renderizarOfertas() {
+        function eliminarPublicacion(id) {
+            const perfil = JSON.parse(localStorage.getItem('sariels_perfil') || '{}');
+            
+            // Buscar en ofertas de tokens
+            const ofertaIndex = ofertaTokens.findIndex(t => t.id === id);
+            if (ofertaIndex !== -1) {
+                const oferta = ofertaTokens[ofertaIndex];
+                if (oferta.vendedor !== perfil.nombre) {
+                    showToast('⚠️ No puedes eliminar esta publicación', 'error');
+                    return;
+                }
+                if (oferta.vendido) {
+                    showToast('⚠️ No puedes eliminar un token ya vendido', 'warning');
+                    return;
+                }
+                if (!confirm(`¿Eliminar tu oferta de ${oferta.cantidad} token(s)?`)) return;
+                
+                ofertaTokens.splice(ofertaIndex, 1);
+                guardarDatosMuro();
+                
+                let tokens = parseInt(localStorage.getItem('sariels_tokens') || '0');
+                tokens += oferta.cantidad;
+                localStorage.setItem('sariels_tokens', tokens.toString());
+                
+                renderizarFeed();
+                actualizarValorMercado();
+                showToast('🗑️ Oferta eliminada, tokens devueltos');
+                return;
+            }
+            
+            // Buscar en publicaciones de texto
+            const posts = JSON.parse(localStorage.getItem('sariels_muro_posts') || '[]');
+            const postIndex = posts.findIndex(p => p.id === id);
+            
+            if (postIndex === -1) {
+                showToast('⚠️ Publicación no encontrada', 'error');
+                return;
+            }
+            
+            const post = posts[postIndex];
+            if (post.autor !== perfil.nombre) {
+                showToast('⚠️ No puedes eliminar esta publicación', 'error');
+                return;
+            }
+            
+            if (!confirm('¿Eliminar esta publicación permanentemente?')) return;
+            
+            posts.splice(postIndex, 1);
+            localStorage.setItem('sariels_muro_posts', JSON.stringify(posts));
+            
+            renderizarFeed();
+            showToast('🗑️ Publicación eliminada');
+        }
+
+        // ================================================================
+        // RENDERIZAR FEED COMPLETO
+        // ================================================================
+        function renderizarFeed() {
             const container = document.getElementById('feedContainer');
             if (!container) return;
             
+            const perfil = JSON.parse(localStorage.getItem('sariels_perfil') || '{}');
+            const posts = JSON.parse(localStorage.getItem('sariels_muro_posts') || '[]');
             const ofertasActivas = ofertaTokens.filter(t => !t.vendido);
             const ofertasVendidas = ofertaTokens.filter(t => t.vendido);
             
             let html = '';
             
-            // Ofertas activas
-            if (ofertasActivas.length === 0 && ofertasVendidas.length === 0) {
+            // 1. Publicaciones de texto
+            posts.forEach(post => {
+                const esAutor = post.autor === perfil.nombre;
+                html += `
+                    <div class="post-card" data-id="${post.id}">
+                        <div class="post-header">
+                            <div class="post-avatar">${post.avatar || '◈'}</div>
+                            <div>
+                                <div class="post-author">
+                                    ${post.autor || 'Explorador'}
+                                    <span class="badge-verificado">✦ Verificado</span>
+                                </div>
+                                <div class="post-date">${post.fecha || new Date().toLocaleString()}</div>
+                            </div>
+                        </div>
+                        <div class="post-content">${post.contenido || ''}</div>
+                        <div class="post-stats">
+                            <span>❤️ ${post.likes || 0}</span>
+                            <span>💬 ${post.comentarios?.length || 0}</span>
+                        </div>
+                        <div class="post-actions">
+                            <button onclick="likePost(${post.id})">❤️ <span class="count">${post.likes || 0}</span></button>
+                            <button onclick="comentarPost(${post.id})">💬 <span class="count">${post.comentarios?.length || 0}</span></button>
+                            ${esAutor ? `<button class="btn-eliminar" onclick="eliminarPublicacion(${post.id})">🗑️ Eliminar</button>` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            // 2. Ofertas activas
+            ofertasActivas.forEach(t => {
+                html += renderizarOferta(t, false, perfil.nombre);
+            });
+            
+            // 3. Ofertas vendidas (últimas 5)
+            ofertasVendidas.slice(-5).reverse().forEach(t => {
+                html += renderizarOferta(t, true, perfil.nombre);
+            });
+            
+            if (html === '') {
                 html = `
                     <div class="empty-state">
                         <span class="icon">◈</span>
-                        <h3>Sin ofertas de tokens</h3>
-                        <p>Publica tus tokens en venta usando el botón ◆ Vender tokens</p>
+                        <h3>Sin publicaciones</h3>
+                        <p>Publica algo o vende tus tokens</p>
                     </div>
                 `;
-            } else {
-                // Ofertas activas primero
-                ofertasActivas.forEach(t => {
-                    html += renderizarOferta(t);
-                });
-                
-                // Ofertas vendidas después
-                ofertasVendidas.slice(-5).reverse().forEach(t => {
-                    html += renderizarOferta(t, true);
-                });
             }
             
             container.innerHTML = html;
         }
 
-        function renderizarOferta(token, vendido = false) {
+        function renderizarOferta(token, vendido = false, usuarioActual = '') {
             const fecha = new Date(token.fecha).toLocaleDateString();
             const esVendido = vendido || token.vendido;
+            const esAutor = token.vendedor === usuarioActual;
             
             return `
                 <div class="post-card" data-id="${token.id}">
@@ -1392,8 +1813,44 @@
                         <span>◈ ${token.cantidad} tokens</span>
                         <span>⟡ ${token.precio} MXN c/u</span>
                     </div>
+                    <div class="post-actions">
+                        ${esAutor && !esVendido ? `<button class="btn-eliminar" onclick="eliminarPublicacion(${token.id})">🗑️ Eliminar</button>` : ''}
+                    </div>
                 </div>
             `;
+        }
+
+        // ================================================================
+        // LIKE Y COMENTARIOS (para publicaciones de texto)
+        // ================================================================
+        function likePost(id) {
+            const posts = JSON.parse(localStorage.getItem('sariels_muro_posts') || '[]');
+            const post = posts.find(p => p.id === id);
+            if (post) {
+                post.likes = (post.likes || 0) + 1;
+                localStorage.setItem('sariels_muro_posts', JSON.stringify(posts));
+                renderizarFeed();
+            }
+        }
+
+        function comentarPost(id) {
+            const posts = JSON.parse(localStorage.getItem('sariels_muro_posts') || '[]');
+            const post = posts.find(p => p.id === id);
+            if (!post) return;
+            
+            const comentario = prompt('Escribe un comentario:');
+            if (comentario && comentario.trim()) {
+                if (!post.comentarios) post.comentarios = [];
+                const perfil = JSON.parse(localStorage.getItem('sariels_perfil') || '{}');
+                post.comentarios.push({
+                    autor: perfil.nombre || 'Explorador',
+                    texto: comentario.trim(),
+                    fecha: new Date().toLocaleString()
+                });
+                localStorage.setItem('sariels_muro_posts', JSON.stringify(posts));
+                renderizarFeed();
+                showToast('💬 Comentario agregado');
+            }
         }
 
         // ================================================================
@@ -1406,7 +1863,6 @@
                 return;
             }
             
-            // Mostrar tokens disponibles
             const tokens = parseInt(localStorage.getItem('sariels_tokens') || '0');
             document.getElementById('tokensDisponibles').textContent = tokens;
             
@@ -1450,11 +1906,9 @@
                 return;
             }
             
-            // Descontar tokens del usuario
             const nuevosTokens = tokensDisponibles - cantidad;
             localStorage.setItem('sariels_tokens', nuevosTokens.toString());
             
-            // Publicar oferta
             agregarOfertaToken(cantidad, precio, perfil.nombre || 'Explorador');
             cerrarModalVenta();
         }
@@ -1510,7 +1964,6 @@
             
             const perfil = JSON.parse(localStorage.getItem('sariels_perfil') || '{}');
             
-            // Agregar publicación temporal (simulada)
             const post = {
                 id: Date.now(),
                 autor: perfil.nombre || 'Explorador',
@@ -1521,14 +1974,53 @@
                 comentarios: []
             };
             
-            // Guardar en localStorage
             const posts = JSON.parse(localStorage.getItem('sariels_muro_posts') || '[]');
             posts.unshift(post);
             localStorage.setItem('sariels_muro_posts', JSON.stringify(posts));
             
             textarea.value = '';
-            renderizarOfertas();
+            renderizarFeed();
             showToast('✅ Publicación creada');
+        }
+
+        // ================================================================
+        // MODO OSCURO/CLARO
+        // ================================================================
+        function toggleModo() {
+            const body = document.body;
+            const btn = document.querySelector('.btn-toggle-modo');
+            
+            if (body.classList.contains('modo-claro')) {
+                body.classList.remove('modo-claro');
+                localStorage.setItem('sariels_modo', 'oscuro');
+                if (btn) btn.textContent = '🌙';
+                showToast('🌙 Modo oscuro');
+            } else {
+                body.classList.add('modo-claro');
+                localStorage.setItem('sariels_modo', 'claro');
+                if (btn) btn.textContent = '☀️';
+                showToast('☀️ Modo claro');
+            }
+        }
+
+        function cargarModo() {
+            const modo = localStorage.getItem('sariels_modo');
+            const btn = document.querySelector('.btn-toggle-modo');
+            
+            if (modo === 'claro') {
+                document.body.classList.add('modo-claro');
+                if (btn) btn.textContent = '☀️';
+            } else {
+                document.body.classList.remove('modo-claro');
+                if (btn) btn.textContent = '🌙';
+            }
+        }
+
+        // ================================================================
+        // SCROLL TO TOP
+        // ================================================================
+        function scrollToTop() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         // ================================================================
@@ -1537,10 +2029,10 @@
         document.addEventListener('DOMContentLoaded', function() {
             initStars();
             cargarDatosMuro();
+            cargarModo();
             actualizarValorMercado();
-            renderizarOfertas();
+            renderizarFeed();
 
-            // Cargar perfil del usuario
             const perfil = localStorage.getItem('sariels_perfil');
             if (perfil) {
                 try {
@@ -1552,10 +2044,9 @@
                 } catch (e) {}
             }
 
-            // Botón publicar
             document.getElementById('btnPublicar').addEventListener('click', publicarTexto);
+            document.getElementById('btnConfirmarCompra').addEventListener('click', ejecutarCompraConfirmada);
 
-            // Enter para publicar
             document.getElementById('postContent').addEventListener('keydown', function(e) {
                 if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
                     e.preventDefault();
@@ -1563,14 +2054,28 @@
                 }
             });
 
-            // Cerrar modal con Escape
             document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape') cerrarModalVenta();
+                if (e.key === 'Escape') {
+                    cerrarModalVenta();
+                    cerrarModalConfirmacion();
+                }
             });
 
-            // Cerrar modal click fuera
             document.getElementById('modalVender').addEventListener('click', function(e) {
                 if (e.target === this) cerrarModalVenta();
+            });
+            document.getElementById('modalConfirmarCompra').addEventListener('click', function(e) {
+                if (e.target === this) cerrarModalConfirmacion();
+            });
+
+            // Scroll to top
+            window.addEventListener('scroll', function() {
+                const btn = document.querySelector('.btn-scroll-top');
+                if (window.scrollY > 300) {
+                    btn.classList.add('show');
+                } else {
+                    btn.classList.remove('show');
+                }
             });
 
             console.log('◈ Sariel\'s - Muro Ultra Mega Pro');
@@ -1578,6 +2083,9 @@
             console.log('◆ Tokens en venta:', ofertaTokens.filter(t => !t.vendido).length);
         });
 
+        // ================================================================
+        // ESTRELLAS
+        // ================================================================
         function initStars() {
             const canvas = document.getElementById('stars-canvas');
             if (!canvas) return;
@@ -1633,19 +2141,17 @@
                 animId = requestAnimationFrame(draw);
             }
 
-            function pauseAnimation() { isVisible = false; }
-            function resumeAnimation() { isVisible = true; }
-
             resize();
             draw();
 
             window.addEventListener('resize', resize);
             document.addEventListener('visibilitychange', function() {
-                if (document.hidden) pauseAnimation();
-                else resumeAnimation();
+                if (document.hidden) {
+                    isVisible = false;
+                } else {
+                    isVisible = true;
+                }
             });
-
-            return { pauseAnimation, resumeAnimation };
         }
 
         // ================================================================
@@ -1661,8 +2167,16 @@
         window.agregarImagen = agregarImagen;
         window.agregarEncuesta = agregarEncuesta;
         window.publicarTexto = publicarTexto;
-        window.renderizarOfertas = renderizarOfertas;
+        window.renderizarFeed = renderizarFeed;
         window.actualizarValorMercado = actualizarValorMercado;
+        window.eliminarPublicacion = eliminarPublicacion;
+        window.toggleModo = toggleModo;
+        window.scrollToTop = scrollToTop;
+        window.verTokens = verTokens;
+        window.likePost = likePost;
+        window.comentarPost = comentarPost;
+        window.cerrarModalConfirmacion = cerrarModalConfirmacion;
+        window.ejecutarCompraConfirmada = ejecutarCompraConfirmada;
     </script>
 </body>
 </html>
