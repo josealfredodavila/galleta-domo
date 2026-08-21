@@ -1607,11 +1607,12 @@
     <!-- ===== SCRIPTS ===== -->
     <script src="https://cdn.jsdelivr.net/npm/web3@1.8.0/dist/web3.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
-    <script src="/app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <!-- <script src="/app.js"></script> -->   <!-- 🔴 COMENTADA para evitar conflictos -->
     <script src="/features/muro/muro.js"></script>
     <script>
         // ================================================================
-        // MURO ULTRA MEGA PRO - LÓGICA COMPLETA
+        // MURO ULTRA MEGA PRO - LÓGICA COMPLETA (CON SUPABASE AUTH)
         // ================================================================
 
         // ================================================================
@@ -1626,6 +1627,46 @@
             else t.classList.remove('error', 'warning');
             clearTimeout(t._timeout);
             t._timeout = setTimeout(() => t.classList.remove('show'), 3500);
+        }
+
+        // ================================================================
+        // SUPABASE CLIENTE
+        // ================================================================
+        const SUPABASE_URL = 'https://hbbwopkfpkvahgtawqke.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_4gJWA-t7Eg6ruuI2EF-K2A_GQlahb2j';
+        let supabase = null;
+
+        if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
+            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        }
+
+        // ================================================================
+        // HEADERS DE AUTENTICACIÓN
+        // ================================================================
+        async function getAuthHeaders() {
+            const headers = { 'Content-Type': 'application/json' };
+            if (supabase) {
+                try {
+                    const { data: { session } } = await supabase.auth.getSession();
+                    if (session && session.access_token) {
+                        headers['Authorization'] = `Bearer ${session.access_token}`;
+                    }
+                } catch (e) {
+                    console.warn('No se pudo obtener sesión de Supabase:', e);
+                }
+            }
+            return headers;
+        }
+
+        async function fetchWithAuth(url, options = {}) {
+            const headers = await getAuthHeaders();
+            return fetch(url, {
+                ...options,
+                headers: {
+                    ...headers,
+                    ...(options.headers || {})
+                }
+            });
         }
 
         // ================================================================
@@ -1663,14 +1704,12 @@
         }
 
         // ================================================================
-        // PRECIO DINÁMICO - BASE 6.25 MXN (75 ÷ 12)
+        // PRECIO DINÁMICO
         // ================================================================
         function calcularPrecioDinamico() {
             const oferta = ofertaTokens.filter(t => !t.vendido).length;
             const demanda = ofertaTokens.filter(t => !t.vendido).length > 0 ? 
                 Math.floor(oferta * 1.8) + 5 : 5;
-            
-            // ✅ PRECIO BASE CORRECTO: 6.25 MXN (75 ÷ 12)
             const precioBase = 6.25;
             let factor = 1;
             if (demanda > oferta && oferta > 0) {
@@ -1678,26 +1717,19 @@
             } else if (oferta > demanda && oferta > 0) {
                 factor = 1 - ((oferta - demanda) / (oferta + demanda)) * 0.3;
             }
-            
             let precio = Math.round(precioBase * factor * 100) / 100;
             precio = Math.max(3.12, Math.min(12.50, precio));
-            
             return { precio, oferta, demanda };
         }
 
         function actualizarValorMercado() {
             const data = calcularPrecioDinamico();
-            const precioEl = document.getElementById('precioToken');
-            const ofertaEl = document.getElementById('ofertaTotal');
-            const demandaEl = document.getElementById('demandaTotal');
-            const tendenciaEl = document.getElementById('tendenciaValor');
-            
-            if (precioEl) precioEl.innerHTML = data.precio.toFixed(2) + ' <span class="moneda">MXN</span>';
-            if (ofertaEl) ofertaEl.textContent = data.oferta;
-            if (demandaEl) demandaEl.textContent = data.demanda;
-            
+            document.getElementById('precioToken').innerHTML = data.precio.toFixed(2) + ' <span class="moneda">MXN</span>';
+            document.getElementById('ofertaTotal').textContent = data.oferta;
+            document.getElementById('demandaTotal').textContent = data.demanda;
             if (historialPrecios.length > 1) {
                 const prev = historialPrecios[historialPrecios.length - 2]?.precio || data.precio;
+                const tendenciaEl = document.getElementById('tendenciaValor');
                 if (data.precio > prev) {
                     tendenciaEl.textContent = '↑ Subiendo';
                     tendenciaEl.className = 'up';
@@ -1709,19 +1741,13 @@
                     tendenciaEl.className = '';
                 }
             }
-            
             actualizarTokenBadge();
         }
 
-        // ================================================================
-        // TOKEN BADGE
-        // ================================================================
         function actualizarTokenBadge() {
             const tokens = parseInt(localStorage.getItem('sariels_tokens') || '0');
             const badge = document.getElementById('tokenBadgeCantidad');
-            if (badge) {
-                badge.textContent = tokens;
-            }
+            if (badge) badge.textContent = tokens;
         }
 
         function verTokens() {
@@ -1735,8 +1761,8 @@
         function agregarOfertaToken(cantidad, precio, vendedor) {
             ofertaTokens.push({
                 id: Date.now(),
-                cantidad: cantidad,
-                precio: precio,
+                cantidad,
+                precio,
                 vendedor: vendedor || 'Explorador',
                 fecha: new Date().toISOString(),
                 vendido: false,
@@ -1756,10 +1782,8 @@
         function toggleComentariosOferta(id) {
             const container = document.getElementById(`comentarios-oferta-${id}`);
             if (!container) return;
-            
             const isVisible = container.style.display !== 'none';
             container.style.display = isVisible ? 'none' : 'block';
-            
             if (!isVisible) {
                 setTimeout(() => {
                     const input = document.getElementById(`comentario-oferta-input-${id}`);
@@ -1771,34 +1795,28 @@
         function enviarComentarioOferta(id) {
             const input = document.getElementById(`comentario-oferta-input-${id}`);
             if (!input) return;
-            
             const texto = input.value.trim();
             if (!texto) {
                 showToast('⚠️ Escribe un comentario', 'error');
                 return;
             }
-            
             const perfil = JSON.parse(localStorage.getItem('sariels_perfil') || '{}');
             if (!perfil.nombre) {
                 showToast('⚠️ Conecta tu wallet primero', 'error');
                 return;
             }
-            
             const token = ofertaTokens.find(t => t.id === id);
             if (!token) {
                 showToast('⚠️ Oferta no encontrada', 'error');
                 return;
             }
-            
             if (!token.comentarios) token.comentarios = [];
-            
             token.comentarios.push({
                 autor: perfil.nombre,
                 avatar: perfil.avatar || '◈',
-                texto: texto,
+                texto,
                 fecha: new Date().toLocaleString()
             });
-            
             guardarDatosMuro();
             renderizarFeed();
             showToast('◈ Comentario agregado');
@@ -1807,17 +1825,13 @@
         function eliminarComentarioOferta(idOferta, index) {
             const perfil = JSON.parse(localStorage.getItem('sariels_perfil') || '{}');
             const token = ofertaTokens.find(t => t.id === idOferta);
-            
             if (!token || !token.comentarios) return;
-            
             const comentario = token.comentarios[index];
             if (comentario.autor !== perfil.nombre) {
                 showToast('⚠️ No puedes eliminar este comentario', 'error');
                 return;
             }
-            
             if (!confirm('¿Eliminar este comentario?')) return;
-            
             token.comentarios.splice(index, 1);
             guardarDatosMuro();
             renderizarFeed();
@@ -1833,24 +1847,19 @@
                 showToast('⚠️ Token no disponible', 'error');
                 return;
             }
-            
             const perfil = JSON.parse(localStorage.getItem('sariels_perfil') || '{}');
             if (!perfil.nombre) {
                 showToast('⚠️ Conecta tu wallet primero', 'error');
                 return;
             }
-            
             if (perfil.nombre === token.vendedor) {
                 showToast('⚠️ No puedes comprar tus propios tokens', 'warning');
                 return;
             }
-            
             idCompraPendiente = id;
-            
             document.getElementById('confirmCantidad').textContent = token.cantidad;
             document.getElementById('confirmPrecio').textContent = token.precio.toFixed(2);
             document.getElementById('confirmTotal').textContent = (token.cantidad * token.precio).toFixed(2);
-            
             document.getElementById('modalConfirmarCompra').classList.add('show');
         }
 
@@ -1861,32 +1870,26 @@
 
         function ejecutarCompraConfirmada() {
             if (!idCompraPendiente) return;
-            
             const id = idCompraPendiente;
             const token = ofertaTokens.find(t => t.id === id);
-            
             if (!token || token.vendido) {
                 showToast('⚠️ Token no disponible', 'error');
                 cerrarModalConfirmacion();
                 return;
             }
-            
             const perfil = JSON.parse(localStorage.getItem('sariels_perfil') || '{}');
             if (!perfil.nombre) {
                 showToast('⚠️ Conecta tu wallet primero', 'error');
                 cerrarModalConfirmacion();
                 return;
             }
-            
             token.vendido = true;
             token.comprador = perfil.nombre;
             token.fechaVenta = new Date().toISOString();
             guardarDatosMuro();
-            
             let tokens = parseInt(localStorage.getItem('sariels_tokens') || '0');
             tokens += token.cantidad;
             localStorage.setItem('sariels_tokens', tokens.toString());
-            
             const historial = JSON.parse(localStorage.getItem('sariels_historial_compras') || '[]');
             historial.push({
                 id: Date.now(),
@@ -1899,7 +1902,6 @@
                 fecha: new Date().toISOString()
             });
             localStorage.setItem('sariels_historial_compras', JSON.stringify(historial));
-            
             cerrarModalConfirmacion();
             renderizarFeed();
             actualizarValorMercado();
@@ -1915,7 +1917,6 @@
         // ================================================================
         function eliminarPublicacion(id) {
             const perfil = JSON.parse(localStorage.getItem('sariels_perfil') || '{}');
-            
             const ofertaIndex = ofertaTokens.findIndex(t => t.id === id);
             if (ofertaIndex !== -1) {
                 const oferta = ofertaTokens[ofertaIndex];
@@ -1928,62 +1929,55 @@
                     return;
                 }
                 if (!confirm(`¿Eliminar oferta de ${oferta.cantidad} token(s)?`)) return;
-                
                 ofertaTokens.splice(ofertaIndex, 1);
                 guardarDatosMuro();
-                
                 let tokens = parseInt(localStorage.getItem('sariels_tokens') || '0');
                 tokens += oferta.cantidad;
                 localStorage.setItem('sariels_tokens', tokens.toString());
-                
                 renderizarFeed();
                 actualizarValorMercado();
                 showToast('🗑️ Oferta eliminada, tokens devueltos');
                 return;
             }
-            
             const posts = JSON.parse(localStorage.getItem('sariels_muro_posts') || '[]');
             const postIndex = posts.findIndex(p => p.id === id);
-            
             if (postIndex === -1) {
                 showToast('⚠️ Publicación no encontrada', 'error');
                 return;
             }
-            
             const post = posts[postIndex];
             if (post.autor !== perfil.nombre) {
                 showToast('⚠️ No puedes eliminar esta publicación', 'error');
                 return;
             }
-            
             if (!confirm('¿Eliminar publicación permanentemente?')) return;
-            
             posts.splice(postIndex, 1);
             localStorage.setItem('sariels_muro_posts', JSON.stringify(posts));
-            
             renderizarFeed();
             showToast('🗑️ Publicación eliminada');
         }
 
         // ================================================================
-        // RENDERIZAR FEED
+        // RENDERIZAR FEED (con formato de fecha corregido)
         // ================================================================
         function renderizarFeed() {
             const container = document.getElementById('feedContainer');
             if (!container) return;
-            
             const perfil = JSON.parse(localStorage.getItem('sariels_perfil') || '{}');
             const posts = JSON.parse(localStorage.getItem('sariels_muro_posts') || '[]');
             const ofertasActivas = ofertaTokens.filter(t => !t.vendido);
             const ofertasVendidas = ofertaTokens.filter(t => t.vendido);
-            
             let html = '';
-            
+
             // Publicaciones de texto
             posts.forEach(post => {
                 const esAutor = post.autor === perfil.nombre;
                 const comentarios = post.comentarios || [];
                 const vistas = post.vistas || Math.floor(Math.random() * 50) + 10;
+                // ✅ Fecha corregida: primero created_at (Supabase), luego fecha (localStorage)
+                const fechaPost = post.created_at 
+                    ? new Date(post.created_at).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                    : post.fecha || 'Hace un momento';
                 html += `
                     <div class="post-card" data-id="${post.id}">
                         <div class="post-header">
@@ -1994,7 +1988,7 @@
                                     <span class="badge-verificado">✦ Verificado</span>
                                     ${post.anclado ? '<span class="badge-anclado">📌 Anclado</span>' : ''}
                                 </div>
-                                <div class="post-date">${post.fecha || new Date().toLocaleString()} · 👁️ ${vistas} vistas</div>
+                                <div class="post-date">${fechaPost} · 👁️ ${vistas} vistas</div>
                             </div>
                         </div>
                         <div class="post-content">${post.contenido || ''}</div>
@@ -2032,17 +2026,15 @@
                     </div>
                 `;
             });
-            
-            // Ofertas activas
+
+            // Ofertas activas y vendidas
             ofertasActivas.forEach(t => {
                 html += renderizarOferta(t, false, perfil.nombre);
             });
-            
-            // Ofertas vendidas
             ofertasVendidas.slice(-5).reverse().forEach(t => {
                 html += renderizarOferta(t, true, perfil.nombre);
             });
-            
+
             if (html === '') {
                 html = `
                     <div class="empty-state">
@@ -2052,7 +2044,6 @@
                     </div>
                 `;
             }
-            
             container.innerHTML = html;
         }
 
@@ -2062,7 +2053,6 @@
             const esAutor = token.vendedor === usuarioActual;
             const comentarios = token.comentarios || [];
             const totalComentarios = comentarios.length;
-            
             let comentariosHtml = '';
             if (totalComentarios > 0) {
                 comentariosHtml = comentarios.map((c, i) => `
@@ -2076,7 +2066,6 @@
                     </div>
                 `).join('');
             }
-            
             return `
                 <div class="post-card" data-id="${token.id}">
                     <div class="post-header">
@@ -2137,10 +2126,8 @@
         function toggleComentariosPost(id) {
             const container = document.getElementById(`comentarios-post-input-${id}`);
             if (!container) return;
-            
             const isVisible = container.style.display !== 'none';
             container.style.display = isVisible ? 'none' : 'block';
-            
             if (!isVisible) {
                 setTimeout(() => {
                     const input = document.getElementById(`comentario-post-input-${id}`);
@@ -2152,41 +2139,41 @@
         function enviarComentarioPost(id) {
             const input = document.getElementById(`comentario-post-input-${id}`);
             if (!input) return;
-            
             const texto = input.value.trim();
             if (!texto) {
                 showToast('⚠️ Escribe un comentario', 'error');
                 return;
             }
-            
             const perfil = JSON.parse(localStorage.getItem('sariels_perfil') || '{}');
             if (!perfil.nombre) {
                 showToast('⚠️ Conecta tu wallet primero', 'error');
                 return;
             }
-            
             const posts = JSON.parse(localStorage.getItem('sariels_muro_posts') || '[]');
             const post = posts.find(p => p.id === id);
             if (!post) {
                 showToast('⚠️ Publicación no encontrada', 'error');
                 return;
             }
-            
             if (!post.comentarios) post.comentarios = [];
             post.comentarios.push({
                 autor: perfil.nombre,
                 avatar: perfil.avatar || '◈',
-                texto: texto,
+                texto,
                 fecha: new Date().toLocaleString()
             });
-            
             localStorage.setItem('sariels_muro_posts', JSON.stringify(posts));
             renderizarFeed();
             showToast('◈ Comentario agregado');
+            // Enviar al backend con autenticación
+            fetchWithAuth('/api/muro/comentario', {
+                method: 'POST',
+                body: JSON.stringify({ postId: id, contenido: texto })
+            }).catch(err => console.warn('Error enviando comentario al backend:', err));
         }
 
         // ================================================================
-        // LIKE EN PUBLICACIONES DE TEXTO
+        // LIKE
         // ================================================================
         function likePost(id) {
             const posts = JSON.parse(localStorage.getItem('sariels_muro_posts') || '[]');
@@ -2195,6 +2182,10 @@
                 post.likes = (post.likes || 0) + 1;
                 localStorage.setItem('sariels_muro_posts', JSON.stringify(posts));
                 renderizarFeed();
+                fetchWithAuth('/api/muro/reaccion', {
+                    method: 'POST',
+                    body: JSON.stringify({ postId: id, reaccion: 'meGusta' })
+                }).catch(err => console.warn('Error enviando like al backend:', err));
             }
         }
 
@@ -2204,7 +2195,6 @@
         function compartirPublicacion(id) {
             const url = `${window.location.origin}/muro/${id}`;
             const texto = `◈ Publicación en Sariel's\n🔗 ${url}`;
-            
             if (navigator.share) {
                 navigator.share({
                     title: 'Publicación en Sariel\'s',
@@ -2222,7 +2212,6 @@
 
         function generarQRPost(id) {
             const url = `${window.location.origin}/muro/${id}`;
-            
             if (typeof QRCode !== 'undefined') {
                 const modal = document.createElement('div');
                 modal.style.cssText = `
@@ -2247,7 +2236,6 @@
                     </div>
                 `;
                 document.body.appendChild(modal);
-                
                 try {
                     new QRCode(document.getElementById('qrContainer'), {
                         text: url,
@@ -2275,21 +2263,17 @@
                 showToast('⚠️ Conecta tu wallet primero', 'error');
                 return;
             }
-            
             const tokens = parseInt(localStorage.getItem('sariels_tokens') || '0');
             document.getElementById('tokensDisponibles').textContent = tokens;
-            
             if (tokens === 0) {
                 showToast('⚠️ No tienes tokens para vender', 'warning');
                 return;
             }
-            
             const data = calcularPrecioDinamico();
             const sugerido = Math.round(data.precio * 100) / 100;
             document.getElementById('precioSugerido').textContent = sugerido.toFixed(2);
             document.getElementById('inputPrecioToken').value = sugerido.toFixed(2);
             document.getElementById('inputCantidadTokens').max = tokens;
-            
             document.getElementById('modalVender').classList.add('show');
         }
 
@@ -2301,33 +2285,26 @@
             const cantidad = parseInt(document.getElementById('inputCantidadTokens').value) || 1;
             const precio = parseFloat(document.getElementById('inputPrecioToken').value) || 6.25;
             const perfil = JSON.parse(localStorage.getItem('sariels_perfil') || '{}');
-            
             const tokensDisponibles = parseInt(localStorage.getItem('sariels_tokens') || '0');
-            
             if (cantidad < 1) {
                 showToast('⚠️ La cantidad debe ser al menos 1', 'error');
                 return;
             }
-            
             if (cantidad > tokensDisponibles) {
                 showToast(`⚠️ Solo tienes ${tokensDisponibles} tokens disponibles`, 'error');
                 return;
             }
-            
             if (precio < 0.5) {
                 showToast('⚠️ El precio mínimo es 0.50 MXN', 'error');
                 return;
             }
-            
-            const nuevosTokens = tokensDisponibles - cantidad;
-            localStorage.setItem('sariels_tokens', nuevosTokens.toString());
-            
+            localStorage.setItem('sariels_tokens', (tokensDisponibles - cantidad).toString());
             agregarOfertaToken(cantidad, precio, perfil.nombre || 'Explorador');
             cerrarModalVenta();
         }
 
         // ================================================================
-        // HERRAMIENTAS DEL MURO
+        // HERRAMIENTAS
         // ================================================================
         function insertarHashtag() {
             const textarea = document.getElementById('postContent');
@@ -2374,14 +2351,12 @@
                 showToast('⚠️ Escribe algo para publicar', 'error');
                 return;
             }
-            
             const perfil = JSON.parse(localStorage.getItem('sariels_perfil') || '{}');
-            
             const post = {
                 id: Date.now(),
                 autor: perfil.nombre || 'Explorador',
                 avatar: perfil.avatar || '◈',
-                contenido: contenido,
+                contenido,
                 fecha: new Date().toLocaleString(),
                 likes: 0,
                 comentarios: [],
@@ -2390,20 +2365,22 @@
                 imagen: null,
                 encuesta: null
             };
-            
             const posts = JSON.parse(localStorage.getItem('sariels_muro_posts') || '[]');
             posts.unshift(post);
             localStorage.setItem('sariels_muro_posts', JSON.stringify(posts));
-            
             textarea.value = '';
             renderizarFeed();
             showToast('✅ Publicación creada');
+            // Enviar al backend
+            fetchWithAuth('/api/muro', {
+                method: 'POST',
+                body: JSON.stringify({ contenido, tipo: 'texto' })
+            }).catch(err => console.warn('Error publicando en backend:', err));
         }
 
         // ================================================================
-        // MODO OSCURO/CLARO CON ARRASTRE
+        // MODO OSCURO/CLARO Y BOTÓN ARRASTRABLE
         // ================================================================
-        let modoBtn = null;
         let isDragging = false;
         let dragOffsetX = 0;
         let dragOffsetY = 0;
@@ -2411,7 +2388,6 @@
         function toggleModo() {
             const body = document.body;
             const btn = document.getElementById('btnToggleModo');
-            
             if (body.classList.contains('modo-claro')) {
                 body.classList.remove('modo-claro');
                 localStorage.setItem('sariels_modo', 'oscuro');
@@ -2428,7 +2404,6 @@
         function cargarModo() {
             const modo = localStorage.getItem('sariels_modo');
             const btn = document.getElementById('btnToggleModo');
-            
             if (modo === 'claro') {
                 document.body.classList.add('modo-claro');
                 if (btn) btn.textContent = '☀️';
@@ -2438,14 +2413,9 @@
             }
         }
 
-        // ================================================================
-        // BOTÓN ARRASTRABLE
-        // ================================================================
         function initDraggableButton() {
             const btn = document.getElementById('btnToggleModo');
             if (!btn) return;
-            
-            // Cargar posición guardada
             const pos = localStorage.getItem('sariels_modo_pos');
             if (pos) {
                 try {
@@ -2456,8 +2426,6 @@
                     btn.style.right = 'auto';
                 } catch (e) {}
             }
-            
-            // Eventos para mouse
             btn.addEventListener('mousedown', function(e) {
                 isDragging = true;
                 const rect = btn.getBoundingClientRect();
@@ -2467,37 +2435,28 @@
                 btn.style.cursor = 'grabbing';
                 e.preventDefault();
             });
-            
             document.addEventListener('mousemove', function(e) {
                 if (!isDragging) return;
                 const x = e.clientX - dragOffsetX;
                 const y = e.clientY - dragOffsetY;
-                
-                // Limitar dentro de la pantalla
                 const maxX = window.innerWidth - btn.offsetWidth - 10;
                 const maxY = window.innerHeight - btn.offsetHeight - 10;
-                
                 btn.style.left = Math.max(10, Math.min(maxX, x)) + 'px';
                 btn.style.top = Math.max(10, Math.min(maxY, y)) + 'px';
                 btn.style.bottom = 'auto';
                 btn.style.right = 'auto';
             });
-            
             document.addEventListener('mouseup', function(e) {
                 if (isDragging) {
                     isDragging = false;
                     btn.classList.remove('dragging');
                     btn.style.cursor = 'grab';
-                    
-                    // Guardar posición
                     localStorage.setItem('sariels_modo_pos', JSON.stringify({
                         x: parseInt(btn.style.left),
                         y: parseInt(btn.style.top)
                     }));
                 }
             });
-            
-            // Eventos para móviles (touch)
             btn.addEventListener('touchstart', function(e) {
                 const touch = e.touches[0];
                 const rect = btn.getBoundingClientRect();
@@ -2507,45 +2466,34 @@
                 btn.classList.add('dragging');
                 e.preventDefault();
             }, { passive: false });
-            
             document.addEventListener('touchmove', function(e) {
                 if (!isDragging) return;
                 const touch = e.touches[0];
                 const x = touch.clientX - dragOffsetX;
                 const y = touch.clientY - dragOffsetY;
-                
                 const maxX = window.innerWidth - btn.offsetWidth - 10;
                 const maxY = window.innerHeight - btn.offsetHeight - 10;
-                
                 btn.style.left = Math.max(10, Math.min(maxX, x)) + 'px';
                 btn.style.top = Math.max(10, Math.min(maxY, y)) + 'px';
                 btn.style.bottom = 'auto';
                 btn.style.right = 'auto';
                 e.preventDefault();
             }, { passive: false });
-            
             document.addEventListener('touchend', function() {
                 if (isDragging) {
                     isDragging = false;
                     btn.classList.remove('dragging');
-                    
-                    // Guardar posición
                     localStorage.setItem('sariels_modo_pos', JSON.stringify({
                         x: parseInt(btn.style.left),
                         y: parseInt(btn.style.top)
                     }));
                 }
             });
-            
-            // Click para toggle (solo si no hubo arrastre)
-            let clickStartX = 0;
-            let clickStartY = 0;
-            
+            let clickStartX = 0, clickStartY = 0;
             btn.addEventListener('mousedown', function(e) {
                 clickStartX = e.clientX;
                 clickStartY = e.clientY;
             });
-            
             btn.addEventListener('mouseup', function(e) {
                 const dx = e.clientX - clickStartX;
                 const dy = e.clientY - clickStartY;
@@ -2553,14 +2501,11 @@
                     toggleModo();
                 }
             });
-            
-            // Para touch
             btn.addEventListener('touchstart', function(e) {
                 const touch = e.touches[0];
                 clickStartX = touch.clientX;
                 clickStartY = touch.clientY;
             });
-            
             btn.addEventListener('touchend', function(e) {
                 const touch = e.changedTouches[0];
                 const dx = touch.clientX - clickStartX;
@@ -2593,37 +2538,31 @@
             if (perfil) {
                 try {
                     const data = JSON.parse(perfil);
-                    const nombreEl = document.getElementById('userNombre');
-                    const handleEl = document.getElementById('userHandle');
-                    if (nombreEl) nombreEl.textContent = data.nombre || 'Explorador';
-                    if (handleEl) handleEl.textContent = '@' + (data.handle || 'explorador');
+                    document.getElementById('userNombre').textContent = data.nombre || 'Explorador';
+                    document.getElementById('userHandle').textContent = '@' + (data.handle || 'explorador');
                 } catch (e) {}
             }
 
             document.getElementById('btnPublicar').addEventListener('click', publicarTexto);
             document.getElementById('btnConfirmarCompra').addEventListener('click', ejecutarCompraConfirmada);
-
             document.getElementById('postContent').addEventListener('keydown', function(e) {
                 if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
                     e.preventDefault();
                     publicarTexto();
                 }
             });
-
             document.addEventListener('keydown', function(e) {
                 if (e.key === 'Escape') {
                     cerrarModalVenta();
                     cerrarModalConfirmacion();
                 }
             });
-
             document.getElementById('modalVender').addEventListener('click', function(e) {
                 if (e.target === this) cerrarModalVenta();
             });
             document.getElementById('modalConfirmarCompra').addEventListener('click', function(e) {
                 if (e.target === this) cerrarModalConfirmacion();
             });
-
             window.addEventListener('scroll', function() {
                 const btn = document.querySelector('.btn-scroll-top');
                 if (window.scrollY > 300) {
@@ -2633,7 +2572,7 @@
                 }
             });
 
-            console.log('◈ Sariel\'s - Muro Ultra Mega Pro');
+            console.log('◈ Sariel\'s - Muro Ultra Mega Pro (con Supabase Auth)');
             console.log('⧫ Diseño premium sin emojis');
             console.log('◆ Tokens en venta:', ofertaTokens.filter(t => !t.vendido).length);
             console.log('⟡ Precio base: 6.25 MXN (75 ÷ 12)');
@@ -2646,10 +2585,8 @@
             let width, height, stars = [];
             let animId = null;
             let isVisible = true;
-
             const isMobile = window.innerWidth < 600;
             const STAR_COUNT = isMobile ? 40 : 100;
-
             function resize() {
                 width = window.innerWidth;
                 height = window.innerHeight;
@@ -2657,7 +2594,6 @@
                 canvas.height = height;
                 createStars();
             }
-
             function createStars() {
                 stars = [];
                 for (let i = 0; i < STAR_COUNT; i++) {
@@ -2671,7 +2607,6 @@
                     });
                 }
             }
-
             function draw() {
                 if (!isVisible) {
                     animId = requestAnimationFrame(draw);
@@ -2693,20 +2628,15 @@
                 }
                 animId = requestAnimationFrame(draw);
             }
-
             function pauseAnimation() { isVisible = false; }
             function resumeAnimation() { isVisible = true; }
-
             resize();
             draw();
-
             window.addEventListener('resize', resize);
             document.addEventListener('visibilitychange', function() {
                 if (document.hidden) pauseAnimation();
                 else resumeAnimation();
             });
-
-            return { pauseAnimation, resumeAnimation };
         }
 
         // ================================================================
