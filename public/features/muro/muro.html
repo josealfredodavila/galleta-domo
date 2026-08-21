@@ -329,6 +329,11 @@
         }
         .valor-mercado .info .detalles .up { color: var(--success); }
         .valor-mercado .info .detalles .down { color: var(--danger); }
+        .valor-mercado .info .extra {
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
         .valor-mercado .btn-vender-token {
             background: linear-gradient(135deg, var(--gold), var(--gold-dark));
             color: var(--space);
@@ -409,12 +414,6 @@
             color: var(--text-muted);
             margin-left: 4px;
         }
-        .trending-tags .tag .up {
-            color: var(--success);
-        }
-        .trending-tags .tag .down {
-            color: var(--danger);
-        }
 
         /* ===== FORMULARIO ===== */
         .post-form {
@@ -488,20 +487,19 @@
         .post-form .form-actions .tools {
             display: flex;
             gap: 4px;
-            flex-wrap: wrap;
         }
         .post-form .form-actions .tools button {
             background: none;
             border: none;
             color: var(--text-muted);
-            font-size: 0.8rem;
+            font-size: 0.9rem;
             cursor: pointer;
             transition: var(--transition);
             padding: 4px 10px;
             border-radius: 8px;
             font-family: 'Inter', sans-serif;
-            font-weight: 500;
-            letter-spacing: 0.3px;
+            font-weight: 400;
+            letter-spacing: 0.5px;
         }
         .post-form .form-actions .tools button:hover {
             color: var(--gold);
@@ -602,6 +600,28 @@
             border: 1px solid rgba(212, 175, 55, 0.1);
             letter-spacing: 0.5px;
         }
+        .post-card .post-author .badge-anclado {
+            font-size: 0.5rem;
+            background: rgba(212, 175, 55, 0.08);
+            color: var(--gold);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-family: 'Orbitron', monospace;
+            margin-left: 6px;
+            border: 1px solid rgba(212, 175, 55, 0.1);
+            letter-spacing: 0.5px;
+        }
+        .post-card .post-author .badge-vendido {
+            font-size: 0.5rem;
+            background: rgba(0, 214, 143, 0.15);
+            color: var(--success);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-family: 'Orbitron', monospace;
+            margin-left: 6px;
+            border: 1px solid rgba(0, 214, 143, 0.1);
+            letter-spacing: 0.5px;
+        }
         .post-card .post-date {
             font-size: 0.65rem;
             color: var(--text-muted);
@@ -622,8 +642,93 @@
         .post-card .post-content .hashtag:hover {
             text-decoration: underline;
         }
+        .post-card .post-stats {
+            display: flex;
+            gap: 16px;
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            padding: 8px 0;
+            border-top: 1px solid var(--glass-border);
+            letter-spacing: 0.3px;
+        }
+        .post-card .post-stats span {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
 
-        /* ===== POST DE VENTA ===== */
+        /* ===== ENCUESTAS ===== */
+        .post-card .post-encuesta {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            padding: 14px;
+            margin: 10px 0;
+            border: 1px solid rgba(212, 175, 55, 0.08);
+            transition: var(--transition);
+        }
+        .post-card .post-encuesta:hover {
+            border-color: rgba(212, 175, 55, 0.15);
+        }
+        .post-card .post-encuesta .pregunta {
+            font-weight: 600;
+            color: var(--gold);
+            font-size: 0.8rem;
+            margin-bottom: 8px;
+            letter-spacing: 0.3px;
+        }
+        .post-card .post-encuesta .opcion {
+            margin: 4px 0;
+            cursor: pointer;
+            padding: 6px 10px;
+            border-radius: 8px;
+            transition: var(--transition);
+            background: rgba(255, 255, 255, 0.03);
+        }
+        .post-card .post-encuesta .opcion:hover {
+            background: rgba(212, 175, 55, 0.05);
+        }
+        .post-card .post-encuesta .opcion .barra {
+            width: 100%;
+            height: 4px;
+            background: rgba(212, 175, 55, 0.08);
+            border-radius: 2px;
+            margin-top: 4px;
+            overflow: hidden;
+        }
+        .post-card .post-encuesta .opcion .barra .fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--gold-dark), var(--gold), var(--gold-light));
+            border-radius: 2px;
+            transition: width 0.5s ease;
+        }
+        .post-card .post-encuesta .total-votos {
+            font-size: 0.55rem;
+            color: var(--text-muted);
+            margin-top: 6px;
+            letter-spacing: 0.3px;
+        }
+
+        /* ===== MEDIA ===== */
+        .post-card .post-media {
+            margin: 12px -20px 12px -20px;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .post-card .post-media img {
+            width: 100%;
+            max-height: 400px;
+            object-fit: cover;
+            transition: var(--transition-slow);
+        }
+        .post-card .post-media img:hover {
+            transform: scale(1.02);
+        }
+        .post-card .post-media video {
+            width: 100%;
+            max-height: 400px;
+        }
+
+        /* ===== VENTA ===== */
         .post-card .post-venta {
             background: rgba(212, 175, 55, 0.05);
             border: 1px solid rgba(212, 175, 55, 0.1);
@@ -636,24 +741,6 @@
             flex-wrap: wrap;
             gap: 8px;
         }
-        .post-card .post-venta .info-venta {
-            display: flex;
-            gap: 16px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-        .post-card .post-venta .cantidad {
-            font-family: 'Orbitron', monospace;
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: var(--text-primary);
-        }
-        .post-card .post-venta .cantidad .label {
-            font-size: 0.6rem;
-            color: var(--text-muted);
-            font-weight: 400;
-            font-family: 'Inter', sans-serif;
-        }
         .post-card .post-venta .precio {
             font-family: 'Orbitron', monospace;
             color: var(--gold);
@@ -661,11 +748,10 @@
             font-weight: 700;
             letter-spacing: 0.5px;
         }
-        .post-card .post-venta .precio .label {
-            font-size: 0.6rem;
+        .post-card .post-venta .cantidad {
             color: var(--text-muted);
-            font-weight: 400;
-            font-family: 'Inter', sans-serif;
+            font-size: 0.85rem;
+            letter-spacing: 0.3px;
         }
         .post-card .post-venta .btn-comprar {
             background: linear-gradient(135deg, var(--gold), var(--gold-dark));
@@ -684,11 +770,6 @@
             transform: scale(1.05);
             box-shadow: var(--shadow-gold);
         }
-        .post-card .post-venta .btn-comprar:disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-            transform: none !important;
-        }
         .post-card .post-venta .vendido {
             font-size: 0.65rem;
             color: var(--text-muted);
@@ -697,68 +778,7 @@
             background: rgba(255, 255, 255, 0.05);
         }
 
-        /* ===== POST STATS ===== */
-        .post-card .post-stats {
-            display: flex;
-            gap: 16px;
-            font-size: 0.65rem;
-            color: var(--text-muted);
-            padding: 8px 0;
-            border-top: 1px solid var(--glass-border);
-            letter-spacing: 0.3px;
-        }
-        .post-card .post-stats span {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        /* ===== POST ACTIONS ===== */
-        .post-card .post-actions {
-            display: flex;
-            gap: 2px;
-            flex-wrap: wrap;
-            padding-top: 8px;
-            border-top: 1px solid var(--glass-border);
-        }
-        .post-card .post-actions button {
-            background: none;
-            border: none;
-            color: var(--text-muted);
-            font-size: 0.7rem;
-            cursor: pointer;
-            transition: var(--transition);
-            font-family: 'Inter', sans-serif;
-            padding: 4px 12px;
-            border-radius: 20px;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            letter-spacing: 0.3px;
-        }
-        .post-card .post-actions button:hover {
-            color: var(--gold);
-            background: rgba(212, 175, 55, 0.05);
-        }
-        .post-card .post-actions button.liked {
-            color: var(--danger);
-        }
-        .post-card .post-actions button .count {
-            font-size: 0.6rem;
-            color: var(--text-muted);
-        }
-
-        /* ===== BOTÓN ELIMINAR - SOLO AUTOR ===== */
-        .post-actions .btn-eliminar {
-            color: var(--text-muted);
-            transition: var(--transition);
-        }
-        .post-actions .btn-eliminar:hover {
-            color: var(--danger) !important;
-            background: rgba(255, 51, 102, 0.08) !important;
-        }
-
-        /* ===== COMENTARIOS ===== */
+        /* ===== COMENTARIOS EN PUBLICACIONES DE TEXTO ===== */
         .post-card .post-comentarios {
             margin-top: 12px;
             border-top: 1px solid rgba(212, 175, 55, 0.06);
@@ -841,6 +861,145 @@
         }
         .post-card .post-comentarios .input-comentario button:hover {
             transform: scale(1.05);
+        }
+
+        /* ================================================================
+           COMENTARIOS EN OFERTAS DE TOKENS
+           ================================================================ */
+        .post-card .comentarios-oferta {
+            margin-top: 12px;
+            border-top: 1px solid rgba(212, 175, 55, 0.06);
+            padding-top: 12px;
+        }
+        .post-card .comentarios-oferta .comentario {
+            display: flex;
+            gap: 10px;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.04);
+        }
+        .post-card .comentarios-oferta .comentario .avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--green-deep), var(--gold));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.6rem;
+            color: white;
+            font-weight: 700;
+            flex-shrink: 0;
+            font-family: 'Orbitron', monospace;
+        }
+        .post-card .comentarios-oferta .comentario .texto {
+            flex: 1;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+        .post-card .comentarios-oferta .comentario .texto strong {
+            color: var(--text-secondary);
+        }
+        .post-card .comentarios-oferta .comentario .texto .fecha {
+            font-size: 0.55rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+            letter-spacing: 0.3px;
+        }
+        .post-card .comentarios-oferta .comentario .texto .btn-eliminar-comentario {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 0.55rem;
+            cursor: pointer;
+            padding: 0;
+            margin-top: 2px;
+            transition: var(--transition);
+        }
+        .post-card .comentarios-oferta .comentario .texto .btn-eliminar-comentario:hover {
+            color: var(--danger);
+        }
+        .post-card .comentarios-oferta .input-comentario {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .post-card .comentarios-oferta .input-comentario input {
+            flex: 1;
+            padding: 8px 14px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(212, 175, 55, 0.1);
+            border-radius: 20px;
+            color: var(--text-primary);
+            font-size: 0.8rem;
+            font-family: 'Inter', sans-serif;
+            outline: none;
+            transition: var(--transition);
+        }
+        .post-card .comentarios-oferta .input-comentario input:focus {
+            outline: none;
+            border-color: var(--gold);
+            background: rgba(255, 255, 255, 0.08);
+        }
+        .post-card .comentarios-oferta .input-comentario button {
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            color: var(--space);
+            border: none;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-family: 'Orbitron', monospace;
+            font-size: 0.6rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--transition);
+            letter-spacing: 0.5px;
+        }
+        .post-card .comentarios-oferta .input-comentario button:hover {
+            transform: scale(1.05);
+        }
+
+        /* ===== ACCIONES ===== */
+        .post-card .post-actions {
+            display: flex;
+            gap: 2px;
+            flex-wrap: wrap;
+            padding-top: 8px;
+            border-top: 1px solid var(--glass-border);
+        }
+        .post-card .post-actions button {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: var(--transition);
+            font-family: 'Inter', sans-serif;
+            padding: 4px 12px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            letter-spacing: 0.3px;
+        }
+        .post-card .post-actions button:hover {
+            color: var(--gold);
+            background: rgba(212, 175, 55, 0.05);
+        }
+        .post-card .post-actions button.liked {
+            color: var(--danger);
+        }
+        .post-card .post-actions button .count {
+            font-size: 0.6rem;
+            color: var(--text-muted);
+        }
+
+        /* ===== BOTÓN ELIMINAR ===== */
+        .post-actions .btn-eliminar {
+            color: var(--text-muted);
+            transition: var(--transition);
+        }
+        .post-actions .btn-eliminar:hover {
+            color: var(--danger) !important;
+            background: rgba(255, 51, 102, 0.08) !important;
         }
 
         /* ===== MODAL VENDER ===== */
@@ -1019,6 +1178,7 @@
             -webkit-backdrop-filter: blur(10px);
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            font-family: 'Inter', sans-serif;
         }
         .btn-toggle-modo:hover {
             transform: scale(1.1) rotate(15deg);
@@ -1045,6 +1205,7 @@
             visibility: hidden;
             transform: translateY(20px);
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            font-family: 'Inter', sans-serif;
         }
         .btn-scroll-top.show {
             opacity: 1;
@@ -1083,6 +1244,27 @@
             letter-spacing: 0.3px;
         }
 
+        /* ===== LOADING ===== */
+        .loading-spinner {
+            text-align: center;
+            padding: 40px 0;
+            color: var(--text-muted);
+        }
+        .loading-spinner .spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(212, 175, 55, 0.08);
+            border-top: 3px solid var(--gold);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 12px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
         /* ===== TOAST ===== */
         .toast {
             position: fixed;
@@ -1109,29 +1291,7 @@
         .toast.error { border-color: var(--danger); color: var(--danger); }
         .toast.warning { border-color: var(--warning); color: var(--warning); }
 
-        /* ===== FOOTER ===== */
-        .footer {
-            margin-top: 30px;
-            padding-top: 16px;
-            border-top: 1px solid var(--glass-border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 10px;
-            font-size: 0.7rem;
-            color: var(--text-muted);
-            padding-bottom: 8px;
-            letter-spacing: 0.3px;
-        }
-        .footer .brand { color: var(--gold); font-weight: 600; letter-spacing: 1px; }
-        .footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
-        .footer-links a { color: var(--text-muted); text-decoration: none; transition: var(--transition); }
-        .footer-links a:hover { color: var(--gold); }
-
-        /* ================================================================
-           MODO CLARO
-           ================================================================ */
+        /* ===== MODO CLARO ===== */
         body.modo-claro {
             background: #f0f4f8;
             color: #05080f;
@@ -1146,10 +1306,6 @@
         }
         body.modo-claro .post-card {
             background: rgba(255, 255, 255, 0.7);
-            border-color: rgba(0, 0, 0, 0.08);
-        }
-        body.modo-claro .post-card:hover {
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
         }
         body.modo-claro .post-form {
             background: rgba(255, 255, 255, 0.7);
@@ -1166,19 +1322,16 @@
         body.modo-claro .post-card .post-date {
             color: #6a8a9a;
         }
-        body.modo-claro .post-card .post-stats {
-            border-top-color: rgba(0, 0, 0, 0.08);
-        }
-        body.modo-claro .post-card .post-actions {
-            border-top-color: rgba(0, 0, 0, 0.08);
-        }
-        body.modo-claro .post-card .post-comentarios {
-            border-top-color: rgba(0, 0, 0, 0.06);
-        }
         body.modo-claro .post-card .post-comentarios .comentario .texto {
             color: #4a6a7a;
         }
         body.modo-claro .post-card .post-comentarios .comentario .texto strong {
+            color: #0a1a2a;
+        }
+        body.modo-claro .post-card .comentarios-oferta .comentario .texto {
+            color: #4a6a7a;
+        }
+        body.modo-claro .post-card .comentarios-oferta .comentario .texto strong {
             color: #0a1a2a;
         }
         body.modo-claro .post-card .post-venta {
@@ -1204,9 +1357,26 @@
         body.modo-claro .btn-scroll-top {
             background: rgba(255, 255, 255, 0.8);
         }
-        body.modo-claro .valor-mercado .btn-vender-token {
-            color: #05080f;
+
+        /* ===== FOOTER ===== */
+        .footer {
+            margin-top: 30px;
+            padding-top: 16px;
+            border-top: 1px solid var(--glass-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            padding-bottom: 8px;
+            letter-spacing: 0.3px;
         }
+        .footer .brand { color: var(--gold); font-weight: 600; letter-spacing: 1px; }
+        .footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
+        .footer-links a { color: var(--text-muted); text-decoration: none; transition: var(--transition); }
+        .footer-links a:hover { color: var(--gold); }
 
         /* ===== RESPONSIVE ===== */
         @media (max-width: 768px) {
@@ -1219,8 +1389,8 @@
             .trending-section { padding: 12px 16px; }
             .trending-tags .tag { font-size: 0.6rem; padding: 3px 10px; }
             .post-card .post-venta { flex-direction: column; align-items: stretch; text-align: center; }
-            .post-card .post-venta .info-venta { justify-content: center; }
             .post-card .post-venta .btn-comprar { width: 100%; }
+            .post-card .post-media { margin: 8px -16px 8px -16px; }
             .valor-mercado { grid-template-columns: 1fr; text-align: center; }
             .valor-mercado .btn-vender-token { width: 100%; justify-content: center; }
             .main-nav .nav-link { font-size: 0.6rem; padding: 6px 10px; }
@@ -1235,6 +1405,7 @@
             .post-card .post-actions { gap: 2px; }
             .post-card .post-actions button { font-size: 0.6rem; padding: 3px 8px; }
             .post-card .post-actions button .count { font-size: 0.5rem; }
+            .post-card .post-media { margin: 6px -14px 6px -14px; }
             .post-card .post-header { gap: 8px; }
             .post-card .post-avatar { width: 32px; height: 32px; font-size: 0.9rem; }
             .post-card .post-author { font-size: 0.75rem; }
@@ -1266,8 +1437,7 @@
             </a>
             <div class="header-actions">
                 <span class="network-badge"><span class="dot"></span> Polygon</span>
-                <!-- NUEVO: Token Badge -->
-                <span class="token-badge" id="tokenBadge" onclick="verTokens()" title="Ver tus tokens">
+                <span class="token-badge" id="tokenBadge" onclick="verTokens()">
                     ◈ <span id="tokenBadgeCantidad">0</span> tokens
                 </span>
             </div>
@@ -1292,9 +1462,7 @@
                     <span>◉ Demanda: <strong id="demandaTotal">0</strong></span>
                     <span id="tendenciaLabel">⟡ Tendencia: <strong id="tendenciaValor" class="up">Estable</strong></span>
                 </div>
-                <div style="font-size:0.6rem;color:var(--text-muted);margin-top:4px;">
-                    💡 1 Domo = 75 MXN = 12 tokens · 12 tokens = 1 NFT
-                </div>
+                <div class="extra">1 Domo = 75 MXN = 12 tokens · 12 tokens = 1 NFT</div>
             </div>
             <button class="btn-vender-token" onclick="abrirModalVenta()">◆ Vender tokens</button>
         </div>
@@ -1303,13 +1471,13 @@
         <div class="trending-section">
             <div class="header">
                 <h3>◈ Tendencia ahora</h3>
-                <span class="actualizado" id="trendingActualizado">Actualizado</span>
+                <span class="actualizado">Actualizado</span>
             </div>
             <div class="trending-tags" id="trendingTags">
                 <span class="tag">#Sariels <span class="count">124</span></span>
                 <span class="tag">#GalletaDomo <span class="count">87</span></span>
                 <span class="tag">#Web3 <span class="count">56</span></span>
-                <span class="tag" id="tagEsStoks">#EsStoks <span class="count" id="esStoksCount">43</span> <span class="up">↑</span></span>
+                <span class="tag">#EsStoks <span class="count">43</span></span>
                 <span class="tag">#NFT <span class="count">31</span></span>
             </div>
         </div>
@@ -1338,7 +1506,7 @@
 
         <!-- ===== FEED ===== -->
         <div id="feedContainer">
-            <div class="empty-state" id="emptyState">
+            <div class="empty-state">
                 <span class="icon">◈</span>
                 <h3>Sin publicaciones</h3>
                 <p>Sé el primero en compartir algo</p>
@@ -1377,7 +1545,7 @@
         </div>
     </div>
 
-    <!-- ===== MODAL CONFIRMAR COMPRA (NUEVO) ===== -->
+    <!-- ===== MODAL CONFIRMAR COMPRA ===== -->
     <div class="modal-overlay" id="modalConfirmarCompra">
         <div class="modal modal-confirmacion">
             <div class="modal-header">
@@ -1386,18 +1554,18 @@
             </div>
             <div class="modal-body">
                 <div style="text-align:center;padding:10px 0;">
-                    <div style="font-size:2rem;margin-bottom:8px;">🛒</div>
+                    <div style="font-size:2rem;margin-bottom:8px;font-family:'Orbitron',monospace;color:var(--gold);">◈</div>
                     <p style="color:var(--text-muted);font-size:0.9rem;">
-                        ¿Confirmas la compra de 
+                        Confirmas la compra de 
                         <strong style="color:var(--gold);" id="confirmCantidad">1</strong> 
                         token(s) a 
-                        <strong style="color:var(--gold);" id="confirmPrecio">75</strong> MXN c/u?
+                        <strong style="color:var(--gold);" id="confirmPrecio">75</strong> MXN c/u
                     </p>
                     <div style="font-family:'Orbitron',monospace;color:var(--gold);font-size:1.8rem;margin:16px 0;padding:12px;background:rgba(212,175,55,0.05);border-radius:12px;border:1px solid rgba(212,175,55,0.1);">
                         Total: <span id="confirmTotal">75</span> MXN
                     </div>
                     <div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:16px;">
-                        ⚡ Transacción en Polygon · Gas fees incluidos
+                        ⚡ Transacción en Polygon
                     </div>
                     <div style="display:flex;gap:10px;">
                         <button class="btn-cancelar" onclick="cerrarModalConfirmacion()">Cancelar</button>
@@ -1411,11 +1579,11 @@
     <!-- ===== TOAST ===== -->
     <div class="toast" id="toast"></div>
 
-    <!-- ===== BOTÓN MODO OSCURO/CLARO (NUEVO) ===== -->
-    <button class="btn-toggle-modo" onclick="toggleModo()" title="Cambiar modo">🌙</button>
+    <!-- ===== BOTÓN MODO OSCURO/CLARO ===== -->
+    <button class="btn-toggle-modo" onclick="toggleModo()">🌙</button>
 
-    <!-- ===== BOTÓN SCROLL TO TOP (NUEVO) ===== -->
-    <button class="btn-scroll-top" onclick="scrollToTop()" title="Volver arriba">↑</button>
+    <!-- ===== BOTÓN SCROLL TO TOP ===== -->
+    <button class="btn-scroll-top" onclick="scrollToTop()">↑</button>
 
     <!-- ===== SCRIPTS ===== -->
     <script src="https://cdn.jsdelivr.net/npm/web3@1.8.0/dist/web3.min.js"></script>
@@ -1522,30 +1690,23 @@
                 }
             }
             
-            const esStoksCount = document.getElementById('esStoksCount');
-            if (esStoksCount) esStoksCount.textContent = data.oferta + data.demanda;
-            
             actualizarTokenBadge();
         }
 
         // ================================================================
-        // TOKEN BADGE EN HEADER
+        // TOKEN BADGE
         // ================================================================
         function actualizarTokenBadge() {
             const tokens = parseInt(localStorage.getItem('sariels_tokens') || '0');
             const badge = document.getElementById('tokenBadgeCantidad');
             if (badge) {
                 badge.textContent = tokens;
-                badge.parentElement.style.transform = 'scale(1.1)';
-                setTimeout(() => {
-                    badge.parentElement.style.transform = 'scale(1)';
-                }, 300);
             }
         }
 
         function verTokens() {
             const tokens = parseInt(localStorage.getItem('sariels_tokens') || '0');
-            showToast(`◈ Tienes ${tokens} tokens (${Math.floor(tokens/12)} NFTs disponibles)`);
+            showToast(`◈ ${tokens} tokens · ${Math.floor(tokens/12)} NFTs disponibles`);
         }
 
         // ================================================================
@@ -1560,7 +1721,8 @@
                 fecha: new Date().toISOString(),
                 vendido: false,
                 comprador: null,
-                fechaVenta: null
+                fechaVenta: null,
+                comentarios: []
             });
             guardarDatosMuro();
             renderizarFeed();
@@ -1569,7 +1731,81 @@
         }
 
         // ================================================================
-        // CONFIRMAR COMPRA - MODAL
+        // COMENTARIOS EN OFERTAS
+        // ================================================================
+        function toggleComentariosOferta(id) {
+            const container = document.getElementById(`comentarios-oferta-${id}`);
+            if (!container) return;
+            
+            const isVisible = container.style.display !== 'none';
+            container.style.display = isVisible ? 'none' : 'block';
+            
+            if (!isVisible) {
+                setTimeout(() => {
+                    const input = document.getElementById(`comentario-oferta-input-${id}`);
+                    if (input) input.focus();
+                }, 200);
+            }
+        }
+
+        function enviarComentarioOferta(id) {
+            const input = document.getElementById(`comentario-oferta-input-${id}`);
+            if (!input) return;
+            
+            const texto = input.value.trim();
+            if (!texto) {
+                showToast('⚠️ Escribe un comentario', 'error');
+                return;
+            }
+            
+            const perfil = JSON.parse(localStorage.getItem('sariels_perfil') || '{}');
+            if (!perfil.nombre) {
+                showToast('⚠️ Conecta tu wallet primero', 'error');
+                return;
+            }
+            
+            const token = ofertaTokens.find(t => t.id === id);
+            if (!token) {
+                showToast('⚠️ Oferta no encontrada', 'error');
+                return;
+            }
+            
+            if (!token.comentarios) token.comentarios = [];
+            
+            token.comentarios.push({
+                autor: perfil.nombre,
+                avatar: perfil.avatar || '◈',
+                texto: texto,
+                fecha: new Date().toLocaleString()
+            });
+            
+            guardarDatosMuro();
+            renderizarFeed();
+            showToast('◈ Comentario agregado');
+        }
+
+        function eliminarComentarioOferta(idOferta, index) {
+            const perfil = JSON.parse(localStorage.getItem('sariels_perfil') || '{}');
+            const token = ofertaTokens.find(t => t.id === idOferta);
+            
+            if (!token || !token.comentarios) return;
+            
+            const comentario = token.comentarios[index];
+            if (comentario.autor !== perfil.nombre) {
+                showToast('⚠️ No puedes eliminar este comentario', 'error');
+                return;
+            }
+            
+            if (!confirm('¿Eliminar este comentario?')) return;
+            
+            token.comentarios.splice(index, 1);
+            guardarDatosMuro();
+            renderizarFeed();
+            showToast('🗑️ Comentario eliminado');
+        }
+
+        // ================================================================
+        // CONFIRMAR COMPRA
         // ================================================================
         function mostrarConfirmacionCompra(id) {
             const token = ofertaTokens.find(t => t.id === id);
@@ -1647,7 +1883,7 @@
             cerrarModalConfirmacion();
             renderizarFeed();
             actualizarValorMercado();
-            showToast(`✅ Comprados ${token.cantidad} tokens por ${token.precio} MXN c/u`);
+            showToast(`✅ ${token.cantidad} tokens comprados a ${token.precio} MXN c/u`);
         }
 
         function comprarTokens(id) {
@@ -1660,7 +1896,6 @@
         function eliminarPublicacion(id) {
             const perfil = JSON.parse(localStorage.getItem('sariels_perfil') || '{}');
             
-            // Buscar en ofertas de tokens
             const ofertaIndex = ofertaTokens.findIndex(t => t.id === id);
             if (ofertaIndex !== -1) {
                 const oferta = ofertaTokens[ofertaIndex];
@@ -1672,7 +1907,7 @@
                     showToast('⚠️ No puedes eliminar un token ya vendido', 'warning');
                     return;
                 }
-                if (!confirm(`¿Eliminar tu oferta de ${oferta.cantidad} token(s)?`)) return;
+                if (!confirm(`¿Eliminar oferta de ${oferta.cantidad} token(s)?`)) return;
                 
                 ofertaTokens.splice(ofertaIndex, 1);
                 guardarDatosMuro();
@@ -1687,7 +1922,6 @@
                 return;
             }
             
-            // Buscar en publicaciones de texto
             const posts = JSON.parse(localStorage.getItem('sariels_muro_posts') || '[]');
             const postIndex = posts.findIndex(p => p.id === id);
             
@@ -1702,7 +1936,7 @@
                 return;
             }
             
-            if (!confirm('¿Eliminar esta publicación permanentemente?')) return;
+            if (!confirm('¿Eliminar publicación permanentemente?')) return;
             
             posts.splice(postIndex, 1);
             localStorage.setItem('sariels_muro_posts', JSON.stringify(posts));
@@ -1712,7 +1946,7 @@
         }
 
         // ================================================================
-        // RENDERIZAR FEED COMPLETO
+        // RENDERIZAR FEED
         // ================================================================
         function renderizarFeed() {
             const container = document.getElementById('feedContainer');
@@ -1725,9 +1959,11 @@
             
             let html = '';
             
-            // 1. Publicaciones de texto
+            // Publicaciones de texto
             posts.forEach(post => {
                 const esAutor = post.autor === perfil.nombre;
+                const comentarios = post.comentarios || [];
+                const vistas = post.vistas || Math.floor(Math.random() * 50) + 10;
                 html += `
                     <div class="post-card" data-id="${post.id}">
                         <div class="post-header">
@@ -1736,30 +1972,53 @@
                                 <div class="post-author">
                                     ${post.autor || 'Explorador'}
                                     <span class="badge-verificado">✦ Verificado</span>
+                                    ${post.anclado ? '<span class="badge-anclado">📌 Anclado</span>' : ''}
                                 </div>
-                                <div class="post-date">${post.fecha || new Date().toLocaleString()}</div>
+                                <div class="post-date">${post.fecha || new Date().toLocaleString()} · 👁️ ${vistas} vistas</div>
                             </div>
                         </div>
                         <div class="post-content">${post.contenido || ''}</div>
                         <div class="post-stats">
                             <span>❤️ ${post.likes || 0}</span>
-                            <span>💬 ${post.comentarios?.length || 0}</span>
+                            <span>💬 ${comentarios.length}</span>
+                            <span>👁️ ${vistas}</span>
                         </div>
                         <div class="post-actions">
                             <button onclick="likePost(${post.id})">❤️ <span class="count">${post.likes || 0}</span></button>
-                            <button onclick="comentarPost(${post.id})">💬 <span class="count">${post.comentarios?.length || 0}</span></button>
-                            ${esAutor ? `<button class="btn-eliminar" onclick="eliminarPublicacion(${post.id})">🗑️ Eliminar</button>` : ''}
+                            <button onclick="toggleComentariosPost(${post.id})">💬 <span class="count">${comentarios.length}</span></button>
+                            <button onclick="compartirPublicacion(${post.id})">🔗 Compartir</button>
+                            <button onclick="generarQRPost(${post.id})">📱 QR</button>
+                            ${esAutor ? `<button class="btn-eliminar" onclick="eliminarPublicacion(${post.id})">✕ Eliminar</button>` : ''}
+                        </div>
+                        ${comentarios.length > 0 ? `
+                            <div class="post-comentarios" id="comentarios-post-${post.id}">
+                                ${comentarios.map(c => `
+                                    <div class="comentario">
+                                        <div class="avatar">${c.avatar || '◈'}</div>
+                                        <div class="texto">
+                                            <strong>${c.autor || 'Usuario'}</strong> ${c.texto}
+                                            <div class="fecha">${c.fecha || 'Ahora'}</div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        ` : ''}
+                        <div class="post-comentarios" id="comentarios-post-input-${post.id}" style="display:none;">
+                            <div class="input-comentario">
+                                <input type="text" id="comentario-post-input-${post.id}" placeholder="Escribe un comentario..." />
+                                <button onclick="enviarComentarioPost(${post.id})">Enviar</button>
+                            </div>
                         </div>
                     </div>
                 `;
             });
             
-            // 2. Ofertas activas
+            // Ofertas activas
             ofertasActivas.forEach(t => {
                 html += renderizarOferta(t, false, perfil.nombre);
             });
             
-            // 3. Ofertas vendidas (últimas 5)
+            // Ofertas vendidas
             ofertasVendidas.slice(-5).reverse().forEach(t => {
                 html += renderizarOferta(t, true, perfil.nombre);
             });
@@ -1769,7 +2028,7 @@
                     <div class="empty-state">
                         <span class="icon">◈</span>
                         <h3>Sin publicaciones</h3>
-                        <p>Publica algo o vende tus tokens</p>
+                        <p>Sé el primero en compartir algo</p>
                     </div>
                 `;
             }
@@ -1781,6 +2040,22 @@
             const fecha = new Date(token.fecha).toLocaleDateString();
             const esVendido = vendido || token.vendido;
             const esAutor = token.vendedor === usuarioActual;
+            const comentarios = token.comentarios || [];
+            const totalComentarios = comentarios.length;
+            
+            let comentariosHtml = '';
+            if (totalComentarios > 0) {
+                comentariosHtml = comentarios.map((c, i) => `
+                    <div class="comentario">
+                        <div class="avatar">${c.avatar || '◈'}</div>
+                        <div class="texto">
+                            <strong>${c.autor || 'Usuario'}</strong> ${c.texto}
+                            <div class="fecha">${c.fecha || 'Ahora'}</div>
+                            ${c.autor === usuarioActual ? `<button class="btn-eliminar-comentario" onclick="eliminarComentarioOferta(${token.id}, ${i})">✕ Eliminar</button>` : ''}
+                        </div>
+                    </div>
+                `).join('');
+            }
             
             return `
                 <div class="post-card" data-id="${token.id}">
@@ -1790,12 +2065,13 @@
                             <div class="post-author">
                                 ${token.vendedor || 'Explorador'}
                                 <span class="badge-verificado">✦ Verificado</span>
+                                ${esVendido ? '<span class="badge-vendido">◆ Vendido</span>' : ''}
                             </div>
                             <div class="post-date">${fecha}</div>
                         </div>
                     </div>
                     <div class="post-content">
-                        ${esVendido ? '✅ Tokens vendidos' : '📍 Tokens en venta'}
+                        ${esVendido ? '◆ Tokens vendidos' : '◈ Tokens en venta'}
                     </div>
                     <div class="post-venta">
                         <div class="info-venta">
@@ -1812,16 +2088,85 @@
                     <div class="post-stats">
                         <span>◈ ${token.cantidad} tokens</span>
                         <span>⟡ ${token.precio} MXN c/u</span>
+                        <span>💬 ${totalComentarios}</span>
                     </div>
                     <div class="post-actions">
-                        ${esAutor && !esVendido ? `<button class="btn-eliminar" onclick="eliminarPublicacion(${token.id})">🗑️ Eliminar</button>` : ''}
+                        <button onclick="toggleComentariosOferta(${token.id})">
+                            💬 <span class="count">${totalComentarios}</span>
+                        </button>
+                        <button onclick="compartirPublicacion(${token.id})">🔗 Compartir</button>
+                        <button onclick="generarQRPost(${token.id})">📱 QR</button>
+                        ${esAutor && !esVendido ? `<button class="btn-eliminar" onclick="eliminarPublicacion(${token.id})">✕ Eliminar</button>` : ''}
+                    </div>
+                    <div class="comentarios-oferta" id="comentarios-oferta-${token.id}" style="display:none;">
+                        ${comentariosHtml}
+                        ${!esVendido ? `
+                            <div class="input-comentario">
+                                <input type="text" id="comentario-oferta-input-${token.id}" placeholder="Pregunta al vendedor..." />
+                                <button onclick="enviarComentarioOferta(${token.id})">Enviar</button>
+                            </div>
+                        ` : ''}
                     </div>
                 </div>
             `;
         }
 
         // ================================================================
-        // LIKE Y COMENTARIOS (para publicaciones de texto)
+        // PUBLICACIONES DE TEXTO - COMENTARIOS
+        // ================================================================
+        function toggleComentariosPost(id) {
+            const container = document.getElementById(`comentarios-post-input-${id}`);
+            if (!container) return;
+            
+            const isVisible = container.style.display !== 'none';
+            container.style.display = isVisible ? 'none' : 'block';
+            
+            if (!isVisible) {
+                setTimeout(() => {
+                    const input = document.getElementById(`comentario-post-input-${id}`);
+                    if (input) input.focus();
+                }, 200);
+            }
+        }
+
+        function enviarComentarioPost(id) {
+            const input = document.getElementById(`comentario-post-input-${id}`);
+            if (!input) return;
+            
+            const texto = input.value.trim();
+            if (!texto) {
+                showToast('⚠️ Escribe un comentario', 'error');
+                return;
+            }
+            
+            const perfil = JSON.parse(localStorage.getItem('sariels_perfil') || '{}');
+            if (!perfil.nombre) {
+                showToast('⚠️ Conecta tu wallet primero', 'error');
+                return;
+            }
+            
+            const posts = JSON.parse(localStorage.getItem('sariels_muro_posts') || '[]');
+            const post = posts.find(p => p.id === id);
+            if (!post) {
+                showToast('⚠️ Publicación no encontrada', 'error');
+                return;
+            }
+            
+            if (!post.comentarios) post.comentarios = [];
+            post.comentarios.push({
+                autor: perfil.nombre,
+                avatar: perfil.avatar || '◈',
+                texto: texto,
+                fecha: new Date().toLocaleString()
+            });
+            
+            localStorage.setItem('sariels_muro_posts', JSON.stringify(posts));
+            renderizarFeed();
+            showToast('◈ Comentario agregado');
+        }
+
+        // ================================================================
+        // LIKE EN PUBLICACIONES DE TEXTO
         // ================================================================
         function likePost(id) {
             const posts = JSON.parse(localStorage.getItem('sariels_muro_posts') || '[]');
@@ -1833,23 +2178,71 @@
             }
         }
 
-        function comentarPost(id) {
-            const posts = JSON.parse(localStorage.getItem('sariels_muro_posts') || '[]');
-            const post = posts.find(p => p.id === id);
-            if (!post) return;
+        // ================================================================
+        // COMPARTIR Y QR
+        // ================================================================
+        function compartirPublicacion(id) {
+            const url = `${window.location.origin}/muro/${id}`;
+            const texto = `◈ Publicación en Sariel's\n🔗 ${url}`;
             
-            const comentario = prompt('Escribe un comentario:');
-            if (comentario && comentario.trim()) {
-                if (!post.comentarios) post.comentarios = [];
-                const perfil = JSON.parse(localStorage.getItem('sariels_perfil') || '{}');
-                post.comentarios.push({
-                    autor: perfil.nombre || 'Explorador',
-                    texto: comentario.trim(),
-                    fecha: new Date().toLocaleString()
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Publicación en Sariel\'s',
+                    text: texto,
+                    url: url
+                }).catch(() => {});
+            } else {
+                navigator.clipboard.writeText(texto).then(() => {
+                    showToast('📋 Copiado al portapapeles');
+                }).catch(() => {
+                    prompt('Copia este enlace:', url);
                 });
-                localStorage.setItem('sariels_muro_posts', JSON.stringify(posts));
-                renderizarFeed();
-                showToast('💬 Comentario agregado');
+            }
+        }
+
+        function generarQRPost(id) {
+            const url = `${window.location.origin}/muro/${id}`;
+            
+            if (typeof QRCode !== 'undefined') {
+                const modal = document.createElement('div');
+                modal.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(5, 8, 15, 0.9);
+                    backdrop-filter: blur(20px);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 10000;
+                `;
+                modal.innerHTML = `
+                    <div style="background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:24px;padding:30px;text-align:center;max-width:400px;width:90%;">
+                        <h3 style="font-family:'Orbitron',monospace;color:var(--gold);font-size:1rem;margin-bottom:12px;">◈ QR de publicación</h3>
+                        <div id="qrContainer" style="background:white;padding:16px;border-radius:16px;display:inline-block;margin:0 auto;"></div>
+                        <p style="color:var(--text-muted);font-size:0.7rem;margin-top:12px;">Escanea para ver esta publicación</p>
+                        <button onclick="this.closest('div[style]').remove()" style="margin-top:16px;padding:8px 24px;border-radius:30px;border:1px solid var(--glass-border);background:transparent;color:var(--text-secondary);cursor:pointer;font-family:'Inter',sans-serif;">Cerrar</button>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+                
+                try {
+                    new QRCode(document.getElementById('qrContainer'), {
+                        text: url,
+                        width: 200,
+                        height: 200,
+                        colorDark: '#0F2D1A',
+                        colorLight: '#ffffff'
+                    });
+                    showToast('📱 QR generado');
+                } catch (e) {
+                    document.getElementById('qrContainer').innerHTML = '⚠️ Error generando QR';
+                    showToast('⚠️ Error generando QR', 'error');
+                }
+            } else {
+                showToast(`📱 QR: ${url.substring(0, 50)}...`);
             }
         }
 
@@ -1926,7 +2319,7 @@
             textarea.focus();
             textarea.selectionStart = cursorPos + 1;
             textarea.selectionEnd = cursorPos + 1;
-            showToast('◈ Hashtag agregado');
+            showToast('Hashtag agregado');
         }
 
         function insertarEmoji() {
@@ -1944,7 +2337,7 @@
         }
 
         function agregarImagen() {
-            showToast('◇ Función de imágenes próximamente');
+            showToast('◆ Función de imágenes próximamente');
         }
 
         function agregarEncuesta() {
@@ -1971,7 +2364,11 @@
                 contenido: contenido,
                 fecha: new Date().toLocaleString(),
                 likes: 0,
-                comentarios: []
+                comentarios: [],
+                vistas: Math.floor(Math.random() * 50) + 10,
+                anclado: false,
+                imagen: null,
+                encuesta: null
             };
             
             const posts = JSON.parse(localStorage.getItem('sariels_muro_posts') || '[]');
@@ -2068,7 +2465,6 @@
                 if (e.target === this) cerrarModalConfirmacion();
             });
 
-            // Scroll to top
             window.addEventListener('scroll', function() {
                 const btn = document.querySelector('.btn-scroll-top');
                 if (window.scrollY > 300) {
@@ -2079,13 +2475,10 @@
             });
 
             console.log('◈ Sariel\'s - Muro Ultra Mega Pro');
-            console.log('⟡ Sistema de oferta y demanda activo');
+            console.log('⧫ Diseño premium sin emojis');
             console.log('◆ Tokens en venta:', ofertaTokens.filter(t => !t.vendido).length);
         });
 
-        // ================================================================
-        // ESTRELLAS
-        // ================================================================
         function initStars() {
             const canvas = document.getElementById('stars-canvas');
             if (!canvas) return;
@@ -2141,17 +2534,19 @@
                 animId = requestAnimationFrame(draw);
             }
 
+            function pauseAnimation() { isVisible = false; }
+            function resumeAnimation() { isVisible = true; }
+
             resize();
             draw();
 
             window.addEventListener('resize', resize);
             document.addEventListener('visibilitychange', function() {
-                if (document.hidden) {
-                    isVisible = false;
-                } else {
-                    isVisible = true;
-                }
+                if (document.hidden) pauseAnimation();
+                else resumeAnimation();
             });
+
+            return { pauseAnimation, resumeAnimation };
         }
 
         // ================================================================
@@ -2174,9 +2569,15 @@
         window.scrollToTop = scrollToTop;
         window.verTokens = verTokens;
         window.likePost = likePost;
-        window.comentarPost = comentarPost;
+        window.compartirPublicacion = compartirPublicacion;
+        window.generarQRPost = generarQRPost;
         window.cerrarModalConfirmacion = cerrarModalConfirmacion;
         window.ejecutarCompraConfirmada = ejecutarCompraConfirmada;
+        window.toggleComentariosOferta = toggleComentariosOferta;
+        window.enviarComentarioOferta = enviarComentarioOferta;
+        window.eliminarComentarioOferta = eliminarComentarioOferta;
+        window.toggleComentariosPost = toggleComentariosPost;
+        window.enviarComentarioPost = enviarComentarioPost;
     </script>
 </body>
 </html>
