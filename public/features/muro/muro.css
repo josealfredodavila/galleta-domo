@@ -1,9 +1,7 @@
 /* ================================================================
    MURO ULTRA MEGA PRO - SARIEL'S
-   Estilos premium competitivos con Silicon Valley
    ================================================================ */
 
-/* ===== VARIABLES GLOBALES ===== */
 :root {
     --gold: #D4AF37;
     --gold-dark: #b8923a;
@@ -33,18 +31,277 @@
 }
 
 /* ================================================================
-   MURO CONTAINER
+   APP
    ================================================================ */
-
-.muro-container {
-    max-width: 900px;
+.app {
+    position: relative;
+    z-index: 1;
+    max-width: 1100px;
     margin: 0 auto;
+    padding: 16px 20px 30px;
+}
+
+/* ================================================================
+   HEADER
+   ================================================================ */
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0 14px;
+    border-bottom: 1px solid var(--glass-border);
+    flex-wrap: wrap;
+    gap: 10px;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(5, 8, 15, 0.92);
+    border-radius: var(--radius) var(--radius) 0 0;
+    transition: background 0.5s ease, border-color 0.5s ease;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    transition: var(--transition);
+}
+.logo:hover { opacity: 0.85; }
+
+.logo-hex {
+    font-size: 1.8rem;
+    color: var(--gold);
+    font-weight: 800;
+    font-family: 'Orbitron', monospace;
+    text-shadow: 0 0 30px rgba(212, 175, 55, 0.3);
+    animation: glow-pulse 3s ease-in-out infinite;
+}
+@keyframes glow-pulse {
+    0%, 100% { text-shadow: 0 0 30px rgba(212, 175, 55, 0.3); }
+    50% { text-shadow: 0 0 60px rgba(212, 175, 55, 0.6); }
+}
+
+.logo-text {
+    font-family: 'Orbitron', monospace;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: 2px;
+}
+.logo-text span { color: var(--gold); }
+
+.logo-badge {
+    font-size: 0.45rem;
+    background: linear-gradient(135deg, var(--gold), var(--gold-light));
+    color: var(--space);
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.network-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.6rem;
+    color: var(--gold);
+    background: rgba(212, 175, 55, 0.1);
+    padding: 4px 12px;
+    border-radius: 20px;
+    border: 1px solid rgba(212, 175, 55, 0.15);
+}
+.network-badge .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--success);
+    animation: pulse-dot 2s infinite;
+}
+@keyframes pulse-dot {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.3; transform: scale(0.8); }
+}
+
+/* ===== TOKEN BADGE ===== */
+.token-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(212, 175, 55, 0.1);
+    border: 1px solid rgba(212, 175, 55, 0.15);
+    padding: 4px 14px;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    color: var(--gold);
+    font-family: 'Orbitron', monospace;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+.token-badge:hover {
+    background: rgba(212, 175, 55, 0.15);
+    border-color: rgba(212, 175, 55, 0.25);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-gold);
+}
+.token-badge #tokenBadgeCantidad {
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--gold-bright);
+}
+
+/* ================================================================
+   NAVEGACIÓN
+   ================================================================ */
+.main-nav {
+    display: flex;
+    gap: 4px;
+    background: rgba(15, 45, 26, 0.3);
+    border-radius: var(--radius);
+    padding: 4px;
+    border: 1px solid var(--glass-border);
+    margin: 16px 0 20px;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    transition: background 0.5s ease, border-color 0.5s ease;
+}
+.main-nav .nav-link {
+    padding: 8px 16px;
+    border-radius: 12px;
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 0.7rem;
+    font-weight: 500;
+    transition: var(--transition);
+    white-space: nowrap;
+    font-family: 'Inter', sans-serif;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    position: relative;
+}
+.main-nav .nav-link::after {
+    content: '';
+    position: absolute;
+    bottom: 2px;
+    left: 50%;
+    width: 0;
+    height: 2px;
+    background: var(--gold);
+    transition: var(--transition);
+    transform: translateX(-50%);
+    border-radius: 2px;
+}
+.main-nav .nav-link:hover::after,
+.main-nav .nav-link.active::after {
+    width: 60%;
+}
+.main-nav .nav-link:hover {
+    color: var(--text-primary);
+    background: rgba(212, 175, 55, 0.05);
+}
+.main-nav .nav-link.active {
+    background: rgba(212, 175, 55, 0.12);
+    color: var(--gold);
+}
+.main-nav .nav-link.live {
+    color: var(--danger);
+}
+.main-nav .nav-link.live:hover {
+    background: rgba(255, 51, 102, 0.08);
+}
+
+/* ================================================================
+   VALOR DE MERCADO
+   ================================================================ */
+.valor-mercado {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-xl);
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    transition: var(--transition-slow);
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 12px;
+    align-items: center;
+}
+.valor-mercado:hover {
+    border-color: rgba(212, 175, 55, 0.2);
+    box-shadow: var(--shadow-gold);
+}
+.valor-mercado .info .titulo {
+    font-family: 'Orbitron', monospace;
+    color: var(--text-muted);
+    font-size: 0.6rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+.valor-mercado .info .precio {
+    font-family: 'Orbitron', monospace;
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--gold);
+    text-shadow: 0 0 30px rgba(212, 175, 55, 0.1);
+}
+.valor-mercado .info .precio .moneda {
+    font-size: 1rem;
+    color: var(--text-muted);
+}
+.valor-mercado .info .detalles {
+    display: flex;
+    gap: 16px;
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    margin-top: 4px;
+}
+.valor-mercado .info .detalles span {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.valor-mercado .info .detalles .up { color: var(--success); }
+.valor-mercado .info .detalles .down { color: var(--danger); }
+.valor-mercado .info .extra {
+    font-size: 0.6rem;
+    color: var(--text-muted);
+    margin-top: 4px;
+}
+.valor-mercado .btn-vender-token {
+    background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+    color: var(--space);
+    border: none;
+    padding: 10px 20px;
+    border-radius: 30px;
+    font-family: 'Orbitron', monospace;
+    font-weight: 700;
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: var(--transition);
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+}
+.valor-mercado .btn-vender-token:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-gold);
 }
 
 /* ================================================================
    TRENDING TOPICS
    ================================================================ */
-
 .trending-section {
     background: var(--glass-bg);
     border: 1px solid var(--glass-border);
@@ -55,37 +312,33 @@
     -webkit-backdrop-filter: blur(16px);
     transition: var(--transition-slow);
 }
-
 .trending-section:hover {
     border-color: rgba(212, 175, 55, 0.2);
     box-shadow: var(--shadow-gold);
 }
-
 .trending-section .header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 10px;
 }
-
 .trending-section .header h3 {
     font-family: 'Orbitron', monospace;
     color: var(--gold);
     font-size: 0.85rem;
     font-weight: 600;
+    letter-spacing: 1px;
 }
-
 .trending-section .header .actualizado {
     font-size: 0.55rem;
     color: var(--text-muted);
+    letter-spacing: 0.5px;
 }
-
 .trending-tags {
     display: flex;
     gap: 8px;
     flex-wrap: wrap;
 }
-
 .trending-tags .tag {
     padding: 4px 14px;
     border-radius: 20px;
@@ -96,15 +349,14 @@
     cursor: pointer;
     transition: var(--transition);
     font-family: 'Inter', sans-serif;
+    letter-spacing: 0.3px;
 }
-
 .trending-tags .tag:hover {
     background: rgba(212, 175, 55, 0.15);
     border-color: rgba(212, 175, 55, 0.2);
     color: var(--gold);
     transform: translateY(-2px);
 }
-
 .trending-tags .tag .count {
     font-size: 0.55rem;
     color: var(--text-muted);
@@ -112,9 +364,8 @@
 }
 
 /* ================================================================
-   FORMULARIO DE PUBLICACIÓN
+   FORMULARIO
    ================================================================ */
-
 .post-form {
     background: var(--glass-bg);
     border: 1px solid var(--glass-border);
@@ -125,19 +376,16 @@
     -webkit-backdrop-filter: blur(16px);
     transition: var(--transition-slow);
 }
-
 .post-form:hover {
     border-color: rgba(212, 175, 55, 0.2);
     box-shadow: var(--shadow-gold);
 }
-
 .post-form .form-header {
     display: flex;
     align-items: center;
     gap: 12px;
     margin-bottom: 12px;
 }
-
 .post-form .form-header .avatar {
     width: 40px;
     height: 40px;
@@ -148,20 +396,17 @@
     justify-content: center;
     font-size: 1.2rem;
     color: white;
-    transition: var(--transition);
+    font-family: 'Orbitron', monospace;
 }
-
 .post-form .form-header .nombre {
     font-weight: 600;
     color: var(--text-primary);
     font-size: 0.85rem;
 }
-
 .post-form .form-header .handle {
     font-size: 0.7rem;
     color: var(--text-muted);
 }
-
 .post-form textarea {
     width: 100%;
     padding: 12px 16px;
@@ -176,13 +421,11 @@
     transition: var(--transition);
     outline: none;
 }
-
 .post-form textarea:focus {
     border-color: var(--gold);
     box-shadow: 0 0 30px rgba(212, 175, 55, 0.05);
     background: rgba(0, 0, 0, 0.35);
 }
-
 .post-form .form-actions {
     display: flex;
     justify-content: space-between;
@@ -191,33 +434,34 @@
     gap: 10px;
     margin-top: 12px;
 }
-
 .post-form .form-actions .tools {
     display: flex;
-    gap: 6px;
+    gap: 4px;
 }
-
 .post-form .form-actions .tools button {
     background: none;
     border: none;
     color: var(--text-muted);
-    font-size: 1.1rem;
+    font-size: 0.9rem;
     cursor: pointer;
     transition: var(--transition);
-    padding: 4px 8px;
+    padding: 4px 10px;
     border-radius: 8px;
     font-family: 'Inter', sans-serif;
+    font-weight: 400;
+    letter-spacing: 0.5px;
 }
-
 .post-form .form-actions .tools button:hover {
     color: var(--gold);
     background: rgba(212, 175, 55, 0.05);
 }
-
-/* ================================================================
-   BOTONES
-   ================================================================ */
-
+.post-form .form-actions .tools button.venta {
+    color: var(--success);
+    border: 1px solid rgba(0, 214, 143, 0.15);
+}
+.post-form .form-actions .tools button.venta:hover {
+    background: rgba(0, 214, 143, 0.08);
+}
 .btn-publicar {
     background: linear-gradient(135deg, var(--gold), var(--gold-dark));
     color: var(--space);
@@ -229,39 +473,21 @@
     font-size: 0.7rem;
     cursor: pointer;
     transition: var(--transition);
+    letter-spacing: 1px;
 }
-
 .btn-publicar:hover {
     transform: translateY(-2px);
     box-shadow: var(--shadow-gold);
 }
-
 .btn-publicar:disabled {
     opacity: 0.4;
     cursor: not-allowed;
     transform: none !important;
 }
 
-.btn-adjuntar {
-    background: rgba(212, 175, 55, 0.1);
-    border: 1px solid rgba(212, 175, 55, 0.15);
-    color: var(--gold);
-    padding: 10px 16px;
-    border-radius: 30px;
-    font-family: 'Orbitron', monospace;
-    font-size: 0.7rem;
-    cursor: pointer;
-    transition: var(--transition);
-}
-
-.btn-adjuntar:hover {
-    background: rgba(212, 175, 55, 0.2);
-}
-
 /* ================================================================
-   TARJETA DE PUBLICACIÓN
+   POST CARD
    ================================================================ */
-
 .post-card {
     background: var(--glass-bg);
     border: 1px solid var(--glass-border);
@@ -273,25 +499,21 @@
     transition: var(--transition-slow);
     animation: fadeInUp 0.4s ease;
 }
-
 @keyframes fadeInUp {
     from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
 }
-
 .post-card:hover {
     border-color: rgba(212, 175, 55, 0.2);
     box-shadow: var(--shadow-gold);
     transform: translateY(-2px);
 }
-
 .post-card .post-header {
     display: flex;
     align-items: center;
     gap: 12px;
     margin-bottom: 10px;
 }
-
 .post-card .post-avatar {
     width: 44px;
     height: 44px;
@@ -305,26 +527,20 @@
     font-size: 1.2rem;
     overflow: hidden;
     flex-shrink: 0;
-    transition: var(--transition);
+    font-family: 'Orbitron', monospace;
 }
-
-.post-card .post-avatar:hover {
-    transform: scale(1.05);
-}
-
 .post-card .post-avatar img {
     width: 100%;
     height: 100%;
     object-fit: cover;
 }
-
 .post-card .post-author {
     font-family: 'Orbitron', monospace;
     font-weight: 700;
     color: var(--gold);
     font-size: 0.85rem;
+    letter-spacing: 0.5px;
 }
-
 .post-card .post-author .badge-verificado {
     font-size: 0.5rem;
     background: rgba(212, 175, 55, 0.15);
@@ -334,8 +550,8 @@
     font-family: 'Orbitron', monospace;
     margin-left: 6px;
     border: 1px solid rgba(212, 175, 55, 0.1);
+    letter-spacing: 0.5px;
 }
-
 .post-card .post-author .badge-anclado {
     font-size: 0.5rem;
     background: rgba(212, 175, 55, 0.08);
@@ -345,13 +561,24 @@
     font-family: 'Orbitron', monospace;
     margin-left: 6px;
     border: 1px solid rgba(212, 175, 55, 0.1);
+    letter-spacing: 0.5px;
 }
-
+.post-card .post-author .badge-vendido {
+    font-size: 0.5rem;
+    background: rgba(0, 214, 143, 0.15);
+    color: var(--success);
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-family: 'Orbitron', monospace;
+    margin-left: 6px;
+    border: 1px solid rgba(0, 214, 143, 0.1);
+    letter-spacing: 0.5px;
+}
 .post-card .post-date {
     font-size: 0.65rem;
     color: var(--text-muted);
+    letter-spacing: 0.3px;
 }
-
 .post-card .post-content {
     color: var(--text-secondary);
     font-size: 0.9rem;
@@ -359,17 +586,14 @@
     margin-bottom: 12px;
     word-wrap: break-word;
 }
-
 .post-card .post-content .hashtag {
     color: var(--gold);
     cursor: pointer;
     transition: var(--transition);
 }
-
 .post-card .post-content .hashtag:hover {
     text-decoration: underline;
 }
-
 .post-card .post-stats {
     display: flex;
     gap: 16px;
@@ -377,8 +601,8 @@
     color: var(--text-muted);
     padding: 8px 0;
     border-top: 1px solid var(--glass-border);
+    letter-spacing: 0.3px;
 }
-
 .post-card .post-stats span {
     display: flex;
     align-items: center;
@@ -388,7 +612,6 @@
 /* ================================================================
    ENCUESTAS
    ================================================================ */
-
 .post-card .post-encuesta {
     background: rgba(0, 0, 0, 0.2);
     border-radius: 12px;
@@ -397,18 +620,16 @@
     border: 1px solid rgba(212, 175, 55, 0.08);
     transition: var(--transition);
 }
-
 .post-card .post-encuesta:hover {
     border-color: rgba(212, 175, 55, 0.15);
 }
-
 .post-card .post-encuesta .pregunta {
     font-weight: 600;
     color: var(--gold);
     font-size: 0.8rem;
     margin-bottom: 8px;
+    letter-spacing: 0.3px;
 }
-
 .post-card .post-encuesta .opcion {
     margin: 4px 0;
     cursor: pointer;
@@ -417,11 +638,9 @@
     transition: var(--transition);
     background: rgba(255, 255, 255, 0.03);
 }
-
 .post-card .post-encuesta .opcion:hover {
     background: rgba(212, 175, 55, 0.05);
 }
-
 .post-card .post-encuesta .opcion .barra {
     width: 100%;
     height: 4px;
@@ -430,91 +649,44 @@
     margin-top: 4px;
     overflow: hidden;
 }
-
 .post-card .post-encuesta .opcion .barra .fill {
     height: 100%;
     background: linear-gradient(90deg, var(--gold-dark), var(--gold), var(--gold-light));
     border-radius: 2px;
     transition: width 0.5s ease;
 }
-
 .post-card .post-encuesta .total-votos {
     font-size: 0.55rem;
     color: var(--text-muted);
     margin-top: 6px;
+    letter-spacing: 0.3px;
 }
 
 /* ================================================================
-   MEDIA (IMÁGENES)
+   MEDIA
    ================================================================ */
-
 .post-card .post-media {
     margin: 12px -20px 12px -20px;
     border-radius: 12px;
     overflow: hidden;
 }
-
 .post-card .post-media img {
     width: 100%;
     max-height: 400px;
     object-fit: cover;
     transition: var(--transition-slow);
 }
-
 .post-card .post-media img:hover {
     transform: scale(1.02);
 }
-
 .post-card .post-media video {
     width: 100%;
     max-height: 400px;
 }
 
 /* ================================================================
-   ACCIONES DE PUBLICACIÓN
+   VENTA
    ================================================================ */
-
-.post-card .post-actions {
-    display: flex;
-    gap: 4px;
-    flex-wrap: wrap;
-    padding-top: 8px;
-    border-top: 1px solid var(--glass-border);
-}
-
-.post-card .post-actions button {
-    background: none;
-    border: none;
-    color: var(--text-muted);
-    font-size: 0.75rem;
-    cursor: pointer;
-    transition: var(--transition);
-    font-family: 'Inter', sans-serif;
-    padding: 4px 12px;
-    border-radius: 20px;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-}
-
-.post-card .post-actions button:hover {
-    color: var(--gold);
-    background: rgba(212, 175, 55, 0.05);
-}
-
-.post-card .post-actions button.liked {
-    color: var(--danger);
-}
-
-.post-card .post-actions button .count {
-    font-size: 0.65rem;
-    color: var(--text-muted);
-}
-
-/* ================================================================
-   SECCIÓN DE VENTA
-   ================================================================ */
-
 .post-card .post-venta {
     background: rgba(212, 175, 55, 0.05);
     border: 1px solid rgba(212, 175, 55, 0.1);
@@ -527,19 +699,18 @@
     flex-wrap: wrap;
     gap: 8px;
 }
-
 .post-card .post-venta .precio {
     font-family: 'Orbitron', monospace;
     color: var(--gold);
     font-size: 1.1rem;
     font-weight: 700;
+    letter-spacing: 0.5px;
 }
-
 .post-card .post-venta .cantidad {
     color: var(--text-muted);
     font-size: 0.85rem;
+    letter-spacing: 0.3px;
 }
-
 .post-card .post-venta .btn-comprar {
     background: linear-gradient(135deg, var(--gold), var(--gold-dark));
     color: var(--space);
@@ -551,23 +722,28 @@
     font-weight: 700;
     cursor: pointer;
     transition: var(--transition);
+    letter-spacing: 0.5px;
 }
-
 .post-card .post-venta .btn-comprar:hover {
     transform: scale(1.05);
     box-shadow: var(--shadow-gold);
 }
+.post-card .post-venta .vendido {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    padding: 4px 12px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.05);
+}
 
 /* ================================================================
-   COMENTARIOS
+   COMENTARIOS EN PUBLICACIONES DE TEXTO
    ================================================================ */
-
 .post-card .post-comentarios {
     margin-top: 12px;
     border-top: 1px solid rgba(212, 175, 55, 0.06);
     padding-top: 12px;
 }
-
 .post-card .post-comentarios .comentario {
     display: flex;
     gap: 10px;
@@ -575,13 +751,11 @@
     border-bottom: 1px solid rgba(212, 175, 55, 0.04);
     transition: var(--transition);
 }
-
 .post-card .post-comentarios .comentario:hover {
     background: rgba(255, 255, 255, 0.02);
     border-radius: 8px;
     padding-left: 4px;
 }
-
 .post-card .post-comentarios .comentario .avatar {
     width: 28px;
     height: 28px;
@@ -594,30 +768,27 @@
     color: white;
     font-weight: 700;
     flex-shrink: 0;
+    font-family: 'Orbitron', monospace;
 }
-
 .post-card .post-comentarios .comentario .texto {
     flex: 1;
     font-size: 0.8rem;
     color: var(--text-muted);
 }
-
 .post-card .post-comentarios .comentario .texto strong {
     color: var(--text-secondary);
 }
-
 .post-card .post-comentarios .comentario .texto .fecha {
     font-size: 0.55rem;
     color: var(--text-muted);
     margin-top: 2px;
+    letter-spacing: 0.3px;
 }
-
 .post-card .post-comentarios .input-comentario {
     display: flex;
     gap: 8px;
     margin-top: 8px;
 }
-
 .post-card .post-comentarios .input-comentario input {
     flex: 1;
     padding: 8px 14px;
@@ -630,13 +801,11 @@
     outline: none;
     transition: var(--transition);
 }
-
 .post-card .post-comentarios .input-comentario input:focus {
     outline: none;
     border-color: var(--gold);
     background: rgba(255, 255, 255, 0.08);
 }
-
 .post-card .post-comentarios .input-comentario button {
     background: linear-gradient(135deg, var(--gold), var(--gold-dark));
     color: var(--space);
@@ -648,48 +817,430 @@
     font-weight: 700;
     cursor: pointer;
     transition: var(--transition);
+    letter-spacing: 0.5px;
 }
-
 .post-card .post-comentarios .input-comentario button:hover {
     transform: scale(1.05);
 }
 
 /* ================================================================
+   COMENTARIOS EN OFERTAS DE TOKENS
+   ================================================================ */
+.post-card .comentarios-oferta {
+    margin-top: 12px;
+    border-top: 1px solid rgba(212, 175, 55, 0.06);
+    padding-top: 12px;
+}
+.post-card .comentarios-oferta .comentario {
+    display: flex;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(212, 175, 55, 0.04);
+}
+.post-card .comentarios-oferta .comentario .avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--green-deep), var(--gold));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.6rem;
+    color: white;
+    font-weight: 700;
+    flex-shrink: 0;
+    font-family: 'Orbitron', monospace;
+}
+.post-card .comentarios-oferta .comentario .texto {
+    flex: 1;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+.post-card .comentarios-oferta .comentario .texto strong {
+    color: var(--text-secondary);
+}
+.post-card .comentarios-oferta .comentario .texto .fecha {
+    font-size: 0.55rem;
+    color: var(--text-muted);
+    margin-top: 2px;
+    letter-spacing: 0.3px;
+}
+.post-card .comentarios-oferta .comentario .texto .btn-eliminar-comentario {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 0.55rem;
+    cursor: pointer;
+    padding: 0;
+    margin-top: 2px;
+    transition: var(--transition);
+}
+.post-card .comentarios-oferta .comentario .texto .btn-eliminar-comentario:hover {
+    color: var(--danger);
+}
+.post-card .comentarios-oferta .input-comentario {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+.post-card .comentarios-oferta .input-comentario input {
+    flex: 1;
+    padding: 8px 14px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(212, 175, 55, 0.1);
+    border-radius: 20px;
+    color: var(--text-primary);
+    font-size: 0.8rem;
+    font-family: 'Inter', sans-serif;
+    outline: none;
+    transition: var(--transition);
+}
+.post-card .comentarios-oferta .input-comentario input:focus {
+    outline: none;
+    border-color: var(--gold);
+    background: rgba(255, 255, 255, 0.08);
+}
+.post-card .comentarios-oferta .input-comentario button {
+    background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+    color: var(--space);
+    border: none;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-family: 'Orbitron', monospace;
+    font-size: 0.6rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: var(--transition);
+    letter-spacing: 0.5px;
+}
+.post-card .comentarios-oferta .input-comentario button:hover {
+    transform: scale(1.05);
+}
+
+/* ================================================================
+   ACCIONES
+   ================================================================ */
+.post-card .post-actions {
+    display: flex;
+    gap: 2px;
+    flex-wrap: wrap;
+    padding-top: 8px;
+    border-top: 1px solid var(--glass-border);
+}
+.post-card .post-actions button {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: var(--transition);
+    font-family: 'Inter', sans-serif;
+    padding: 4px 12px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    letter-spacing: 0.3px;
+}
+.post-card .post-actions button:hover {
+    color: var(--gold);
+    background: rgba(212, 175, 55, 0.05);
+}
+.post-card .post-actions button.liked {
+    color: var(--danger);
+}
+.post-card .post-actions button .count {
+    font-size: 0.6rem;
+    color: var(--text-muted);
+}
+
+/* ===== BOTÓN ELIMINAR ===== */
+.post-actions .btn-eliminar {
+    color: var(--text-muted);
+    transition: var(--transition);
+}
+.post-actions .btn-eliminar:hover {
+    color: var(--danger) !important;
+    background: rgba(255, 51, 102, 0.08) !important;
+}
+
+/* ================================================================
+   MODAL VENDER
+   ================================================================ */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(5, 8, 15, 0.9);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    animation: fadeIn 0.3s ease;
+}
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+.modal-overlay.show {
+    display: flex;
+}
+
+.modal {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-xl);
+    padding: 32px;
+    max-width: 480px;
+    width: 92%;
+    max-height: 85vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow-gold-strong);
+    animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+@keyframes slideUp {
+    from { transform: translateY(30px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+.modal .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+.modal .modal-header h2 {
+    font-family: 'Orbitron', monospace;
+    color: var(--gold);
+    font-size: 1.1rem;
+    letter-spacing: 1px;
+}
+.modal .modal-header .btn-cerrar {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.6rem;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    transition: var(--transition);
+    line-height: 1;
+}
+.modal .modal-header .btn-cerrar:hover {
+    color: var(--text-primary);
+    transform: rotate(90deg);
+}
+.modal .form-group {
+    margin-bottom: 16px;
+}
+.modal .form-group label {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+}
+.modal .form-group input,
+.modal .form-group select {
+    width: 100%;
+    padding: 10px 14px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--glass-border);
+    border-radius: 10px;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    outline: none;
+    transition: var(--transition);
+    font-family: 'Inter', sans-serif;
+}
+.modal .form-group input:focus,
+.modal .form-group select:focus {
+    border-color: var(--gold);
+    box-shadow: 0 0 30px rgba(212, 175, 55, 0.05);
+}
+.modal .form-group .precio-sugerido {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    margin-top: 4px;
+}
+.modal .btn-guardar {
+    width: 100%;
+    padding: 12px;
+    border-radius: 30px;
+    border: none;
+    background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+    color: var(--space);
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: var(--transition);
+    font-family: 'Inter', sans-serif;
+    letter-spacing: 0.5px;
+}
+.modal .btn-guardar:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-gold);
+}
+.modal .btn-guardar:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* ================================================================
+   MODAL CONFIRMAR COMPRA
+   ================================================================ */
+.modal-confirmacion .modal-body {
+    padding: 0;
+}
+.modal-confirmacion .btn-cancelar {
+    flex: 1;
+    padding: 10px;
+    border-radius: 30px;
+    border: 1px solid var(--glass-border);
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    transition: var(--transition);
+}
+.modal-confirmacion .btn-cancelar:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+.modal-confirmacion .btn-confirmar {
+    flex: 2;
+    padding: 10px;
+    border-radius: 30px;
+    border: none;
+    background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+    color: var(--space);
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: var(--transition);
+    font-family: 'Inter', sans-serif;
+}
+.modal-confirmacion .btn-confirmar:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-gold);
+}
+
+/* ================================================================
+   BOTÓN TOGGLE MODO - ARRASTRABLE
+   ================================================================ */
+.btn-toggle-modo {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    z-index: 999;
+    padding: 12px 16px;
+    border-radius: 50%;
+    border: 1px solid var(--glass-border);
+    background: var(--glass-bg);
+    color: var(--gold);
+    cursor: grab;
+    font-size: 1.2rem;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    transition: box-shadow 0.3s ease, transform 0.2s ease;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    font-family: 'Inter', sans-serif;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.btn-toggle-modo:hover {
+    transform: scale(1.05);
+    box-shadow: var(--shadow-gold);
+}
+.btn-toggle-modo:active {
+    cursor: grabbing;
+    transform: scale(0.95);
+}
+.btn-toggle-modo.dragging {
+    transition: none;
+    box-shadow: 0 8px 40px rgba(212, 175, 55, 0.4);
+}
+
+/* ================================================================
+   BOTÓN SCROLL TO TOP
+   ================================================================ */
+.btn-scroll-top {
+    position: fixed;
+    bottom: 80px;
+    right: 20px;
+    z-index: 999;
+    padding: 12px 16px;
+    border-radius: 50%;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    color: var(--gold);
+    cursor: pointer;
+    font-size: 1.2rem;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(20px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    font-family: 'Inter', sans-serif;
+}
+.btn-scroll-top.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+.btn-scroll-top:hover {
+    transform: translateY(-4px) scale(1.05);
+    box-shadow: var(--shadow-gold);
+}
+
+/* ================================================================
    EMPTY STATE
    ================================================================ */
-
 .empty-state {
     text-align: center;
     padding: 60px 20px;
     color: var(--text-muted);
 }
-
 .empty-state .icon {
-    font-size: 3rem;
+    font-size: 2.5rem;
     display: block;
     margin-bottom: 16px;
+    font-family: 'Orbitron', monospace;
+    color: var(--gold);
+    opacity: 0.4;
+    letter-spacing: 2px;
 }
-
 .empty-state h3 {
     font-family: 'Orbitron', monospace;
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     color: var(--text-secondary);
+    letter-spacing: 1px;
+    font-weight: 400;
 }
-
 .empty-state p {
     font-size: 0.85rem;
+    letter-spacing: 0.3px;
 }
 
 /* ================================================================
-   LOADING SPINNER
+   LOADING
    ================================================================ */
-
 .loading-spinner {
     text-align: center;
     padding: 40px 0;
     color: var(--text-muted);
 }
-
 .loading-spinner .spinner {
     display: inline-block;
     width: 40px;
@@ -700,7 +1251,6 @@
     animation: spin 1s linear infinite;
     margin-bottom: 12px;
 }
-
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
@@ -709,7 +1259,6 @@
 /* ================================================================
    TOAST
    ================================================================ */
-
 .toast {
     position: fixed;
     bottom: 30px;
@@ -729,74 +1278,141 @@
     max-width: 400px;
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
+    letter-spacing: 0.3px;
 }
-
 .toast.show { transform: translateY(0); opacity: 1; }
 .toast.error { border-color: var(--danger); color: var(--danger); }
 .toast.warning { border-color: var(--warning); color: var(--warning); }
 
 /* ================================================================
-   MODO OSCURO/CLARO (overrides)
+   MODO CLARO
    ================================================================ */
-
 body.modo-claro {
     background: #f0f4f8;
     color: #05080f;
 }
-
+body.modo-claro .header {
+    background: rgba(255, 255, 255, 0.92);
+    border-bottom-color: rgba(0, 0, 0, 0.08);
+}
+body.modo-claro .main-nav {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: rgba(0, 0, 0, 0.08);
+}
 body.modo-claro .post-card {
     background: rgba(255, 255, 255, 0.7);
 }
-
 body.modo-claro .post-form {
     background: rgba(255, 255, 255, 0.7);
 }
-
 body.modo-claro .trending-section {
     background: rgba(255, 255, 255, 0.7);
 }
-
+body.modo-claro .valor-mercado {
+    background: rgba(255, 255, 255, 0.7);
+}
 body.modo-claro .post-card .post-content {
     color: #1a2a3a;
 }
-
 body.modo-claro .post-card .post-date {
     color: #6a8a9a;
 }
-
 body.modo-claro .post-card .post-comentarios .comentario .texto {
     color: #4a6a7a;
 }
-
 body.modo-claro .post-card .post-comentarios .comentario .texto strong {
     color: #0a1a2a;
 }
+body.modo-claro .post-card .comentarios-oferta .comentario .texto {
+    color: #4a6a7a;
+}
+body.modo-claro .post-card .comentarios-oferta .comentario .texto strong {
+    color: #0a1a2a;
+}
+body.modo-claro .post-card .post-venta {
+    background: rgba(212, 175, 55, 0.08);
+    border-color: rgba(212, 175, 55, 0.15);
+}
+body.modo-claro .modal {
+    background: rgba(255, 255, 255, 0.9);
+}
+body.modo-claro .modal .form-group input,
+body.modo-claro .modal .form-group select {
+    background: rgba(0, 0, 0, 0.05);
+}
+body.modo-claro .toast {
+    background: rgba(255, 255, 255, 0.9);
+    color: #05080f;
+    border-color: var(--gold);
+}
+body.modo-claro .token-badge {
+    background: rgba(212, 175, 55, 0.12);
+}
+body.modo-claro .btn-toggle-modo,
+body.modo-claro .btn-scroll-top {
+    background: rgba(255, 255, 255, 0.8);
+}
+
+/* ================================================================
+   FOOTER
+   ================================================================ */
+.footer {
+    margin-top: 30px;
+    padding-top: 16px;
+    border-top: 1px solid var(--glass-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    padding-bottom: 8px;
+    letter-spacing: 0.3px;
+}
+.footer .brand { color: var(--gold); font-weight: 600; letter-spacing: 1px; }
+.footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
+.footer-links a { color: var(--text-muted); text-decoration: none; transition: var(--transition); }
+.footer-links a:hover { color: var(--gold); }
 
 /* ================================================================
    RESPONSIVE
    ================================================================ */
-
 @media (max-width: 768px) {
-    .muro-container { padding: 0 12px; }
+    .app { padding: 12px 14px; }
     .post-card { padding: 14px 16px; }
     .post-card .post-content { font-size: 0.85rem; }
     .post-form { padding: 14px 16px; }
-    .post-card .post-venta { flex-direction: column; align-items: stretch; text-align: center; }
-    .post-card .post-venta .btn-comprar { width: 100%; }
-    .post-card .post-media { margin: 8px -16px 8px -16px; }
     .post-form .form-actions { flex-direction: column; align-items: stretch; }
     .post-form .form-actions .tools { justify-content: center; }
     .trending-section { padding: 12px 16px; }
     .trending-tags .tag { font-size: 0.6rem; padding: 3px 10px; }
+    .post-card .post-venta { flex-direction: column; align-items: stretch; text-align: center; }
+    .post-card .post-venta .btn-comprar { width: 100%; }
+    .post-card .post-media { margin: 8px -16px 8px -16px; }
+    .valor-mercado { grid-template-columns: 1fr; text-align: center; }
+    .valor-mercado .btn-vender-token { width: 100%; justify-content: center; }
+    .main-nav .nav-link { font-size: 0.6rem; padding: 6px 10px; }
+    .header .logo-text { font-size: 1rem; }
+    .header .logo-hex { font-size: 1.4rem; }
+    .modal { padding: 20px; }
+    .btn-toggle-modo { width: 44px; height: 44px; font-size: 1rem; }
+    .btn-scroll-top { bottom: 70px; right: 10px; padding: 10px 14px; font-size: 1rem; }
 }
 
 @media (max-width: 480px) {
-    .post-card .post-actions { gap: 4px; }
-    .post-card .post-actions button { font-size: 0.65rem; padding: 3px 8px; }
-    .post-card .post-actions button .count { font-size: 0.55rem; }
+    .post-card .post-actions { gap: 2px; }
+    .post-card .post-actions button { font-size: 0.6rem; padding: 3px 8px; }
+    .post-card .post-actions button .count { font-size: 0.5rem; }
     .post-card .post-media { margin: 6px -14px 6px -14px; }
     .post-card .post-header { gap: 8px; }
     .post-card .post-avatar { width: 32px; height: 32px; font-size: 0.9rem; }
     .post-card .post-author { font-size: 0.75rem; }
     .post-form .form-header .avatar { width: 32px; height: 32px; font-size: 0.9rem; }
+    .main-nav .nav-link { font-size: 0.55rem; padding: 4px 8px; }
+    .valor-mercado .info .precio { font-size: 1.4rem; }
+    .valor-mercado .info .detalles { flex-wrap: wrap; justify-content: center; }
+    .token-badge { font-size: 0.6rem; padding: 3px 10px; }
+    .token-badge #tokenBadgeCantidad { font-size: 0.75rem; }
+    .btn-toggle-modo { width: 40px; height: 40px; font-size: 0.9rem; padding: 8px; }
 }
