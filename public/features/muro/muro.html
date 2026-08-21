@@ -1161,7 +1161,9 @@
             box-shadow: var(--shadow-gold);
         }
 
-        /* ===== BOTÓN TOGGLE MODO ===== */
+        /* ================================================================
+           BOTÓN TOGGLE MODO - ARRASTRABLE
+           ================================================================ */
         .btn-toggle-modo {
             position: fixed;
             bottom: 20px;
@@ -1172,17 +1174,33 @@
             border: 1px solid var(--glass-border);
             background: var(--glass-bg);
             color: var(--gold);
-            cursor: pointer;
+            cursor: grab;
             font-size: 1.2rem;
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: box-shadow 0.3s ease, transform 0.2s ease;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
             font-family: 'Inter', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         .btn-toggle-modo:hover {
-            transform: scale(1.1) rotate(15deg);
+            transform: scale(1.05);
             box-shadow: var(--shadow-gold);
+        }
+        .btn-toggle-modo:active {
+            cursor: grabbing;
+            transform: scale(0.95);
+        }
+        .btn-toggle-modo.dragging {
+            transition: none;
+            box-shadow: 0 8px 40px rgba(212, 175, 55, 0.4);
         }
 
         /* ===== BOTÓN SCROLL TO TOP ===== */
@@ -1397,7 +1415,7 @@
             .header .logo-text { font-size: 1rem; }
             .header .logo-hex { font-size: 1.4rem; }
             .modal { padding: 20px; }
-            .btn-toggle-modo { bottom: 10px; left: 10px; padding: 10px 14px; font-size: 1rem; }
+            .btn-toggle-modo { width: 44px; height: 44px; font-size: 1rem; }
             .btn-scroll-top { bottom: 70px; right: 10px; padding: 10px 14px; font-size: 1rem; }
         }
 
@@ -1415,6 +1433,7 @@
             .valor-mercado .info .detalles { flex-wrap: wrap; justify-content: center; }
             .token-badge { font-size: 0.6rem; padding: 3px 10px; }
             .token-badge #tokenBadgeCantidad { font-size: 0.75rem; }
+            .btn-toggle-modo { width: 40px; height: 40px; font-size: 0.9rem; padding: 8px; }
         }
     </style>
 </head>
@@ -1456,7 +1475,7 @@
         <div class="valor-mercado" id="valorMercado">
             <div class="info">
                 <div class="titulo">◈ Valor de Mercado Sariel's</div>
-                <div class="precio" id="precioToken">75 <span class="moneda">MXN</span></div>
+                <div class="precio" id="precioToken">6.25 <span class="moneda">MXN</span></div>
                 <div class="detalles">
                     <span>◈ Oferta: <strong id="ofertaTotal">0</strong> tokens</span>
                     <span>◉ Demanda: <strong id="demandaTotal">0</strong></span>
@@ -1538,8 +1557,8 @@
             </div>
             <div class="form-group">
                 <label>Precio por token (MXN)</label>
-                <input type="number" id="inputPrecioToken" min="1" step="0.5" value="15" />
-                <div class="precio-sugerido">⟡ Precio sugerido: <strong id="precioSugerido">15</strong> MXN</div>
+                <input type="number" id="inputPrecioToken" min="1" step="0.5" value="6.25" />
+                <div class="precio-sugerido">⟡ Precio sugerido: <strong id="precioSugerido">6.25</strong> MXN</div>
             </div>
             <button class="btn-guardar" id="btnVenderTokens" onclick="publicarVenta()">◆ Publicar venta</button>
         </div>
@@ -1559,10 +1578,10 @@
                         Confirmas la compra de 
                         <strong style="color:var(--gold);" id="confirmCantidad">1</strong> 
                         token(s) a 
-                        <strong style="color:var(--gold);" id="confirmPrecio">75</strong> MXN c/u
+                        <strong style="color:var(--gold);" id="confirmPrecio">6.25</strong> MXN c/u
                     </p>
                     <div style="font-family:'Orbitron',monospace;color:var(--gold);font-size:1.8rem;margin:16px 0;padding:12px;background:rgba(212,175,55,0.05);border-radius:12px;border:1px solid rgba(212,175,55,0.1);">
-                        Total: <span id="confirmTotal">75</span> MXN
+                        Total: <span id="confirmTotal">6.25</span> MXN
                     </div>
                     <div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:16px;">
                         ⚡ Transacción en Polygon
@@ -1579,8 +1598,8 @@
     <!-- ===== TOAST ===== -->
     <div class="toast" id="toast"></div>
 
-    <!-- ===== BOTÓN MODO OSCURO/CLARO ===== -->
-    <button class="btn-toggle-modo" onclick="toggleModo()">🌙</button>
+    <!-- ===== BOTÓN MODO OSCURO/CLARO - ARRASTRABLE ===== -->
+    <button class="btn-toggle-modo" id="btnToggleModo">🌙</button>
 
     <!-- ===== BOTÓN SCROLL TO TOP ===== -->
     <button class="btn-scroll-top" onclick="scrollToTop()">↑</button>
@@ -1628,10 +1647,10 @@
             }
             ofertaTokens = [];
             historialPrecios = [
-                { timestamp: Date.now() - 86400000, precio: 70, oferta: 5, demanda: 12 },
-                { timestamp: Date.now() - 43200000, precio: 72, oferta: 8, demanda: 15 },
-                { timestamp: Date.now() - 21600000, precio: 75, oferta: 10, demanda: 18 },
-                { timestamp: Date.now(), precio: 75, oferta: 10, demanda: 18 }
+                { timestamp: Date.now() - 86400000, precio: 6.25, oferta: 5, demanda: 12 },
+                { timestamp: Date.now() - 43200000, precio: 6.50, oferta: 8, demanda: 15 },
+                { timestamp: Date.now() - 21600000, precio: 6.25, oferta: 10, demanda: 18 },
+                { timestamp: Date.now(), precio: 6.25, oferta: 10, demanda: 18 }
             ];
             guardarDatosMuro();
         }
@@ -1644,14 +1663,15 @@
         }
 
         // ================================================================
-        // PRECIO DINÁMICO
+        // PRECIO DINÁMICO - BASE 6.25 MXN (75 ÷ 12)
         // ================================================================
         function calcularPrecioDinamico() {
             const oferta = ofertaTokens.filter(t => !t.vendido).length;
             const demanda = ofertaTokens.filter(t => !t.vendido).length > 0 ? 
                 Math.floor(oferta * 1.8) + 5 : 5;
             
-            const precioBase = 75;
+            // ✅ PRECIO BASE CORRECTO: 6.25 MXN (75 ÷ 12)
+            const precioBase = 6.25;
             let factor = 1;
             if (demanda > oferta && oferta > 0) {
                 factor = 1 + ((demanda - oferta) / (demanda + oferta)) * 0.5;
@@ -1659,8 +1679,8 @@
                 factor = 1 - ((oferta - demanda) / (oferta + demanda)) * 0.3;
             }
             
-            let precio = Math.round(precioBase * factor);
-            precio = Math.max(37.5, Math.min(150, precio));
+            let precio = Math.round(precioBase * factor * 100) / 100;
+            precio = Math.max(3.12, Math.min(12.50, precio));
             
             return { precio, oferta, demanda };
         }
@@ -1672,7 +1692,7 @@
             const demandaEl = document.getElementById('demandaTotal');
             const tendenciaEl = document.getElementById('tendenciaValor');
             
-            if (precioEl) precioEl.innerHTML = data.precio + ' <span class="moneda">MXN</span>';
+            if (precioEl) precioEl.innerHTML = data.precio.toFixed(2) + ' <span class="moneda">MXN</span>';
             if (ofertaEl) ofertaEl.textContent = data.oferta;
             if (demandaEl) demandaEl.textContent = data.demanda;
             
@@ -1828,7 +1848,7 @@
             idCompraPendiente = id;
             
             document.getElementById('confirmCantidad').textContent = token.cantidad;
-            document.getElementById('confirmPrecio').textContent = token.precio;
+            document.getElementById('confirmPrecio').textContent = token.precio.toFixed(2);
             document.getElementById('confirmTotal').textContent = (token.cantidad * token.precio).toFixed(2);
             
             document.getElementById('modalConfirmarCompra').classList.add('show');
@@ -1883,7 +1903,7 @@
             cerrarModalConfirmacion();
             renderizarFeed();
             actualizarValorMercado();
-            showToast(`✅ ${token.cantidad} tokens comprados a ${token.precio} MXN c/u`);
+            showToast(`✅ ${token.cantidad} tokens comprados a ${token.precio.toFixed(2)} MXN c/u`);
         }
 
         function comprarTokens(id) {
@@ -2079,7 +2099,7 @@
                                 ${token.cantidad} <span class="label">tokens</span>
                             </div>
                             <div class="precio">
-                                ${token.precio} <span class="label">MXN c/u</span>
+                                ${token.precio.toFixed(2)} <span class="label">MXN c/u</span>
                             </div>
                             ${esVendido ? `<span class="vendido">◆ Vendido a ${token.comprador || 'usuario'}</span>` : ''}
                         </div>
@@ -2087,7 +2107,7 @@
                     </div>
                     <div class="post-stats">
                         <span>◈ ${token.cantidad} tokens</span>
-                        <span>⟡ ${token.precio} MXN c/u</span>
+                        <span>⟡ ${token.precio.toFixed(2)} MXN c/u</span>
                         <span>💬 ${totalComentarios}</span>
                     </div>
                     <div class="post-actions">
@@ -2265,9 +2285,9 @@
             }
             
             const data = calcularPrecioDinamico();
-            const sugerido = Math.round(data.precio * 0.2);
-            document.getElementById('precioSugerido').textContent = sugerido;
-            document.getElementById('inputPrecioToken').value = sugerido;
+            const sugerido = Math.round(data.precio * 100) / 100;
+            document.getElementById('precioSugerido').textContent = sugerido.toFixed(2);
+            document.getElementById('inputPrecioToken').value = sugerido.toFixed(2);
             document.getElementById('inputCantidadTokens').max = tokens;
             
             document.getElementById('modalVender').classList.add('show');
@@ -2279,7 +2299,7 @@
 
         function publicarVenta() {
             const cantidad = parseInt(document.getElementById('inputCantidadTokens').value) || 1;
-            const precio = parseFloat(document.getElementById('inputPrecioToken').value) || 15;
+            const precio = parseFloat(document.getElementById('inputPrecioToken').value) || 6.25;
             const perfil = JSON.parse(localStorage.getItem('sariels_perfil') || '{}');
             
             const tokensDisponibles = parseInt(localStorage.getItem('sariels_tokens') || '0');
@@ -2294,8 +2314,8 @@
                 return;
             }
             
-            if (precio < 1) {
-                showToast('⚠️ El precio debe ser al menos 1 MXN', 'error');
+            if (precio < 0.5) {
+                showToast('⚠️ El precio mínimo es 0.50 MXN', 'error');
                 return;
             }
             
@@ -2381,11 +2401,16 @@
         }
 
         // ================================================================
-        // MODO OSCURO/CLARO
+        // MODO OSCURO/CLARO CON ARRASTRE
         // ================================================================
+        let modoBtn = null;
+        let isDragging = false;
+        let dragOffsetX = 0;
+        let dragOffsetY = 0;
+
         function toggleModo() {
             const body = document.body;
-            const btn = document.querySelector('.btn-toggle-modo');
+            const btn = document.getElementById('btnToggleModo');
             
             if (body.classList.contains('modo-claro')) {
                 body.classList.remove('modo-claro');
@@ -2402,7 +2427,7 @@
 
         function cargarModo() {
             const modo = localStorage.getItem('sariels_modo');
-            const btn = document.querySelector('.btn-toggle-modo');
+            const btn = document.getElementById('btnToggleModo');
             
             if (modo === 'claro') {
                 document.body.classList.add('modo-claro');
@@ -2411,6 +2436,139 @@
                 document.body.classList.remove('modo-claro');
                 if (btn) btn.textContent = '🌙';
             }
+        }
+
+        // ================================================================
+        // BOTÓN ARRASTRABLE
+        // ================================================================
+        function initDraggableButton() {
+            const btn = document.getElementById('btnToggleModo');
+            if (!btn) return;
+            
+            // Cargar posición guardada
+            const pos = localStorage.getItem('sariels_modo_pos');
+            if (pos) {
+                try {
+                    const p = JSON.parse(pos);
+                    btn.style.left = p.x + 'px';
+                    btn.style.top = p.y + 'px';
+                    btn.style.bottom = 'auto';
+                    btn.style.right = 'auto';
+                } catch (e) {}
+            }
+            
+            // Eventos para mouse
+            btn.addEventListener('mousedown', function(e) {
+                isDragging = true;
+                const rect = btn.getBoundingClientRect();
+                dragOffsetX = e.clientX - rect.left;
+                dragOffsetY = e.clientY - rect.top;
+                btn.classList.add('dragging');
+                btn.style.cursor = 'grabbing';
+                e.preventDefault();
+            });
+            
+            document.addEventListener('mousemove', function(e) {
+                if (!isDragging) return;
+                const x = e.clientX - dragOffsetX;
+                const y = e.clientY - dragOffsetY;
+                
+                // Limitar dentro de la pantalla
+                const maxX = window.innerWidth - btn.offsetWidth - 10;
+                const maxY = window.innerHeight - btn.offsetHeight - 10;
+                
+                btn.style.left = Math.max(10, Math.min(maxX, x)) + 'px';
+                btn.style.top = Math.max(10, Math.min(maxY, y)) + 'px';
+                btn.style.bottom = 'auto';
+                btn.style.right = 'auto';
+            });
+            
+            document.addEventListener('mouseup', function(e) {
+                if (isDragging) {
+                    isDragging = false;
+                    btn.classList.remove('dragging');
+                    btn.style.cursor = 'grab';
+                    
+                    // Guardar posición
+                    localStorage.setItem('sariels_modo_pos', JSON.stringify({
+                        x: parseInt(btn.style.left),
+                        y: parseInt(btn.style.top)
+                    }));
+                }
+            });
+            
+            // Eventos para móviles (touch)
+            btn.addEventListener('touchstart', function(e) {
+                const touch = e.touches[0];
+                const rect = btn.getBoundingClientRect();
+                dragOffsetX = touch.clientX - rect.left;
+                dragOffsetY = touch.clientY - rect.top;
+                isDragging = true;
+                btn.classList.add('dragging');
+                e.preventDefault();
+            }, { passive: false });
+            
+            document.addEventListener('touchmove', function(e) {
+                if (!isDragging) return;
+                const touch = e.touches[0];
+                const x = touch.clientX - dragOffsetX;
+                const y = touch.clientY - dragOffsetY;
+                
+                const maxX = window.innerWidth - btn.offsetWidth - 10;
+                const maxY = window.innerHeight - btn.offsetHeight - 10;
+                
+                btn.style.left = Math.max(10, Math.min(maxX, x)) + 'px';
+                btn.style.top = Math.max(10, Math.min(maxY, y)) + 'px';
+                btn.style.bottom = 'auto';
+                btn.style.right = 'auto';
+                e.preventDefault();
+            }, { passive: false });
+            
+            document.addEventListener('touchend', function() {
+                if (isDragging) {
+                    isDragging = false;
+                    btn.classList.remove('dragging');
+                    
+                    // Guardar posición
+                    localStorage.setItem('sariels_modo_pos', JSON.stringify({
+                        x: parseInt(btn.style.left),
+                        y: parseInt(btn.style.top)
+                    }));
+                }
+            });
+            
+            // Click para toggle (solo si no hubo arrastre)
+            let clickStartX = 0;
+            let clickStartY = 0;
+            
+            btn.addEventListener('mousedown', function(e) {
+                clickStartX = e.clientX;
+                clickStartY = e.clientY;
+            });
+            
+            btn.addEventListener('mouseup', function(e) {
+                const dx = e.clientX - clickStartX;
+                const dy = e.clientY - clickStartY;
+                if (Math.abs(dx) < 5 && Math.abs(dy) < 5) {
+                    toggleModo();
+                }
+            });
+            
+            // Para touch
+            btn.addEventListener('touchstart', function(e) {
+                const touch = e.touches[0];
+                clickStartX = touch.clientX;
+                clickStartY = touch.clientY;
+            });
+            
+            btn.addEventListener('touchend', function(e) {
+                const touch = e.changedTouches[0];
+                const dx = touch.clientX - clickStartX;
+                const dy = touch.clientY - clickStartY;
+                if (Math.abs(dx) < 10 && Math.abs(dy) < 10) {
+                    toggleModo();
+                }
+            });
         }
 
         // ================================================================
@@ -2429,6 +2587,7 @@
             cargarModo();
             actualizarValorMercado();
             renderizarFeed();
+            initDraggableButton();
 
             const perfil = localStorage.getItem('sariels_perfil');
             if (perfil) {
@@ -2477,6 +2636,7 @@
             console.log('◈ Sariel\'s - Muro Ultra Mega Pro');
             console.log('⧫ Diseño premium sin emojis');
             console.log('◆ Tokens en venta:', ofertaTokens.filter(t => !t.vendido).length);
+            console.log('⟡ Precio base: 6.25 MXN (75 ÷ 12)');
         });
 
         function initStars() {
