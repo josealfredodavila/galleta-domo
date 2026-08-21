@@ -2,7 +2,7 @@
   "$schema": "https://railway.com/railway.schema.json",
   "build": {
     "builder": "NIXPACKS",
-    "buildCommand": "npm install",
+    "buildCommand": "npm ci --only=production",
     "buildEnvironment": "V3"
   },
   "deploy": {
@@ -11,13 +11,6 @@
     "startCommand": "node server.js",
     "healthcheckPath": "/api/health",
     "sleepApplication": false,
-    "useLegacyStacker": false,
-    "ipv6EgressEnabled": false,
-    "multiRegionConfig": {
-      "ams": {
-        "numReplicas": 1
-      }
-    },
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10
   }
