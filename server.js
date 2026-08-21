@@ -65,6 +65,7 @@ function requireAdminSecret(req, res, next) {
 // RUTAS
 // ================================================================
 
+// ✅ HEALTHCHECK (para Railway)
 app.get('/api/health', (req, res) => {
     res.json({
         status: 'OK',
