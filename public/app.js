@@ -39,10 +39,23 @@ class GalletaDomoApp {
     }
 
     setupEventListeners() {
-        document.getElementById('connectWallet').addEventListener('click', () => this.conectarWallet());
-        document.getElementById('buyDomo').addEventListener('click', () => this.buyDomo());
-        document.getElementById('canjearNft').addEventListener('click', () => this.canjearNft());
-        document.getElementById('loadMoreHistory').addEventListener('click', () => this.loadHistory(true));
+        const connectBtn = document.getElementById('connectWallet');
+        if (connectBtn) connectBtn.addEventListener('click', () => this.conectarWallet());
+
+        const buyBtn = document.getElementById('buyDomo');
+        if (buyBtn) buyBtn.addEventListener('click', () => this.buyDomo());
+
+        const canjearBtn = document.getElementById('canjearNft');
+        if (canjearBtn) canjearBtn.addEventListener('click', () => this.canjearNft());
+
+        const loadMoreBtn = document.getElementById('loadMoreHistory');
+        if (loadMoreBtn) loadMoreBtn.addEventListener('click', () => this.loadHistory(true));
+
+        // Botón de desconectar
+        const disconnectBtn = document.getElementById('btnDisconnectWallet');
+        if (disconnectBtn) {
+            disconnectBtn.addEventListener('click', () => this.desconectarWallet());
+        }
     }
 
     loadQtyControls() {
@@ -50,12 +63,17 @@ class GalletaDomoApp {
         const increaseBtn = document.getElementById('increaseQty');
         const qtyDisplay = document.getElementById('domoQuantity');
 
-        decreaseBtn.addEventListener('click', () => {
-            if (this.qty > 1) { this.qty--; qtyDisplay.textContent = this.qty; }
-        });
-        increaseBtn.addEventListener('click', () => {
-            if (this.qty < 10) { this.qty++; qtyDisplay.textContent = this.qty; }
-        });
+        if (decreaseBtn) {
+            decreaseBtn.addEventListener('click', () => {
+                if (this.qty > 1) { this.qty--; qtyDisplay.textContent = this.qty; }
+            });
+        }
+
+        if (increaseBtn) {
+            increaseBtn.addEventListener('click', () => {
+                if (this.qty < 10) { this.qty++; qtyDisplay.textContent = this.qty; }
+            });
+        }
     }
 
     // ============================================================
@@ -70,11 +88,11 @@ class GalletaDomoApp {
             }
 
             const button = document.getElementById('connectWallet');
-            button.disabled = true;
-            button.textContent = '⏳ Conectando...';
+            if (button) {
+                button.disabled = true;
+                button.textContent = '⏳ Conectando...';
+            }
 
-            // Supabase maneja: pedir cuenta, armar el mensaje SIWE,
-            // pedir la firma a MetaMask, y verificarla en su backend.
             const { data, error } = await this.supabase.auth.signInWithWeb3({
                 chain: 'ethereum',
                 statement: 'Inicia sesión en Sariel\'s Ecosystem'
@@ -83,37 +101,56 @@ class GalletaDomoApp {
             if (error) throw error;
 
             this.showNotification('✅ Wallet conectada exitosamente', 'success');
-            // onAuthStateChange dispara onLoginSuccess() automáticamente
 
         } catch (error) {
             console.error('Error conectando wallet:', error);
             this.showNotification('❌ Error al conectar wallet: ' + error.message, 'error');
-            document.getElementById('connectWallet').disabled = false;
-            document.getElementById('connectWallet').textContent = '🔗 Conectar Wallet';
+            const button = document.getElementById('connectWallet');
+            if (button) {
+                button.disabled = false;
+                button.textContent = '🔗 Conectar Wallet';
+            }
         }
     }
 
     async onLoginSuccess() {
-        document.getElementById('connectWallet').textContent = '✅ Conectado';
-        document.getElementById('connectWallet').disabled = false;
-        document.getElementById('buyDomo').disabled = false;
+        const connectBtn = document.getElementById('connectWallet');
+        if (connectBtn) {
+            connectBtn.textContent = '✅ Conectado';
+            connectBtn.disabled = false;
+        }
 
-        const walletAddress = this.session.user.user_metadata?.custom_claims?.address
-            || this.session.user.user_metadata?.address;
+        const buyBtn = document.getElementById('buyDomo');
+        if (buyBtn) buyBtn.disabled = false;
+
+        const walletAddress = this.session.user?.user_metadata?.custom_claims?.address
+            || this.session.user?.user_metadata?.address;
 
         if (walletAddress) {
-            document.getElementById('walletInfo').classList.remove('hidden');
-            document.getElementById('walletAddress').textContent =
-                `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`;
+            const walletInfo = document.getElementById('walletInfo');
+            if (walletInfo) walletInfo.classList.remove('hidden');
+
+            const addressEl = document.getElementById('walletAddress');
+            if (addressEl) {
+                addressEl.textContent = `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`;
+            }
         }
 
         await this.loadUserData();
     }
 
     onLogout() {
-        document.getElementById('connectWallet').textContent = '🔗 Conectar Wallet';
-        document.getElementById('buyDomo').disabled = true;
-        document.getElementById('walletInfo').classList.add('hidden');
+        const connectBtn = document.getElementById('connectWallet');
+        if (connectBtn) {
+            connectBtn.textContent = '🔗 Conectar Wallet';
+            connectBtn.disabled = false;
+        }
+
+        const buyBtn = document.getElementById('buyDomo');
+        if (buyBtn) buyBtn.disabled = true;
+
+        const walletInfo = document.getElementById('walletInfo');
+        if (walletInfo) walletInfo.classList.add('hidden');
     }
 
     async desconectarWallet() {
@@ -126,7 +163,7 @@ class GalletaDomoApp {
     // ============================================================
     authHeaders() {
         return {
-            'Authorization': `Bearer ${this.session.access_token}`,
+            'Authorization': `Bearer ${this.session?.access_token || ''}`,
             'Content-Type': 'application/json'
         };
     }
@@ -146,13 +183,18 @@ class GalletaDomoApp {
 
             const data = await response.json();
 
-            document.getElementById('tokensCount').textContent = data.tokensAcumulados || 0;
+            const tokensCount = document.getElementById('tokensCount');
+            if (tokensCount) tokensCount.textContent = data.tokensAcumulados || 0;
 
             const progreso = data.progresoCanje || 0;
-            document.getElementById('progressFill').style.width = `${progreso}%`;
-            document.getElementById('progressText').textContent = `${data.tokensAcumulados || 0}/12`;
+            const progressFill = document.getElementById('progressFill');
+            if (progressFill) progressFill.style.width = `${progreso}%`;
 
-            document.getElementById('canjearNft').disabled = !data.puedeCanjear;
+            const progressText = document.getElementById('progressText');
+            if (progressText) progressText.textContent = `${data.tokensAcumulados || 0}/12`;
+
+            const canjearBtn = document.getElementById('canjearNft');
+            if (canjearBtn) canjearBtn.disabled = !data.puedeCanjear;
 
             await this.loadHistory();
 
@@ -162,9 +204,55 @@ class GalletaDomoApp {
     }
 
     // ============================================================
-    // ESCANEAR QR DEL DOMO (cliente escanea el QR del domo)
+    // COMPRAR DOMO
+    // ============================================================
+    async buyDomo() {
+        if (!this.session) {
+            this.showNotification('⚠️ Conecta tu wallet primero', 'error');
+            return;
+        }
+
+        const button = document.getElementById('buyDomo');
+        if (button) {
+            button.disabled = true;
+            button.textContent = '⏳ Procesando...';
+        }
+
+        try {
+            const response = await fetch(`${this.apiUrl}/domo/comprar`, {
+                method: 'POST',
+                headers: this.authHeaders(),
+                body: JSON.stringify({ cantidad: this.qty, metodoPago: 'efectivo' })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                this.showNotification(`✅ ${this.qty} domo(s) comprado(s)`, 'success');
+                await this.loadUserData();
+            } else {
+                this.showNotification(data.error || '❌ Error al comprar domo', 'error');
+            }
+        } catch (error) {
+            console.error('Error comprando domo:', error);
+            this.showNotification('❌ Error al procesar la compra', 'error');
+        } finally {
+            if (button) {
+                button.disabled = false;
+                button.textContent = 'Comprar Domo';
+            }
+        }
+    }
+
+    // ============================================================
+    // ESCANEAR QR DEL DOMO
     // ============================================================
     async escanearQR(qrCodigo) {
+        if (!this.session) {
+            this.showNotification('⚠️ Conecta tu wallet primero', 'error');
+            return;
+        }
+
         try {
             const response = await fetch(`${this.apiUrl}/qr/escanear`, {
                 method: 'POST',
@@ -190,14 +278,21 @@ class GalletaDomoApp {
     // CANJEAR NFT
     // ============================================================
     async canjearNft() {
-        try {
-            const confirmar = confirm('⚠️ ¿Estás seguro de canjear tu NFT? Se quemarán 12 tokens.\n\nEsta acción es irreversible.');
-            if (!confirmar) return;
+        if (!this.session) {
+            this.showNotification('⚠️ Conecta tu wallet primero', 'error');
+            return;
+        }
 
-            const button = document.getElementById('canjearNft');
+        const confirmar = confirm('⚠️ ¿Estás seguro de canjear tu NFT? Se quemarán 12 tokens.\n\nEsta acción es irreversible.');
+        if (!confirmar) return;
+
+        const button = document.getElementById('canjearNft');
+        if (button) {
             button.disabled = true;
             button.textContent = '⏳ Canjeando...';
+        }
 
+        try {
             const response = await fetch(`${this.apiUrl}/nft/canjear`, {
                 method: 'POST',
                 headers: this.authHeaders()
@@ -210,13 +305,16 @@ class GalletaDomoApp {
                 await this.loadUserData();
             } else {
                 this.showNotification(data.error || '❌ Error al canjear NFT', 'error');
-                button.disabled = false;
+                if (button) button.disabled = false;
             }
         } catch (error) {
             console.error('Error canjeando NFT:', error);
             this.showNotification('❌ Error al procesar el canje', 'error');
         } finally {
-            document.getElementById('canjearNft').textContent = '🔥 Canjear NFT (12 tokens)';
+            if (button) {
+                button.textContent = '🔥 Canjear NFT (12 tokens)';
+                button.disabled = false;
+            }
         }
     }
 
@@ -224,6 +322,8 @@ class GalletaDomoApp {
     // HISTORIAL
     // ============================================================
     async loadHistory(loadMore = false) {
+        if (!this.session) return;
+
         try {
             this.currentPage = loadMore ? (this.currentPage || 1) + 1 : 1;
 
@@ -235,6 +335,8 @@ class GalletaDomoApp {
             const data = await response.json();
             const historyDiv = document.getElementById('transactionHistory');
 
+            if (!historyDiv) return;
+
             if (data.transactions && data.transactions.length > 0) {
                 historyDiv.innerHTML = data.transactions.map(tx => `
                     <div class="history-item ${tx.tipo}">
@@ -244,9 +346,10 @@ class GalletaDomoApp {
                     </div>
                 `).join('');
 
-                document.getElementById('loadMoreHistory').classList.toggle(
-                    'hidden', data.pagination.pages <= this.currentPage
-                );
+                const loadMoreBtn = document.getElementById('loadMoreHistory');
+                if (loadMoreBtn) {
+                    loadMoreBtn.classList.toggle('hidden', data.pagination?.pages <= this.currentPage);
+                }
             } else {
                 historyDiv.innerHTML = '<p class="empty-message">📭 No hay transacciones aún</p>';
             }
