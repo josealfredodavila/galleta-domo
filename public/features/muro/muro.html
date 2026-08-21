@@ -248,6 +248,76 @@
             background: rgba(255, 51, 102, 0.08);
         }
 
+        /* ===== VALOR DE MERCADO ===== */
+        .valor-mercado {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-xl);
+            padding: 16px 20px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            transition: var(--transition-slow);
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 12px;
+            align-items: center;
+        }
+        .valor-mercado:hover {
+            border-color: rgba(212, 175, 55, 0.2);
+            box-shadow: var(--shadow-gold);
+        }
+        .valor-mercado .info .titulo {
+            font-family: 'Orbitron', monospace;
+            color: var(--text-muted);
+            font-size: 0.6rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .valor-mercado .info .precio {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--gold);
+            text-shadow: 0 0 30px rgba(212, 175, 55, 0.1);
+        }
+        .valor-mercado .info .precio .moneda {
+            font-size: 1rem;
+            color: var(--text-muted);
+        }
+        .valor-mercado .info .detalles {
+            display: flex;
+            gap: 16px;
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+        .valor-mercado .info .detalles span {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .valor-mercado .info .detalles .up { color: var(--success); }
+        .valor-mercado .info .detalles .down { color: var(--danger); }
+        .valor-mercado .btn-vender-token {
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            color: var(--space);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: var(--transition);
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+        .valor-mercado .btn-vender-token:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-gold);
+        }
+
         /* ===== TRENDING TOPICS ===== */
         .trending-section {
             background: var(--glass-bg);
@@ -308,6 +378,12 @@
             font-size: 0.55rem;
             color: var(--text-muted);
             margin-left: 4px;
+        }
+        .trending-tags .tag .up {
+            color: var(--success);
+        }
+        .trending-tags .tag .down {
+            color: var(--danger);
         }
 
         /* ===== FORMULARIO ===== */
@@ -382,23 +458,31 @@
         .post-form .form-actions .tools {
             display: flex;
             gap: 4px;
+            flex-wrap: wrap;
         }
         .post-form .form-actions .tools button {
             background: none;
             border: none;
             color: var(--text-muted);
-            font-size: 0.9rem;
+            font-size: 0.8rem;
             cursor: pointer;
             transition: var(--transition);
             padding: 4px 10px;
             border-radius: 8px;
             font-family: 'Inter', sans-serif;
-            font-weight: 400;
-            letter-spacing: 0.5px;
+            font-weight: 500;
+            letter-spacing: 0.3px;
         }
         .post-form .form-actions .tools button:hover {
             color: var(--gold);
             background: rgba(212, 175, 55, 0.05);
+        }
+        .post-form .form-actions .tools button.venta {
+            color: var(--success);
+            border: 1px solid rgba(0, 214, 143, 0.15);
+        }
+        .post-form .form-actions .tools button.venta:hover {
+            background: rgba(0, 214, 143, 0.08);
         }
         .btn-publicar {
             background: linear-gradient(135deg, var(--gold), var(--gold-dark));
@@ -488,17 +572,6 @@
             border: 1px solid rgba(212, 175, 55, 0.1);
             letter-spacing: 0.5px;
         }
-        .post-card .post-author .badge-anclado {
-            font-size: 0.5rem;
-            background: rgba(212, 175, 55, 0.08);
-            color: var(--gold);
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-family: 'Orbitron', monospace;
-            margin-left: 6px;
-            border: 1px solid rgba(212, 175, 55, 0.1);
-            letter-spacing: 0.5px;
-        }
         .post-card .post-date {
             font-size: 0.65rem;
             color: var(--text-muted);
@@ -519,6 +592,82 @@
         .post-card .post-content .hashtag:hover {
             text-decoration: underline;
         }
+
+        /* ===== POST DE VENTA ===== */
+        .post-card .post-venta {
+            background: rgba(212, 175, 55, 0.05);
+            border: 1px solid rgba(212, 175, 55, 0.1);
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .post-card .post-venta .info-venta {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .post-card .post-venta .cantidad {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        .post-card .post-venta .cantidad .label {
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            font-weight: 400;
+            font-family: 'Inter', sans-serif;
+        }
+        .post-card .post-venta .precio {
+            font-family: 'Orbitron', monospace;
+            color: var(--gold);
+            font-size: 1.1rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+        .post-card .post-venta .precio .label {
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            font-weight: 400;
+            font-family: 'Inter', sans-serif;
+        }
+        .post-card .post-venta .btn-comprar {
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            color: var(--space);
+            border: none;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-family: 'Orbitron', monospace;
+            font-size: 0.6rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--transition);
+            letter-spacing: 0.5px;
+        }
+        .post-card .post-venta .btn-comprar:hover {
+            transform: scale(1.05);
+            box-shadow: var(--shadow-gold);
+        }
+        .post-card .post-venta .btn-comprar:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+        .post-card .post-venta .vendido {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            padding: 4px 12px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        /* ===== POST STATS ===== */
         .post-card .post-stats {
             display: flex;
             gap: 16px;
@@ -534,78 +683,7 @@
             gap: 4px;
         }
 
-        /* ===== ENCUESTAS ===== */
-        .post-card .post-encuesta {
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 12px;
-            padding: 14px;
-            margin: 10px 0;
-            border: 1px solid rgba(212, 175, 55, 0.08);
-            transition: var(--transition);
-        }
-        .post-card .post-encuesta:hover {
-            border-color: rgba(212, 175, 55, 0.15);
-        }
-        .post-card .post-encuesta .pregunta {
-            font-weight: 600;
-            color: var(--gold);
-            font-size: 0.8rem;
-            margin-bottom: 8px;
-            letter-spacing: 0.3px;
-        }
-        .post-card .post-encuesta .opcion {
-            margin: 4px 0;
-            cursor: pointer;
-            padding: 6px 10px;
-            border-radius: 8px;
-            transition: var(--transition);
-            background: rgba(255, 255, 255, 0.03);
-        }
-        .post-card .post-encuesta .opcion:hover {
-            background: rgba(212, 175, 55, 0.05);
-        }
-        .post-card .post-encuesta .opcion .barra {
-            width: 100%;
-            height: 4px;
-            background: rgba(212, 175, 55, 0.08);
-            border-radius: 2px;
-            margin-top: 4px;
-            overflow: hidden;
-        }
-        .post-card .post-encuesta .opcion .barra .fill {
-            height: 100%;
-            background: linear-gradient(90deg, var(--gold-dark), var(--gold), var(--gold-light));
-            border-radius: 2px;
-            transition: width 0.5s ease;
-        }
-        .post-card .post-encuesta .total-votos {
-            font-size: 0.55rem;
-            color: var(--text-muted);
-            margin-top: 6px;
-            letter-spacing: 0.3px;
-        }
-
-        /* ===== MEDIA ===== */
-        .post-card .post-media {
-            margin: 12px -20px 12px -20px;
-            border-radius: 12px;
-            overflow: hidden;
-        }
-        .post-card .post-media img {
-            width: 100%;
-            max-height: 400px;
-            object-fit: cover;
-            transition: var(--transition-slow);
-        }
-        .post-card .post-media img:hover {
-            transform: scale(1.02);
-        }
-        .post-card .post-media video {
-            width: 100%;
-            max-height: 400px;
-        }
-
-        /* ===== ACCIONES ===== */
+        /* ===== POST ACTIONS ===== */
         .post-card .post-actions {
             display: flex;
             gap: 2px;
@@ -638,49 +716,6 @@
         .post-card .post-actions button .count {
             font-size: 0.6rem;
             color: var(--text-muted);
-        }
-
-        /* ===== VENTA ===== */
-        .post-card .post-venta {
-            background: rgba(212, 175, 55, 0.05);
-            border: 1px solid rgba(212, 175, 55, 0.1);
-            border-radius: 12px;
-            padding: 12px 16px;
-            margin-bottom: 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-        .post-card .post-venta .precio {
-            font-family: 'Orbitron', monospace;
-            color: var(--gold);
-            font-size: 1.1rem;
-            font-weight: 700;
-            letter-spacing: 0.5px;
-        }
-        .post-card .post-venta .cantidad {
-            color: var(--text-muted);
-            font-size: 0.85rem;
-            letter-spacing: 0.3px;
-        }
-        .post-card .post-venta .btn-comprar {
-            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
-            color: var(--space);
-            border: none;
-            padding: 6px 16px;
-            border-radius: 20px;
-            font-family: 'Orbitron', monospace;
-            font-size: 0.6rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: var(--transition);
-            letter-spacing: 0.5px;
-        }
-        .post-card .post-venta .btn-comprar:hover {
-            transform: scale(1.05);
-            box-shadow: var(--shadow-gold);
         }
 
         /* ===== COMENTARIOS ===== */
@@ -768,6 +803,128 @@
             transform: scale(1.05);
         }
 
+        /* ===== MODAL VENDER ===== */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(5, 8, 15, 0.9);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .modal-overlay.show {
+            display: flex;
+        }
+        .modal {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-xl);
+            padding: 32px;
+            max-width: 480px;
+            width: 92%;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow-gold-strong);
+            animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        @keyframes slideUp {
+            from { transform: translateY(30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .modal .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .modal .modal-header h2 {
+            font-family: 'Orbitron', monospace;
+            color: var(--gold);
+            font-size: 1.1rem;
+            letter-spacing: 1px;
+        }
+        .modal .modal-header .btn-cerrar {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.6rem;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            transition: var(--transition);
+            line-height: 1;
+        }
+        .modal .modal-header .btn-cerrar:hover {
+            color: var(--text-primary);
+            transform: rotate(90deg);
+        }
+        .modal .form-group {
+            margin-bottom: 16px;
+        }
+        .modal .form-group label {
+            display: block;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+            font-weight: 500;
+            letter-spacing: 0.3px;
+        }
+        .modal .form-group input,
+        .modal .form-group select {
+            width: 100%;
+            padding: 10px 14px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            outline: none;
+            transition: var(--transition);
+            font-family: 'Inter', sans-serif;
+        }
+        .modal .form-group input:focus,
+        .modal .form-group select:focus {
+            border-color: var(--gold);
+            box-shadow: 0 0 30px rgba(212, 175, 55, 0.05);
+        }
+        .modal .form-group .precio-sugerido {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+        .modal .btn-guardar {
+            width: 100%;
+            padding: 12px;
+            border-radius: 30px;
+            border: none;
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            color: var(--space);
+            font-weight: 700;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: var(--transition);
+            font-family: 'Inter', sans-serif;
+            letter-spacing: 0.5px;
+        }
+        .modal .btn-guardar:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-gold);
+        }
+        .modal .btn-guardar:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
         /* ===== EMPTY STATE ===== */
         .empty-state {
             text-align: center;
@@ -795,27 +952,6 @@
             letter-spacing: 0.3px;
         }
 
-        /* ===== LOADING ===== */
-        .loading-spinner {
-            text-align: center;
-            padding: 40px 0;
-            color: var(--text-muted);
-        }
-        .loading-spinner .spinner {
-            display: inline-block;
-            width: 40px;
-            height: 40px;
-            border: 3px solid rgba(212, 175, 55, 0.08);
-            border-top: 3px solid var(--gold);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 12px;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
         /* ===== TOAST ===== */
         .toast {
             position: fixed;
@@ -841,33 +977,6 @@
         .toast.show { transform: translateY(0); opacity: 1; }
         .toast.error { border-color: var(--danger); color: var(--danger); }
         .toast.warning { border-color: var(--warning); color: var(--warning); }
-
-        /* ===== MODO CLARO ===== */
-        body.modo-claro {
-            background: #f0f4f8;
-            color: #05080f;
-        }
-        body.modo-claro .post-card {
-            background: rgba(255, 255, 255, 0.7);
-        }
-        body.modo-claro .post-form {
-            background: rgba(255, 255, 255, 0.7);
-        }
-        body.modo-claro .trending-section {
-            background: rgba(255, 255, 255, 0.7);
-        }
-        body.modo-claro .post-card .post-content {
-            color: #1a2a3a;
-        }
-        body.modo-claro .post-card .post-date {
-            color: #6a8a9a;
-        }
-        body.modo-claro .post-card .post-comentarios .comentario .texto {
-            color: #4a6a7a;
-        }
-        body.modo-claro .post-card .post-comentarios .comentario .texto strong {
-            color: #0a1a2a;
-        }
 
         /* ===== FOOTER ===== */
         .footer {
@@ -900,20 +1009,27 @@
             .trending-section { padding: 12px 16px; }
             .trending-tags .tag { font-size: 0.6rem; padding: 3px 10px; }
             .post-card .post-venta { flex-direction: column; align-items: stretch; text-align: center; }
+            .post-card .post-venta .info-venta { justify-content: center; }
             .post-card .post-venta .btn-comprar { width: 100%; }
-            .post-card .post-media { margin: 8px -16px 8px -16px; }
+            .valor-mercado { grid-template-columns: 1fr; text-align: center; }
+            .valor-mercado .btn-vender-token { width: 100%; justify-content: center; }
+            .main-nav .nav-link { font-size: 0.6rem; padding: 6px 10px; }
+            .header .logo-text { font-size: 1rem; }
+            .header .logo-hex { font-size: 1.4rem; }
+            .modal { padding: 20px; }
         }
 
         @media (max-width: 480px) {
             .post-card .post-actions { gap: 2px; }
             .post-card .post-actions button { font-size: 0.6rem; padding: 3px 8px; }
             .post-card .post-actions button .count { font-size: 0.5rem; }
-            .post-card .post-media { margin: 6px -14px 6px -14px; }
             .post-card .post-header { gap: 8px; }
             .post-card .post-avatar { width: 32px; height: 32px; font-size: 0.9rem; }
             .post-card .post-author { font-size: 0.75rem; }
             .post-form .form-header .avatar { width: 32px; height: 32px; font-size: 0.9rem; }
             .main-nav .nav-link { font-size: 0.55rem; padding: 4px 8px; }
+            .valor-mercado .info .precio { font-size: 1.4rem; }
+            .valor-mercado .info .detalles { flex-wrap: wrap; justify-content: center; }
         }
     </style>
 </head>
@@ -948,17 +1064,31 @@
             <a href="/features/live/live.html" class="nav-link live">◉ Live</a>
         </nav>
 
+        <!-- ===== VALOR DE MERCADO ===== -->
+        <div class="valor-mercado" id="valorMercado">
+            <div class="info">
+                <div class="titulo">◈ Valor de Mercado Sariel's</div>
+                <div class="precio" id="precioToken">75 <span class="moneda">MXN</span></div>
+                <div class="detalles">
+                    <span>◈ Oferta: <strong id="ofertaTotal">0</strong> tokens</span>
+                    <span>◉ Demanda: <strong id="demandaTotal">0</strong></span>
+                    <span id="tendenciaLabel">⟡ Tendencia: <strong id="tendenciaValor" class="up">Estable</strong></span>
+                </div>
+            </div>
+            <button class="btn-vender-token" onclick="abrirModalVenta()">◆ Vender tokens</button>
+        </div>
+
         <!-- ===== TRENDING TOPICS ===== -->
         <div class="trending-section">
             <div class="header">
                 <h3>◈ Tendencia ahora</h3>
-                <span class="actualizado">Actualizado</span>
+                <span class="actualizado" id="trendingActualizado">Actualizado</span>
             </div>
             <div class="trending-tags" id="trendingTags">
                 <span class="tag">#Sariels <span class="count">124</span></span>
                 <span class="tag">#GalletaDomo <span class="count">87</span></span>
                 <span class="tag">#Web3 <span class="count">56</span></span>
-                <span class="tag">#EsStoks <span class="count">43</span></span>
+                <span class="tag" id="tagEsStoks">#EsStoks <span class="count" id="esStoksCount">43</span> <span class="up">↑</span></span>
                 <span class="tag">#NFT <span class="count">31</span></span>
             </div>
         </div>
@@ -979,6 +1109,7 @@
                     <button onclick="insertarEmoji()">◆ Emoji</button>
                     <button onclick="agregarImagen()">◇ Imagen</button>
                     <button onclick="agregarEncuesta()">◈ Encuesta</button>
+                    <button class="venta" onclick="abrirModalVenta()">◉ Vender tokens</button>
                 </div>
                 <button class="btn-publicar" id="btnPublicar">⟡ Publicar</button>
             </div>
@@ -986,7 +1117,7 @@
 
         <!-- ===== FEED ===== -->
         <div id="feedContainer">
-            <div class="empty-state">
+            <div class="empty-state" id="emptyState">
                 <span class="icon">◈</span>
                 <h3>Sin publicaciones</h3>
                 <p>Sé el primero en compartir algo</p>
@@ -1004,6 +1135,27 @@
 
     </div>
 
+    <!-- ===== MODAL VENDER ===== -->
+    <div class="modal-overlay" id="modalVender">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>◈ Vender tokens</h2>
+                <button class="btn-cerrar" onclick="cerrarModalVenta()">✕</button>
+            </div>
+            <div class="form-group">
+                <label>Cantidad de tokens</label>
+                <input type="number" id="inputCantidadTokens" min="1" max="100" value="1" />
+                <div style="font-size:0.65rem;color:var(--text-muted);margin-top:4px;">Tokens disponibles: <strong id="tokensDisponibles">0</strong></div>
+            </div>
+            <div class="form-group">
+                <label>Precio por token (MXN)</label>
+                <input type="number" id="inputPrecioToken" min="1" step="0.5" value="15" />
+                <div class="precio-sugerido">⟡ Precio sugerido: <strong id="precioSugerido">15</strong> MXN</div>
+            </div>
+            <button class="btn-guardar" id="btnVenderTokens" onclick="publicarVenta()">◆ Publicar venta</button>
+        </div>
+    </div>
+
     <!-- ===== TOAST ===== -->
     <div class="toast" id="toast"></div>
 
@@ -1014,11 +1166,381 @@
     <script src="/features/muro/muro.js"></script>
     <script>
         // ================================================================
-        // INICIALIZACIÓN ADICIONAL
+        // MURO ULTRA MEGA PRO - LÓGICA COMPLETA
+        // ================================================================
+
+        // ================================================================
+        // TOAST
+        // ================================================================
+        function showToast(msg, type = '') {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.className = 'toast show';
+            if (type === 'error') t.classList.add('error');
+            else if (type === 'warning') t.classList.add('warning');
+            else t.classList.remove('error', 'warning');
+            clearTimeout(t._timeout);
+            t._timeout = setTimeout(() => t.classList.remove('show'), 3500);
+        }
+
+        // ================================================================
+        // DATOS DEL MURO (localStorage)
+        // ================================================================
+        let ofertaTokens = [];
+        let historialPrecios = [];
+
+        function cargarDatosMuro() {
+            const saved = localStorage.getItem('sariels_muro_data');
+            if (saved) {
+                try {
+                    const data = JSON.parse(saved);
+                    ofertaTokens = data.ofertaTokens || [];
+                    historialPrecios = data.historialPrecios || [];
+                    return;
+                } catch (e) {}
+            }
+            // Datos iniciales
+            ofertaTokens = [];
+            historialPrecios = [
+                { timestamp: Date.now() - 86400000, precio: 70, oferta: 5, demanda: 12 },
+                { timestamp: Date.now() - 43200000, precio: 72, oferta: 8, demanda: 15 },
+                { timestamp: Date.now() - 21600000, precio: 75, oferta: 10, demanda: 18 },
+                { timestamp: Date.now(), precio: 75, oferta: 10, demanda: 18 }
+            ];
+            guardarDatosMuro();
+        }
+
+        function guardarDatosMuro() {
+            localStorage.setItem('sariels_muro_data', JSON.stringify({
+                ofertaTokens: ofertaTokens,
+                historialPrecios: historialPrecios
+            }));
+        }
+
+        // ================================================================
+        // PRECIO DINÁMICO
+        // ================================================================
+        function calcularPrecioDinamico() {
+            const oferta = ofertaTokens.filter(t => !t.vendido).length;
+            const demanda = ofertaTokens.filter(t => !t.vendido).length > 0 ? 
+                Math.floor(oferta * 1.8) + 5 : 5; // Demanda simulada
+            
+            const totalTransacciones = ofertaTokens.length;
+            const precioBase = 75;
+            
+            // Calcular factor de ajuste
+            let factor = 1;
+            if (demanda > oferta && oferta > 0) {
+                factor = 1 + ((demanda - oferta) / (demanda + oferta)) * 0.5;
+            } else if (oferta > demanda && oferta > 0) {
+                factor = 1 - ((oferta - demanda) / (oferta + demanda)) * 0.3;
+            }
+            
+            // Límites
+            let precio = Math.round(precioBase * factor);
+            precio = Math.max(37.5, Math.min(150, precio));
+            
+            return { precio, oferta, demanda };
+        }
+
+        function actualizarValorMercado() {
+            const data = calcularPrecioDinamico();
+            const precioEl = document.getElementById('precioToken');
+            const ofertaEl = document.getElementById('ofertaTotal');
+            const demandaEl = document.getElementById('demandaTotal');
+            const tendenciaEl = document.getElementById('tendenciaValor');
+            
+            if (precioEl) precioEl.innerHTML = data.precio + ' <span class="moneda">MXN</span>';
+            if (ofertaEl) ofertaEl.textContent = data.oferta;
+            if (demandaEl) demandaEl.textContent = data.demanda;
+            
+            // Tendencia
+            if (historialPrecios.length > 1) {
+                const prev = historialPrecios[historialPrecios.length - 2]?.precio || data.precio;
+                if (data.precio > prev) {
+                    tendenciaEl.textContent = '↑ Subiendo';
+                    tendenciaEl.className = 'up';
+                } else if (data.precio < prev) {
+                    tendenciaEl.textContent = '↓ Bajando';
+                    tendenciaEl.className = 'down';
+                } else {
+                    tendenciaEl.textContent = '⟡ Estable';
+                    tendenciaEl.className = '';
+                }
+            }
+            
+            // Actualizar Es.stoks en trending
+            const esStoksCount = document.getElementById('esStoksCount');
+            if (esStoksCount) esStoksCount.textContent = data.oferta + data.demanda;
+        }
+
+        // ================================================================
+        // OFERTA DE TOKENS
+        // ================================================================
+        function agregarOfertaToken(cantidad, precio, vendedor) {
+            const data = calcularPrecioDinamico();
+            ofertaTokens.push({
+                id: Date.now(),
+                cantidad: cantidad,
+                precio: precio,
+                vendedor: vendedor || 'Explorador',
+                fecha: new Date().toISOString(),
+                vendido: false,
+                comprador: null
+            });
+            guardarDatosMuro();
+            renderizarOfertas();
+            actualizarValorMercado();
+            showToast(`◆ ${cantidad} tokens en venta a ${precio} MXN`);
+        }
+
+        function comprarTokens(id) {
+            const token = ofertaTokens.find(t => t.id === id);
+            if (!token || token.vendido) {
+                showToast('⚠️ Este token ya no está disponible', 'error');
+                return;
+            }
+            
+            const perfil = JSON.parse(localStorage.getItem('sariels_perfil') || '{}');
+            if (!perfil.nombre) {
+                showToast('⚠️ Conecta tu wallet primero', 'error');
+                return;
+            }
+            
+            token.vendido = true;
+            token.comprador = perfil.nombre || 'Comprador';
+            guardarDatosMuro();
+            
+            // Actualizar tokens del comprador en localStorage
+            let tokens = parseInt(localStorage.getItem('sariels_tokens') || '0');
+            tokens += token.cantidad;
+            localStorage.setItem('sariels_tokens', tokens.toString());
+            
+            renderizarOfertas();
+            actualizarValorMercado();
+            showToast(`✅ Comprados ${token.cantidad} tokens por ${token.precio} MXN c/u`);
+        }
+
+        // ================================================================
+        // RENDERIZAR OFERTAS
+        // ================================================================
+        function renderizarOfertas() {
+            const container = document.getElementById('feedContainer');
+            if (!container) return;
+            
+            const ofertasActivas = ofertaTokens.filter(t => !t.vendido);
+            const ofertasVendidas = ofertaTokens.filter(t => t.vendido);
+            
+            let html = '';
+            
+            // Ofertas activas
+            if (ofertasActivas.length === 0 && ofertasVendidas.length === 0) {
+                html = `
+                    <div class="empty-state">
+                        <span class="icon">◈</span>
+                        <h3>Sin ofertas de tokens</h3>
+                        <p>Publica tus tokens en venta usando el botón ◆ Vender tokens</p>
+                    </div>
+                `;
+            } else {
+                // Ofertas activas primero
+                ofertasActivas.forEach(t => {
+                    html += renderizarOferta(t);
+                });
+                
+                // Ofertas vendidas después
+                ofertasVendidas.slice(-5).reverse().forEach(t => {
+                    html += renderizarOferta(t, true);
+                });
+            }
+            
+            container.innerHTML = html;
+        }
+
+        function renderizarOferta(token, vendido = false) {
+            const fecha = new Date(token.fecha).toLocaleDateString();
+            const esVendido = vendido || token.vendido;
+            
+            return `
+                <div class="post-card" data-id="${token.id}">
+                    <div class="post-header">
+                        <div class="post-avatar">◈</div>
+                        <div>
+                            <div class="post-author">
+                                ${token.vendedor || 'Explorador'}
+                                <span class="badge-verificado">✦ Verificado</span>
+                            </div>
+                            <div class="post-date">${fecha}</div>
+                        </div>
+                    </div>
+                    <div class="post-content">
+                        ${esVendido ? '✅ Tokens vendidos' : '📍 Tokens en venta'}
+                    </div>
+                    <div class="post-venta">
+                        <div class="info-venta">
+                            <div class="cantidad">
+                                ${token.cantidad} <span class="label">tokens</span>
+                            </div>
+                            <div class="precio">
+                                ${token.precio} <span class="label">MXN c/u</span>
+                            </div>
+                            ${esVendido ? `<span class="vendido">◆ Vendido a ${token.comprador || 'usuario'}</span>` : ''}
+                        </div>
+                        ${!esVendido ? `<button class="btn-comprar" onclick="comprarTokens(${token.id})">⟡ Comprar</button>` : ''}
+                    </div>
+                    <div class="post-stats">
+                        <span>◈ ${token.cantidad} tokens</span>
+                        <span>⟡ ${token.precio} MXN c/u</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ================================================================
+        // MODAL VENTA
+        // ================================================================
+        function abrirModalVenta() {
+            const perfil = JSON.parse(localStorage.getItem('sariels_perfil') || '{}');
+            if (!perfil.nombre) {
+                showToast('⚠️ Conecta tu wallet primero', 'error');
+                return;
+            }
+            
+            // Mostrar tokens disponibles
+            const tokens = parseInt(localStorage.getItem('sariels_tokens') || '0');
+            document.getElementById('tokensDisponibles').textContent = tokens;
+            
+            if (tokens === 0) {
+                showToast('⚠️ No tienes tokens para vender', 'warning');
+                return;
+            }
+            
+            const data = calcularPrecioDinamico();
+            const sugerido = Math.round(data.precio * 0.2);
+            document.getElementById('precioSugerido').textContent = sugerido;
+            document.getElementById('inputPrecioToken').value = sugerido;
+            document.getElementById('inputCantidadTokens').max = tokens;
+            
+            document.getElementById('modalVender').classList.add('show');
+        }
+
+        function cerrarModalVenta() {
+            document.getElementById('modalVender').classList.remove('show');
+        }
+
+        function publicarVenta() {
+            const cantidad = parseInt(document.getElementById('inputCantidadTokens').value) || 1;
+            const precio = parseFloat(document.getElementById('inputPrecioToken').value) || 15;
+            const perfil = JSON.parse(localStorage.getItem('sariels_perfil') || '{}');
+            
+            const tokensDisponibles = parseInt(localStorage.getItem('sariels_tokens') || '0');
+            
+            if (cantidad < 1) {
+                showToast('⚠️ La cantidad debe ser al menos 1', 'error');
+                return;
+            }
+            
+            if (cantidad > tokensDisponibles) {
+                showToast(`⚠️ Solo tienes ${tokensDisponibles} tokens disponibles`, 'error');
+                return;
+            }
+            
+            if (precio < 1) {
+                showToast('⚠️ El precio debe ser al menos 1 MXN', 'error');
+                return;
+            }
+            
+            // Descontar tokens del usuario
+            const nuevosTokens = tokensDisponibles - cantidad;
+            localStorage.setItem('sariels_tokens', nuevosTokens.toString());
+            
+            // Publicar oferta
+            agregarOfertaToken(cantidad, precio, perfil.nombre || 'Explorador');
+            cerrarModalVenta();
+        }
+
+        // ================================================================
+        // HERRAMIENTAS DEL MURO
+        // ================================================================
+        function insertarHashtag() {
+            const textarea = document.getElementById('postContent');
+            if (!textarea) return;
+            const cursorPos = textarea.selectionStart;
+            const textBefore = textarea.value.substring(0, cursorPos);
+            const textAfter = textarea.value.substring(cursorPos);
+            textarea.value = textBefore + '#' + textAfter;
+            textarea.focus();
+            textarea.selectionStart = cursorPos + 1;
+            textarea.selectionEnd = cursorPos + 1;
+            showToast('◈ Hashtag agregado');
+        }
+
+        function insertarEmoji() {
+            const emojis = ['◆', '◇', '◈', '✦', '★', '☆', '⊚', '◉', '◊', '⬡'];
+            const emoji = emojis[Math.floor(Math.random() * emojis.length)];
+            const textarea = document.getElementById('postContent');
+            if (!textarea) return;
+            const cursorPos = textarea.selectionStart;
+            const textBefore = textarea.value.substring(0, cursorPos);
+            const textAfter = textarea.value.substring(cursorPos);
+            textarea.value = textBefore + emoji + textAfter;
+            textarea.focus();
+            textarea.selectionStart = cursorPos + 1;
+            textarea.selectionEnd = cursorPos + 1;
+        }
+
+        function agregarImagen() {
+            showToast('◇ Función de imágenes próximamente');
+        }
+
+        function agregarEncuesta() {
+            showToast('◈ Función de encuestas próximamente');
+        }
+
+        // ================================================================
+        // PUBLICAR TEXTO
+        // ================================================================
+        function publicarTexto() {
+            const textarea = document.getElementById('postContent');
+            const contenido = textarea.value.trim();
+            if (!contenido) {
+                showToast('⚠️ Escribe algo para publicar', 'error');
+                return;
+            }
+            
+            const perfil = JSON.parse(localStorage.getItem('sariels_perfil') || '{}');
+            
+            // Agregar publicación temporal (simulada)
+            const post = {
+                id: Date.now(),
+                autor: perfil.nombre || 'Explorador',
+                avatar: perfil.avatar || '◈',
+                contenido: contenido,
+                fecha: new Date().toLocaleString(),
+                likes: 0,
+                comentarios: []
+            };
+            
+            // Guardar en localStorage
+            const posts = JSON.parse(localStorage.getItem('sariels_muro_posts') || '[]');
+            posts.unshift(post);
+            localStorage.setItem('sariels_muro_posts', JSON.stringify(posts));
+            
+            textarea.value = '';
+            renderizarOfertas();
+            showToast('✅ Publicación creada');
+        }
+
+        // ================================================================
+        // INICIALIZAR
         // ================================================================
         document.addEventListener('DOMContentLoaded', function() {
             initStars();
+            cargarDatosMuro();
+            actualizarValorMercado();
+            renderizarOfertas();
 
+            // Cargar perfil del usuario
             const perfil = localStorage.getItem('sariels_perfil');
             if (perfil) {
                 try {
@@ -1030,8 +1552,30 @@
                 } catch (e) {}
             }
 
+            // Botón publicar
+            document.getElementById('btnPublicar').addEventListener('click', publicarTexto);
+
+            // Enter para publicar
+            document.getElementById('postContent').addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                    e.preventDefault();
+                    publicarTexto();
+                }
+            });
+
+            // Cerrar modal con Escape
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') cerrarModalVenta();
+            });
+
+            // Cerrar modal click fuera
+            document.getElementById('modalVender').addEventListener('click', function(e) {
+                if (e.target === this) cerrarModalVenta();
+            });
+
             console.log('◈ Sariel\'s - Muro Ultra Mega Pro');
-            console.log('⧫ Diseño premium sin emojis');
+            console.log('⟡ Sistema de oferta y demanda activo');
+            console.log('◆ Tokens en venta:', ofertaTokens.filter(t => !t.vendido).length);
         });
 
         function initStars() {
@@ -1105,52 +1649,20 @@
         }
 
         // ================================================================
-        // HERRAMIENTAS
+        // EXPONER FUNCIONES GLOBALES
         // ================================================================
-        function insertarHashtag() {
-            const textarea = document.getElementById('postContent');
-            if (!textarea) return;
-            const cursorPos = textarea.selectionStart;
-            const textBefore = textarea.value.substring(0, cursorPos);
-            const textAfter = textarea.value.substring(cursorPos);
-            textarea.value = textBefore + '#' + textAfter;
-            textarea.focus();
-            textarea.selectionStart = cursorPos + 1;
-            textarea.selectionEnd = cursorPos + 1;
-            showToast('Hashtag agregado');
-        }
-
-        function insertarEmoji() {
-            const emojis = ['◆', '◇', '◈', '✦', '★', '☆', '⊚', '◉', '◊', '⬡'];
-            const emoji = emojis[Math.floor(Math.random() * emojis.length)];
-            const textarea = document.getElementById('postContent');
-            if (!textarea) return;
-            const cursorPos = textarea.selectionStart;
-            const textBefore = textarea.value.substring(0, cursorPos);
-            const textAfter = textarea.value.substring(cursorPos);
-            textarea.value = textBefore + emoji + textAfter;
-            textarea.focus();
-            textarea.selectionStart = cursorPos + 1;
-            textarea.selectionEnd = cursorPos + 1;
-        }
-
-        function agregarImagen() {
-            showToast('◆ Función de imágenes próximamente');
-        }
-
-        function agregarEncuesta() {
-            showToast('◈ Función de encuestas próximamente');
-        }
-
-        function showToast(msg, type = '') {
-            const t = document.getElementById('toast');
-            t.textContent = msg;
-            t.className = 'toast show';
-            if (type === 'error') t.classList.add('error');
-            else t.classList.remove('error');
-            clearTimeout(t._timeout);
-            t._timeout = setTimeout(() => t.classList.remove('show'), 3500);
-        }
+        window.showToast = showToast;
+        window.abrirModalVenta = abrirModalVenta;
+        window.cerrarModalVenta = cerrarModalVenta;
+        window.publicarVenta = publicarVenta;
+        window.comprarTokens = comprarTokens;
+        window.insertarHashtag = insertarHashtag;
+        window.insertarEmoji = insertarEmoji;
+        window.agregarImagen = agregarImagen;
+        window.agregarEncuesta = agregarEncuesta;
+        window.publicarTexto = publicarTexto;
+        window.renderizarOfertas = renderizarOfertas;
+        window.actualizarValorMercado = actualizarValorMercado;
     </script>
 </body>
 </html>
