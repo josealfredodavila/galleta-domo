@@ -792,6 +792,21 @@
             padding-top: 56.25%;
             overflow: hidden;
         }
+        .live-player #videoContainer {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: black;
+        }
+        .live-player #videoContainer video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
         .live-player .player-placeholder {
             position: absolute;
             inset: 0;
@@ -800,6 +815,7 @@
             align-items: center;
             justify-content: center;
             color: var(--text-muted);
+            z-index: 2;
         }
         .live-player .player-placeholder .icon {
             font-size: 4rem;
@@ -1029,14 +1045,15 @@
             </div>
             <div class="modal-live-body">
                 <div class="live-player">
-                    <div class="player-placeholder">
+                    <div id="videoContainer"></div>
+                    <div class="player-placeholder" id="playerPlaceholder">
                         <div class="icon">◈</div>
                         <p>◉ Transmisión en vivo</p>
-                        <p style="font-size:0.8rem;color:var(--text-muted);">Conectando...</p>
+                        <p style="font-size:0.8rem;color:var(--text-muted);" id="liveStatusText">Conectando...</p>
                     </div>
                 </div>
                 <div class="live-chat">
-                    <div class="chat-messages">
+                    <div class="chat-messages" id="chatMessages">
                         <div class="empty-message">Sin mensajes aún</div>
                     </div>
                     <div class="chat-input-live">
@@ -1054,35 +1071,107 @@
     <!-- ===== SCRIPTS ===== -->
     <script src="https://cdn.jsdelivr.net/npm/web3@1.8.0/dist/web3.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <!-- LiveKit Client SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/livekit-client/dist/livekit-client.umd.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <script src="/app.js"></script>
     <script src="/features/live/live.js"></script>
     <script>
         // ================================================================
-        // INICIALIZACIÓN - SIN REDIRECCIÓN AGRESIVA
+        // INTEGRACIÓN LIVEKIT & ESTRELLAS
         // ================================================================
+        let livekitRoom = null;
+
         document.addEventListener('DOMContentLoaded', function() {
             initStars();
+            console.log('◈ Sariel\'s - Live Ultra Mega Pro con LiveKit listo');
+        });
 
-            // Verificar token - sin redirigir agresivamente
-            const token = localStorage.getItem('galleta_token');
-            if (!token) {
-                console.log('⚠️ Modo demostración - sin token');
-                showToast('⚠️ Conecta tu wallet para transmisiones en vivo', 'warning');
-            } else {
-                console.log('✅ Token encontrado');
+        async function crearTransmision() {
+            const modal = document.getElementById('modalLive');
+            const placeholder = document.getElementById('playerPlaceholder');
+            const statusText = document.getElementById('liveStatusText');
+            const videoContainer = document.getElementById('videoContainer');
+            
+            modal.classList.add('active');
+            statusText.innerText = 'Solicitando acceso a cámara y micrófono...';
+
+            try {
+                // 1. Pedir token a nuestro backend en Railway
+                const response = await fetch('/api/token?room=muro-live-general&name=User_' + Math.floor(Math.random() * 1000));
+                const data = await response.json();
+
+                if (!data.token) {
+                    throw new Error('No se pudo obtener el token de acceso.');
+                }
+
+                statusText.innerText = 'Conectando con LiveKit Cloud...';
+
+                // 2. Conectar a LiveKit usando la URL de tus variables de entorno
+                const wsUrl = 'wss://csariels-domo-57ujk04t.livekit.cloud';
+                livekitRoom = new LivekitClient.Room();
+
+                await livekitRoom.connect(wsUrl, data.token);
+                statusText.innerText = '¡Conectado! Encendiendo cámara...';
+
+                // 3. Activar cámara y micrófono locales
+                await livekitRoom.localParticipant.enableCameraAndMicrophone();
+                placeholder.style.display = 'none';
+
+                // 4. Mostrar nuestro propio video en pantalla
+                livekitRoom.localParticipant.trackPublications.forEach(publication => {
+                    if (publication.track) {
+                        const element = publication.track.attach();
+                        videoContainer.appendChild(element);
+                    }
+                });
+
+                // 5. Escuchar si alguien más se conecta a la sala
+                livekitRoom.on(LivekitClient.RoomEvent.TrackSubscribed, (track, publication, participant) => {
+                    const element = track.attach();
+                    videoContainer.appendChild(element);
+                });
+
+                showToast('◉ ¡Transmisión en vivo iniciada con éxito!');
+                document.getElementById('liveCount').innerText = '1';
+
+            } catch (error) {
+                console.error('Error al iniciar transmisión:', error);
+                statusText.innerText = 'Error al conectar: ' + error.message;
+                showToast('❌ Error al iniciar transmisión', 'error');
+            }
+        }
+
+        async function cerrarModalTransmision() {
+            const modal = document.getElementById('modalLive');
+            modal.classList.remove('active');
+            
+            if (livekitRoom) {
+                await livekitRoom.disconnect();
+                livekitRoom = null;
             }
 
-            console.log('◈ Sariel\'s - Live Ultra Mega Pro');
-            console.log('◉ Transmisiones en vivo listas');
-        });
+            const videoContainer = document.getElementById('videoContainer');
+            videoContainer.innerHTML = '';
+            document.getElementById('playerPlaceholder').style.display = 'flex';
+            document.getElementById('liveCount').innerText = '0';
+            showToast('◈ Transmisión finalizada');
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.className = `toast ${type} show`;
+            toast.innerText = message;
+            setTimeout(() => {
+                toast.className = 'toast';
+            }, 3500);
+        }
 
         function initStars() {
             const canvas = document.getElementById('stars-canvas');
             if (!canvas) return;
             const ctx = canvas.getContext('2d');
             let width, height, stars = [];
-            let animId = null;
             let isVisible = true;
 
             const isMobile = window.innerWidth < 600;
@@ -1112,7 +1201,7 @@
 
             function draw() {
                 if (!isVisible) {
-                    animId = requestAnimationFrame(draw);
+                    requestAnimationFrame(draw);
                     return;
                 }
                 ctx.clearRect(0, 0, width, height);
@@ -1129,22 +1218,17 @@
                         star.x = Math.random() * width;
                     }
                 }
-                animId = requestAnimationFrame(draw);
+                requestAnimationFrame(draw);
             }
-
-            function pauseAnimation() { isVisible = false; }
-            function resumeAnimation() { isVisible = true; }
 
             resize();
             draw();
 
             window.addEventListener('resize', resize);
             document.addEventListener('visibilitychange', function() {
-                if (document.hidden) pauseAnimation();
-                else resumeAnimation();
+                if (document.hidden) isVisible = false;
+                else isVisible = true;
             });
-
-            return { pauseAnimation, resumeAnimation };
         }
     </script>
 </body>
