@@ -7,6 +7,17 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 
 // ================================================================
+// HEALTH CHECK PARA RAILWAY
+// ================================================================
+app.get('/api/health', (req, res) => {
+    res.status(200).json({ 
+        status: 'healthy', 
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime()
+    });
+});
+
+// ================================================================
 // NUEVA RUTA DE LIVEKIT PARA EL MURO LIVE
 // ================================================================
 app.get('/api/token', async (req, res) => {
@@ -40,7 +51,7 @@ app.get('/api/token', async (req, res) => {
 });
 
 // ================================================================
-// RUTAS PRINCIPALES Y HEALTHCHECK
+// RUTAS PRINCIPALES
 // ================================================================
 app.get('/', (req, res) => {
     res.status(200).json({ status: 'OK', message: "Sariel's API running successfully" });
@@ -57,7 +68,6 @@ process.on('SIGTERM', () => process.exit(0));
 // Escuchar explícitamente en 0.0.0.0
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`✅ Servidor corriendo en el puerto ${PORT}`);
-    console.log(`📦 Base de datos: Supabase (${process.env.SUPABASE_URL || 'Configurada'})`);
 });
 
 module.exports = app;
