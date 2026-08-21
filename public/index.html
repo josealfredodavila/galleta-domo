@@ -1282,6 +1282,8 @@
     <!-- ===== SCRIPTS ===== -->
     <script src="https://cdn.jsdelivr.net/npm/web3@1.8.0/dist/web3.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="app.js"></script>
     <script>
         // ================================================================
         // CONFIGURACIÓN DE CONTRASEÑAS (DOBLE CAPA)
@@ -1650,7 +1652,7 @@
         }
 
         // ================================================================
-        // WALLET - CON METAMASK (POLYGON) - VERSIÓN CORREGIDA
+        // WALLET - CON METAMASK (POLYGON)
         // ================================================================
         let web3 = null;
         let userAccount = null;
@@ -1659,7 +1661,6 @@
         async function conectarWallet() {
             const connectBtn = document.getElementById('connectWallet');
 
-            // ===== VERIFICAR SI METAMASK ESTÁ INSTALADO =====
             if (typeof window.ethereum === 'undefined' || !window.ethereum) {
                 connectBtn.disabled = true;
                 connectBtn.textContent = '⬇️ Descargar MetaMask';
@@ -1687,19 +1688,15 @@
                 return;
             }
 
-            // ===== METAMASK INSTALADO - INICIALIZAR =====
             try {
                 web3 = new Web3(window.ethereum);
                 
-                // ===== VERIFICAR RED (POLYGON) =====
                 const chainId = await window.ethereum.request({ method: 'eth_chainId' });
                 currentChainId = chainId;
                 
-                // Polygon Mainnet = 0x89 (137 en decimal)
                 const POLYGON_CHAIN_ID = '0x89';
                 
                 if (chainId !== POLYGON_CHAIN_ID) {
-                    // Intentar cambiar a Polygon
                     try {
                         await window.ethereum.request({
                             method: 'wallet_switchEthereumChain',
@@ -1707,7 +1704,6 @@
                         });
                         showToast('🔄 Cambiando a Polygon Mainnet...');
                     } catch (switchError) {
-                        // Si Polygon no está agregado, agregarlo
                         if (switchError.code === 4902) {
                             try {
                                 await window.ethereum.request({
@@ -1734,7 +1730,6 @@
                     }
                 }
 
-                // ===== VERIFICAR SI YA HAY CUENTAS =====
                 const accounts = await window.ethereum.request({ method: 'eth_accounts' });
                 if (accounts && accounts.length > 0) {
                     userAccount = accounts[0];
@@ -1743,7 +1738,6 @@
                     return;
                 }
 
-                // ===== SOLICITAR CONEXIÓN =====
                 connectBtn.disabled = true;
                 connectBtn.textContent = '⏳ Conectando...';
 
@@ -1774,9 +1768,7 @@
             }
         }
 
-        // ===== ESCUCHAR CAMBIOS EN METAMASK =====
         if (typeof window.ethereum !== 'undefined') {
-            // Cambio de cuenta
             window.ethereum.on('accountsChanged', function(accounts) {
                 if (accounts.length === 0) {
                     desconectarWallet();
@@ -1788,13 +1780,11 @@
                 }
             });
 
-            // Cambio de red
             window.ethereum.on('chainChanged', function(chainId) {
                 currentChainId = chainId;
                 const isPolygon = chainId === '0x89';
                 showToast(isPolygon ? '✅ Red Polygon' : '⚠️ Cambia a Polygon para usar Sariel\'s', isPolygon ? '' : 'warning');
                 if (!isPolygon) {
-                    // Sugerir cambiar a Polygon
                     setTimeout(async () => {
                         const cambiar = confirm('⚠️ Estás en la red incorrecta. ¿Quieres cambiar a Polygon Mainnet?');
                         if (cambiar) {
