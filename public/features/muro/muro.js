@@ -1,6 +1,5 @@
 /* ================================================================
-   MURO ULTRA MEGA PRO - SARIEL'S
-   Lógica premium competitiva con Silicon Valley
+   MURO ULTRA MEGA PRO - SARIEL'S (CON SUPABASE AUTH)
    ================================================================ */
 
 // ================================================================
@@ -24,10 +23,51 @@ function showToast(msg, type = '') {
 }
 
 // ================================================================
-// DATOS DEL MURO (localStorage - FALLBACK)
+// SUPABASE CLIENTE
+// ================================================================
+const SUPABASE_URL = 'https://hbbwopkfpkvahgtawqke.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_4gJWA-t7Eg6ruuI2EF-K2A_GQlahb2j';
+let supabase = null;
+
+if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
+    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    console.log('◈ Supabase cliente inicializado en muro.js');
+}
+
+// ================================================================
+// HEADERS DE AUTENTICACIÓN
+// ================================================================
+async function getAuthHeaders() {
+    const headers = { 'Content-Type': 'application/json' };
+    if (supabase) {
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session && session.access_token) {
+                headers['Authorization'] = `Bearer ${session.access_token}`;
+            }
+        } catch (e) {
+            console.warn('No se pudo obtener sesión de Supabase:', e);
+        }
+    }
+    return headers;
+}
+
+async function fetchWithAuth(url, options = {}) {
+    const headers = await getAuthHeaders();
+    return fetch(url, {
+        ...options,
+        headers: {
+            ...headers,
+            ...(options.headers || {})
+        }
+    });
+}
+
+// ================================================================
+// DATOS DEL MURO (localStorage)
 // ================================================================
 function cargarPublicacionesLocal() {
-    const saved = localStorage.getItem('sariels_muro');
+    const saved = localStorage.getItem('sariels_muro_posts');
     if (saved) {
         try {
             return JSON.parse(saved);
@@ -37,7 +77,7 @@ function cargarPublicacionesLocal() {
 }
 
 function guardarPublicacionesLocal(posts) {
-    localStorage.setItem('sariels_muro', JSON.stringify(posts));
+    localStorage.setItem('sariels_muro_posts', JSON.stringify(posts));
 }
 
 // ================================================================
@@ -66,32 +106,13 @@ async function cargarPublicaciones(pagina = 1) {
     cargando = true;
 
     try {
-        const token = localStorage.getItem('galleta_token');
-        if (!token) {
-            // Fallback: cargar desde localStorage
-            const posts = cargarPublicacionesLocal();
-            if (posts.length > 0) {
-                renderizarFeedLocal(posts);
-                hayMas = false;
-                if (btnCargarMas) btnCargarMas.style.display = 'none';
-            } else {
-                mostrarSinPublicaciones();
-            }
-            cargando = false;
-            return;
-        }
-
-        const response = await fetch(`/api/muro?page=${pagina}&limit=10`, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
+        const response = await fetchWithAuth(`/api/muro?page=${pagina}&limit=10`);
 
         if (!response.ok) {
             if (response.status === 401) {
-                localStorage.removeItem('galleta_token');
-                localStorage.removeItem('userId');
-                window.location.href = '/';
+                console.warn('No autenticado, usando localStorage');
+                cargarDesdeLocalStorage();
+                cargando = false;
                 return;
             }
             throw new Error('Error al cargar publicaciones');
@@ -115,28 +136,27 @@ async function cargarPublicaciones(pagina = 1) {
                 btnCargarMas.style.display = hayMas ? 'block' : 'none';
             }
         } else if (pagina === 1) {
-            // Fallback: mostrar desde localStorage
-            const posts = cargarPublicacionesLocal();
-            if (posts.length > 0) {
-                renderizarFeedLocal(posts);
-            } else {
-                mostrarSinPublicaciones();
-            }
+            cargarDesdeLocalStorage();
         }
 
         paginaActual = pagina;
 
     } catch (error) {
         console.error('Error cargando publicaciones:', error);
-        // Fallback: mostrar desde localStorage
-        const posts = cargarPublicacionesLocal();
-        if (posts.length > 0) {
-            renderizarFeedLocal(posts);
-        } else if (pagina === 1) {
-            mostrarErrorPublicaciones();
-        }
+        cargarDesdeLocalStorage();
     } finally {
         cargando = false;
+    }
+}
+
+function cargarDesdeLocalStorage() {
+    const posts = cargarPublicacionesLocal();
+    if (posts.length > 0) {
+        renderizarFeedLocal(posts);
+        hayMas = false;
+        if (btnCargarMas) btnCargarMas.style.display = 'none';
+    } else {
+        mostrarSinPublicaciones();
     }
 }
 
@@ -152,12 +172,12 @@ function renderizarFeedLocal(posts) {
 
     feedContainer.innerHTML = '';
     posts.forEach(post => {
-        // Convertir post de localStorage a formato compatible
         const postData = {
             _id: post.id || Date.now().toString(),
-            autor: { nombre: post.autor || 'Explorador', fotoPerfil: '/default-avatar.png', verificado: true },
+            autor: { nombre: post.autor || 'Explorador', fotoPerfil: post.avatar || '/default-avatar.png', verificado: true },
             contenido: post.contenido || '',
             createdAt: post.fecha || new Date().toISOString(),
+            fecha: post.fecha || new Date().toISOString(),
             reacciones: { meGusta: post.likes || 0 },
             usuarioReacciono: post.liked || false,
             totalComentarios: post.comentarios ? post.comentarios.length : 0,
@@ -181,13 +201,11 @@ function renderizarFeedLocal(posts) {
 function renderizarPublicacion(post) {
     const esVenta = post.tipo === 'venta' || post.tipo === 'token';
     const autor = post.autor || { nombre: 'Usuario', fotoPerfil: '/default-avatar.png', verificado: false };
-    const fecha = new Date(post.createdAt).toLocaleDateString('es-ES', {
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
+    
+    // ✅ Fecha corregida: usa created_at de Supabase o fecha de localStorage
+    const fecha = post.createdAt 
+        ? new Date(post.createdAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+        : post.fecha || 'Hace un momento';
 
     const reacciones = post.reacciones || {};
     const totalReacciones = Object.values(reacciones).reduce((a, b) => a + b, 0);
@@ -346,7 +364,7 @@ function mostrarErrorPublicaciones() {
 }
 
 // ================================================================
-// PUBLICAR NUEVA PUBLICACIÓN
+// PUBLICAR NUEVA PUBLICACIÓN (CON SUPABASE AUTH)
 // ================================================================
 async function publicar() {
     const contenido = postContent.value.trim();
@@ -355,57 +373,13 @@ async function publicar() {
         return;
     }
 
-    const token = localStorage.getItem('galleta_token');
-    if (!token) {
-        // Publicar localmente (fallback)
-        publicarLocal(contenido);
-        return;
-    }
-
-    btnPublicar.disabled = true;
-    btnPublicar.textContent = '⏳ Publicando...';
-
-    try {
-        const response = await fetch('/api/muro', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                contenido: contenido,
-                tipo: 'texto'
-            })
-        });
-
-        if (!response.ok) throw new Error('Error al publicar');
-
-        const data = await response.json();
-        postContent.value = '';
-        cargarPublicaciones(1);
-        showToast('✅ Publicación creada');
-
-    } catch (error) {
-        console.error('Error publicando:', error);
-        publicarLocal(contenido);
-    } finally {
-        btnPublicar.disabled = false;
-        btnPublicar.textContent = '🚀 Publicar';
-    }
-}
-
-// ================================================================
-// PUBLICAR LOCAL (FALLBACK)
-// ================================================================
-function publicarLocal(contenido) {
     const perfil = JSON.parse(localStorage.getItem('sariels_perfil') || '{}');
     const posts = cargarPublicacionesLocal();
-
+    
     const nuevoPost = {
         id: Date.now(),
         autor: perfil.nombre || 'Explorador',
         avatar: perfil.avatar || '◈',
-        verificado: true,
         contenido: contenido,
         fecha: new Date().toLocaleString(),
         likes: 0,
@@ -418,12 +392,42 @@ function publicarLocal(contenido) {
         programado: null,
         tipo: 'texto'
     };
-
+    
+    // Guardar en localStorage siempre
     posts.unshift(nuevoPost);
     guardarPublicacionesLocal(posts);
-    postContent.value = '';
-    cargarPublicaciones(1);
-    showToast('✅ Publicación creada (modo local)');
+
+    btnPublicar.disabled = true;
+    btnPublicar.textContent = '⏳ Publicando...';
+
+    try {
+        const response = await fetchWithAuth('/api/muro', {
+            method: 'POST',
+            body: JSON.stringify({
+                contenido: contenido,
+                tipo: 'texto'
+            })
+        });
+
+        if (!response.ok) {
+            console.warn('Error al publicar en backend, pero queda en localStorage');
+        } else {
+            const data = await response.json();
+            console.log('✅ Publicación guardada en backend:', data);
+        }
+
+        postContent.value = '';
+        renderizarFeedLocal(posts);
+        showToast('✅ Publicación creada');
+
+    } catch (error) {
+        console.error('Error publicando:', error);
+        renderizarFeedLocal(posts);
+        showToast('✅ Publicación creada (modo local)');
+    } finally {
+        btnPublicar.disabled = false;
+        btnPublicar.textContent = '🚀 Publicar';
+    }
 }
 
 // ================================================================
@@ -433,34 +437,24 @@ const EMOJIS_REACCIONES = ['❤️', '👍', '😂', '😮', '😢'];
 
 window.toggleLike = async function(postId) {
     try {
-        const token = localStorage.getItem('galleta_token');
-        if (!token) {
-            toggleLikeLocal(postId);
-            return;
-        }
+        // Actualizar local primero (feedback inmediato)
+        toggleLikeLocal(postId);
 
-        const response = await fetch('/api/muro/reaccion', {
+        // Enviar al backend con autenticación
+        const response = await fetchWithAuth('/api/muro/reaccion', {
             method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            },
             body: JSON.stringify({ postId, reaccion: 'meGusta' })
         });
 
         if (!response.ok) {
-            const error = await response.json();
-            console.error('Error en like:', error);
-            toggleLikeLocal(postId);
-            return;
+            console.warn('Error al enviar like al backend:', await response.text());
+        } else {
+            const data = await response.json();
+            actualizarReacciones(postId, data.reacciones);
         }
-
-        const data = await response.json();
-        actualizarReacciones(postId, data.reacciones);
 
     } catch (error) {
         console.error('Error en like:', error);
-        toggleLikeLocal(postId);
     }
 };
 
@@ -471,7 +465,7 @@ function toggleLikeLocal(postId) {
         post.liked = !post.liked;
         post.likes += post.liked ? 1 : -1;
         guardarPublicacionesLocal(posts);
-        cargarPublicaciones(1);
+        renderizarFeedLocal(posts);
     }
 }
 
@@ -496,7 +490,6 @@ window.toggleComentarios = function(postId) {
 
     if (!isVisible) {
         cargarComentarios(postId);
-        // Enfocar input
         setTimeout(() => {
             const input = document.getElementById(`comentario-input-${postId}`);
             if (input) input.focus();
@@ -506,13 +499,7 @@ window.toggleComentarios = function(postId) {
 
 async function cargarComentarios(postId) {
     try {
-        const token = localStorage.getItem('galleta_token');
-        const response = await fetch(`/api/muro/${postId}`, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
-
+        const response = await fetchWithAuth(`/api/muro/${postId}`);
         if (response.ok) {
             const data = await response.json();
             const lista = document.querySelector(`#comentarios-${postId} .comentarios-lista`);
@@ -548,25 +535,20 @@ window.enviarComentario = async function(postId) {
     }
 
     try {
-        const token = localStorage.getItem('galleta_token');
-        if (!token) {
-            enviarComentarioLocal(postId, contenido);
-            return;
-        }
+        // Guardar localmente primero
+        enviarComentarioLocal(postId, contenido);
 
-        const response = await fetch('/api/muro/comentario', {
+        // Enviar al backend con autenticación
+        const response = await fetchWithAuth('/api/muro/comentario', {
             method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            },
             body: JSON.stringify({ postId, comentario: contenido })
         });
 
         if (response.ok) {
             input.value = '';
+            showToast('✅ Comentario agregado');
             cargarComentarios(postId);
-            // Incrementar contador de comentarios
+            
             const postCard = document.querySelector(`.post-card[data-id="${postId}"]`);
             if (postCard) {
                 const countEl = postCard.querySelector('.post-actions button:nth-child(2) .count');
@@ -575,14 +557,11 @@ window.enviarComentario = async function(postId) {
                     countEl.textContent = current + 1;
                 }
             }
-            showToast('✅ Comentario agregado');
         } else {
-            const error = await response.json();
-            showToast(`❌ ${error.error || 'Error al comentar'}`, 'error');
+            console.warn('Error al enviar comentario al backend, pero queda en localStorage');
         }
     } catch (error) {
         console.error('Error enviando comentario:', error);
-        enviarComentarioLocal(postId, contenido);
     }
 };
 
@@ -599,16 +578,47 @@ function enviarComentarioLocal(postId, contenido) {
             fecha: new Date().toLocaleString()
         });
         guardarPublicacionesLocal(posts);
-        cargarPublicaciones(1);
-        showToast('✅ Comentario agregado (local)');
+        renderizarFeedLocal(posts);
     }
 }
 
 // ================================================================
-// COMPRAR TOKENS (P2P)
+// COMPRAR TOKENS (CON MODAL DE CONFIRMACIÓN)
 // ================================================================
 window.comprarTokens = function(postId) {
-    showToast('🛒 Función de compra de tokens en desarrollo');
+    // Buscar la oferta en localStorage
+    const muroData = JSON.parse(localStorage.getItem('sariels_muro_data') || '{"ofertaTokens":[]}');
+    const token = muroData.ofertaTokens.find(t => t.id === postId);
+    if (!token) {
+        showToast('⚠️ Oferta no encontrada', 'error');
+        return;
+    }
+    if (token.vendido) {
+        showToast('⚠️ Este token ya fue vendido', 'warning');
+        return;
+    }
+    
+    // Verificar sesión
+    const perfil = JSON.parse(localStorage.getItem('sariels_perfil') || '{}');
+    if (!perfil.nombre) {
+        showToast('⚠️ Conecta tu wallet primero', 'error');
+        return;
+    }
+    
+    if (perfil.nombre === token.vendedor) {
+        showToast('⚠️ No puedes comprar tus propios tokens', 'warning');
+        return;
+    }
+    
+    // Mostrar confirmación con modal
+    if (window.mostrarConfirmacionCompra) {
+        window.mostrarConfirmacionCompra(token.id);
+    } else {
+        // Fallback: confirmación simple
+        if (confirm(`¿Comprar ${token.cantidad} token(s) por ${token.precio} MXN c/u?`)) {
+            showToast('🛒 Función de compra en desarrollo');
+        }
+    }
 };
 
 // ================================================================
@@ -639,7 +649,6 @@ window.compartirPublicacion = function(postId) {
 window.generarQRPost = function(postId) {
     const url = `${window.location.origin}/muro/${postId}`;
 
-    // Usar QRCode.js si está disponible
     if (typeof QRCode !== 'undefined') {
         const modal = document.createElement('div');
         modal.style.cssText = `
@@ -679,7 +688,6 @@ window.generarQRPost = function(postId) {
             showToast('⚠️ Error generando QR', 'error');
         }
     } else {
-        // Fallback: mostrar URL
         showToast(`📱 QR: ${url.substring(0, 50)}...`);
     }
 };
@@ -689,28 +697,15 @@ window.generarQRPost = function(postId) {
 // ================================================================
 window.anclarPost = async function(postId) {
     try {
-        const token = localStorage.getItem('galleta_token');
-        if (!token) {
-            anclarPostLocal(postId);
-            return;
-        }
-
-        const response = await fetch(`/api/muro/anclar/${postId}`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
+        anclarPostLocal(postId);
+        const response = await fetchWithAuth(`/api/muro/anclar/${postId}`, {
+            method: 'POST'
         });
-
-        if (response.ok) {
-            cargarPublicaciones(1);
-            showToast('📌 Publicación anclada');
-        } else {
-            anclarPostLocal(postId);
+        if (!response.ok) {
+            console.warn('Error al anclar en backend, pero queda en localStorage');
         }
     } catch (error) {
         console.error('Error anclando:', error);
-        anclarPostLocal(postId);
     }
 };
 
@@ -721,8 +716,8 @@ function anclarPostLocal(postId) {
     if (post) {
         post.anclado = true;
         guardarPublicacionesLocal(posts);
-        cargarPublicaciones(1);
-        showToast('📌 Publicación anclada (local)');
+        renderizarFeedLocal(posts);
+        showToast('📌 Publicación anclada');
     }
 }
 
@@ -752,18 +747,14 @@ window.programarPost = function(postId) {
 // ================================================================
 window.votarEncuesta = async function(postId, opcionIndex) {
     try {
-        const token = localStorage.getItem('galleta_token');
-        if (!token) {
+        const perfil = JSON.parse(localStorage.getItem('sariels_perfil') || '{}');
+        if (!perfil.nombre) {
             showToast('⚠️ Conecta tu wallet primero', 'error');
             return;
         }
 
-        const response = await fetch('/api/muro/encuesta/votar', {
+        const response = await fetchWithAuth('/api/muro/encuesta/votar', {
             method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            },
             body: JSON.stringify({ postId, opcionIndex })
         });
 
@@ -811,8 +802,18 @@ window.agregarImagen = function() {
         posts.unshift(nuevoPost);
         guardarPublicacionesLocal(posts);
         postContent.value = '';
-        cargarPublicaciones(1);
+        renderizarFeedLocal(posts);
         showToast('🖼️ Imagen publicada');
+        
+        // Enviar al backend
+        fetchWithAuth('/api/muro', {
+            method: 'POST',
+            body: JSON.stringify({
+                contenido: contenido,
+                tipo: 'imagen',
+                imagen: url.trim()
+            })
+        }).catch(err => console.warn('Error publicando imagen en backend:', err));
     }
 };
 
@@ -868,8 +869,18 @@ window.agregarEncuesta = function() {
     posts.unshift(nuevoPost);
     guardarPublicacionesLocal(posts);
     postContent.value = '';
-    cargarPublicaciones(1);
+    renderizarFeedLocal(posts);
     showToast('📊 Encuesta publicada');
+    
+    // Enviar al backend
+    fetchWithAuth('/api/muro', {
+        method: 'POST',
+        body: JSON.stringify({
+            contenido: contenido,
+            tipo: 'encuesta',
+            encuesta: nuevoPost.encuesta
+        })
+    }).catch(err => console.warn('Error publicando encuesta en backend:', err));
 };
 
 // ================================================================
@@ -914,7 +925,7 @@ function insertarHashtag() {
 }
 
 function insertarEmoji() {
-    const emojis = ['😊', '🔥', '✨', '🌟', '💎', '🚀', '🎯', '🏆', '⭐', '💫'];
+    const emojis = ['◆', '◇', '◈', '✦', '★', '☆', '⊚', '◉', '◊', '⬡'];
     const emoji = emojis[Math.floor(Math.random() * emojis.length)];
     const textarea = document.getElementById('postContent');
     if (!textarea) return;
@@ -953,46 +964,36 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Botón de modo oscuro/claro
-    const btnModo = document.createElement('button');
-    btnModo.textContent = '🌙';
-    btnModo.style.cssText = `
-        position: fixed;
-        bottom: 20px;
-        left: 20px;
-        z-index: 999;
-        padding: 10px 14px;
-        border-radius: 50%;
-        border: 1px solid var(--glass-border);
-        background: var(--glass-bg);
-        color: var(--gold);
-        cursor: pointer;
-        font-size: 1.2rem;
-        backdrop-filter: blur(10px);
-        transition: all 0.3s ease;
-    `;
-    btnModo.onmouseover = () => btnModo.style.transform = 'scale(1.1)';
-    btnModo.onmouseout = () => btnModo.style.transform = 'scale(1)';
-    btnModo.onclick = toggleModo;
-    document.body.appendChild(btnModo);
-
-    // Verificar wallet
-    const token = localStorage.getItem('galleta_token');
-    const connectBtn = document.getElementById('connectWallet');
-    if (token && connectBtn) {
-        connectBtn.textContent = '✅ Conectado';
-        connectBtn.disabled = true;
+    // Botón de modo oscuro/claro (si no existe, crearlo)
+    let btnModo = document.getElementById('btnToggleModo');
+    if (!btnModo) {
+        btnModo = document.createElement('button');
+        btnModo.id = 'btnToggleModo';
+        btnModo.textContent = modoOscuro ? '🌙' : '☀️';
+        btnModo.style.cssText = `
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 999;
+            padding: 10px 14px;
+            border-radius: 50%;
+            border: 1px solid var(--glass-border);
+            background: var(--glass-bg);
+            color: var(--gold);
+            cursor: pointer;
+            font-size: 1.2rem;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        `;
+        btnModo.onmouseover = () => btnModo.style.transform = 'scale(1.1)';
+        btnModo.onmouseout = () => btnModo.style.transform = 'scale(1)';
+        btnModo.onclick = toggleModo;
+        document.body.appendChild(btnModo);
     }
 
-    if (connectBtn) {
-        connectBtn.addEventListener('click', function() {
-            window.location.href = '/';
-        });
-    }
-
-    console.log('◈ Sariel\'s - Muro Ultra Mega Pro');
+    console.log('◈ Sariel\'s - Muro Ultra Mega Pro (con Supabase Auth)');
     console.log('🚀 Competencia de Silicon Valley');
-    console.log('🔑 Innovaciones: Reacciones, Comentarios anidados, QR, Imágenes, Encuestas, Trending, Modo oscuro, Anclaje, Programación');
+    console.log('🔑 Innovaciones: Reacciones, Comentarios, QR, Imágenes, Encuestas, Modo oscuro, Anclaje, Programación');
 });
 
 // ================================================================
@@ -1017,3 +1018,7 @@ window.buscarHashtag = buscarHashtag;
 window.buscarUsuario = buscarUsuario;
 window.toggleModo = toggleModo;
 window.cargarPublicaciones = cargarPublicaciones;
+window.renderizarFeedLocal = renderizarFeedLocal;
+window.cargarDesdeLocalStorage = cargarDesdeLocalStorage;
+
+console.log('◈ muro.js cargado correctamente con Supabase Auth');
