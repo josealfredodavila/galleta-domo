@@ -20,6 +20,8 @@
     --danger: #ff3366;
     --warning: #D4A857;
     --quantum: #00e5ff;
+    --live-red: #ff0044;
+    --live-glow: 0 0 40px rgba(255, 0, 68, 0.3);
 }
 
 /* ================================================================
@@ -256,6 +258,56 @@ body {
     opacity: 0.4;
     cursor: not-allowed;
     transform: none;
+}
+
+/* ================================================================
+   BOTÓN CREAR LIVE (NUEVO)
+   ================================================================ */
+.btn-crear-live {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(135deg, var(--live-red), #d63031);
+    color: white;
+    border: none;
+    padding: 10px 24px;
+    border-radius: 30px;
+    font-family: 'Orbitron', monospace;
+    font-weight: 700;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: var(--transition);
+    letter-spacing: 0.5px;
+    box-shadow: var(--live-glow);
+}
+.btn-crear-live:hover {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 0 60px rgba(255, 0, 68, 0.4);
+}
+.btn-crear-live:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+/* ================================================================
+   LIVE BADGE HEADER (NUEVO)
+   ================================================================ */
+.live-badge-header {
+    font-size: 0.55rem;
+    background: var(--live-red);
+    color: white;
+    padding: 3px 12px;
+    border-radius: 20px;
+    font-family: 'Orbitron', monospace;
+    font-weight: 700;
+    letter-spacing: 1px;
+    animation: pulse-live-header 1.5s ease-in-out infinite;
+    box-shadow: var(--live-glow);
+}
+@keyframes pulse-live-header {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
 }
 
 /* ================================================================
