@@ -6,6 +6,7 @@
     <title>◈ Sariel's · Ecosistema WEB3</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet" />
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+    <link rel="stylesheet" href="/styles.css" />
     <style>
         /* ================================================================
            ESTILOS PROFESIONALES - CSARIEL'S ECOSYSTEM
@@ -35,6 +36,8 @@
             --bronze: #CD7F32;
             --bronze-light: #D4A574;
             --bronze-dark: #8B5A2B;
+            --live-red: #ff0044;
+            --live-glow: 0 0 40px rgba(255, 0, 68, 0.3);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -263,6 +266,24 @@
             border: 1px solid rgba(247, 212, 74, 0.2);
         }
         .btn-warning:hover { background: rgba(247, 212, 74, 0.2); }
+
+        /* ===== LIVE BADGE HEADER ===== */
+        .live-badge-header {
+            font-size: 0.55rem;
+            background: var(--live-red);
+            color: white;
+            padding: 3px 12px;
+            border-radius: 20px;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            letter-spacing: 1px;
+            animation: pulse-live-header 1.5s ease-in-out infinite;
+            box-shadow: var(--live-glow);
+        }
+        @keyframes pulse-live-header {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
 
         /* ===== DOMO CARD ===== */
         .domo-card { text-align: center; }
@@ -973,7 +994,7 @@
 
         <!-- ===== HEADER ===== -->
         <header class="header">
-            <a href="#" class="logo" onclick="cambiarTab('inicio')">
+            <a href="/" class="logo">
                 <span class="logo-hex">◈</span>
                 <span class="logo-text">Sariel<span>'s</span></span>
                 <span class="logo-badge">✦ WEB3</span>
@@ -1255,7 +1276,7 @@
     <script src="https://cdn.jsdelivr.net/npm/web3@1.8.0/dist/web3.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-    <script src="app.js"></script>
+    <script src="/app.js"></script>
     <script>
         // ================================================================
         // CONFIGURACIÓN DE CONTRASEÑAS (DOBLE CAPA)
