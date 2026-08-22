@@ -1,13 +1,22 @@
 const express = require('express');
 const { AccessToken } = require('livekit-server-sdk');
+const cors = require('cors');
+const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// ================================================================
+// MIDDLEWARE
+// ================================================================
+app.use(cors());
 app.use(express.json());
 
+// Servir archivos estáticos desde la carpeta public/
+app.use(express.static('public'));
+
 // ================================================================
-// HEALTH CHECK PARA RAILWAY
+// HEALTH CHECK
 // ================================================================
 app.get('/api/health', (req, res) => {
     res.status(200).json({ 
@@ -18,7 +27,7 @@ app.get('/api/health', (req, res) => {
 });
 
 // ================================================================
-// NUEVA RUTA DE LIVEKIT PARA EL MURO LIVE
+// LIVEKIT TOKEN
 // ================================================================
 app.get('/api/token', async (req, res) => {
     try {
@@ -26,7 +35,9 @@ app.get('/api/token', async (req, res) => {
         const participantName = req.query.name || `usuario_${Math.floor(Math.random() * 1000)}`;
 
         if (!process.env.LIVEKIT_API_KEY || !process.env.LIVEKIT_API_SECRET) {
-            return res.status(500).json({ error: 'Las credenciales de LiveKit no están configuradas en el servidor.' });
+            return res.status(500).json({ 
+                error: 'LiveKit credentials not configured' 
+            });
         }
 
         const at = new AccessToken(
@@ -45,29 +56,65 @@ app.get('/api/token', async (req, res) => {
         const token = await at.toJwt();
         res.json({ token });
     } catch (error) {
-        console.error('❌ Error generando token de LiveKit:', error);
-        res.status(500).json({ error: 'No se pudo generar el token de transmisión' });
+        console.error('❌ Error generando token:', error);
+        res.status(500).json({ 
+            error: 'No se pudo generar el token de transmisión' 
+        });
     }
 });
 
 // ================================================================
-// RUTAS PRINCIPALES
+// RUTA PRINCIPAL
 // ================================================================
 app.get('/', (req, res) => {
-    res.status(200).json({ status: 'OK', message: "Sariel's API running successfully" });
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+// ================================================================
+// RUTA PARA LIVE (ruta corta)
+// ================================================================
+app.get('/live', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'features', 'live', 'live.html'));
+});
+
+// ================================================================
+// RUTA PARA QR GENERATOR (ruta corta)
+// ================================================================
+app.get('/qr', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'qr-generator.html'));
+});
+
+// ================================================================
+// MANEJO DE ERRORES
+// ================================================================
 app.use((err, req, res, next) => {
     console.error('❌ Error:', err.message);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ 
+        error: err.message || 'Error interno del servidor' 
+    });
 });
 
-process.on('SIGINT', () => process.exit(0));
-process.on('SIGTERM', () => process.exit(0));
+// ================================================================
+// APAGADO GRACIAL
+// ================================================================
+process.on('SIGINT', () => {
+    console.log('🛑 Servidor detenido por SIGINT');
+    process.exit(0);
+});
+process.on('SIGTERM', () => {
+    console.log('🛑 Servidor detenido por SIGTERM');
+    process.exit(0);
+});
 
-// Escuchar explícitamente en 0.0.0.0
+// ================================================================
+// INICIAR SERVIDOR
+// ================================================================
 app.listen(PORT, '0.0.0.0', () => {
+    console.log(`========================================`);
     console.log(`✅ Servidor corriendo en el puerto ${PORT}`);
+    console.log(`📁 Sirviendo archivos desde: /public`);
+    console.log(`🌐 URL: http://localhost:${PORT}`);
+    console.log(`========================================`);
 });
 
 module.exports = app;
