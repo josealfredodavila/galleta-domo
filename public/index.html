@@ -585,6 +585,37 @@
             padding: 10px;
         }
 
+        /* ===== RECUPERAR CONTRASEÑA (NUEVO) ===== */
+        #recoverCard h3 {
+            font-family: 'Orbitron', monospace;
+            color: var(--gold);
+            font-size: 0.95rem;
+            margin-bottom: 12px;
+        }
+        #recoverCard .sub {
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            margin-bottom: 16px;
+        }
+        #recoverCard .btn {
+            width: 100%;
+            justify-content: center;
+            padding: 10px;
+        }
+        #recoverCard .footer-text {
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            margin-top: 12px;
+            text-align: center;
+        }
+        #recoverCard .footer-text a {
+            color: var(--gold);
+            text-decoration: none;
+        }
+        #recoverCard .footer-text a:hover {
+            text-decoration: underline;
+        }
+
         /* ===== GRID ===== */
         .grid-2 {
             display: grid;
@@ -1032,6 +1063,7 @@
 
             <!-- ===== AUTH + WALLET ===== -->
             <div class="auth-section">
+                <!-- ===== REGISTRO ===== -->
                 <div class="auth-card" id="registerCard">
                     <h3>◈ Regístrate gratis</h3>
                     <div class="sub">Crea tu cuenta con email o teléfono</div>
@@ -1045,14 +1077,35 @@
                     </p>
                 </div>
 
+                <!-- ===== LOGIN ===== -->
                 <div class="auth-card" id="loginCard" style="display:none;">
                     <h3>◈ Iniciar sesión</h3>
                     <div class="sub">Entra con tu email o wallet</div>
                     <input type="email" id="loginEmail" placeholder="Correo electrónico" />
                     <input type="password" id="loginPassword" placeholder="Contraseña" />
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:4px;">
+                        <a href="#" onclick="mostrarRecuperacion()" style="color:var(--gold);font-size:0.65rem;text-decoration:underline;">
+                            ¿Olvidaste tu contraseña?
+                        </a>
+                        <button class="btn btn-outline btn-sm" onclick="recuperarConWallet()" style="font-size:0.5rem;padding:3px 10px;border-radius:16px;border-color:rgba(212,175,55,0.2);">
+                            ◈ Recuperar con Wallet
+                        </button>
+                    </div>
                     <button class="btn btn-outline" onclick="iniciarSesion()" style="width:100%;justify-content:center;">◈ Iniciar sesión</button>
                     <p style="font-size:0.6rem;color:var(--text-muted);margin-top:8px;text-align:center;">
                         ¿No tienes cuenta? <a href="#" onclick="mostrarRegistro()" style="color:var(--gold);">Regístrate</a>
+                    </p>
+                </div>
+
+                <!-- ===== RECUPERAR CONTRASEÑA (NUEVO) ===== -->
+                <div class="auth-card" id="recoverCard" style="display:none;">
+                    <h3>◈ ¿Olvidaste tu contraseña?</h3>
+                    <div class="sub">No te preocupes, te enviamos un enlace seguro para recuperarla.</div>
+                    <input type="email" id="recoverEmail" placeholder="Tu correo registrado" />
+                    <button class="btn btn-gold" onclick="enviarRecuperacion()">📧 Enviar enlace de recuperación</button>
+                    <p class="footer-text">
+                        Te llegará en menos de 1 minuto. Revisa spam si no lo ves.<br>
+                        <a href="#" onclick="mostrarLogin()" style="color:var(--gold);">← Volver a iniciar sesión</a>
                     </p>
                 </div>
             </div>
@@ -1825,11 +1878,40 @@
         function mostrarLogin() {
             document.getElementById('registerCard').style.display = 'none';
             document.getElementById('loginCard').style.display = 'block';
+            document.getElementById('recoverCard').style.display = 'none';
         }
 
         function mostrarRegistro() {
             document.getElementById('registerCard').style.display = 'block';
             document.getElementById('loginCard').style.display = 'none';
+            document.getElementById('recoverCard').style.display = 'none';
+        }
+
+        function mostrarRecuperacion() {
+            document.getElementById('registerCard').style.display = 'none';
+            document.getElementById('loginCard').style.display = 'none';
+            document.getElementById('recoverCard').style.display = 'block';
+        }
+
+        function enviarRecuperacion() {
+            const email = document.getElementById('recoverEmail').value.trim();
+            if (!email) {
+                showToast('⚠️ Ingresa tu correo', 'error');
+                return;
+            }
+            if (typeof app !== 'undefined' && app.recuperarContraseña) {
+                app.recuperarContraseña(email);
+            } else {
+                showToast('⚠️ Función de recuperación no disponible', 'error');
+            }
+        }
+
+        function recuperarConWallet() {
+            if (typeof app !== 'undefined' && app.recuperarConWallet) {
+                app.recuperarConWallet();
+            } else {
+                showToast('⚠️ Función de recuperación no disponible', 'error');
+            }
         }
 
         function registrarUsuario() {
@@ -2083,6 +2165,9 @@
         window.iniciarSesion = iniciarSesion;
         window.mostrarLogin = mostrarLogin;
         window.mostrarRegistro = mostrarRegistro;
+        window.mostrarRecuperacion = mostrarRecuperacion;
+        window.enviarRecuperacion = enviarRecuperacion;
+        window.recuperarConWallet = recuperarConWallet;
         window.comprarInternetMini = comprarInternetMini;
         window.seleccionarPackMini = seleccionarPackMini;
         window.comprarDomo = comprarDomo;
