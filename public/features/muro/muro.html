@@ -1849,6 +1849,7 @@
                 };
                 posts.push(postEjemplo);
                 localStorage.setItem('sariels_muro_posts', JSON.stringify(posts));
+                console.log('✅ Publicación de ejemplo creada');
             }
             
             renderizarFeed();
@@ -2499,7 +2500,7 @@
             cargarModo();
             actualizarValorMercado();
             
-            // ✅ CARGAR PUBLICACIONES AL INICIO
+            // ✅ CARGAR PUBLICACIONES AL INICIO (ESTA ES LA LÍNEA CLAVE)
             cargarPublicacionesIniciales();
             
             initDraggableButton();
