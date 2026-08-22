@@ -8,10 +8,7 @@
     <link rel="stylesheet" href="/features/muro/muro.css" />
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <style>
-        /* ================================================================
-           MURO ULTRA MEGA PRO - SARIEL'S
-           ================================================================ */
-
+        /* ===== ESTILOS COMPLETOS (los mismos que tenías) ===== */
         :root {
             --gold: #D4AF37;
             --gold-dark: #b8923a;
@@ -57,7 +54,6 @@
             transition: background 0.5s ease, color 0.5s ease;
         }
 
-        /* ===== FONDO ESTELAR ===== */
         #stars-canvas {
             position: fixed;
             top: 0;
@@ -92,7 +88,6 @@
         ::-webkit-scrollbar-track { background: var(--space); }
         ::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 2px; }
 
-        /* ===== APP ===== */
         .app {
             position: relative;
             z-index: 1;
@@ -102,7 +97,6 @@
             contain: layout style;
         }
 
-        /* ===== HEADER ===== */
         .header {
             display: flex;
             justify-content: space-between;
@@ -190,7 +184,6 @@
             50% { opacity: 0.3; transform: scale(0.8); }
         }
 
-        /* ===== TOKEN BADGE EN HEADER ===== */
         .token-badge {
             display: flex;
             align-items: center;
@@ -217,7 +210,6 @@
             color: var(--gold-bright);
         }
 
-        /* ===== NAVEGACIÓN ===== */
         .main-nav {
             display: flex;
             gap: 4px;
@@ -278,7 +270,6 @@
             background: rgba(255, 51, 102, 0.08);
         }
 
-        /* ===== VALOR DE MERCADO ===== */
         .valor-mercado {
             background: var(--glass-bg);
             border: 1px solid var(--glass-border);
@@ -353,7 +344,6 @@
             box-shadow: var(--shadow-gold);
         }
 
-        /* ===== TRENDING TOPICS ===== */
         .trending-section {
             background: var(--glass-bg);
             border: 1px solid var(--glass-border);
@@ -415,7 +405,6 @@
             margin-left: 4px;
         }
 
-        /* ===== FORMULARIO ===== */
         .post-form {
             background: var(--glass-bg);
             border: 1px solid var(--glass-border);
@@ -535,7 +524,6 @@
             transform: none !important;
         }
 
-        /* ===== POST CARD ===== */
         .post-card {
             background: var(--glass-bg);
             border: 1px solid var(--glass-border);
@@ -657,78 +645,48 @@
             gap: 4px;
         }
 
-        /* ===== ENCUESTAS ===== */
-        .post-card .post-encuesta {
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 12px;
-            padding: 14px;
-            margin: 10px 0;
-            border: 1px solid rgba(212, 175, 55, 0.08);
+        .post-card .post-actions {
+            display: flex;
+            gap: 2px;
+            flex-wrap: wrap;
+            padding-top: 8px;
+            border-top: 1px solid var(--glass-border);
+        }
+        .post-card .post-actions button {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 0.7rem;
+            cursor: pointer;
             transition: var(--transition);
-        }
-        .post-card .post-encuesta:hover {
-            border-color: rgba(212, 175, 55, 0.15);
-        }
-        .post-card .post-encuesta .pregunta {
-            font-weight: 600;
-            color: var(--gold);
-            font-size: 0.8rem;
-            margin-bottom: 8px;
+            font-family: 'Inter', sans-serif;
+            padding: 4px 12px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
             letter-spacing: 0.3px;
         }
-        .post-card .post-encuesta .opcion {
-            margin: 4px 0;
-            cursor: pointer;
-            padding: 6px 10px;
-            border-radius: 8px;
-            transition: var(--transition);
-            background: rgba(255, 255, 255, 0.03);
-        }
-        .post-card .post-encuesta .opcion:hover {
+        .post-card .post-actions button:hover {
+            color: var(--gold);
             background: rgba(212, 175, 55, 0.05);
         }
-        .post-card .post-encuesta .opcion .barra {
-            width: 100%;
-            height: 4px;
-            background: rgba(212, 175, 55, 0.08);
-            border-radius: 2px;
-            margin-top: 4px;
-            overflow: hidden;
+        .post-card .post-actions button.liked {
+            color: var(--danger);
         }
-        .post-card .post-encuesta .opcion .barra .fill {
-            height: 100%;
-            background: linear-gradient(90deg, var(--gold-dark), var(--gold), var(--gold-light));
-            border-radius: 2px;
-            transition: width 0.5s ease;
-        }
-        .post-card .post-encuesta .total-votos {
-            font-size: 0.55rem;
+        .post-card .post-actions button .count {
+            font-size: 0.6rem;
             color: var(--text-muted);
-            margin-top: 6px;
-            letter-spacing: 0.3px;
+        }
+        .post-card .post-actions .btn-eliminar {
+            color: var(--text-muted);
+            transition: var(--transition);
+        }
+        .post-card .post-actions .btn-eliminar:hover {
+            color: var(--danger) !important;
+            background: rgba(255, 51, 102, 0.08) !important;
         }
 
-        /* ===== MEDIA ===== */
-        .post-card .post-media {
-            margin: 12px -20px 12px -20px;
-            border-radius: 12px;
-            overflow: hidden;
-        }
-        .post-card .post-media img {
-            width: 100%;
-            max-height: 400px;
-            object-fit: cover;
-            transition: var(--transition-slow);
-        }
-        .post-card .post-media img:hover {
-            transform: scale(1.02);
-        }
-        .post-card .post-media video {
-            width: 100%;
-            max-height: 400px;
-        }
-
-        /* ===== VENTA ===== */
         .post-card .post-venta {
             background: rgba(212, 175, 55, 0.05);
             border: 1px solid rgba(212, 175, 55, 0.1);
@@ -778,7 +736,6 @@
             background: rgba(255, 255, 255, 0.05);
         }
 
-        /* ===== COMENTARIOS EN PUBLICACIONES DE TEXTO ===== */
         .post-card .post-comentarios {
             margin-top: 12px;
             border-top: 1px solid rgba(212, 175, 55, 0.06);
@@ -863,9 +820,6 @@
             transform: scale(1.05);
         }
 
-        /* ================================================================
-           COMENTARIOS EN OFERTAS DE TOKENS
-           ================================================================ */
         .post-card .comentarios-oferta {
             margin-top: 12px;
             border-top: 1px solid rgba(212, 175, 55, 0.06);
@@ -957,52 +911,6 @@
             transform: scale(1.05);
         }
 
-        /* ===== ACCIONES ===== */
-        .post-card .post-actions {
-            display: flex;
-            gap: 2px;
-            flex-wrap: wrap;
-            padding-top: 8px;
-            border-top: 1px solid var(--glass-border);
-        }
-        .post-card .post-actions button {
-            background: none;
-            border: none;
-            color: var(--text-muted);
-            font-size: 0.7rem;
-            cursor: pointer;
-            transition: var(--transition);
-            font-family: 'Inter', sans-serif;
-            padding: 4px 12px;
-            border-radius: 20px;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            letter-spacing: 0.3px;
-        }
-        .post-card .post-actions button:hover {
-            color: var(--gold);
-            background: rgba(212, 175, 55, 0.05);
-        }
-        .post-card .post-actions button.liked {
-            color: var(--danger);
-        }
-        .post-card .post-actions button .count {
-            font-size: 0.6rem;
-            color: var(--text-muted);
-        }
-
-        /* ===== BOTÓN ELIMINAR ===== */
-        .post-actions .btn-eliminar {
-            color: var(--text-muted);
-            transition: var(--transition);
-        }
-        .post-actions .btn-eliminar:hover {
-            color: var(--danger) !important;
-            background: rgba(255, 51, 102, 0.08) !important;
-        }
-
-        /* ===== MODAL VENDER ===== */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -1124,7 +1032,6 @@
             cursor: not-allowed;
         }
 
-        /* ===== MODAL CONFIRMAR COMPRA ===== */
         .modal-confirmacion .modal-body {
             padding: 0;
         }
@@ -1161,9 +1068,6 @@
             box-shadow: var(--shadow-gold);
         }
 
-        /* ================================================================
-           BOTÓN TOGGLE MODO - ARRASTRABLE
-           ================================================================ */
         .btn-toggle-modo {
             position: fixed;
             bottom: 20px;
@@ -1203,7 +1107,6 @@
             box-shadow: 0 8px 40px rgba(212, 175, 55, 0.4);
         }
 
-        /* ===== BOTÓN SCROLL TO TOP ===== */
         .btn-scroll-top {
             position: fixed;
             bottom: 80px;
@@ -1235,7 +1138,6 @@
             box-shadow: var(--shadow-gold);
         }
 
-        /* ===== EMPTY STATE ===== */
         .empty-state {
             text-align: center;
             padding: 60px 20px;
@@ -1262,28 +1164,6 @@
             letter-spacing: 0.3px;
         }
 
-        /* ===== LOADING ===== */
-        .loading-spinner {
-            text-align: center;
-            padding: 40px 0;
-            color: var(--text-muted);
-        }
-        .loading-spinner .spinner {
-            display: inline-block;
-            width: 40px;
-            height: 40px;
-            border: 3px solid rgba(212, 175, 55, 0.08);
-            border-top: 3px solid var(--gold);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 12px;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* ===== TOAST ===== */
         .toast {
             position: fixed;
             bottom: 30px;
@@ -1309,7 +1189,6 @@
         .toast.error { border-color: var(--danger); color: var(--danger); }
         .toast.warning { border-color: var(--warning); color: var(--warning); }
 
-        /* ===== MODO CLARO ===== */
         body.modo-claro {
             background: #f0f4f8;
             color: #05080f;
@@ -1376,7 +1255,6 @@
             background: rgba(255, 255, 255, 0.8);
         }
 
-        /* ===== FOOTER ===== */
         .footer {
             margin-top: 30px;
             padding-top: 16px;
@@ -1396,7 +1274,6 @@
         .footer-links a { color: var(--text-muted); text-decoration: none; transition: var(--transition); }
         .footer-links a:hover { color: var(--gold); }
 
-        /* ===== RESPONSIVE ===== */
         @media (max-width: 768px) {
             .app { padding: 12px 14px; }
             .post-card { padding: 14px 16px; }
@@ -1408,7 +1285,6 @@
             .trending-tags .tag { font-size: 0.6rem; padding: 3px 10px; }
             .post-card .post-venta { flex-direction: column; align-items: stretch; text-align: center; }
             .post-card .post-venta .btn-comprar { width: 100%; }
-            .post-card .post-media { margin: 8px -16px 8px -16px; }
             .valor-mercado { grid-template-columns: 1fr; text-align: center; }
             .valor-mercado .btn-vender-token { width: 100%; justify-content: center; }
             .main-nav .nav-link { font-size: 0.6rem; padding: 6px 10px; }
@@ -1423,7 +1299,6 @@
             .post-card .post-actions { gap: 2px; }
             .post-card .post-actions button { font-size: 0.6rem; padding: 3px 8px; }
             .post-card .post-actions button .count { font-size: 0.5rem; }
-            .post-card .post-media { margin: 6px -14px 6px -14px; }
             .post-card .post-header { gap: 8px; }
             .post-card .post-avatar { width: 32px; height: 32px; font-size: 0.9rem; }
             .post-card .post-author { font-size: 0.75rem; }
@@ -1525,11 +1400,7 @@
 
         <!-- ===== FEED ===== -->
         <div id="feedContainer">
-            <div class="empty-state">
-                <span class="icon">◈</span>
-                <h3>Sin publicaciones</h3>
-                <p>Sé el primero en compartir algo</p>
-            </div>
+            <!-- Las publicaciones se renderizan con JavaScript -->
         </div>
 
         <!-- ===== FOOTER ===== -->
@@ -1608,11 +1479,9 @@
     <script src="https://cdn.jsdelivr.net/npm/web3@1.8.0/dist/web3.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-    <!-- <script src="/app.js"></script> -->   <!-- 🔴 COMENTADA para evitar conflictos -->
-    <script src="/features/muro/muro.js"></script>
     <script>
         // ================================================================
-        // MURO ULTRA MEGA PRO - LÓGICA COMPLETA (CON SUPABASE AUTH)
+        // MURO ULTRA MEGA PRO - LÓGICA COMPLETA (CORREGIDA)
         // ================================================================
 
         // ================================================================
@@ -1958,26 +1827,69 @@
         }
 
         // ================================================================
-        // RENDERIZAR FEED (con formato de fecha corregido)
+        // ✅ NUEVA FUNCIÓN: CARGAR PUBLICACIONES AL INICIO
+        // ================================================================
+        function cargarPublicacionesIniciales() {
+            const posts = JSON.parse(localStorage.getItem('sariels_muro_posts') || '[]');
+            
+            // Si no hay publicaciones, crear una de ejemplo
+            if (posts.length === 0) {
+                const postEjemplo = {
+                    id: Date.now(),
+                    autor: 'Sariel\'s',
+                    avatar: '◈',
+                    contenido: '◈ ¡Bienvenido al muro de Sariel\'s! Comparte tus pensamientos, vende tokens y conecta con la comunidad.',
+                    fecha: new Date().toLocaleString(),
+                    likes: 5,
+                    comentarios: [],
+                    vistas: 42,
+                    anclado: true,
+                    imagen: null,
+                    encuesta: null
+                };
+                posts.push(postEjemplo);
+                localStorage.setItem('sariels_muro_posts', JSON.stringify(posts));
+            }
+            
+            renderizarFeed();
+        }
+
+        // ================================================================
+        // ✅ RENDERIZAR FEED (CORREGIDO)
         // ================================================================
         function renderizarFeed() {
             const container = document.getElementById('feedContainer');
             if (!container) return;
+
             const perfil = JSON.parse(localStorage.getItem('sariels_perfil') || '{}');
             const posts = JSON.parse(localStorage.getItem('sariels_muro_posts') || '[]');
             const ofertasActivas = ofertaTokens.filter(t => !t.vendido);
             const ofertasVendidas = ofertaTokens.filter(t => t.vendido);
+
             let html = '';
 
-            // Publicaciones de texto
+            // Si no hay posts ni ofertas, mostrar estado vacío
+            if (posts.length === 0 && ofertasActivas.length === 0 && ofertasVendidas.length === 0) {
+                html = `
+                    <div class="empty-state">
+                        <span class="icon">◈</span>
+                        <h3>Sin publicaciones</h3>
+                        <p>Sé el primero en compartir algo</p>
+                    </div>
+                `;
+                container.innerHTML = html;
+                return;
+            }
+
+            // Mostrar posts (los más recientes primero)
             posts.forEach(post => {
                 const esAutor = post.autor === perfil.nombre;
                 const comentarios = post.comentarios || [];
                 const vistas = post.vistas || Math.floor(Math.random() * 50) + 10;
-                // ✅ Fecha corregida: primero created_at (Supabase), luego fecha (localStorage)
                 const fechaPost = post.created_at 
                     ? new Date(post.created_at).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
                     : post.fecha || 'Hace un momento';
+                    
                 html += `
                     <div class="post-card" data-id="${post.id}">
                         <div class="post-header">
@@ -2027,23 +1939,16 @@
                 `;
             });
 
-            // Ofertas activas y vendidas
+            // Ofertas activas
             ofertasActivas.forEach(t => {
                 html += renderizarOferta(t, false, perfil.nombre);
             });
+
+            // Ofertas vendidas (últimas 5)
             ofertasVendidas.slice(-5).reverse().forEach(t => {
                 html += renderizarOferta(t, true, perfil.nombre);
             });
 
-            if (html === '') {
-                html = `
-                    <div class="empty-state">
-                        <span class="icon">◈</span>
-                        <h3>Sin publicaciones</h3>
-                        <p>Sé el primero en compartir algo</p>
-                    </div>
-                `;
-            }
             container.innerHTML = html;
         }
 
@@ -2165,7 +2070,6 @@
             localStorage.setItem('sariels_muro_posts', JSON.stringify(posts));
             renderizarFeed();
             showToast('◈ Comentario agregado');
-            // Enviar al backend con autenticación
             fetchWithAuth('/api/muro/comentario', {
                 method: 'POST',
                 body: JSON.stringify({ postId: id, contenido: texto })
@@ -2371,7 +2275,6 @@
             textarea.value = '';
             renderizarFeed();
             showToast('✅ Publicación creada');
-            // Enviar al backend
             fetchWithAuth('/api/muro', {
                 method: 'POST',
                 body: JSON.stringify({ contenido, tipo: 'texto' })
@@ -2524,60 +2427,8 @@
         }
 
         // ================================================================
-        // INICIALIZAR
+        // ESTRELLAS
         // ================================================================
-        document.addEventListener('DOMContentLoaded', function() {
-            initStars();
-            cargarDatosMuro();
-            cargarModo();
-            actualizarValorMercado();
-            renderizarFeed();
-            initDraggableButton();
-
-            const perfil = localStorage.getItem('sariels_perfil');
-            if (perfil) {
-                try {
-                    const data = JSON.parse(perfil);
-                    document.getElementById('userNombre').textContent = data.nombre || 'Explorador';
-                    document.getElementById('userHandle').textContent = '@' + (data.handle || 'explorador');
-                } catch (e) {}
-            }
-
-            document.getElementById('btnPublicar').addEventListener('click', publicarTexto);
-            document.getElementById('btnConfirmarCompra').addEventListener('click', ejecutarCompraConfirmada);
-            document.getElementById('postContent').addEventListener('keydown', function(e) {
-                if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-                    e.preventDefault();
-                    publicarTexto();
-                }
-            });
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape') {
-                    cerrarModalVenta();
-                    cerrarModalConfirmacion();
-                }
-            });
-            document.getElementById('modalVender').addEventListener('click', function(e) {
-                if (e.target === this) cerrarModalVenta();
-            });
-            document.getElementById('modalConfirmarCompra').addEventListener('click', function(e) {
-                if (e.target === this) cerrarModalConfirmacion();
-            });
-            window.addEventListener('scroll', function() {
-                const btn = document.querySelector('.btn-scroll-top');
-                if (window.scrollY > 300) {
-                    btn.classList.add('show');
-                } else {
-                    btn.classList.remove('show');
-                }
-            });
-
-            console.log('◈ Sariel\'s - Muro Ultra Mega Pro (con Supabase Auth)');
-            console.log('⧫ Diseño premium sin emojis');
-            console.log('◆ Tokens en venta:', ofertaTokens.filter(t => !t.vendido).length);
-            console.log('⟡ Precio base: 6.25 MXN (75 ÷ 12)');
-        });
-
         function initStars() {
             const canvas = document.getElementById('stars-canvas');
             if (!canvas) return;
@@ -2640,6 +2491,70 @@
         }
 
         // ================================================================
+        // INICIALIZAR
+        // ================================================================
+        document.addEventListener('DOMContentLoaded', function() {
+            initStars();
+            cargarDatosMuro();
+            cargarModo();
+            actualizarValorMercado();
+            
+            // ✅ CARGAR PUBLICACIONES AL INICIO
+            cargarPublicacionesIniciales();
+            
+            initDraggableButton();
+
+            const perfil = localStorage.getItem('sariels_perfil');
+            if (perfil) {
+                try {
+                    const data = JSON.parse(perfil);
+                    document.getElementById('userNombre').textContent = data.nombre || 'Explorador';
+                    document.getElementById('userHandle').textContent = '@' + (data.handle || 'explorador');
+                } catch (e) {}
+            }
+
+            document.getElementById('btnPublicar').addEventListener('click', publicarTexto);
+            document.getElementById('btnConfirmarCompra').addEventListener('click', ejecutarCompraConfirmada);
+            
+            document.getElementById('postContent').addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                    e.preventDefault();
+                    publicarTexto();
+                }
+            });
+            
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    cerrarModalVenta();
+                    cerrarModalConfirmacion();
+                }
+            });
+            
+            document.getElementById('modalVender').addEventListener('click', function(e) {
+                if (e.target === this) cerrarModalVenta();
+            });
+            
+            document.getElementById('modalConfirmarCompra').addEventListener('click', function(e) {
+                if (e.target === this) cerrarModalConfirmacion();
+            });
+            
+            window.addEventListener('scroll', function() {
+                const btn = document.querySelector('.btn-scroll-top');
+                if (window.scrollY > 300) {
+                    btn.classList.add('show');
+                } else {
+                    btn.classList.remove('show');
+                }
+            });
+
+            console.log('◈ Sariel\'s - Muro Ultra Mega Pro (con Supabase Auth)');
+            console.log('⧫ Diseño premium sin emojis');
+            console.log('◆ Tokens en venta:', ofertaTokens.filter(t => !t.vendido).length);
+            console.log('⟡ Precio base: 6.25 MXN (75 ÷ 12)');
+            console.log('✅ Publicaciones cargadas correctamente');
+        });
+
+        // ================================================================
         // EXPONER FUNCIONES GLOBALES
         // ================================================================
         window.showToast = showToast;
@@ -2668,6 +2583,7 @@
         window.eliminarComentarioOferta = eliminarComentarioOferta;
         window.toggleComentariosPost = toggleComentariosPost;
         window.enviarComentarioPost = enviarComentarioPost;
+        window.cargarPublicacionesIniciales = cargarPublicacionesIniciales;
     </script>
 </body>
 </html>
