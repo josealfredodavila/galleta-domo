@@ -1,7 +1,7 @@
 {
   "name": "galleta-domo-backend",
   "version": "1.0.0",
-  "description": "Backend de Sariel's con Supabase",
+  "description": "Backend de Sariel's con Supabase y LiveKit",
   "main": "server.js",
   "engines": {
     "node": "20.x"
@@ -14,7 +14,8 @@
     "@supabase/supabase-js": "^2.39.0",
     "cors": "^2.8.5",
     "dotenv": "^16.0.3",
-    "express": "^4.18.2"
+    "express": "^4.18.2",
+    "livekit-server-sdk": "^1.2.0"
   },
   "devDependencies": {
     "nodemon": "^2.0.22"
