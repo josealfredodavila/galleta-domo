@@ -1,40 +1,19 @@
-/* ================================================================
-   LIVE ULTRA MEGA PRO - SARIEL'S
-   Lógica premium competitiva con Silicon Valley
-   ================================================================ */
+// ================================================================
+// LIVE.JS - VERSIÓN COMPLETA CON SUPABASE + LIVEKIT
+// ================================================================
 
 // ================================================================
-// TOAST
+// TOAST (reutiliza el de app.js)
 // ================================================================
-function showToast(msg, type = '') {
-    let t = document.getElementById('toast');
-    if (!t) {
-        t = document.createElement('div');
-        t.id = 'toast';
-        t.className = 'toast';
-        document.body.appendChild(t);
-    }
-    t.textContent = msg;
-    t.className = 'toast show';
-    if (type === 'error') t.classList.add('error');
-    else if (type === 'warning') t.classList.add('warning');
-    else t.classList.remove('error', 'warning');
-    clearTimeout(t._timeout);
-    t._timeout = setTimeout(() => t.classList.remove('show'), 3500);
-}
+// showToast ya está definido en app.js
 
 // ================================================================
 // VARIABLES GLOBALES
 // ================================================================
-let usuarioActual = null;
+let livekitRoom = null;
+let transmisionActual = null;
+let chatSubscription = null;
 let socket = null;
-let transmisiones = [];
-let streamActual = null;
-let roomActual = null;
-let timerInterval = null;
-let segundosTransmitidos = 0;
-let modoOscuro = true;
-let liveActivo = false;
 
 // ================================================================
 // ELEMENTOS DEL DOM
@@ -44,48 +23,17 @@ const liveCount = document.getElementById('liveCount');
 const totalViewers = document.getElementById('totalViewers');
 
 // ================================================================
-// VERIFICAR AUTENTICACIÓN (SIN REDIRECCIÓN AGRESIVA)
+// CREAR TRANSMISIÓN (CON SUPABASE)
 // ================================================================
-function verificarAutenticacion() {
-    const token = localStorage.getItem('galleta_token');
-    const userId = localStorage.getItem('userId');
-    
-    // Si no hay token, mostrar mensaje pero NO redirigir
-    if (!token) {
-        showToast('⚠️ Conecta tu wallet para usar Live', 'warning');
-        return false;
-    }
-    
-    // Si hay userId, consideramos que está autenticado
-    if (userId) {
-        return true;
-    }
-    
-    // Intentar obtener userId del token
-    try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        if (payload && payload.id) {
-            localStorage.setItem('userId', payload.id);
-            return true;
-        }
-    } catch (e) {
-        console.warn('Token inválido, pero continuamos en modo demo');
-        return true; // Permitir modo demo
-    }
-    
-    return true; // Permitir modo demo si falla la verificación
-}
-
-// ================================================================
-// CREAR TRANSMISIÓN
-// ================================================================
-window.crearTransmision = function() {
-    const token = localStorage.getItem('galleta_token');
-    if (!token) {
-        showToast('⚠️ Conecta tu wallet primero', 'error');
-        // Intentar redirigir al index para conectar wallet
-        if (confirm('¿Quieres ir a conectar tu wallet?')) {
-            window.location.href = '/';
+window.crearTransmision = async function() {
+    if (!window.app || !window.app.usuario) {
+        showToast('⚠️ Inicia sesión primero', 'error');
+        if (confirm('¿Quieres iniciar sesión ahora?')) {
+            const email = prompt('Correo:');
+            if (email) {
+                const pass = prompt('Contraseña:');
+                if (pass) await app.iniciarSesion(email, pass);
+            }
         }
         return;
     }
@@ -93,38 +41,107 @@ window.crearTransmision = function() {
     const titulo = prompt('◆ Título de la transmisión:');
     if (!titulo || titulo.trim() === '') return;
 
-    const tagsInput = prompt('◈ Tags (separados por coma, ej: Música, Tokens, Gaming):');
-    const tags = tagsInput ? tagsInput.split(',').map(t => t.trim()).filter(t => t) : ['En vivo'];
-
-    showToast(`◉ Transmisión iniciada: ${titulo.trim()}`);
-
-    // Actualizar contador
-    if (liveCount) {
-        const current = parseInt(liveCount.textContent) || 0;
-        liveCount.textContent = current + 1;
+    const tipo = confirm('¿Quieres cobrar por acceso? (Cancelar = Gratis)');
+    let precio = 0;
+    if (tipo) {
+        precio = parseFloat(prompt('Precio en MXN:')) || 0;
     }
 
-    // Agregar tarjeta simulada
-    agregarLiveSimulado(titulo.trim(), tags);
+    const tagsInput = prompt('◈ Tags (separados por coma):');
+    const tags = tagsInput ? tagsInput.split(',').map(t => t.trim()).filter(t => t) : ['En vivo'];
+
+    // Crear en Supabase
+    const transmision = await app.crearTransmision({
+        titulo: titulo.trim(),
+        descripcion: '',
+        tags: tags,
+        tipo: tipo ? 'pago' : 'gratis',
+        precio: precio
+    });
+
+    if (!transmision) return;
+
+    transmisionActual = transmision;
+    
+    // Conectar a LiveKit
+    await conectarLiveKit(transmision.id);
+
+    // Agregar al grid
+    agregarLiveReal(transmision);
+
+    showToast(`◉ Transmisión iniciada: ${titulo.trim()}`);
+    abrirModalLive(transmision.id);
 };
 
 // ================================================================
-// AGREGAR LIVE SIMULADO
+// CONECTAR A LIVEKIT
 // ================================================================
-function agregarLiveSimulado(titulo, tags) {
+async function conectarLiveKit(transmisionId) {
+    try {
+        const nombre = window.app?.usuario?.user_metadata?.nombre || 'Streamer';
+        
+        const response = await fetch(`/api/token?room=transmision-${transmisionId}&name=${nombre}`);
+        const data = await response.json();
+
+        if (!data.token) {
+            throw new Error('No se pudo obtener token');
+        }
+
+        const wsUrl = 'wss://csariels-domo-57ujk04t.livekit.cloud';
+        livekitRoom = new LivekitClient.Room();
+
+        await livekitRoom.connect(wsUrl, data.token);
+        await livekitRoom.localParticipant.enableCameraAndMicrophone();
+
+        // Mostrar video propio
+        const videoContainer = document.getElementById('videoContainer');
+        if (videoContainer) {
+            videoContainer.innerHTML = '';
+            livekitRoom.localParticipant.trackPublications.forEach(pub => {
+                if (pub.track) {
+                    const element = pub.track.attach();
+                    videoContainer.appendChild(element);
+                }
+            });
+        }
+
+        // Escuchar nuevos participantes
+        livekitRoom.on(LivekitClient.RoomEvent.TrackSubscribed, (track, pub, participant) => {
+            const videoContainer = document.getElementById('videoContainer');
+            if (videoContainer) {
+                const element = track.attach();
+                videoContainer.appendChild(element);
+            }
+        });
+
+        showToast('◉ Conectado a LiveKit');
+        return true;
+    } catch (error) {
+        console.error('Error LiveKit:', error);
+        showToast('❌ Error al conectar: ' + error.message, 'error');
+        return false;
+    }
+}
+
+// ================================================================
+// AGREGAR LIVE REAL (desde Supabase)
+// ================================================================
+function agregarLiveReal(transmision) {
     if (!liveGrid) return;
 
-    // Eliminar empty state si existe
     const emptyState = liveGrid.querySelector('.empty-state');
     if (emptyState) emptyState.remove();
 
     const perfil = JSON.parse(localStorage.getItem('sariels_perfil') || '{}');
-    const nombre = perfil.nombre || 'Explorador';
+    const nombre = perfil.nombre || transmision.usuarios?.nombre || 'Streamer';
     const avatar = perfil.avatar || '✦';
 
     const card = document.createElement('div');
     card.className = 'live-card';
-    card.onclick = function() { abrirModalLive(); };
+    card.dataset.id = transmision.id;
+    card.onclick = function() { abrirModalLive(transmision.id); };
+
+    const esPago = transmision.tipo_transmision === 'pago' && transmision.precio > 0;
 
     card.innerHTML = `
         <div class="live-thumbnail">
@@ -133,173 +150,128 @@ function agregarLiveSimulado(titulo, tags) {
             </div>
             <div class="live-placeholder">◈</div>
             <div class="live-overlay"></div>
-            <div class="live-viewers">◉ 1</div>
+            <div class="live-viewers">◉ ${transmision.espectadores || 0}</div>
             <button class="live-qr-btn" onclick="event.stopPropagation();generarQRLive()">◈ QR</button>
         </div>
         <div class="live-info">
-            <div class="live-title">${titulo}</div>
+            <div class="live-title">
+                ${transmision.titulo}
+                ${esPago ? `<span class="tag">◆ $${transmision.precio}</span>` : `<span class="tag">✨ Gratis</span>`}
+            </div>
             <div class="live-host">
                 <div class="host-avatar">${avatar}</div>
                 <span class="host-name">${nombre}</span>
             </div>
             <div class="live-tags">
-                ${tags.map(tag => `<span class="tag live-tag">◉ ${tag}</span>`).join('')}
+                ${transmision.tags?.map(tag => `<span class="tag live-tag">◉ ${tag}</span>`).join('') || ''}
             </div>
             <div class="live-meta">
-                <span>⏱ Recién iniciado</span>
-                <span>◆ Público</span>
+                <span>⏱ ${new Date(transmision.fecha_inicio).toLocaleTimeString()}</span>
+                <span>◆ ${esPago ? 'Pago' : 'Público'}</span>
             </div>
         </div>
     `;
 
     liveGrid.prepend(card);
-
-    // Actualizar contador
-    if (liveCount) {
-        const current = parseInt(liveCount.textContent) || 0;
-        liveCount.textContent = current + 1;
-    }
-
-    showToast('◉ Transmisión iniciada exitosamente');
-    abrirModalLive();
+    actualizarContadores();
 }
 
 // ================================================================
 // ABRIR MODAL LIVE
 // ================================================================
-function abrirModalLive() {
+window.abrirModalLive = async function(transmisionId) {
     const modal = document.getElementById('modalLive');
     if (!modal) return;
+
+    // Verificar si es pago
+    const { data: transmision } = await app.supabase
+        .from('transmisiones')
+        .select('*')
+        .eq('id', transmisionId)
+        .single();
+
+    if (transmision && transmision.tipo_transmision === 'pago' && transmision.precio > 0) {
+        // Verificar si ya pagó
+        const tieneAcceso = await app.verificarAcceso(transmisionId);
+        if (!tieneAcceso) {
+            const pagar = confirm(`Esta transmisión cuesta $${transmision.precio} MXN. ¿Quieres pagar para acceder?`);
+            if (pagar) {
+                const pago = await app.registrarPago(transmisionId, transmision.precio, 'stripe');
+                if (!pago) return;
+            } else {
+                showToast('⚠️ Necesitas pagar para acceder', 'warning');
+                return;
+            }
+        }
+    }
+
     modal.classList.add('active');
+    document.getElementById('liveStatusText').textContent = 'Conectando...';
 
-    // Iniciar timer
-    segundosTransmitidos = 0;
-    if (timerInterval) clearInterval(timerInterval);
-    timerInterval = setInterval(() => {
-        segundosTransmitidos++;
-        actualizarTimer();
-    }, 1000);
+    // Conectar a LiveKit como espectador
+    if (!livekitRoom || livekitRoom.state === 'disconnected') {
+        const nombre = window.app?.usuario?.user_metadata?.nombre || 'Espectador';
+        const response = await fetch(`/api/token?room=transmision-${transmisionId}&name=${nombre}`);
+        const data = await response.json();
 
-    // Simular conexión
-    const placeholder = document.querySelector('.player-placeholder');
-    if (placeholder) {
-        placeholder.innerHTML = `
-            <div class="icon">◈</div>
-            <p style="letter-spacing:0.5px;">◉ Transmisión en vivo</p>
-            <p style="font-size: 0.8rem; color: var(--text-muted); letter-spacing:0.3px;">Conectando...</p>
-        `;
-        setTimeout(() => {
-            placeholder.innerHTML = `
-                <div class="icon">◈</div>
-                <p style="color: var(--success); letter-spacing:0.5px;">◆ Conectado</p>
-                <p style="font-size: 0.8rem; color: var(--text-muted); letter-spacing:0.3px;">Transmisión en curso</p>
-            `;
-            // Simular chat
-            simularChat();
-        }, 1500);
+        if (data.token) {
+            const wsUrl = 'wss://csariels-domo-57ujk04t.livekit.cloud';
+            livekitRoom = new LivekitClient.Room();
+            await livekitRoom.connect(wsUrl, data.token);
+            
+            // Escuchar tracks de otros
+            livekitRoom.on(LivekitClient.RoomEvent.TrackSubscribed, (track, pub, participant) => {
+                const videoContainer = document.getElementById('videoContainer');
+                if (videoContainer) {
+                    const element = track.attach();
+                    videoContainer.appendChild(element);
+                }
+            });
+
+            // Ocultar placeholder
+            const placeholder = document.querySelector('.player-placeholder');
+            if (placeholder) placeholder.style.display = 'none';
+
+            document.getElementById('liveStatusText').textContent = 'Conectado';
+            showToast('◉ Conectado a la transmisión');
+        }
     }
-}
 
-// ================================================================
-// CERRAR MODAL
-// ================================================================
-window.cerrarModalTransmision = function() {
-    const modal = document.getElementById('modalLive');
-    if (modal) modal.classList.remove('active');
-
-    if (timerInterval) {
-        clearInterval(timerInterval);
-        timerInterval = null;
+    // Suscribirse al chat
+    if (chatSubscription) {
+        await chatSubscription.unsubscribe();
+        chatSubscription = null;
     }
-    segundosTransmitidos = 0;
 
-    // Limpiar chat
-    const messages = document.querySelector('.chat-messages');
-    if (messages) {
-        messages.innerHTML = `<div class="empty-message">Sin mensajes aún</div>`;
+    chatSubscription = app.suscribirseChat(transmisionId, (mensaje) => {
+        agregarMensajeChat(mensaje.nombre_usuario || 'Anónimo', mensaje.mensaje);
+    });
+
+    // Cargar mensajes anteriores
+    const mensajes = await app.obtenerMensajes(transmisionId);
+    const messagesContainer = document.getElementById('chatMessages');
+    if (messagesContainer) {
+        messagesContainer.innerHTML = '';
+        mensajes.forEach(msg => {
+            agregarMensajeChat(msg.nombre_usuario || 'Anónimo', msg.mensaje);
+        });
     }
+
+    // Actualizar contador de espectadores
+    actualizarContadores();
 };
 
 // ================================================================
-// ACTUALIZAR TIMER
+// AGREGAR MENSAJE AL CHAT
 // ================================================================
-function actualizarTimer() {
-    const minutos = Math.floor(segundosTransmitidos / 60);
-    const segundos = segundosTransmitidos % 60;
-    const timerDisplay = document.querySelector('.live-timer');
-    if (timerDisplay) {
-        timerDisplay.textContent = `⏱ ${String(minutos).padStart(2, '0')}:${String(segundos).padStart(2, '0')}`;
-    }
-}
-
-// ================================================================
-// SIMULAR CHAT
-// ================================================================
-function simularChat() {
-    const messages = document.querySelector('.chat-messages');
+function agregarMensajeChat(usuario, mensaje) {
+    const messages = document.getElementById('chatMessages');
     if (!messages) return;
-
-    const usuarios = ['Ana', 'Carlos', 'María', 'Luis', 'Sofia', 'David', 'Elena', 'Jorge'];
-    const mensajes = [
-        '◈ Gran transmisión!',
-        '◆ Me encanta este contenido',
-        '◉ Excelente calidad',
-        '✨ Increíble',
-        '🌟 Sigan así!',
-        '◈ Cuánto cuesta?',
-        '◆ Ya quiero probar',
-        '◉ 🔥🔥🔥'
-    ];
 
     const emptyMsg = messages.querySelector('.empty-message');
     if (emptyMsg) emptyMsg.remove();
 
-    let count = 0;
-    const maxMessages = 5;
-
-    const interval = setInterval(() => {
-        if (count >= maxMessages || !document.getElementById('modalLive')?.classList.contains('active')) {
-            clearInterval(interval);
-            return;
-        }
-
-        const usuario = usuarios[Math.floor(Math.random() * usuarios.length)];
-        const mensaje = mensajes[Math.floor(Math.random() * mensajes.length)];
-        const hora = new Date().toLocaleTimeString();
-
-        const msgDiv = document.createElement('div');
-        msgDiv.className = 'chat-message';
-        msgDiv.innerHTML = `
-            <span class="user">${usuario}</span>
-            <span class="text">${mensaje}</span>
-            <span class="time">${hora}</span>
-        `;
-        messages.appendChild(msgDiv);
-        messages.scrollTop = messages.scrollHeight;
-        count++;
-    }, 3000);
-}
-
-// ================================================================
-// ENVIAR MENSAJE
-// ================================================================
-window.enviarMensajeChat = function() {
-    const input = document.getElementById('chatInput');
-    if (!input) return;
-
-    const mensaje = input.value.trim();
-    if (!mensaje) return;
-
-    const messages = document.querySelector('.chat-messages');
-    if (!messages) return;
-
-    const perfil = JSON.parse(localStorage.getItem('sariels_perfil') || '{}');
-    const usuario = perfil.nombre || 'Explorador';
     const hora = new Date().toLocaleTimeString();
-
-    const emptyMsg = messages.querySelector('.empty-message');
-    if (emptyMsg) emptyMsg.remove();
-
     const msgDiv = document.createElement('div');
     msgDiv.className = 'chat-message';
     msgDiv.innerHTML = `
@@ -309,68 +281,97 @@ window.enviarMensajeChat = function() {
     `;
     messages.appendChild(msgDiv);
     messages.scrollTop = messages.scrollHeight;
+}
+
+// ================================================================
+// ENVIAR MENSAJE AL CHAT
+// ================================================================
+window.enviarMensajeChat = async function() {
+    const input = document.getElementById('chatInput');
+    if (!input) return;
+
+    const mensaje = input.value.trim();
+    if (!mensaje) return;
+
+    if (!transmisionActual) {
+        showToast('⚠️ No hay transmisión activa', 'error');
+        return;
+    }
+
+    await app.enviarMensaje(transmisionActual.id, mensaje);
     input.value = '';
 };
 
 // ================================================================
-// GENERAR QR
+// CERRAR MODAL
 // ================================================================
-window.generarQRLive = function() {
-    const url = window.location.href;
+window.cerrarModalTransmision = async function() {
+    const modal = document.getElementById('modalLive');
+    if (modal) modal.classList.remove('active');
 
-    if (typeof QRCode !== 'undefined') {
-        const modal = document.createElement('div');
-        modal.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(5, 8, 15, 0.9);
-            backdrop-filter: blur(20px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 10000;
-        `;
-        modal.innerHTML = `
-            <div style="background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:24px;padding:30px;text-align:center;max-width:400px;width:90%;">
-                <h3 style="font-family:'Orbitron',monospace;color:var(--gold);font-size:1rem;margin-bottom:12px;letter-spacing:1px;">◈ QR de transmisión</h3>
-                <div id="qrContainer" style="background:white;padding:16px;border-radius:16px;display:inline-block;margin:0 auto;"></div>
-                <p style="color:var(--text-muted);font-size:0.7rem;margin-top:12px;letter-spacing:0.3px;">Escanea para unirte al live</p>
-                <button onclick="this.closest('div[style]').remove()" style="margin-top:16px;padding:8px 24px;border-radius:30px;border:1px solid var(--glass-border);background:transparent;color:var(--text-secondary);cursor:pointer;font-family:'Inter',sans-serif;letter-spacing:0.3px;">Cerrar</button>
-            </div>
-        `;
-        document.body.appendChild(modal);
-
-        try {
-            new QRCode(document.getElementById('qrContainer'), {
-                text: url,
-                width: 200,
-                height: 200,
-                colorDark: '#0F2D1A',
-                colorLight: '#ffffff'
-            });
-            showToast('◈ QR generado');
-        } catch (e) {
-            document.getElementById('qrContainer').innerHTML = '⚠️ Error generando QR';
-            showToast('⚠️ Error generando QR', 'error');
-        }
-    } else {
-        showToast(`◈ QR: ${url}`);
+    if (chatSubscription) {
+        await chatSubscription.unsubscribe();
+        chatSubscription = null;
     }
+
+    if (livekitRoom) {
+        await livekitRoom.disconnect();
+        livekitRoom = null;
+    }
+
+    const videoContainer = document.getElementById('videoContainer');
+    if (videoContainer) videoContainer.innerHTML = '';
+
+    const placeholder = document.querySelector('.player-placeholder');
+    if (placeholder) placeholder.style.display = 'flex';
 };
+
+// ================================================================
+// ACTUALIZAR CONTADORES
+// ================================================================
+function actualizarContadores() {
+    const cards = document.querySelectorAll('.live-card');
+    if (liveCount) liveCount.textContent = cards.length;
+
+    // Actualizar espectadores (simulado)
+    const viewers = cards.length * Math.floor(Math.random() * 10 + 1);
+    if (totalViewers) totalViewers.textContent = viewers;
+}
+
+// ================================================================
+// CARGAR TRANSMISIONES AL INICIO
+// ================================================================
+async function cargarTransmisiones() {
+    if (!window.app) return;
+
+    const transmisiones = await app.obtenerTransmisionesActivas();
+    
+    if (transmisiones.length === 0) {
+        // Mostrar empty state
+        if (liveGrid) {
+            liveGrid.innerHTML = `
+                <div class="empty-state">
+                    <span class="icon">◈</span>
+                    <h3>Sin transmisiones activas</h3>
+                    <p>Inicia una transmisión para compartir en vivo</p>
+                    <button class="btn-crear-live-empty" onclick="crearTransmision()">
+                        <span>◉</span> Iniciar transmisión
+                    </button>
+                </div>
+            `;
+        }
+        return;
+    }
+
+    transmisiones.forEach(trans => agregarLiveReal(trans));
+}
 
 // ================================================================
 // INICIALIZAR
 // ================================================================
 document.addEventListener('DOMContentLoaded', function() {
-    // Verificar autenticación sin redirigir agresivamente
-    const autenticado = verificarAutenticacion();
-    
-    if (!autenticado) {
-        showToast('⚠️ Conecta tu wallet para usar Live', 'warning');
-    }
+    // Cargar transmisiones
+    setTimeout(cargarTransmisiones, 500);
 
     // Enter para enviar mensaje
     const chatInput = document.getElementById('chatInput');
@@ -383,20 +384,16 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Cerrar modal con Escape
+    // Escape para cerrar modal
     document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-            cerrarModalTransmision();
-        }
+        if (e.key === 'Escape') cerrarModalTransmision();
     });
 
-    // Cerrar modal click fuera
+    // Click fuera del modal
     const modal = document.getElementById('modalLive');
     if (modal) {
         modal.addEventListener('click', function(e) {
-            if (e.target === this) {
-                cerrarModalTransmision();
-            }
+            if (e.target === this) cerrarModalTransmision();
         });
     }
 
@@ -407,8 +404,9 @@ document.addEventListener('DOMContentLoaded', function() {
 // ================================================================
 // EXPONER FUNCIONES GLOBALES
 // ================================================================
-window.showToast = showToast;
-window.crearTransmision = crearTransmision;
-window.generarQRLive = generarQRLive;
+window.cargarTransmisiones = cargarTransmisiones;
+window.agregarLiveReal = agregarLiveReal;
+window.abrirModalLive = abrirModalLive;
 window.enviarMensajeChat = enviarMensajeChat;
 window.cerrarModalTransmision = cerrarModalTransmision;
+window.actualizarContadores = actualizarContadores;
