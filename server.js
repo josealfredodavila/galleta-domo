@@ -64,22 +64,16 @@ app.get('/api/token', async (req, res) => {
 });
 
 // ================================================================
-// RUTA PRINCIPAL
+// RUTAS PRINCIPALES
 // ================================================================
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// ================================================================
-// RUTA PARA LIVE (ruta corta)
-// ================================================================
 app.get('/live', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'features', 'live', 'live.html'));
 });
 
-// ================================================================
-// RUTA PARA QR GENERATOR (ruta corta)
-// ================================================================
 app.get('/qr', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'qr-generator.html'));
 });
