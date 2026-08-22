@@ -105,6 +105,88 @@ class GalletaDomoApp {
         }
     }
 
+    // ================================================================
+    // 🔐 RECUPERAR CONTRASEÑA - VERSIÓN PRO
+    // ================================================================
+    async recuperarContraseña(email) {
+        try {
+            const { data, error } = await this.supabase.auth.resetPasswordForEmail(email, {
+                redirectTo: 'https://galleta-domo.up.railway.app/actualizar-contraseña.html'
+            });
+
+            if (error) throw error;
+            
+            // ✅ MENSAJE PRO
+            showToast('📧 ¡Listo! Te enviamos un enlace a tu correo. Revisa tu bandeja.');
+            return true;
+        } catch (error) {
+            // ✅ MENSAJE PRO
+            showToast('❌ No encontramos ese correo. Verifica que esté bien escrito.', 'error');
+            return false;
+        }
+    }
+
+    // ================================================================
+    // 🔐 ACTUALIZAR CONTRASEÑA - VERSIÓN PRO
+    // ================================================================
+    async actualizarContraseña(nuevaContraseña) {
+        try {
+            const { data, error } = await this.supabase.auth.updateUser({
+                password: nuevaContraseña
+            });
+
+            if (error) throw error;
+            
+            // ✅ MENSAJE PRO
+            showToast('✅ ¡Contraseña actualizada! Ahora inicia sesión con la nueva.');
+            return true;
+        } catch (error) {
+            showToast('❌ Error al actualizar. Intenta de nuevo.', 'error');
+            return false;
+        }
+    }
+
+    // ================================================================
+    // 🔐 RECUPERAR CON WALLET (WEB3)
+    // ================================================================
+    async recuperarConWallet() {
+        try {
+            if (typeof window.ethereum === 'undefined') {
+                showToast('⚠️ Conecta MetaMask primero', 'error');
+                return;
+            }
+
+            const accounts = await window.ethereum.request({ 
+                method: 'eth_requestAccounts' 
+            });
+            
+            if (!accounts || accounts.length === 0) return;
+
+            const wallet = accounts[0];
+            
+            // Buscar usuario por wallet en Supabase
+            const { data, error } = await this.supabase
+                .from('usuarios')
+                .select('email')
+                .eq('wallet', wallet)
+                .single();
+
+            if (error || !data) {
+                showToast('⚠️ No hay cuenta asociada a esta wallet', 'error');
+                return;
+            }
+
+            // Enviar recuperación al email registrado
+            await this.recuperarContraseña(data.email);
+            
+        } catch (error) {
+            showToast('❌ Error: ' + error.message, 'error');
+        }
+    }
+
+    // ================================================================
+    // CERRAR SESIÓN
+    // ================================================================
     async cerrarSesion() {
         try {
             await this.supabase.auth.signOut();
@@ -498,7 +580,7 @@ class GalletaDomoApp {
 }
 
 // ================================================================
-// TOAST (si no existe en live.js)
+// TOAST
 // ================================================================
 function showToast(msg, type = '') {
     let t = document.getElementById('toast');
