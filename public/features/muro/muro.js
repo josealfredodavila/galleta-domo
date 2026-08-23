@@ -1,6 +1,6 @@
-// ================================================================
-// MURO ULTRA MEGA PRO - SARIEL'S (CON SUPABASE AUTH)
-// ================================================================
+/* ================================================================
+   MURO ULTRA MEGA PRO - SARIEL'S
+   ================================================================ */
 
 function showToast(msg, type = '') {
     let t = document.getElementById('toast');
@@ -19,29 +19,12 @@ function showToast(msg, type = '') {
     t._timeout = setTimeout(() => t.classList.remove('show'), 3500);
 }
 
-// SUPABASE CLIENTE
-const SUPABASE_URL = 'https://hbbwopkfpkvahgtawqke.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_4gJWA-t7Eg6ruuI2EF-K2A_GQlahb2j';
-let supabase = null;
+const API_URL = '/api';
 
-if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
-    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    console.log('◈ Supabase cliente inicializado en muro.js');
-}
-
-// HEADERS AUTENTICADOS
 async function getAuthHeaders() {
     const headers = { 'Content-Type': 'application/json' };
-    if (supabase) {
-        try {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session && session.access_token) {
-                headers['Authorization'] = `Bearer ${session.access_token}`;
-            }
-        } catch (e) {
-            console.warn('No se pudo obtener sesión de Supabase:', e);
-        }
-    }
+    const token = localStorage.getItem('galleta_token');
+    if (token) headers['Authorization'] = `Bearer ${token}`;
     return headers;
 }
 
@@ -53,83 +36,59 @@ async function fetchWithAuth(url, options = {}) {
     });
 }
 
-// LOCALSTORAGE FALLBACK
-function cargarPublicacionesLocal() {
-    const saved = localStorage.getItem('sariels_muro_posts');
-    if (saved) {
-        try { return JSON.parse(saved); } catch (e) {}
-    }
-    return [];
-}
-
-function guardarPublicacionesLocal(posts) {
-    localStorage.setItem('sariels_muro_posts', JSON.stringify(posts));
-}
-
-let publicaciones = [];
-let paginaActual = 1;
-let cargando = false;
-
-// INICIALIZACIÓN AL CARGAR LA PÁGINA
-document.addEventListener('DOMContentLoaded', () => {
-    cargarPublicaciones(1);
-    actualizarPerfilUsuario();
-});
-
-function actualizarPerfilUsuario() {
-    const perfil = JSON.parse(localStorage.getItem('sariels_perfil') || '{}');
-    const nameEl = document.getElementById('userName');
-    const avatarEl = document.getElementById('userAvatar');
-    if (nameEl && perfil.nombre) nameEl.textContent = perfil.nombre;
-    if (avatarEl && perfil.avatar) avatarEl.textContent = perfil.avatar;
-}
-
-// CARGAR PUBLICACIONES
-async function cargarPublicaciones(pagina = 1) {
-    if (cargando) return;
-    cargando = true;
-
+// Cargar publicaciones
+async function cargarPublicaciones() {
     try {
-        const response = await fetchWithAuth(`/api/muro?page=${pagina}&limit=10`);
-        if (!response.ok) throw new Error('Error backend');
-
-        const data = await response.json();
-        const feedContainer = document.getElementById('feedContainer');
-
-        if (pagina === 1 && feedContainer) feedContainer.innerHTML = '';
-
-        if (data.publicaciones && data.publicaciones.length > 0) {
-            data.publicaciones.forEach(post => renderizarPublicacion(post));
-        } else {
-            cargarDesdeLocalStorage();
+        const response = await fetchWithAuth(`${API_URL}/muro`);
+        if (response.ok) {
+            const data = await response.json();
+            if (data.success && data.posts) {
+                renderizarPublicaciones(data.posts);
+                return;
+            }
         }
     } catch (error) {
-        cargarDesdeLocalStorage();
-    } finally {
-        cargando = false;
+        console.warn('Error cargando muro desde API:', error);
     }
+    // Fallback local
+    const posts = JSON.parse(localStorage.getItem('sariels_muro_posts') || '[]');
+    renderizarPublicaciones(posts);
 }
 
-function cargarDesdeLocalStorage() {
-    const posts = cargarPublicacionesLocal();
+function renderizarPublicaciones(posts) {
     const feedContainer = document.getElementById('feedContainer');
     if (!feedContainer) return;
 
-    if (posts.length > 0) {
-        feedContainer.innerHTML = '';
-        posts.forEach(post => renderizarPublicacion(post));
-    } else {
+    if (posts.length === 0) {
         feedContainer.innerHTML = `
             <div class="empty-state">
-                <span class="icon">📭</span>
+                <span class="icon">◈</span>
                 <h3>Sin publicaciones</h3>
-                <p>Sé el primero en compartir algo en la red.</p>
+                <p>Sé el primero en compartir algo.</p>
             </div>
         `;
+        return;
     }
+
+    feedContainer.innerHTML = posts.map(post => `
+        <div class="post-card">
+            <div class="post-header">
+                <div class="post-avatar">${post.usuarios?.avatar_url ? `<img src="${post.usuarios.avatar_url}">` : '◈'}</div>
+                <div>
+                    <div class="post-author">${post.usuarios?.nombre || 'Explorador'} <span class="badge-verificado">✦ Verificado</span></div>
+                    <div class="post-date">${new Date(post.created_at).toLocaleString()}</div>
+                </div>
+            </div>
+            <div class="post-content">${post.contenido || ''}</div>
+            <div class="post-stats">
+                <span>❤️ ${post.muro_likes?.length || 0}</span>
+                <span>💬 ${post.muro_comentarios?.length || 0}</span>
+            </div>
+        </div>
+    `).join('');
 }
 
-// PUBLICAR
+// Publicar
 async function publicar() {
     const postContent = document.getElementById('postContent');
     const btnPublicar = document.getElementById('btnPublicar');
@@ -140,60 +99,25 @@ async function publicar() {
         return;
     }
 
-    const perfil = JSON.parse(localStorage.getItem('sariels_perfil') || '{}');
-    const nuevoPost = {
-        id: Date.now(),
-        autor: perfil.nombre || 'Explorador',
-        avatar: perfil.avatar || '◈',
-        contenido: contenido,
-        fecha: new Date().toLocaleString(),
-        likes: 0,
-        comentarios: []
-    };
-
-    const posts = cargarPublicacionesLocal();
-    posts.unshift(nuevoPost);
-    guardarPublicacionesLocal(posts);
-
-    if (btnPublicar) btnPublicar.disabled = true;
-
     try {
-        await fetchWithAuth('/api/muro', {
+        const response = await fetchWithAuth(`${API_URL}/muro`, {
             method: 'POST',
-            body: JSON.stringify({ contenido, tipo: 'texto' })
+            body: JSON.stringify({ contenido })
         });
-    } catch (e) {
-        console.warn('Backend offline, guardado en LocalStorage');
-    } finally {
-        if (postContent) postContent.value = '';
-        if (btnPublicar) btnPublicar.disabled = false;
-        cargarDesdeLocalStorage();
-        showToast('✅ Publicación creada');
+
+        if (response.ok) {
+            showToast('✅ Publicación creada');
+            if (postContent) postContent.value = '';
+            cargarPublicaciones();
+        }
+    } catch (error) {
+        showToast('❌ Error al publicar', 'error');
     }
 }
 
-// RENDERIZAR
-function renderizarPublicacion(post) {
-    const feedContainer = document.getElementById('feedContainer');
-    if (!feedContainer) return;
+document.addEventListener('DOMContentLoaded', () => {
+    cargarPublicaciones();
+});
 
-    const postCard = document.createElement('div');
-    postCard.className = 'post-card';
-
-    postCard.innerHTML = `
-        <div class="post-header">
-            <div class="post-avatar">${post.avatar || '◈'}</div>
-            <div>
-                <div class="post-author">${post.autor || 'Explorador'} <span class="badge-verificado">✦ Verificado</span></div>
-                <div class="post-date">${post.fecha || 'Hace un momento'}</div>
-            </div>
-        </div>
-        <div class="post-content">${post.contenido || ''}</div>
-        <div class="post-stats">
-            <span>❤️ ${post.likes || 0}</span>
-            <span>💬 ${(post.comentarios || []).length}</span>
-        </div>
-    `;
-
-    feedContainer.appendChild(postCard);
-}
+window.publicar = publicar;
+window.showToast = showToast;
