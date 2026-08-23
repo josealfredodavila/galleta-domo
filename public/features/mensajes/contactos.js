@@ -178,7 +178,7 @@ function actualizarContadores() {
 }
 
 // ================================================================
-// RENDERIZAR CONTACTOS
+// RENDERIZAR CONTACTOS (Estilo Premium)
 // ================================================================
 function renderizarContactos(lista) {
     if (!lista || lista.length === 0) {
@@ -196,11 +196,12 @@ function renderizarContactos(lista) {
     contactosList.innerHTML = lista.map(contacto => {
         const esOnline = contacto.estado === 'conectado';
         const esFavorito = contacto.esFavorito || false;
+        const inicial = contacto.nombre ? contacto.nombre[0].toUpperCase() : '✦';
 
         return `
             <div class="contacto-card" data-id="${contacto._id}">
                 <div class="contacto-avatar ${esOnline ? 'online' : 'offline'} ${esFavorito ? 'favorito' : ''}">
-                    ${contacto.nombre ? contacto.nombre[0].toUpperCase() : '✦'}
+                    ${inicial}
                     ${esOnline ? '<span class="online-dot"></span>' : ''}
                     ${esFavorito ? '<span class="favorito-badge">◆</span>' : ''}
                 </div>
