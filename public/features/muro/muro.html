@@ -1,7 +1,9 @@
 <!-- ================================================================
-     MURO ULTRA MEGA PRO - SARIEL'S (VERSIÓN CORREGIDA)
+     MURO ULTRA MEGA PRO - SARIEL'S (VERSIÓN CORREGIDA Y UNIFICADA)
      - ELIMINADA la función que creaba publicaciones de ejemplo
      - Las publicaciones ahora persisten en localStorage
+     - Footer con 4 enlaces legales
+     - Navegación con rutas cortas y "Mensajes"
      ================================================================ -->
 <!DOCTYPE html>
 <html lang="es">
@@ -13,7 +15,8 @@
     <link rel="stylesheet" href="/features/muro/muro.css" />
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <style>
-        /* ===== ESTILOS COMPLETOS ===== */
+        /* ===== TODOS TUS ESTILOS EXISTENTES (SE MANTIENEN) ===== */
+        /* ===== ... (los mismos estilos que tenías) ... ===== */
         :root {
             --gold: #D4AF37;
             --gold-dark: #b8923a;
@@ -41,9 +44,9 @@
             --purple: #a855f7;
             --pink: #ec4899;
         }
-
+        /* ===== ... (todos tus estilos) ... ===== */
+        /* ===== (MISMO CONTENIDO QUE TU ARCHIVO ORIGINAL) ===== */
         * { margin: 0; padding: 0; box-sizing: border-box; }
-
         body {
             background: var(--space);
             color: var(--text-primary);
@@ -58,7 +61,6 @@
             -moz-osx-font-smoothing: grayscale;
             transition: background 0.5s ease, color 0.5s ease;
         }
-
         #stars-canvas {
             position: fixed;
             top: 0;
@@ -69,7 +71,6 @@
             pointer-events: none;
             will-change: transform;
         }
-
         .nebula {
             position: fixed;
             border-radius: 50%;
@@ -83,16 +84,13 @@
         .nebula-1 { width: 700px; height: 700px; background: var(--green-bright); top: -15%; right: -15%; }
         .nebula-2 { width: 600px; height: 600px; background: var(--gold-light); bottom: -15%; left: -15%; animation-delay: -8s; opacity: 0.06; }
         .nebula-3 { width: 500px; height: 500px; background: var(--purple); top: 50%; left: 50%; transform: translate(-50%, -50%); animation-delay: -15s; opacity: 0.04; }
-
         @keyframes nebula-drift {
             0% { transform: translate(0, 0) scale(1); }
             100% { transform: translate(40px, -30px) scale(1.15); }
         }
-
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: var(--space); }
         ::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 2px; }
-
         .app {
             position: relative;
             z-index: 1;
@@ -101,7 +99,6 @@
             padding: 16px 20px 30px;
             contain: layout style;
         }
-
         .header {
             display: flex;
             justify-content: space-between;
@@ -188,7 +185,6 @@
             0%, 100% { opacity: 1; transform: scale(1); }
             50% { opacity: 0.3; transform: scale(0.8); }
         }
-
         .token-badge {
             display: flex;
             align-items: center;
@@ -214,7 +210,6 @@
             font-size: 0.9rem;
             color: var(--gold-bright);
         }
-
         .main-nav {
             display: flex;
             gap: 4px;
@@ -274,7 +269,11 @@
         .main-nav .nav-link.live:hover {
             background: rgba(255, 51, 102, 0.08);
         }
-
+        /* ===== (TODOS TUS ESTILOS ADICIONALES: valor-mercado, trending-section, post-form, post-card, modales, etc.) ===== */
+        /* ===== (MISMO CONTENIDO QUE TU ARCHIVO ORIGINAL) ===== */
+        /* ================================================================
+           ESTILOS COMPLETOS (los mismos que tenías)
+           ================================================================ */
         .valor-mercado {
             background: var(--glass-bg);
             border: 1px solid var(--glass-border);
@@ -348,7 +347,6 @@
             transform: translateY(-2px);
             box-shadow: var(--shadow-gold);
         }
-
         .trending-section {
             background: var(--glass-bg);
             border: 1px solid var(--glass-border);
@@ -409,7 +407,6 @@
             color: var(--text-muted);
             margin-left: 4px;
         }
-
         .post-form {
             background: var(--glass-bg);
             border: 1px solid var(--glass-border);
@@ -528,7 +525,6 @@
             cursor: not-allowed;
             transform: none !important;
         }
-
         .post-card {
             background: var(--glass-bg);
             border: 1px solid var(--glass-border);
@@ -649,7 +645,6 @@
             align-items: center;
             gap: 4px;
         }
-
         .post-card .post-actions {
             display: flex;
             gap: 2px;
@@ -691,7 +686,6 @@
             color: var(--danger) !important;
             background: rgba(255, 51, 102, 0.08) !important;
         }
-
         .post-card .post-venta {
             background: rgba(212, 175, 55, 0.05);
             border: 1px solid rgba(212, 175, 55, 0.1);
@@ -740,7 +734,6 @@
             border-radius: 12px;
             background: rgba(255, 255, 255, 0.05);
         }
-
         .post-card .post-comentarios {
             margin-top: 12px;
             border-top: 1px solid rgba(212, 175, 55, 0.06);
@@ -824,7 +817,6 @@
         .post-card .post-comentarios .input-comentario button:hover {
             transform: scale(1.05);
         }
-
         .post-card .comentarios-oferta {
             margin-top: 12px;
             border-top: 1px solid rgba(212, 175, 55, 0.06);
@@ -915,7 +907,7 @@
         .post-card .comentarios-oferta .input-comentario button:hover {
             transform: scale(1.05);
         }
-
+        /* ===== MODALES ===== */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -1036,7 +1028,6 @@
             opacity: 0.4;
             cursor: not-allowed;
         }
-
         .modal-confirmacion .modal-body {
             padding: 0;
         }
@@ -1072,7 +1063,6 @@
             transform: translateY(-2px);
             box-shadow: var(--shadow-gold);
         }
-
         .btn-toggle-modo {
             position: fixed;
             bottom: 20px;
@@ -1111,7 +1101,6 @@
             transition: none;
             box-shadow: 0 8px 40px rgba(212, 175, 55, 0.4);
         }
-
         .btn-scroll-top {
             position: fixed;
             bottom: 80px;
@@ -1142,7 +1131,6 @@
             transform: translateY(-4px) scale(1.05);
             box-shadow: var(--shadow-gold);
         }
-
         .empty-state {
             text-align: center;
             padding: 60px 20px;
@@ -1168,7 +1156,6 @@
             font-size: 0.85rem;
             letter-spacing: 0.3px;
         }
-
         .toast {
             position: fixed;
             bottom: 30px;
@@ -1193,7 +1180,6 @@
         .toast.show { transform: translateY(0); opacity: 1; }
         .toast.error { border-color: var(--danger); color: var(--danger); }
         .toast.warning { border-color: var(--warning); color: var(--warning); }
-
         body.modo-claro {
             background: #f0f4f8;
             color: #05080f;
@@ -1259,7 +1245,6 @@
         body.modo-claro .btn-scroll-top {
             background: rgba(255, 255, 255, 0.8);
         }
-
         .footer {
             margin-top: 30px;
             padding-top: 16px;
@@ -1278,7 +1263,7 @@
         .footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
         .footer-links a { color: var(--text-muted); text-decoration: none; transition: var(--transition); }
         .footer-links a:hover { color: var(--gold); }
-
+        /* ===== RESPONSIVE ===== */
         @media (max-width: 768px) {
             .app { padding: 12px 14px; }
             .post-card { padding: 14px 16px; }
@@ -1299,7 +1284,6 @@
             .btn-toggle-modo { width: 44px; height: 44px; font-size: 1rem; }
             .btn-scroll-top { bottom: 70px; right: 10px; padding: 10px 14px; font-size: 1rem; }
         }
-
         @media (max-width: 480px) {
             .post-card .post-actions { gap: 2px; }
             .post-card .post-actions button { font-size: 0.6rem; padding: 3px 8px; }
@@ -1320,16 +1304,16 @@
 <body>
 
     <!-- ===== FONDO ESTELAR ===== -->
-    <canvas id="stars-canvas"></canvas>
-    <div class="nebula nebula-1"></div>
-    <div class="nebula nebula-2"></div>
-    <div class="nebula nebula-3"></div>
+    <canvas id="stars-canvas" aria-hidden="true"></canvas>
+    <div class="nebula nebula-1" aria-hidden="true"></div>
+    <div class="nebula nebula-2" aria-hidden="true"></div>
+    <div class="nebula nebula-3" aria-hidden="true"></div>
 
     <div class="app">
 
         <!-- ===== HEADER ===== -->
         <header class="header">
-            <a href="/" class="logo">
+            <a href="/" class="logo" aria-label="Ir a la página de inicio">
                 <span class="logo-hex">◈</span>
                 <span class="logo-text">Sariel<span>'s</span></span>
                 <span class="logo-badge">✦ WEB3</span>
@@ -1342,13 +1326,16 @@
             </div>
         </header>
 
-        <!-- ===== NAVEGACIÓN ===== -->
-        <nav class="main-nav">
+        <!-- ============================================================ -->
+        <!-- ===== NAVEGACIÓN UNIFICADA CON RUTAS CORTAS ===== -->
+        <!-- ============================================================ -->
+        <nav class="main-nav" aria-label="Navegación principal">
             <a href="/" class="nav-link">⌂ Inicio</a>
-            <a href="/features/muro/muro.html" class="nav-link active">◇ Muro</a>
-            <a href="/features/perfil/perfil.html" class="nav-link">◆ Perfil</a>
-            <a href="/features/mensajes/contactos.html" class="nav-link">◈ Contactos</a>
-            <a href="/features/live/live.html" class="nav-link live">◉ Live</a>
+            <a href="/muro" class="nav-link active">◇ Muro</a>
+            <a href="/perfil" class="nav-link">◆ Perfil</a>
+            <a href="/contactos" class="nav-link">◈ Contactos</a>
+            <a href="/mensajes" class="nav-link">◈ Mensajes</a>
+            <a href="/live" class="nav-link live">◉ Live</a>
         </nav>
 
         <!-- ===== VALOR DE MERCADO ===== -->
@@ -1408,11 +1395,16 @@
             <!-- Las publicaciones se renderizan con JavaScript -->
         </div>
 
-        <!-- ===== FOOTER ===== -->
+        <!-- ============================================================ -->
+        <!-- ===== FOOTER UNIFICADO CON 4 ENLACES LEGALES ===== -->
+        <!-- ============================================================ -->
         <footer class="footer">
             <span><span class="brand">◈ Sariel's</span> · Sabor al Paladar · WEB3</span>
             <div class="footer-links">
-                <a href="/terminos.html">◈ Términos</a>
+                <a href="/terminos">📜 Términos</a>
+                <a href="/privacidad">🔒 Privacidad</a>
+                <a href="/cookies">🍪 Cookies</a>
+                <a href="/live-terminos">📡 Términos de Live</a>
                 <span style="opacity:0.3;">⚡ Polygon</span>
             </div>
         </footer>
@@ -1471,11 +1463,11 @@
     </div>
 
     <!-- ===== TOAST ===== -->
-    <div class="toast" id="toast"></div>
+    <div class="toast" id="toast" role="alert" aria-live="polite"></div>
 
     <!-- ===== BOTONES EXTRA ===== -->
-    <button class="btn-toggle-modo" id="btnToggleModo">🌙</button>
-    <button class="btn-scroll-top" onclick="scrollToTop()">↑</button>
+    <button class="btn-toggle-modo" id="btnToggleModo" aria-label="Cambiar entre modo oscuro y claro">🌙</button>
+    <button class="btn-scroll-top" onclick="scrollToTop()" aria-label="Volver arriba">↑</button>
 
     <!-- ===== SCRIPTS ===== -->
     <script src="https://cdn.jsdelivr.net/npm/web3@1.8.0/dist/web3.min.js"></script>
@@ -1628,8 +1620,7 @@
             showToast(`◆ ${cantidad} tokens en venta a ${precio} MXN`);
         }
 
-        // ===== COMENTARIOS =====
-        function toggleComentariosOferta(id) {
+        // ===== COMENTARIOS =====        function toggleComentariosOferta(id) {
             const container = document.getElementById(`comentarios-oferta-${id}`);
             if (!container) return;
             const isVisible = container.style.display !== 'none';
@@ -2478,6 +2469,8 @@
             console.log('◈ Sariel\'s - Muro CORREGIDO');
             console.log('✅ SIN publicaciones de ejemplo automáticas');
             console.log('✅ Las publicaciones persisten en localStorage');
+            console.log('✅ Footer con 4 enlaces legales');
+            console.log('✅ Navegación con rutas cortas y Mensajes');
         });
 
         // ===== EXPONER FUNCIONES =====
