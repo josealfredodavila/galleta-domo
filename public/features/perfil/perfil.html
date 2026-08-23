@@ -3,14 +3,13 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>◈ Perfil · Sariel's</title>
+    <title>Perfil · Sariel's</title>
     <link rel="stylesheet" href="/styles.css" />
     <link rel="stylesheet" href="/features/perfil/perfil.css" />
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
 
-    <!-- ===== FONDO ESTELAR ===== -->
     <canvas id="stars-canvas"></canvas>
     <div class="nebula nebula-1"></div>
     <div class="nebula nebula-2"></div>
@@ -18,57 +17,53 @@
 
     <div class="app">
 
-        <!-- ===== HEADER ===== -->
+        <!-- HEADER -->
         <header class="header">
             <a href="/" class="logo">
-                <span class="logo-hex">◈</span>
                 <span class="logo-text">Sariel<span>'s</span></span>
-                <span class="logo-badge">✦ WEB3</span>
+                <span class="logo-badge">WEB3</span>
             </a>
             <div class="header-actions">
                 <span class="network-badge"><span class="dot"></span> Polygon</span>
             </div>
         </header>
 
-        <!-- ===== NAVEGACIÓN ===== -->
+        <!-- NAV -->
         <nav class="main-nav">
-            <a href="/" class="nav-link">⌂ Inicio</a>
-            <a href="/features/muro/muro.html" class="nav-link">◇ Muro</a>
-            <a href="/features/perfil/perfil.html" class="nav-link active">◆ Perfil</a>
-            <a href="/features/mensajes/contactos.html" class="nav-link">◈ Contactos</a>
-            <a href="/features/live/live.html" class="nav-link live">◉ Live</a>
+            <a href="/" class="nav-link">Inicio</a>
+            <a href="/features/muro/muro.html" class="nav-link">Muro</a>
+            <a href="/features/perfil/perfil.html" class="nav-link active">Perfil</a>
+            <a href="/features/mensajes/contactos.html" class="nav-link">Contactos</a>
+            <a href="/features/live/live.html" class="nav-link live">Live</a>
         </nav>
 
-        <!-- ===== PERFIL ===== -->
+        <!-- PERFIL -->
         <div class="perfil-card">
-            <!-- Portada -->
             <div class="perfil-portada" id="portadaContainer" onclick="cambiarPortada()">
                 <img id="portadaImg" src="" alt="Portada" style="display:none;" />
                 <div class="overlay-gradient"></div>
-                <button class="btn-cambiar-portada">✎ Cambiar portada</button>
+                <button class="btn-cambiar-portada">Cambiar portada</button>
             </div>
 
-            <!-- Info -->
             <div class="perfil-info">
                 <div class="perfil-avatar" id="avatarContainer" onclick="cambiarAvatar()">
                     <span id="avatarEmoji">◈</span>
-                    <button class="btn-cambiar-foto">✎ Cambiar foto</button>
+                    <button class="btn-cambiar-foto">Cambiar foto</button>
                 </div>
 
                 <div class="perfil-nombre-area">
                     <div class="nombre-group">
                         <span class="nombre" id="displayNombre">Explorador</span>
-                        <span class="verified-badge">✦ Verificado</span>
+                        <span class="verified-badge">Verificado</span>
                     </div>
                     <div>
                         <span class="handle" id="displayHandle">@explorador</span>
-                        <button class="btn-editar" onclick="abrirModalEditar()">✎ Editar</button>
+                        <button class="btn-editar" onclick="abrirModalEditar()">Editar</button>
                     </div>
                 </div>
 
-                <div class="perfil-bio" id="displayBio">⚡ Construyendo el futuro descentralizado en Sariel's</div>
+                <div class="perfil-bio" id="displayBio">Construyendo el futuro descentralizado en Sariel's</div>
 
-                <!-- Detalles -->
                 <div class="perfil-detalles" id="detallesContainer">
                     <div class="detalle"><span class="icon">⊚</span> <span class="valor" id="displayEdad">24 años</span></div>
                     <div class="detalle"><span class="icon">◈</span> <span class="valor" id="displayEstudio">Ingeniería</span></div>
@@ -78,126 +73,62 @@
                     <div class="detalle"><span class="icon">◊</span> <span class="valor" id="displayEstadoCivil">Soltera(o)</span></div>
                 </div>
 
-                <!-- Estadísticas -->
                 <div class="perfil-stats">
-                    <div class="stat">
-                        <div class="numero" id="statTokens">0</div>
-                        <div class="label">Tokens</div>
-                    </div>
-                    <div class="stat">
-                        <div class="numero" id="statContactos">0</div>
-                        <div class="label">Contactos</div>
-                    </div>
-                    <div class="stat">
-                        <div class="numero" id="statNFT">0</div>
-                        <div class="label">NFT</div>
-                    </div>
-                    <div class="stat">
-                        <div class="numero" id="statSeguidores">0</div>
-                        <div class="label">Seguidores</div>
-                    </div>
+                    <div class="stat"><div class="numero" id="statTokens">0</div><div class="label">Tokens</div></div>
+                    <div class="stat"><div class="numero" id="statContactos">0</div><div class="label">Contactos</div></div>
+                    <div class="stat"><div class="numero" id="statNFT">0</div><div class="label">NFT</div></div>
+                    <div class="stat"><div class="numero" id="statSeguidores">0</div><div class="label">Seguidores</div></div>
                 </div>
 
-                <!-- Huella Digital -->
                 <div class="huella-digital">
-                    <div class="header">
-                        <span class="titulo">◈ Huella Digital</span>
-                        <span class="nivel" id="huellaNivel">⚡ Alta</span>
-                    </div>
-                    <div class="barra">
-                        <div class="fill" id="huellaBarra" style="width:75%;"></div>
-                    </div>
-                    <div class="descripcion">
-                        <span class="etiqueta">Actividad en la red</span>
-                        <span class="valor" id="huellaDescripcion">75% · Contribuyente activo</span>
-                    </div>
+                    <div class="header"><span class="titulo">Huella Digital</span><span class="nivel" id="huellaNivel">Alta</span></div>
+                    <div class="barra"><div class="fill" id="huellaBarra" style="width:75%;"></div></div>
+                    <div class="descripcion"><span class="etiqueta">Actividad en la red</span><span class="valor" id="huellaDescripcion">75% · Contribuyente activo</span></div>
                 </div>
 
-                <!-- Acciones -->
                 <div class="perfil-acciones">
-                    <button class="btn-accion danger" onclick="bloquearUsuario()">⊘ Bloquear</button>
-                    <button class="btn-accion" onclick="showToast('📋 Sugerencias cargadas')">✦ Sugerencias</button>
-                    <button class="btn-accion success" onclick="showToast('📸 Subiendo foto...')">◈ Subir foto</button>
+                    <button class="btn-accion danger" onclick="bloquearUsuario()">Bloquear</button>
+                    <button class="btn-accion" onclick="showToast('Sugerencias cargadas')">Sugerencias</button>
+                    <button class="btn-accion success" onclick="showToast('Subiendo foto...')">Subir foto</button>
                 </div>
             </div>
         </div>
 
-        <!-- ===== TOKENS ===== -->
+        <!-- TOKENS -->
         <div class="tokens-section">
-            <div class="header">
-                <h3>◈ Progreso</h3>
-                <span class="cantidad" id="tokenCantidad">0</span>
-            </div>
-            <div class="token-bar">
-                <div class="bar">
-                    <div class="fill" id="tokenProgress" style="width:0%;"></div>
-                </div>
-                <span class="text" id="tokenText">0/12</span>
-            </div>
+            <div class="header"><h3>Progreso</h3><span class="cantidad" id="tokenCantidad">0</span></div>
+            <div class="token-bar"><div class="bar"><div class="fill" id="tokenProgress" style="width:0%;"></div></div><span class="text" id="tokenText">0/12</span></div>
             <div class="sub">Acumula <strong>12</strong> para canjear tu NFT</div>
         </div>
 
-        <!-- ===== PUBLICACIONES ===== -->
+        <!-- PUBLICACIONES -->
         <div class="publicaciones-section">
-            <div class="header">
-                <h3>◈ Publicaciones</h3>
-                <button class="btn-subir" onclick="document.getElementById('subirArchivoInput').click()">⟡ Subir foto / video</button>
-            </div>
+            <div class="header"><h3>Publicaciones</h3><button class="btn-subir" onclick="document.getElementById('subirArchivoInput').click()">Subir foto / video</button></div>
             <input type="file" id="subirArchivoInput" accept="image/*,video/*" style="display:none;" onchange="subirArchivo(this)" />
-
             <div class="publicar-input-area">
                 <input type="text" id="inputPublicarTexto" placeholder="Escribe algo para compartir..." />
-                <button class="btn-publicar-rapido" onclick="publicarTextoPerfil()">⟡ Publicar</button>
+                <button class="btn-publicar-rapido" onclick="publicarTextoPerfil()">Publicar</button>
             </div>
-
-            <div id="publicacionesContainer">
-                <!-- Las publicaciones se renderizan con JavaScript -->
-            </div>
+            <div id="publicacionesContainer"></div>
         </div>
 
-        <!-- ===== CONECTIVIDAD ===== -->
+        <!-- CONECTIVIDAD -->
         <div class="conectividad-section">
-            <div class="conectividad-card">
-                <div class="header">
-                    <h4>◈ eSIM</h4>
-                    <span class="status inactive" id="esimStatus">Inactiva</span>
-                </div>
-                <div class="info" id="esimInfo">Sin datos activos</div>
-                <button class="btn-accion" onclick="toggleESIM()">📲 Activar eSIM</button>
-            </div>
-            <div class="conectividad-card">
-                <div class="header">
-                    <h4>◉ WiFi</h4>
-                    <span class="status inactive" id="wifiStatus">Desconectado</span>
-                </div>
-                <div class="info" id="wifiInfo">Ahorra tus datos móviles</div>
-                <button class="btn-accion" onclick="toggleWiFi()">🛜 Conectar WiFi</button>
-            </div>
+            <div class="conectividad-card"><div class="header"><h4>eSIM</h4><span class="status inactive" id="esimStatus">Inactiva</span></div><div class="info" id="esimInfo">Sin datos activos</div><button class="btn-accion" onclick="toggleESIM()">Activar eSIM</button></div>
+            <div class="conectividad-card"><div class="header"><h4>WiFi</h4><span class="status inactive" id="wifiStatus">Desconectado</span></div><div class="info" id="wifiInfo">Ahorra tus datos móviles</div><button class="btn-accion" onclick="toggleWiFi()">Conectar WiFi</button></div>
         </div>
 
-        <!-- ===== AMIGOS SUGERIDOS ===== -->
+        <!-- AMIGOS -->
         <div class="amigos-section">
-            <div class="header">
-                <h3>◈ Amigos sugeridos</h3>
-                <button class="btn-ver-todos" onclick="showToast('📋 Cargando más sugerencias...')">Ver todos →</button>
-            </div>
-            <div class="amigos-grid" id="amigosGrid">
-                <!-- Generado por JS -->
-            </div>
+            <div class="header"><h3>Amigos sugeridos</h3><button class="btn-ver-todos" onclick="showToast('Cargando más...')">Ver todos →</button></div>
+            <div class="amigos-grid" id="amigosGrid"></div>
         </div>
 
-        <!-- ===== FOOTER ===== -->
+        <!-- FOOTER -->
         <footer class="footer">
-            <span><span class="brand">◈ Sariel's</span> · Sabor al Paladar · WEB3</span>
-            <div class="footer-links">
-                <a href="/terminos.html">📜 Términos</a>
-                <a href="/privacidad.html">🔒 Privacidad</a>
-                <a href="/cookies.html">🍪 Cookies</a>
-                <a href="/live-terminos.html">📡 Términos de Live</a>
-                <span style="opacity:0.3;">⚡ Polygon</span>
-            </div>
+            <span><span class="brand">Sariel's</span> · Sabor al Paladar · WEB3</span>
+            <div class="footer-links"><a href="/terminos.html">Términos</a><a href="/privacidad.html">Privacidad</a><a href="/cookies.html">Cookies</a><a href="/live-terminos.html">Términos de Live</a><span style="opacity:0.3;">Polygon</span></div>
         </footer>
-
     </div>
 
     <!-- ===== MODAL EDITAR ===== -->
@@ -259,27 +190,39 @@
 
     <!-- ===== SCRIPTS ===== -->
     <script src="https://cdn.jsdelivr.net/npm/web3@1.8.0/dist/web3.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <script src="/app.js"></script>
     <script src="/features/perfil/perfil.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             initStars();
-            if (typeof renderizarPerfil === 'function') renderizarPerfil();
-            if (typeof cargarPublicacionesPerfil === 'function') cargarPublicacionesPerfil();
+
+            if (typeof renderizarPerfil === 'function') {
+                renderizarPerfil();
+            }
+            if (typeof cargarPublicacionesPerfil === 'function') {
+                cargarPublicacionesPerfil();
+            }
         });
 
         function initStars() {
             const canvas = document.getElementById('stars-canvas');
             if (!canvas) return;
             const ctx = canvas.getContext('2d');
-            let width, height, stars = [], animId, isVisible = true;
-            const STAR_COUNT = window.innerWidth < 600 ? 40 : 100;
+            let width, height, stars = [];
+            let animId = null;
+            let isVisible = true;
+            const isMobile = window.innerWidth < 600;
+            const STAR_COUNT = isMobile ? 40 : 100;
+
             function resize() {
                 width = window.innerWidth;
                 height = window.innerHeight;
                 canvas.width = width;
                 canvas.height = height;
+                createStars();
+            }
+
+            function createStars() {
                 stars = [];
                 for (let i = 0; i < STAR_COUNT; i++) {
                     stars.push({
@@ -292,26 +235,43 @@
                     });
                 }
             }
+
             function draw() {
-                if (!isVisible) { animId = requestAnimationFrame(draw); return; }
+                if (!isVisible) {
+                    animId = requestAnimationFrame(draw);
+                    return;
+                }
                 ctx.clearRect(0, 0, width, height);
                 for (let star of stars) {
                     const opacity = star.opacity * (0.6 + 0.4 * Math.sin(star.twinklePhase));
                     ctx.beginPath();
                     ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
-                    ctx.fillStyle = `rgba(255,255,255,${opacity})`;
+                    ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
                     ctx.fill();
                     star.twinklePhase += 0.02;
                     star.y += star.speed;
-                    if (star.y > height) { star.y = 0; star.x = Math.random() * width; }
+                    if (star.y > height) {
+                        star.y = 0;
+                        star.x = Math.random() * width;
+                    }
                 }
                 animId = requestAnimationFrame(draw);
             }
+
+            function pauseAnimation() { isVisible = false; }
+            function resumeAnimation() { isVisible = true; }
+
             resize();
             draw();
             window.addEventListener('resize', resize);
-            document.addEventListener('visibilitychange', () => isVisible = !document.hidden);
+            document.addEventListener('visibilitychange', function() {
+                if (document.hidden) pauseAnimation();
+                else resumeAnimation();
+            });
+
+            return { pauseAnimation, resumeAnimation };
         }
+
         window.initStars = initStars;
     </script>
 </body>
