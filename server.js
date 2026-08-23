@@ -15,6 +15,9 @@ const PORT = process.env.PORT || 8080;
 app.use(cors());
 app.use(express.json());
 
+// ✅ ESTA LÍNEA ERA LA QUE FALTABA: SIRVE TODOS LOS ARCHIVOS ESTÁTICOS DE PUBLIC
+app.use(express.static(path.join(__dirname, 'public')));
+
 // ================================================================
 // SERVICIO DE SUPABASE (SEGURIDAD POR REQUEST)
 // ================================================================
