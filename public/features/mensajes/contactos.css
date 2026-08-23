@@ -515,6 +515,30 @@
 }
 
 /* ================================================================
+   FOOTER (AGREGADO)
+   ================================================================ */
+
+.footer {
+    margin-top: 30px;
+    padding-top: 16px;
+    border-top: 1px solid var(--glass-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    padding-bottom: 8px;
+    letter-spacing: 0.3px;
+}
+
+.footer .brand { color: var(--gold); font-weight: 600; letter-spacing: 1px; }
+.footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
+.footer-links a { color: var(--text-muted); text-decoration: none; transition: var(--transition); }
+.footer-links a:hover { color: var(--gold); }
+
+/* ================================================================
    MODO CLARO
    ================================================================ */
 
