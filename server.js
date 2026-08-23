@@ -1,25 +1,13 @@
 const express = require('express');
 const { AccessToken } = require('livekit-server-sdk');
-const { createClient } = require('@supabase/supabase-js');
 const cors = require('cors');
 const path = require('path');
 
+// FIX: Node.js 22 ya tiene WebSocket nativo, pero si aún hay problema, esto lo cubre
+globalThis.WebSocket = require('ws');
+
 const app = express();
 const PORT = process.env.PORT || 8080;
-
-// ================================================================
-// SUPABASE CONFIG
-// ================================================================
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_ANON_KEY;
-
-let supabase = null;
-if (supabaseUrl && supabaseKey) {
-    supabase = createClient(supabaseUrl, supabaseKey);
-    console.log('✅ Supabase conectado en server.js');
-} else {
-    console.warn('⚠️ Variables de Supabase no configuradas. Usando fallback localStorage.');
-}
 
 // ================================================================
 // MIDDLEWARE
@@ -27,8 +15,25 @@ if (supabaseUrl && supabaseKey) {
 app.use(cors());
 app.use(express.json());
 
-// ✅ SOLO SIRVE DESDE public/ (NO desde la raíz)
-app.use(express.static(path.join(__dirname, 'public')));
+// ================================================================
+// SERVICIO DE SUPABASE (SEGURIDAD POR REQUEST)
+// ================================================================
+const { createClient } = require('@supabase/supabase-js');
+
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+
+// Función para crear cliente Supabase con el token del usuario
+function clienteDelUsuario(req) {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (token) {
+        return createClient(supabaseUrl, supabaseAnonKey, {
+            global: { headers: { Authorization: `Bearer ${token}` } }
+        });
+    }
+    // Si no hay token, se crea sin auth (para rutas públicas)
+    return createClient(supabaseUrl, supabaseAnonKey);
+}
 
 // ================================================================
 // HEALTH CHECK
@@ -79,20 +84,21 @@ app.get('/api/token', async (req, res) => {
 });
 
 // ================================================================
-// RUTAS PARA EL PERFIL (API)
+// RUTAS PARA EL PERFIL (SEGURIDAD CON AUTH.UID)
 // ================================================================
 app.get('/api/perfil', async (req, res) => {
     try {
-        if (!supabase) {
-            return res.status(500).json({ success: false, error: 'Supabase no configurado' });
+        const supabase = clienteDelUsuario(req);
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (!user) {
+            return res.status(401).json({ success: false, error: 'No autenticado' });
         }
 
-        const userId = req.query.userId || 'default-user';
-        
         const { data, error } = await supabase
-            .from('perfiles')
+            .from('usuarios')
             .select('*')
-            .eq('id', userId)
+            .eq('id', user.id)
             .single();
 
         if (error) throw error;
@@ -100,12 +106,14 @@ app.get('/api/perfil', async (req, res) => {
         if (data) {
             return res.json({ success: true, perfil: data });
         } else {
+            // Si el usuario no tiene perfil, se devuelve uno por defecto
             return res.json({ success: true, perfil: { 
+                id: user.id,
                 nombre: 'Explorador', 
                 handle: 'explorador', 
                 bio: 'Explorando el ecosistema Sariel\'s', 
-                tokens: 0, 
-                nfts: 0 
+                avatar_url: null,
+                tokens_acumulados: 0
             }});
         }
     } catch (error) {
@@ -116,21 +124,23 @@ app.get('/api/perfil', async (req, res) => {
 
 app.put('/api/perfil', async (req, res) => {
     try {
-        if (!supabase) {
-            return res.status(500).json({ success: false, error: 'Supabase no configurado' });
+        const supabase = clienteDelUsuario(req);
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (!user) {
+            return res.status(401).json({ success: false, error: 'No autenticado' });
         }
 
-        const { nombre, handle, bio, avatar } = req.body;
-        const userId = req.query.userId || 'default-user';
+        const { nombre, handle, bio, avatar_url } = req.body;
 
         const { data, error } = await supabase
-            .from('perfiles')
+            .from('usuarios')
             .upsert({ 
-                id: userId, 
+                id: user.id, 
                 nombre, 
                 handle, 
                 bio, 
-                avatar,
+                avatar_url,
                 updated_at: new Date().toISOString()
             });
 
