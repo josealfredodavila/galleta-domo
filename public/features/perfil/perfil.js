@@ -1,6 +1,6 @@
 /* ================================================================
    PERFIL ULTRA MEGA PRO - SARIEL'S
-   Lógica premium competitiva con Silicon Valley
+   Lógica premium conectada a Supabase vía Server (API)
    ================================================================ */
 
 // ================================================================
@@ -24,36 +24,22 @@ function showToast(msg, type = '') {
 }
 
 // ================================================================
-// SUPABASE CLIENTE
+// CONFIGURACIÓN DE API (Ruta relativa para producción)
 // ================================================================
-const SUPABASE_URL = 'https://hbbwopkfpkvahgtawqke.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_4gJWA-t7Eg6ruuI2EF-K2A_GQlahb2j';
-let supabase = null;
-
-if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
-    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    console.log('◈ Supabase cliente inicializado en perfil.js');
-}
-
-// ================================================================
-// API URL - PRODUCCIÓN (RAILWAY)
-// ================================================================
-const API_URL = 'https://galleta-domo.up.railway.app/api';
+const API_URL = '/api';
 
 // ================================================================
 // HEADERS DE AUTENTICACIÓN
 // ================================================================
 async function getAuthHeaders() {
     const headers = { 'Content-Type': 'application/json' };
-    if (supabase) {
-        try {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session && session.access_token) {
-                headers['Authorization'] = `Bearer ${session.access_token}`;
-            }
-        } catch (e) {
-            console.warn('No se pudo obtener sesión de Supabase:', e);
+    try {
+        const token = localStorage.getItem('galleta_token');
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
         }
+    } catch (e) {
+        console.warn('No se pudo obtener token:', e);
     }
     return headers;
 }
@@ -82,11 +68,10 @@ function cambiarTab(tab) {
 }
 
 // ================================================================
-// CARGAR PERFIL DESDE SUPABASE / localStorage
+// CARGAR PERFIL DESDE API (Supabase) / localStorage
 // ================================================================
 async function cargarPerfil() {
     try {
-        // Intentar cargar desde Supabase primero
         const response = await fetchWithAuth(`${API_URL}/perfil`);
         if (response.ok) {
             const data = await response.json();
@@ -96,23 +81,21 @@ async function cargarPerfil() {
             }
         }
     } catch (error) {
-        console.warn('Error cargando perfil desde Supabase, usando localStorage:', error);
+        console.warn('Error cargando perfil desde API:', error);
     }
 
     // Fallback: localStorage
     const perfil = JSON.parse(localStorage.getItem('sariels_perfil') || '{}');
     const tokens = parseInt(localStorage.getItem('sariels_tokens') || '0');
     const nfts = parseInt(localStorage.getItem('sariels_nft') === 'true' ? 1 : 0);
-    const domos = parseInt(localStorage.getItem('sariels_domos') || '0');
 
     actualizarUI({
         nombre: perfil.nombre || 'Explorador',
         handle: perfil.handle || 'explorador',
-        bio: perfil.bio || '🌍 Explorando el ecosistema Sariel\'s · WEB3 · Comunidad',
+        bio: perfil.bio || 'Explorando el ecosistema Sariel\'s · WEB3 · Comunidad',
         avatar: perfil.avatar || null,
         tokens: tokens,
         nfts: nfts,
-        domos: domos,
         seguidores: perfil.seguidores || 0,
         siguiendo: perfil.siguiendo || 0
     });
@@ -134,7 +117,7 @@ function actualizarUI(data) {
         nombreEl.innerHTML = `${data.nombre || 'Explorador'} <span class="verified">✦ VERIFICADO</span>`;
     }
     if (handleEl) handleEl.textContent = '@' + (data.handle || 'explorador');
-    if (bioEl) bioEl.textContent = data.bio || '🌍 Explorando el ecosistema Sariel\'s · WEB3 · Comunidad';
+    if (bioEl) bioEl.textContent = data.bio || 'Explorando el ecosistema Sariel\'s · WEB3 · Comunidad';
 
     if (avatarEl) {
         if (data.avatar) {
@@ -177,7 +160,7 @@ function actualizarUI(data) {
 
     if (editNombre) editNombre.value = data.nombre || 'Explorador';
     if (editHandle) editHandle.value = '@' + (data.handle || 'explorador');
-    if (editBio) editBio.value = data.bio || '🌍 Explorando el ecosistema Sariel\'s · WEB3 · Comunidad';
+    if (editBio) editBio.value = data.bio || 'Explorando el ecosistema Sariel\'s · WEB3 · Comunidad';
     if (editAvatar) editAvatar.value = data.avatar || '';
 }
 
@@ -260,13 +243,13 @@ function cargarHistorial() {
 }
 
 // ================================================================
-// GUARDAR PERFIL
+// GUARDAR PERFIL VÍA API
 // ================================================================
 async function guardarPerfil() {
     const perfil = {
         nombre: document.getElementById('editNombre').value.trim() || 'Explorador',
         handle: document.getElementById('editHandle').value.trim().replace('@', '') || 'explorador',
-        bio: document.getElementById('editBio').value.trim() || '🌍 Explorando el ecosistema Sariel\'s · WEB3 · Comunidad',
+        bio: document.getElementById('editBio').value.trim() || 'Explorando el ecosistema Sariel\'s · WEB3 · Comunidad',
         avatar: document.getElementById('editAvatar').value.trim() || null
     };
 
@@ -283,7 +266,7 @@ async function guardarPerfil() {
             return;
         }
     } catch (error) {
-        console.warn('Error guardando perfil en Supabase, usando localStorage:', error);
+        console.warn('Error guardando perfil vía API:', error);
     }
 
     // Fallback: localStorage
@@ -321,7 +304,7 @@ function compartirPerfil() {
     const perfil = JSON.parse(localStorage.getItem('sariels_perfil') || '{}');
     const handle = perfil.handle || 'explorador';
     const url = `${window.location.origin}/perfil/${handle}`;
-    const texto = `◈ Perfil de ${perfil.nombre || 'Explorador'} en Sariel's\n🔗 ${url}`;
+    const texto = `◈ Perfil de ${perfil.nombre || 'Explorador'} en Sariel's\n◈ ${url}`;
 
     if (navigator.share) {
         navigator.share({
@@ -331,7 +314,7 @@ function compartirPerfil() {
         }).catch(() => {});
     } else {
         navigator.clipboard.writeText(texto).then(() => {
-            showToast('📋 Copiado al portapapeles');
+            showToast('◈ Copiado al portapapeles');
         }).catch(() => {
             prompt('Copia este enlace:', url);
         });
@@ -352,8 +335,6 @@ function irAMuro() {
 // ================================================================
 // WALLET (con Supabase)
 // ================================================================
-let session = null;
-
 async function conectarWallet() {
     if (typeof window.app !== 'undefined' && window.app.supabase) {
         try {
@@ -437,4 +418,4 @@ window.cargarPublicaciones = cargarPublicaciones;
 window.cargarHistorial = cargarHistorial;
 window.actualizarUI = actualizarUI;
 
-console.log('◈ perfil.js cargado correctamente con Supabase Auth');
+console.log('◈ perfil.js cargado correctamente conectado a API');
