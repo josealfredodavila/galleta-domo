@@ -11,7 +11,10 @@ const PORT = process.env.PORT || 8080;
 // ================================================================
 app.use(cors());
 app.use(express.json());
-app.use(express.static('public'));
+
+// ✅ SIRVE ARCHIVOS DESDE LA RAÍZ Y DESDE public/
+app.use(express.static(__dirname));     // Busca en la raíz
+app.use(express.static('public'));      // Busca en public/
 
 // ================================================================
 // HEALTH CHECK
@@ -105,7 +108,7 @@ app.get('/actualizar-contrasena', (req, res) => {
 });
 
 // ================================================================
-// ✅ RUTAS LEGALES (AGREGAR ESTAS)
+// RUTAS LEGALES
 // ================================================================
 app.get('/terminos', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'terminos.html'));
@@ -152,7 +155,7 @@ process.on('SIGTERM', () => {
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`========================================`);
     console.log(`✅ Servidor corriendo en el puerto ${PORT}`);
-    console.log(`📁 Sirviendo archivos desde: /public`);
+    console.log(`📁 Sirviendo archivos desde: /public y raíz`);
     console.log(`🌐 URL: http://localhost:${PORT}`);
     console.log(`========================================`);
 });
