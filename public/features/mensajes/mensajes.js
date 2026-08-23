@@ -249,19 +249,19 @@ function cargarConversacionesEjemplo() {
 function seleccionarConversacionDemo(id) {
     const mensajesDemo = {
         1: [
-            { tipo: 'recibido', texto: 'Hola, ¿cómo estás?', hora: '14:25' },
+            { tipo: 'recibido', texto: 'Hola, ¿cómo estás?', hora: '14:25', estado: 'conectado' },
             { tipo: 'enviado', texto: '¡Hola! Todo bien, ¿y tú?', hora: '14:27', leido: true },
-            { tipo: 'recibido', texto: 'Bien, quería preguntarte sobre los tokens', hora: '14:28' },
+            { tipo: 'recibido', texto: 'Bien, quería preguntarte sobre los tokens', hora: '14:28', estado: 'desconectado' },
             { tipo: 'enviado', texto: 'Claro, ¿qué necesitas saber?', hora: '14:30', leido: true }
         ],
         2: [
-            { tipo: 'recibido', texto: '¿Confirmamos la reunión?', hora: '12:10' },
+            { tipo: 'recibido', texto: '¿Confirmamos la reunión?', hora: '12:10', estado: 'conectado' },
             { tipo: 'enviado', texto: 'Sí, a las 5 pm', hora: '12:12', leido: true },
-            { tipo: 'recibido', texto: 'Nos vemos mañana', hora: '12:15' }
+            { tipo: 'recibido', texto: 'Nos vemos mañana', hora: '12:15', estado: 'conectado' }
         ],
         3: [
             { tipo: 'enviado', texto: '¿Necesitas ayuda con algo más?', hora: '10:00', leido: true },
-            { tipo: 'recibido', texto: 'Gracias por tu ayuda', hora: '10:05' }
+            { tipo: 'recibido', texto: 'Gracias por tu ayuda', hora: '10:05', estado: 'conectado' }
         ]
     };
 
@@ -282,12 +282,35 @@ function seleccionarConversacionDemo(id) {
 
     mensajes.forEach(msg => {
         const div = document.createElement('div');
-        div.className = `msg ${msg.tipo}`;
-        div.innerHTML = `
-            ${msg.texto}
-            <span class="msg-hora">${msg.hora}</span>
-            ${msg.leido ? '<span class="msg-leido">✓✓ Leído</span>' : ''}
-        `;
+        div.className = `msg-wrapper ${msg.tipo}`;
+        
+        if (msg.tipo === 'enviado') {
+            div.innerHTML = `
+                <div class="burbuja">${msg.texto}</div>
+                <div class="meta">
+                    ${msg.hora}
+                    ${msg.leido ? '<span class="leido leido">◆◆</span>' : '<span class="leido no-leido">◈◈</span>'}
+                </div>
+            `;
+        } else {
+            const estadoClass = msg.estado || 'conectado';
+            const estadoTexto = {
+                'conectado': '◈ Conectado',
+                'desconectado': '◈ Desconectado',
+                'sin-datos': '⚠️ Sin conexión a internet'
+            }[estadoClass] || '◈ Conectado';
+
+            div.innerHTML = `
+                <div class="fila">
+                    <div class="avatar estado-${estadoClass}" title="${estadoTexto}">
+                        ◈
+                        <span class="tooltip">${estadoTexto}</span>
+                    </div>
+                    <div class="burbuja">${msg.texto}</div>
+                </div>
+                <div class="meta">${msg.hora}</div>
+            `;
+        }
         container.appendChild(div);
     });
     container.scrollTop = container.scrollHeight;
@@ -418,51 +441,32 @@ function crearElementoMensaje(mensaje, scroll = true) {
     const fecha = new Date(mensaje.createdAt);
 
     const div = document.createElement('div');
-    div.className = `msg ${tipo}`;
+    div.className = `msg-wrapper ${tipo}`;
     
-    let contenido = '';
-    
-    if (mensaje.contenido) {
-        contenido += `<span class="msg-text">${mensaje.contenido}</span>`;
-    }
-    
-    if (mensaje.archivo) {
-        const ext = mensaje.archivo.split('.').pop().toLowerCase();
-        if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
-            contenido += `
-                <div class="msg-archivo" onclick="window.open('${mensaje.archivo}', '_blank')">
-                    <img src="${mensaje.archivo}" alt="Imagen" loading="lazy" />
+    if (tipo === 'enviado') {
+        div.innerHTML = `
+            <div class="burbuja">${mensaje.contenido || ''}</div>
+            <div class="meta">
+                ${formatearHora(fecha)}
+                <span class="leido leido">◆◆</span>
+            </div>
+        `;
+    } else {
+        const estadoClass = 'conectado';
+        const estadoTexto = '◈ Conectado';
+
+        div.innerHTML = `
+            <div class="fila">
+                <div class="avatar estado-${estadoClass}" title="${estadoTexto}">
+                    ◈
+                    <span class="tooltip">${estadoTexto}</span>
                 </div>
-            `;
-        } else if (['mp4', 'webm', 'mov'].includes(ext)) {
-            contenido += `
-                <div class="msg-archivo">
-                    <video controls src="${mensaje.archivo}"></video>
-                </div>
-            `;
-        } else {
-            contenido += `
-                <div class="msg-archivo">
-                    <a href="${mensaje.archivo}" target="_blank" class="file-link">◈ Ver archivo</a>
-                </div>
-            `;
-        }
+                <div class="burbuja">${mensaje.contenido || ''}</div>
+            </div>
+            <div class="meta">${formatearHora(fecha)}</div>
+        `;
     }
     
-    if (mensaje.tipo === 'comprobante') {
-        contenido += `<div class="msg-comprobante">◈ Comprobante de pago</div>`;
-    }
-    
-    if (mensaje.reacciones && Object.keys(mensaje.reacciones).length > 0) {
-        const reaccionesStr = Object.entries(mensaje.reacciones)
-            .map(([emoji, count]) => `${emoji} ${count}`)
-            .join(' ');
-        contenido += `<div class="msg-reacciones">${reaccionesStr}</div>`;
-    }
-    
-    contenido += `<span class="msg-hora">${formatearHora(fecha)}</span>`;
-    
-    div.innerHTML = contenido;
     return div;
 }
 
