@@ -116,11 +116,9 @@ class GalletaDomoApp {
 
             if (error) throw error;
             
-            // ✅ MENSAJE PRO
             showToast('📧 ¡Listo! Te enviamos un enlace a tu correo. Revisa tu bandeja.');
             return true;
         } catch (error) {
-            // ✅ MENSAJE PRO
             showToast('❌ No encontramos ese correo. Verifica que esté bien escrito.', 'error');
             return false;
         }
@@ -137,7 +135,6 @@ class GalletaDomoApp {
 
             if (error) throw error;
             
-            // ✅ MENSAJE PRO
             showToast('✅ ¡Contraseña actualizada! Ahora inicia sesión con la nueva.');
             return true;
         } catch (error) {
@@ -164,7 +161,6 @@ class GalletaDomoApp {
 
             const wallet = accounts[0];
             
-            // Buscar usuario por wallet en Supabase
             const { data, error } = await this.supabase
                 .from('usuarios')
                 .select('email')
@@ -176,7 +172,6 @@ class GalletaDomoApp {
                 return;
             }
 
-            // Enviar recuperación al email registrado
             await this.recuperarContraseña(data.email);
             
         } catch (error) {
@@ -215,7 +210,6 @@ class GalletaDomoApp {
         try {
             web3 = new Web3(window.ethereum);
             
-            // Verificar red (Polygon)
             const chainId = await window.ethereum.request({ method: 'eth_chainId' });
             if (chainId !== '0x89') {
                 try {
@@ -235,7 +229,6 @@ class GalletaDomoApp {
                 this.actualizarUIWallet(accounts[0]);
                 showToast('✅ Wallet conectada: ' + accounts[0].slice(0, 6) + '...' + accounts[0].slice(-4));
                 
-                // Vincular wallet con Supabase (si está autenticado)
                 if (this.usuario) {
                     await this.vincularWallet(accounts[0]);
                 }
@@ -369,7 +362,6 @@ class GalletaDomoApp {
         }
     }
 
-    // Suscribirse a nuevos mensajes (Realtime)
     suscribirseChat(transmisionId, callback) {
         return this.supabase
             .channel(`chat-${transmisionId}`)
@@ -498,7 +490,6 @@ class GalletaDomoApp {
 
             if (error) throw error;
 
-            // Actualizar transmisión
             await this.supabase
                 .from('transmisiones')
                 .update({
@@ -517,14 +508,17 @@ class GalletaDomoApp {
     }
 
     // ================================================================
-    // UI UPDATES
+    // UI UPDATES - VERSIÓN SEGURA (SOLO ACTUALIZA, NO CREA)
     // ================================================================
     actualizarUIUsuario(user) {
+        // Solo actualizar si los elementos existen en el DOM
         const loginBtn = document.getElementById('loginBtn');
         const userInfo = document.getElementById('userInfo');
 
-        if (user && loginBtn) {
-            loginBtn.style.display = 'none';
+        if (!loginBtn && !userInfo) return; // No crear elementos
+
+        if (user) {
+            if (loginBtn) loginBtn.style.display = 'none';
             if (userInfo) {
                 userInfo.style.display = 'flex';
                 userInfo.innerHTML = `
@@ -546,11 +540,14 @@ class GalletaDomoApp {
     }
 
     actualizarUIWallet(wallet) {
+        // Solo actualizar si los elementos existen en el DOM
         const walletBtn = document.getElementById('walletBtn');
         const walletInfo = document.getElementById('walletInfo');
 
-        if (wallet && walletBtn) {
-            walletBtn.style.display = 'none';
+        if (!walletBtn && !walletInfo) return; // No crear elementos
+
+        if (wallet) {
+            if (walletBtn) walletBtn.style.display = 'none';
             if (walletInfo) {
                 walletInfo.style.display = 'flex';
                 walletInfo.innerHTML = `
@@ -580,7 +577,7 @@ class GalletaDomoApp {
 }
 
 // ================================================================
-// TOAST
+// TOAST - VERSIÓN SEGURA (NO DUPLICAR)
 // ================================================================
 function showToast(msg, type = '') {
     let t = document.getElementById('toast');
@@ -604,62 +601,32 @@ function showToast(msg, type = '') {
 // ================================================================
 const app = new GalletaDomoApp();
 
-// Exponer para uso global
 window.app = app;
 window.usuarioActual = usuarioActual;
 window.showToast = showToast;
 
 // ================================================================
-// INICIALIZAR CUANDO EL DOM ESTÉ LISTO
+// INICIALIZACIÓN SEGURA - NO MODIFICA EL HEADER
 // ================================================================
 document.addEventListener('DOMContentLoaded', function() {
     console.log('◈ Sariel\'s App - Lista');
     console.log('◉ Supabase conectado');
     console.log('◆ Wallet: ' + (localStorage.getItem('sariels_wallet') ? 'Conectada' : 'Desconectada'));
     
-    // Agregar botones de autenticación en el header si no existen
-    const headerActions = document.querySelector('.header-actions');
-    if (headerActions) {
-        // Buscar si ya existen
-        if (!document.getElementById('loginBtn')) {
-            const loginBtn = document.createElement('button');
-            loginBtn.id = 'loginBtn';
-            loginBtn.className = 'nav-link';
-            loginBtn.textContent = '◆ Conectar';
-            loginBtn.onclick = () => {
-                const email = prompt('Correo:');
-                if (email) {
-                    const pass = prompt('Contraseña:');
-                    if (pass) app.iniciarSesion(email, pass);
-                }
-            };
-            headerActions.appendChild(loginBtn);
-        }
-        
-        if (!document.getElementById('walletBtn')) {
-            const walletBtn = document.createElement('button');
-            walletBtn.id = 'walletBtn';
-            walletBtn.className = 'nav-link admin';
-            walletBtn.textContent = '◈ Wallet';
-            walletBtn.onclick = () => app.conectarWallet();
-            headerActions.appendChild(walletBtn);
-        }
-        
-        if (!document.getElementById('userInfo')) {
-            const userInfo = document.createElement('div');
-            userInfo.id = 'userInfo';
-            userInfo.style.cssText = 'display:none;align-items:center;gap:8px;';
-            headerActions.appendChild(userInfo);
-        }
-        
-        if (!document.getElementById('walletInfo')) {
-            const walletInfo = document.createElement('div');
-            walletInfo.id = 'walletInfo';
-            walletInfo.style.cssText = 'display:none;align-items:center;gap:8px;';
-            headerActions.appendChild(walletInfo);
-        }
+    // SOLO actualizar UI si los elementos existen
+    // NO crear nuevos elementos en el header
+    
+    // Si hay usuario logueado, actualizar UI
+    if (app.usuario) {
+        app.actualizarUIUsuario(app.usuario);
     }
-
-    // Recuperar sesión
+    
+    // Si hay wallet guardada, actualizar UI
+    const walletGuardada = localStorage.getItem('sariels_wallet');
+    if (walletGuardada) {
+        app.actualizarUIWallet(walletGuardada);
+    }
+    
+    // Recuperar sesión (ya se hace en el constructor, pero por seguridad)
     app.init();
 });
