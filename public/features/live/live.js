@@ -83,6 +83,7 @@ let peerConnections = [];
 let currentRoom = null;
 let livekitToken = null;
 let socket = null;
+let isVoiceActive = false; // Lector de voz activo/inactivo
 
 // ================================================================
 // INICIALIZAR
@@ -100,14 +101,35 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Verificar permisos de notificación
-    if ('Notification' in window && Notification.permission === 'default') {
-        Notification.requestPermission();
-    }
-
     console.log('◉ Sariel\'s - Live Ultra Mega Pro');
     console.log('🔴 Sistema de transmisiones en vivo');
 });
+
+// ================================================================
+// LECTOR DE VOZ (WEB SPEECH API - GRATIS)
+// ================================================================
+function toggleVoice() {
+    isVoiceActive = !isVoiceActive;
+    const voiceBtn = document.getElementById('voiceBtn');
+    if (voiceBtn) {
+        voiceBtn.classList.toggle('voice-active', isVoiceActive);
+        voiceBtn.textContent = isVoiceActive ? '🔊' : '🔇';
+    }
+    showToast(isVoiceActive ? '🔊 Lector de voz activado' : '🔇 Lector de voz desactivado');
+}
+
+function leerMensaje(texto) {
+    if (!isVoiceActive || !texto) return;
+    
+    // Usar la Web Speech API (gratis)
+    if ('speechSynthesis' in window) {
+        const utterance = new SpeechSynthesisUtterance(texto);
+        utterance.lang = 'es-ES';
+        utterance.rate = 1.0;
+        utterance.pitch = 1.0;
+        window.speechSynthesis.speak(utterance);
+    }
+}
 
 // ================================================================
 // SOCKET.IO (para chat en tiempo real)
@@ -139,6 +161,9 @@ function iniciarSocket() {
                 chatMessages.push(msg);
                 renderizarMensaje(msg);
                 actualizarContadorChat();
+                
+                // Lector de voz: leer solo si está activo
+                leerMensaje(`${msg.nombre} dice: ${msg.texto}`);
             }
         });
 
@@ -187,7 +212,6 @@ async function iniciarTransmision() {
             return;
         }
 
-        // Verificar autenticación
         const session = await getSession();
         if (!session) {
             showToast('⚠️ Conecta tu wallet primero', 'warning');
@@ -203,7 +227,6 @@ async function iniciarTransmision() {
 
         localStream = stream;
 
-        // Intentar obtener token de LiveKit
         const perfil = JSON.parse(localStorage.getItem('sariels_perfil') || '{}');
         const roomName = `live_${Date.now()}`;
         const participantName = perfil.nombre || 'Explorador';
@@ -235,13 +258,11 @@ async function iniciarTransmision() {
 
         showToast('✅ Transmisión iniciada', 'success');
 
-        // Simular espectadores
         viewersCount = Math.floor(Math.random() * 30) + 5;
         actualizarViewers();
 
         agregarStreamLocal();
 
-        // Notificar al servidor
         if (socket && socket.connected) {
             socket.emit('live_start', {
                 room: roomName,
@@ -290,7 +311,6 @@ function agregarStreamLocal() {
     const perfil = JSON.parse(localStorage.getItem('sariels_perfil') || '{}');
     const nombre = perfil.nombre || 'Explorador';
 
-    // Remover stream local anterior si existe
     const oldLocal = document.getElementById('stream-local');
     if (oldLocal) oldLocal.remove();
 
@@ -344,7 +364,6 @@ function finalizarTransmision() {
     const local = document.getElementById('stream-local');
     if (local) local.remove();
 
-    // Notificar al servidor
     if (socket && socket.connected && currentRoom) {
         socket.emit('live_end', { room: currentRoom });
     }
@@ -484,7 +503,6 @@ function enviarMensaje() {
     input.value = '';
     actualizarContadorChat();
 
-    // Enviar al servidor
     if (socket && socket.connected && currentRoom) {
         socket.emit('live_message', {
             room: currentRoom,
@@ -494,7 +512,6 @@ function enviarMensaje() {
         });
     }
 
-    // Simular respuesta automática
     if (Math.random() > 0.7) {
         setTimeout(() => {
             const respuestas = [
@@ -516,6 +533,8 @@ function enviarMensaje() {
             chatMessages.push(botMsg);
             renderizarMensaje(botMsg);
             actualizarContadorChat();
+            
+            leerMensaje(`Nuevo mensaje de ${botMsg.nombre}: ${botMsg.texto}`);
         }, 2000 + Math.random() * 3000);
     }
 }
@@ -527,7 +546,6 @@ function renderizarMensaje(msg) {
     const container = document.getElementById('chatMessages');
     if (!container) return;
 
-    // Eliminar mensaje de bienvenida si es el único
     const welcome = container.querySelector('.chat-msg:first-child');
     if (welcome && welcome.querySelector('.name')?.textContent === 'Sariel\'s Bot' && chatMessages.length > 1) {
         welcome.remove();
@@ -578,13 +596,14 @@ function simularMensajes() {
             chatMessages.push(msg);
             renderizarMensaje(msg);
             actualizarContadorChat();
+            
+            leerMensaje(`${msg.nombre} dice: ${msg.texto}`);
             index++;
         } else {
             clearInterval(interval);
         }
     }, 3000);
 
-    // Simular espectadores adicionales
     const viewerInterval = setInterval(() => {
         if (!isLive) {
             clearInterval(viewerInterval);
@@ -611,7 +630,7 @@ function actualizarContadorChat() {
 }
 
 // ================================================================
-// CARGAR STREAMS DESDE EL SERVIDOR (Ruta correcta: /api/live/activos)
+// CARGAR STREAMS DESDE EL SERVIDOR
 // ================================================================
 async function cargarStreams() {
     try {
@@ -628,7 +647,6 @@ async function cargarStreams() {
         console.warn('Error cargando streams, usando datos locales:', error);
     }
 
-    // Datos de ejemplo
     streamsList = [];
     renderizarStreams(streamsList);
 }
@@ -640,7 +658,6 @@ function renderizarStreams(streams) {
     const container = document.getElementById('streamsList');
     if (!container) return;
 
-    // Remover streams existentes excepto el local
     const local = document.getElementById('stream-local');
     container.innerHTML = '';
     if (local) container.appendChild(local);
@@ -678,7 +695,6 @@ function renderizarStreams(streams) {
 // ================================================================
 function unirseTransmision(streamId) {
     showToast('◈ Uniéndose a la transmisión...');
-    // En producción, aquí se conectaría al stream específico
     setTimeout(() => {
         showToast('✅ Transmisión abierta', 'success');
     }, 1500);
@@ -806,5 +822,7 @@ window.unirseTransmision = unirseTransmision;
 window.toggleModo = toggleModo;
 window.cargarModo = cargarModo;
 window.getSession = getSession;
+window.toggleVoice = toggleVoice;
+window.leerMensaje = leerMensaje;
 
-console.log('◉ live.js cargado correctamente con Supabase Auth');
+console.log('◉ live.js cargado correctamente con Supabase Auth y Lector de Voz');
