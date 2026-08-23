@@ -237,16 +237,16 @@
 <body>
 
     <!-- ===== FONDO ESTELAR ===== -->
-    <canvas id="stars-canvas"></canvas>
-    <div class="nebula nebula-1"></div>
-    <div class="nebula nebula-2"></div>
-    <div class="nebula nebula-3"></div>
+    <canvas id="stars-canvas" aria-hidden="true"></canvas>
+    <div class="nebula nebula-1" aria-hidden="true"></div>
+    <div class="nebula nebula-2" aria-hidden="true"></div>
+    <div class="nebula nebula-3" aria-hidden="true"></div>
 
     <div class="app">
 
         <!-- ===== HEADER ===== -->
         <header class="header">
-            <a href="/" class="logo">
+            <a href="/" class="logo" aria-label="Ir a la página de inicio">
                 <span class="logo-hex">◈</span>
                 <span class="logo-text">Sariel<span>'s</span></span>
                 <span class="logo-badge">✦ WEB3</span>
@@ -256,13 +256,16 @@
             </div>
         </header>
 
-        <!-- ===== NAVEGACIÓN ===== -->
-        <nav class="main-nav">
+        <!-- ============================================================ -->
+        <!-- ===== NAVEGACIÓN UNIFICADA CON RUTAS CORTAS ===== -->
+        <!-- ============================================================ -->
+        <nav class="main-nav" aria-label="Navegación principal">
             <a href="/" class="nav-link">⌂ Inicio</a>
-            <a href="/features/muro/muro.html" class="nav-link">◇ Muro</a>
-            <a href="/features/perfil/perfil.html" class="nav-link active">◆ Perfil</a>
-            <a href="/features/mensajes/contactos.html" class="nav-link">◈ Contactos</a>
-            <a href="/features/live/live.html" class="nav-link live">◉ Live</a>
+            <a href="/muro" class="nav-link">◇ Muro</a>
+            <a href="/perfil" class="nav-link active">◆ Perfil</a>
+            <a href="/contactos" class="nav-link">◈ Contactos</a>
+            <a href="/mensajes" class="nav-link">◈ Mensajes</a>
+            <a href="/live" class="nav-link live">◉ Live</a>
         </nav>
 
         <!-- ===== PERFIL ===== -->
@@ -416,11 +419,16 @@
             </div>
         </div>
 
-        <!-- ===== FOOTER ===== -->
+        <!-- ============================================================ -->
+        <!-- ===== FOOTER UNIFICADO CON 4 ENLACES LEGALES ===== -->
+        <!-- ============================================================ -->
         <footer class="footer">
             <span><span class="brand">◈ Sariel's</span> · Sabor al Paladar · WEB3</span>
             <div class="footer-links">
-                <a href="/terminos.html">📜 Términos</a>
+                <a href="/terminos">📜 Términos</a>
+                <a href="/privacidad">🔒 Privacidad</a>
+                <a href="/cookies">🍪 Cookies</a>
+                <a href="/live-terminos">📡 Términos de Live</a>
                 <span style="opacity:0.3;">⚡ Polygon</span>
             </div>
         </footer>
@@ -482,7 +490,7 @@
     </div>
 
     <!-- ===== TOAST ===== -->
-    <div class="toast" id="toast"></div>
+    <div class="toast" id="toast" role="alert" aria-live="polite"></div>
 
     <!-- ===== SCRIPTS ===== -->
     <script src="https://cdn.jsdelivr.net/npm/web3@1.8.0/dist/web3.min.js"></script>
@@ -507,6 +515,8 @@
 
             console.log('◈ Sariel\'s - Perfil Ultra Mega Pro (con Publicaciones)');
             console.log('🚀 Competencia de Silicon Valley');
+            console.log('✅ Footer con 4 enlaces legales');
+            console.log('✅ Navegación con rutas cortas y Mensajes');
         });
 
         // ================================================================
@@ -518,10 +528,10 @@
             const container = document.getElementById('publicacionesContainer');
             if (!container) return;
 
-            const posts = JSON.parse(localStorage.getItem('sariels_perfil_posts') || '[]');
+            let posts = JSON.parse(localStorage.getItem('sariels_perfil_posts') || '[]');
 
-            if (posts.length === 0) {
-                // Publicación de ejemplo
+            if (!Array.isArray(posts) || posts.length === 0) {
+                // Publicación de ejemplo (solo si no hay ninguna)
                 const postEjemplo = {
                     id: Date.now(),
                     autor: 'Sariel\'s',
@@ -533,7 +543,7 @@
                     media: null,
                     tipo: 'texto'
                 };
-                posts.push(postEjemplo);
+                posts = [postEjemplo];
                 localStorage.setItem('sariels_perfil_posts', JSON.stringify(posts));
             }
 
@@ -570,13 +580,13 @@
                         <div class="pub-contenido">${post.contenido || ''}</div>
                         ${mediaHtml}
                         <div class="pub-reacciones">
-                            <button onclick="reaccionarPublicacion(${post.id}, 'like')">
+                            <button onclick="reaccionarPublicacion(${post.id}, 'like')" aria-label="Me gusta">
                                 👍 Me gusta <span class="contador" id="likes-${post.id}">${post.likes || 0}</span>
                             </button>
-                            <button onclick="reaccionarPublicacion(${post.id}, 'divertido')">
+                            <button onclick="reaccionarPublicacion(${post.id}, 'divertido')" aria-label="Me divierte">
                                 😄 Me divierte <span class="contador" id="divertido-${post.id}">${post.divertido || 0}</span>
                             </button>
-                            ${esAutor ? `<button onclick="eliminarPublicacionPerfil(${post.id})" style="color:var(--danger);">✕ Eliminar</button>` : ''}
+                            ${esAutor ? `<button onclick="eliminarPublicacionPerfil(${post.id})" style="color:var(--danger);" aria-label="Eliminar publicación">✕ Eliminar</button>` : ''}
                         </div>
                     </div>
                 `;
@@ -596,7 +606,8 @@
                 if (contenido === null) return;
 
                 const perfil = JSON.parse(localStorage.getItem('sariels_perfil') || '{}');
-                const posts = JSON.parse(localStorage.getItem('sariels_perfil_posts') || '[]');
+                let posts = JSON.parse(localStorage.getItem('sariels_perfil_posts') || '[]');
+                if (!Array.isArray(posts)) posts = [];
 
                 const nuevoPost = {
                     id: Date.now(),
@@ -629,7 +640,8 @@
             }
 
             const perfil = JSON.parse(localStorage.getItem('sariels_perfil') || '{}');
-            const posts = JSON.parse(localStorage.getItem('sariels_perfil_posts') || '[]');
+            let posts = JSON.parse(localStorage.getItem('sariels_perfil_posts') || '[]');
+            if (!Array.isArray(posts)) posts = [];
 
             const nuevoPost = {
                 id: Date.now(),
