@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>◈ Live · Sariel's</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/features/live/live.css" />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+    <!-- ===== SCRIPTS EXTERNOS ===== -->
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.8.0/dist/web3.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/livekit-client/dist/livekit-client.umd.js"></script>
+    <!-- ===== SCRIPTS LOCALES ===== -->
+    <script src="/app.js"></script>
+    <script src="/features/live/live.js"></script>
+</head>
+<body>
+    <!-- ===== FONDO ESTELAR ===== -->
+    <canvas id="stars-canvas" aria-hidden="true"></canvas>
+    <div class="nebula nebula-1" aria-hidden="true"></div>
+    <div class="nebula nebula-2" aria-hidden="true"></div>
+    <div class="nebula nebula-3" aria-hidden="true"></div>
+
+    <div class="app">
+
+        <!-- ===== HEADER ===== -->
+        <header class="header">
+            <a href="/" class="logo" aria-label="Ir a la página de inicio">
+                <span class="logo-hex">◈</span>
+                <span class="logo-text">Sariel<span>'s</span></span>
+                <span class="logo-badge">✦ WEB3</span>
+            </a>
+            <div class="header-actions">
+                <span class="network-badge"><span class="dot"></span> Polygon</span>
+                <span class="live-badge-header">◉ EN VIVO</span>
+                <!-- Los botones de autenticación los agrega app.js -->
+            </div>
+        </header>
+
+        <!-- ===== NAVEGACIÓN ===== -->
+        <nav class="main-nav" aria-label="Navegación principal">
+            <a href="/" class="nav-link">⌂ Inicio</a>
+            <a href="/muro" class="nav-link">◇ Muro</a>
+            <a href="/perfil" class="nav-link">◆ Perfil</a>
+            <a href="/contactos" class="nav-link">◈ Contactos</a>
+            <a href="/live" class="nav-link active live">◉ Live</a>
+        </nav>
+
+        <!-- ===== CALENDARIO ===== -->
+        <div class="calendario-section">
+            <div class="header">
+                <h3>◈ Próximos eventos</h3>
+                <button class="ver-todos" onclick="showToast('◈ Cargando todos los eventos...')" aria-label="Ver todos los eventos">Ver todos →</button>
+            </div>
+            <div class="calendario-grid" id="calendarioGrid">
+                <!-- Los eventos se cargan desde Supabase -->
+            </div>
+        </div>
+
+        <!-- ===== LIVE HEADER ===== -->
+        <div class="live-header">
+            <h2>◈ Transmisiones en vivo</h2>
+            <div class="live-stats">
+                <span>◉ <span id="liveCount">0</span> en vivo</span>
+                <span>◈ <span id="totalViewers">0</span> espectadores</span>
+            </div>
+            <button class="btn-crear-live" onclick="crearTransmision()" aria-label="Iniciar una nueva transmisión en vivo">
+                <span>◉</span> Iniciar transmisión
+            </button>
+        </div>
+
+        <!-- ===== GRID DE TRANSMISIONES ===== -->
+        <div class="live-grid" id="liveGrid">
+            <!-- Las transmisiones se cargan desde Supabase -->
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- ===== FOOTER CORREGIDO CON TODOS LOS ENLACES LEGALES ===== -->
+        <!-- ============================================================ -->
+        <footer class="footer">
+            <span><span class="brand">◈ Sariel's</span> · Sabor al Paladar · WEB3</span>
+            <div class="footer-links">
+                <a href="/terminos">📜 Términos</a>
+                <a href="/privacidad">🔒 Privacidad</a>
+                <a href="/cookies">🍪 Cookies</a>
+                <a href="/live-terminos">📡 Términos de Live</a>
+                <span style="opacity:0.3;">⚡ Polygon</span>
+            </div>
+        </footer>
+
+    </div>
+
+    <!-- ===== MODAL ===== -->
+    <div class="modal-live" id="modalLive" role="dialog" aria-modal="true" aria-label="Ventana de transmisión en vivo">
+        <div class="modal-live-content">
+            <div class="modal-live-header">
+                <div class="modal-live-title"><span class="live-dot">◉</span> Transmisión en vivo</div>
+                <button class="btn-cerrar-modal" onclick="cerrarModalTransmision()" aria-label="Cerrar la ventana de transmisión">✕</button>
+            </div>
+            <div class="modal-live-body">
+                <div class="live-player">
+                    <div id="videoContainer"></div>
+                    <div class="player-placeholder" id="playerPlaceholder">
+                        <div class="icon">◈</div>
+                        <p>◉ Transmisión en vivo</p>
+                        <p style="font-size:0.8rem;color:var(--text-muted);" id="liveStatusText">Conectando...</p>
+                    </div>
+                </div>
+                <div class="live-chat">
+                    <div class="chat-messages" id="chatMessages">
+                        <div class="empty-message">Sin mensajes aún</div>
+                    </div>
+                    <div class="chat-input-live">
+                        <input type="text" placeholder="Escribe un mensaje..." id="chatInput" aria-label="Escribe un mensaje en el chat" />
+                        <button onclick="enviarMensajeChat()" aria-label="Enviar mensaje">↩</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== TOAST ===== -->
+    <div class="toast" id="toast" role="alert" aria-live="polite"></div>
+
+    <!-- ===== SCRIPT DE ESTRELLAS ===== -->
+    <script>
+        function initStars() {
+            const canvas = document.getElementById('stars-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            let width, height, stars = [];
+            let isVisible = true;
+
+            const isMobile = window.innerWidth < 600;
+            const STAR_COUNT = isMobile ? 40 : 100;
+
+            function resize() {
+                width = window.innerWidth;
+                height = window.innerHeight;
+                canvas.width = width;
+                canvas.height = height;
+                createStars();
+            }
+
+            function createStars() {
+                stars = [];
+                for (let i = 0; i < STAR_COUNT; i++) {
+                    stars.push({
+                        x: Math.random() * width,
+                        y: Math.random() * height,
+                        radius: Math.random() * 0.8 + 0.2,
+                        speed: Math.random() * 0.005 + 0.002,
+                        opacity: Math.random() * 0.5 + 0.2,
+                        twinklePhase: Math.random() * Math.PI * 2
+                    });
+                }
+            }
+
+            function draw() {
+                if (!isVisible) {
+                    requestAnimationFrame(draw);
+                    return;
+                }
+                ctx.clearRect(0, 0, width, height);
+                for (let star of stars) {
+                    const opacity = star.opacity * (0.6 + 0.4 * Math.sin(star.twinklePhase));
+                    ctx.beginPath();
+                    ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
+                    ctx.fill();
+                    star.twinklePhase += 0.02;
+                    star.y += star.speed;
+                    if (star.y > height) {
+                        star.y = 0;
+                        star.x = Math.random() * width;
+                    }
+                }
+                requestAnimationFrame(draw);
+            }
+
+            resize();
+            draw();
+
+            window.addEventListener('resize', resize);
+            document.addEventListener('visibilitychange', function() {
+                if (document.hidden) isVisible = false;
+                else isVisible = true;
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', initStars);
+    </script>
+</body>
+</html>
