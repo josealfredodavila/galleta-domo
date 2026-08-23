@@ -92,7 +92,6 @@ document.addEventListener('DOMContentLoaded', function() {
     actualizarViewers();
     cargarStreams();
     iniciarSocket();
-    configurarMiniPlayerDrag();
 
     const chatInput = document.getElementById('chatInput');
     if (chatInput) {
@@ -222,13 +221,6 @@ async function iniciarTransmision() {
             await video.play();
         }
 
-        // Sincronizar con mini player si está abierto
-        const miniVideo = document.getElementById('miniVideo');
-        if (miniVideo && miniVideo.style.display !== 'none') {
-            miniVideo.srcObject = stream;
-            await miniVideo.play();
-        }
-
         isPlaying = true;
         isLive = true;
 
@@ -336,9 +328,6 @@ function finalizarTransmision() {
 
     const video = document.getElementById('liveVideo');
     if (video) video.srcObject = null;
-
-    // Cerrar mini player si está abierto
-    cerrarMiniPlayer();
 
     isPlaying = false;
     isLive = false;
@@ -464,100 +453,6 @@ async function capturarPantalla() {
             showToast('❌ Error al compartir pantalla', 'error');
         }
     }
-}
-
-// ================================================================
-// MINI PLAYER FLOTANTE (ARRASTRABLE)
-// ================================================================
-function abrirMiniPlayer() {
-    const miniPlayer = document.getElementById('miniPlayer');
-    const miniVideo = document.getElementById('miniVideo');
-
-    if (!localStream) {
-        showToast('⚠️ No hay transmisión activa', 'warning');
-        return;
-    }
-
-    miniPlayer.style.display = 'block';
-    miniVideo.srcObject = localStream;
-    miniVideo.play().catch(() => {});
-
-    showToast('◈ Mini player activado. Arrástralo con tu dedo.', 'success');
-}
-
-function cerrarMiniPlayer() {
-    const miniPlayer = document.getElementById('miniPlayer');
-    const miniVideo = document.getElementById('miniVideo');
-    if (miniPlayer) miniPlayer.style.display = 'none';
-    if (miniVideo) miniVideo.srcObject = null;
-}
-
-function configurarMiniPlayerDrag() {
-    const miniPlayer = document.getElementById('miniPlayer');
-    if (!miniPlayer) return;
-
-    let isDragging = false;
-    let startX, startY, initialLeft, initialTop;
-
-    // Eventos táctiles
-    miniPlayer.addEventListener('touchstart', function(e) {
-        const touch = e.touches[0];
-        isDragging = true;
-        startX = touch.clientX;
-        startY = touch.clientY;
-        const rect = miniPlayer.getBoundingClientRect();
-        initialLeft = rect.left;
-        initialTop = rect.top;
-        e.preventDefault();
-    });
-
-    miniPlayer.addEventListener('touchmove', function(e) {
-        if (!isDragging) return;
-        const touch = e.touches[0];
-        const deltaX = touch.clientX - startX;
-        const deltaY = touch.clientY - startY;
-        
-        miniPlayer.style.left = (initialLeft + deltaX) + 'px';
-        miniPlayer.style.top = (initialTop + deltaY) + 'px';
-        miniPlayer.style.right = 'auto';
-        miniPlayer.style.bottom = 'auto';
-        miniPlayer.style.transform = 'none';
-        
-        e.preventDefault();
-    });
-
-    miniPlayer.addEventListener('touchend', function() {
-        isDragging = false;
-    });
-
-    // Eventos de mouse (para escritorio)
-    miniPlayer.addEventListener('mousedown', function(e) {
-        isDragging = true;
-        startX = e.clientX;
-        startY = e.clientY;
-        const rect = miniPlayer.getBoundingClientRect();
-        initialLeft = rect.left;
-        initialTop = rect.top;
-        e.preventDefault();
-    });
-
-    miniPlayer.addEventListener('mousemove', function(e) {
-        if (!isDragging) return;
-        const deltaX = e.clientX - startX;
-        const deltaY = e.clientY - startY;
-        
-        miniPlayer.style.left = (initialLeft + deltaX) + 'px';
-        miniPlayer.style.top = (initialTop + deltaY) + 'px';
-        miniPlayer.style.right = 'auto';
-        miniPlayer.style.bottom = 'auto';
-        miniPlayer.style.transform = 'none';
-        
-        e.preventDefault();
-    });
-
-    miniPlayer.addEventListener('mouseup', function() {
-        isDragging = false;
-    });
 }
 
 // ================================================================
@@ -716,11 +611,11 @@ function actualizarContadorChat() {
 }
 
 // ================================================================
-// CARGAR STREAMS DESDE EL SERVIDOR
+// CARGAR STREAMS DESDE EL SERVIDOR (Ruta correcta: /api/live/activos)
 // ================================================================
 async function cargarStreams() {
     try {
-        const response = await fetchWithAuth(`${API_URL}/live/streams`);
+        const response = await fetchWithAuth(`${API_URL}/live/activos`);
         if (response.ok) {
             const data = await response.json();
             if (data.success && data.streams) {
@@ -767,12 +662,12 @@ function renderizarStreams(streams) {
         card.onclick = () => unirseTransmision(stream.id);
         card.innerHTML = `
             <div class="stream-thumb">
-                ${stream.isLive ? '<span class="live-badge">● EN VIVO</span>' : ''}
-                ◉
+                ${stream.is_live ? '<span class="live-badge">● EN VIVO</span>' : ''}
+                ${stream.room_name ? '◉' : '◈'}
             </div>
-            <div class="stream-name">${stream.nombre || 'Transmisión'}</div>
-            <div class="stream-host">${stream.host || 'Anfitrión'} · Sariel's</div>
-            <div class="stream-viewers">◈ ${stream.viewers || 0} espectadores</div>
+            <div class="stream-name">${stream.titulo || 'Transmisión'}</div>
+            <div class="stream-host">${stream.usuarios?.nombre || stream.host || 'Anfitrión'} · Sariel's</div>
+            <div class="stream-viewers">◈ ${stream.viewers_count || 0} espectadores</div>
         `;
         container.appendChild(card);
     });
@@ -911,8 +806,5 @@ window.unirseTransmision = unirseTransmision;
 window.toggleModo = toggleModo;
 window.cargarModo = cargarModo;
 window.getSession = getSession;
-window.abrirMiniPlayer = abrirMiniPlayer;
-window.cerrarMiniPlayer = cerrarMiniPlayer;
-window.configurarMiniPlayerDrag = configurarMiniPlayerDrag;
 
-console.log('◉ live.js cargado correctamente con Supabase Auth y Mini Player');
+console.log('◉ live.js cargado correctamente con Supabase Auth');
