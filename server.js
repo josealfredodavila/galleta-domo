@@ -2,18 +2,9 @@ const express = require('express');
 const { AccessToken } = require('livekit-server-sdk');
 const cors = require('cors');
 const path = require('path');
-const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 8080;
-
-// ================================================================
-// ASEGURAR CARPETA PARA SQLITE (si usas)
-// ================================================================
-const dataDir = path.join(__dirname, 'data');
-if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir, { recursive: true });
-}
 
 // ================================================================
 // MIDDLEWARE
@@ -25,14 +16,13 @@ app.use(express.json());
 app.use(express.static('public'));
 
 // ================================================================
-// HEALTH CHECK (PARA RAILWAY) - NUEVO
+// HEALTH CHECK (PARA RAILWAY) - ✅ AGREGADO
 // ================================================================
 app.get('/api/health', (req, res) => {
     res.status(200).json({
         status: 'healthy',
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
-        memory: process.memoryUsage(),
         port: PORT
     });
 });
@@ -137,17 +127,7 @@ app.get('/live-terminos', (req, res) => {
 });
 
 // ================================================================
-// MANEJO DE ERRORES 404
-// ================================================================
-app.use((req, res) => {
-    res.status(404).json({ 
-        error: 'Ruta no encontrada',
-        path: req.originalUrl
-    });
-});
-
-// ================================================================
-// MANEJO DE ERRORES GENERAL
+// MANEJO DE ERRORES
 // ================================================================
 app.use((err, req, res, next) => {
     console.error('❌ Error:', err.message);
@@ -177,8 +157,6 @@ app.listen(PORT, '0.0.0.0', () => {
     console.log(`✅ Servidor corriendo en el puerto ${PORT}`);
     console.log(`📁 Sirviendo archivos desde: /public`);
     console.log(`🌐 URL: http://localhost:${PORT}`);
-    console.log(`========================================`);
-    console.log(`📌 Healthcheck: /api/health`);
     console.log(`========================================`);
 });
 
