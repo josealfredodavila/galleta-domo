@@ -555,6 +555,59 @@ body.modo-claro .live-video-container .live-overlay .text {
 }
 
 /* ================================================================
+   MINI PLAYER FLOTANTE (ARRASTRABLE CON EL DEDO)
+   ================================================================ */
+.mini-player {
+    position: fixed;
+    width: 180px;
+    height: 105px;
+    background: var(--space);
+    border: 2px solid var(--gold);
+    border-radius: 12px;
+    overflow: hidden;
+    z-index: 9999;
+    box-shadow: 0 4px 20px rgba(212, 175, 55, 0.4);
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+    padding: 4px;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+.mini-player video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.mini-player .mini-controls {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+}
+
+.mini-player .mini-controls button {
+    background: var(--gold);
+    border: none;
+    color: var(--space);
+    border-radius: 50%;
+    width: 22px;
+    height: 22px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 10px rgba(212, 175, 55, 0.4);
+}
+
+.mini-player .mini-controls button:hover {
+    transform: scale(1.1);
+}
+
+/* ================================================================
    FOOTER
    ================================================================ */
 .footer {
