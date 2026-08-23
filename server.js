@@ -1,10 +1,25 @@
 const express = require('express');
 const { AccessToken } = require('livekit-server-sdk');
+const { createClient } = require('@supabase/supabase-js');
 const cors = require('cors');
 const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 8080;
+
+// ================================================================
+// SUPABASE CONFIG
+// ================================================================
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_ANON_KEY;
+
+let supabase = null;
+if (supabaseUrl && supabaseKey) {
+    supabase = createClient(supabaseUrl, supabaseKey);
+    console.log('✅ Supabase conectado en server.js');
+} else {
+    console.warn('⚠️ Variables de Supabase no configuradas. Usando fallback localStorage.');
+}
 
 // ================================================================
 // MIDDLEWARE
@@ -60,6 +75,71 @@ app.get('/api/token', async (req, res) => {
         res.status(500).json({ 
             error: 'No se pudo generar el token de transmisión' 
         });
+    }
+});
+
+// ================================================================
+// RUTAS PARA EL PERFIL (API)
+// ================================================================
+app.get('/api/perfil', async (req, res) => {
+    try {
+        if (!supabase) {
+            return res.status(500).json({ success: false, error: 'Supabase no configurado' });
+        }
+
+        const userId = req.query.userId || 'default-user';
+        
+        const { data, error } = await supabase
+            .from('perfiles')
+            .select('*')
+            .eq('id', userId)
+            .single();
+
+        if (error) throw error;
+
+        if (data) {
+            return res.json({ success: true, perfil: data });
+        } else {
+            return res.json({ success: true, perfil: { 
+                nombre: 'Explorador', 
+                handle: 'explorador', 
+                bio: 'Explorando el ecosistema Sariel\'s', 
+                tokens: 0, 
+                nfts: 0 
+            }});
+        }
+    } catch (error) {
+        console.error('Error obteniendo perfil:', error);
+        return res.status(500).json({ success: false, error: 'Error al obtener perfil' });
+    }
+});
+
+app.put('/api/perfil', async (req, res) => {
+    try {
+        if (!supabase) {
+            return res.status(500).json({ success: false, error: 'Supabase no configurado' });
+        }
+
+        const { nombre, handle, bio, avatar } = req.body;
+        const userId = req.query.userId || 'default-user';
+
+        const { data, error } = await supabase
+            .from('perfiles')
+            .upsert({ 
+                id: userId, 
+                nombre, 
+                handle, 
+                bio, 
+                avatar,
+                updated_at: new Date().toISOString()
+            });
+
+        if (error) throw error;
+
+        return res.json({ success: true, perfil: data });
+    } catch (error) {
+        console.error('Error guardando perfil:', error);
+        return res.status(500).json({ success: false, error: 'Error al guardar perfil' });
     }
 });
 
