@@ -2,9 +2,19 @@ const express = require('express');
 const { AccessToken } = require('livekit-server-sdk');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
+
+// ================================================================
+// ASEGURAR CARPETA PARA SQLITE
+// ================================================================
+const dataDir = path.join(__dirname, 'data');
+if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true });
+}
+const dbPath = path.join(dataDir, 'database.sqlite');
 
 // ================================================================
 // MIDDLEWARE
@@ -16,13 +26,14 @@ app.use(express.json());
 app.use(express.static('public'));
 
 // ================================================================
-// HEALTH CHECK
+// HEALTH CHECK (PARA RAILWAY)
 // ================================================================
 app.get('/api/health', (req, res) => {
-    res.status(200).json({ 
-        status: 'healthy', 
+    res.status(200).json({
+        status: 'healthy',
         timestamp: new Date().toISOString(),
-        uptime: process.uptime()
+        uptime: process.uptime(),
+        database: fs.existsSync(dbPath) ? 'ok' : 'no-db-yet'
     });
 });
 
@@ -64,15 +75,12 @@ app.get('/api/token', async (req, res) => {
 });
 
 // ================================================================
-// RUTAS PRINCIPALES (PÁGINAS HTML)
+// RUTAS PRINCIPALES
 // ================================================================
-
-// --- Página principal ---
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// --- Funcionalidades principales ---
 app.get('/muro', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'features', 'muro', 'muro.html'));
 });
@@ -101,7 +109,6 @@ app.get('/admin-internet', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'features', 'internet', 'admin-internet.html'));
 });
 
-// --- Herramientas ---
 app.get('/qr', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'qr-generator.html'));
 });
@@ -111,9 +118,8 @@ app.get('/actualizar-contrasena', (req, res) => {
 });
 
 // ================================================================
-// RUTAS LEGALES (TÉRMINOS Y CONDICIONES, PRIVACIDAD, COOKIES, ETC.)
+// RUTAS LEGALES
 // ================================================================
-
 app.get('/terminos', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'terminos.html'));
 });
@@ -131,63 +137,7 @@ app.get('/live-terminos', (req, res) => {
 });
 
 // ================================================================
-// RUTAS DE REDIRECCIÓN (COMPATIBILIDAD CON ENLACES EXISTENTES)
-// ================================================================
-
-// Redirigir /features/muro/muro.html → /muro
-app.get('/features/muro/muro.html', (req, res) => {
-    res.redirect(301, '/muro');
-});
-
-app.get('/features/perfil/perfil.html', (req, res) => {
-    res.redirect(301, '/perfil');
-});
-
-app.get('/features/mensajes/mensajes.html', (req, res) => {
-    res.redirect(301, '/mensajes');
-});
-
-app.get('/features/mensajes/contactos.html', (req, res) => {
-    res.redirect(301, '/contactos');
-});
-
-app.get('/features/live/live.html', (req, res) => {
-    res.redirect(301, '/live');
-});
-
-app.get('/features/internet/internet.html', (req, res) => {
-    res.redirect(301, '/internet');
-});
-
-app.get('/features/internet/admin-internet.html', (req, res) => {
-    res.redirect(301, '/admin-internet');
-});
-
-app.get('/terminos.html', (req, res) => {
-    res.redirect(301, '/terminos');
-});
-
-app.get('/privacidad.html', (req, res) => {
-    res.redirect(301, '/privacidad');
-});
-
-app.get('/cookies.html', (req, res) => {
-    res.redirect(301, '/cookies');
-});
-
-app.get('/live-terminos.html', (req, res) => {
-    res.redirect(301, '/live-terminos');
-});
-
-// ================================================================
-// MANEJO DE ERRORES 404 (PÁGINA NO ENCONTRADA)
-// ================================================================
-app.use((req, res) => {
-    res.status(404).sendFile(path.join(__dirname, 'public', '404.html'));
-});
-
-// ================================================================
-// MANEJO DE ERRORES GENERAL
+// MANEJO DE ERRORES
 // ================================================================
 app.use((err, req, res, next) => {
     console.error('❌ Error:', err.message);
@@ -216,21 +166,8 @@ app.listen(PORT, '0.0.0.0', () => {
     console.log(`========================================`);
     console.log(`✅ Servidor corriendo en el puerto ${PORT}`);
     console.log(`📁 Sirviendo archivos desde: /public`);
+    console.log(`🗄️ Base de datos: ${dbPath}`);
     console.log(`🌐 URL: http://localhost:${PORT}`);
-    console.log(`========================================`);
-    console.log(`📌 Rutas principales:`);
-    console.log(`   🏠 / → Inicio`);
-    console.log(`   📝 /muro → Muro`);
-    console.log(`   👤 /perfil → Perfil`);
-    console.log(`   💬 /mensajes → Mensajes`);
-    console.log(`   👥 /contactos → Contactos`);
-    console.log(`   📡 /live → Live`);
-    console.log(`   🌐 /internet → Internet`);
-    console.log(`   ⚙️ /admin-internet → Admin Internet`);
-    console.log(`   📜 /terminos → Términos y Condiciones`);
-    console.log(`   🔒 /privacidad → Política de Privacidad`);
-    console.log(`   🍪 /cookies → Aviso de Cookies`);
-    console.log(`   📡 /live-terminos → Términos de Live`);
     console.log(`========================================`);
 });
 
