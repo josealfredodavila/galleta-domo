@@ -1,42 +1,61 @@
 <style>
     /* ================================================================
-       PALETA OFICIAL EXACTA + TODOS LOS COMPONENTES DEL PERFIL
+       ESTILO ORIGINAL SARIEL'S (MODO OSCURO PREMIUM)
        ================================================================ */
     :root {
         --bg-primary: #05080F;
+        --bg-secondary: #0B1F14;
         --green-primary: #122819;
         --green-secondary: #0B1F14;
         --green-card: #162B1D;
         --gold-primary: #D0AB3A;
+        --gold-dark: #B8962E;
+        --gold-light: #E4C45A;
         --text-primary: #E4F0E7;
         --text-secondary: #889995;
         --green-online: #2CBD82;
         --danger: #FF3366;
+        
+        /* Efecto cristal */
+        --glass-bg: rgba(22, 43, 29, 0.85);
+        --glass-border: rgba(22, 43, 29, 0.4);
     }
 
     body {
-        background-color: var(--bg-primary);
+        background: radial-gradient(circle at top, var(--green-primary), var(--bg-primary) 60%);
         color: var(--text-primary);
         font-family: 'Inter', sans-serif;
         margin: 0;
         padding: 20px;
+        min-height: 100vh;
     }
 
-    /* ===== PERFIL CARD (El contenedor principal) ===== */
+    /* ===== PERFIL CARD ===== */
     .perfil-card {
-        background: var(--green-card);
-        border: 1px solid var(--green-secondary);
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-border);
         border-radius: 20px;
         overflow: hidden;
+        backdrop-filter: blur(16px);
         margin-bottom: 20px;
+        box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
     }
 
     /* ===== PORTADA ===== */
     .perfil-portada {
-        background: linear-gradient(135deg, var(--green-secondary), var(--green-primary));
-        height: 180px;
+        width: 100%;
+        height: 200px;
+        background: linear-gradient(135deg, var(--green-secondary), var(--green-primary), var(--green-card), var(--green-secondary));
+        background-size: 400% 400%;
+        animation: gradient-shift 15s ease infinite;
         position: relative;
+        overflow: hidden;
         cursor: pointer;
+    }
+    @keyframes gradient-shift {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
     }
     .perfil-portada .overlay-gradient {
         position: absolute;
@@ -44,19 +63,7 @@
         left: 0;
         right: 0;
         height: 60%;
-        background: linear-gradient(transparent, var(--bg-primary));
-    }
-    .perfil-portada .btn-cambiar-portada {
-        position: absolute;
-        bottom: 16px;
-        right: 20px;
-        background: rgba(5, 8, 15, 0.8);
-        border: 1px solid var(--gold-primary);
-        color: var(--gold-primary);
-        padding: 6px 16px;
-        border-radius: 20px;
-        font-size: 0.7rem;
-        cursor: pointer;
+        background: linear-gradient(transparent, rgba(5, 8, 15, 0.85));
     }
 
     /* ===== AVATAR ===== */
@@ -65,7 +72,7 @@
         height: 88px;
         border-radius: 50%;
         border: 3px solid var(--gold-primary);
-        background: var(--green-primary);
+        background: linear-gradient(135deg, var(--green-secondary), var(--green-primary));
         display: flex;
         align-items: center;
         justify-content: center;
@@ -75,10 +82,11 @@
         margin-left: 28px;
         position: relative;
         z-index: 2;
+        box-shadow: 0 0 40px rgba(208, 171, 58, 0.1);
         cursor: pointer;
     }
 
-    /* ===== INFORMACIÓN DEL PERFIL ===== */
+    /* ===== INFO PERFIL ===== */
     .perfil-info {
         padding: 0 28px 24px;
     }
@@ -97,7 +105,8 @@
     .perfil-nombre-area .verified-badge {
         background: rgba(208, 171, 58, 0.15);
         color: var(--gold-primary);
-        padding: 4px 10px;
+        border: 1px solid rgba(208, 171, 58, 0.15);
+        padding: 2px 12px;
         border-radius: 20px;
         font-size: 0.6rem;
         margin-left: 8px;
@@ -107,50 +116,55 @@
         font-size: 0.85rem;
     }
     .perfil-nombre-area .btn-editar {
-        background: transparent;
-        border: 1px solid var(--gold-primary);
-        color: var(--gold-primary);
-        border-radius: 20px;
-        padding: 6px 16px;
+        background: rgba(5, 8, 15, 0.3);
+        border: 1px solid var(--glass-border);
+        color: var(--text-secondary);
+        border-radius: 30px;
+        padding: 8px 22px;
         font-size: 0.7rem;
         cursor: pointer;
+        transition: all 0.3s;
+    }
+    .perfil-nombre-area .btn-editar:hover {
+        border-color: var(--gold-primary);
+        color: var(--gold-primary);
     }
     .perfil-bio {
         color: var(--text-secondary);
         font-size: 0.9rem;
-        margin-top: 12px;
-        line-height: 1.5;
+        margin-top: 8px;
+        line-height: 1.6;
     }
 
     /* ===== DETALLES ===== */
     .perfil-detalles {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 10px;
-        margin-top: 16px;
+        gap: 8px 24px;
+        margin-top: 14px;
+        font-size: 0.75rem;
+        color: var(--text-secondary);
     }
     .perfil-detalles .detalle {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 10px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    }
+    .perfil-detalles .detalle .icon {
         color: var(--text-secondary);
-        font-size: 0.75rem;
+        opacity: 0.5;
     }
     .perfil-detalles .detalle .valor {
         color: var(--text-primary);
     }
 
-    /* ===== ESTADÍSTICAS (Tokens, Contactos, NFT, Seguidores) ===== */
+    /* ===== ESTADÍSTICAS ===== */
     .perfil-stats {
         display: flex;
-        justify-content: space-between;
-        margin-top: 20px;
-        padding: 16px 0;
-        border-top: 1px solid rgba(255, 255, 255, 0.05);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    }
-    .perfil-stats .stat {
-        text-align: center;
+        gap: 32px;
+        margin-top: 14px;
+        flex-wrap: wrap;
     }
     .perfil-stats .stat .numero {
         font-family: 'Orbitron', monospace;
@@ -168,9 +182,10 @@
     /* ===== HUELLA DIGITAL ===== */
     .huella-digital {
         background: rgba(5, 8, 15, 0.4);
+        border: 1px solid rgba(208, 171, 58, 0.06);
         border-radius: 12px;
-        padding: 16px;
-        margin-top: 16px;
+        padding: 16px 20px;
+        margin-top: 14px;
     }
     .huella-digital .header {
         display: flex;
@@ -180,63 +195,61 @@
         color: var(--text-secondary);
     }
     .huella-digital .header .nivel {
-        color: var(--gold-primary);
         font-family: 'Orbitron', monospace;
+        color: var(--gold-primary);
     }
     .huella-digital .barra {
         width: 100%;
         height: 4px;
-        background: rgba(255, 255, 255, 0.1);
+        background: rgba(208, 171, 58, 0.06);
         border-radius: 2px;
-        margin: 10px 0;
+        margin: 8px 0 6px;
         overflow: hidden;
     }
     .huella-digital .barra .fill {
         height: 100%;
-        background: linear-gradient(90deg, var(--green-primary), var(--gold-primary));
+        background: linear-gradient(90deg, var(--green-primary), var(--gold-primary), var(--gold-light));
     }
 
-    /* ===== ACCIONES (Botones) ===== */
+    /* ===== ACCIONES ===== */
     .perfil-acciones {
         display: flex;
         gap: 8px;
         margin-top: 16px;
+        padding-top: 16px;
+        border-top: 1px solid rgba(22, 43, 29, 0.3);
     }
     .perfil-acciones .btn-accion {
-        padding: 8px 16px;
-        border-radius: 20px;
-        font-size: 0.65rem;
-        border: 1px solid var(--green-secondary);
-        background: transparent;
+        background: rgba(5, 8, 15, 0.3);
+        border: 1px solid var(--glass-border);
         color: var(--text-secondary);
+        border-radius: 20px;
+        padding: 7px 18px;
+        font-size: 0.65rem;
         cursor: pointer;
+        transition: all 0.3s;
     }
     .perfil-acciones .btn-accion:hover {
         border-color: var(--gold-primary);
         color: var(--gold-primary);
     }
     .perfil-acciones .btn-accion.danger {
-        border-color: rgba(255, 51, 102, 0.3);
+        border-color: rgba(255, 51, 102, 0.15);
         color: var(--danger);
     }
     .perfil-acciones .btn-accion.success {
-        border-color: rgba(44, 189, 130, 0.3);
+        border-color: rgba(44, 189, 130, 0.15);
         color: var(--green-online);
     }
 
-    /* ===== TOKENS, PUBLICACIONES, AMIGOS, CONECTIVIDAD ===== */
+    /* ===== SECCIONES (Tokens, Publicaciones, Amigos, Conectividad) ===== */
     .tokens-section, .publicaciones-section, .amigos-section, .conectividad-section {
-        background: var(--green-card);
-        border: 1px solid var(--green-secondary);
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-border);
         border-radius: 20px;
-        padding: 20px;
+        padding: 20px 24px;
         margin-bottom: 16px;
-    }
-    .tokens-section .header, .publicaciones-section .header, .amigos-section .header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 16px;
+        backdrop-filter: blur(16px);
     }
     .tokens-section .header h3, .publicaciones-section .header h3, .amigos-section .header h3 {
         font-family: 'Orbitron', monospace;
@@ -247,23 +260,23 @@
     .tokens-section .header .cantidad {
         font-family: 'Orbitron', monospace;
         font-size: 1.2rem;
-        color: var(--gold-primary);
+        color: var(--gold-light);
     }
     .tokens-section .token-bar {
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 16px;
     }
     .tokens-section .token-bar .bar {
         flex: 1;
         height: 8px;
-        background: rgba(255, 255, 255, 0.1);
+        background: rgba(208, 171, 58, 0.06);
         border-radius: 4px;
         overflow: hidden;
     }
     .tokens-section .token-bar .bar .fill {
         height: 100%;
-        background: linear-gradient(90deg, var(--gold-primary), var(--gold-primary));
+        background: linear-gradient(90deg, var(--gold-dark), var(--gold-primary), var(--gold-light));
     }
 
     /* ===== INPUTS Y BOTONES DE PUBLICAR ===== */
@@ -274,61 +287,57 @@
     }
     .publicar-input-area input {
         flex: 1;
-        padding: 10px 16px;
         background: rgba(5, 8, 15, 0.4);
-        border: 1px solid var(--green-secondary);
-        border-radius: 20px;
+        border: 1px solid var(--glass-border);
+        border-radius: 30px;
+        padding: 10px 16px;
         color: var(--text-primary);
-        font-size: 0.8rem;
+        font-size: 0.85rem;
         outline: none;
     }
     .publicar-input-area .btn-publicar-rapido, .btn-subir {
-        background: var(--gold-primary);
+        background: linear-gradient(135deg, var(--gold-primary), var(--gold-dark));
         color: var(--bg-primary);
         border: none;
-        padding: 10px 16px;
-        border-radius: 20px;
-        font-size: 0.7rem;
+        border-radius: 30px;
+        padding: 8px 18px;
+        font-size: 0.65rem;
         font-weight: bold;
         cursor: pointer;
     }
 
     /* ===== PUBLICACIÓN ITEM ===== */
     .publicacion-item {
-        background: rgba(5, 8, 15, 0.4);
+        background: rgba(5, 8, 15, 0.3);
+        border: 1px solid var(--glass-border);
         border-radius: 12px;
-        padding: 16px;
+        padding: 14px 16px;
         margin-bottom: 12px;
     }
     .publicacion-item .pub-header {
         font-size: 0.7rem;
         color: var(--text-secondary);
-        margin-bottom: 8px;
     }
     .publicacion-item .pub-header .pub-autor {
         color: var(--gold-primary);
-        font-weight: bold;
+        font-weight: 600;
     }
     .publicacion-item .pub-contenido {
-        color: var(--text-primary);
         font-size: 0.85rem;
+        color: var(--text-primary);
         line-height: 1.5;
-    }
-    .publicacion-item .pub-reacciones {
-        font-size: 0.65rem;
-        color: var(--text-secondary);
-        margin-top: 10px;
     }
 
     /* ===== AMIGOS ===== */
     .amigos-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
         gap: 12px;
     }
     .amigo-card {
-        background: rgba(5, 8, 15, 0.4);
-        border-radius: 12px;
+        background: rgba(5, 8, 15, 0.3);
+        border: 1px solid var(--glass-border);
+        border-radius: 14px;
         padding: 14px;
         text-align: center;
     }
@@ -336,31 +345,27 @@
         width: 48px;
         height: 48px;
         border-radius: 50%;
-        background: var(--green-primary);
+        background: linear-gradient(135deg, var(--green-primary), var(--gold-primary));
         margin: 0 auto 8px;
         display: flex;
         align-items: center;
         justify-content: center;
         font-size: 1.3rem;
-        color: var(--gold-primary);
+        color: var(--bg-primary);
     }
     .amigo-card .nombre {
-        font-size: 0.7rem;
+        font-size: 0.75rem;
         color: var(--text-primary);
-        font-weight: bold;
-    }
-    .amigo-card .handle {
-        font-size: 0.55rem;
-        color: var(--text-secondary);
+        font-weight: 600;
     }
     .amigo-card .btn-seguir {
         margin-top: 8px;
-        padding: 4px 12px;
-        border-radius: 12px;
-        font-size: 0.55rem;
-        border: 1px solid var(--green-secondary);
         background: transparent;
+        border: 1px solid var(--glass-border);
         color: var(--text-secondary);
+        border-radius: 14px;
+        padding: 4px 14px;
+        font-size: 0.55rem;
         cursor: pointer;
     }
 
@@ -371,9 +376,10 @@
         gap: 16px;
     }
     .conectividad-card {
-        background: rgba(5, 8, 15, 0.4);
-        border-radius: 16px;
-        padding: 16px;
+        background: rgba(5, 8, 15, 0.3);
+        border: 1px solid var(--glass-border);
+        border-radius: 20px;
+        padding: 18px 20px;
     }
     .conectividad-card .header {
         display: flex;
@@ -385,45 +391,36 @@
         margin: 0;
         font-size: 0.8rem;
     }
-    .conectividad-card .header .status {
-        font-size: 0.6rem;
-        padding: 4px 8px;
-        border-radius: 12px;
-    }
     .conectividad-card .header .status.active {
-        background: rgba(44, 189, 130, 0.15);
+        background: rgba(44, 189, 130, 0.12);
         color: var(--green-online);
+        border-radius: 12px;
+        padding: 2px 12px;
+        font-size: 0.6rem;
     }
     .conectividad-card .header .status.inactive {
         background: rgba(255, 255, 255, 0.05);
         color: var(--text-secondary);
+        border-radius: 12px;
+        padding: 2px 12px;
+        font-size: 0.6rem;
     }
     .conectividad-card .info {
         color: var(--text-secondary);
-        font-size: 0.7rem;
+        font-size: 0.75rem;
         margin: 8px 0;
-    }
-    .conectividad-card .btn-accion {
-        background: transparent;
-        border: 1px solid var(--green-secondary);
-        color: var(--text-secondary);
-        border-radius: 12px;
-        padding: 4px 12px;
-        font-size: 0.6rem;
-        cursor: pointer;
     }
 
     /* ===== FOOTER ===== */
     .footer {
         margin-top: 20px;
-        text-align: center;
         font-size: 0.7rem;
         color: var(--text-secondary);
-        padding-bottom: 20px;
+        text-align: center;
     }
     .footer .brand {
         color: var(--gold-primary);
-        font-weight: bold;
+        font-weight: 600;
     }
 
     /* ===== MODAL (Editar perfil) ===== */
@@ -433,30 +430,33 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background: rgba(5, 8, 15, 0.9);
+        background: rgba(5, 8, 15, 0.85);
+        backdrop-filter: blur(8px);
         display: flex;
         align-items: center;
         justify-content: center;
         z-index: 1000;
     }
     .modal {
-        background: var(--green-card);
-        border: 1px solid var(--green-secondary);
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-border);
         border-radius: 20px;
-        padding: 24px;
+        padding: 32px;
         max-width: 500px;
         width: 90%;
+        backdrop-filter: blur(16px);
     }
     .modal-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 16px;
+        margin-bottom: 24px;
     }
     .modal-header h2 {
+        font-family: 'Orbitron', monospace;
         color: var(--gold-primary);
         margin: 0;
-        font-size: 1.1rem;
+        font-size: 1.2rem;
     }
     .modal .btn-cerrar {
         background: none;
@@ -466,35 +466,38 @@
         cursor: pointer;
     }
     .modal .form-group {
-        margin-bottom: 12px;
+        margin-bottom: 16px;
     }
     .modal .form-group label {
         display: block;
         color: var(--text-secondary);
         font-size: 0.7rem;
         margin-bottom: 4px;
+        font-weight: 500;
     }
     .modal .form-group input, .modal .form-group textarea, .modal .form-group select {
         width: 100%;
-        padding: 8px 12px;
-        background: rgba(5, 8, 15, 0.6);
-        border: 1px solid var(--green-secondary);
-        border-radius: 8px;
+        background: rgba(5, 8, 15, 0.4);
+        border: 1px solid var(--glass-border);
+        border-radius: 12px;
+        padding: 10px 14px;
         color: var(--text-primary);
-        font-size: 0.8rem;
+        font-size: 0.85rem;
         outline: none;
+    }
+    .modal .form-group input:focus, .modal .form-group textarea:focus, .modal .form-group select:focus {
+        border-color: var(--gold-primary);
     }
     .modal .btn-guardar {
         width: 100%;
-        padding: 12px;
-        background: var(--gold-primary);
+        background: linear-gradient(135deg, var(--gold-primary), var(--gold-dark));
         color: var(--bg-primary);
         border: none;
-        border-radius: 8px;
+        border-radius: 30px;
+        padding: 12px;
         font-weight: bold;
         font-size: 0.8rem;
         cursor: pointer;
-        margin-top: 10px;
     }
 
     /* ===== RESPONSIVE ===== */
@@ -503,8 +506,7 @@
             grid-template-columns: 1fr;
         }
         .perfil-stats {
-            gap: 10px;
-            flex-wrap: wrap;
+            gap: 16px;
         }
         .conectividad-section {
             grid-template-columns: 1fr;
