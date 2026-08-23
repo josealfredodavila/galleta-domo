@@ -4,14 +4,11 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>◉ Live · Sariel's</title>
-    <link rel="stylesheet" href="/styles.css" />
-    <link rel="stylesheet" href="/features/live/live.css" />
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+    
+    <!-- CSS INCORPORADO PARA GARANTIZAR QUE CARGUE SIN ERRORES -->
     <style>
-        /* ================================================================
-           LIVE ULTRA MEGA PRO - SARIEL'S
-           ================================================================ */
-
         :root {
             --gold: #D4AF37;
             --gold-dark: #b8923a;
@@ -35,9 +32,6 @@
             --success: #00d68f;
             --danger: #ff3366;
             --warning: #f7d44a;
-            --cyan: #00e5ff;
-            --purple: #a855f7;
-            --pink: #ec4899;
             --live-red: #ff0044;
             --live-red-glow: rgba(255, 0, 68, 0.3);
         }
@@ -58,7 +52,6 @@
             -moz-osx-font-smoothing: grayscale;
         }
 
-        /* ===== FONDO ESTELAR ===== */
         #stars-canvas {
             position: fixed;
             top: 0;
@@ -67,7 +60,6 @@
             height: 100%;
             z-index: 0;
             pointer-events: none;
-            will-change: transform;
         }
 
         .nebula {
@@ -78,7 +70,6 @@
             pointer-events: none;
             z-index: 0;
             animation: nebula-drift 25s ease-in-out infinite alternate;
-            will-change: transform;
         }
         .nebula-1 { width: 700px; height: 700px; background: var(--green-bright); top: -15%; right: -15%; }
         .nebula-2 { width: 600px; height: 600px; background: var(--gold-light); bottom: -15%; left: -15%; animation-delay: -8s; opacity: 0.06; }
@@ -93,17 +84,14 @@
         ::-webkit-scrollbar-track { background: var(--space); }
         ::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 2px; }
 
-        /* ===== APP ===== */
         .app {
             position: relative;
             z-index: 1;
             max-width: 1100px;
             margin: 0 auto;
             padding: 16px 20px 30px;
-            contain: layout style;
         }
 
-        /* ===== HEADER ===== */
         .header {
             display: flex;
             justify-content: space-between;
@@ -112,86 +100,28 @@
             border-bottom: 1px solid var(--glass-border);
             flex-wrap: wrap;
             gap: 10px;
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
+            background: rgba(5, 8, 15, 0.92);
+            border-radius: var(--radius) var(--radius) 0 0;
             position: sticky;
             top: 0;
             z-index: 100;
-            background: rgba(5, 8, 15, 0.92);
-            border-radius: var(--radius) var(--radius) 0 0;
-            contain: layout style;
-            transition: background 0.5s ease, border-color 0.5s ease;
         }
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            text-decoration: none;
-            transition: var(--transition);
-        }
-        .logo:hover { opacity: 0.85; }
-        .logo-hex {
-            font-size: 1.8rem;
-            color: var(--gold);
-            font-weight: 800;
-            font-family: 'Orbitron', monospace;
-            text-shadow: 0 0 30px rgba(212, 175, 55, 0.3);
-            animation: glow-pulse 3s ease-in-out infinite;
-            will-change: text-shadow;
-        }
+        .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+        .logo-hex { font-size: 1.8rem; color: var(--gold); font-weight: 800; font-family: 'Orbitron', monospace; text-shadow: 0 0 30px rgba(212, 175, 55, 0.3); animation: glow-pulse 3s ease-in-out infinite; }
         @keyframes glow-pulse {
             0%, 100% { text-shadow: 0 0 30px rgba(212, 175, 55, 0.3); }
             50% { text-shadow: 0 0 60px rgba(212, 175, 55, 0.6); }
         }
-        .logo-text {
-            font-family: 'Orbitron', monospace;
-            font-size: 1.2rem;
-            font-weight: 700;
-            color: var(--text-primary);
-            letter-spacing: 2px;
-        }
+        .logo-text { font-family: 'Orbitron', monospace; font-size: 1.2rem; font-weight: 700; color: var(--text-primary); letter-spacing: 2px; }
         .logo-text span { color: var(--gold); }
-        .logo-badge {
-            font-size: 0.45rem;
-            background: linear-gradient(135deg, var(--gold), var(--gold-light));
-            color: var(--space);
-            padding: 2px 10px;
-            border-radius: 20px;
-            font-weight: 700;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-        }
-        .header-actions {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-        .network-badge {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 0.6rem;
-            color: var(--gold);
-            background: rgba(212, 175, 55, 0.1);
-            padding: 4px 12px;
-            border-radius: 20px;
-            border: 1px solid rgba(212, 175, 55, 0.15);
-        }
-        .network-badge .dot {
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background: var(--success);
-            animation: pulse-dot 2s infinite;
-            will-change: transform, opacity;
-        }
+        .logo-badge { font-size: 0.45rem; background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: var(--space); padding: 2px 10px; border-radius: 20px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
+        .network-badge { display: flex; align-items: center; gap: 6px; font-size: 0.6rem; color: var(--gold); background: rgba(212, 175, 55, 0.1); padding: 4px 12px; border-radius: 20px; border: 1px solid rgba(212, 175, 55, 0.15); }
+        .network-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); animation: pulse-dot 2s infinite; }
         @keyframes pulse-dot {
             0%, 100% { opacity: 1; transform: scale(1); }
             50% { opacity: 0.3; transform: scale(0.8); }
         }
 
-        /* ===== NAVEGACIÓN ===== */
         .main-nav {
             display: flex;
             gap: 4px;
@@ -201,10 +131,6 @@
             border: 1px solid var(--glass-border);
             margin: 16px 0 20px;
             overflow-x: auto;
-            flex-wrap: nowrap;
-            -webkit-overflow-scrolling: touch;
-            contain: layout style;
-            transition: background 0.5s ease, border-color 0.5s ease;
         }
         .main-nav .nav-link {
             padding: 8px 16px;
@@ -215,10 +141,6 @@
             font-weight: 500;
             transition: var(--transition);
             white-space: nowrap;
-            font-family: 'Inter', sans-serif;
-            background: transparent;
-            border: none;
-            cursor: pointer;
             position: relative;
         }
         .main-nav .nav-link::after {
@@ -231,36 +153,14 @@
             background: var(--gold);
             transition: var(--transition);
             transform: translateX(-50%);
-            border-radius: 2px;
         }
-        .main-nav .nav-link:hover::after,
-        .main-nav .nav-link.active::after {
-            width: 60%;
-        }
-        .main-nav .nav-link:hover {
-            color: var(--text-primary);
-            background: rgba(212, 175, 55, 0.05);
-        }
-        .main-nav .nav-link.active {
-            background: rgba(212, 175, 55, 0.12);
-            color: var(--gold);
-        }
-        .main-nav .nav-link.live {
-            color: var(--live-red);
-        }
-        .main-nav .nav-link.live:hover {
-            background: rgba(255, 0, 68, 0.08);
-        }
+        .main-nav .nav-link:hover::after, .main-nav .nav-link.active::after { width: 60%; }
+        .main-nav .nav-link:hover { color: var(--text-primary); background: rgba(212, 175, 55, 0.05); }
+        .main-nav .nav-link.active { background: rgba(212, 175, 55, 0.12); color: var(--gold); }
+        .main-nav .nav-link.live { color: var(--live-red); }
 
-        /* ================================================================
-           LIVE CONTAINER
-           ================================================================ */
-        .live-container {
-            max-width: 1000px;
-            margin: 0 auto;
-        }
+        .live-container { max-width: 1000px; margin: 0 auto; }
 
-        /* ===== LIVE HEADER ===== */
         .live-header {
             display: flex;
             justify-content: space-between;
@@ -275,39 +175,38 @@
             flex-wrap: wrap;
             gap: 10px;
         }
-        .live-header h1 {
-            font-family: 'Orbitron', monospace;
-            font-size: 1.2rem;
-            color: var(--gold);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .live-header .live-dot {
-            display: inline-block;
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background: var(--live-red);
-            animation: pulse-dot-live 1.5s ease-in-out infinite;
-        }
+        .live-header h1 { font-family: 'Orbitron', monospace; font-size: 1.2rem; color: var(--gold); display: flex; align-items: center; gap: 10px; }
+        .live-header .live-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--live-red); animation: pulse-dot-live 1.5s ease-in-out infinite; }
         @keyframes pulse-dot-live {
             0%, 100% { opacity: 1; transform: scale(1); }
             50% { opacity: 0.3; transform: scale(0.6); }
         }
-        .live-header .live-status {
-            font-size: 0.6rem;
-            color: var(--live-red);
-            font-family: 'Orbitron', monospace;
-            letter-spacing: 0.5px;
-        }
-        .live-header .live-actions {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
+        .live-header .live-status { font-size: 0.6rem; color: var(--live-red); font-family: 'Orbitron', monospace; letter-spacing: 0.5px; }
+        .live-header .live-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
-        /* ===== LIVE VIDEO ===== */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 20px;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: var(--transition);
+            font-family: 'Inter', sans-serif;
+        }
+        .btn-gold { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); box-shadow: 0 4px 20px rgba(212, 175, 55, 0.2); }
+        .btn-gold:hover { transform: translateY(-2px); box-shadow: var(--shadow-gold); }
+        .btn-outline { background: transparent; color: var(--text-secondary); border: 1px solid var(--glass-border); }
+        .btn-outline:hover { border-color: var(--gold); color: var(--gold); box-shadow: 0 0 20px rgba(212, 175, 55, 0.1); }
+        .btn-sm { padding: 4px 12px; font-size: 0.65rem; }
+        .btn-danger { background: rgba(255, 51, 102, 0.1); color: var(--danger); border: 1px solid rgba(255, 51, 102, 0.2); }
+        .btn-danger:hover { background: rgba(255, 51, 102, 0.2); }
+        .btn-success { background: linear-gradient(135deg, var(--success), #00a876); color: var(--space); box-shadow: 0 4px 20px rgba(0, 214, 143, 0.2); }
+        .btn-success:hover { transform: translateY(-2px); box-shadow: 0 0 30px rgba(0, 214, 143, 0.3); }
+
         .live-video-container {
             background: var(--space);
             border: 1px solid var(--glass-border);
@@ -319,16 +218,7 @@
             min-height: 300px;
             transition: var(--transition-slow);
         }
-        .live-video-container:hover {
-            border-color: rgba(212, 175, 55, 0.2);
-            box-shadow: var(--shadow-gold);
-        }
-        .live-video-container video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            background: var(--space);
-        }
+        .live-video-container video { width: 100%; height: 100%; object-fit: cover; background: var(--space); }
         .live-video-container .live-overlay {
             position: absolute;
             top: 12px;
@@ -343,24 +233,9 @@
             -webkit-backdrop-filter: blur(8px);
             border: 1px solid rgba(255, 0, 68, 0.2);
         }
-        .live-video-container .live-overlay .dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: var(--live-red);
-            animation: pulse-dot-live 1.5s ease-in-out infinite;
-        }
-        .live-video-container .live-overlay .text {
-            font-size: 0.55rem;
-            color: white;
-            font-family: 'Orbitron', monospace;
-            letter-spacing: 0.5px;
-        }
-        .live-video-container .live-overlay .viewers {
-            font-size: 0.5rem;
-            color: var(--text-muted);
-            font-family: 'Orbitron', monospace;
-        }
+        .live-video-container .live-overlay .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--live-red); animation: pulse-dot-live 1.5s ease-in-out infinite; }
+        .live-video-container .live-overlay .text { font-size: 0.55rem; color: white; font-family: 'Orbitron', monospace; letter-spacing: 0.5px; }
+        .live-video-container .live-overlay .viewers { font-size: 0.5rem; color: var(--text-muted); font-family: 'Orbitron', monospace; }
         .live-video-container .live-controls {
             position: absolute;
             bottom: 20px;
@@ -375,40 +250,13 @@
             -webkit-backdrop-filter: blur(8px);
             border: 1px solid rgba(212, 175, 55, 0.1);
         }
-        .live-video-container .live-controls button {
-            background: none;
-            border: none;
-            color: white;
-            font-size: 1.1rem;
-            cursor: pointer;
-            transition: var(--transition);
-            padding: 4px 8px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .live-video-container .live-controls button:hover {
-            color: var(--gold);
-            background: rgba(212, 175, 55, 0.1);
-        }
-        .live-video-container .live-controls button.mic {
-            color: var(--success);
-        }
-        .live-video-container .live-controls button.mic.muted {
-            color: var(--danger);
-        }
-        .live-video-container .live-controls button.end {
-            color: var(--danger);
-            font-size: 0.8rem;
-            padding: 4px 12px;
-            border-radius: 20px;
-        }
-        .live-video-container .live-controls button.end:hover {
-            background: rgba(255, 51, 102, 0.2);
-        }
+        .live-video-container .live-controls button { background: none; border: none; color: white; font-size: 1.1rem; cursor: pointer; transition: var(--transition); padding: 4px 8px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+        .live-video-container .live-controls button:hover { color: var(--gold); background: rgba(212, 175, 55, 0.1); }
+        .live-video-container .live-controls button.mic { color: var(--success); }
+        .live-video-container .live-controls button.mic.muted { color: var(--danger); }
+        .live-video-container .live-controls button.end { color: var(--danger); font-size: 0.8rem; padding: 4px 12px; border-radius: 20px; }
+        .live-video-container .live-controls button.end:hover { background: rgba(255, 51, 102, 0.2); }
 
-        /* ===== LIVE CHAT ===== */
         .live-chat-container {
             background: var(--glass-bg);
             border: 1px solid var(--glass-border);
@@ -419,311 +267,91 @@
             -webkit-backdrop-filter: blur(16px);
             transition: var(--transition-slow);
         }
-        .live-chat-container:hover {
-            border-color: rgba(212, 175, 55, 0.2);
-            box-shadow: var(--shadow-gold);
-        }
-        .live-chat-container .chat-header {
-            padding: 12px 18px;
-            border-bottom: 1px solid var(--glass-border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: rgba(0, 0, 0, 0.1);
-        }
-        .live-chat-container .chat-header h3 {
-            font-size: 0.8rem;
-            color: var(--gold);
-            font-family: 'Orbitron', monospace;
-            letter-spacing: 0.5px;
-        }
-        .live-chat-container .chat-header .chat-count {
-            font-size: 0.55rem;
-            color: var(--text-muted);
-        }
-        .live-chat-container .chat-messages {
-            padding: 12px 16px;
-            max-height: 250px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-        .live-chat-container .chat-messages::-webkit-scrollbar {
-            width: 3px;
-        }
-        .live-chat-container .chat-messages::-webkit-scrollbar-thumb {
-            background: var(--gold);
-            border-radius: 2px;
-        }
-        .live-chat-container .chat-messages .chat-msg {
-            display: flex;
-            gap: 8px;
-            padding: 4px 0;
-            border-bottom: 1px solid rgba(212, 175, 55, 0.04);
-            font-size: 0.8rem;
-        }
-        .live-chat-container .chat-messages .chat-msg .avatar {
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--green-deep), var(--gold));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.5rem;
-            color: white;
-            font-weight: 700;
-            flex-shrink: 0;
-            font-family: 'Orbitron', monospace;
-        }
-        .live-chat-container .chat-messages .chat-msg .msg {
-            flex: 1;
-        }
-        .live-chat-container .chat-messages .chat-msg .msg .name {
-            font-weight: 600;
-            color: var(--gold);
-            font-size: 0.65rem;
-        }
-        .live-chat-container .chat-messages .chat-msg .msg .text {
-            color: var(--text-secondary);
-            font-size: 0.75rem;
-        }
-        .live-chat-container .chat-messages .chat-msg .msg .time {
-            font-size: 0.5rem;
-            color: var(--text-muted);
-            margin-left: 6px;
-        }
-        .live-chat-container .chat-input {
-            display: flex;
-            gap: 8px;
-            padding: 10px 16px;
-            border-top: 1px solid var(--glass-border);
-            background: rgba(0, 0, 0, 0.1);
-        }
-        .live-chat-container .chat-input input {
-            flex: 1;
-            padding: 8px 14px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid var(--glass-border);
-            border-radius: 20px;
-            color: var(--text-primary);
-            font-size: 0.8rem;
-            font-family: 'Inter', sans-serif;
-            outline: none;
-            transition: var(--transition);
-        }
-        .live-chat-container .chat-input input:focus {
-            outline: none;
-            border-color: var(--gold);
-            background: rgba(255, 255, 255, 0.08);
-        }
-        .live-chat-container .chat-input button {
-            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
-            color: var(--space);
-            border: none;
-            padding: 6px 16px;
-            border-radius: 20px;
-            font-family: 'Orbitron', monospace;
-            font-size: 0.6rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: var(--transition);
-        }
-        .live-chat-container .chat-input button:hover {
-            transform: scale(1.05);
-            box-shadow: var(--shadow-gold);
-        }
+        .live-chat-container .chat-header { padding: 12px 18px; border-bottom: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center; background: rgba(0, 0, 0, 0.1); }
+        .live-chat-container .chat-header h3 { font-size: 0.8rem; color: var(--gold); font-family: 'Orbitron', monospace; letter-spacing: 0.5px; }
+        .live-chat-container .chat-header .chat-count { font-size: 0.55rem; color: var(--text-muted); }
+        .live-chat-container .chat-messages { padding: 12px 16px; max-height: 250px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
+        .live-chat-container .chat-messages .chat-msg { display: flex; gap: 8px; padding: 4px 0; border-bottom: 1px solid rgba(212, 175, 55, 0.04); font-size: 0.8rem; }
+        .live-chat-container .chat-messages .chat-msg .avatar { width: 24px; height: 24px; border-radius: 50%; background: linear-gradient(135deg, var(--green-deep), var(--gold)); display: flex; align-items: center; justify-content: center; font-size: 0.5rem; color: white; font-weight: 700; flex-shrink: 0; font-family: 'Orbitron', monospace; }
+        .live-chat-container .chat-messages .chat-msg .msg { flex: 1; }
+        .live-chat-container .chat-messages .chat-msg .msg .name { font-weight: 600; color: var(--gold); font-size: 0.65rem; }
+        .live-chat-container .chat-messages .chat-msg .msg .text { color: var(--text-secondary); font-size: 0.75rem; }
+        .live-chat-container .chat-messages .chat-msg .msg .time { font-size: 0.5rem; color: var(--text-muted); margin-left: 6px; }
+        .live-chat-container .chat-input { display: flex; gap: 8px; padding: 10px 16px; border-top: 1px solid var(--glass-border); background: rgba(0, 0, 0, 0.1); }
+        .live-chat-container .chat-input input { flex: 1; padding: 8px 14px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border); border-radius: 20px; color: var(--text-primary); font-size: 0.8rem; font-family: 'Inter', sans-serif; outline: none; transition: var(--transition); }
+        .live-chat-container .chat-input input:focus { outline: none; border-color: var(--gold); background: rgba(255, 255, 255, 0.08); }
+        .live-chat-container .chat-input button { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); border: none; padding: 6px 16px; border-radius: 20px; font-family: 'Orbitron', monospace; font-size: 0.6rem; font-weight: 700; cursor: pointer; transition: var(--transition); }
+        .live-chat-container .chat-input button:hover { transform: scale(1.05); box-shadow: var(--shadow-gold); }
 
-        /* ===== STREAMS LIST ===== */
-        .streams-list {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 12px;
-            margin-top: 16px;
-        }
-        .stream-card {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius);
-            padding: 14px;
-            transition: var(--transition);
-            cursor: pointer;
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-        }
-        .stream-card:hover {
-            border-color: rgba(212, 175, 55, 0.2);
-            transform: translateY(-3px);
-            box-shadow: var(--shadow-gold);
-        }
-        .stream-card .stream-thumb {
-            width: 100%;
-            aspect-ratio: 16 / 9;
-            background: var(--space);
-            border-radius: 8px;
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2rem;
-            color: var(--text-muted);
-            border: 1px solid var(--glass-border);
-            position: relative;
-            overflow: hidden;
-        }
-        .stream-card .stream-thumb .live-badge {
-            position: absolute;
-            top: 6px;
-            left: 6px;
-            background: var(--live-red);
-            color: white;
-            font-size: 0.45rem;
-            padding: 2px 10px;
-            border-radius: 12px;
-            font-family: 'Orbitron', monospace;
-            letter-spacing: 0.5px;
-        }
-        .stream-card .stream-thumb img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        .stream-card .stream-name {
-            font-weight: 600;
-            font-size: 0.8rem;
-            color: var(--text-primary);
-        }
-        .stream-card .stream-host {
-            font-size: 0.65rem;
-            color: var(--text-muted);
-        }
-        .stream-card .stream-viewers {
-            font-size: 0.55rem;
-            color: var(--text-muted);
-            font-family: 'Orbitron', monospace;
-        }
+        .streams-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin-top: 16px; }
+        .stream-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius); padding: 14px; transition: var(--transition); cursor: pointer; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+        .stream-card:hover { border-color: rgba(212, 175, 55, 0.2); transform: translateY(-3px); box-shadow: var(--shadow-gold); }
+        .stream-card .stream-thumb { width: 100%; aspect-ratio: 16 / 9; background: var(--space); border-radius: 8px; margin-bottom: 8px; display: flex; align-items: center; justify-content: center; font-size: 2rem; color: var(--text-muted); border: 1px solid var(--glass-border); position: relative; overflow: hidden; }
+        .stream-card .stream-thumb .live-badge { position: absolute; top: 6px; left: 6px; background: var(--live-red); color: white; font-size: 0.45rem; padding: 2px 10px; border-radius: 12px; font-family: 'Orbitron', monospace; letter-spacing: 0.5px; }
+        .stream-card .stream-name { font-weight: 600; font-size: 0.8rem; color: var(--text-primary); }
+        .stream-card .stream-host { font-size: 0.65rem; color: var(--text-muted); }
+        .stream-card .stream-viewers { font-size: 0.55rem; color: var(--text-muted); font-family: 'Orbitron', monospace; }
 
-        /* ===== EMPTY STATE ===== */
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: var(--text-muted);
-        }
-        .empty-state .icon {
-            font-size: 2.5rem;
-            display: block;
-            margin-bottom: 16px;
-            font-family: 'Orbitron', monospace;
-            color: var(--gold);
-            opacity: 0.4;
-            letter-spacing: 2px;
-        }
-        .empty-state h3 {
-            font-family: 'Orbitron', monospace;
-            font-size: 1.1rem;
-            color: var(--text-secondary);
-            letter-spacing: 1px;
-            font-weight: 400;
-        }
-        .empty-state p {
-            font-size: 0.85rem;
-            letter-spacing: 0.3px;
-        }
+        .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
+        .empty-state .icon { font-size: 2.5rem; display: block; margin-bottom: 16px; font-family: 'Orbitron', monospace; color: var(--gold); opacity: 0.4; letter-spacing: 2px; }
+        .empty-state h3 { font-family: 'Orbitron', monospace; font-size: 1.1rem; color: var(--text-secondary); letter-spacing: 1px; font-weight: 400; }
+        .empty-state p { font-size: 0.85rem; letter-spacing: 0.3px; }
 
-        /* ===== TOAST ===== */
-        .toast {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            background: var(--green-deep);
-            border: 1px solid var(--gold);
-            color: var(--gold);
-            padding: 12px 24px;
-            border-radius: 12px;
-            font-size: 0.8rem;
-            font-weight: 500;
-            box-shadow: var(--shadow-gold-strong);
-            transform: translateY(100px);
-            opacity: 0;
-            transition: all 0.4s ease;
-            z-index: 9999;
-            max-width: 400px;
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-        }
+        .toast { position: fixed; bottom: 30px; right: 30px; background: var(--green-deep); border: 1px solid var(--gold); color: var(--gold); padding: 12px 24px; border-radius: 12px; font-size: 0.8rem; font-weight: 500; box-shadow: var(--shadow-gold-strong); transform: translateY(100px); opacity: 0; transition: all 0.4s ease; z-index: 9999; max-width: 400px; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
         .toast.show { transform: translateY(0); opacity: 1; }
         .toast.error { border-color: var(--danger); color: var(--danger); }
         .toast.warning { border-color: var(--warning); color: var(--warning); }
 
-        /* ===== MODO CLARO ===== */
-        body.modo-claro .live-header {
-            background: rgba(255, 255, 255, 0.7);
+        /* MINI PLAYER FLOTANTE (ARRASTRABLE) */
+        .mini-player {
+            position: fixed;
+            width: 180px;
+            height: 105px;
+            background: var(--space);
+            border: 2px solid var(--gold);
+            border-radius: 12px;
+            overflow: hidden;
+            z-index: 9999;
+            box-shadow: 0 4px 20px rgba(212, 175, 55, 0.4);
+            cursor: grab;
+            touch-action: none;
+            user-select: none;
+            padding: 4px;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
         }
-        body.modo-claro .live-chat-container {
-            background: rgba(255, 255, 255, 0.7);
-        }
-        body.modo-claro .live-chat-container .chat-input input {
-            background: rgba(0, 0, 0, 0.04);
-            color: #0a1a2a;
-        }
-        body.modo-claro .live-chat-container .chat-messages .chat-msg .msg .text {
-            color: #2a4a5a;
-        }
-        body.modo-claro .stream-card {
-            background: rgba(255, 255, 255, 0.7);
-        }
-        body.modo-claro .toast {
-            background: rgba(255, 255, 255, 0.9);
-            color: #0a1a2a;
-        }
+        .mini-player video { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; }
+        .mini-player .mini-controls { position: absolute; top: 6px; right: 6px; }
+        .mini-player .mini-controls button { background: var(--gold); border: none; color: var(--space); border-radius: 50%; width: 22px; height: 22px; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 10px rgba(212, 175, 55, 0.4); }
+        .mini-player .mini-controls button:hover { transform: scale(1.1); }
 
-        /* ===== FOOTER ===== */
-        .footer {
-            margin-top: 30px;
-            padding-top: 16px;
-            border-top: 1px solid var(--glass-border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 10px;
-            font-size: 0.7rem;
-            color: var(--text-muted);
-            padding-bottom: 8px;
-            letter-spacing: 0.3px;
-        }
+        .footer { margin-top: 30px; padding-top: 16px; border-top: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; font-size: 0.7rem; color: var(--text-muted); padding-bottom: 8px; letter-spacing: 0.3px; }
         .footer .brand { color: var(--gold); font-weight: 600; letter-spacing: 1px; }
         .footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
         .footer-links a { color: var(--text-muted); text-decoration: none; transition: var(--transition); }
         .footer-links a:hover { color: var(--gold); }
 
-        /* ===== RESPONSIVE ===== */
         @media (max-width: 768px) {
             .app { padding: 12px 14px; }
+            .live-header { flex-direction: column; align-items: stretch; text-align: center; }
+            .live-header .live-actions { justify-content: center; }
             .live-video-container { aspect-ratio: 16 / 9; min-height: 200px; }
-            .live-video-container .live-controls { padding: 6px 12px; gap: 6px; }
-            .live-video-container .live-controls button { font-size: 0.9rem; padding: 2px 6px; }
-            .live-header h1 { font-size: 1rem; }
-            .streams-list { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+            .live-video-container .live-controls { padding: 6px 12px; gap: 6px; flex-wrap: wrap; justify-content: center; }
             .main-nav .nav-link { font-size: 0.6rem; padding: 6px 10px; }
             .header .logo-text { font-size: 1rem; }
             .header .logo-hex { font-size: 1.4rem; }
         }
-
         @media (max-width: 480px) {
-            .live-header { flex-direction: column; align-items: stretch; text-align: center; }
-            .live-header .live-actions { justify-content: center; }
-            .live-video-container .live-controls { flex-wrap: wrap; justify-content: center; }
+            .live-header h1 { font-size: 0.85rem; flex-wrap: wrap; justify-content: center; }
+            .live-video-container { min-height: 150px; }
+            .live-video-container .live-controls { gap: 4px; padding: 4px 10px; }
             .streams-list { grid-template-columns: 1fr 1fr; }
             .main-nav .nav-link { font-size: 0.55rem; padding: 4px 8px; }
-            .live-chat-container .chat-messages { max-height: 150px; }
         }
     </style>
 </head>
 <body>
 
-    <!-- ===== FONDO ESTELAR ===== -->
     <canvas id="stars-canvas"></canvas>
     <div class="nebula nebula-1"></div>
     <div class="nebula nebula-2"></div>
@@ -731,7 +359,6 @@
 
     <div class="app">
 
-        <!-- ===== HEADER ===== -->
         <header class="header">
             <a href="/" class="logo">
                 <span class="logo-hex">◈</span>
@@ -743,7 +370,6 @@
             </div>
         </header>
 
-        <!-- ===== NAVEGACIÓN ===== -->
         <nav class="main-nav">
             <a href="/" class="nav-link">⌂ Inicio</a>
             <a href="/features/muro/muro.html" class="nav-link">◇ Muro</a>
@@ -752,10 +378,8 @@
             <a href="/features/live/live.html" class="nav-link active live">◉ Live</a>
         </nav>
 
-        <!-- ===== LIVE ===== -->
         <div class="live-container">
 
-            <!-- ===== LIVE HEADER ===== -->
             <div class="live-header">
                 <h1>
                     <span class="live-dot"></span>
@@ -764,11 +388,11 @@
                 </h1>
                 <div class="live-actions">
                     <button class="btn btn-gold btn-sm" onclick="iniciarTransmision()">◉ Iniciar live</button>
+                    <button class="btn btn-outline btn-sm" onclick="abrirMiniPlayer()">◈ Mini player</button>
                     <button class="btn btn-outline btn-sm" onclick="verTodasLasTransmisiones()">◈ Ver todas</button>
                 </div>
             </div>
 
-            <!-- ===== LIVE VIDEO ===== -->
             <div class="live-video-container" id="liveVideoContainer">
                 <video id="liveVideo" autoplay playsinline muted></video>
                 <div class="live-overlay">
@@ -777,27 +401,34 @@
                     <span class="viewers" id="viewersCount">0 espectadores</span>
                 </div>
                 <div class="live-controls" id="liveControls">
-                    <button onclick="togglePlay()" id="playBtn" title="Play/Pause">⏸️</button>
-                    <button onclick="toggleMute()" id="muteBtn" title="Mute/Unmute" class="mic">🔊</button>
-                    <button onclick="capturarPantalla()" id="screenBtn" title="Compartir pantalla">🖥️</button>
+                    <button onclick="togglePlay()" id="playBtn" title="Play/Pause">◈</button>
+                    <button onclick="toggleMute()" id="muteBtn" title="Mute/Unmute" class="mic">◉</button>
+                    <button onclick="capturarPantalla()" id="screenBtn" title="Compartir pantalla">✦</button>
+                    <button onclick="abrirMiniPlayer()" id="pipBtn" title="Mini player">◈</button>
                     <button class="end" onclick="finalizarTransmision()" title="Finalizar">✕ Finalizar</button>
                 </div>
             </div>
 
-            <!-- ===== LIVE CHAT ===== -->
+            <!-- MINI PLAYER FLOTANTE -->
+            <div class="mini-player" id="miniPlayer" style="display: none;">
+                <video id="miniVideo" autoplay playsinline muted></video>
+                <div class="mini-controls">
+                    <button onclick="cerrarMiniPlayer()">✕</button>
+                </div>
+            </div>
+
             <div class="live-chat-container">
                 <div class="chat-header">
                     <h3>◈ Chat en vivo</h3>
                     <span class="chat-count" id="chatCount">0 mensajes</span>
                 </div>
                 <div class="chat-messages" id="chatMessages">
-                    <!-- Mensajes -->
                     <div class="chat-msg">
                         <div class="avatar">◈</div>
                         <div class="msg">
                             <span class="name">Sariel's Bot</span>
                             <span class="time">●</span>
-                            <div class="text">¡Bienvenido al Live de Sariel's! 🔥</div>
+                            <div class="text">¡Bienvenido al Live de Sariel's!</div>
                         </div>
                     </div>
                 </div>
@@ -807,7 +438,6 @@
                 </div>
             </div>
 
-            <!-- ===== STREAMS LIST ===== -->
             <h3 style="font-family:'Orbitron',monospace;color:var(--gold);font-size:0.85rem;margin:16px 0 8px;letter-spacing:1px;">
                 ◈ Transmisiones activas
             </h3>
@@ -821,517 +451,24 @@
 
         </div>
 
-        <!-- ===== FOOTER ===== -->
         <footer class="footer">
             <span><span class="brand">◈ Sariel's</span> · Sabor al Paladar · WEB3</span>
             <div class="footer-links">
-                <a href="/terminos.html">◈ Términos</a>
-                <a href="/live-terminos.html">◉ Live Términos</a>
+                <a href="/terminos">◈ Términos</a>
+                <a href="/privacidad">◈ Privacidad</a>
+                <a href="/cookies">◈ Cookies</a>
+                <a href="/live-terminos">◉ Live Términos</a>
                 <span style="opacity:0.3;">⚡ Polygon</span>
             </div>
         </footer>
 
     </div>
 
-    <!-- ===== TOAST ===== -->
     <div class="toast" id="toast"></div>
 
-    <!-- ===== SCRIPTS ===== -->
     <script src="https://cdn.jsdelivr.net/npm/web3@1.8.0/dist/web3.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-    <script src="/app.js"></script>
     <script src="/features/live/live.js"></script>
-    <script>
-        // ================================================================
-        // LIVE - LÓGICA COMPLETA
-        // ================================================================
-
-        // ================================================================
-        // TOAST
-        // ================================================================
-        function showToast(msg, type = '') {
-            const t = document.getElementById('toast');
-            t.textContent = msg;
-            t.className = 'toast show';
-            if (type === 'error') t.classList.add('error');
-            else if (type === 'warning') t.classList.add('warning');
-            else t.classList.remove('error', 'warning');
-            clearTimeout(t._timeout);
-            t._timeout = setTimeout(() => t.classList.remove('show'), 3500);
-        }
-
-        // ================================================================
-        // VARIABLES
-        // ================================================================
-        let localStream = null;
-        let isPlaying = false;
-        let isMuted = false;
-        let chatMessages = [];
-        let viewersCount = 0;
-        let isLive = false;
-
-        // ================================================================
-        // INICIALIZAR
-        // ================================================================
-        document.addEventListener('DOMContentLoaded', function() {
-            initStars();
-            actualizarViewers();
-            cargarStreams();
-
-            document.getElementById('chatInput').addEventListener('keydown', function(e) {
-                if (e.key === 'Enter') enviarMensaje();
-            });
-
-            console.log('◉ Sariel\'s - Live Ultra Mega Pro');
-            console.log('🔴 Sistema de transmisiones en vivo');
-        });
-
-        // ================================================================
-        // INICIAR TRANSMISIÓN
-        // ================================================================
-        async function iniciarTransmision() {
-            try {
-                // Verificar si hay soporte para getUserMedia
-                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                    showToast('⚠️ Tu navegador no soporta transmisiones', 'error');
-                    return;
-                }
-
-                showToast('◉ Solicitando acceso a cámara y micrófono...');
-
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
-                    audio: true
-                });
-
-                localStream = stream;
-                const video = document.getElementById('liveVideo');
-                video.srcObject = stream;
-                await video.play();
-
-                isPlaying = true;
-                isLive = true;
-                document.getElementById('playBtn').textContent = '⏸️';
-                document.getElementById('liveVideoContainer').style.borderColor = 'var(--live-red)';
-                document.getElementById('liveVideoContainer').style.boxShadow = '0 0 60px var(--live-red-glow)';
-
-                showToast('✅ Transmisión iniciada', 'success');
-
-                // Simular espectadores
-                viewersCount = Math.floor(Math.random() * 50) + 10;
-                actualizarViewers();
-
-                // Agregar a la lista de transmisiones
-                agregarStreamLocal();
-
-                // Simular mensajes de chat
-                simularMensajes();
-
-            } catch (error) {
-                console.error('Error iniciando transmisión:', error);
-                if (error.name === 'NotAllowedError') {
-                    showToast('❌ Permiso denegado para cámara/micrófono', 'error');
-                } else {
-                    showToast('❌ Error al iniciar la transmisión', 'error');
-                }
-            }
-        }
-
-        // ================================================================
-        // AGREGAR STREAM LOCAL A LA LISTA
-        // ================================================================
-        function agregarStreamLocal() {
-            const container = document.getElementById('streamsList');
-            const empty = container.querySelector('.empty-state');
-            if (empty) empty.remove();
-
-            const perfil = JSON.parse(localStorage.getItem('sariels_perfil') || '{}');
-            const nombre = perfil.nombre || 'Explorador';
-
-            const card = document.createElement('div');
-            card.className = 'stream-card';
-            card.id = 'stream-local';
-            card.innerHTML = `
-                <div class="stream-thumb">
-                    <span class="live-badge">● EN VIVO</span>
-                    🎥
-                </div>
-                <div class="stream-name">Transmisión de ${nombre}</div>
-                <div class="stream-host">${nombre} · Sariel's</div>
-                <div class="stream-viewers">👁️ ${viewersCount} espectadores</div>
-            `;
-            card.onclick = () => showToast('◈ Ya estás viendo tu transmisión');
-            container.prepend(card);
-        }
-
-        // ================================================================
-        // FINALIZAR TRANSMISIÓN
-        // ================================================================
-        function finalizarTransmision() {
-            if (!isLive) {
-                showToast('⚠️ No hay una transmisión activa', 'warning');
-                return;
-            }
-
-            if (!confirm('¿Finalizar la transmisión?')) return;
-
-            if (localStream) {
-                localStream.getTracks().forEach(track => track.stop());
-                localStream = null;
-            }
-
-            const video = document.getElementById('liveVideo');
-            video.srcObject = null;
-
-            isPlaying = false;
-            isLive = false;
-            document.getElementById('playBtn').textContent = '▶️';
-            document.getElementById('liveVideoContainer').style.borderColor = '';
-            document.getElementById('liveVideoContainer').style.boxShadow = '';
-
-            const local = document.getElementById('stream-local');
-            if (local) local.remove();
-
-            viewersCount = 0;
-            actualizarViewers();
-
-            showToast('🔴 Transmisión finalizada');
-
-            // Verificar si hay otros streams
-            const container = document.getElementById('streamsList');
-            if (container.children.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state" style="grid-column:1/-1;padding:20px;">
-                        <span class="icon">◉</span>
-                        <h3>Sin transmisiones activas</h3>
-                        <p>Sé el primero en iniciar una transmisión</p>
-                    </div>
-                `;
-            }
-        }
-
-        // ================================================================
-        // PLAY/PAUSE
-        // ================================================================
-        function togglePlay() {
-            const video = document.getElementById('liveVideo');
-            const btn = document.getElementById('playBtn');
-
-            if (!video.srcObject) {
-                showToast('⚠️ No hay transmisión activa', 'warning');
-                return;
-            }
-
-            if (isPlaying) {
-                video.pause();
-                btn.textContent = '▶️';
-                isPlaying = false;
-            } else {
-                video.play();
-                btn.textContent = '⏸️';
-                isPlaying = true;
-            }
-        }
-
-        // ================================================================
-        // MUTE/UNMUTE
-        // ================================================================
-        function toggleMute() {
-            const video = document.getElementById('liveVideo');
-            const btn = document.getElementById('muteBtn');
-
-            if (!video.srcObject) {
-                showToast('⚠️ No hay transmisión activa', 'warning');
-                return;
-            }
-
-            isMuted = !isMuted;
-            video.muted = isMuted;
-            btn.textContent = isMuted ? '🔇' : '🔊';
-            btn.className = isMuted ? 'mic muted' : 'mic';
-        }
-
-        // ================================================================
-        // COMPARTIR PANTALLA
-        // ================================================================
-        async function capturarPantalla() {
-            try {
-                if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
-                    showToast('⚠️ Tu navegador no soporta compartir pantalla', 'error');
-                    return;
-                }
-
-                const screenStream = await navigator.mediaDevices.getDisplayMedia({
-                    video: true,
-                    audio: true
-                });
-
-                const video = document.getElementById('liveVideo');
-                video.srcObject = screenStream;
-                await video.play();
-
-                isPlaying = true;
-                document.getElementById('playBtn').textContent = '⏸️';
-
-                showToast('🖥️ Compartiendo pantalla', 'success');
-
-                // Cuando se detiene la compartición
-                screenStream.getVideoTracks()[0].onended = () => {
-                    if (localStream) {
-                        video.srcObject = localStream;
-                        video.play();
-                        showToast('🔄 Volviendo a la cámara');
-                    }
-                };
-
-            } catch (error) {
-                console.error('Error compartiendo pantalla:', error);
-                if (error.name !== 'NotAllowedError') {
-                    showToast('❌ Error al compartir pantalla', 'error');
-                }
-            }
-        }
-
-        // ================================================================
-        // ENVIAR MENSAJE
-        // ================================================================
-        function enviarMensaje() {
-            const input = document.getElementById('chatInput');
-            const texto = input.value.trim();
-
-            if (!texto) {
-                showToast('⚠️ Escribe un mensaje', 'warning');
-                return;
-            }
-
-            const perfil = JSON.parse(localStorage.getItem('sariels_perfil') || '{}');
-            const nombre = perfil.nombre || 'Explorador';
-            const avatar = perfil.avatar ? perfil.avatar[0].toUpperCase() : '◈';
-
-            const msg = {
-                nombre: nombre,
-                avatar: avatar,
-                texto: texto,
-                hora: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-            };
-
-            chatMessages.push(msg);
-            renderizarMensaje(msg);
-            input.value = '';
-            actualizarContadorChat();
-
-            // Simular respuesta del bot
-            if (Math.random() > 0.7) {
-                setTimeout(() => {
-                    const respuestas = [
-                        '🔥 ¡Buen vibra!',
-                        '✨ Excelente comentario',
-                        '🚀 Sariel\'s es lo mejor',
-                        '💎 Gracias por estar aquí',
-                        '🎯 ¡Totalmente de acuerdo!'
-                    ];
-                    const random = respuestas[Math.floor(Math.random() * respuestas.length)];
-                    const botMsg = {
-                        nombre: 'Sariel\'s Bot',
-                        avatar: '◈',
-                        texto: random,
-                        hora: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                    };
-                    chatMessages.push(botMsg);
-                    renderizarMensaje(botMsg);
-                    actualizarContadorChat();
-                }, 2000 + Math.random() * 3000);
-            }
-        }
-
-        // ================================================================
-        // RENDERIZAR MENSAJE
-        // ================================================================
-        function renderizarMensaje(msg) {
-            const container = document.getElementById('chatMessages');
-
-            // Si es el mensaje de bienvenida, lo reemplazamos
-            const welcome = container.querySelector('.chat-msg:first-child');
-            if (welcome && welcome.querySelector('.name')?.textContent === 'Sariel\'s Bot') {
-                welcome.remove();
-            }
-
-            const div = document.createElement('div');
-            div.className = 'chat-msg';
-            div.innerHTML = `
-                <div class="avatar">${msg.avatar || '◈'}</div>
-                <div class="msg">
-                    <span class="name">${msg.nombre}</span>
-                    <span class="time">${msg.hora}</span>
-                    <div class="text">${msg.texto}</div>
-                </div>
-            `;
-            container.appendChild(div);
-            container.scrollTop = container.scrollHeight;
-        }
-
-        // ================================================================
-        // SIMULAR MENSAJES DE CHAT
-        // ================================================================
-        function simularMensajes() {
-            const mensajesBienvenida = [
-                '🔥 ¡Qué buena transmisión!',
-                '✨ Alguien tiene talento',
-                '🚀 Sariel\'s en vivo',
-                '💎 Esto es increíble',
-                '🎯 Me encanta esta comunidad'
-            ];
-
-            let index = 0;
-
-            const interval = setInterval(() => {
-                if (!isLive) {
-                    clearInterval(interval);
-                    return;
-                }
-
-                if (index < mensajesBienvenida.length) {
-                    const perfil = JSON.parse(localStorage.getItem('sariels_perfil') || '{}');
-                    const nombre = `Usuario${Math.floor(Math.random() * 100)}`;
-                    const msg = {
-                        nombre: nombre,
-                        avatar: '✦',
-                        texto: mensajesBienvenida[index],
-                        hora: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                    };
-                    chatMessages.push(msg);
-                    renderizarMensaje(msg);
-                    actualizarContadorChat();
-                    index++;
-                } else {
-                    clearInterval(interval);
-                }
-            }, 3000);
-
-            // Simular espectadores adicionales
-            setInterval(() => {
-                if (!isLive) return;
-                if (Math.random() > 0.8) {
-                    viewersCount += Math.floor(Math.random() * 3);
-                    actualizarViewers();
-                }
-            }, 5000);
-        }
-
-        // ================================================================
-        // ACTUALIZAR VIEWERS
-        // ================================================================
-        function actualizarViewers() {
-            document.getElementById('viewersCount').textContent = `${viewersCount} espectadores`;
-        }
-
-        function actualizarContadorChat() {
-            document.getElementById('chatCount').textContent = `${chatMessages.length} mensajes`;
-        }
-
-        // ================================================================
-        // CARGAR STREAMS (ejemplo)
-        // ================================================================
-        function cargarStreams() {
-            // En producción, esto vendría de la API
-            // Simulación: no hay streams activos al cargar
-        }
-
-        // ================================================================
-        // VER TODAS LAS TRANSMISIONES
-        // ================================================================
-        function verTodasLasTransmisiones() {
-            showToast('◈ Cargando todas las transmisiones...');
-            // En producción, esto redirigiría a una lista de streams
-        }
-
-        // ================================================================
-        // ESTRELLAS
-        // ================================================================
-        function initStars() {
-            const canvas = document.getElementById('stars-canvas');
-            if (!canvas) return;
-            const ctx = canvas.getContext('2d');
-            let width, height, stars = [];
-            let animId = null;
-            let isVisible = true;
-
-            const isMobile = window.innerWidth < 600;
-            const STAR_COUNT = isMobile ? 40 : 100;
-
-            function resize() {
-                width = window.innerWidth;
-                height = window.innerHeight;
-                canvas.width = width;
-                canvas.height = height;
-                createStars();
-            }
-
-            function createStars() {
-                stars = [];
-                for (let i = 0; i < STAR_COUNT; i++) {
-                    stars.push({
-                        x: Math.random() * width,
-                        y: Math.random() * height,
-                        radius: Math.random() * 0.8 + 0.2,
-                        speed: Math.random() * 0.005 + 0.002,
-                        opacity: Math.random() * 0.5 + 0.2,
-                        twinklePhase: Math.random() * Math.PI * 2
-                    });
-                }
-            }
-
-            function draw() {
-                if (!isVisible) {
-                    animId = requestAnimationFrame(draw);
-                    return;
-                }
-                ctx.clearRect(0, 0, width, height);
-                for (let star of stars) {
-                    const opacity = star.opacity * (0.6 + 0.4 * Math.sin(star.twinklePhase));
-                    ctx.beginPath();
-                    ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
-                    ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
-                    ctx.fill();
-                    star.twinklePhase += 0.02;
-                    star.y += star.speed;
-                    if (star.y > height) {
-                        star.y = 0;
-                        star.x = Math.random() * width;
-                    }
-                }
-                animId = requestAnimationFrame(draw);
-            }
-
-            function pauseAnimation() { isVisible = false; }
-            function resumeAnimation() { isVisible = true; }
-
-            resize();
-            draw();
-
-            window.addEventListener('resize', resize);
-            document.addEventListener('visibilitychange', function() {
-                if (document.hidden) pauseAnimation();
-                else resumeAnimation();
-            });
-
-            return { pauseAnimation, resumeAnimation };
-        }
-
-        // ================================================================
-        // EXPONER FUNCIONES GLOBALES
-        // ================================================================
-        window.showToast = showToast;
-        window.iniciarTransmision = iniciarTransmision;
-        window.finalizarTransmision = finalizarTransmision;
-        window.togglePlay = togglePlay;
-        window.toggleMute = toggleMute;
-        window.capturarPantalla = capturarPantalla;
-        window.enviarMensaje = enviarMensaje;
-        window.verTodasLasTransmisiones = verTodasLasTransmisiones;
-        window.actualizarViewers = actualizarViewers;
-        window.cargarStreams = cargarStreams;
-    </script>
 </body>
 </html>
