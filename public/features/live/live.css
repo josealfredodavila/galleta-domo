@@ -144,7 +144,7 @@
 .btn-success:hover { transform: translateY(-2px); box-shadow: 0 0 30px rgba(0, 214, 143, 0.3); }
 
 /* ================================================================
-   LIVE VIDEO
+   CÁMARA ANCHA Y GRANDE (FULL HD)
    ================================================================ */
 .live-video-container {
     background: var(--space);
@@ -153,8 +153,9 @@
     overflow: hidden;
     margin-bottom: 20px;
     position: relative;
-    aspect-ratio: 16 / 9;
-    min-height: 300px;
+    width: 100%; /* Ocupa todo el ancho */
+    height: 70vh; /* Ocupa el 70% de la pantalla */
+    min-height: 400px; /* Nunca más chica que 400px */
     transition: var(--transition-slow);
 }
 .live-video-container:hover {
@@ -165,7 +166,7 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
-    background: var(--space);
+    background: #000;
 }
 
 .live-video-container .live-overlay {
@@ -249,6 +250,18 @@
 }
 
 /* ================================================================
+   LECTOR DE VOZ (BOTÓN)
+   ================================================================ */
+.live-video-container .live-controls button.voice {
+    color: var(--text-muted);
+}
+.live-video-container .live-controls button.voice-active {
+    color: var(--gold);
+    background: rgba(212, 175, 55, 0.2);
+    border-radius: 50%;
+}
+
+/* ================================================================
    LIVE CHAT
    ================================================================ */
 .live-chat-container {
@@ -287,7 +300,7 @@
 
 .live-chat-container .chat-messages {
     padding: 12px 16px;
-    max-height: 250px;
+    max-height: 300px;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
@@ -555,59 +568,6 @@ body.modo-claro .live-video-container .live-overlay .text {
 }
 
 /* ================================================================
-   MINI PLAYER FLOTANTE (ARRASTRABLE CON EL DEDO)
-   ================================================================ */
-.mini-player {
-    position: fixed;
-    width: 180px;
-    height: 105px;
-    background: var(--space);
-    border: 2px solid var(--gold);
-    border-radius: 12px;
-    overflow: hidden;
-    z-index: 9999;
-    box-shadow: 0 4px 20px rgba(212, 175, 55, 0.4);
-    cursor: grab;
-    touch-action: none;
-    user-select: none;
-    padding: 4px;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-}
-
-.mini-player video {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: 8px;
-}
-
-.mini-player .mini-controls {
-    position: absolute;
-    top: 6px;
-    right: 6px;
-}
-
-.mini-player .mini-controls button {
-    background: var(--gold);
-    border: none;
-    color: var(--space);
-    border-radius: 50%;
-    width: 22px;
-    height: 22px;
-    font-size: 0.8rem;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 0 10px rgba(212, 175, 55, 0.4);
-}
-
-.mini-player .mini-controls button:hover {
-    transform: scale(1.1);
-}
-
-/* ================================================================
    FOOTER
    ================================================================ */
 .footer {
@@ -642,8 +602,8 @@ body.modo-claro .live-video-container .live-overlay .text {
         justify-content: center;
     }
     .live-video-container {
-        aspect-ratio: 16 / 9;
-        min-height: 200px;
+        height: 50vh; /* En móvil, ocupa el 50% de la pantalla */
+        min-height: 300px;
     }
     .live-video-container .live-controls {
         padding: 6px 12px;
@@ -674,7 +634,8 @@ body.modo-claro .live-video-container .live-overlay .text {
         justify-content: center;
     }
     .live-video-container {
-        min-height: 150px;
+        height: 40vh; /* En móvil pequeño, ocupa el 40% */
+        min-height: 250px;
     }
     .live-video-container .live-controls {
         gap: 4px;
