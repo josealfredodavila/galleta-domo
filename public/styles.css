@@ -1,5 +1,5 @@
 /* ================================================================
-   ESTILOS BASE - Sariel's Ecosystem
+   ESTILOS BASE - Sariel's Ecosystem (VERSIÓN UNIFICADA)
    ================================================================ */
 :root {
     --space-deep: #05080f;
@@ -48,7 +48,7 @@ body {
 }
 
 /* ================================================================
-   FONDO ESTELAR (NUEVO)
+   FONDO ESTELAR
    ================================================================ */
 #stars-canvas {
     position: fixed;
@@ -99,6 +99,7 @@ body {
     gap: 10px;
     backdrop-filter: blur(10px);
     position: relative;
+    background: rgba(5, 8, 15, 0.8);
 }
 .header::after {
     content: '';
@@ -261,7 +262,7 @@ body {
 }
 
 /* ================================================================
-   BOTÓN CREAR LIVE (NUEVO)
+   BOTÓN CREAR LIVE
    ================================================================ */
 .btn-crear-live {
     display: inline-flex;
@@ -291,7 +292,7 @@ body {
 }
 
 /* ================================================================
-   LIVE BADGE HEADER (NUEVO)
+   LIVE BADGE HEADER
    ================================================================ */
 .live-badge-header {
     font-size: 0.55rem;
@@ -311,7 +312,7 @@ body {
 }
 
 /* ================================================================
-   PERFIL MEJORADO (NUEVO DISEÑO)
+   PERFIL MEJORADO
    ================================================================ */
 .profile-card {
     background: rgba(15,45,26,0.3);
@@ -947,7 +948,7 @@ body {
 .panel-badge {
     font-size: 0.7rem;
     background: linear-gradient(135deg, var(--gold-cosmic), #b8923a);
-    color: var(--verde-bosque-dark);
+    color: #0a0c10;
     padding: 3px 12px;
     border-radius: 20px;
     font-weight: 700;
@@ -1058,7 +1059,7 @@ body {
 }
 
 /* ================================================================
-   FOOTER
+   FOOTER UNIFICADO (CON 4 ENLACES LEGALES)
    ================================================================ */
 .footer {
     margin-top: 24px;
@@ -1081,28 +1082,195 @@ body {
     background: linear-gradient(90deg, transparent, var(--gold-cosmic), transparent);
     opacity: 0.2;
 }
-.footer-content p {
-    opacity: 0.8;
-    font-size: 0.9rem;
-    color: var(--text-secondary);
+.footer .footer-links {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
 }
-.footer-brand {
-    font-size: 1.2rem;
+.footer .footer-links a {
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: var(--transition);
+    font-size: 0.7rem;
+}
+.footer .footer-links a:hover {
+    color: var(--gold-cosmic);
+}
+.footer .brand {
     color: var(--gold-cosmic);
     font-weight: 600;
+    font-size: 0.8rem;
 }
-.footer-small {
-    font-size: 0.75rem;
-    opacity: 0.4;
-    margin-top: 5px;
-    color: var(--text-secondary);
+
+/* ================================================================
+   MODO CLARO (UNIFICADO)
+   ================================================================ */
+body.modo-claro {
+    background: #f0f4f8;
+    color: #0a1a2a;
 }
-.footer-small a {
-    color: var(--gold-cosmic);
-    text-decoration: none;
-    border-bottom: 1px dotted rgba(212, 168, 87, 0.3);
+
+body.modo-claro .header {
+    background: rgba(255, 255, 255, 0.92);
+    border-bottom-color: rgba(0, 0, 0, 0.08);
 }
-.footer-small a:hover { border-bottom-color: var(--gold-cosmic); }
+body.modo-claro .header::after {
+    opacity: 0.2;
+}
+
+body.modo-claro .profile-card {
+    background: rgba(255, 255, 255, 0.7);
+    border-color: rgba(0, 0, 0, 0.08);
+}
+body.modo-claro .profile-card::before {
+    opacity: 0.05;
+}
+
+body.modo-claro .profile-info .name {
+    background: linear-gradient(135deg, var(--gold-dark), #0a1a2a);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+body.modo-claro .profile-info .sub {
+    color: #4a6a7a;
+}
+body.modo-claro .profile-stats .stat .number {
+    color: var(--gold-dark);
+}
+body.modo-claro .profile-stats .stat .label {
+    color: #4a6a7a;
+}
+
+body.modo-claro .panel {
+    background: rgba(255, 255, 255, 0.7);
+    border-color: rgba(0, 0, 0, 0.08);
+}
+body.modo-claro .panel-header {
+    background: rgba(0, 0, 0, 0.03);
+}
+body.modo-claro .panel-header h2 {
+    color: var(--gold-dark);
+}
+
+body.modo-claro .status-item {
+    background: rgba(0, 0, 0, 0.03);
+    border-color: rgba(0, 0, 0, 0.06);
+}
+body.modo-claro .status-item .status-label {
+    color: #4a6a7a;
+}
+body.modo-claro .status-item .status-value {
+    color: var(--gold-dark);
+}
+
+body.modo-claro .esim-dashboard {
+    background: rgba(255, 255, 255, 0.7);
+    border-color: rgba(0, 0, 0, 0.08);
+}
+body.modo-claro .esim-dashboard .esim-header .title {
+    color: var(--gold-dark);
+}
+
+body.modo-claro .wallet-section {
+    background: rgba(0, 0, 0, 0.05);
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+body.modo-claro .contact-card {
+    background: rgba(0, 0, 0, 0.03);
+    border-color: rgba(0, 0, 0, 0.06);
+}
+body.modo-claro .contact-card:hover {
+    background: rgba(0, 0, 0, 0.06);
+}
+
+body.modo-claro .tabs {
+    border-bottom-color: rgba(0, 0, 0, 0.1);
+}
+body.modo-claro .tab {
+    color: #4a6a7a;
+}
+body.modo-claro .tab.active {
+    color: var(--gold-dark);
+    border-bottom-color: var(--gold-dark);
+}
+
+body.modo-claro .toast {
+    background: rgba(255, 255, 255, 0.9);
+    color: #0a1a2a;
+    border-color: var(--gold-dark);
+}
+body.modo-claro .toast.error {
+    background: var(--danger);
+    color: white;
+}
+
+body.modo-claro .connection-bar {
+    background: rgba(255, 255, 255, 0.7);
+    border-color: rgba(0, 0, 0, 0.08);
+}
+body.modo-claro .connection-bar .status-left .info {
+    color: #4a6a7a;
+}
+
+body.modo-claro .register-banner {
+    background: rgba(0, 0, 0, 0.03);
+    border-color: rgba(0, 0, 0, 0.06);
+}
+body.modo-claro .register-banner .banner-text {
+    color: #4a6a7a;
+}
+body.modo-claro .register-banner .banner-text .highlight {
+    color: var(--gold-dark);
+}
+
+body.modo-claro .footer {
+    border-top-color: rgba(0, 0, 0, 0.1);
+}
+body.modo-claro .footer .brand {
+    color: var(--gold-dark);
+}
+body.modo-claro .footer .footer-links a {
+    color: #4a6a7a;
+}
+body.modo-claro .footer .footer-links a:hover {
+    color: var(--gold-dark);
+}
+
+body.modo-claro .btn-outline {
+    border-color: rgba(0, 0, 0, 0.1);
+    color: #4a6a7a;
+}
+body.modo-claro .btn-outline:hover {
+    border-color: var(--gold-dark);
+    color: var(--gold-dark);
+    background: rgba(212, 168, 87, 0.05);
+}
+
+body.modo-claro .network-badge {
+    background: rgba(212, 168, 87, 0.12);
+    color: var(--gold-dark);
+    border-color: rgba(212, 168, 87, 0.2);
+}
+
+body.modo-claro .status-badge {
+    background: rgba(212, 168, 87, 0.06);
+    border-color: rgba(212, 168, 87, 0.1);
+    color: var(--gold-dark);
+}
+
+body.modo-claro .btn-gold {
+    background: linear-gradient(135deg, var(--gold-dark), #b8923a);
+    color: white;
+    -webkit-text-fill-color: white;
+}
+
+body.modo-claro .btn-primary {
+    background: linear-gradient(135deg, #1a6b4f, #0B3D2E);
+    border-color: var(--gold-dark);
+    color: var(--gold-dark);
+    -webkit-text-fill-color: var(--gold-dark);
+}
 
 /* ================================================================
    RESPONSIVE
@@ -1127,6 +1295,8 @@ body {
     .wallet-section { flex-wrap: wrap; }
     .connection-bar { flex-direction: column; align-items: flex-start; }
     .connection-bar .status-right { width: 100%; justify-content: flex-start; }
+    .footer { flex-direction: column; text-align: center; }
+    .footer .footer-links { justify-content: center; }
 }
 @media (max-width: 480px) {
     .btn { font-size: 0.45rem; padding: 4px 8px; }
