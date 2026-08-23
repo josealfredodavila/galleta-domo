@@ -72,7 +72,7 @@
             border-color: rgba(212, 175, 55, 0.2);
             box-shadow: var(--shadow-gold);
         }
-        .publicaciones-section .header {
+        .publicaciones-section .section-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -83,7 +83,7 @@
             backdrop-filter: none;
             position: static;
         }
-        .publicaciones-section .header h3 {
+        .publicaciones-section .section-header h3 {
             font-family: 'Orbitron', monospace;
             color: var(--text-secondary);
             font-size: 0.85rem;
@@ -268,94 +268,98 @@
             <a href="/live" class="nav-link live">◉ Live</a>
         </nav>
 
-        <!-- ===== PERFIL ===== -->
-        <div class="perfil-card">
-            <!-- Portada -->
-            <div class="perfil-portada" id="portadaContainer" onclick="cambiarPortada()">
-                <img id="portadaImg" src="" alt="Portada" style="display:none;" />
-                <div class="overlay-gradient"></div>
-                <button class="btn-cambiar-portada">✎ Cambiar portada</button>
-            </div>
-
-            <!-- Info -->
-            <div class="perfil-info">
-                <div class="perfil-avatar" id="avatarContainer" onclick="cambiarAvatar()">
-                    <span id="avatarEmoji">◈</span>
-                    <button class="btn-cambiar-foto">✎ Cambiar foto</button>
+        <!-- ============================================================ -->
+        <!-- ===== PERFIL (CON CLASES CORRECTAS PARA perfil.css) ===== -->
+        <!-- ============================================================ -->
+        <div class="perfil-container">
+            <div class="perfil-card">
+                <!-- Portada -->
+                <div class="perfil-portada" id="portadaContainer" onclick="cambiarPortada()">
+                    <img id="portadaImg" src="" alt="Portada" style="display:none;" />
+                    <div class="overlay-gradient"></div>
+                    <button class="btn-cambiar-portada">✎ Cambiar portada</button>
                 </div>
 
-                <div class="perfil-nombre-area">
-                    <div class="nombre-group">
-                        <div class="nombre" id="displayNombre">Explorador</div>
-                        <span class="verified-badge">✦ Verificado</span>
+                <!-- Info -->
+                <div class="perfil-info">
+                    <div class="perfil-avatar" id="avatarContainer" onclick="cambiarAvatar()">
+                        <span id="avatarEmoji">◈</span>
+                        <button class="btn-cambiar-foto">✎ Cambiar foto</button>
                     </div>
-                    <div>
-                        <div class="handle" id="displayHandle">@explorador</div>
-                        <button class="btn-editar" onclick="abrirModalEditar()">✎ Editar</button>
-                    </div>
-                </div>
 
-                <div class="perfil-bio" id="displayBio">⚡ Construyendo el futuro descentralizado en Sariel's</div>
+                    <div class="perfil-nombre-area">
+                        <div class="nombre-group">
+                            <span class="nombre" id="displayNombre">Explorador</span>
+                            <span class="verified-badge">✦ Verificado</span>
+                        </div>
+                        <div>
+                            <span class="handle" id="displayHandle">@explorador</span>
+                            <button class="btn-editar" onclick="abrirModalEditar()">✎ Editar</button>
+                        </div>
+                    </div>
 
-                <!-- Detalles -->
-                <div class="perfil-detalles" id="detallesContainer">
-                    <div class="detalle"><span class="icon">⊚</span> <span class="valor" id="displayEdad">24 años</span></div>
-                    <div class="detalle"><span class="icon">◈</span> <span class="valor" id="displayEstudio">Ingeniería</span></div>
-                    <div class="detalle"><span class="icon">♫</span> <span class="valor" id="displayMusica">Electronic · Jazz</span></div>
-                    <div class="detalle"><span class="icon">✈</span> <span class="valor" id="displayViajes">Viajero</span></div>
-                    <div class="detalle"><span class="icon">◉</span> <span class="valor" id="displayUbicacion">CDMX, México</span></div>
-                    <div class="detalle"><span class="icon">◊</span> <span class="valor" id="displayEstadoCivil">Soltera(o)</span></div>
-                </div>
+                    <div class="bio" id="displayBio">⚡ Construyendo el futuro descentralizado en Sariel's</div>
 
-                <!-- Estadísticas -->
-                <div class="perfil-stats">
-                    <div class="stat">
-                        <div class="numero" id="statTokens">0</div>
-                        <div class="label">Tokens</div>
+                    <!-- Detalles -->
+                    <div class="perfil-detalles" id="detallesContainer">
+                        <div class="detalle"><span class="icon">⊚</span> <span class="valor" id="displayEdad">24 años</span></div>
+                        <div class="detalle"><span class="icon">◈</span> <span class="valor" id="displayEstudio">Ingeniería</span></div>
+                        <div class="detalle"><span class="icon">♫</span> <span class="valor" id="displayMusica">Electronic · Jazz</span></div>
+                        <div class="detalle"><span class="icon">✈</span> <span class="valor" id="displayViajes">Viajero</span></div>
+                        <div class="detalle"><span class="icon">◉</span> <span class="valor" id="displayUbicacion">CDMX, México</span></div>
+                        <div class="detalle"><span class="icon">◊</span> <span class="valor" id="displayEstadoCivil">Soltera(o)</span></div>
                     </div>
-                    <div class="stat">
-                        <div class="numero" id="statContactos">0</div>
-                        <div class="label">Contactos</div>
-                    </div>
-                    <div class="stat">
-                        <div class="numero" id="statNFT">0</div>
-                        <div class="label">NFT</div>
-                    </div>
-                    <div class="stat">
-                        <div class="numero" id="statSeguidores">0</div>
-                        <div class="label">Seguidores</div>
-                    </div>
-                </div>
 
-                <!-- Huella Digital -->
-                <div class="huella-digital">
-                    <div class="header">
-                        <span class="titulo">◈ Huella Digital</span>
-                        <span class="nivel" id="huellaNivel">⚡ Alta</span>
+                    <!-- Estadísticas -->
+                    <div class="perfil-stats">
+                        <div class="stat">
+                            <div class="numero" id="statTokens">0</div>
+                            <div class="label">Tokens</div>
+                        </div>
+                        <div class="stat">
+                            <div class="numero" id="statContactos">0</div>
+                            <div class="label">Contactos</div>
+                        </div>
+                        <div class="stat">
+                            <div class="numero" id="statNFT">0</div>
+                            <div class="label">NFT</div>
+                        </div>
+                        <div class="stat">
+                            <div class="numero" id="statSeguidores">0</div>
+                            <div class="label">Seguidores</div>
+                        </div>
                     </div>
-                    <div class="barra">
-                        <div class="fill" id="huellaBarra" style="width:75%;"></div>
-                    </div>
-                    <div class="descripcion">
-                        <span class="etiqueta">Actividad en la red</span>
-                        <span class="valor" id="huellaDescripcion">75% · Contribuyente activo</span>
-                    </div>
-                </div>
 
-                <!-- Acciones -->
-                <div class="perfil-acciones">
-                    <button class="btn-accion success" onclick="bloquearUsuario()">⊘ Bloquear</button>
-                    <button class="btn-accion" onclick="showToast('Sugerencias cargadas')">✦ Sugerencias</button>
-                    <button class="btn-accion" onclick="showToast('Subiendo foto...')">◈ Subir foto</button>
+                    <!-- Huella Digital -->
+                    <div class="huella-digital">
+                        <div class="header">
+                            <span class="titulo">◈ Huella Digital</span>
+                            <span class="nivel" id="huellaNivel">⚡ Alta</span>
+                        </div>
+                        <div class="barra">
+                            <div class="fill" id="huellaBarra" style="width:75%;"></div>
+                        </div>
+                        <div class="descripcion">
+                            <span class="etiqueta">Actividad en la red</span>
+                            <span class="valor" id="huellaDescripcion">75% · Contribuyente activo</span>
+                        </div>
+                    </div>
+
+                    <!-- Acciones -->
+                    <div class="perfil-acciones">
+                        <button class="btn-accion danger" onclick="bloquearUsuario()">⊘ Bloquear</button>
+                        <button class="btn-accion" onclick="showToast('Sugerencias cargadas')">✦ Sugerencias</button>
+                        <button class="btn-accion success" onclick="showToast('Subiendo foto...')">◈ Subir foto</button>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- ===== TOKENS ===== -->
         <div class="tokens-section">
-            <div class="header">
+            <div class="section-header">
                 <h3>◈ Progreso</h3>
-                <span class="cantidad" id="tokenCantidad">0</span>
+                <span class="token-count" id="tokenCantidad">0</span>
             </div>
             <div class="token-bar">
                 <div class="bar">
@@ -363,26 +367,24 @@
                 </div>
                 <span class="text" id="tokenText">0/12</span>
             </div>
-            <div class="sub">Acumula <strong>12</strong> para canjear tu NFT</div>
+            <div class="token-info">Acumula <span class="highlight">12</span> para canjear tu NFT</div>
         </div>
 
         <!-- ===================================================== -->
-        <!-- ===== NUEVA SECCIÓN: PUBLICACIONES ===== -->
+        <!-- ===== PUBLICACIONES ===== -->
         <!-- ===================================================== -->
         <div class="publicaciones-section">
-            <div class="header">
+            <div class="section-header">
                 <h3>◈ Publicaciones</h3>
                 <button class="btn-subir" onclick="document.getElementById('subirArchivoInput').click()">⟡ Subir foto / video</button>
             </div>
             <input type="file" id="subirArchivoInput" accept="image/*,video/*" style="display:none;" onchange="subirArchivo(this)" />
 
-            <!-- Input para publicar texto -->
             <div class="publicar-input-area">
                 <input type="text" id="inputPublicarTexto" placeholder="Escribe algo para compartir..." />
                 <button class="btn-publicar-rapido" onclick="publicarTextoPerfil()">⟡ Publicar</button>
             </div>
 
-            <!-- Contenedor de publicaciones -->
             <div id="publicacionesContainer">
                 <!-- Las publicaciones se renderizan con JavaScript -->
             </div>
@@ -420,7 +422,7 @@
         </div>
 
         <!-- ============================================================ -->
-        <!-- ===== FOOTER UNIFICADO CON 4 ENLACES LEGALES ===== -->
+        <!-- ===== FOOTER ===== -->
         <!-- ============================================================ -->
         <footer class="footer">
             <span><span class="brand">◈ Sariel's</span> · Sabor al Paladar · WEB3</span>
@@ -497,14 +499,22 @@
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <script src="/app.js"></script>
     <script src="/features/perfil/perfil.js"></script>
-    
-    <!-- ===== INICIALIZACIÓN DE ESTRELLAS (ÚNICA FUNCIÓN QUE NO ESTÁ EN perfil.js) ===== -->
+
+    <!-- ===== INICIALIZACIÓN DE ESTRELLAS + RENDERIZADO ===== -->
     <script>
         // ================================================================
         // ESTRELLAS ANIMADAS DE FONDO
         // ================================================================
         document.addEventListener('DOMContentLoaded', function() {
             initStars();
+
+            // Renderizar perfil con datos guardados
+            if (typeof renderizarPerfil === 'function') {
+                renderizarPerfil();
+            }
+            if (typeof cargarPublicacionesPerfil === 'function') {
+                cargarPublicacionesPerfil();
+            }
         });
 
         function initStars() {
