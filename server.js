@@ -11,19 +11,16 @@ const PORT = process.env.PORT || 8080;
 // ================================================================
 app.use(cors());
 app.use(express.json());
-
-// Servir archivos estáticos desde la carpeta public/
 app.use(express.static('public'));
 
 // ================================================================
-// HEALTH CHECK (PARA RAILWAY) - ✅ AGREGADO
+// HEALTH CHECK
 // ================================================================
 app.get('/api/health', (req, res) => {
     res.status(200).json({
         status: 'healthy',
         timestamp: new Date().toISOString(),
-        uptime: process.uptime(),
-        port: PORT
+        uptime: process.uptime()
     });
 });
 
@@ -108,7 +105,7 @@ app.get('/actualizar-contrasena', (req, res) => {
 });
 
 // ================================================================
-// RUTAS LEGALES
+// ✅ RUTAS LEGALES (AGREGAR ESTAS)
 // ================================================================
 app.get('/terminos', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'terminos.html'));
