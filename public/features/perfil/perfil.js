@@ -1,11 +1,7 @@
 /* ================================================================
    PERFIL ULTRA MEGA PRO - SARIEL'S
-   Lógica premium conectada a Supabase vía Server (API)
    ================================================================ */
 
-// ================================================================
-// TOAST
-// ================================================================
 function showToast(msg, type = '') {
     let t = document.getElementById('toast');
     if (!t) {
@@ -23,24 +19,12 @@ function showToast(msg, type = '') {
     t._timeout = setTimeout(() => t.classList.remove('show'), 3500);
 }
 
-// ================================================================
-// CONFIGURACIÓN DE API (Ruta relativa para producción)
-// ================================================================
 const API_URL = '/api';
 
-// ================================================================
-// HEADERS DE AUTENTICACIÓN
-// ================================================================
 async function getAuthHeaders() {
     const headers = { 'Content-Type': 'application/json' };
-    try {
-        const token = localStorage.getItem('galleta_token');
-        if (token) {
-            headers['Authorization'] = `Bearer ${token}`;
-        }
-    } catch (e) {
-        console.warn('No se pudo obtener token:', e);
-    }
+    const token = localStorage.getItem('galleta_token');
+    if (token) headers['Authorization'] = `Bearer ${token}`;
     return headers;
 }
 
@@ -48,16 +32,10 @@ async function fetchWithAuth(url, options = {}) {
     const headers = await getAuthHeaders();
     return fetch(url, {
         ...options,
-        headers: {
-            ...headers,
-            ...(options.headers || {})
-        }
+        headers: { ...headers, ...(options.headers || {}) }
     });
 }
 
-// ================================================================
-// TABS
-// ================================================================
 function cambiarTab(tab) {
     document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
@@ -67,9 +45,6 @@ function cambiarTab(tab) {
     if (tabBtn) tabBtn.classList.add('active');
 }
 
-// ================================================================
-// CARGAR PERFIL DESDE API (Supabase) / localStorage
-// ================================================================
 async function cargarPerfil() {
     try {
         const response = await fetchWithAuth(`${API_URL}/perfil`);
@@ -84,7 +59,6 @@ async function cargarPerfil() {
         console.warn('Error cargando perfil desde API:', error);
     }
 
-    // Fallback: localStorage
     const perfil = JSON.parse(localStorage.getItem('sariels_perfil') || '{}');
     const tokens = parseInt(localStorage.getItem('sariels_tokens') || '0');
     const nfts = parseInt(localStorage.getItem('sariels_nft') === 'true' ? 1 : 0);
@@ -99,14 +73,8 @@ async function cargarPerfil() {
         seguidores: perfil.seguidores || 0,
         siguiendo: perfil.siguiendo || 0
     });
-
-    cargarPublicaciones();
-    cargarHistorial();
 }
 
-// ================================================================
-// ACTUALIZAR UI DEL PERFIL
-// ================================================================
 function actualizarUI(data) {
     const nombreEl = document.getElementById('perfilNombre');
     const handleEl = document.getElementById('perfilHandle');
@@ -120,8 +88,8 @@ function actualizarUI(data) {
     if (bioEl) bioEl.textContent = data.bio || 'Explorando el ecosistema Sariel\'s · WEB3 · Comunidad';
 
     if (avatarEl) {
-        if (data.avatar) {
-            avatarEl.innerHTML = `<img src="${data.avatar}" alt="Avatar" /><span class="edit-badge" onclick="editarAvatar()" title="Cambiar avatar">✎</span>`;
+        if (data.avatar_url) {
+            avatarEl.innerHTML = `<img src="${data.avatar_url}" alt="Avatar" /><span class="edit-badge" onclick="editarAvatar()" title="Cambiar avatar">✎</span>`;
         } else {
             avatarEl.innerHTML = `◈<span class="edit-badge" onclick="editarAvatar()" title="Cambiar avatar">✎</span>`;
         }
@@ -132,26 +100,10 @@ function actualizarUI(data) {
     const statSeguidores = document.getElementById('statSeguidores');
     const statSiguiendo = document.getElementById('statSiguiendo');
 
-    if (statTokens) statTokens.textContent = data.tokens || 0;
-    if (statNFTS) statNFTS.textContent = data.nfts || 0;
+    if (statTokens) statTokens.textContent = data.tokens_acumulados || 0;
+    if (statNFTS) statNFTS.textContent = 0;
     if (statSeguidores) statSeguidores.textContent = data.seguidores || 0;
     if (statSiguiendo) statSiguiendo.textContent = data.siguiendo || 0;
-
-    const tokenTotal = document.getElementById('tokenTotal');
-    const tokenDisponibles = document.getElementById('tokenDisponibles');
-    const tokenVendidos = document.getElementById('tokenVendidos');
-    const tokenNFTs = document.getElementById('tokenNFTs');
-
-    if (tokenTotal) tokenTotal.textContent = data.tokens || 0;
-    if (tokenDisponibles) tokenDisponibles.textContent = data.tokens || 0;
-    if (tokenVendidos) tokenVendidos.textContent = 0;
-    if (tokenNFTs) tokenNFTs.textContent = data.nfts || 0;
-
-    const progressFill = document.getElementById('progressFill');
-    const progressText = document.getElementById('progressText');
-    const progreso = Math.min(data.tokens || 0, 12);
-    if (progressFill) progressFill.style.width = `${(progreso / 12) * 100}%`;
-    if (progressText) progressText.textContent = `${progreso} / 12`;
 
     const editNombre = document.getElementById('editNombre');
     const editHandle = document.getElementById('editHandle');
@@ -161,96 +113,15 @@ function actualizarUI(data) {
     if (editNombre) editNombre.value = data.nombre || 'Explorador';
     if (editHandle) editHandle.value = '@' + (data.handle || 'explorador');
     if (editBio) editBio.value = data.bio || 'Explorando el ecosistema Sariel\'s · WEB3 · Comunidad';
-    if (editAvatar) editAvatar.value = data.avatar || '';
+    if (editAvatar) editAvatar.value = data.avatar_url || '';
 }
 
-// ================================================================
-// CARGAR PUBLICACIONES DEL USUARIO
-// ================================================================
-function cargarPublicaciones() {
-    const posts = JSON.parse(localStorage.getItem('sariels_muro_posts') || '[]');
-    const perfil = JSON.parse(localStorage.getItem('sariels_perfil') || '{}');
-    const misPosts = posts.filter(p => p.autor === perfil.nombre);
-
-    const container = document.getElementById('postsList');
-    const count = document.getElementById('postsCount');
-
-    if (count) count.textContent = misPosts.length;
-
-    if (!container) return;
-
-    if (misPosts.length === 0) {
-        container.innerHTML = `
-            <div class="empty-state">
-                <span class="icon">◈</span>
-                <h4>Sin publicaciones</h4>
-                <p>Publica algo en el Muro</p>
-            </div>
-        `;
-        return;
-    }
-
-    container.innerHTML = misPosts.map(p => `
-        <div class="activity-item">
-            <div class="icon">◈</div>
-            <div class="content">
-                <div class="text">
-                    <strong>${p.autor || 'Explorador'}</strong> ${p.contenido || ''}
-                </div>
-                <div class="fecha">${p.fecha || 'Hace un momento'}</div>
-            </div>
-            <button class="btn btn-outline btn-sm" onclick="irAPublicacion(${p.id})">Ver</button>
-        </div>
-    `).join('');
-}
-
-// ================================================================
-// CARGAR HISTORIAL
-// ================================================================
-function cargarHistorial() {
-    const historial = JSON.parse(localStorage.getItem('sariels_historial_compras') || '[]');
-    const container = document.getElementById('historialList');
-    const count = document.getElementById('historialCount');
-
-    if (count) count.textContent = historial.length;
-
-    if (!container) return;
-
-    if (historial.length === 0) {
-        container.innerHTML = `
-            <div class="empty-state">
-                <span class="icon">◈</span>
-                <h4>Sin transacciones</h4>
-                <p>Compra domos para acumular tokens</p>
-            </div>
-        `;
-        return;
-    }
-
-    container.innerHTML = historial.slice(-10).reverse().map(h => `
-        <div class="activity-item">
-            <div class="icon">🛒</div>
-            <div class="content">
-                <div class="text">
-                    <strong>${h.cantidad || 0} tokens</strong> · ${h.tipo || 'compra'}
-                    <span style="font-size:0.7rem;color:var(--text-muted);margin-left:4px;">${h.precio ? h.precio + ' MXN c/u' : ''}</span>
-                </div>
-                <div class="fecha">${h.fecha ? new Date(h.fecha).toLocaleDateString() : 'Hace un momento'}</div>
-            </div>
-            ${h.total ? `<span style="font-size:0.65rem;color:var(--gold);">${h.total} MXN</span>` : ''}
-        </div>
-    `).join('');
-}
-
-// ================================================================
-// GUARDAR PERFIL VÍA API
-// ================================================================
 async function guardarPerfil() {
     const perfil = {
         nombre: document.getElementById('editNombre').value.trim() || 'Explorador',
         handle: document.getElementById('editHandle').value.trim().replace('@', '') || 'explorador',
         bio: document.getElementById('editBio').value.trim() || 'Explorando el ecosistema Sariel\'s · WEB3 · Comunidad',
-        avatar: document.getElementById('editAvatar').value.trim() || null
+        avatar_url: document.getElementById('editAvatar').value.trim() || null
     };
 
     try {
@@ -269,15 +140,11 @@ async function guardarPerfil() {
         console.warn('Error guardando perfil vía API:', error);
     }
 
-    // Fallback: localStorage
     localStorage.setItem('sariels_perfil', JSON.stringify(perfil));
     cargarPerfil();
     showToast('✅ Perfil guardado correctamente');
 }
 
-// ================================================================
-// EDITAR AVATAR
-// ================================================================
 function editarAvatar() {
     const url = prompt('◈ Ingresa la URL de tu avatar:');
     if (url && url.trim()) {
@@ -286,9 +153,6 @@ function editarAvatar() {
     }
 }
 
-// ================================================================
-// EDITAR PERFIL (cambia a la pestaña de configuración)
-// ================================================================
 function editarPerfil() {
     cambiarTab('config');
     setTimeout(() => {
@@ -297,9 +161,6 @@ function editarPerfil() {
     }, 300);
 }
 
-// ================================================================
-// COMPARTIR PERFIL
-// ================================================================
 function compartirPerfil() {
     const perfil = JSON.parse(localStorage.getItem('sariels_perfil') || '{}');
     const handle = perfil.handle || 'explorador';
@@ -307,11 +168,7 @@ function compartirPerfil() {
     const texto = `◈ Perfil de ${perfil.nombre || 'Explorador'} en Sariel's\n◈ ${url}`;
 
     if (navigator.share) {
-        navigator.share({
-            title: `Perfil de ${perfil.nombre || 'Explorador'}`,
-            text: texto,
-            url: url
-        }).catch(() => {});
+        navigator.share({ title: `Perfil de ${perfil.nombre || 'Explorador'}`, text: texto, url: url }).catch(() => {});
     } else {
         navigator.clipboard.writeText(texto).then(() => {
             showToast('◈ Copiado al portapapeles');
@@ -321,101 +178,20 @@ function compartirPerfil() {
     }
 }
 
-// ================================================================
-// IR A PUBLICACIÓN
-// ================================================================
-function irAPublicacion(id) {
-    window.location.href = `/features/muro/muro.html?post=${id}`;
-}
-
 function irAMuro() {
     window.location.href = '/features/muro/muro.html';
 }
 
-// ================================================================
-// WALLET (con Supabase)
-// ================================================================
-async function conectarWallet() {
-    if (typeof window.app !== 'undefined' && window.app.supabase) {
-        try {
-            const { data, error } = await window.app.supabase.auth.signInWithWeb3({
-                chain: 'ethereum',
-                statement: 'Inicia sesión en Sariel\'s Ecosystem'
-            });
-            if (error) throw error;
-            showToast('✅ Wallet conectada exitosamente');
-            actualizarWalletUI();
-        } catch (error) {
-            console.error('Error conectando wallet:', error);
-            showToast('❌ Error al conectar wallet', 'error');
-        }
-    } else {
-        showToast('⚠️ Conecta tu wallet desde el inicio', 'warning');
-        window.location.href = '/';
-    }
-}
+// Inicialización
+document.addEventListener('DOMContentLoaded', function() {
+    cargarPerfil();
+});
 
-async function desconectarWallet() {
-    if (typeof window.app !== 'undefined' && window.app.supabase) {
-        await window.app.supabase.auth.signOut();
-        showToast('🔌 Wallet desconectada');
-        actualizarWalletUI();
-    }
-}
-
-function actualizarWalletUI() {
-    const session = localStorage.getItem('galleta_token');
-    const display = document.getElementById('walletDisplay');
-    const disconnect = document.getElementById('btnDisconnect');
-
-    if (display) {
-        if (session) {
-            display.textContent = '✅ Conectada';
-            display.style.color = 'var(--success)';
-        } else {
-            display.textContent = 'No conectada';
-            display.style.color = 'var(--text-muted)';
-        }
-    }
-
-    if (disconnect) {
-        disconnect.style.display = session ? 'inline-flex' : 'none';
-    }
-}
-
-// ================================================================
-// CERRAR SESIÓN
-// ================================================================
-function cerrarSesion() {
-    if (confirm('¿Estás seguro de cerrar sesión?')) {
-        localStorage.removeItem('galleta_token');
-        localStorage.removeItem('sariels_wallet');
-        if (typeof window.app !== 'undefined' && window.app.supabase) {
-            window.app.supabase.auth.signOut();
-        }
-        showToast('🔌 Sesión cerrada');
-        actualizarWalletUI();
-    }
-}
-
-// ================================================================
-// EXPONER FUNCIONES GLOBALES
-// ================================================================
 window.cambiarTab = cambiarTab;
 window.cargarPerfil = cargarPerfil;
 window.guardarPerfil = guardarPerfil;
 window.editarAvatar = editarAvatar;
 window.editarPerfil = editarPerfil;
 window.compartirPerfil = compartirPerfil;
-window.irAPublicacion = irAPublicacion;
 window.irAMuro = irAMuro;
-window.conectarWallet = conectarWallet;
-window.desconectarWallet = desconectarWallet;
-window.cerrarSesion = cerrarSesion;
 window.showToast = showToast;
-window.actualizarWalletUI = actualizarWalletUI;
-window.cargarPublicaciones = cargarPublicaciones;
-window.cargarHistorial = cargarHistorial;
-window.actualizarUI = actualizarUI;
-
-console.log('◈ perfil.js cargado correctamente conectado a API');
