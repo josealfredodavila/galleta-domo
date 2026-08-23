@@ -29,9 +29,183 @@
 }
 
 /* ================================================================
-   BURBUJAS DE MENSAJE
+   CHAT PANEL
    ================================================================ */
+.chat-panel {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    min-height: 520px;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+}
 
+/* ================================================================
+   CONVERSACIONES
+   ================================================================ */
+.conversaciones {
+    border-right: 1px solid var(--glass-border);
+    background: rgba(0, 0, 0, 0.2);
+    overflow-y: auto;
+    max-height: 600px;
+}
+
+.conversaciones .header-conv {
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--glass-border);
+    font-family: 'Orbitron', monospace;
+    color: var(--gold);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.conversaciones .header-conv .btn-nuevo {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1rem;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 8px;
+    transition: var(--transition);
+}
+
+.conversaciones .header-conv .btn-nuevo:hover {
+    background: rgba(212, 175, 55, 0.1);
+    color: var(--gold);
+}
+
+.conv-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    border-bottom: 1px solid rgba(212, 175, 55, 0.04);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.conv-item:hover {
+    background: rgba(212, 175, 55, 0.05);
+}
+
+.conv-item.active {
+    background: rgba(212, 175, 55, 0.10);
+    border-left: 3px solid var(--gold);
+}
+
+.conv-item .conv-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--green-deep), var(--gold));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    color: white;
+    font-size: 1rem;
+    flex-shrink: 0;
+    font-family: 'Orbitron', monospace;
+}
+
+.conv-item .conv-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.conv-item .conv-info .conv-nombre {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.85rem;
+}
+
+.conv-item .conv-info .conv-msg {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.conv-item .conv-meta {
+    text-align: right;
+}
+
+.conv-item .conv-meta .conv-hora {
+    font-size: 0.6rem;
+    color: var(--text-muted);
+}
+
+.conv-item .conv-meta .conv-badge {
+    background: var(--gold);
+    color: var(--space);
+    font-size: 0.55rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-family: 'Orbitron', monospace;
+}
+
+/* ================================================================
+   CHAT AREA
+   ================================================================ */
+.chat-area {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.chat-area .chat-header {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--glass-border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.chat-area .chat-header .chat-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--green-deep), var(--gold));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    color: white;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+    font-family: 'Orbitron', monospace;
+}
+
+.chat-area .chat-header .chat-info {
+    flex: 1;
+}
+
+.chat-area .chat-header .chat-nombre {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.95rem;
+}
+
+.chat-area .chat-header .chat-estado {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+}
+
+.chat-area .chat-header .chat-estado.online {
+    color: var(--success);
+}
+
+/* ================================================================
+   CHAT MESSAGES
+   ================================================================ */
 .chat-messages {
     flex: 1;
     padding: 16px 20px;
@@ -259,7 +433,86 @@
     50% { opacity: 0.4; }
 }
 
-/* ===== MODO CLARO ===== */
+/* ================================================================
+   CHAT INPUT
+   ================================================================ */
+.chat-input {
+    display: flex;
+    gap: 8px;
+    padding: 12px 16px;
+    border-top: 1px solid var(--glass-border);
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.chat-input input {
+    flex: 1;
+    padding: 10px 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    border-radius: 30px;
+    color: var(--text-primary);
+    outline: none;
+    transition: var(--transition);
+}
+
+.chat-input input:focus {
+    border-color: var(--gold);
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 0 30px rgba(212, 175, 55, 0.05);
+}
+
+.chat-input .btn-enviar {
+    background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+    color: var(--space);
+    border: none;
+    padding: 10px 20px;
+    border-radius: 30px;
+    font-family: 'Orbitron', monospace;
+    font-weight: 700;
+    font-size: 0.65rem;
+    cursor: pointer;
+    transition: var(--transition);
+    letter-spacing: 0.5px;
+}
+
+.chat-input .btn-enviar:hover {
+    transform: scale(1.02);
+    box-shadow: var(--shadow-gold);
+}
+
+/* ================================================================
+   EMPTY CHAT
+   ================================================================ */
+.empty-chat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    color: var(--text-muted);
+    text-align: center;
+    padding: 40px 20px;
+}
+
+.empty-chat .icon {
+    font-size: 2.5rem;
+    display: block;
+    margin-bottom: 12px;
+    font-family: 'Orbitron', monospace;
+    color: var(--gold);
+    opacity: 0.4;
+}
+
+.empty-chat h3 {
+    font-family: 'Orbitron', monospace;
+    color: var(--text-secondary);
+    font-size: 1rem;
+    font-weight: 400;
+}
+
+/* ================================================================
+   MODO CLARO
+   ================================================================ */
 body.modo-claro .msg-wrapper.recibido .burbuja {
     background: rgba(0, 0, 0, 0.05);
     color: #0a1a2a;
@@ -282,8 +535,10 @@ body.modo-claro .msg-wrapper.recibido .avatar .tooltip::after {
 /* ================================================================
    RESPONSIVE
    ================================================================ */
-
 @media (max-width: 768px) {
+    .chat-panel { grid-template-columns: 1fr; min-height: auto; }
+    .conversaciones { border-right: none; border-bottom: 1px solid var(--glass-border); max-height: 180px; }
+    .chat-area { min-height: 400px; }
     .chat-messages { padding: 12px 14px; max-height: 300px; }
     .msg-wrapper.enviado .burbuja,
     .msg-wrapper.recibido .burbuja {
@@ -316,4 +571,7 @@ body.modo-claro .msg-wrapper.recibido .avatar .tooltip::after {
     .msg-wrapper.recibido .meta {
         margin-left: 34px;
     }
+    .chat-input { flex-wrap: wrap; }
+    .chat-input input { flex: 1 1 100%; }
+    .chat-input .btn-enviar { flex: 1; }
 }
