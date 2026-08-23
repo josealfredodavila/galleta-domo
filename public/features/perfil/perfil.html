@@ -3,13 +3,915 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Perfil · Sariel's</title>
+    <title>◈ Perfil · Sariel's</title>
     <link rel="stylesheet" href="/styles.css" />
     <link rel="stylesheet" href="/features/perfil/perfil.css" />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+    <style>
+        /* ================================================================
+           PERFIL ULTRA MEGA PRO - SARIEL'S
+           ================================================================ */
+
+        :root {
+            --gold: #D4AF37;
+            --gold-dark: #b8923a;
+            --gold-light: #e8c84a;
+            --gold-bright: #f0d060;
+            --green-deep: #0F2D1A;
+            --green-mid: #1a4a2a;
+            --green-bright: #2a6a3a;
+            --space: #05080f;
+            --text-primary: #f0f4f8;
+            --text-secondary: #c0d8e8;
+            --text-muted: #8aa8b8;
+            --glass-bg: rgba(15, 45, 26, 0.55);
+            --glass-border: rgba(212, 175, 55, 0.15);
+            --shadow-gold: 0 8px 32px rgba(212, 175, 55, 0.25);
+            --shadow-gold-strong: 0 0 60px rgba(212, 175, 55, 0.15);
+            --radius: 16px;
+            --radius-xl: 24px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-slow: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            --success: #00d68f;
+            --danger: #ff3366;
+            --warning: #f7d44a;
+            --cyan: #00e5ff;
+            --purple: #a855f7;
+            --pink: #ec4899;
+            --bronze: #CD7F32;
+            --bronze-light: #D4A574;
+            --bronze-dark: #8B5A2B;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: var(--space);
+            color: var(--text-primary);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            min-height: 100vh;
+            line-height: 1.6;
+            background-image: 
+                radial-gradient(ellipse at 20% 50%, rgba(26, 74, 42, 0.4) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 50%, rgba(212, 175, 55, 0.08) 0%, transparent 60%);
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* ===== FONDO ESTELAR ===== */
+        #stars-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+            will-change: transform;
+        }
+
+        .nebula {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(120px);
+            opacity: 0.12;
+            pointer-events: none;
+            z-index: 0;
+            animation: nebula-drift 25s ease-in-out infinite alternate;
+            will-change: transform;
+        }
+        .nebula-1 { width: 700px; height: 700px; background: var(--green-bright); top: -15%; right: -15%; }
+        .nebula-2 { width: 600px; height: 600px; background: var(--gold-light); bottom: -15%; left: -15%; animation-delay: -8s; opacity: 0.06; }
+        .nebula-3 { width: 500px; height: 500px; background: var(--purple); top: 50%; left: 50%; transform: translate(-50%, -50%); animation-delay: -15s; opacity: 0.04; }
+
+        @keyframes nebula-drift {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(40px, -30px) scale(1.15); }
+        }
+
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: var(--space); }
+        ::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 2px; }
+
+        /* ===== APP ===== */
+        .app {
+            position: relative;
+            z-index: 1;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 16px 20px 30px;
+            contain: layout style;
+        }
+
+        /* ===== HEADER ===== */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0 14px;
+            border-bottom: 1px solid var(--glass-border);
+            flex-wrap: wrap;
+            gap: 10px;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(5, 8, 15, 0.92);
+            border-radius: var(--radius) var(--radius) 0 0;
+            contain: layout style;
+            transition: background 0.5s ease, border-color 0.5s ease;
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            transition: var(--transition);
+        }
+        .logo:hover { opacity: 0.85; }
+        .logo-hex {
+            font-size: 1.8rem;
+            color: var(--gold);
+            font-weight: 800;
+            font-family: 'Orbitron', monospace;
+            text-shadow: 0 0 30px rgba(212, 175, 55, 0.3);
+            animation: glow-pulse 3s ease-in-out infinite;
+            will-change: text-shadow;
+        }
+        @keyframes glow-pulse {
+            0%, 100% { text-shadow: 0 0 30px rgba(212, 175, 55, 0.3); }
+            50% { text-shadow: 0 0 60px rgba(212, 175, 55, 0.6); }
+        }
+        .logo-text {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: 2px;
+        }
+        .logo-text span { color: var(--gold); }
+        .logo-badge {
+            font-size: 0.45rem;
+            background: linear-gradient(135deg, var(--gold), var(--gold-light));
+            color: var(--space);
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .network-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.6rem;
+            color: var(--gold);
+            background: rgba(212, 175, 55, 0.1);
+            padding: 4px 12px;
+            border-radius: 20px;
+            border: 1px solid rgba(212, 175, 55, 0.15);
+        }
+        .network-badge .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--success);
+            animation: pulse-dot 2s infinite;
+            will-change: transform, opacity;
+        }
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.3; transform: scale(0.8); }
+        }
+
+        /* ===== NAVEGACIÓN ===== */
+        .main-nav {
+            display: flex;
+            gap: 4px;
+            background: rgba(15, 45, 26, 0.3);
+            border-radius: var(--radius);
+            padding: 4px;
+            border: 1px solid var(--glass-border);
+            margin: 16px 0 20px;
+            overflow-x: auto;
+            flex-wrap: nowrap;
+            -webkit-overflow-scrolling: touch;
+            contain: layout style;
+            transition: background 0.5s ease, border-color 0.5s ease;
+        }
+        .main-nav .nav-link {
+            padding: 8px 16px;
+            border-radius: 12px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.7rem;
+            font-weight: 500;
+            transition: var(--transition);
+            white-space: nowrap;
+            font-family: 'Inter', sans-serif;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            position: relative;
+        }
+        .main-nav .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: 2px;
+            left: 50%;
+            width: 0;
+            height: 2px;
+            background: var(--gold);
+            transition: var(--transition);
+            transform: translateX(-50%);
+            border-radius: 2px;
+        }
+        .main-nav .nav-link:hover::after,
+        .main-nav .nav-link.active::after {
+            width: 60%;
+        }
+        .main-nav .nav-link:hover {
+            color: var(--text-primary);
+            background: rgba(212, 175, 55, 0.05);
+        }
+        .main-nav .nav-link.active {
+            background: rgba(212, 175, 55, 0.12);
+            color: var(--gold);
+        }
+        .main-nav .nav-link.live {
+            color: var(--danger);
+        }
+        .main-nav .nav-link.live:hover {
+            background: rgba(255, 51, 102, 0.08);
+        }
+
+        /* ================================================================
+           PERFIL CONTAINER
+           ================================================================ */
+        .perfil-container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        /* ===== HEADER DEL PERFIL ===== */
+        .perfil-header {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-xl);
+            padding: 24px 28px;
+            margin-bottom: 24px;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            transition: var(--transition-slow);
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            flex-wrap: wrap;
+            position: relative;
+            overflow: hidden;
+        }
+        .perfil-header::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(135deg, var(--gold), var(--green-deep), var(--gold));
+            background-size: 300% 300%;
+            border-radius: var(--radius-xl);
+            z-index: -1;
+            opacity: 0.1;
+            animation: border-flow 6s ease-in-out infinite;
+        }
+        @keyframes border-flow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .perfil-header:hover {
+            border-color: rgba(212, 175, 55, 0.25);
+            box-shadow: var(--shadow-gold);
+        }
+
+        .perfil-header .avatar-container {
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .perfil-header .avatar {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--green-deep), var(--gold));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.4rem;
+            font-weight: 700;
+            color: white;
+            overflow: hidden;
+            border: 3px solid var(--gold);
+            box-shadow: 0 0 40px rgba(212, 175, 55, 0.15);
+            transition: var(--transition);
+            font-family: 'Orbitron', monospace;
+        }
+        .perfil-header .avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .perfil-header .avatar .edit-badge {
+            position: absolute;
+            bottom: 4px;
+            right: 4px;
+            background: var(--gold);
+            border-radius: 50%;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.65rem;
+            color: var(--space);
+            border: 2px solid var(--space);
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+        }
+        .perfil-header .avatar .edit-badge:hover {
+            transform: scale(1.1);
+        }
+
+        .perfil-header .info {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .perfil-header .info .nombre {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.4rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--gold), var(--text-primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .perfil-header .info .nombre .verified {
+            font-size: 0.5rem;
+            background: rgba(212, 175, 55, 0.15);
+            color: var(--gold);
+            padding: 2px 12px;
+            border-radius: 12px;
+            font-family: 'Orbitron', monospace;
+            border: 1px solid rgba(212, 175, 55, 0.1);
+            -webkit-text-fill-color: var(--gold);
+        }
+
+        .perfil-header .info .handle {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            letter-spacing: 0.5px;
+        }
+
+        .perfil-header .info .bio {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-top: 6px;
+            max-width: 500px;
+            line-height: 1.5;
+        }
+
+        .perfil-header .info .badges {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+        .perfil-header .info .badges .badge {
+            font-size: 0.55rem;
+            padding: 3px 14px;
+            border-radius: 20px;
+            font-family: 'Orbitron', monospace;
+            border: 1px solid var(--glass-border);
+            color: var(--text-muted);
+            background: rgba(255, 255, 255, 0.03);
+        }
+        .perfil-header .info .badges .badge.gold {
+            border-color: var(--gold);
+            color: var(--gold);
+            background: rgba(212, 175, 55, 0.05);
+        }
+        .perfil-header .info .badges .badge.success {
+            border-color: var(--success);
+            color: var(--success);
+            background: rgba(0, 214, 143, 0.05);
+        }
+
+        .perfil-header .stats {
+            display: flex;
+            gap: 24px;
+            flex-wrap: wrap;
+            margin-left: auto;
+        }
+        .perfil-header .stats .stat {
+            text-align: center;
+        }
+        .perfil-header .stats .stat .number {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--gold);
+            text-shadow: 0 0 20px rgba(212, 175, 55, 0.05);
+        }
+        .perfil-header .stats .stat .label {
+            font-size: 0.55rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-family: 'Orbitron', monospace;
+        }
+
+        .perfil-header .acciones {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-left: 10px;
+        }
+
+        /* ===== BOTONES ===== */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 20px;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: var(--transition);
+            text-decoration: none;
+            font-family: 'Inter', sans-serif;
+        }
+        .btn-gold {
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            color: var(--space);
+            box-shadow: 0 4px 20px rgba(212, 175, 55, 0.2);
+        }
+        .btn-gold:hover { transform: translateY(-2px); box-shadow: var(--shadow-gold); }
+        .btn-gold:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; }
+        .btn-outline {
+            background: transparent;
+            color: var(--text-secondary);
+            border: 1px solid var(--glass-border);
+        }
+        .btn-outline:hover { border-color: var(--gold); color: var(--gold); box-shadow: 0 0 20px rgba(212, 175, 55, 0.1); }
+        .btn-sm { padding: 4px 12px; font-size: 0.65rem; }
+        .btn-success {
+            background: linear-gradient(135deg, var(--success), #00a876);
+            color: var(--space);
+            box-shadow: 0 4px 20px rgba(0, 214, 143, 0.2);
+        }
+        .btn-success:hover { transform: translateY(-2px); box-shadow: 0 0 30px rgba(0, 214, 143, 0.3); }
+        .btn-danger {
+            background: rgba(255, 51, 102, 0.1);
+            color: var(--danger);
+            border: 1px solid rgba(255, 51, 102, 0.2);
+        }
+        .btn-danger:hover { background: rgba(255, 51, 102, 0.2); }
+        .btn-warning {
+            background: rgba(247, 212, 74, 0.1);
+            color: var(--warning);
+            border: 1px solid rgba(247, 212, 74, 0.2);
+        }
+        .btn-warning:hover { background: rgba(247, 212, 74, 0.2); }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--green-deep), var(--green-mid));
+            color: var(--gold);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+        }
+        .btn-primary:hover { background: linear-gradient(135deg, var(--green-mid), var(--green-bright)); box-shadow: 0 0 30px rgba(15, 45, 26, 0.3); }
+
+        /* ===== TABS ===== */
+        .perfil-tabs {
+            display: flex;
+            gap: 4px;
+            background: var(--glass-bg);
+            border-radius: var(--radius);
+            padding: 4px;
+            border: 1px solid var(--glass-border);
+            margin-bottom: 20px;
+            overflow-x: auto;
+        }
+        .perfil-tabs .tab-btn {
+            padding: 10px 20px;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.7rem;
+            font-weight: 600;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: var(--transition);
+            white-space: nowrap;
+        }
+        .perfil-tabs .tab-btn:hover {
+            color: var(--text-primary);
+            background: rgba(212, 175, 55, 0.05);
+        }
+        .perfil-tabs .tab-btn.active {
+            background: rgba(212, 175, 55, 0.12);
+            color: var(--gold);
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.05);
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ===== PANELES ===== */
+        .panel {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            transition: var(--transition);
+            margin-bottom: 16px;
+        }
+        .panel:hover {
+            border-color: rgba(212, 175, 55, 0.2);
+            box-shadow: var(--shadow-gold);
+        }
+        .panel-header {
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(212, 175, 55, 0.03);
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .panel-header h3 {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--gold);
+        }
+        .panel-badge {
+            font-size: 0.6rem;
+            background: rgba(212, 175, 55, 0.12);
+            color: var(--gold);
+            padding: 2px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+            text-transform: uppercase;
+            border: 1px solid rgba(212, 175, 55, 0.08);
+        }
+        .panel-body {
+            padding: 18px;
+        }
+
+        /* ===== ACTIVIDADES ===== */
+        .activity-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.04);
+            transition: var(--transition);
+        }
+        .activity-item:hover {
+            background: rgba(255, 255, 255, 0.02);
+            padding-left: 8px;
+            border-radius: 8px;
+        }
+        .activity-item .icon {
+            font-size: 1.2rem;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: rgba(212, 175, 55, 0.05);
+            flex-shrink: 0;
+        }
+        .activity-item .content {
+            flex: 1;
+        }
+        .activity-item .content .text {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+        .activity-item .content .text strong {
+            color: var(--text-primary);
+        }
+        .activity-item .content .fecha {
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        /* ===== TOKENS ===== */
+        .token-status {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 12px;
+        }
+        .token-status .item {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 14px;
+            text-align: center;
+            transition: var(--transition);
+        }
+        .token-status .item:hover {
+            border-color: var(--gold);
+            transform: translateY(-2px);
+        }
+        .token-status .item .value {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--gold);
+        }
+        .token-status .item .label {
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-family: 'Orbitron', monospace;
+        }
+
+        .progress-bar-container {
+            margin: 12px 0;
+        }
+        .progress-bar-container .bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(212, 175, 55, 0.08);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .progress-bar-container .bar .fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--gold-dark), var(--gold), var(--gold-light));
+            border-radius: 3px;
+            transition: width 0.6s ease;
+        }
+        .progress-bar-container .label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        /* ===== CONFIGURACIÓN ===== */
+        .config-group {
+            margin-bottom: 16px;
+        }
+        .config-group label {
+            display: block;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+            font-weight: 500;
+            letter-spacing: 0.3px;
+        }
+        .config-group input,
+        .config-group textarea,
+        .config-group select {
+            width: 100%;
+            padding: 10px 14px;
+            background: rgba(0, 0, 0, 0.25);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            outline: none;
+            transition: var(--transition);
+            font-family: 'Inter', sans-serif;
+        }
+        .config-group input:focus,
+        .config-group textarea:focus,
+        .config-group select:focus {
+            border-color: var(--gold);
+            box-shadow: 0 0 30px rgba(212, 175, 55, 0.05);
+            background: rgba(0, 0, 0, 0.35);
+        }
+        .config-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        .config-group .hint {
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        /* ===== EMPTY STATE ===== */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-muted);
+        }
+        .empty-state .icon {
+            font-size: 2.5rem;
+            display: block;
+            margin-bottom: 12px;
+            font-family: 'Orbitron', monospace;
+            color: var(--gold);
+            opacity: 0.3;
+        }
+        .empty-state h4 {
+            font-family: 'Orbitron', monospace;
+            color: var(--text-secondary);
+            font-size: 1rem;
+            font-weight: 400;
+            letter-spacing: 0.5px;
+        }
+        .empty-state p {
+            font-size: 0.8rem;
+        }
+
+        /* ===== TOAST ===== */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: var(--green-deep);
+            border: 1px solid var(--gold);
+            color: var(--gold);
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            box-shadow: var(--shadow-gold-strong);
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.4s ease;
+            z-index: 9999;
+            max-width: 400px;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.error { border-color: var(--danger); color: var(--danger); }
+        .toast.warning { border-color: var(--warning); color: var(--warning); }
+
+        /* ===== MODO CLARO ===== */
+        body.modo-claro .perfil-header {
+            background: rgba(255, 255, 255, 0.7);
+        }
+        body.modo-claro .panel {
+            background: rgba(255, 255, 255, 0.7);
+        }
+        body.modo-claro .perfil-tabs {
+            background: rgba(255, 255, 255, 0.5);
+        }
+        body.modo-claro .config-group input,
+        body.modo-claro .config-group textarea,
+        body.modo-claro .config-group select {
+            background: rgba(0, 0, 0, 0.04);
+            color: #0a1a2a;
+        }
+        body.modo-claro .activity-item .content .text {
+            color: #2a4a5a;
+        }
+        body.modo-claro .activity-item .content .text strong {
+            color: #0a1a2a;
+        }
+        body.modo-claro .perfil-header .info .nombre {
+            background: linear-gradient(135deg, var(--gold-dark), #0a1a2a);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        body.modo-claro .toast {
+            background: rgba(255, 255, 255, 0.9);
+            color: #0a1a2a;
+        }
+
+        /* ===== FOOTER ===== */
+        .footer {
+            margin-top: 30px;
+            padding-top: 16px;
+            border-top: 1px solid var(--glass-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            padding-bottom: 8px;
+            letter-spacing: 0.3px;
+        }
+        .footer .brand { color: var(--gold); font-weight: 600; letter-spacing: 1px; }
+        .footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
+        .footer-links a { color: var(--text-muted); text-decoration: none; transition: var(--transition); }
+        .footer-links a:hover { color: var(--gold); }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .app { padding: 12px 14px; }
+            .perfil-header {
+                flex-direction: column;
+                text-align: center;
+                padding: 20px;
+            }
+            .perfil-header .stats {
+                margin-left: 0;
+                justify-content: center;
+                width: 100%;
+            }
+            .perfil-header .acciones {
+                margin-left: 0;
+                justify-content: center;
+                width: 100%;
+            }
+            .perfil-header .info .bio {
+                margin: 6px auto 0;
+            }
+            .perfil-header .info .badges {
+                justify-content: center;
+            }
+            .perfil-tabs .tab-btn {
+                font-size: 0.6rem;
+                padding: 8px 14px;
+            }
+            .token-status {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .main-nav .nav-link { font-size: 0.6rem; padding: 6px 10px; }
+            .header .logo-text { font-size: 1rem; }
+            .header .logo-hex { font-size: 1.4rem; }
+        }
+
+        @media (max-width: 480px) {
+            .perfil-header .avatar {
+                width: 70px;
+                height: 70px;
+                font-size: 1.8rem;
+            }
+            .perfil-header .info .nombre {
+                font-size: 1.1rem;
+            }
+            .perfil-header .stats .stat .number {
+                font-size: 1rem;
+            }
+            .perfil-header .stats {
+                gap: 16px;
+            }
+            .token-status {
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+            }
+            .token-status .item {
+                padding: 10px;
+            }
+            .token-status .item .value {
+                font-size: 1rem;
+            }
+            .perfil-tabs .tab-btn {
+                font-size: 0.55rem;
+                padding: 6px 10px;
+            }
+            .perfil-header .avatar .edit-badge {
+                width: 22px;
+                height: 22px;
+                font-size: 0.5rem;
+            }
+            .main-nav .nav-link { font-size: 0.55rem; padding: 4px 8px; }
+        }
+    </style>
 </head>
 <body>
 
+    <!-- ===== FONDO ESTELAR ===== -->
     <canvas id="stars-canvas"></canvas>
     <div class="nebula nebula-1"></div>
     <div class="nebula nebula-2"></div>
@@ -17,172 +919,235 @@
 
     <div class="app">
 
-        <!-- HEADER -->
+        <!-- ===== HEADER ===== -->
         <header class="header">
             <a href="/" class="logo">
+                <span class="logo-hex">◈</span>
                 <span class="logo-text">Sariel<span>'s</span></span>
-                <span class="logo-badge">WEB3</span>
+                <span class="logo-badge">✦ WEB3</span>
             </a>
             <div class="header-actions">
                 <span class="network-badge"><span class="dot"></span> Polygon</span>
             </div>
         </header>
 
-        <!-- NAV -->
+        <!-- ===== NAVEGACIÓN ===== -->
         <nav class="main-nav">
-            <a href="/" class="nav-link">Inicio</a>
-            <a href="/features/muro/muro.html" class="nav-link">Muro</a>
-            <a href="/features/perfil/perfil.html" class="nav-link active">Perfil</a>
-            <a href="/features/mensajes/contactos.html" class="nav-link">Contactos</a>
-            <a href="/features/live/live.html" class="nav-link live">Live</a>
+            <a href="/" class="nav-link">⌂ Inicio</a>
+            <a href="/features/muro/muro.html" class="nav-link">◇ Muro</a>
+            <a href="/features/perfil/perfil.html" class="nav-link active">◆ Perfil</a>
+            <a href="/features/mensajes/contactos.html" class="nav-link">◈ Contactos</a>
+            <a href="/features/live/live.html" class="nav-link live">◉ Live</a>
         </nav>
 
-        <!-- PERFIL -->
-        <div class="perfil-card">
-            <div class="perfil-portada" id="portadaContainer" onclick="cambiarPortada()">
-                <img id="portadaImg" src="" alt="Portada" style="display:none;" />
-                <div class="overlay-gradient"></div>
-                <button class="btn-cambiar-portada">Cambiar portada</button>
-            </div>
+        <!-- ===== PERFIL ===== -->
+        <div class="perfil-container">
 
-            <div class="perfil-info">
-                <div class="perfil-avatar" id="avatarContainer" onclick="cambiarAvatar()">
-                    <span id="avatarEmoji">◈</span>
-                    <button class="btn-cambiar-foto">Cambiar foto</button>
-                </div>
-
-                <div class="perfil-nombre-area">
-                    <div class="nombre-group">
-                        <span class="nombre" id="displayNombre">Explorador</span>
-                        <span class="verified-badge">Verificado</span>
-                    </div>
-                    <div>
-                        <span class="handle" id="displayHandle">@explorador</span>
-                        <button class="btn-editar" onclick="abrirModalEditar()">Editar</button>
+            <!-- ===== HEADER DEL PERFIL ===== -->
+            <div class="perfil-header" id="perfilHeader">
+                <div class="avatar-container">
+                    <div class="avatar" id="perfilAvatar">
+                        ◈
+                        <span class="edit-badge" onclick="editarAvatar()" title="Cambiar avatar">✎</span>
                     </div>
                 </div>
-
-                <div class="perfil-bio" id="displayBio">Construyendo el futuro descentralizado en Sariel's</div>
-
-                <div class="perfil-detalles" id="detallesContainer">
-                    <div class="detalle"><span class="icon">⊚</span> <span class="valor" id="displayEdad">24 años</span></div>
-                    <div class="detalle"><span class="icon">◈</span> <span class="valor" id="displayEstudio">Ingeniería</span></div>
-                    <div class="detalle"><span class="icon">♫</span> <span class="valor" id="displayMusica">Electronic · Jazz</span></div>
-                    <div class="detalle"><span class="icon">✈</span> <span class="valor" id="displayViajes">Viajero</span></div>
-                    <div class="detalle"><span class="icon">◉</span> <span class="valor" id="displayUbicacion">CDMX, México</span></div>
-                    <div class="detalle"><span class="icon">◊</span> <span class="valor" id="displayEstadoCivil">Soltera(o)</span></div>
+                <div class="info">
+                    <div class="nombre" id="perfilNombre">
+                        Explorador
+                        <span class="verified">✦ VERIFICADO</span>
+                    </div>
+                    <div class="handle" id="perfilHandle">@explorador</div>
+                    <div class="bio" id="perfilBio">🌍 Explorando el ecosistema Sariel's · WEB3 · Comunidad</div>
+                    <div class="badges">
+                        <span class="badge gold">✦ MIEMBRO</span>
+                        <span class="badge success">● ACTIVO</span>
+                        <span class="badge">◈ WEB3</span>
+                    </div>
                 </div>
-
-                <div class="perfil-stats">
-                    <div class="stat"><div class="numero" id="statTokens">0</div><div class="label">Tokens</div></div>
-                    <div class="stat"><div class="numero" id="statContactos">0</div><div class="label">Contactos</div></div>
-                    <div class="stat"><div class="numero" id="statNFT">0</div><div class="label">NFT</div></div>
-                    <div class="stat"><div class="numero" id="statSeguidores">0</div><div class="label">Seguidores</div></div>
+                <div class="stats">
+                    <div class="stat">
+                        <div class="number" id="statTokens">0</div>
+                        <div class="label">◈ Tokens</div>
+                    </div>
+                    <div class="stat">
+                        <div class="number" id="statNFTS">0</div>
+                        <div class="label">◈ NFTs</div>
+                    </div>
+                    <div class="stat">
+                        <div class="number" id="statSeguidores">0</div>
+                        <div class="label">◈ Seguidores</div>
+                    </div>
+                    <div class="stat">
+                        <div class="number" id="statSiguiendo">0</div>
+                        <div class="label">◈ Siguiendo</div>
+                    </div>
                 </div>
-
-                <div class="huella-digital">
-                    <div class="header"><span class="titulo">Huella Digital</span><span class="nivel" id="huellaNivel">Alta</span></div>
-                    <div class="barra"><div class="fill" id="huellaBarra" style="width:75%;"></div></div>
-                    <div class="descripcion"><span class="etiqueta">Actividad en la red</span><span class="valor" id="huellaDescripcion">75% · Contribuyente activo</span></div>
-                </div>
-
-                <div class="perfil-acciones">
-                    <button class="btn-accion danger" onclick="bloquearUsuario()">Bloquear</button>
-                    <button class="btn-accion" onclick="showToast('Sugerencias cargadas')">Sugerencias</button>
-                    <button class="btn-accion success" onclick="showToast('Subiendo foto...')">Subir foto</button>
+                <div class="acciones">
+                    <button class="btn btn-gold btn-sm" onclick="editarPerfil()">✎ Editar perfil</button>
+                    <button class="btn btn-outline btn-sm" onclick="compartirPerfil()">🔗 Compartir</button>
                 </div>
             </div>
-        </div>
 
-        <!-- TOKENS -->
-        <div class="tokens-section">
-            <div class="header"><h3>Progreso</h3><span class="cantidad" id="tokenCantidad">0</span></div>
-            <div class="token-bar"><div class="bar"><div class="fill" id="tokenProgress" style="width:0%;"></div></div><span class="text" id="tokenText">0/12</span></div>
-            <div class="sub">Acumula <strong>12</strong> para canjear tu NFT</div>
-        </div>
-
-        <!-- PUBLICACIONES -->
-        <div class="publicaciones-section">
-            <div class="header"><h3>Publicaciones</h3><button class="btn-subir" onclick="document.getElementById('subirArchivoInput').click()">Subir foto / video</button></div>
-            <input type="file" id="subirArchivoInput" accept="image/*,video/*" style="display:none;" onchange="subirArchivo(this)" />
-            <div class="publicar-input-area">
-                <input type="text" id="inputPublicarTexto" placeholder="Escribe algo para compartir..." />
-                <button class="btn-publicar-rapido" onclick="publicarTextoPerfil()">Publicar</button>
+            <!-- ===== TABS ===== -->
+            <div class="perfil-tabs">
+                <button class="tab-btn active" onclick="cambiarTab('actividad')">◈ Actividad</button>
+                <button class="tab-btn" onclick="cambiarTab('tokens')">⟡ Tokens</button>
+                <button class="tab-btn" onclick="cambiarTab('config')">◆ Configuración</button>
             </div>
-            <div id="publicacionesContainer"></div>
+
+            <!-- ===== TAB: ACTIVIDAD ===== -->
+            <div id="tab-actividad" class="tab-content active">
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3>◈ Última actividad</h3>
+                        <span class="panel-badge">En tiempo real</span>
+                    </div>
+                    <div class="panel-body" id="actividadList">
+                        <div class="empty-state">
+                            <span class="icon">◈</span>
+                            <h4>Sin actividad reciente</h4>
+                            <p>Comienza a interactuar en el Muro</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3>◈ Publicaciones</h3>
+                        <span class="panel-badge" id="postsCount">0</span>
+                    </div>
+                    <div class="panel-body" id="postsList">
+                        <div class="empty-state">
+                            <span class="icon">◈</span>
+                            <h4>Sin publicaciones</h4>
+                            <p>Publica algo en el Muro</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== TAB: TOKENS ===== -->
+            <div id="tab-tokens" class="tab-content">
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3>⟡ Estado de tokens</h3>
+                        <span class="panel-badge">Actualizado</span>
+                    </div>
+                    <div class="panel-body">
+                        <div class="token-status">
+                            <div class="item">
+                                <div class="value" id="tokenTotal">0</div>
+                                <div class="label">◈ Total tokens</div>
+                            </div>
+                            <div class="item">
+                                <div class="value" id="tokenDisponibles">0</div>
+                                <div class="label">◈ Disponibles</div>
+                            </div>
+                            <div class="item">
+                                <div class="value" id="tokenVendidos">0</div>
+                                <div class="label">◈ Vendidos</div>
+                            </div>
+                            <div class="item">
+                                <div class="value" id="tokenNFTs">0</div>
+                                <div class="label">◈ NFTs</div>
+                            </div>
+                        </div>
+
+                        <div class="progress-bar-container">
+                            <div class="bar">
+                                <div class="fill" id="progressFill" style="width: 0%;"></div>
+                            </div>
+                            <div class="label">
+                                <span>Progreso NFT</span>
+                                <span id="progressText">0 / 12</span>
+                            </div>
+                        </div>
+
+                        <button class="btn btn-gold" style="width:100%;justify-content:center;margin-top:12px;" onclick="irAMuro()">
+                            ⟡ Ir al Muro
+                        </button>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3>◈ Historial de transacciones</h3>
+                        <span class="panel-badge" id="historialCount">0</span>
+                    </div>
+                    <div class="panel-body" id="historialList">
+                        <div class="empty-state">
+                            <span class="icon">◈</span>
+                            <h4>Sin transacciones</h4>
+                            <p>Compra domos para acumular tokens</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== TAB: CONFIGURACIÓN ===== -->
+            <div id="tab-config" class="tab-content">
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3>◆ Editar perfil</h3>
+                        <span class="panel-badge">Privado</span>
+                    </div>
+                    <div class="panel-body">
+                        <div class="config-group">
+                            <label>Nombre</label>
+                            <input type="text" id="editNombre" value="Explorador" />
+                        </div>
+                        <div class="config-group">
+                            <label>Handle</label>
+                            <input type="text" id="editHandle" value="@explorador" />
+                        </div>
+                        <div class="config-group">
+                            <label>Biografía</label>
+                            <textarea id="editBio" rows="3">🌍 Explorando el ecosistema Sariel's · WEB3 · Comunidad</textarea>
+                        </div>
+                        <div class="config-group">
+                            <label>Avatar (URL de imagen)</label>
+                            <input type="text" id="editAvatar" placeholder="https://ejemplo.com/avatar.png" />
+                            <div class="hint">◈ Deja vacío para usar el avatar por defecto</div>
+                        </div>
+                        <button class="btn btn-gold" style="width:100%;justify-content:center;" onclick="guardarPerfil()">
+                            ◆ Guardar cambios
+                        </button>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3>◆ Seguridad</h3>
+                        <span class="panel-badge">Recomendado</span>
+                    </div>
+                    <div class="panel-body">
+                        <div class="config-group">
+                            <label>Wallet conectada</label>
+                            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                                <span id="walletDisplay" style="font-family:monospace;font-size:0.85rem;color:var(--text-secondary);">No conectada</span>
+                                <button class="btn btn-outline btn-sm" onclick="conectarWallet()">◈ Conectar</button>
+                                <button class="btn btn-danger btn-sm" onclick="desconectarWallet()" style="display:none;" id="btnDisconnect">✕ Desconectar</button>
+                            </div>
+                            <div class="hint">◈ Conecta tu wallet para interactuar con el ecosistema</div>
+                        </div>
+                        <button class="btn btn-danger" style="width:100%;justify-content:center;margin-top:8px;" onclick="cerrarSesion()">
+                            ✕ Cerrar sesión
+                        </button>
+                    </div>
+                </div>
+            </div>
+
         </div>
 
-        <!-- CONECTIVIDAD -->
-        <div class="conectividad-section">
-            <div class="conectividad-card"><div class="header"><h4>eSIM</h4><span class="status inactive" id="esimStatus">Inactiva</span></div><div class="info" id="esimInfo">Sin datos activos</div><button class="btn-accion" onclick="toggleESIM()">Activar eSIM</button></div>
-            <div class="conectividad-card"><div class="header"><h4>WiFi</h4><span class="status inactive" id="wifiStatus">Desconectado</span></div><div class="info" id="wifiInfo">Ahorra tus datos móviles</div><button class="btn-accion" onclick="toggleWiFi()">Conectar WiFi</button></div>
-        </div>
-
-        <!-- AMIGOS -->
-        <div class="amigos-section">
-            <div class="header"><h3>Amigos sugeridos</h3><button class="btn-ver-todos" onclick="showToast('Cargando más...')">Ver todos →</button></div>
-            <div class="amigos-grid" id="amigosGrid"></div>
-        </div>
-
-        <!-- FOOTER -->
+        <!-- ===== FOOTER ===== -->
         <footer class="footer">
-            <span><span class="brand">Sariel's</span> · Sabor al Paladar · WEB3</span>
-            <div class="footer-links"><a href="/terminos.html">Términos</a><a href="/privacidad.html">Privacidad</a><a href="/cookies.html">Cookies</a><a href="/live-terminos.html">Términos de Live</a><span style="opacity:0.3;">Polygon</span></div>
+            <span><span class="brand">◈ Sariel's</span> · Sabor al Paladar · WEB3</span>
+            <div class="footer-links">
+                <a href="/terminos.html">◈ Términos</a>
+                <span style="opacity:0.3;">⚡ Polygon</span>
+            </div>
         </footer>
-    </div>
 
-    <!-- ===== MODAL EDITAR ===== -->
-    <div class="modal-overlay" id="modalEditar">
-        <div class="modal">
-            <div class="modal-header">
-                <h2>✎ Editar perfil</h2>
-                <button class="btn-cerrar" onclick="cerrarModal()">✕</button>
-            </div>
-            <div class="form-group">
-                <label>Nombre</label>
-                <input type="text" id="inputNombre" placeholder="Tu nombre" />
-            </div>
-            <div class="form-group">
-                <label>Usuario</label>
-                <input type="text" id="inputHandle" placeholder="@usuario" />
-            </div>
-            <div class="form-group">
-                <label>Biografía</label>
-                <textarea id="inputBio" placeholder="Cuéntanos sobre ti..."></textarea>
-            </div>
-            <div class="form-group">
-                <label>Edad</label>
-                <input type="text" id="inputEdad" placeholder="Ej: 24 años" />
-            </div>
-            <div class="form-group">
-                <label>Estudio / Trabajo</label>
-                <input type="text" id="inputEstudio" placeholder="Ej: Ingeniería" />
-            </div>
-            <div class="form-group">
-                <label>Gustos musicales</label>
-                <input type="text" id="inputMusica" placeholder="Ej: Electronic · Jazz" />
-            </div>
-            <div class="form-group">
-                <label>Viajes</label>
-                <input type="text" id="inputViajes" placeholder="Ej: Viajero" />
-            </div>
-            <div class="form-group">
-                <label>Ubicación</label>
-                <input type="text" id="inputUbicacion" placeholder="Ej: CDMX, México" />
-            </div>
-            <div class="form-group">
-                <label>Estado civil</label>
-                <select id="inputEstadoCivil">
-                    <option value="Soltera(o)">Soltera(o)</option>
-                    <option value="Casada(o)">Casada(o)</option>
-                    <option value="Unión libre">Unión libre</option>
-                    <option value="Divorciada(o)">Divorciada(o)</option>
-                    <option value="Viuda(o)">Viuda(o)</option>
-                    <option value="Prefiero no decir">Prefiero no decir</option>
-                </select>
-            </div>
-            <button class="btn-guardar" onclick="guardarPerfil()">💾 Guardar cambios</button>
-        </div>
     </div>
 
     <!-- ===== TOAST ===== -->
@@ -190,89 +1155,9 @@
 
     <!-- ===== SCRIPTS ===== -->
     <script src="https://cdn.jsdelivr.net/npm/web3@1.8.0/dist/web3.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="/app.js"></script>
     <script src="/features/perfil/perfil.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            initStars();
-
-            if (typeof renderizarPerfil === 'function') {
-                renderizarPerfil();
-            }
-            if (typeof cargarPublicacionesPerfil === 'function') {
-                cargarPublicacionesPerfil();
-            }
-        });
-
-        function initStars() {
-            const canvas = document.getElementById('stars-canvas');
-            if (!canvas) return;
-            const ctx = canvas.getContext('2d');
-            let width, height, stars = [];
-            let animId = null;
-            let isVisible = true;
-            const isMobile = window.innerWidth < 600;
-            const STAR_COUNT = isMobile ? 40 : 100;
-
-            function resize() {
-                width = window.innerWidth;
-                height = window.innerHeight;
-                canvas.width = width;
-                canvas.height = height;
-                createStars();
-            }
-
-            function createStars() {
-                stars = [];
-                for (let i = 0; i < STAR_COUNT; i++) {
-                    stars.push({
-                        x: Math.random() * width,
-                        y: Math.random() * height,
-                        radius: Math.random() * 0.8 + 0.2,
-                        speed: Math.random() * 0.005 + 0.002,
-                        opacity: Math.random() * 0.5 + 0.2,
-                        twinklePhase: Math.random() * Math.PI * 2
-                    });
-                }
-            }
-
-            function draw() {
-                if (!isVisible) {
-                    animId = requestAnimationFrame(draw);
-                    return;
-                }
-                ctx.clearRect(0, 0, width, height);
-                for (let star of stars) {
-                    const opacity = star.opacity * (0.6 + 0.4 * Math.sin(star.twinklePhase));
-                    ctx.beginPath();
-                    ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
-                    ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
-                    ctx.fill();
-                    star.twinklePhase += 0.02;
-                    star.y += star.speed;
-                    if (star.y > height) {
-                        star.y = 0;
-                        star.x = Math.random() * width;
-                    }
-                }
-                animId = requestAnimationFrame(draw);
-            }
-
-            function pauseAnimation() { isVisible = false; }
-            function resumeAnimation() { isVisible = true; }
-
-            resize();
-            draw();
-            window.addEventListener('resize', resize);
-            document.addEventListener('visibilitychange', function() {
-                if (document.hidden) pauseAnimation();
-                else resumeAnimation();
-            });
-
-            return { pauseAnimation, resumeAnimation };
-        }
-
-        window.initStars = initStars;
-    </script>
 </body>
 </html>
