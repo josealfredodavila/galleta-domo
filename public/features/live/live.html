@@ -84,11 +84,13 @@
         .btn-danger { background: rgba(255, 51, 102, 0.1); color: var(--danger); border: 1px solid rgba(255, 51, 102, 0.2); }
         .btn-sm { padding: 4px 12px; font-size: 0.65rem; }
 
-        /* Cámara FULL HD */
+        /* Cámara ANCHA */
         .live-video-container {
             background: var(--space); border: 1px solid var(--glass-border); border-radius: var(--radius-xl);
             overflow: hidden; margin-bottom: 20px; position: relative;
-            min-height: 500px; /* Cámara grande */
+            width: 100%; /* Ocupa todo el ancho */
+            height: 70vh; /* Ocupa el 70% de la altura de la pantalla */
+            min-height: 400px;
         }
         .live-video-container video { width: 100%; height: 100%; object-fit: cover; background: #000; }
         .live-video-container .live-overlay {
@@ -105,8 +107,9 @@
         .live-video-container .live-controls button.mic { color: var(--success); }
         .live-video-container .live-controls button.mic.muted { color: var(--danger); }
         .live-video-container .live-controls button.end { color: var(--danger); font-size: 0.8rem; padding: 4px 12px; }
+        .live-video-container .live-controls button.voice-active { color: var(--gold); background: rgba(212, 175, 55, 0.2); }
 
-        /* Chat Moderno */
+        /* Chat */
         .live-chat-container {
             background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-xl);
             overflow: hidden; margin-bottom: 20px;
@@ -139,12 +142,12 @@
         .footer .brand { color: var(--gold); font-weight: 600; }
 
         @media (max-width: 768px) {
-            .live-video-container { min-height: 400px; }
+            .live-video-container { height: 50vh; min-height: 300px; }
             .live-header { flex-direction: column; text-align: center; }
             .main-nav .nav-link { font-size: 0.6rem; padding: 6px 10px; }
         }
         @media (max-width: 480px) {
-            .live-video-container { min-height: 250px; }
+            .live-video-container { height: 40vh; min-height: 250px; }
             .streams-list { grid-template-columns: 1fr 1fr; }
         }
     </style>
@@ -197,6 +200,8 @@
                     <button onclick="togglePlay()" id="playBtn" title="Play/Pause">◈</button>
                     <button onclick="toggleMute()" id="muteBtn" title="Mute/Unmute" class="mic">◉</button>
                     <button onclick="capturarPantalla()" id="screenBtn" title="Compartir pantalla">✦</button>
+                    <!-- LECTOR DE VOZ -->
+                    <button onclick="toggleVoice()" id="voiceBtn" title="Lector de voz" class="voice">🔊</button>
                     <button class="end" onclick="finalizarTransmision()" title="Finalizar">✕ Finalizar</button>
                 </div>
             </div>
