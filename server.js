@@ -3,7 +3,7 @@ const { AccessToken } = require('livekit-server-sdk');
 const cors = require('cors');
 const path = require('path');
 
-// FIX: Node.js 22 ya tiene WebSocket nativo, pero si aún hay problema, esto lo cubre
+// FIX: WebSocket para Node.js
 globalThis.WebSocket = require('ws');
 
 const app = express();
@@ -23,7 +23,6 @@ const { createClient } = require('@supabase/supabase-js');
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
 
-// Función para crear cliente Supabase con el token del usuario
 function clienteDelUsuario(req) {
     const token = req.headers.authorization?.replace('Bearer ', '');
     if (token) {
@@ -31,7 +30,6 @@ function clienteDelUsuario(req) {
             global: { headers: { Authorization: `Bearer ${token}` } }
         });
     }
-    // Si no hay token, se crea sin auth (para rutas públicas)
     return createClient(supabaseUrl, supabaseAnonKey);
 }
 
@@ -55,9 +53,7 @@ app.get('/api/token', async (req, res) => {
         const participantName = req.query.name || `usuario_${Math.floor(Math.random() * 1000)}`;
 
         if (!process.env.LIVEKIT_API_KEY || !process.env.LIVEKIT_API_SECRET) {
-            return res.status(500).json({ 
-                error: 'LiveKit credentials not configured' 
-            });
+            return res.status(500).json({ error: 'LiveKit credentials not configured' });
         }
 
         const at = new AccessToken(
@@ -77,9 +73,7 @@ app.get('/api/token', async (req, res) => {
         res.json({ token });
     } catch (error) {
         console.error('❌ Error generando token:', error);
-        res.status(500).json({ 
-            error: 'No se pudo generar el token de transmisión' 
-        });
+        res.status(500).json({ error: 'No se pudo generar el token de transmisión' });
     }
 });
 
@@ -90,10 +84,7 @@ app.get('/api/perfil', async (req, res) => {
     try {
         const supabase = clienteDelUsuario(req);
         const { data: { user } } = await supabase.auth.getUser();
-
-        if (!user) {
-            return res.status(401).json({ success: false, error: 'No autenticado' });
-        }
+        if (!user) return res.status(401).json({ success: false, error: 'No autenticado' });
 
         const { data, error } = await supabase
             .from('usuarios')
@@ -106,7 +97,6 @@ app.get('/api/perfil', async (req, res) => {
         if (data) {
             return res.json({ success: true, perfil: data });
         } else {
-            // Si el usuario no tiene perfil, se devuelve uno por defecto
             return res.json({ success: true, perfil: { 
                 id: user.id,
                 nombre: 'Explorador', 
@@ -126,13 +116,9 @@ app.put('/api/perfil', async (req, res) => {
     try {
         const supabase = clienteDelUsuario(req);
         const { data: { user } } = await supabase.auth.getUser();
-
-        if (!user) {
-            return res.status(401).json({ success: false, error: 'No autenticado' });
-        }
+        if (!user) return res.status(401).json({ success: false, error: 'No autenticado' });
 
         const { nombre, handle, bio, avatar_url } = req.body;
-
         const { data, error } = await supabase
             .from('usuarios')
             .upsert({ 
@@ -145,7 +131,6 @@ app.put('/api/perfil', async (req, res) => {
             });
 
         if (error) throw error;
-
         return res.json({ success: true, perfil: data });
     } catch (error) {
         console.error('Error guardando perfil:', error);
@@ -154,7 +139,204 @@ app.put('/api/perfil', async (req, res) => {
 });
 
 // ================================================================
-// RUTAS PRINCIPALES
+// RUTAS PARA EL MURO (SEGURIDAD CON AUTH.UID)
+// ================================================================
+app.get('/api/muro/posts', async (req, res) => {
+    try {
+        const supabase = clienteDelUsuario(req);
+        const { data, error } = await supabase
+            .from('muro_posts')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        return res.json({ success: true, posts: data });
+    } catch (error) {
+        console.error('Error cargando muro:', error);
+        return res.status(500).json({ success: false, error: 'Error al cargar muro' });
+    }
+});
+
+app.post('/api/muro/posts', async (req, res) => {
+    try {
+        const supabase = clienteDelUsuario(req);
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return res.status(401).json({ success: false, error: 'No autenticado' });
+
+        const { contenido } = req.body;
+        const { data, error } = await supabase
+            .from('muro_posts')
+            .insert({ user_id: user.id, contenido });
+
+        if (error) throw error;
+        return res.json({ success: true, post: data });
+    } catch (error) {
+        console.error('Error creando post:', error);
+        return res.status(500).json({ success: false, error: 'Error al crear post' });
+    }
+});
+
+app.post('/api/muro/posts/:id/like', async (req, res) => {
+    try {
+        const supabase = clienteDelUsuario(req);
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return res.status(401).json({ success: false, error: 'No autenticado' });
+
+        const postId = req.params.id;
+        const { error } = await supabase
+            .from('muro_likes')
+            .insert({ post_id: postId, user_id: user.id });
+
+        if (error) throw error;
+        return res.json({ success: true });
+    } catch (error) {
+        console.error('Error dando like:', error);
+        return res.status(500).json({ success: false, error: 'Error al dar like' });
+    }
+});
+
+// ================================================================
+// RUTAS PARA MENSAJES (SEGURIDAD CON AUTH.UID)
+// ================================================================
+app.get('/api/mensajes/contactos', async (req, res) => {
+    try {
+        const supabase = clienteDelUsuario(req);
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return res.status(401).json({ success: false, error: 'No autenticado' });
+
+        const { data, error } = await supabase
+            .from('contactos')
+            .select('*')
+            .eq('user_id', user.id);
+
+        if (error) throw error;
+        return res.json({ success: true, contactos: data });
+    } catch (error) {
+        console.error('Error cargando contactos:', error);
+        return res.status(500).json({ success: false, error: 'Error al cargar contactos' });
+    }
+});
+
+app.get('/api/mensajes/:contactoId', async (req, res) => {
+    try {
+        const supabase = clienteDelUsuario(req);
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return res.status(401).json({ success: false, error: 'No autenticado' });
+
+        const contactoId = req.params.contactoId;
+        const { data, error } = await supabase
+            .from('mensajes_chat')
+            .select('*')
+            .or(`and(user_id.eq.${user.id},contacto_id.eq.${contactoId}),and(user_id.eq.${contactoId},contacto_id.eq.${user.id})`)
+            .order('created_at', { ascending: true });
+
+        if (error) throw error;
+        return res.json({ success: true, mensajes: data });
+    } catch (error) {
+        console.error('Error cargando mensajes:', error);
+        return res.status(500).json({ success: false, error: 'Error al cargar mensajes' });
+    }
+});
+
+app.post('/api/mensajes/:contactoId', async (req, res) => {
+    try {
+        const supabase = clienteDelUsuario(req);
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return res.status(401).json({ success: false, error: 'No autenticado' });
+
+        const contactoId = req.params.contactoId;
+        const { contenido } = req.body;
+        const { data, error } = await supabase
+            .from('mensajes_chat')
+            .insert({ user_id: user.id, contacto_id: contactoId, contenido });
+
+        if (error) throw error;
+        return res.json({ success: true, mensaje: data });
+    } catch (error) {
+        console.error('Error enviando mensaje:', error);
+        return res.status(500).json({ success: false, error: 'Error al enviar mensaje' });
+    }
+});
+
+// ================================================================
+// RUTAS PARA LIVE (SEGURIDAD CON AUTH.UID)
+// ================================================================
+app.get('/api/live/streams', async (req, res) => {
+    try {
+        const supabase = clienteDelUsuario(req);
+        const { data, error } = await supabase
+            .from('live_streams')
+            .select('*')
+            .eq('is_live', true)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        return res.json({ success: true, streams: data });
+    } catch (error) {
+        console.error('Error cargando streams:', error);
+        return res.status(500).json({ success: false, error: 'Error al cargar streams' });
+    }
+});
+
+app.post('/api/live/streams', async (req, res) => {
+    try {
+        const supabase = clienteDelUsuario(req);
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return res.status(401).json({ success: false, error: 'No autenticado' });
+
+        const { titulo } = req.body;
+        const { data, error } = await supabase
+            .from('live_streams')
+            .insert({ user_id: user.id, titulo, is_live: true });
+
+        if (error) throw error;
+        return res.json({ success: true, stream: data });
+    } catch (error) {
+        console.error('Error creando stream:', error);
+        return res.status(500).json({ success: false, error: 'Error al crear stream' });
+    }
+});
+
+// ================================================================
+// RUTAS PARA eSIM / INTERNET (SEGURIDAD CON AUTH.UID)
+// ================================================================
+app.get('/api/esim/planes', async (req, res) => {
+    try {
+        const supabase = clienteDelUsuario(req);
+        const { data, error } = await supabase
+            .from('planes_esim')
+            .select('*');
+
+        if (error) throw error;
+        return res.json({ success: true, planes: data });
+    } catch (error) {
+        console.error('Error cargando planes:', error);
+        return res.status(500).json({ success: false, error: 'Error al cargar planes' });
+    }
+});
+
+app.get('/api/esim/suscripcion', async (req, res) => {
+    try {
+        const supabase = clienteDelUsuario(req);
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return res.status(401).json({ success: false, error: 'No autenticado' });
+
+        const { data, error } = await supabase
+            .from('suscripciones_esim')
+            .select('*')
+            .eq('user_id', user.id)
+            .single();
+
+        if (error) throw error;
+        return res.json({ success: true, suscripcion: data });
+    } catch (error) {
+        console.error('Error cargando suscripción:', error);
+        return res.status(500).json({ success: false, error: 'Error al cargar suscripción' });
+    }
+});
+
+// ================================================================
+// RUTAS PRINCIPALES (HTML)
 // ================================================================
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
