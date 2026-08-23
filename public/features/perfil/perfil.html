@@ -4,9 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>◈ Perfil · Sariel's</title>
-    <link rel="stylesheet" href="/styles.css" />
-    <link rel="stylesheet" href="/features/perfil/perfil.css" />
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+    
+    <!-- El CSS está incrustado abajo para garantizar que cargue sin errores de rutas -->
     <style>
         /* ================================================================
            PERFIL ULTRA MEGA PRO - SARIEL'S
@@ -957,7 +958,7 @@
                         <span class="verified">✦ VERIFICADO</span>
                     </div>
                     <div class="handle" id="perfilHandle">@explorador</div>
-                    <div class="bio" id="perfilBio">🌍 Explorando el ecosistema Sariel's · WEB3 · Comunidad</div>
+                    <div class="bio" id="perfilBio">Explorando el ecosistema Sariel's · WEB3 · Comunidad</div>
                     <div class="badges">
                         <span class="badge gold">✦ MIEMBRO</span>
                         <span class="badge success">● ACTIVO</span>
@@ -984,7 +985,7 @@
                 </div>
                 <div class="acciones">
                     <button class="btn btn-gold btn-sm" onclick="editarPerfil()">✎ Editar perfil</button>
-                    <button class="btn btn-outline btn-sm" onclick="compartirPerfil()">🔗 Compartir</button>
+                    <button class="btn btn-outline btn-sm" onclick="compartirPerfil()">◈ Compartir</button>
                 </div>
             </div>
 
@@ -1102,7 +1103,7 @@
                         </div>
                         <div class="config-group">
                             <label>Biografía</label>
-                            <textarea id="editBio" rows="3">🌍 Explorando el ecosistema Sariel's · WEB3 · Comunidad</textarea>
+                            <textarea id="editBio" rows="3">Explorando el ecosistema Sariel's · WEB3 · Comunidad</textarea>
                         </div>
                         <div class="config-group">
                             <label>Avatar (URL de imagen)</label>
@@ -1143,7 +1144,10 @@
         <footer class="footer">
             <span><span class="brand">◈ Sariel's</span> · Sabor al Paladar · WEB3</span>
             <div class="footer-links">
-                <a href="/terminos.html">◈ Términos</a>
+                <a href="/terminos">◈ Términos</a>
+                <a href="/privacidad">◈ Privacidad</a>
+                <a href="/cookies">◈ Cookies</a>
+                <a href="/live-terminos">◈ Términos Live</a>
                 <span style="opacity:0.3;">⚡ Polygon</span>
             </div>
         </footer>
@@ -1157,7 +1161,6 @@
     <script src="https://cdn.jsdelivr.net/npm/web3@1.8.0/dist/web3.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-    <script src="/app.js"></script>
     <script src="/features/perfil/perfil.js"></script>
 </body>
 </html>
