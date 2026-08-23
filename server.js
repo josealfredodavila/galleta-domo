@@ -12,9 +12,8 @@ const PORT = process.env.PORT || 8080;
 app.use(cors());
 app.use(express.json());
 
-// ✅ SIRVE ARCHIVOS DESDE LA RAÍZ Y DESDE public/
-app.use(express.static(__dirname));     // Busca en la raíz
-app.use(express.static('public'));      // Busca en public/
+// ✅ SOLO SIRVE DESDE public/ (NO desde la raíz)
+app.use(express.static(path.join(__dirname, 'public')));
 
 // ================================================================
 // HEALTH CHECK
@@ -137,25 +136,12 @@ app.use((err, req, res, next) => {
 });
 
 // ================================================================
-// APAGADO GRACIAL
-// ================================================================
-process.on('SIGINT', () => {
-    console.log('🛑 Servidor detenido por SIGINT');
-    process.exit(0);
-});
-
-process.on('SIGTERM', () => {
-    console.log('🛑 Servidor detenido por SIGTERM');
-    process.exit(0);
-});
-
-// ================================================================
 // INICIAR SERVIDOR
 // ================================================================
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`========================================`);
     console.log(`✅ Servidor corriendo en el puerto ${PORT}`);
-    console.log(`📁 Sirviendo archivos desde: /public y raíz`);
+    console.log(`📁 Sirviendo archivos desde: /public`);
     console.log(`🌐 URL: http://localhost:${PORT}`);
     console.log(`========================================`);
 });
