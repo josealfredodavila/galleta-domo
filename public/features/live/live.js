@@ -38,7 +38,7 @@ if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
 // ================================================================
 // API URL - PRODUCCIÓN (RAILWAY)
 // ================================================================
-const API_URL = 'https://galleta-domo.up.railway.app/api';
+const API_URL = '/api';
 
 // ================================================================
 // HEADERS DE AUTENTICACIÓN
@@ -82,6 +82,7 @@ let streamsList = [];
 let peerConnections = [];
 let currentRoom = null;
 let livekitToken = null;
+let socket = null;
 
 // ================================================================
 // INICIALIZAR
@@ -91,6 +92,7 @@ document.addEventListener('DOMContentLoaded', function() {
     actualizarViewers();
     cargarStreams();
     iniciarSocket();
+    configurarMiniPlayerDrag();
 
     const chatInput = document.getElementById('chatInput');
     if (chatInput) {
@@ -111,13 +113,11 @@ document.addEventListener('DOMContentLoaded', function() {
 // ================================================================
 // SOCKET.IO (para chat en tiempo real)
 // ================================================================
-let socket = null;
-
 function iniciarSocket() {
     try {
         const socketUrl = window.location.hostname === 'localhost'
             ? 'http://localhost:3001'
-            : 'https://galleta-domo.up.railway.app';
+            : window.location.origin;
 
         socket = io(socketUrl, {
             transports: ['polling', 'websocket'],
@@ -214,8 +214,6 @@ async function iniciarTransmision() {
             livekitToken = token;
             currentRoom = roomName;
             showToast('✅ Conectado a LiveKit');
-            // Aquí se integraría con LiveKit SDK si estuviera disponible
-            // Por ahora usamos el stream local directamente
         }
 
         const video = document.getElementById('liveVideo');
@@ -224,11 +222,18 @@ async function iniciarTransmision() {
             await video.play();
         }
 
+        // Sincronizar con mini player si está abierto
+        const miniVideo = document.getElementById('miniVideo');
+        if (miniVideo && miniVideo.style.display !== 'none') {
+            miniVideo.srcObject = stream;
+            await miniVideo.play();
+        }
+
         isPlaying = true;
         isLive = true;
 
         const playBtn = document.getElementById('playBtn');
-        if (playBtn) playBtn.textContent = '⏸️';
+        if (playBtn) playBtn.textContent = '◈';
 
         const container = document.getElementById('liveVideoContainer');
         if (container) {
@@ -303,11 +308,11 @@ function agregarStreamLocal() {
     card.innerHTML = `
         <div class="stream-thumb">
             <span class="live-badge">● EN VIVO</span>
-            🎥
+            ◉
         </div>
         <div class="stream-name">Transmisión de ${nombre}</div>
         <div class="stream-host">${nombre} · Sariel's</div>
-        <div class="stream-viewers">👁️ ${viewersCount} espectadores</div>
+        <div class="stream-viewers">◈ ${viewersCount} espectadores</div>
     `;
     card.onclick = () => showToast('◈ Ya estás viendo tu transmisión');
     container.prepend(card);
@@ -332,11 +337,14 @@ function finalizarTransmision() {
     const video = document.getElementById('liveVideo');
     if (video) video.srcObject = null;
 
+    // Cerrar mini player si está abierto
+    cerrarMiniPlayer();
+
     isPlaying = false;
     isLive = false;
 
     const playBtn = document.getElementById('playBtn');
-    if (playBtn) playBtn.textContent = '▶️';
+    if (playBtn) playBtn.textContent = '◈';
 
     const container = document.getElementById('liveVideoContainer');
     if (container) {
@@ -386,11 +394,11 @@ function togglePlay() {
 
     if (isPlaying) {
         video.pause();
-        if (btn) btn.textContent = '▶️';
+        if (btn) btn.textContent = '▶';
         isPlaying = false;
     } else {
         video.play();
-        if (btn) btn.textContent = '⏸️';
+        if (btn) btn.textContent = '◈';
         isPlaying = true;
     }
 }
@@ -410,7 +418,7 @@ function toggleMute() {
     isMuted = !isMuted;
     video.muted = isMuted;
     if (btn) {
-        btn.textContent = isMuted ? '🔇' : '🔊';
+        btn.textContent = isMuted ? '◌' : '◉';
         btn.className = isMuted ? 'mic muted' : 'mic';
     }
 }
@@ -438,15 +446,15 @@ async function capturarPantalla() {
 
         isPlaying = true;
         const playBtn = document.getElementById('playBtn');
-        if (playBtn) playBtn.textContent = '⏸️';
+        if (playBtn) playBtn.textContent = '◈';
 
-        showToast('🖥️ Compartiendo pantalla', 'success');
+        showToast('✦ Compartiendo pantalla', 'success');
 
         screenStream.getVideoTracks()[0].onended = () => {
             if (localStream) {
                 video.srcObject = localStream;
                 video.play();
-                showToast('🔄 Volviendo a la cámara');
+                showToast('◈ Volviendo a la cámara');
             }
         };
 
@@ -456,6 +464,100 @@ async function capturarPantalla() {
             showToast('❌ Error al compartir pantalla', 'error');
         }
     }
+}
+
+// ================================================================
+// MINI PLAYER FLOTANTE (ARRASTRABLE)
+// ================================================================
+function abrirMiniPlayer() {
+    const miniPlayer = document.getElementById('miniPlayer');
+    const miniVideo = document.getElementById('miniVideo');
+
+    if (!localStream) {
+        showToast('⚠️ No hay transmisión activa', 'warning');
+        return;
+    }
+
+    miniPlayer.style.display = 'block';
+    miniVideo.srcObject = localStream;
+    miniVideo.play().catch(() => {});
+
+    showToast('◈ Mini player activado. Arrástralo con tu dedo.', 'success');
+}
+
+function cerrarMiniPlayer() {
+    const miniPlayer = document.getElementById('miniPlayer');
+    const miniVideo = document.getElementById('miniVideo');
+    if (miniPlayer) miniPlayer.style.display = 'none';
+    if (miniVideo) miniVideo.srcObject = null;
+}
+
+function configurarMiniPlayerDrag() {
+    const miniPlayer = document.getElementById('miniPlayer');
+    if (!miniPlayer) return;
+
+    let isDragging = false;
+    let startX, startY, initialLeft, initialTop;
+
+    // Eventos táctiles
+    miniPlayer.addEventListener('touchstart', function(e) {
+        const touch = e.touches[0];
+        isDragging = true;
+        startX = touch.clientX;
+        startY = touch.clientY;
+        const rect = miniPlayer.getBoundingClientRect();
+        initialLeft = rect.left;
+        initialTop = rect.top;
+        e.preventDefault();
+    });
+
+    miniPlayer.addEventListener('touchmove', function(e) {
+        if (!isDragging) return;
+        const touch = e.touches[0];
+        const deltaX = touch.clientX - startX;
+        const deltaY = touch.clientY - startY;
+        
+        miniPlayer.style.left = (initialLeft + deltaX) + 'px';
+        miniPlayer.style.top = (initialTop + deltaY) + 'px';
+        miniPlayer.style.right = 'auto';
+        miniPlayer.style.bottom = 'auto';
+        miniPlayer.style.transform = 'none';
+        
+        e.preventDefault();
+    });
+
+    miniPlayer.addEventListener('touchend', function() {
+        isDragging = false;
+    });
+
+    // Eventos de mouse (para escritorio)
+    miniPlayer.addEventListener('mousedown', function(e) {
+        isDragging = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        const rect = miniPlayer.getBoundingClientRect();
+        initialLeft = rect.left;
+        initialTop = rect.top;
+        e.preventDefault();
+    });
+
+    miniPlayer.addEventListener('mousemove', function(e) {
+        if (!isDragging) return;
+        const deltaX = e.clientX - startX;
+        const deltaY = e.clientY - startY;
+        
+        miniPlayer.style.left = (initialLeft + deltaX) + 'px';
+        miniPlayer.style.top = (initialTop + deltaY) + 'px';
+        miniPlayer.style.right = 'auto';
+        miniPlayer.style.bottom = 'auto';
+        miniPlayer.style.transform = 'none';
+        
+        e.preventDefault();
+    });
+
+    miniPlayer.addEventListener('mouseup', function() {
+        isDragging = false;
+    });
 }
 
 // ================================================================
@@ -571,7 +673,6 @@ function simularMensajes() {
         }
 
         if (index < mensajesBienvenida.length) {
-            const perfil = JSON.parse(localStorage.getItem('sariels_perfil') || '{}');
             const nombre = `Usuario${Math.floor(Math.random() * 100)}`;
             const msg = {
                 nombre: nombre,
@@ -667,11 +768,11 @@ function renderizarStreams(streams) {
         card.innerHTML = `
             <div class="stream-thumb">
                 ${stream.isLive ? '<span class="live-badge">● EN VIVO</span>' : ''}
-                🎥
+                ◉
             </div>
             <div class="stream-name">${stream.nombre || 'Transmisión'}</div>
             <div class="stream-host">${stream.host || 'Anfitrión'} · Sariel's</div>
-            <div class="stream-viewers">👁️ ${stream.viewers || 0} espectadores</div>
+            <div class="stream-viewers">◈ ${stream.viewers || 0} espectadores</div>
         `;
         container.appendChild(card);
     });
@@ -683,7 +784,6 @@ function renderizarStreams(streams) {
 function unirseTransmision(streamId) {
     showToast('◈ Uniéndose a la transmisión...');
     // En producción, aquí se conectaría al stream específico
-    // Por ahora, simulamos
     setTimeout(() => {
         showToast('✅ Transmisión abierta', 'success');
     }, 1500);
@@ -706,11 +806,11 @@ function toggleModo() {
     if (isDark) {
         body.classList.remove('modo-claro');
         localStorage.setItem('sariels_modo', 'oscuro');
-        showToast('🌙 Modo oscuro');
+        showToast('◈ Modo oscuro');
     } else {
         body.classList.add('modo-claro');
         localStorage.setItem('sariels_modo', 'claro');
-        showToast('☀️ Modo claro');
+        showToast('✦ Modo claro');
     }
 }
 
@@ -811,5 +911,8 @@ window.unirseTransmision = unirseTransmision;
 window.toggleModo = toggleModo;
 window.cargarModo = cargarModo;
 window.getSession = getSession;
+window.abrirMiniPlayer = abrirMiniPlayer;
+window.cerrarMiniPlayer = cerrarMiniPlayer;
+window.configurarMiniPlayerDrag = configurarMiniPlayerDrag;
 
-console.log('◉ live.js cargado correctamente con Supabase Auth');
+console.log('◉ live.js cargado correctamente con Supabase Auth y Mini Player');
