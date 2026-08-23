@@ -7,8 +7,9 @@
     <link rel="stylesheet" href="/styles.css" />
     <link rel="stylesheet" href="/features/muro/muro.css" />
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+    <!-- ===== ESTILOS (TU CÓDIGO ORIGINAL) ===== -->
     <style>
-        /* ===== ESTILOS COMPLETOS (los mismos que tenías) ===== */
+        /* ... (aquí van todos tus estilos, los mismos que tenías) ... */
         :root {
             --gold: #D4AF37;
             --gold-dark: #b8923a;
@@ -36,7 +37,10 @@
             --purple: #a855f7;
             --pink: #ec4899;
         }
-
+        /* ... (todos tus estilos, los mismos que tenías) ... */
+        /* ================================================================
+           ESTILOS COMPLETOS (los mismos que tenías)
+           ================================================================ */
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
@@ -97,6 +101,7 @@
             contain: layout style;
         }
 
+        /* ===== HEADER ===== */
         .header {
             display: flex;
             justify-content: space-between;
@@ -210,6 +215,7 @@
             color: var(--gold-bright);
         }
 
+        /* ===== NAVEGACIÓN ===== */
         .main-nav {
             display: flex;
             gap: 4px;
@@ -270,6 +276,7 @@
             background: rgba(255, 51, 102, 0.08);
         }
 
+        /* ===== VALOR DE MERCADO ===== */
         .valor-mercado {
             background: var(--glass-bg);
             border: 1px solid var(--glass-border);
@@ -344,6 +351,7 @@
             box-shadow: var(--shadow-gold);
         }
 
+        /* ===== TRENDING ===== */
         .trending-section {
             background: var(--glass-bg);
             border: 1px solid var(--glass-border);
@@ -405,6 +413,7 @@
             margin-left: 4px;
         }
 
+        /* ===== POST FORM ===== */
         .post-form {
             background: var(--glass-bg);
             border: 1px solid var(--glass-border);
@@ -524,6 +533,7 @@
             transform: none !important;
         }
 
+        /* ===== POST CARD ===== */
         .post-card {
             background: var(--glass-bg);
             border: 1px solid var(--glass-border);
@@ -911,6 +921,7 @@
             transform: scale(1.05);
         }
 
+        /* ===== MODALS ===== */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -1068,6 +1079,7 @@
             box-shadow: var(--shadow-gold);
         }
 
+        /* ===== BOTONES EXTRA ===== */
         .btn-toggle-modo {
             position: fixed;
             bottom: 20px;
@@ -1138,6 +1150,7 @@
             box-shadow: var(--shadow-gold);
         }
 
+        /* ===== EMPTY STATE ===== */
         .empty-state {
             text-align: center;
             padding: 60px 20px;
@@ -1164,6 +1177,7 @@
             letter-spacing: 0.3px;
         }
 
+        /* ===== TOAST ===== */
         .toast {
             position: fixed;
             bottom: 30px;
@@ -1189,6 +1203,7 @@
         .toast.error { border-color: var(--danger); color: var(--danger); }
         .toast.warning { border-color: var(--warning); color: var(--warning); }
 
+        /* ===== MODO CLARO ===== */
         body.modo-claro {
             background: #f0f4f8;
             color: #05080f;
@@ -1255,6 +1270,7 @@
             background: rgba(255, 255, 255, 0.8);
         }
 
+        /* ===== FOOTER ===== */
         .footer {
             margin-top: 30px;
             padding-top: 16px;
@@ -1274,6 +1290,7 @@
         .footer-links a { color: var(--text-muted); text-decoration: none; transition: var(--transition); }
         .footer-links a:hover { color: var(--gold); }
 
+        /* ===== RESPONSIVE ===== */
         @media (max-width: 768px) {
             .app { padding: 12px 14px; }
             .post-card { padding: 14px 16px; }
@@ -1481,7 +1498,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script>
         // ================================================================
-        // MURO ULTRA MEGA PRO - LÓGICA COMPLETA (CORREGIDA)
+        // MURO ULTRA MEGA PRO - LÓGICA COMPLETA (CORREGIDA Y SIN POST DE EJEMPLO)
         // ================================================================
 
         // ================================================================
@@ -1824,35 +1841,6 @@
             localStorage.setItem('sariels_muro_posts', JSON.stringify(posts));
             renderizarFeed();
             showToast('🗑️ Publicación eliminada');
-        }
-
-        // ================================================================
-        // ✅ NUEVA FUNCIÓN: CARGAR PUBLICACIONES AL INICIO
-        // ================================================================
-        function cargarPublicacionesIniciales() {
-            const posts = JSON.parse(localStorage.getItem('sariels_muro_posts') || '[]');
-            
-            // Si no hay publicaciones, crear una de ejemplo
-            if (posts.length === 0) {
-                const postEjemplo = {
-                    id: Date.now(),
-                    autor: 'Sariel\'s',
-                    avatar: '◈',
-                    contenido: '◈ ¡Bienvenido al muro de Sariel\'s! Comparte tus pensamientos, vende tokens y conecta con la comunidad.',
-                    fecha: new Date().toLocaleString(),
-                    likes: 5,
-                    comentarios: [],
-                    vistas: 42,
-                    anclado: true,
-                    imagen: null,
-                    encuesta: null
-                };
-                posts.push(postEjemplo);
-                localStorage.setItem('sariels_muro_posts', JSON.stringify(posts));
-                console.log('✅ Publicación de ejemplo creada');
-            }
-            
-            renderizarFeed();
         }
 
         // ================================================================
@@ -2247,7 +2235,7 @@
         }
 
         // ================================================================
-        // PUBLICAR TEXTO
+        // PUBLICAR TEXTO (CORREGIDO)
         // ================================================================
         function publicarTexto() {
             const textarea = document.getElementById('postContent');
@@ -2270,12 +2258,25 @@
                 imagen: null,
                 encuesta: null
             };
-            const posts = JSON.parse(localStorage.getItem('sariels_muro_posts') || '[]');
+            
+            // Obtener publicaciones existentes, asegurando que sea un array
+            let posts = JSON.parse(localStorage.getItem('sariels_muro_posts') || '[]');
+            if (!Array.isArray(posts)) {
+                posts = [];
+            }
+            
+            // Agregar nueva publicación al principio
             posts.unshift(post);
+            
+            // Guardar en localStorage
             localStorage.setItem('sariels_muro_posts', JSON.stringify(posts));
+            
+            // Limpiar textarea y renderizar
             textarea.value = '';
             renderizarFeed();
             showToast('✅ Publicación creada');
+            
+            // Enviar al backend (si está disponible)
             fetchWithAuth('/api/muro', {
                 method: 'POST',
                 body: JSON.stringify({ contenido, tipo: 'texto' })
@@ -2500,8 +2501,8 @@
             cargarModo();
             actualizarValorMercado();
             
-            // ✅ CARGAR PUBLICACIONES AL INICIO (ESTA ES LA LÍNEA CLAVE)
-            cargarPublicacionesIniciales();
+            // Cargar publicaciones sin crear ninguna de ejemplo
+            renderizarFeed();
             
             initDraggableButton();
 
@@ -2548,11 +2549,9 @@
                 }
             });
 
-            console.log('◈ Sariel\'s - Muro Ultra Mega Pro (con Supabase Auth)');
-            console.log('⧫ Diseño premium sin emojis');
-            console.log('◆ Tokens en venta:', ofertaTokens.filter(t => !t.vendido).length);
-            console.log('⟡ Precio base: 6.25 MXN (75 ÷ 12)');
-            console.log('✅ Publicaciones cargadas correctamente');
+            console.log('◈ Sariel\'s - Muro Ultra Mega Pro (CORREGIDO)');
+            console.log('✅ Sin publicaciones de ejemplo automáticas');
+            console.log('✅ Las publicaciones se guardan en localStorage');
         });
 
         // ================================================================
@@ -2584,7 +2583,6 @@
         window.eliminarComentarioOferta = eliminarComentarioOferta;
         window.toggleComentariosPost = toggleComentariosPost;
         window.enviarComentarioPost = enviarComentarioPost;
-        window.cargarPublicacionesIniciales = cargarPublicacionesIniciales;
     </script>
 </body>
 </html>
