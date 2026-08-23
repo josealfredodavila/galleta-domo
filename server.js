@@ -470,18 +470,18 @@ app.post('/api/esim/orden', async (req, res) => {
 });
 
 // ================================================================
-// RUTAS PRINCIPALES (HTML)
+// RUTAS PRINCIPALES (HTML) - USANDO RUTAS EXPLÍCITAS
 // ================================================================
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-app.get('/muro', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'features', 'muro', 'muro.html'));
-});
-
 app.get('/perfil', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'features', 'perfil', 'perfil.html'));
+});
+
+app.get('/muro', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'features', 'muro', 'muro.html'));
 });
 
 app.get('/mensajes', (req, res) => {
