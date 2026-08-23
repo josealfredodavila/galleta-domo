@@ -8,13 +8,12 @@ const app = express();
 const PORT = process.env.PORT || 8080;
 
 // ================================================================
-// ASEGURAR CARPETA PARA SQLITE
+// ASEGURAR CARPETA PARA SQLITE (si usas)
 // ================================================================
 const dataDir = path.join(__dirname, 'data');
 if (!fs.existsSync(dataDir)) {
     fs.mkdirSync(dataDir, { recursive: true });
 }
-const dbPath = path.join(dataDir, 'database.sqlite');
 
 // ================================================================
 // MIDDLEWARE
@@ -26,14 +25,15 @@ app.use(express.json());
 app.use(express.static('public'));
 
 // ================================================================
-// HEALTH CHECK (PARA RAILWAY)
+// HEALTH CHECK (PARA RAILWAY) - NUEVO
 // ================================================================
 app.get('/api/health', (req, res) => {
     res.status(200).json({
         status: 'healthy',
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
-        database: fs.existsSync(dbPath) ? 'ok' : 'no-db-yet'
+        memory: process.memoryUsage(),
+        port: PORT
     });
 });
 
@@ -137,7 +137,17 @@ app.get('/live-terminos', (req, res) => {
 });
 
 // ================================================================
-// MANEJO DE ERRORES
+// MANEJO DE ERRORES 404
+// ================================================================
+app.use((req, res) => {
+    res.status(404).json({ 
+        error: 'Ruta no encontrada',
+        path: req.originalUrl
+    });
+});
+
+// ================================================================
+// MANEJO DE ERRORES GENERAL
 // ================================================================
 app.use((err, req, res, next) => {
     console.error('❌ Error:', err.message);
@@ -166,8 +176,9 @@ app.listen(PORT, '0.0.0.0', () => {
     console.log(`========================================`);
     console.log(`✅ Servidor corriendo en el puerto ${PORT}`);
     console.log(`📁 Sirviendo archivos desde: /public`);
-    console.log(`🗄️ Base de datos: ${dbPath}`);
     console.log(`🌐 URL: http://localhost:${PORT}`);
+    console.log(`========================================`);
+    console.log(`📌 Healthcheck: /api/health`);
     console.log(`========================================`);
 });
 
