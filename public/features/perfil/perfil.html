@@ -7,7 +7,6 @@
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
     
-    <!-- CSS INCORPORADO PARA GARANTIZAR QUE CARGUE -->
     <style>
         :root {
             --gold: #D4AF37;
@@ -28,7 +27,6 @@
             --radius: 16px;
             --radius-xl: 24px;
             --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            --transition-slow: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
             --success: #00d68f;
             --danger: #ff3366;
             --warning: #f7d44a;
@@ -486,8 +484,9 @@
                 <div class="avatar-container">
                     <div class="avatar" id="perfilAvatar">
                         ◈
-                        <span class="edit-badge" onclick="editarAvatar()" title="Cambiar avatar">✎</span>
+                        <span class="edit-badge" onclick="abrirSelectorArchivo()" title="Cambiar avatar">✎</span>
                     </div>
+                    <input type="file" id="fileInput" accept="image/*" style="display:none;" onchange="subirFoto(event)" />
                 </div>
                 <div class="info">
                     <div class="nombre" id="perfilNombre">
@@ -639,9 +638,9 @@
                             <textarea id="editBio" rows="3">Explorando el ecosistema Sariel's · WEB3 · Comunidad</textarea>
                         </div>
                         <div class="config-group">
-                            <label>Avatar (URL de imagen)</label>
-                            <input type="text" id="editAvatar" placeholder="https://ejemplo.com/avatar.png" />
-                            <div class="hint">◈ Deja vacío para usar el avatar por defecto</div>
+                            <label>Foto de perfil</label>
+                            <button class="btn btn-outline" style="width:100%;" onclick="abrirSelectorArchivo()">📸 Subir foto</button>
+                            <div class="hint">◈ Sube una foto para personalizar tu perfil</div>
                         </div>
                         <button class="btn btn-gold" style="width:100%;justify-content:center;" onclick="guardarPerfil()">
                             ◆ Guardar cambios
