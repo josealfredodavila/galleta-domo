@@ -4,25 +4,16 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>◈ Mensajes · Sariel's</title>
-    <link rel="stylesheet" href="/styles.css" />
-    <link rel="stylesheet" href="/features/mensajes/mensajes.css" />
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
     
-    <!-- CSS INCORPORADO PARA GARANTIZAR QUE CARGUE -->
     <style>
-        /* ================================================================
-           MENSAJES ULTRA MEGA PRO - SARIEL'S
-           ================================================================ */
-
         :root {
             --gold: #D4AF37;
             --gold-dark: #b8923a;
             --gold-light: #e8c84a;
-            --gold-bright: #f0d060;
             --green-deep: #0F2D1A;
             --green-mid: #1a4a2a;
-            --green-bright: #2a6a3a;
             --space: #05080f;
             --text-primary: #f0f4f8;
             --text-secondary: #c0d8e8;
@@ -30,17 +21,11 @@
             --glass-bg: rgba(15, 45, 26, 0.55);
             --glass-border: rgba(212, 175, 55, 0.15);
             --shadow-gold: 0 8px 32px rgba(212, 175, 55, 0.25);
-            --shadow-gold-strong: 0 0 60px rgba(212, 175, 55, 0.15);
             --radius: 16px;
             --radius-xl: 24px;
             --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            --transition-slow: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
             --success: #00d68f;
             --danger: #ff3366;
-            --warning: #f7d44a;
-            --cyan: #00e5ff;
-            --purple: #a855f7;
-            --pink: #ec4899;
             --live-red: #ff0044;
         }
 
@@ -52,7 +37,6 @@
             font-family: 'Inter', sans-serif;
             min-height: 100vh;
             background-image: radial-gradient(ellipse at 20% 50%, rgba(26, 74, 42, 0.4) 0%, transparent 60%), radial-gradient(ellipse at 80% 50%, rgba(212, 175, 55, 0.08) 0%, transparent 60%);
-            -webkit-font-smoothing: antialiased;
         }
 
         .app { max-width: 1100px; margin: 0 auto; padding: 16px 20px 30px; }
@@ -137,6 +121,8 @@
 
         .footer { margin-top: 30px; padding-top: 16px; border-top: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center; font-size: 0.7rem; color: var(--text-muted); }
         .footer .brand { color: var(--gold); font-weight: 600; }
+        .footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
+        .footer-links a { color: var(--text-muted); text-decoration: none; }
 
         @media (max-width: 768px) {
             .chat-panel { grid-template-columns: 1fr; min-height: auto; }
@@ -216,17 +202,6 @@
                             <div class="conv-hora">Ayer</div>
                         </div>
                     </div>
-                    <div class="conv-item" data-id="4" onclick="seleccionarConversacion(4)">
-                        <div class="conv-avatar">◇</div>
-                        <div class="conv-info">
-                            <div class="conv-nombre">Grupo Sariel's</div>
-                            <div class="conv-msg">◈ Evento: Degustación mañana</div>
-                        </div>
-                        <div class="conv-meta">
-                            <div class="conv-hora">10:30</div>
-                            <span class="conv-badge">5</span>
-                        </div>
-                    </div>
                 </div>
             </div>
 
@@ -237,93 +212,12 @@
                         <div class="chat-nombre" id="chatNombre">Ana Martínez</div>
                         <div class="chat-estado online" id="chatEstado">◉ En línea</div>
                     </div>
-                    <div class="chat-actions">
-                        <button onclick="showToast('◈ Llamada de voz')" title="Llamada de voz">◈</button>
-                        <button onclick="showToast('◈ Llamada de video')" title="Llamada de video">◆</button>
-                        <button onclick="showToast('◈ Perfil del contacto')" title="Perfil">◉</button>
-                    </div>
                 </div>
 
                 <div class="chat-messages" id="chatMessages">
-                    <!-- Mensaje recibido con avatar -->
-                    <div class="msg-wrapper recibido">
-                        <div class="fila">
-                            <div class="avatar estado-conectado" title="◈ Conectado">
-                                ◈
-                                <span class="tooltip">◈ Conectado</span>
-                            </div>
-                            <div class="burbuja">
-                                Hola, ¿cómo estás?
-                            </div>
-                        </div>
-                        <div class="meta">
-                            14:25
-                        </div>
-                    </div>
-
-                    <!-- Mensaje enviado (propio) -->
-                    <div class="msg-wrapper enviado">
-                        <div class="burbuja">
-                            ¡Hola! Todo bien, ¿y tú?
-                        </div>
-                        <div class="meta">
-                            14:27
-                            <span class="leido leido">◆◆</span>
-                        </div>
-                    </div>
-
-                    <!-- Mensaje recibido con avatar (desconectado) -->
-                    <div class="msg-wrapper recibido">
-                        <div class="fila">
-                            <div class="avatar estado-desconectado" title="◈ Desconectado">
-                                ◈
-                                <span class="tooltip">◈ Desconectado</span>
-                            </div>
-                            <div class="burbuja">
-                                Bien, quería preguntarte sobre los tokens
-                            </div>
-                        </div>
-                        <div class="meta">
-                            14:28
-                        </div>
-                    </div>
-
-                    <!-- Mensaje enviado (propio) con leído -->
-                    <div class="msg-wrapper enviado">
-                        <div class="burbuja">
-                            Claro, ¿qué necesitas saber?
-                        </div>
-                        <div class="meta">
-                            14:30
-                            <span class="leido leido">◆◆</span>
-                        </div>
-                    </div>
-
-                    <!-- Mensaje recibido con avatar (sin datos - rojo) -->
-                    <div class="msg-wrapper recibido">
-                        <div class="fila">
-                            <div class="avatar estado-sin-datos" title="⚠️ Sin conexión a internet">
-                                ◈
-                                <span class="tooltip">⚠️ Sin conexión a internet</span>
-                            </div>
-                            <div class="burbuja">
-                                (Mensaje pendiente de enviar...)
-                            </div>
-                        </div>
-                        <div class="meta">
-                            14:32
-                        </div>
-                    </div>
-
-                    <!-- Mensaje enviado (propio) no leído -->
-                    <div class="msg-wrapper enviado">
-                        <div class="burbuja">
-                            ¿Podemos hablar mañana?
-                        </div>
-                        <div class="meta">
-                            14:35
-                            <span class="leido no-leido">◈◈</span>
-                        </div>
+                    <div class="empty-chat">
+                        <span class="icon">◈</span>
+                        <h3>Selecciona una conversación</h3>
                     </div>
                 </div>
 
@@ -338,10 +232,10 @@
         <footer class="footer">
             <span><span class="brand">◈ Sariel's</span> · Sabor al Paladar · WEB3</span>
             <div class="footer-links">
-                <a href="/terminos.html">◈ Términos</a>
-                <a href="/privacidad.html">◈ Privacidad</a>
-                <a href="/cookies.html">◈ Cookies</a>
-                <a href="/live-terminos.html">◉ Live Términos</a>
+                <a href="/terminos">◈ Términos</a>
+                <a href="/privacidad">◈ Privacidad</a>
+                <a href="/cookies">◈ Cookies</a>
+                <a href="/live-terminos">◉ Live Términos</a>
                 <span style="opacity:0.3;">⚡ Polygon</span>
             </div>
         </footer>
@@ -353,228 +247,6 @@
     <script src="https://cdn.jsdelivr.net/npm/web3@1.8.0/dist/web3.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="/app.js"></script>
     <script src="/features/mensajes/mensajes.js"></script>
-    <script>
-        // ================================================================
-        // MENSAJES - LÓGICA COMPLETA CON BURBUJAS
-        // ================================================================
-
-        let conversacionActual = 1;
-        let mensajesPorConversacion = {
-            1: [
-                { tipo: 'recibido', texto: 'Hola, ¿cómo estás?', hora: '14:25', estado: 'conectado' },
-                { tipo: 'enviado', texto: '¡Hola! Todo bien, ¿y tú?', hora: '14:27', leido: true },
-                { tipo: 'recibido', texto: 'Bien, quería preguntarte sobre los tokens', hora: '14:28', estado: 'desconectado' },
-                { tipo: 'enviado', texto: 'Claro, ¿qué necesitas saber?', hora: '14:30', leido: true },
-                { tipo: 'recibido', texto: '(Mensaje pendiente de enviar...)', hora: '14:32', estado: 'sin-datos' }
-            ],
-            2: [
-                { tipo: 'recibido', texto: '¿Confirmamos la reunión?', hora: '12:10', estado: 'conectado' },
-                { tipo: 'enviado', texto: 'Sí, a las 5 pm', hora: '12:12', leido: true },
-                { tipo: 'recibido', texto: 'Nos vemos mañana', hora: '12:15', estado: 'conectado' }
-            ],
-            3: [
-                { tipo: 'enviado', texto: '¿Necesitas ayuda con algo más?', hora: '10:00', leido: true },
-                { tipo: 'recibido', texto: 'Gracias por tu ayuda', hora: '10:05', estado: 'conectado' }
-            ],
-            4: [
-                { tipo: 'recibido', texto: '◈ Evento: Degustación mañana a las 7pm', hora: '10:25', estado: 'conectado' },
-                { tipo: 'recibido', texto: '¿Quién se apunta?', hora: '10:28', estado: 'conectado' },
-                { tipo: 'enviado', texto: 'Yo voy!', hora: '10:30', leido: true }
-            ]
-        };
-
-        function showToast(msg, type = '') {
-            const t = document.getElementById('toast');
-            t.textContent = msg;
-            t.className = 'toast show';
-            if (type === 'error') t.classList.add('error');
-            else t.classList.remove('error');
-            clearTimeout(t._timeout);
-            t._timeout = setTimeout(() => t.classList.remove('show'), 3500);
-        }
-
-        function renderizarMensaje(msg) {
-            if (msg.tipo === 'enviado') {
-                return `
-                    <div class="msg-wrapper enviado">
-                        <div class="burbuja">${msg.texto}</div>
-                        <div class="meta">
-                            ${msg.hora}
-                            ${msg.leido ? '<span class="leido leido">◆◆</span>' : '<span class="leido no-leido">◈◈</span>'}
-                        </div>
-                    </div>
-                `;
-            } else {
-                const estadoClass = msg.estado || 'conectado';
-                const estadoTexto = {
-                    'conectado': '◈ Conectado',
-                    'desconectado': '◈ Desconectado',
-                    'sin-datos': '⚠️ Sin conexión a internet',
-                    'entregado': '✓ Mensaje entregado',
-                    'enviando': '⟡ Enviando...',
-                    'sin-esim': '⚠️ Sin eSIM'
-                }[estadoClass] || '◈ Conectado';
-
-                return `
-                    <div class="msg-wrapper recibido">
-                        <div class="fila">
-                            <div class="avatar estado-${estadoClass}" title="${estadoTexto}">
-                                ◈
-                                <span class="tooltip">${estadoTexto}</span>
-                            </div>
-                            <div class="burbuja">${msg.texto}</div>
-                        </div>
-                        <div class="meta">${msg.hora}</div>
-                    </div>
-                `;
-            }
-        }
-
-        function seleccionarConversacion(id) {
-            conversacionActual = id;
-
-            document.querySelectorAll('.conv-item').forEach(el => el.classList.remove('active'));
-            const selected = document.querySelector(`.conv-item[data-id="${id}"]`);
-            if (selected) selected.classList.add('active');
-
-            const nombre = selected?.querySelector('.conv-nombre')?.textContent || 'Usuario';
-            document.getElementById('chatNombre').textContent = nombre;
-
-            const mensajes = mensajesPorConversacion[id] || [];
-            const container = document.getElementById('chatMessages');
-            container.innerHTML = '';
-
-            if (mensajes.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-chat">
-                        <span class="icon">◈</span>
-                        <h3>Sin mensajes</h3>
-                        <p>Inicia la conversación</p>
-                    </div>
-                `;
-                return;
-            }
-
-            mensajes.forEach(msg => {
-                container.innerHTML += renderizarMensaje(msg);
-            });
-            container.scrollTop = container.scrollHeight;
-        }
-
-        function enviarMensaje() {
-            const input = document.getElementById('chatInput');
-            const texto = input.value.trim();
-            if (!texto) return;
-
-            const container = document.getElementById('chatMessages');
-            const empty = container.querySelector('.empty-chat');
-            if (empty) empty.remove();
-
-            const hora = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-            const msgEnviado = {
-                tipo: 'enviado',
-                texto: texto,
-                hora: hora,
-                leido: false
-            };
-
-            if (!mensajesPorConversacion[conversacionActual]) {
-                mensajesPorConversacion[conversacionActual] = [];
-            }
-            mensajesPorConversacion[conversacionActual].push(msgEnviado);
-
-            container.innerHTML += renderizarMensaje(msgEnviado);
-            container.scrollTop = container.scrollHeight;
-            input.value = '';
-
-            setTimeout(() => {
-                const mensajes = mensajesPorConversacion[conversacionActual];
-                const ultimo = mensajes[mensajes.length - 1];
-                if (ultimo && ultimo.tipo === 'enviado') {
-                    ultimo.leido = true;
-                    seleccionarConversacion(conversacionActual);
-                    showToast('◆◆ Mensaje leído');
-                }
-            }, 1500);
-
-            setTimeout(() => {
-                const respuestas = [
-                    '◈ Interesante, cuéntame más',
-                    '◆ ¡Entendido!',
-                    '◉ Perfecto, gracias',
-                    '✦ Buena idea',
-                    '◇ Lo revisaré',
-                    '◈ Excelente propuesta',
-                    '◆ Totalmente de acuerdo',
-                    '◉ ¿Puedes enviarme más detalles?'
-                ];
-                const respuesta = respuestas[Math.floor(Math.random() * respuestas.length)];
-                const horaResp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-                const estados = ['conectado', 'desconectado', 'conectado', 'conectado', 'entregado'];
-                const estadoRandom = estados[Math.floor(Math.random() * estados.length)];
-
-                const msgRecibido = {
-                    tipo: 'recibido',
-                    texto: respuesta,
-                    hora: horaResp,
-                    estado: estadoRandom
-                };
-
-                mensajesPorConversacion[conversacionActual].push(msgRecibido);
-                container.innerHTML += renderizarMensaje(msgRecibido);
-                container.scrollTop = container.scrollHeight;
-
-                if (estadoRandom === 'sin-datos') {
-                    showToast('⚠️ El usuario no tiene conexión a internet', 'error');
-                }
-            }, 2500 + Math.random() * 1500);
-        }
-
-        function nuevaConversacion() {
-            const nombre = prompt('◈ Nombre del contacto:');
-            if (nombre && nombre.trim()) {
-                const id = Date.now();
-                const avatar = '◈';
-                const lista = document.getElementById('conversacionesList');
-                const item = document.createElement('div');
-                item.className = 'conv-item';
-                item.dataset.id = id;
-                item.onclick = () => seleccionarConversacion(id);
-                item.innerHTML = `
-                    <div class="conv-avatar">${avatar}</div>
-                    <div class="conv-info">
-                        <div class="conv-nombre">${nombre.trim()}</div>
-                        <div class="conv-msg">Nueva conversación</div>
-                    </div>
-                    <div class="conv-meta">
-                        <div class="conv-hora">Ahora</div>
-                    </div>
-                `;
-                lista.appendChild(item);
-                mensajesPorConversacion[id] = [];
-                seleccionarConversacion(id);
-                showToast(`◈ Nueva conversación con ${nombre.trim()}`);
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('btnEnviar').addEventListener('click', enviarMensaje);
-            document.getElementById('chatInput').addEventListener('keydown', function(e) {
-                if (e.key === 'Enter') enviarMensaje();
-            });
-
-            seleccionarConversacion(1);
-        });
-
-        window.showToast = showToast;
-        window.seleccionarConversacion = seleccionarConversacion;
-        window.nuevaConversacion = nuevaConversacion;
-        window.enviarMensaje = enviarMensaje;
-    </script>
 </body>
 </html>
