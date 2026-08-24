@@ -4,7 +4,7 @@
    ================================================================ */
 
 // ================================================================
-// SUPABASE CLIENTE (El MISMO que está en app.js)
+// SUPABASE CLIENTE
 // ================================================================
 const supabase = window.supabase.createClient(
     'https://hbbwopkfpkvahgtawqke.supabase.co',
@@ -46,7 +46,6 @@ async function cargarPerfil() {
     try {
         const session = await getSession();
         if (!session) {
-            // Si no hay sesión, redirigir al inicio
             window.location.href = '/';
             return;
         }
@@ -62,7 +61,6 @@ async function cargarPerfil() {
         if (data) {
             actualizarUI(data);
         } else {
-            // Si no tiene perfil creado, usar datos por defecto
             const defaultData = {
                 nombre: session.user.user_metadata?.nombre || 'Explorador',
                 handle: session.user.email?.split('@')[0] || 'explorador',
@@ -173,8 +171,10 @@ async function subirFoto(event) {
         return;
     }
 
-    const fileName = `avatar-${session.user.id}-${Date.now()}.jpg`;
-    const filePath = `avatars/${fileName}`;
+    // ✅ SIGUIENDO EL PATRÓN EXACTO QUE PIDIÓ AMI:
+    // La ruta DEBE ser: {user_id}/avatar.jpg
+    const fileExt = file.name.split('.').pop().toLowerCase();
+    const filePath = `${session.user.id}/avatar.${fileExt}`;
 
     try {
         showToast('⏳ Subiendo foto...');
@@ -182,10 +182,7 @@ async function subirFoto(event) {
         // Subir a Supabase Storage
         const { error: uploadError } = await supabase.storage
             .from('sariels-avatars')
-            .upload(filePath, file, {
-                cacheControl: '3600',
-                upsert: true
-            });
+            .upload(filePath, file, { upsert: true });
 
         if (uploadError) throw uploadError;
 
