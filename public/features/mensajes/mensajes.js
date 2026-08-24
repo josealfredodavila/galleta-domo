@@ -1,7 +1,15 @@
 /* ================================================================
    MENSAJES ULTRA MEGA PRO - SARIEL'S
-   Lógica premium - Sin redirección agresiva
+   Conectado a Supabase REAL (Sin localStorage ni API vieja)
    ================================================================ */
+
+// ================================================================
+// SUPABASE CLIENTE (El mismo de app.js)
+// ================================================================
+const supabase = window.supabase.createClient(
+    'https://hbbwopkfpkvahgtawqke.supabase.co',
+    'sb_publishable_4gJWA-t7Eg6ruuI2EF-K2A_GQlahb2j'
+);
 
 // ================================================================
 // TOAST
@@ -24,13 +32,19 @@ function showToast(msg, type = '') {
 }
 
 // ================================================================
+// OBTENER SESIÓN
+// ================================================================
+async function getSession() {
+    const { data: { session } } = await supabase.auth.getSession();
+    return session;
+}
+
+// ================================================================
 // VARIABLES GLOBALES
 // ================================================================
 let usuarioActual = null;
-let socket = null;
 let conversacionActual = null;
 let mensajesCargados = [];
-let modoOscuro = true;
 let paginaMensajes = 1;
 let cargandoMensajes = false;
 let hayMasMensajes = true;
@@ -47,171 +61,100 @@ const chatEstado = document.querySelector('.chat-estado');
 const chatAvatar = document.querySelector('.chat-avatar');
 
 // ================================================================
-// VERIFICAR AUTENTICACIÓN (SIN REDIRECCIÓN)
+// VERIFICAR AUTENTICACIÓN
 // ================================================================
-function verificarAutenticacion() {
-    const token = localStorage.getItem('galleta_token');
-    if (!token) {
-        showToast('⚠️ Conecta tu wallet para usar mensajería', 'warning');
+async function verificarAutenticacion() {
+    const session = await getSession();
+    if (!session) {
+        showToast('⚠️ Inicia sesión para usar mensajería', 'warning');
         return false;
     }
+    usuarioActual = session.user;
     return true;
 }
 
 // ================================================================
-// CONEXIÓN A SOCKET.IO
-// ================================================================
-function conectarSocket() {
-    const token = localStorage.getItem('galleta_token');
-    if (!token) return;
-
-    const socketUrl = window.location.hostname === 'localhost'
-        ? 'http://localhost:3001'
-        : window.location.origin;
-
-    socket = io(socketUrl, {
-        transports: ['polling', 'websocket'],
-        reconnection: true,
-        reconnectionAttempts: 5
-    });
-
-    socket.on('connect', () => {
-        console.log('◉ Conectado al servidor de mensajería');
-        const userId = localStorage.getItem('userId');
-        if (userId) {
-            socket.emit('authenticate', { userId });
-        }
-    });
-
-    socket.on('authenticated', (data) => {
-        console.log('◆ Autenticado en Socket.IO');
-    });
-
-    socket.on('new_message', (data) => {
-        const mensaje = data.mensaje;
-        const de = data.de;
-
-        if (conversacionActual && conversacionActual._id === de) {
-            agregarMensajeAlChat(mensaje, false);
-            marcarMensajesComoLeidos(de);
-        }
-
-        cargarConversaciones();
-        mostrarNotificacionMensaje(data);
-    });
-
-    socket.on('user_online', (data) => {
-        actualizarEstadoContacto(data.userId, true);
-    });
-
-    socket.on('user_offline', (data) => {
-        actualizarEstadoContacto(data.userId, false);
-    });
-
-    socket.on('typing', (data) => {
-        if (conversacionActual && conversacionActual._id === data.userId) {
-            mostrarIndicadorEscritura(data.userName);
-        }
-    });
-
-    socket.on('disconnect', () => {
-        console.log('◉ Desconectado del servidor');
-    });
-}
-
-// ================================================================
-// NOTIFICACIÓN DE MENSAJE
-// ================================================================
-function mostrarNotificacionMensaje(data) {
-    const usuario = data.usuario?.nombre || 'Alguien';
-    const mensaje = data.mensaje?.contenido || 'Nuevo mensaje';
-    
-    if (document.hidden) {
-        if (Notification.permission === 'granted') {
-            new Notification(`◈ ${usuario}`, {
-                body: mensaje,
-                icon: '/favicon.ico'
-            });
-        }
-    }
-    
-    showToast(`◈ ${usuario}: ${mensaje.substring(0, 50)}${mensaje.length > 50 ? '...' : ''}`);
-}
-
-// ================================================================
-// CARGAR CONVERSACIONES
+// CARGAR CONVERSACIONES (Desde Supabase)
 // ================================================================
 async function cargarConversaciones() {
+    if (!await verificarAutenticacion()) {
+        cargarConversacionesEjemplo();
+        return;
+    }
+
     try {
-        const token = localStorage.getItem('galleta_token');
-        if (!token) {
-            cargarConversacionesEjemplo();
-            return;
-        }
+        // Obtener contactos del usuario
+        const { data: contactos, error } = await supabase
+            .from('contactos')
+            .select('*, usuarios!contactos_contacto_id_fkey(id, nombre, handle, avatar_url)')
+            .eq('usuario_id', usuarioActual.id);
 
-        const response = await fetch('/api/mensajes/conversaciones', {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
+        if (error) throw error;
 
-        if (!response.ok) throw new Error('Error al cargar conversaciones');
-
-        const data = await response.json();
-        const conversaciones = data.conversaciones || [];
-
-        if (conversaciones.length === 0) {
+        if (!contactos || contactos.length === 0) {
             conversacionesList.innerHTML = `
                 <div style="padding: 40px 20px; text-align: center; color: var(--text-muted);">
                     <div style="font-size: 2.5rem; margin-bottom: 12px; font-family:'Orbitron',monospace; color:var(--gold); opacity:0.4; letter-spacing:2px;">◈</div>
-                    <p style="letter-spacing:0.3px;">Sin conversaciones</p>
+                    <p style="letter-spacing:0.3px;">Sin contactos</p>
                     <p style="font-size: 0.75rem; letter-spacing:0.3px;">Agrega contactos para empezar a chatear</p>
                 </div>
             `;
             return;
         }
 
+        // Obtener último mensaje de cada contacto
+        const conversaciones = await Promise.all(contactos.map(async (contacto) => {
+            const contactoInfo = contacto.usuarios || {};
+            const { data: ultimoMensaje } = await supabase
+                .from('mensajes_chat')
+                .select('*')
+                .or(`and(remitente_id.eq.${usuarioActual.id},destinatario_id.eq.${contactoInfo.id}),and(remitente_id.eq.${contactoInfo.id},destinatario_id.eq.${usuarioActual.id})`)
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .single();
+
+            return {
+                id: contactoInfo.id,
+                nombre: contactoInfo.nombre || 'Usuario',
+                handle: contactoInfo.handle || '',
+                avatar_url: contactoInfo.avatar_url || null,
+                ultimoMensaje: ultimoMensaje?.contenido || 'Sin mensajes',
+                fecha: ultimoMensaje?.created_at || null
+            };
+        }));
+
         conversacionesList.innerHTML = conversaciones.map(conv => {
-            const contacto = conv.contacto || {};
-            const ultimoMsg = conv.ultimoMensaje || {};
-            const esMiMensaje = ultimoMsg.de === usuarioActual?._id;
-            const fecha = ultimoMsg.createdAt ? new Date(ultimoMsg.createdAt) : null;
-            const estaActivo = contacto.estado === 'conectado';
+            const fecha = conv.fecha ? new Date(conv.fecha) : null;
+            const avatar = conv.avatar_url ? `<img src="${conv.avatar_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" />` : (conv.nombre ? conv.nombre[0].toUpperCase() : '✦');
 
             return `
-                <div class="conv-item ${conversacionActual && conversacionActual._id === contacto._id ? 'active' : ''}"
-                     data-id="${contacto._id}"
-                     onclick="abrirConversacion('${contacto._id}')">
-                    <div class="conv-avatar">
-                        ${contacto.nombre ? contacto.nombre[0].toUpperCase() : '✦'}
-                        ${estaActivo ? '<span class="online-dot"></span>' : ''}
-                    </div>
+                <div class="conv-item ${conversacionActual && conversacionActual.id === conv.id ? 'active' : ''}"
+                     data-id="${conv.id}"
+                     onclick="abrirConversacion('${conv.id}')">
+                    <div class="conv-avatar">${avatar}</div>
                     <div class="conv-info">
-                        <div class="conv-nombre">${contacto.nombre || 'Usuario'}</div>
-                        <div class="conv-msg">
-                            ${esMiMensaje ? '◈ Tú: ' : ''}${ultimoMsg.contenido || 'Sin mensajes'}
-                        </div>
+                        <div class="conv-nombre">${conv.nombre}</div>
+                        <div class="conv-msg">${conv.ultimoMensaje}</div>
                     </div>
                     <div class="conv-meta">
                         <div class="conv-hora">${fecha ? formatearHora(fecha) : ''}</div>
-                        ${conv.noLeidos > 0 ? `<span class="conv-badge">${conv.noLeidos}</span>` : ''}
                     </div>
                 </div>
             `;
         }).join('');
 
     } catch (error) {
-        console.error('Error cargando conversaciones:', error);
+        console.error('Error cargando conversaciones desde Supabase:', error);
         cargarConversacionesEjemplo();
     }
 }
 
 // ================================================================
-// CONVERSACIONES DE EJEMPLO (MODO DEMO)
+// CONVERSACIONES DE EJEMPLO (Solo si no hay sesión)
 // ================================================================
 function cargarConversacionesEjemplo() {
     conversacionesList.innerHTML = `
-        <div class="conv-item active" data-id="1" onclick="seleccionarConversacionDemo(1)">
+        <div class="conv-item" data-id="1" onclick="seleccionarConversacionDemo(1)">
             <div class="conv-avatar">✦</div>
             <div class="conv-info">
                 <div class="conv-nombre">Ana Martínez</div>
@@ -219,7 +162,6 @@ function cargarConversacionesEjemplo() {
             </div>
             <div class="conv-meta">
                 <div class="conv-hora">14:30</div>
-                <span class="conv-badge">2</span>
             </div>
         </div>
         <div class="conv-item" data-id="2" onclick="seleccionarConversacionDemo(2)">
@@ -232,36 +174,20 @@ function cargarConversacionesEjemplo() {
                 <div class="conv-hora">12:15</div>
             </div>
         </div>
-        <div class="conv-item" data-id="3" onclick="seleccionarConversacionDemo(3)">
-            <div class="conv-avatar">◈</div>
-            <div class="conv-info">
-                <div class="conv-nombre">María García</div>
-                <div class="conv-msg">Gracias por tu ayuda</div>
-            </div>
-            <div class="conv-meta">
-                <div class="conv-hora">Ayer</div>
-            </div>
-        </div>
     `;
-    showToast('◈ Modo demostración - Conversaciones de ejemplo', 'warning');
+    showToast('⚠️ Inicia sesión para ver conversaciones reales', 'warning');
 }
 
 function seleccionarConversacionDemo(id) {
     const mensajesDemo = {
         1: [
-            { tipo: 'recibido', texto: 'Hola, ¿cómo estás?', hora: '14:25', estado: 'conectado' },
-            { tipo: 'enviado', texto: '¡Hola! Todo bien, ¿y tú?', hora: '14:27', leido: true },
-            { tipo: 'recibido', texto: 'Bien, quería preguntarte sobre los tokens', hora: '14:28', estado: 'desconectado' },
-            { tipo: 'enviado', texto: 'Claro, ¿qué necesitas saber?', hora: '14:30', leido: true }
+            { tipo: 'recibido', texto: 'Hola, ¿cómo estás?', hora: '14:25' },
+            { tipo: 'enviado', texto: '¡Hola! Todo bien, ¿y tú?', hora: '14:27' },
+            { tipo: 'recibido', texto: 'Bien, quería preguntarte sobre los tokens', hora: '14:28' }
         ],
         2: [
-            { tipo: 'recibido', texto: '¿Confirmamos la reunión?', hora: '12:10', estado: 'conectado' },
-            { tipo: 'enviado', texto: 'Sí, a las 5 pm', hora: '12:12', leido: true },
-            { tipo: 'recibido', texto: 'Nos vemos mañana', hora: '12:15', estado: 'conectado' }
-        ],
-        3: [
-            { tipo: 'enviado', texto: '¿Necesitas ayuda con algo más?', hora: '10:00', leido: true },
-            { tipo: 'recibido', texto: 'Gracias por tu ayuda', hora: '10:05', estado: 'conectado' }
+            { tipo: 'recibido', texto: '¿Confirmamos la reunión?', hora: '12:10' },
+            { tipo: 'enviado', texto: 'Sí, a las 5 pm', hora: '12:12' }
         ]
     };
 
@@ -270,13 +196,7 @@ function seleccionarConversacionDemo(id) {
     container.innerHTML = '';
 
     if (mensajes.length === 0) {
-        container.innerHTML = `
-            <div class="empty-chat">
-                <span class="icon">◈</span>
-                <h3>Sin mensajes</h3>
-                <p>Inicia la conversación</p>
-            </div>
-        `;
+        container.innerHTML = `<div class="empty-chat"><span class="icon">◈</span><h3>Sin mensajes</h3></div>`;
         return;
     }
 
@@ -285,27 +205,11 @@ function seleccionarConversacionDemo(id) {
         div.className = `msg-wrapper ${msg.tipo}`;
         
         if (msg.tipo === 'enviado') {
-            div.innerHTML = `
-                <div class="burbuja">${msg.texto}</div>
-                <div class="meta">
-                    ${msg.hora}
-                    ${msg.leido ? '<span class="leido leido">◆◆</span>' : '<span class="leido no-leido">◈◈</span>'}
-                </div>
-            `;
+            div.innerHTML = `<div class="burbuja">${msg.texto}</div><div class="meta">${msg.hora} <span class="leido leido">◆◆</span></div>`;
         } else {
-            const estadoClass = msg.estado || 'conectado';
-            const estadoTexto = {
-                'conectado': '◈ Conectado',
-                'desconectado': '◈ Desconectado',
-                'sin-datos': '⚠️ Sin conexión a internet'
-            }[estadoClass] || '◈ Conectado';
-
             div.innerHTML = `
                 <div class="fila">
-                    <div class="avatar estado-${estadoClass}" title="${estadoTexto}">
-                        ◈
-                        <span class="tooltip">${estadoTexto}</span>
-                    </div>
+                    <div class="avatar estado-conectado">◈</div>
                     <div class="burbuja">${msg.texto}</div>
                 </div>
                 <div class="meta">${msg.hora}</div>
@@ -314,49 +218,33 @@ function seleccionarConversacionDemo(id) {
         container.appendChild(div);
     });
     container.scrollTop = container.scrollHeight;
-
-    document.querySelectorAll('.conv-item').forEach(el => el.classList.remove('active'));
-    const selected = document.querySelector(`.conv-item[data-id="${id}"]`);
-    if (selected) selected.classList.add('active');
 }
 
 // ================================================================
-// ABRIR CONVERSACIÓN
+// ABRIR CONVERSACIÓN (Desde Supabase)
 // ================================================================
 window.abrirConversacion = async function(contactoId) {
     try {
-        const token = localStorage.getItem('galleta_token');
-        if (!token) {
+        const session = await getSession();
+        if (!session) {
             seleccionarConversacionDemo(contactoId);
             return;
         }
 
-        const response = await fetch(`/api/perfil/${contactoId}`, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
+        const { data: contacto } = await supabase
+            .from('usuarios')
+            .select('id, nombre, handle, avatar_url')
+            .eq('id', contactoId)
+            .single();
 
-        if (!response.ok) throw new Error('Error al cargar contacto');
-
-        const contacto = await response.json();
         conversacionActual = contacto;
 
         if (chatNombre) chatNombre.textContent = contacto.nombre || 'Usuario';
-        if (chatEstado) {
-            const online = contacto.estado === 'conectado';
-            chatEstado.textContent = online ? '◉ En línea' : '◈ Desconectado';
-            chatEstado.className = `chat-estado ${online ? 'online' : ''}`;
-        }
-        if (chatAvatar) {
-            chatAvatar.textContent = contacto.nombre ? contacto.nombre[0].toUpperCase() : '✦';
-        }
+        if (chatAvatar) chatAvatar.textContent = contacto.nombre ? contacto.nombre[0].toUpperCase() : '✦';
 
-        await marcarMensajesComoLeidos(contactoId);
         paginaMensajes = 1;
         hayMasMensajes = true;
         await cargarMensajes(contactoId, 1);
-        await cargarConversaciones();
 
         chatInput.disabled = false;
         btnEnviar.disabled = false;
@@ -371,54 +259,45 @@ window.abrirConversacion = async function(contactoId) {
 };
 
 // ================================================================
-// CARGAR MENSAJES (CON PAGINACIÓN)
+// CARGAR MENSAJES (Desde Supabase)
 // ================================================================
 async function cargarMensajes(contactoId, page = 1) {
     if (cargandoMensajes) return;
     cargandoMensajes = true;
 
     try {
-        const token = localStorage.getItem('galleta_token');
-        if (!token) {
+        const session = await getSession();
+        if (!session) {
             cargandoMensajes = false;
             return;
         }
 
-        const response = await fetch(`/api/mensajes/${contactoId}?page=${page}&limit=50`, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
+        const { data: mensajes, error } = await supabase
+            .from('mensajes_chat')
+            .select('*')
+            .or(`and(remitente_id.eq.${session.user.id},destinatario_id.eq.${contactoId}),and(remitente_id.eq.${contactoId},destinatario_id.eq.${session.user.id})`)
+            .order('created_at', { ascending: false })
+            .range((page - 1) * 50, (page * 50) - 1);
 
-        if (!response.ok) throw new Error('Error al cargar mensajes');
+        if (error) throw error;
 
-        const data = await response.json();
-        const mensajes = data.mensajes || [];
-        const totalPages = data.pagination?.pages || 1;
-
-        hayMasMensajes = page < totalPages;
+        hayMasMensajes = mensajes.length === 50;
 
         if (page === 1) {
             chatMessages.innerHTML = '';
             mensajesCargados = [];
         }
 
-        if (mensajes.length > 0) {
+        if (mensajes && mensajes.length > 0) {
             const fragment = document.createDocumentFragment();
-            mensajes.forEach(msg => {
+            mensajes.reverse().forEach(msg => {
                 const el = crearElementoMensaje(msg, false);
                 fragment.appendChild(el);
             });
             chatMessages.prepend(fragment);
             mensajesCargados = [...mensajes, ...mensajesCargados];
         } else if (page === 1) {
-            chatMessages.innerHTML = `
-                <div class="empty-chat">
-                    <span class="icon">◈</span>
-                    <h3>Sin mensajes</h3>
-                    <p>Inicia la conversación</p>
-                </div>
-            `;
+            chatMessages.innerHTML = `<div class="empty-chat"><span class="icon">◈</span><h3>Sin mensajes</h3><p>Inicia la conversación</p></div>`;
         }
 
         if (page === 1) {
@@ -426,7 +305,7 @@ async function cargarMensajes(contactoId, page = 1) {
         }
 
     } catch (error) {
-        console.error('Error cargando mensajes:', error);
+        console.error('Error cargando mensajes desde Supabase:', error);
     } finally {
         cargandoMensajes = false;
     }
@@ -436,9 +315,10 @@ async function cargarMensajes(contactoId, page = 1) {
 // CREAR ELEMENTO DE MENSAJE
 // ================================================================
 function crearElementoMensaje(mensaje, scroll = true) {
-    const esEnviado = mensaje.de === usuarioActual?._id;
+    const session = usuarioActual;
+    const esEnviado = mensaje.remitente_id === session?.id;
     const tipo = esEnviado ? 'enviado' : 'recibido';
-    const fecha = new Date(mensaje.createdAt);
+    const fecha = new Date(mensaje.created_at);
 
     const div = document.createElement('div');
     div.className = `msg-wrapper ${tipo}`;
@@ -446,21 +326,12 @@ function crearElementoMensaje(mensaje, scroll = true) {
     if (tipo === 'enviado') {
         div.innerHTML = `
             <div class="burbuja">${mensaje.contenido || ''}</div>
-            <div class="meta">
-                ${formatearHora(fecha)}
-                <span class="leido leido">◆◆</span>
-            </div>
+            <div class="meta">${formatearHora(fecha)} <span class="leido leido">◆◆</span></div>
         `;
     } else {
-        const estadoClass = 'conectado';
-        const estadoTexto = '◈ Conectado';
-
         div.innerHTML = `
             <div class="fila">
-                <div class="avatar estado-${estadoClass}" title="${estadoTexto}">
-                    ◈
-                    <span class="tooltip">${estadoTexto}</span>
-                </div>
+                <div class="avatar estado-conectado">◈</div>
                 <div class="burbuja">${mensaje.contenido || ''}</div>
             </div>
             <div class="meta">${formatearHora(fecha)}</div>
@@ -470,20 +341,8 @@ function crearElementoMensaje(mensaje, scroll = true) {
     return div;
 }
 
-function agregarMensajeAlChat(mensaje, scroll = true) {
-    const empty = chatMessages.querySelector('.empty-chat');
-    if (empty) empty.remove();
-
-    const div = crearElementoMensaje(mensaje, scroll);
-    chatMessages.appendChild(div);
-
-    if (scroll) {
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-    }
-}
-
 // ================================================================
-// ENVIAR MENSAJE
+// ENVIAR MENSAJE (Desde Supabase)
 // ================================================================
 async function enviarMensaje() {
     const contenido = chatInput.value.trim();
@@ -492,36 +351,26 @@ async function enviarMensaje() {
         return;
     }
 
-    const token = localStorage.getItem('galleta_token');
+    const session = await getSession();
+    if (!session) {
+        showToast('⚠️ Inicia sesión para enviar mensajes', 'error');
+        return;
+    }
 
     try {
-        const response = await fetch('/api/mensajes', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                para: conversacionActual._id,
+        const { error } = await supabase
+            .from('mensajes_chat')
+            .insert({
+                remitente_id: session.user.id,
+                destinatario_id: conversacionActual.id,
                 contenido: contenido
-            })
-        });
+            });
 
-        if (!response.ok) throw new Error('Error al enviar mensaje');
-
-        const data = await response.json();
+        if (error) throw error;
 
         chatInput.value = '';
-        agregarMensajeAlChat(data.mensaje);
+        await cargarMensajes(conversacionActual.id, 1);
         cargarConversaciones();
-
-        if (socket) {
-            socket.emit('typing', {
-                userId: conversacionActual._id,
-                userName: usuarioActual?.nombre
-            });
-        }
-
     } catch (error) {
         console.error('Error enviando mensaje:', error);
         showToast('❌ Error al enviar mensaje', 'error');
@@ -529,166 +378,10 @@ async function enviarMensaje() {
 }
 
 // ================================================================
-// INDICADOR DE ESCRITURA
-// ================================================================
-let typingTimeout = null;
-
-function mostrarIndicadorEscritura(userName) {
-    const estado = document.getElementById('chatEstado');
-    if (estado && !estado.textContent.includes('escribiendo')) {
-        estado.textContent = `◈ ${userName || 'Alguien'} está escribiendo...`;
-        estado.className = 'chat-estado typing';
-        
-        clearTimeout(typingTimeout);
-        typingTimeout = setTimeout(() => {
-            if (conversacionActual) {
-                const online = conversacionActual.estado === 'conectado';
-                estado.textContent = online ? '◉ En línea' : '◈ Desconectado';
-                estado.className = `chat-estado ${online ? 'online' : ''}`;
-            }
-        }, 3000);
-    }
-}
-
-// ================================================================
-// MARCAR MENSAJES COMO LEÍDOS
-// ================================================================
-async function marcarMensajesComoLeidos(contactoId) {
-    try {
-        const token = localStorage.getItem('galleta_token');
-        if (!token) return;
-        await fetch(`/api/mensajes/leer/${contactoId}`, {
-            method: 'PUT',
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
-    } catch (error) {
-        console.error('Error marcando mensajes como leídos:', error);
-    }
-}
-
-// ================================================================
-// ACTUALIZAR ESTADO DE CONTACTO
-// ================================================================
-function actualizarEstadoContacto(userId, online) {
-    const items = conversacionesList.querySelectorAll('.conv-item');
-    items.forEach(item => {
-        if (item.dataset.id === userId) {
-            const avatar = item.querySelector('.conv-avatar');
-            if (avatar) {
-                const dot = avatar.querySelector('.online-dot');
-                if (online) {
-                    if (!dot) {
-                        const newDot = document.createElement('span');
-                        newDot.className = 'online-dot';
-                        avatar.appendChild(newDot);
-                    }
-                } else if (dot) {
-                    dot.remove();
-                }
-            }
-        }
-    });
-
-    if (conversacionActual && conversacionActual._id === userId) {
-        if (chatEstado) {
-            chatEstado.textContent = online ? '◉ En línea' : '◈ Desconectado';
-            chatEstado.className = `chat-estado ${online ? 'online' : ''}`;
-        }
-    }
-}
-
-// ================================================================
-// NUEVA CONVERSACIÓN
-// ================================================================
-window.nuevaConversacion = function() {
-    const wallet = prompt('◈ Ingresa la dirección wallet del usuario:');
-    if (!wallet || wallet.length < 10) {
-        showToast('⚠️ Ingresa una wallet válida', 'warning');
-        return;
-    }
-    buscarYAgregarConversacion(wallet);
-};
-
-async function buscarYAgregarConversacion(wallet) {
-    try {
-        const token = localStorage.getItem('galleta_token');
-        if (!token) {
-            showToast('⚠️ Conecta tu wallet para iniciar conversaciones', 'warning');
-            return;
-        }
-
-        const response = await fetch(`/api/perfil/buscar?wallet=${wallet}`, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
-
-        if (!response.ok) throw new Error('Usuario no encontrado');
-
-        const data = await response.json();
-        if (data.encontrado) {
-            abrirConversacion(data.usuarioId);
-            showToast('◈ Conversación iniciada');
-        } else {
-            showToast('❌ Usuario no encontrado', 'error');
-        }
-    } catch (error) {
-        console.error('Error buscando usuario:', error);
-        showToast('❌ Error al buscar usuario', 'error');
-    }
-}
-
-// ================================================================
-// CARGAR MÁS MENSAJES (SCROLL INFINITO)
-// ================================================================
-function cargarMasMensajes() {
-    if (chatMessages.scrollTop === 0 && hayMasMensajes && !cargandoMensajes && conversacionActual) {
-        paginaMensajes++;
-        cargarMensajes(conversacionActual._id, paginaMensajes);
-    }
-}
-
-// ================================================================
-// UTILIDADES
-// ================================================================
-function formatearHora(fecha) {
-    return fecha.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-}
-
-// ================================================================
-// MODO OSCURO/CLARO
-// ================================================================
-function toggleModo() {
-    modoOscuro = !modoOscuro;
-    const body = document.body;
-    if (modoOscuro) {
-        body.classList.remove('modo-claro');
-        localStorage.setItem('sariels_modo', 'oscuro');
-        showToast('◆ Modo oscuro');
-    } else {
-        body.classList.add('modo-claro');
-        localStorage.setItem('sariels_modo', 'claro');
-        showToast('◇ Modo claro');
-    }
-}
-
-function cargarModo() {
-    const modo = localStorage.getItem('sariels_modo');
-    if (modo === 'claro') {
-        modoOscuro = false;
-        document.body.classList.add('modo-claro');
-    }
-}
-
-// ================================================================
 // INICIALIZAR
 // ================================================================
-document.addEventListener('DOMContentLoaded', function() {
-    cargarModo();
-    verificarAutenticacion();
-    conectarSocket();
+document.addEventListener('DOMContentLoaded', async function() {
+    await verificarAutenticacion();
     cargarConversaciones();
 
     btnEnviar.addEventListener('click', enviarMensaje);
@@ -699,64 +392,6 @@ document.addEventListener('DOMContentLoaded', function() {
             enviarMensaje();
         }
     });
-
-    chatMessages.addEventListener('scroll', function() {
-        if (this.scrollTop === 0) {
-            cargarMasMensajes();
-        }
-    });
-
-    const btnNuevo = document.querySelector('.btn-nuevo');
-    if (btnNuevo) {
-        btnNuevo.addEventListener('click', nuevaConversacion);
-    }
-
-    // Botón de modo oscuro
-    const btnModo = document.createElement('button');
-    btnModo.textContent = modoOscuro ? '◆' : '◇';
-    btnModo.style.cssText = `
-        position: fixed;
-        bottom: 20px;
-        left: 20px;
-        z-index: 999;
-        padding: 10px 14px;
-        border-radius: 50%;
-        border: 1px solid var(--glass-border);
-        background: var(--glass-bg);
-        color: var(--gold);
-        cursor: pointer;
-        font-size: 1.2rem;
-        backdrop-filter: blur(10px);
-        transition: all 0.3s ease;
-        font-family: 'Inter', sans-serif;
-    `;
-    btnModo.onmouseover = () => btnModo.style.transform = 'scale(1.1)';
-    btnModo.onmouseout = () => btnModo.style.transform = 'scale(1)';
-    btnModo.onclick = toggleModo;
-    document.body.appendChild(btnModo);
-
-    if ('Notification' in window && Notification.permission === 'default') {
-        Notification.requestPermission();
-    }
-
-    // Verificar wallet (solo UI, sin redirigir)
-    const token = localStorage.getItem('galleta_token');
-    const connectBtn = document.getElementById('connectWallet');
-    if (token && connectBtn) {
-        connectBtn.textContent = '✅ Conectado';
-        connectBtn.disabled = true;
-    }
-
-    if (connectBtn) {
-        connectBtn.addEventListener('click', function() {
-            if (confirm('⚠️ ¿Quieres ir al inicio para conectar tu wallet?')) {
-                window.location.href = '/';
-            }
-        });
-    }
-
-    console.log('◈ Sariel\'s - Mensajes Ultra Mega Pro (sin redirección)');
-    console.log('◆ Conversaciones cargadas');
 });
 
 // ================================================================
@@ -766,5 +401,4 @@ window.showToast = showToast;
 window.abrirConversacion = abrirConversacion;
 window.nuevaConversacion = nuevaConversacion;
 window.enviarMensaje = enviarMensaje;
-window.toggleModo = toggleModo;
 window.cargarConversaciones = cargarConversaciones;
