@@ -32,6 +32,18 @@ function showToast(msg, type = '') {
 }
 
 // ================================================================
+// FUNCIÓN PARA CAMBIAR TABS
+// ================================================================
+function cambiarTab(tab) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    const tabContent = document.getElementById('tab-' + tab);
+    if (tabContent) tabContent.classList.add('active');
+    const tabBtn = document.querySelector(`.tab-btn[onclick="cambiarTab('${tab}')"]`);
+    if (tabBtn) tabBtn.classList.add('active');
+}
+
+// ================================================================
 // FUNCIÓN PARA OBTENER SESIÓN
 // ================================================================
 async function getSession() {
