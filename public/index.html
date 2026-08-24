@@ -71,6 +71,7 @@
         .btn-gold:hover { transform: translateY(-2px); box-shadow: var(--shadow-gold); }
         .btn-outline { background: transparent; color: var(--text-secondary); border: 1px solid var(--glass-border); }
         .btn-outline:hover { border-color: var(--gold); color: var(--gold); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
         .hero { text-align: center; padding: 40px 20px 30px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius); margin-bottom: 30px; }
         .hero h1 { font-family: 'Orbitron', monospace; font-size: 2.2rem; color: var(--gold); margin-bottom: 8px; }
@@ -114,14 +115,49 @@
         .footer .brand { color: var(--gold); font-weight: 600; }
         .footer-links { display: flex; gap: 12px; }
         .footer-links a { color: var(--text-muted); text-decoration: none; }
+
+        .toast {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(80px);
+            background: rgba(5,8,15,0.95); border: 1px solid var(--glass-border);
+            padding: 12px 24px; border-radius: 30px; color: var(--text-primary);
+            font-size: 0.85rem; box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+            backdrop-filter: blur(12px); transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 999; opacity: 0; pointer-events: none;
+        }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+        .toast.error { border-color: var(--danger); color: var(--danger); }
+        .toast.warning { border-color: var(--warning); color: var(--warning); }
+
+        .wallet-connect-wrapper { display: flex; justify-content: center; margin-bottom: 10px; }
+        .wallet-status-bar { display: none; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.3); padding: 8px 16px; border-radius: 30px; border: 1px solid var(--glass-border); }
+        .wallet-status-bar .info { display: flex; align-items: center; gap: 8px; }
+        .wallet-status-bar .dot { width: 8px; height: 8px; background: var(--success); border-radius: 50%; display: inline-block; }
+        .wallet-status-bar .address { font-family: monospace; color: var(--gold); font-size: 0.8rem; }
+        .btn-sm { font-size: 0.6rem; padding: 4px 12px; }
+
+        #sessionInfo { 
+            background: rgba(0,0,0,0.2); 
+            padding: 8px 16px; 
+            border-radius: 20px; 
+            font-size: 0.7rem; 
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        #sessionInfo .email { color: var(--gold); }
+        .logout-btn { 
+            background: transparent; 
+            border: 1px solid var(--danger); 
+            color: var(--danger); 
+            padding: 2px 12px; 
+            border-radius: 12px; 
+            cursor: pointer; 
+            font-size: 0.6rem;
+        }
     </style>
 </head>
 <body>
-
-    <canvas id="stars-canvas"></canvas>
-    <div class="nebula nebula-1"></div>
-    <div class="nebula nebula-2"></div>
-    <div class="nebula nebula-3"></div>
 
     <div class="app">
         <header class="header">
@@ -132,14 +168,11 @@
             </a>
             <div class="header-actions">
                 <span class="network-badge"><span class="dot"></span> Polygon</span>
-                <a href="/features/muro/muro.html" class="nav-link">◇ Muro</a>
-                <a href="/features/perfil/perfil.html" class="nav-link">◆ Perfil</a>
-                <a href="/features/mensajes/contactos.html" class="nav-link">◈ Contactos</a>
-                <a href="/features/live/live.html" class="nav-link">◉ Live</a>
-                <a href="/features/internet/internet.html" class="nav-link">◈ Internet</a>
-                <button class="nav-link active" onclick="cambiarTab('inicio')">⌂ Inicio</button>
-                <button class="nav-link admin" onclick="abrirQRAdmin()">◈ Admin QR</button>
-                <a href="/qr-generator.html" class="nav-link admin" target="_blank">◈ QR Generator</a>
+                <div id="sessionInfo">
+                    <span>🔐</span>
+                    <span class="email" id="userEmail">No autenticado</span>
+                    <button class="logout-btn" onclick="cerrarSesion()" id="logoutBtn" style="display:none;">Cerrar</button>
+                </div>
             </div>
         </header>
 
@@ -228,6 +261,24 @@
             </div>
         </div>
 
+        <div id="tab-internet" class="tab-content">
+            <div class="panel">
+                <h2>◈ Internet Sariel's</h2>
+                <p style="color:var(--text-secondary);">Próximamente: Navegador descentralizado, DNS on-chain y más.</p>
+            </div>
+        </div>
+
+        <div id="tab-admin" class="tab-content">
+            <div class="panel">
+                <h2>◈ Admin QR</h2>
+                <div style="display:flex; gap: 10px; flex-wrap:wrap; margin-top:10px;">
+                    <input type="text" id="qrData" placeholder="Datos para QR" value="https://sariels.com" style="flex:1; padding:10px; background:rgba(0,0,0,0.4); border:1px solid var(--glass-border); border-radius:10px; color:white;" />
+                    <button class="btn btn-gold" onclick="generarQR()">Generar QR</button>
+                </div>
+                <div id="qrContainer" style="margin-top:20px; display:flex; justify-content:center; background:white; padding:20px; border-radius:10px;"></div>
+            </div>
+        </div>
+
         <footer class="footer">
             <span><span class="brand">◈ Sariel's</span> · Sabor al Paladar · WEB3</span>
             <div class="footer-links">
@@ -246,16 +297,19 @@
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     
-    <!-- ELIMINAMOS app.js PARA EVITAR CONFLICTOS -->
-    
     <script>
         // ================================================================
-        // SUPABASE CLIENTE (El mismo de app.js)
+        // CONFIGURACIÓN
         // ================================================================
         const supabase = window.supabase.createClient(
             'https://hbbwopkfpkvahgtawqke.supabase.co',
             'sb_publishable_4gJWA-t7Eg6ruuI2EF-K2A_GQlahb2j'
         );
+
+        let currentUser = null;
+        let userTokens = 0;
+        let userDomos = 0;
+        let userHasNft = false;
 
         // ================================================================
         // TOAST
@@ -282,11 +336,36 @@
         }
 
         // ================================================================
-        // REGISTRO (Supabase Auth)
+        // SESIÓN (Auth)
         // ================================================================
+        async function checkSession() {
+            const { data: { session }, error } = await supabase.auth.getSession();
+            if (error) {
+                console.error('Error checking session:', error);
+                return;
+            }
+            
+            if (session) {
+                currentUser = session.user;
+                document.getElementById('userEmail').textContent = currentUser.email || 'Usuario';
+                document.getElementById('logoutBtn').style.display = 'inline-block';
+                document.getElementById('registerCard').style.display = 'none';
+                document.getElementById('loginCard').style.display = 'none';
+                
+                // Cargar datos del usuario
+                await loadUserData();
+            } else {
+                document.getElementById('userEmail').textContent = 'No autenticado';
+                document.getElementById('logoutBtn').style.display = 'none';
+                document.getElementById('registerCard').style.display = 'block';
+                document.getElementById('loginCard').style.display = 'none';
+            }
+        }
+
         async function registrarUsuario() {
             const email = document.getElementById('regEmail').value.trim();
             const password = document.getElementById('regPassword').value.trim();
+            const name = document.getElementById('regName').value.trim();
 
             if (!email || !password) {
                 showToast('⚠️ Correo y contraseña son obligatorios', 'error');
@@ -296,20 +375,22 @@
             try {
                 const { data, error } = await supabase.auth.signUp({
                     email: email,
-                    password: password
+                    password: password,
+                    options: { data: { full_name: name } }
                 });
 
                 if (error) throw error;
 
-                showToast('✅ Cuenta creada. Revisa tu correo.');
+                showToast('✅ Cuenta creada. Revisa tu correo para confirmar.');
+                if (data.user) {
+                    currentUser = data.user;
+                    await loadUserData();
+                }
             } catch (error) {
                 showToast('❌ ' + error.message, 'error');
             }
         }
 
-        // ================================================================
-        // LOGIN (Supabase Auth)
-        // ================================================================
         async function iniciarSesion() {
             const email = document.getElementById('loginEmail').value.trim();
             const password = document.getElementById('loginPassword').value.trim();
@@ -328,28 +409,106 @@
                 if (error) throw error;
 
                 showToast('✅ Sesión iniciada correctamente');
-                window.location.href = '/features/perfil/perfil.html';
+                await checkSession();
             } catch (error) {
                 showToast('❌ ' + error.message, 'error');
             }
         }
 
-        // ================================================================
-        // MOSTRAR FORMULARIOS
-        // ================================================================
+        async function cerrarSesion() {
+            try {
+                await supabase.auth.signOut();
+                currentUser = null;
+                showToast('🔌 Sesión cerrada');
+                await checkSession();
+            } catch (error) {
+                showToast('❌ ' + error.message, 'error');
+            }
+        }
+
         function mostrarLogin() {
             document.getElementById('registerCard').style.display = 'none';
             document.getElementById('loginCard').style.display = 'block';
         }
+
         function mostrarRegistro() {
             document.getElementById('registerCard').style.display = 'block';
             document.getElementById('loginCard').style.display = 'none';
         }
 
         // ================================================================
-        // WALLET (MetaMask)
+        // CARGAR DATOS DEL USUARIO
+        // ================================================================
+        async function loadUserData() {
+            if (!currentUser) return;
+
+            try {
+                // Obtener datos de la tabla usuarios
+                const { data: userData, error: userError } = await supabase
+                    .from('usuarios')
+                    .select('domos, tokens, nft_canjeado')
+                    .eq('id', currentUser.id)
+                    .single();
+
+                if (userError && userError.code !== 'PGRST116') {
+                    console.error('Error loading user data:', userError);
+                    return;
+                }
+
+                if (userData) {
+                    userDomos = userData.domos || 0;
+                    userTokens = userData.tokens || 0;
+                    userHasNft = userData.nft_canjeado || false;
+                } else {
+                    // Si no existe el registro, crear uno
+                    const { error: insertError } = await supabase
+                        .from('usuarios')
+                        .insert({
+                            id: currentUser.id,
+                            email: currentUser.email,
+                            domos: 0,
+                            tokens: 0,
+                            nft_canjeado: false
+                        });
+
+                    if (insertError) {
+                        console.error('Error creating user record:', insertError);
+                    }
+                    userDomos = 0;
+                    userTokens = 0;
+                    userHasNft = false;
+                }
+
+                actualizarEstado();
+            } catch (error) {
+                console.error('Error in loadUserData:', error);
+            }
+        }
+
+        // ================================================================
+        // ACTUALIZAR ESTADO UI
+        // ================================================================
+        function actualizarEstado() {
+            document.getElementById('domosCount').textContent = userDomos;
+            document.getElementById('tokensCount').textContent = userTokens;
+
+            const progreso = Math.min(userTokens, 12);
+            document.getElementById('progressFill').style.width = `${(progreso / 12) * 100}%`;
+            document.getElementById('progressText').textContent = `${progreso} / 12`;
+
+            document.getElementById('haCanjeado').textContent = userHasNft ? '✅ Sí' : 'No';
+            document.getElementById('canjearNft').disabled = userTokens < 12 || userHasNft || !currentUser;
+        }
+
+        // ================================================================
+        // WALLET (MetaMask + Supabase RPC)
         // ================================================================
         async function conectarWallet() {
+            if (!currentUser) {
+                showToast('⚠️ Primero inicia sesión', 'error');
+                return;
+            }
+
             if (typeof window.ethereum === 'undefined') {
                 showToast('⚠️ Instala MetaMask para conectar tu wallet', 'error');
                 return;
@@ -359,8 +518,41 @@
                 const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
                 const cuenta = accounts[0];
 
-                // Guardar en Supabase (RPC)
-                const { error } = await supabase.rpc('vincular_wallet', { p_wallet_address: cuenta });
+                // Verificar red Polygon Amoy (Chain ID 80002)
+                const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+                if (chainId !== '0x13882') { // 80002 en hex
+                    try {
+                        await window.ethereum.request({
+                            method: 'wallet_switchEthereumChain',
+                            params: [{ chainId: '0x13882' }],
+                        });
+                    } catch (switchError) {
+                        // Si la red no está agregada
+                        if (switchError.code === 4902) {
+                            await window.ethereum.request({
+                                method: 'wallet_addEthereumChain',
+                                params: [{
+                                    chainId: '0x13882',
+                                    chainName: 'Polygon Amoy Testnet',
+                                    nativeCurrency: {
+                                        name: 'POL',
+                                        symbol: 'POL',
+                                        decimals: 18
+                                    },
+                                    rpcUrls: ['https://rpc-amoy.polygon.technology/'],
+                                    blockExplorerUrls: ['https://amoy.polygonscan.com/']
+                                }]
+                            });
+                        } else {
+                            throw switchError;
+                        }
+                    }
+                }
+
+                // Llamar RPC vincular_wallet
+                const { data, error } = await supabase.rpc('vincular_wallet', { 
+                    p_wallet_address: cuenta 
+                });
 
                 if (error) throw error;
 
@@ -372,79 +564,147 @@
                 showToast('✅ Wallet conectada correctamente');
             } catch (error) {
                 console.error('Error conectando wallet:', error);
-                showToast('❌ Error al conectar wallet', 'error');
+                showToast('❌ Error al conectar wallet: ' + error.message, 'error');
             }
         }
 
-        async function desconectarWallet() {
+        function desconectarWallet() {
             document.getElementById('connectWallet').style.display = 'flex';
             document.getElementById('walletStatusBar').style.display = 'none';
             showToast('🔌 Wallet desconectada');
         }
 
         // ================================================================
-        // ADMIN QR (Solo UI - sin backend)
+        // COMPRAR DOMO (RPC real)
         // ================================================================
-        function abrirQRAdmin() {
-            cambiarTab('admin');
-            showToast('◈ Acceso a Admin QR. Configura la contraseña en el frontend.');
-        }
-
-        // ================================================================
-        // COMPRAR DOMO (Demo - sin backend)
-        // ================================================================
-        function comprarDomo() {
-            const qty = parseInt(document.getElementById('domoQuantity').textContent);
-            showToast(`⏳ Procesando compra de ${qty} domo(s)...`);
-            setTimeout(() => {
-                let domos = parseInt(localStorage.getItem('sariels_domos') || '0');
-                let tokens = parseInt(localStorage.getItem('sariels_tokens') || '0');
-                domos += qty;
-                tokens += qty * 12;
-                localStorage.setItem('sariels_domos', domos.toString());
-                localStorage.setItem('sariels_tokens', tokens.toString());
-                actualizarEstado();
-                showToast('✅ Compra realizada en modo demo');
-            }, 1500);
-        }
-
-        function canjearNFT() {
-            const tokens = parseInt(localStorage.getItem('sariels_tokens') || '0');
-            if (tokens < 12) {
-                showToast('⚠️ Necesitas 12 tokens para canjear un NFT', 'error');
+        async function comprarDomo() {
+            if (!currentUser) {
+                showToast('⚠️ Inicia sesión para comprar', 'error');
                 return;
             }
-            tokens -= 12;
-            localStorage.setItem('sariels_tokens', tokens.toString());
-            localStorage.setItem('sariels_nft', 'true');
-            actualizarEstado();
-            showToast('✅ NFT canjeado');
+
+            const qty = parseInt(document.getElementById('domoQuantity').textContent);
+            const btn = document.getElementById('buyDomo');
+            btn.disabled = true;
+            btn.textContent = '⏳ Procesando...';
+
+            try {
+                // Llamar RPC comprar_domo
+                const { data, error } = await supabase.rpc('comprar_domo', {
+                    p_cantidad: qty
+                });
+
+                if (error) throw error;
+
+                // Recargar datos actualizados
+                await loadUserData();
+                showToast(`✅ Compra exitosa de ${qty} domo(s)`);
+            } catch (error) {
+                console.error('Error comprando domo:', error);
+                showToast('❌ Error al comprar: ' + error.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Comprar Domo';
+            }
         }
 
         // ================================================================
-        // ACTUALIZAR ESTADO
+        // CANJEAR NFT (RPC real)
         // ================================================================
-        function actualizarEstado() {
-            const domos = parseInt(localStorage.getItem('sariels_domos') || '0');
-            const tokens = parseInt(localStorage.getItem('sariels_tokens') || '0');
-            const nft = localStorage.getItem('sariels_nft') === 'true';
+        async function canjearNFT() {
+            if (!currentUser) {
+                showToast('⚠️ Inicia sesión para canjear', 'error');
+                return;
+            }
 
-            document.getElementById('domosCount').textContent = domos;
-            document.getElementById('tokensCount').textContent = tokens;
+            if (userTokens < 12) {
+                showToast('⚠️ Necesitas 12 Es.stoks para canjear un NFT', 'error');
+                return;
+            }
 
-            const progreso = Math.min(tokens, 12);
-            document.getElementById('progressFill').style.width = `${(progreso / 12) * 100}%`;
-            document.getElementById('progressText').textContent = `${progreso} / 12`;
+            if (userHasNft) {
+                showToast('⚠️ Ya has canjeado tu NFT', 'warning');
+                return;
+            }
 
-            document.getElementById('haCanjeado').textContent = nft ? '✅ Sí' : 'No';
-            document.getElementById('canjearNft').disabled = tokens < 12 || nft;
+            const btn = document.getElementById('canjearNft');
+            btn.disabled = true;
+            btn.textContent = '⏳ Procesando...';
+
+            try {
+                // Llamar RPC canjear_nft
+                const { data, error } = await supabase.rpc('canjear_nft');
+
+                if (error) throw error;
+
+                // Recargar datos actualizados
+                await loadUserData();
+                showToast('✅ NFT canjeado exitosamente. Revisa tu historial.');
+            } catch (error) {
+                console.error('Error canjeando NFT:', error);
+                showToast('❌ Error al canjear: ' + error.message, 'error');
+            } finally {
+                btn.disabled = userTokens < 12 || userHasNft;
+                btn.textContent = '⟡ Canjear NFT (12 Es.stoks)';
+            }
         }
 
         // ================================================================
-        // INICIALIZAR
+        // GENERADOR QR (Admin)
+        // ================================================================
+        function generarQR() {
+            const data = document.getElementById('qrData').value;
+            const container = document.getElementById('qrContainer');
+            container.innerHTML = '';
+            try {
+                new QRCode(container, {
+                    text: data,
+                    width: 200,
+                    height: 200,
+                    colorDark: '#000000',
+                    colorLight: '#ffffff',
+                    correctLevel: QRCode.CorrectLevel.H
+                });
+                showToast('✅ QR generado correctamente');
+            } catch (error) {
+                showToast('❌ Error generando QR', 'error');
+            }
+        }
+
+        function abrirQRAdmin() {
+            cambiarTab('admin');
+        }
+
+        // ================================================================
+        // CONTROLES DE CANTIDAD
         // ================================================================
         document.addEventListener('DOMContentLoaded', function() {
-            actualizarEstado();
+            const qtyDisplay = document.getElementById('domoQuantity');
+            document.getElementById('decreaseQty').addEventListener('click', () => {
+                let val = parseInt(qtyDisplay.textContent);
+                if (val > 1) qtyDisplay.textContent = val - 1;
+            });
+            document.getElementById('increaseQty').addEventListener('click', () => {
+                let val = parseInt(qtyDisplay.textContent);
+                if (val < 10) qtyDisplay.textContent = val + 1;
+            });
+
+            // Inicializar sesión
+            checkSession();
+
+            // Suscribirse a cambios de autenticación
+            supabase.auth.onAuthStateChange((event, session) => {
+                if (event === 'SIGNED_IN' && session) {
+                    currentUser = session.user;
+                    loadUserData();
+                } else if (event === 'SIGNED_OUT') {
+                    currentUser = null;
+                    userDomos = 0;
+                    userTokens = 0;
+                    userHasNft = false;
+                    actualizarEstado();
+                }
+            });
         });
 
         // ================================================================
@@ -455,6 +715,7 @@
         window.mostrarRegistro = mostrarRegistro;
         window.registrarUsuario = registrarUsuario;
         window.iniciarSesion = iniciarSesion;
+        window.cerrarSesion = cerrarSesion;
         window.conectarWallet = conectarWallet;
         window.desconectarWallet = desconectarWallet;
         window.comprarDomo = comprarDomo;
@@ -462,6 +723,7 @@
         window.actualizarEstado = actualizarEstado;
         window.showToast = showToast;
         window.abrirQRAdmin = abrirQRAdmin;
+        window.generarQR = generarQR;
     </script>
 </body>
 </html>
