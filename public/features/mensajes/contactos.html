@@ -4,42 +4,28 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>◈ Contactos · Sariel's</title>
-    <link rel="stylesheet" href="/styles.css" />
-    <link rel="stylesheet" href="/features/mensajes/contactos.css" />
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+    
     <style>
-        /* ================================================================
-           CONTACTOS ULTRA MEGA PRO - SARIEL'S
-           ================================================================ */
-
         :root {
             --gold: #D4AF37;
             --gold-dark: #b8923a;
             --gold-light: #e8c84a;
-            --gold-bright: #f0d060;
             --green-deep: #0F2D1A;
             --green-mid: #1a4a2a;
-            --green-bright: #2a6a3a;
             --space: #05080f;
             --text-primary: #f0f4f8;
             --text-secondary: #c0d8e8;
             --text-muted: #8aa8b8;
-            --glass-bg: rgba(15, 45, 26, 0.45);
-            --glass-border: rgba(212, 175, 55, 0.12);
-            --glass-border-hover: rgba(212, 175, 55, 0.3);
-            --shadow-gold: 0 8px 40px rgba(212, 175, 55, 0.2);
-            --shadow-gold-strong: 0 0 60px rgba(212, 175, 55, 0.12);
-            --shadow-card: 0 4px 30px rgba(0, 0, 0, 0.3);
+            --glass-bg: rgba(15, 45, 26, 0.55);
+            --glass-border: rgba(212, 175, 55, 0.15);
+            --shadow-gold: 0 8px 32px rgba(212, 175, 55, 0.25);
             --radius: 16px;
             --radius-xl: 24px;
-            --transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-            --transition-slow: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             --success: #00d68f;
             --danger: #ff3366;
-            --warning: #f7d44a;
-            --cyan: #00e5ff;
-            --purple: #a855f7;
-            --pink: #ec4899;
             --live-red: #ff0044;
         }
 
@@ -48,78 +34,21 @@
         body {
             background: var(--space);
             color: var(--text-primary);
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-family: 'Inter', sans-serif;
             min-height: 100vh;
-            line-height: 1.6;
-            background-image: 
-                radial-gradient(ellipse at 20% 50%, rgba(26, 74, 42, 0.4) 0%, transparent 60%),
-                radial-gradient(ellipse at 80% 50%, rgba(212, 175, 55, 0.08) 0%, transparent 60%);
-            padding: 0;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
+            background-image: radial-gradient(ellipse at 20% 50%, rgba(26, 74, 42, 0.4) 0%, transparent 60%), radial-gradient(ellipse at 80% 50%, rgba(212, 175, 55, 0.08) 0%, transparent 60%);
         }
 
-        #stars-canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 0;
-            pointer-events: none;
-        }
-
-        .nebula {
-            position: fixed;
-            border-radius: 50%;
-            filter: blur(120px);
-            opacity: 0.12;
-            pointer-events: none;
-            z-index: 0;
-            animation: nebula-drift 25s ease-in-out infinite alternate;
-        }
-        .nebula-1 { width: 700px; height: 700px; background: var(--green-bright); top: -15%; right: -15%; }
-        .nebula-2 { width: 600px; height: 600px; background: var(--gold-light); bottom: -15%; left: -15%; animation-delay: -8s; opacity: 0.06; }
-        .nebula-3 { width: 500px; height: 500px; background: var(--purple); top: 50%; left: 50%; transform: translate(-50%, -50%); animation-delay: -15s; opacity: 0.04; }
-
-        @keyframes nebula-drift {
-            0% { transform: translate(0, 0) scale(1); }
-            100% { transform: translate(40px, -30px) scale(1.15); }
-        }
-
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: var(--space); }
-        ::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 2px; }
-
-        .app {
-            position: relative;
-            z-index: 1;
-            max-width: 1100px;
-            margin: 0 auto;
-            padding: 16px 20px 30px;
-        }
+        .app { max-width: 1100px; margin: 0 auto; padding: 16px 20px 30px; }
 
         .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 0 14px;
-            border-bottom: 1px solid var(--glass-border);
-            flex-wrap: wrap;
-            gap: 10px;
-            background: rgba(5, 8, 15, 0.92);
-            border-radius: var(--radius) var(--radius) 0 0;
-            position: sticky;
-            top: 0;
-            z-index: 100;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 0 14px; border-bottom: 1px solid var(--glass-border);
+            background: rgba(5, 8, 15, 0.92); position: sticky; top: 0; z-index: 100;
         }
         .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
-        .logo-hex { font-size: 1.8rem; color: var(--gold); font-weight: 800; font-family: 'Orbitron', monospace; text-shadow: 0 0 30px rgba(212, 175, 55, 0.3); animation: glow-pulse 3s ease-in-out infinite; }
-        @keyframes glow-pulse {
-            0%, 100% { text-shadow: 0 0 30px rgba(212, 175, 55, 0.3); }
-            50% { text-shadow: 0 0 60px rgba(212, 175, 55, 0.6); }
-        }
-        .logo-text { font-family: 'Orbitron', monospace; font-size: 1.2rem; font-weight: 700; color: var(--text-primary); letter-spacing: 2px; }
+        .logo-hex { font-size: 1.8rem; color: var(--gold); font-family: 'Orbitron', monospace; }
+        .logo-text { font-family: 'Orbitron', monospace; font-size: 1.2rem; color: var(--text-primary); letter-spacing: 2px; }
         .logo-text span { color: var(--gold); }
         .logo-badge { font-size: 0.45rem; background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: var(--space); padding: 2px 10px; border-radius: 20px; font-weight: 700; }
         .network-badge { display: flex; align-items: center; gap: 6px; font-size: 0.6rem; color: var(--gold); background: rgba(212, 175, 55, 0.1); padding: 4px 12px; border-radius: 20px; }
@@ -166,7 +95,7 @@
             background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius);
             transition: var(--transition);
         }
-        .contacto-card:hover { border-color: var(--glass-border-hover); transform: translateY(-3px); box-shadow: var(--shadow-gold); }
+        .contacto-card:hover { border-color: rgba(212, 175, 55, 0.3); transform: translateY(-3px); box-shadow: var(--shadow-gold); }
 
         .contacto-card .contacto-avatar {
             width: 48px; height: 48px; border-radius: 50%;
@@ -273,10 +202,10 @@
         <footer class="footer">
             <span><span class="brand">◈ Sariel's</span> · Sabor al Paladar · WEB3</span>
             <div class="footer-links">
-                <a href="/terminos.html">◈ Términos</a>
-                <a href="/privacidad.html">◈ Privacidad</a>
-                <a href="/cookies.html">◈ Cookies</a>
-                <a href="/live-terminos.html">◉ Live Términos</a>
+                <a href="/terminos">◈ Términos</a>
+                <a href="/privacidad">◈ Privacidad</a>
+                <a href="/cookies">◈ Cookies</a>
+                <a href="/live-terminos">◉ Live Términos</a>
                 <span style="opacity:0.3;">⚡ Polygon</span>
             </div>
         </footer>
@@ -287,8 +216,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/web3@1.8.0/dist/web3.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="/app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="/features/mensajes/contactos.js"></script>
 </body>
 </html>
