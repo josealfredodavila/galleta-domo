@@ -88,16 +88,13 @@
         .live-video-container {
             background: var(--space); border: 1px solid var(--glass-border); border-radius: var(--radius-xl);
             overflow: hidden; margin-bottom: 20px; position: relative;
-            width: 100%; /* Ocupa todo el ancho */
-            height: 70vh; /* Ocupa el 70% de la altura de la pantalla */
-            min-height: 400px;
+            width: 100%; height: 70vh; min-height: 400px;
         }
         .live-video-container video { width: 100%; height: 100%; object-fit: cover; background: #000; }
         .live-video-container .live-overlay {
             position: absolute; top: 12px; left: 12px; display: flex; align-items: center; gap: 8px;
             background: rgba(0, 0, 0, 0.6); padding: 4px 12px; border-radius: 20px;
         }
-        .live-video-container .live-overlay .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--live-red); animation: pulse-dot-live 1.5s infinite; }
         .live-video-container .live-controls {
             position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
             display: flex; gap: 12px; background: rgba(0, 0, 0, 0.6); padding: 8px 16px; border-radius: 30px;
@@ -133,7 +130,6 @@
         .stream-card .stream-thumb .live-badge { position: absolute; top: 6px; left: 6px; background: var(--live-red); color: white; font-size: 0.45rem; padding: 2px 10px; border-radius: 12px; }
         .stream-card .stream-name { font-weight: 600; font-size: 0.8rem; color: var(--text-primary); margin-top: 8px; }
         .stream-card .stream-host { font-size: 0.65rem; color: var(--text-muted); }
-        .stream-card .stream-viewers { font-size: 0.55rem; color: var(--text-muted); font-family: 'Orbitron', monospace; }
 
         .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
         .empty-state .icon { font-size: 2.5rem; display: block; margin-bottom: 16px; color: var(--gold); opacity: 0.4; font-family: 'Orbitron', monospace; }
@@ -257,12 +253,12 @@
 
     <div class="toast" id="toast"></div>
 
-    <!-- ===== SCRIPTS (AGREGADO LIVEKIT SDK) ===== -->
+    <!-- ===== SCRIPTS ===== -->
     <script src="https://cdn.jsdelivr.net/npm/web3@1.8.0/dist/web3.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     
-    <!-- 🔥 ESTA ES LA LÍNEA QUE FALTABA PARA LIVEKIT -->
+    <!-- SDK DE LIVEKIT -->
     <script src="https://cdn.jsdelivr.net/npm/livekit-client/dist/livekit-client.umd.min.js"></script>
     
     <script src="/features/live/live.js"></script>
