@@ -1,10 +1,10 @@
 /* ================================================================
    MURO ULTRA MEGA PRO - SARIEL'S
-   Con Supabase Realtime + Subida de Fotos
+   Corregido: Likes interactivos, Realtime sin duplicados, .count()
    ================================================================ */
 
 // ================================================================
-// SUPABASE CLIENTE (El mismo de app.js)
+// SUPABASE CLIENTE
 // ================================================================
 const supabase = window.supabase.createClient(
     'https://hbbwopkfpkvahgtawqke.supabase.co',
@@ -40,13 +40,13 @@ async function getSession() {
 }
 
 // ================================================================
-// CARGAR PUBLICACIONES (Para el estado inicial)
+// CARGAR PUBLICACIONES (CORRECCIÓN DEL .count())
 // ================================================================
 async function cargarPublicaciones() {
     try {
         const { data, error } = await supabase
             .from('muro_posts')
-            .select('*, usuarios(nombre, avatar_url), muro_likes(count), muro_comentarios(count)')
+            .select('*, usuarios(nombre, avatar_url), muro_likes(id), muro_comentarios(id)')
             .order('created_at', { ascending: false });
 
         if (error) throw error;
@@ -72,63 +72,7 @@ async function cargarPublicaciones() {
 }
 
 // ================================================================
-// SUSCRIBIRSE A REALTIME
-// ================================================================
-async function suscribirseARealtime() {
-    const channel = supabase
-        .channel('muro-realtime')
-        .on('postgres_changes',
-            { event: 'INSERT', schema: 'public', table: 'muro_posts' },
-            (payload) => {
-                // Agregar la publicación nueva al DOM sin recargar
-                agregarPostRealtime(payload.new);
-            }
-        )
-        .on('postgres_changes',
-            { event: 'UPDATE', schema: 'public', table: 'muro_posts' },
-            () => cargarPublicaciones()
-        )
-        .subscribe();
-
-    return channel;
-}
-
-// ================================================================
-// AGREGAR POST EN TIEMPO REAL
-// ================================================================
-async function agregarPostRealtime(post) {
-    const feedContainer = document.getElementById('feedContainer');
-    if (!feedContainer) return;
-
-    // Obtener usuario
-    const { data: userData } = await supabase
-        .from('usuarios')
-        .select('nombre, avatar_url')
-        .eq('id', post.usuario_id)
-        .single();
-
-    const avatar = userData?.avatar_url ? `<img src="${userData.avatar_url}">` : '◈';
-    const nombre = userData?.nombre || 'Explorador';
-
-    const newPost = `
-        <div class="post-card">
-            <div class="post-header">
-                <div class="post-avatar">${avatar}</div>
-                <div>
-                    <div class="post-author">${nombre} <span class="badge-verificado">✦ Verificado</span></div>
-                    <div class="post-date">${new Date(post.created_at).toLocaleString()}</div>
-                </div>
-            </div>
-            <div class="post-content">${post.contenido || ''}</div>
-            ${post.imagen_url ? `<img src="${post.imagen_url}" style="width:100%; border-radius:12px; margin-top:12px;" />` : ''}
-        </div>
-    `;
-
-    feedContainer.insertAdjacentHTML('afterbegin', newPost);
-}
-
-// ================================================================
-// RENDERIZAR PUBLICACIONES (Para el estado inicial)
+// RENDERIZAR PUBLICACIONES (CON BOTÓN DE LIKE INTERACTIVO)
 // ================================================================
 function renderizarPublicaciones(posts) {
     const feedContainer = document.getElementById('feedContainer');
@@ -138,9 +82,10 @@ function renderizarPublicaciones(posts) {
         const avatar = post.usuarios?.avatar_url ? `<img src="${post.usuarios.avatar_url}">` : '◈';
         const likes = post.muro_likes?.length || 0;
         const comentarios = post.muro_comentarios?.length || 0;
+        const imagen = post.imagen_url ? `<img src="${post.imagen_url}" style="width:100%; border-radius:12px; margin-top:12px;" />` : '';
 
         return `
-            <div class="post-card">
+            <div class="post-card" data-post-id="${post.id}">
                 <div class="post-header">
                     <div class="post-avatar">${avatar}</div>
                     <div>
@@ -149,10 +94,10 @@ function renderizarPublicaciones(posts) {
                     </div>
                 </div>
                 <div class="post-content">${post.contenido || ''}</div>
-                ${post.imagen_url ? `<img src="${post.imagen_url}" style="width:100%; border-radius:12px; margin-top:12px;" />` : ''}
+                ${imagen}
                 <div class="post-stats">
-                    <span>❤️ ${likes}</span>
-                    <span>💬 ${comentarios}</span>
+                    <span onclick="likePublicacion('${post.id}')" style="cursor:pointer;" class="like-btn">❤️ <span class="count">${likes}</span></span>
+                    <span>💬 <span class="count">${comentarios}</span></span>
                 </div>
             </div>
         `;
@@ -160,49 +105,43 @@ function renderizarPublicaciones(posts) {
 }
 
 // ================================================================
-// PUBLICAR NUEVA PUBLICACIÓN
+// DAR LIKE CON MANEJO DE ERROR (DUPLICADO)
 // ================================================================
-async function publicar() {
-    const postContent = document.getElementById('postContent');
-    const btnPublicar = document.getElementById('btnPublicar');
-    const contenido = postContent ? postContent.value.trim() : '';
-
-    if (!contenido) {
-        showToast('⚠️ Escribe algo para publicar', 'error');
-        return;
-    }
-
+async function likePublicacion(postId) {
     try {
         const session = await getSession();
         if (!session) {
-            showToast('⚠️ Inicia sesión para publicar', 'error');
+            showToast('⚠️ Inicia sesión para dar like', 'error');
             return;
         }
 
-        btnPublicar.disabled = true;
-
+        // Intentar insertar like
         const { error } = await supabase
-            .from('muro_posts')
+            .from('muro_likes')
             .insert({
-                usuario_id: session.user.id,
-                contenido: contenido
+                post_id: postId,
+                usuario_id: session.user.id
             });
 
-        if (error) throw error;
+        if (error) {
+            // Manejo del error 23505 (duplicate key value)
+            if (error.code === '23505') {
+                showToast('⚠️ Ya diste like a este post', 'warning');
+                return;
+            }
+            throw error;
+        }
 
-        postContent.value = '';
-        showToast('✅ Publicación creada');
+        showToast('❤️ Like dado');
         cargarPublicaciones();
     } catch (error) {
-        console.error('Error al publicar:', error);
-        showToast('❌ Error al publicar', 'error');
-    } finally {
-        btnPublicar.disabled = false;
+        console.error('Error al dar like:', error);
+        showToast('❌ Error al dar like', 'error');
     }
 }
 
 // ================================================================
-// SUBIR IMAGEN AL MURO
+// SUBIR IMAGEN AL MURO (CON LIMPIEZA DEL INPUT)
 // ================================================================
 async function subirImagenMuro(event) {
     const file = event.target.files[0];
@@ -245,6 +184,10 @@ async function subirImagenMuro(event) {
         if (insertError) throw insertError;
 
         showToast('✅ Imagen subida correctamente');
+        
+        // ✅ LIMPIEZA DEL INPUT (para no fallar al subir la misma foto)
+        event.target.value = '';
+        
         cargarPublicaciones();
     } catch (error) {
         console.error('Error al subir imagen:', error);
@@ -253,30 +196,106 @@ async function subirImagenMuro(event) {
 }
 
 // ================================================================
-// DAR LIKE
+// SUSCRIBIRSE A REALTIME (EVITANDO DUPLICADOS)
 // ================================================================
-async function likePublicacion(postId) {
+async function suscribirseARealtime() {
+    const channel = supabase
+        .channel('muro-realtime')
+        .on('postgres_changes',
+            { event: 'INSERT', schema: 'public', table: 'muro_posts' },
+            (payload) => {
+                // Validar si ya existe en el DOM
+                const existingPost = document.querySelector(`[data-post-id="${payload.new.id}"]`);
+                if (!existingPost) {
+                    agregarPostRealtime(payload.new);
+                }
+            }
+        )
+        .on('postgres_changes',
+            { event: 'UPDATE', schema: 'public', table: 'muro_posts' },
+            () => cargarPublicaciones()
+        )
+        .subscribe();
+
+    return channel;
+}
+
+// ================================================================
+// AGREGAR POST EN TIEMPO REAL (SIN DUPLICAR)
+// ================================================================
+async function agregarPostRealtime(post) {
+    const feedContainer = document.getElementById('feedContainer');
+    if (!feedContainer) return;
+
+    // Obtener usuario
+    const { data: userData } = await supabase
+        .from('usuarios')
+        .select('nombre, avatar_url')
+        .eq('id', post.usuario_id)
+        .single();
+
+    const avatar = userData?.avatar_url ? `<img src="${userData.avatar_url}">` : '◈';
+    const nombre = userData?.nombre || 'Explorador';
+
+    const newPost = `
+        <div class="post-card" data-post-id="${post.id}">
+            <div class="post-header">
+                <div class="post-avatar">${avatar}</div>
+                <div>
+                    <div class="post-author">${nombre} <span class="badge-verificado">✦ Verificado</span></div>
+                    <div class="post-date">${new Date(post.created_at).toLocaleString()}</div>
+                </div>
+            </div>
+            <div class="post-content">${post.contenido || ''}</div>
+            ${post.imagen_url ? `<img src="${post.imagen_url}" style="width:100%; border-radius:12px; margin-top:12px;" />` : ''}
+        </div>
+    `;
+
+    feedContainer.insertAdjacentHTML('afterbegin', newPost);
+}
+
+// ================================================================
+// PUBLICAR NUEVA PUBLICACIÓN
+// ================================================================
+async function publicar() {
+    const postContent = document.getElementById('postContent');
+    const btnPublicar = document.getElementById('btnPublicar');
+    const contenido = postContent ? postContent.value.trim() : '';
+
+    if (!contenido) {
+        showToast('⚠️ Escribe algo para publicar', 'error');
+        return;
+    }
+
     try {
         const session = await getSession();
         if (!session) {
-            showToast('⚠️ Inicia sesión para dar like', 'error');
+            showToast('⚠️ Inicia sesión para publicar', 'error');
             return;
         }
 
+        btnPublicar.disabled = true;
+
         const { error } = await supabase
-            .from('muro_likes')
+            .from('muro_posts')
             .insert({
-                post_id: postId,
-                usuario_id: session.user.id
+                usuario_id: session.user.id,
+                contenido: contenido
             });
 
         if (error) throw error;
 
-        showToast('❤️ Like dado');
-        cargarPublicaciones();
+        postContent.value = '';
+        showToast('✅ Publicación creada');
+        
+        // ⚠️ NO llamamos a cargarPublicaciones() aquí, 
+        // dejamos que Realtime lo agregue automáticamente.
+        
     } catch (error) {
-        console.error('Error al dar like:', error);
-        showToast('❌ Error al dar like', 'error');
+        console.error('Error al publicar:', error);
+        showToast('❌ Error al publicar', 'error');
+    } finally {
+        btnPublicar.disabled = false;
     }
 }
 
