@@ -106,6 +106,27 @@
             border-bottom: 1px dotted rgba(212, 175, 55, 0.2);
         }
         .preview-link:hover { border-bottom-color: #D4AF37; }
+
+        /* ===== FOOTER ===== */
+        .footer {
+            margin-top: 30px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(212, 175, 55, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            padding-bottom: 8px;
+            letter-spacing: 0.3px;
+        }
+        .footer .brand { color: #D4AF37; font-weight: 600; letter-spacing: 1px; }
+        .footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
+        .footer-links a { color: #4a6a8a; text-decoration: none; transition: all 0.3s; }
+        .footer-links a:hover { color: #D4AF37; }
+
         @media (max-width: 768px) {
             .pack-card { grid-template-columns: 1fr; gap: 8px; }
         }
@@ -136,6 +157,18 @@
             <p>📌 Para compartir los cambios, exporta el JSON y súbelo a tu base de datos o archivo de configuración.</p>
         </div>
     </div>
+
+    <!-- ===== FOOTER ===== -->
+    <footer class="footer" style="max-width:1000px; margin: 30px auto 0;">
+        <span><span class="brand">◈ Sariel's</span> · Sabor al Paladar · WEB3</span>
+        <div class="footer-links">
+            <a href="/terminos.html">◈ Términos</a>
+            <a href="/privacidad.html">◈ Privacidad</a>
+            <a href="/cookies.html">◈ Cookies</a>
+            <a href="/live-terminos.html">◉ Live Términos</a>
+            <span style="opacity:0.3;">⚡ Polygon</span>
+        </div>
+    </footer>
 
     <div class="toast" id="toast"></div>
 
