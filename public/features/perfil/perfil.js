@@ -1,7 +1,19 @@
 /* ================================================================
    PERFIL ULTRA MEGA PRO - SARIEL'S
+   Con Supabase Auth + Subida de Fotos a Storage
    ================================================================ */
 
+// ================================================================
+// SUPABASE CLIENTE (El MISMO que está en app.js)
+// ================================================================
+const supabase = window.supabase.createClient(
+    'https://hbbwopkfpkvahgtawqke.supabase.co',
+    'sb_publishable_4gJWA-t7Eg6ruuI2EF-K2A_GQlahb2j'
+);
+
+// ================================================================
+// TOAST
+// ================================================================
 function showToast(msg, type = '') {
     let t = document.getElementById('toast');
     if (!t) {
@@ -19,62 +31,56 @@ function showToast(msg, type = '') {
     t._timeout = setTimeout(() => t.classList.remove('show'), 3500);
 }
 
-const API_URL = '/api';
-
-async function getAuthHeaders() {
-    const headers = { 'Content-Type': 'application/json' };
-    const token = localStorage.getItem('galleta_token');
-    if (token) headers['Authorization'] = `Bearer ${token}`;
-    return headers;
+// ================================================================
+// FUNCIÓN PARA OBTENER SESIÓN
+// ================================================================
+async function getSession() {
+    const { data: { session } } = await supabase.auth.getSession();
+    return session;
 }
 
-async function fetchWithAuth(url, options = {}) {
-    const headers = await getAuthHeaders();
-    return fetch(url, {
-        ...options,
-        headers: { ...headers, ...(options.headers || {}) }
-    });
-}
-
-function cambiarTab(tab) {
-    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-    const tabContent = document.getElementById('tab-' + tab);
-    if (tabContent) tabContent.classList.add('active');
-    const tabBtn = document.querySelector(`.tab-btn[onclick="cambiarTab('${tab}')"]`);
-    if (tabBtn) tabBtn.classList.add('active');
-}
-
+// ================================================================
+// CARGAR PERFIL REAL DESDE SUPABASE
+// ================================================================
 async function cargarPerfil() {
     try {
-        const response = await fetchWithAuth(`${API_URL}/perfil`);
-        if (response.ok) {
-            const data = await response.json();
-            if (data.success && data.perfil) {
-                actualizarUI(data.perfil);
-                return;
-            }
+        const session = await getSession();
+        if (!session) {
+            // Si no hay sesión, redirigir al inicio
+            window.location.href = '/';
+            return;
+        }
+
+        const { data, error } = await supabase
+            .from('usuarios')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+
+        if (error) throw error;
+
+        if (data) {
+            actualizarUI(data);
+        } else {
+            // Si no tiene perfil creado, usar datos por defecto
+            const defaultData = {
+                nombre: session.user.user_metadata?.nombre || 'Explorador',
+                handle: session.user.email?.split('@')[0] || 'explorador',
+                bio: 'Explorando el ecosistema Sariel\'s · WEB3 · Comunidad',
+                avatar_url: null,
+                tokens_acumulados: 0
+            };
+            actualizarUI(defaultData);
         }
     } catch (error) {
-        console.warn('Error cargando perfil desde API:', error);
+        console.error('Error cargando perfil desde Supabase:', error);
+        showToast('❌ Error al cargar perfil', 'error');
     }
-
-    const perfil = JSON.parse(localStorage.getItem('sariels_perfil') || '{}');
-    const tokens = parseInt(localStorage.getItem('sariels_tokens') || '0');
-    const nfts = parseInt(localStorage.getItem('sariels_nft') === 'true' ? 1 : 0);
-
-    actualizarUI({
-        nombre: perfil.nombre || 'Explorador',
-        handle: perfil.handle || 'explorador',
-        bio: perfil.bio || 'Explorando el ecosistema Sariel\'s · WEB3 · Comunidad',
-        avatar: perfil.avatar || null,
-        tokens: tokens,
-        nfts: nfts,
-        seguidores: perfil.seguidores || 0,
-        siguiendo: perfil.siguiendo || 0
-    });
 }
 
+// ================================================================
+// ACTUALIZAR UI
+// ================================================================
 function actualizarUI(data) {
     const nombreEl = document.getElementById('perfilNombre');
     const handleEl = document.getElementById('perfilHandle');
@@ -89,9 +95,9 @@ function actualizarUI(data) {
 
     if (avatarEl) {
         if (data.avatar_url) {
-            avatarEl.innerHTML = `<img src="${data.avatar_url}" alt="Avatar" /><span class="edit-badge" onclick="editarAvatar()" title="Cambiar avatar">✎</span>`;
+            avatarEl.innerHTML = `<img src="${data.avatar_url}" alt="Avatar" /><span class="edit-badge" onclick="abrirSelectorArchivo()" title="Cambiar avatar">✎</span>`;
         } else {
-            avatarEl.innerHTML = `◈<span class="edit-badge" onclick="editarAvatar()" title="Cambiar avatar">✎</span>`;
+            avatarEl.innerHTML = `◈<span class="edit-badge" onclick="abrirSelectorArchivo()" title="Cambiar avatar">✎</span>`;
         }
     }
 
@@ -116,7 +122,16 @@ function actualizarUI(data) {
     if (editAvatar) editAvatar.value = data.avatar_url || '';
 }
 
+// ================================================================
+// GUARDAR PERFIL REAL EN SUPABASE
+// ================================================================
 async function guardarPerfil() {
+    const session = await getSession();
+    if (!session) {
+        showToast('⚠️ Inicia sesión para guardar', 'error');
+        return;
+    }
+
     const perfil = {
         nombre: document.getElementById('editNombre').value.trim() || 'Explorador',
         handle: document.getElementById('editHandle').value.trim().replace('@', '') || 'explorador',
@@ -125,34 +140,81 @@ async function guardarPerfil() {
     };
 
     try {
-        const response = await fetchWithAuth(`${API_URL}/perfil`, {
-            method: 'PUT',
-            body: JSON.stringify(perfil)
-        });
+        const { error } = await supabase
+            .from('usuarios')
+            .update(perfil)
+            .eq('id', session.user.id);
 
-        if (response.ok) {
-            localStorage.setItem('sariels_perfil', JSON.stringify(perfil));
-            cargarPerfil();
-            showToast('✅ Perfil guardado correctamente');
-            return;
-        }
+        if (error) throw error;
+
+        showToast('✅ Perfil guardado correctamente');
+        cargarPerfil();
     } catch (error) {
-        console.warn('Error guardando perfil vía API:', error);
-    }
-
-    localStorage.setItem('sariels_perfil', JSON.stringify(perfil));
-    cargarPerfil();
-    showToast('✅ Perfil guardado correctamente');
-}
-
-function editarAvatar() {
-    const url = prompt('◈ Ingresa la URL de tu avatar:');
-    if (url && url.trim()) {
-        document.getElementById('editAvatar').value = url.trim();
-        guardarPerfil();
+        console.error('Error guardando perfil:', error);
+        showToast('❌ Error al guardar', 'error');
     }
 }
 
+// ================================================================
+// SUBIR FOTO DE PERFIL (Supabase Storage)
+// ================================================================
+function abrirSelectorArchivo() {
+    const input = document.getElementById('fileInput');
+    if (input) input.click();
+}
+
+async function subirFoto(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const session = await getSession();
+    if (!session) {
+        showToast('⚠️ Inicia sesión para subir foto', 'error');
+        return;
+    }
+
+    const fileName = `avatar-${session.user.id}-${Date.now()}.jpg`;
+    const filePath = `avatars/${fileName}`;
+
+    try {
+        showToast('⏳ Subiendo foto...');
+
+        // Subir a Supabase Storage
+        const { error: uploadError } = await supabase.storage
+            .from('sariels-avatars')
+            .upload(filePath, file, {
+                cacheControl: '3600',
+                upsert: true
+            });
+
+        if (uploadError) throw uploadError;
+
+        // Obtener URL pública
+        const { data: urlData } = supabase.storage
+            .from('sariels-avatars')
+            .getPublicUrl(filePath);
+
+        const publicUrl = urlData.publicUrl;
+
+        // Actualizar en la tabla usuarios
+        const { error: updateError } = await supabase
+            .from('usuarios')
+            .update({ avatar_url: publicUrl })
+            .eq('id', session.user.id);
+
+        if (updateError) throw updateError;
+
+        showToast('✅ Foto actualizada correctamente');
+        cargarPerfil();
+    } catch (error) {
+        console.error('Error subiendo foto:', error);
+        showToast('❌ Error al subir foto', 'error');
+    }
+}
+
+// ================================================================
+// EDITAR PERFIL (cambia a pestaña config)
+// ================================================================
 function editarPerfil() {
     cambiarTab('config');
     setTimeout(() => {
@@ -161,14 +223,17 @@ function editarPerfil() {
     }, 300);
 }
 
+// ================================================================
+// COMPARTIR PERFIL
+// ================================================================
 function compartirPerfil() {
-    const perfil = JSON.parse(localStorage.getItem('sariels_perfil') || '{}');
-    const handle = perfil.handle || 'explorador';
+    const nombre = document.getElementById('perfilNombre')?.textContent.split(' ')[0] || 'Explorador';
+    const handle = document.getElementById('perfilHandle')?.textContent.replace('@', '') || 'explorador';
     const url = `${window.location.origin}/perfil/${handle}`;
-    const texto = `◈ Perfil de ${perfil.nombre || 'Explorador'} en Sariel's\n◈ ${url}`;
+    const texto = `◈ Perfil de ${nombre} en Sariel's\n◈ ${url}`;
 
     if (navigator.share) {
-        navigator.share({ title: `Perfil de ${perfil.nombre || 'Explorador'}`, text: texto, url: url }).catch(() => {});
+        navigator.share({ title: `Perfil de ${nombre}`, text: texto, url: url }).catch(() => {});
     } else {
         navigator.clipboard.writeText(texto).then(() => {
             showToast('◈ Copiado al portapapeles');
@@ -182,16 +247,23 @@ function irAMuro() {
     window.location.href = '/features/muro/muro.html';
 }
 
-// Inicialización
+// ================================================================
+// INICIALIZAR
+// ================================================================
 document.addEventListener('DOMContentLoaded', function() {
     cargarPerfil();
 });
 
+// ================================================================
+// EXPONER FUNCIONES GLOBALES
+// ================================================================
 window.cambiarTab = cambiarTab;
 window.cargarPerfil = cargarPerfil;
 window.guardarPerfil = guardarPerfil;
-window.editarAvatar = editarAvatar;
+window.editarAvatar = abrirSelectorArchivo;
 window.editarPerfil = editarPerfil;
 window.compartirPerfil = compartirPerfil;
 window.irAMuro = irAMuro;
 window.showToast = showToast;
+window.abrirSelectorArchivo = abrirSelectorArchivo;
+window.subirFoto = subirFoto;
