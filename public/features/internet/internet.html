@@ -721,6 +721,22 @@
 
         let packs = cargarPacks();
 
+        // ===== INTENTAR CARGAR DESDE API REAL =====
+        async function obtenerPlanesAPI() {
+            try {
+                const response = await fetch('/api/esim/planes');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success && data.planes && data.planes.length > 0) {
+                        packs = data.planes;
+                    }
+                }
+            } catch (e) {
+                console.warn('Usando datos locales para Internet');
+            }
+            renderPacks();
+        }
+
         function renderPacks() {
             const grid = document.getElementById('internetGrid');
             if (!grid) return;
@@ -785,6 +801,25 @@
             btn.disabled = true;
 
             try {
+                // Intentar crear orden en Supabase
+                const token = localStorage.getItem('galleta_token');
+                if (token) {
+                    const response = await fetch('/api/esim/orden', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ planId: selectedPack.id })
+                    });
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.success) {
+                            showToast('✅ Orden creada en Supabase');
+                        }
+                    }
+                }
+
                 // Simulación de API (en producción, aquí se llama a /api/esim/orden)
                 status.innerHTML = `
                     ✅ <b>¡Orden generada!</b><br>
@@ -897,6 +932,7 @@
             initStars();
             packs = cargarPacks();
             renderPacks();
+            obtenerPlanesAPI();
 
             const phoneInput = document.getElementById('netPhone');
             if (phoneInput) {
