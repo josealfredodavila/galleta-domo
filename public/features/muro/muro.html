@@ -7,11 +7,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>◈ Muro · Sariel's</title>
-    <link rel="stylesheet" href="/styles.css" />
-    <link rel="stylesheet" href="/features/muro/muro.css" />
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
-
-    <!-- CSS INCRUSTADO (YA NO DEPENDES DE ARCHIVO EXTERNO) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+    
+    <!-- CSS INCRUSTADO (Ya NO dependes de muro.css externo) -->
     <style>
         :root {
             --gold: #D4AF37;
@@ -32,7 +31,6 @@
             --radius: 16px;
             --radius-xl: 24px;
             --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            --transition-slow: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
             --success: #00d68f;
             --danger: #ff3366;
             --warning: #f7d44a;
@@ -40,14 +38,136 @@
             --purple: #a855f7;
             --pink: #ec4899;
         }
-        /* ===== TODOS TUS ESTILOS EXISTENTES ===== */
-        /* (El CSS que ya tenías en el archivo) */
-        /* ===== ... ===== */
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: var(--space);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            background-image: radial-gradient(ellipse at 20% 50%, rgba(26, 74, 42, 0.4) 0%, transparent 60%), radial-gradient(ellipse at 80% 50%, rgba(212, 175, 55, 0.08) 0%, transparent 60%);
+        }
+
+        #stars-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+        .nebula { position: fixed; border-radius: 50%; filter: blur(120px); opacity: 0.12; pointer-events: none; z-index: 0; animation: nebula-drift 25s ease-in-out infinite alternate; }
+        .nebula-1 { width: 700px; height: 700px; background: var(--green-bright); top: -15%; right: -15%; }
+        .nebula-2 { width: 600px; height: 600px; background: var(--gold-light); bottom: -15%; left: -15%; animation-delay: -8s; opacity: 0.06; }
+        .nebula-3 { width: 500px; height: 500px; background: var(--purple); top: 50%; left: 50%; transform: translate(-50%, -50%); animation-delay: -15s; opacity: 0.04; }
+        @keyframes nebula-drift { 0% { transform: translate(0,0) scale(1); } 100% { transform: translate(40px,-30px) scale(1.15); } }
+
+        .app { position: relative; z-index: 1; max-width: 100%; width: 100%; margin: 0 auto; padding: 12px 16px 30px; }
+
+        .header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 0 14px; border-bottom: 1px solid var(--glass-border);
+            background: rgba(5, 8, 15, 0.92); position: sticky; top: 0; z-index: 100;
+        }
+        .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+        .logo-hex { font-size: 1.8rem; color: var(--gold); font-family: 'Orbitron', monospace; }
+        .logo-text { font-family: 'Orbitron', monospace; font-size: 1.2rem; color: var(--text-primary); letter-spacing: 2px; }
+        .logo-text span { color: var(--gold); }
+        .logo-badge { font-size: 0.45rem; background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: var(--space); padding: 2px 10px; border-radius: 20px; font-weight: 700; }
+        .network-badge { display: flex; align-items: center; gap: 6px; font-size: 0.6rem; color: var(--gold); background: rgba(212,175,55,0.1); padding: 4px 12px; border-radius: 20px; }
+        .token-badge { display: flex; align-items: center; gap: 6px; background: rgba(212,175,55,0.1); border: 1px solid rgba(212,175,55,0.15); padding: 4px 14px; border-radius: 20px; font-size: 0.7rem; color: var(--gold); font-family: 'Orbitron', monospace; }
+
+        .main-nav {
+            display: flex; gap: 4px; background: rgba(15,45,26,0.3); border-radius: var(--radius);
+            padding: 4px; border: 1px solid var(--glass-border); margin: 16px 0 20px; overflow-x: auto;
+        }
+        .main-nav .nav-link { padding: 8px 16px; border-radius: 12px; color: var(--text-muted); text-decoration: none; font-size: 0.7rem; white-space: nowrap; }
+        .main-nav .nav-link.active { background: rgba(212,175,55,0.12); color: var(--gold); }
+        .main-nav .nav-link.live { color: var(--danger); }
+
+        .valor-mercado {
+            background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-xl);
+            padding: 16px 20px; margin-bottom: 20px; display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center;
+        }
+        .valor-mercado .info .titulo { font-family: 'Orbitron', monospace; color: var(--text-muted); font-size: 0.6rem; letter-spacing: 1px; text-transform: uppercase; }
+        .valor-mercado .info .precio { font-family: 'Orbitron', monospace; font-size: 1.8rem; font-weight: 700; color: var(--gold); }
+        .valor-mercado .info .detalles { display: flex; gap: 16px; font-size: 0.65rem; color: var(--text-muted); margin-top: 4px; }
+        .valor-mercado .btn-vender-token { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); border: none; padding: 10px 20px; border-radius: 30px; font-family: 'Orbitron', monospace; font-weight: 700; font-size: 0.7rem; cursor: pointer; }
+
+        .trending-section {
+            background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-xl);
+            padding: 16px 20px; margin-bottom: 20px;
+        }
+        .trending-section .header { display: flex; justify-content: space-between; margin-bottom: 10px; }
+        .trending-section .header h3 { font-family: 'Orbitron', monospace; color: var(--gold); font-size: 0.85rem; }
+        .trending-tags { display: flex; gap: 8px; flex-wrap: wrap; }
+        .trending-tags .tag { padding: 4px 14px; border-radius: 20px; font-size: 0.7rem; background: rgba(212,175,55,0.08); border: 1px solid rgba(212,175,55,0.08); color: var(--text-secondary); cursor: pointer; }
+        .trending-tags .tag:hover { background: rgba(212,175,55,0.15); color: var(--gold); }
+
+        .post-form {
+            background: rgba(15, 25, 20, 0.85) !important;
+            border: 1px solid rgba(212, 175, 55, 0.3) !important;
+            border-radius: 20px;
+            padding: 16px;
+            margin-bottom: 20px;
+            width: 100%;
+        }
+        .post-form .form-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+        .post-form .form-header .avatar { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #1a4a2a, #D4AF37); display: flex; align-items: center; justify-content: center; font-size: 1.1rem; color: #fff; font-family: 'Orbitron', monospace; }
+        .post-form .form-header .nombre { font-weight: 700; color: #fff; font-size: 0.9rem; }
+        .post-form .form-header .handle { font-size: 0.75rem; color: #8aa8b8; }
+        .post-form textarea { width: 100% !important; box-sizing: border-box !important; padding: 12px 14px; background: rgba(5,8,15,0.7) !important; border: 1px solid rgba(212,175,55,0.2) !important; border-radius: 12px; color: #fff !important; font-size: 0.9rem; resize: none; min-height: 80px; outline: none; }
+        .post-form textarea:focus { border-color: #D4AF37 !important; box-shadow: 0 0 12px rgba(212,175,55,0.2); }
+        .post-form .form-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; gap: 10px; }
+        .post-form .form-actions .tools button { background: transparent; border: none; color: #00e5ff; font-size: 0.85rem; cursor: pointer; }
+        .btn-publicar { background: linear-gradient(135deg, #D4AF37, #b8923a) !important; color: #05080f !important; border: none !important; padding: 10px 24px !important; border-radius: 30px !important; font-family: 'Orbitron', monospace !important; font-weight: 700 !important; font-size: 0.8rem !important; cursor: pointer; }
+        .btn-publicar:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(212,175,55,0.4); }
+
+        .post-card {
+            background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-xl);
+            padding: 20px 24px; margin-bottom: 16px;
+        }
+        .post-card .post-header { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+        .post-card .post-avatar { width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, var(--green-deep), var(--gold)); display: flex; align-items: center; justify-content: center; color: white; font-size: 1.2rem; }
+        .post-card .post-author { font-family: 'Orbitron', monospace; font-weight: 700; color: var(--gold); font-size: 0.85rem; }
+        .post-card .post-author .badge-verificado { font-size: 0.5rem; background: rgba(212,175,55,0.15); color: var(--gold); padding: 2px 8px; border-radius: 12px; margin-left: 6px; }
+        .post-card .post-date { font-size: 0.65rem; color: var(--text-muted); }
+        .post-card .post-content { color: var(--text-secondary); font-size: 0.9rem; line-height: 1.7; margin-bottom: 12px; }
+        .post-card .post-stats { display: flex; gap: 16px; font-size: 0.65rem; color: var(--text-muted); padding: 8px 0; border-top: 1px solid var(--glass-border); }
+        .post-card .post-actions { display: flex; gap: 2px; flex-wrap: wrap; padding-top: 8px; border-top: 1px solid var(--glass-border); }
+        .post-card .post-actions button { background: none; border: none; color: var(--text-muted); font-size: 0.7rem; cursor: pointer; padding: 4px 12px; border-radius: 20px; }
+        .post-card .post-actions button:hover { color: var(--gold); background: rgba(212,175,55,0.05); }
+        .post-card .post-venta { background: rgba(212,175,55,0.05); border: 1px solid rgba(212,175,55,0.1); border-radius: 12px; padding: 12px 16px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+        .post-card .post-venta .precio { font-family: 'Orbitron', monospace; color: var(--gold); font-size: 1.1rem; font-weight: 700; }
+        .post-card .post-venta .btn-comprar { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); border: none; padding: 6px 16px; border-radius: 20px; font-family: 'Orbitron', monospace; font-size: 0.6rem; font-weight: 700; cursor: pointer; }
+
+        .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
+        .empty-state .icon { font-size: 2.5rem; display: block; margin-bottom: 16px; color: var(--gold); opacity: 0.4; font-family: 'Orbitron', monospace; }
+
+        .footer { margin-top: 30px; padding-top: 16px; border-top: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center; font-size: 0.7rem; color: var(--text-muted); }
+        .footer .brand { color: var(--gold); font-weight: 600; }
+        .footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
+        .footer-links a { color: var(--text-muted); text-decoration: none; }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5,8,15,0.9); display: none; align-items: center; justify-content: center; z-index: 1000; }
+        .modal-overlay.show { display: flex; }
+        .modal { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-xl); padding: 32px; max-width: 480px; width: 92%; max-height: 85vh; overflow-y: auto; }
+        .modal .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .modal .modal-header h2 { font-family: 'Orbitron', monospace; color: var(--gold); font-size: 1.1rem; }
+        .modal .modal-header .btn-cerrar { background: none; border: none; color: var(--text-muted); font-size: 1.6rem; cursor: pointer; }
+        .modal .form-group { margin-bottom: 16px; }
+        .modal .form-group label { display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px; }
+        .modal .form-group input, .modal .form-group select { width: 100%; padding: 10px 14px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 10px; color: var(--text-primary); font-size: 0.9rem; outline: none; }
+        .modal .btn-guardar { width: 100%; padding: 12px; border-radius: 30px; border: none; background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); font-weight: 700; font-size: 0.85rem; cursor: pointer; }
+
+        .toast { position: fixed; bottom: 30px; right: 30px; background: var(--green-deep); border: 1px solid var(--gold); color: var(--gold); padding: 14px 28px; border-radius: 14px; font-size: 0.8rem; transform: translateY(100px); opacity: 0; transition: all 0.5s ease; z-index: 9999; }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.error { border-color: var(--danger); color: var(--danger); }
+        
+        @media (max-width: 768px) {
+            .app { padding: 12px 14px; }
+            .post-card { padding: 14px 16px; }
+            .valor-mercado { grid-template-columns: 1fr; text-align: center; }
+            .valor-mercado .btn-vender-token { width: 100%; justify-content: center; }
+        }
     </style>
 </head>
 <body>
 
-    <!-- ===== FONDO ESTELAR ===== -->
     <canvas id="stars-canvas" aria-hidden="true"></canvas>
     <div class="nebula nebula-1" aria-hidden="true"></div>
     <div class="nebula nebula-2" aria-hidden="true"></div>
@@ -55,7 +175,6 @@
 
     <div class="app">
 
-        <!-- ===== HEADER ===== -->
         <header class="header">
             <a href="/" class="logo" aria-label="Ir a la página de inicio">
                 <span class="logo-hex">◈</span>
@@ -70,7 +189,6 @@
             </div>
         </header>
 
-        <!-- ===== NAVEGACIÓN UNIFICADA ===== -->
         <nav class="main-nav" aria-label="Navegación principal">
             <a href="/" class="nav-link">⌂ Inicio</a>
             <a href="/muro" class="nav-link active">◇ Muro</a>
@@ -80,7 +198,6 @@
             <a href="/live" class="nav-link live">◉ Live</a>
         </nav>
 
-        <!-- ===== VALOR DE MERCADO ===== -->
         <div class="valor-mercado" id="valorMercado">
             <div class="info">
                 <div class="titulo">◈ Valor de Mercado Sariel's</div>
@@ -95,7 +212,6 @@
             <button class="btn-vender-token" onclick="abrirModalVenta()">◆ Vender tokens</button>
         </div>
 
-        <!-- ===== TRENDING TOPICS ===== -->
         <div class="trending-section">
             <div class="header">
                 <h3>◈ Tendencia ahora</h3>
@@ -110,7 +226,6 @@
             </div>
         </div>
 
-        <!-- ===== FORMULARIO ===== -->
         <div class="post-form">
             <div class="form-header">
                 <div class="avatar">◈</div>
@@ -132,10 +247,8 @@
             </div>
         </div>
 
-        <!-- ===== FEED ===== -->
         <div id="feedContainer"></div>
 
-        <!-- ===== FOOTER UNIFICADO ===== -->
         <footer class="footer">
             <span><span class="brand">◈ Sariel's</span> · Sabor al Paladar · WEB3</span>
             <div class="footer-links">
@@ -149,7 +262,7 @@
 
     </div>
 
-    <!-- ===== MODALES ===== -->
+    <!-- MODALES -->
     <div class="modal-overlay" id="modalVender">
         <div class="modal">
             <div class="modal-header">
@@ -197,7 +310,6 @@
         </div>
     </div>
 
-    <!-- ===== TOAST ===== -->
     <div class="toast" id="toast" role="alert" aria-live="polite"></div>
 
     <button class="btn-toggle-modo" id="btnToggleModo" aria-label="Cambiar entre modo oscuro y claro">🌙</button>
