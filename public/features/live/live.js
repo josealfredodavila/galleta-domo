@@ -1,10 +1,10 @@
 /* ================================================================
    MURO ULTRA MEGA PRO - SARIEL'S
-   Corregido: Likes interactivos, Realtime sin duplicados, .count()
+   Corregido: Likes Interactivos, Realtime sin Duplicados, .count()
    ================================================================ */
 
 // ================================================================
-// SUPABASE CLIENTE
+// SUPABASE CLIENTE (El mismo de app.js)
 // ================================================================
 const supabase = window.supabase.createClient(
     'https://hbbwopkfpkvahgtawqke.supabase.co',
@@ -40,7 +40,7 @@ async function getSession() {
 }
 
 // ================================================================
-// CARGAR PUBLICACIONES (CORRECCIÓN DEL .count())
+// CARGAR PUBLICACIONES (Con conteo correcto)
 // ================================================================
 async function cargarPublicaciones() {
     try {
@@ -72,7 +72,7 @@ async function cargarPublicaciones() {
 }
 
 // ================================================================
-// RENDERIZAR PUBLICACIONES (CON BOTÓN DE LIKE INTERACTIVO)
+// RENDERIZAR PUBLICACIONES (Con LIKE INTERACTIVO)
 // ================================================================
 function renderizarPublicaciones(posts) {
     const feedContainer = document.getElementById('feedContainer');
@@ -105,7 +105,7 @@ function renderizarPublicaciones(posts) {
 }
 
 // ================================================================
-// DAR LIKE CON MANEJO DE ERROR (DUPLICADO)
+// DAR LIKE (Manejo del error 23505)
 // ================================================================
 async function likePublicacion(postId) {
     try {
@@ -115,7 +115,6 @@ async function likePublicacion(postId) {
             return;
         }
 
-        // Intentar insertar like
         const { error } = await supabase
             .from('muro_likes')
             .insert({
@@ -141,7 +140,7 @@ async function likePublicacion(postId) {
 }
 
 // ================================================================
-// SUBIR IMAGEN AL MURO (CON LIMPIEZA DEL INPUT)
+// SUBIR IMAGEN (Con limpieza del input)
 // ================================================================
 async function subirImagenMuro(event) {
     const file = event.target.files[0];
@@ -153,7 +152,7 @@ async function subirImagenMuro(event) {
         return;
     }
 
-    // ✅ Regla correcta de AMI: `${user.id}/${Date.now()}.${fileExt}`
+    // ✅ Regla correcta: `${user.id}/${Date.now()}.${fileExt}`
     const fileExt = file.name.split('.').pop().toLowerCase();
     const filePath = `${session.user.id}/${Date.now()}.${fileExt}`;
 
@@ -185,7 +184,7 @@ async function subirImagenMuro(event) {
 
         showToast('✅ Imagen subida correctamente');
         
-        // ✅ LIMPIEZA DEL INPUT (para no fallar al subir la misma foto)
+        // ✅ LIMPIEZA DEL INPUT
         event.target.value = '';
         
         cargarPublicaciones();
@@ -196,7 +195,7 @@ async function subirImagenMuro(event) {
 }
 
 // ================================================================
-// SUSCRIBIRSE A REALTIME (EVITANDO DUPLICADOS)
+// SUSCRIBIRSE A REALTIME (Sin duplicados)
 // ================================================================
 async function suscribirseARealtime() {
     const channel = supabase
@@ -221,7 +220,7 @@ async function suscribirseARealtime() {
 }
 
 // ================================================================
-// AGREGAR POST EN TIEMPO REAL (SIN DUPLICAR)
+// AGREGAR POST EN TIEMPO REAL (Sin duplicar)
 // ================================================================
 async function agregarPostRealtime(post) {
     const feedContainer = document.getElementById('feedContainer');
@@ -255,7 +254,7 @@ async function agregarPostRealtime(post) {
 }
 
 // ================================================================
-// PUBLICAR NUEVA PUBLICACIÓN
+// PUBLICAR (Sin llamar a cargarPublicaciones() manual)
 // ================================================================
 async function publicar() {
     const postContent = document.getElementById('postContent');
