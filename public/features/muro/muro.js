@@ -1,7 +1,19 @@
 /* ================================================================
    MURO ULTRA MEGA PRO - SARIEL'S
+   Conectado a Supabase REAL
    ================================================================ */
 
+// ================================================================
+// SUPABASE CLIENTE (El mismo de app.js)
+// ================================================================
+const supabase = window.supabase.createClient(
+    'https://hbbwopkfpkvahgtawqke.supabase.co',
+    'sb_publishable_4gJWA-t7Eg6ruuI2EF-K2A_GQlahb2j'
+);
+
+// ================================================================
+// TOAST
+// ================================================================
 function showToast(msg, type = '') {
     let t = document.getElementById('toast');
     if (!t) {
@@ -19,76 +31,80 @@ function showToast(msg, type = '') {
     t._timeout = setTimeout(() => t.classList.remove('show'), 3500);
 }
 
-const API_URL = '/api';
-
-async function getAuthHeaders() {
-    const headers = { 'Content-Type': 'application/json' };
-    const token = localStorage.getItem('galleta_token');
-    if (token) headers['Authorization'] = `Bearer ${token}`;
-    return headers;
+// ================================================================
+// OBTENER SESIÓN REAL
+// ================================================================
+async function getSession() {
+    const { data: { session } } = await supabase.auth.getSession();
+    return session;
 }
 
-async function fetchWithAuth(url, options = {}) {
-    const headers = await getAuthHeaders();
-    return fetch(url, {
-        ...options,
-        headers: { ...headers, ...(options.headers || {}) }
-    });
-}
-
-// Cargar publicaciones
+// ================================================================
+// CARGAR PUBLICACIONES DESDE SUPABASE
+// ================================================================
 async function cargarPublicaciones() {
     try {
-        const response = await fetchWithAuth(`${API_URL}/muro`);
-        if (response.ok) {
-            const data = await response.json();
-            if (data.success && data.posts) {
-                renderizarPublicaciones(data.posts);
-                return;
+        const { data, error } = await supabase
+            .from('muro_posts')
+            .select('*, usuarios(nombre, avatar_url), muro_likes(count), muro_comentarios(count)')
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+            renderizarPublicaciones(data);
+        } else {
+            const feedContainer = document.getElementById('feedContainer');
+            if (feedContainer) {
+                feedContainer.innerHTML = `
+                    <div class="empty-state">
+                        <span class="icon">◈</span>
+                        <h3>Sin publicaciones</h3>
+                        <p>Sé el primero en compartir algo.</p>
+                    </div>
+                `;
             }
         }
     } catch (error) {
-        console.warn('Error cargando muro desde API:', error);
+        console.error('Error cargando publicaciones desde Supabase:', error);
+        showToast('❌ Error al cargar publicaciones', 'error');
     }
-    // Fallback local
-    const posts = JSON.parse(localStorage.getItem('sariels_muro_posts') || '[]');
-    renderizarPublicaciones(posts);
 }
 
+// ================================================================
+// RENDERIZAR PUBLICACIONES
+// ================================================================
 function renderizarPublicaciones(posts) {
     const feedContainer = document.getElementById('feedContainer');
     if (!feedContainer) return;
 
-    if (posts.length === 0) {
-        feedContainer.innerHTML = `
-            <div class="empty-state">
-                <span class="icon">◈</span>
-                <h3>Sin publicaciones</h3>
-                <p>Sé el primero en compartir algo.</p>
-            </div>
-        `;
-        return;
-    }
+    feedContainer.innerHTML = posts.map(post => {
+        const avatar = post.usuarios?.avatar_url ? `<img src="${post.usuarios.avatar_url}">` : '◈';
+        const likes = post.muro_likes?.length || 0;
+        const comentarios = post.muro_comentarios?.length || 0;
 
-    feedContainer.innerHTML = posts.map(post => `
-        <div class="post-card">
-            <div class="post-header">
-                <div class="post-avatar">${post.usuarios?.avatar_url ? `<img src="${post.usuarios.avatar_url}">` : '◈'}</div>
-                <div>
-                    <div class="post-author">${post.usuarios?.nombre || 'Explorador'} <span class="badge-verificado">✦ Verificado</span></div>
-                    <div class="post-date">${new Date(post.created_at).toLocaleString()}</div>
+        return `
+            <div class="post-card">
+                <div class="post-header">
+                    <div class="post-avatar">${avatar}</div>
+                    <div>
+                        <div class="post-author">${post.usuarios?.nombre || 'Explorador'} <span class="badge-verificado">✦ Verificado</span></div>
+                        <div class="post-date">${new Date(post.created_at).toLocaleString()}</div>
+                    </div>
+                </div>
+                <div class="post-content">${post.contenido || ''}</div>
+                <div class="post-stats">
+                    <span>❤️ ${likes}</span>
+                    <span>💬 ${comentarios}</span>
                 </div>
             </div>
-            <div class="post-content">${post.contenido || ''}</div>
-            <div class="post-stats">
-                <span>❤️ ${post.muro_likes?.length || 0}</span>
-                <span>💬 ${post.muro_comentarios?.length || 0}</span>
-            </div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
-// Publicar
+// ================================================================
+// PUBLICAR NUEVA PUBLICACIÓN
+// ================================================================
 async function publicar() {
     const postContent = document.getElementById('postContent');
     const btnPublicar = document.getElementById('btnPublicar');
@@ -100,24 +116,134 @@ async function publicar() {
     }
 
     try {
-        const response = await fetchWithAuth(`${API_URL}/muro`, {
-            method: 'POST',
-            body: JSON.stringify({ contenido })
-        });
-
-        if (response.ok) {
-            showToast('✅ Publicación creada');
-            if (postContent) postContent.value = '';
-            cargarPublicaciones();
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ Inicia sesión para publicar', 'error');
+            return;
         }
+
+        btnPublicar.disabled = true;
+
+        const { error } = await supabase
+            .from('muro_posts')
+            .insert({
+                usuario_id: session.user.id,
+                contenido: contenido
+            });
+
+        if (error) throw error;
+
+        postContent.value = '';
+        showToast('✅ Publicación creada');
+        cargarPublicaciones();
     } catch (error) {
+        console.error('Error al publicar:', error);
         showToast('❌ Error al publicar', 'error');
+    } finally {
+        btnPublicar.disabled = false;
     }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+// ================================================================
+// DAR LIKE A UNA PUBLICACIÓN
+// ================================================================
+async function likePublicacion(postId) {
+    try {
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ Inicia sesión para dar like', 'error');
+            return;
+        }
+
+        const { error } = await supabase
+            .from('muro_likes')
+            .insert({
+                post_id: postId,
+                usuario_id: session.user.id
+            });
+
+        if (error) throw error;
+
+        showToast('❤️ Like dado');
+        cargarPublicaciones();
+    } catch (error) {
+        console.error('Error al dar like:', error);
+        showToast('❌ Error al dar like', 'error');
+    }
+}
+
+// ================================================================
+// SUBIR IMAGEN AL MURO (Supabase Storage)
+// ================================================================
+async function subirImagenMuro(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const session = await getSession();
+    if (!session) {
+        showToast('⚠️ Inicia sesión para subir imagen', 'error');
+        return;
+    }
+
+    const fileName = `${session.user.id}-${Date.now()}-${file.name}`;
+    const filePath = `muro/${fileName}`;
+
+    try {
+        showToast('⏳ Subiendo imagen...');
+
+        const { error: uploadError } = await supabase.storage
+            .from('muro-imagenes')
+            .upload(filePath, file, { upsert: true });
+
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = supabase.storage
+            .from('muro-imagenes')
+            .getPublicUrl(filePath);
+
+        const publicUrl = urlData.publicUrl;
+
+        // Guardar en el post o como publicación de imagen
+        const { error: insertError } = await supabase
+            .from('muro_posts')
+            .insert({
+                usuario_id: session.user.id,
+                contenido: '',
+                imagen_url: publicUrl
+            });
+
+        if (insertError) throw insertError;
+
+        showToast('✅ Imagen subida correctamente');
+        cargarPublicaciones();
+    } catch (error) {
+        console.error('Error al subir imagen:', error);
+        showToast('❌ Error al subir imagen', 'error');
+    }
+}
+
+// ================================================================
+// INICIALIZAR
+// ================================================================
+document.addEventListener('DOMContentLoaded', async function() {
+    const session = await getSession();
+    if (!session) {
+        showToast('⚠️ Inicia sesión para ver y publicar', 'warning');
+    }
+
     cargarPublicaciones();
+
+    const btnPublicar = document.getElementById('btnPublicar');
+    if (btnPublicar) {
+        btnPublicar.addEventListener('click', publicar);
+    }
 });
 
+// ================================================================
+// EXPONER FUNCIONES
+// ================================================================
 window.publicar = publicar;
+window.cargarPublicaciones = cargarPublicaciones;
+window.likePublicacion = likePublicacion;
+window.subirImagenMuro = subirImagenMuro;
 window.showToast = showToast;
