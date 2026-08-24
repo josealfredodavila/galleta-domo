@@ -1,10 +1,10 @@
 /* ================================================================
    MURO ULTRA MEGA PRO - SARIEL'S
-   Conectado a Supabase REAL
+   Conectado a Supabase REAL + Realtime + Subida de Imágenes
    ================================================================ */
 
 // ================================================================
-// SUPABASE CLIENTE (El mismo de app.js)
+// SUPABASE CLIENTE
 // ================================================================
 const supabase = window.supabase.createClient(
     'https://hbbwopkfpkvahgtawqke.supabase.co',
@@ -32,7 +32,7 @@ function showToast(msg, type = '') {
 }
 
 // ================================================================
-// OBTENER SESIÓN REAL
+// OBTENER SESIÓN
 // ================================================================
 async function getSession() {
     const { data: { session } } = await supabase.auth.getSession();
@@ -72,16 +72,44 @@ async function cargarPublicaciones() {
 }
 
 // ================================================================
+// SUSCRIBIRSE A CAMBIOS EN TIEMPO REAL (Realtime)
+// ================================================================
+async function suscribirseARealtime() {
+    const channel = supabase
+        .channel('muro-realtime')
+        .on('postgres_changes', 
+            { event: 'INSERT', schema: 'public', table: 'muro_posts' }, 
+            (payload) => {
+                console.log('Nueva publicación en tiempo real:', payload.new);
+                cargarPublicaciones();
+            }
+        )
+        .on('postgres_changes', 
+            { event: 'INSERT', schema: 'public', table: 'muro_likes' }, 
+            () => cargarPublicaciones()
+        )
+        .on('postgres_changes', 
+            { event: 'INSERT', schema: 'public', table: 'muro_comentarios' }, 
+            () => cargarPublicaciones()
+        )
+        .subscribe();
+
+    return channel;
+}
+
+// ================================================================
 // RENDERIZAR PUBLICACIONES
 // ================================================================
 function renderizarPublicaciones(posts) {
     const feedContainer = document.getElementById('feedContainer');
     if (!feedContainer) return;
 
+    // Si hay imagen, mostrarla
     feedContainer.innerHTML = posts.map(post => {
         const avatar = post.usuarios?.avatar_url ? `<img src="${post.usuarios.avatar_url}">` : '◈';
         const likes = post.muro_likes?.length || 0;
         const comentarios = post.muro_comentarios?.length || 0;
+        const imagen = post.imagen_url ? `<img src="${post.imagen_url}" style="width:100%; border-radius:12px; margin-top:12px;" />` : '';
 
         return `
             <div class="post-card">
@@ -93,6 +121,7 @@ function renderizarPublicaciones(posts) {
                     </div>
                 </div>
                 <div class="post-content">${post.contenido || ''}</div>
+                ${imagen}
                 <div class="post-stats">
                     <span>❤️ ${likes}</span>
                     <span>💬 ${comentarios}</span>
@@ -103,7 +132,7 @@ function renderizarPublicaciones(posts) {
 }
 
 // ================================================================
-// PUBLICAR NUEVA PUBLICACIÓN
+// PUBLICAR NUEVA PUBLICACIÓN (Texto)
 // ================================================================
 async function publicar() {
     const postContent = document.getElementById('postContent');
@@ -145,6 +174,57 @@ async function publicar() {
 }
 
 // ================================================================
+// SUBIR IMAGEN AL MURO (Supabase Storage)
+// ================================================================
+async function subirImagenMuro(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const session = await getSession();
+    if (!session) {
+        showToast('⚠️ Inicia sesión para subir imagen', 'error');
+        return;
+    }
+
+    // ✅ Regla exacta de AMI: `${user.id}/${Date.now()}.${fileExt}`
+    const fileExt = file.name.split('.').pop().toLowerCase();
+    const filePath = `${session.user.id}/${Date.now()}.${fileExt}`;
+
+    try {
+        showToast('⏳ Subiendo imagen...');
+
+        const { error: uploadError } = await supabase.storage
+            .from('muro-imagenes')
+            .upload(filePath, file, { upsert: true });
+
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = supabase.storage
+            .from('muro-imagenes')
+            .getPublicUrl(filePath);
+
+        const publicUrl = urlData.publicUrl;
+
+        // Guardar como publicación de imagen
+        const { error: insertError } = await supabase
+            .from('muro_posts')
+            .insert({
+                usuario_id: session.user.id,
+                contenido: '',
+                imagen_url: publicUrl
+            });
+
+        if (insertError) throw insertError;
+
+        showToast('✅ Imagen subida correctamente');
+        cargarPublicaciones();
+    } catch (error) {
+        console.error('Error al subir imagen:', error);
+        showToast('❌ Error al subir imagen', 'error');
+    }
+}
+
+// ================================================================
 // DAR LIKE A UNA PUBLICACIÓN
 // ================================================================
 async function likePublicacion(postId) {
@@ -173,56 +253,6 @@ async function likePublicacion(postId) {
 }
 
 // ================================================================
-// SUBIR IMAGEN AL MURO (Supabase Storage)
-// ================================================================
-async function subirImagenMuro(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    const session = await getSession();
-    if (!session) {
-        showToast('⚠️ Inicia sesión para subir imagen', 'error');
-        return;
-    }
-
-    const fileName = `${session.user.id}-${Date.now()}-${file.name}`;
-    const filePath = `muro/${fileName}`;
-
-    try {
-        showToast('⏳ Subiendo imagen...');
-
-        const { error: uploadError } = await supabase.storage
-            .from('muro-imagenes')
-            .upload(filePath, file, { upsert: true });
-
-        if (uploadError) throw uploadError;
-
-        const { data: urlData } = supabase.storage
-            .from('muro-imagenes')
-            .getPublicUrl(filePath);
-
-        const publicUrl = urlData.publicUrl;
-
-        // Guardar en el post o como publicación de imagen
-        const { error: insertError } = await supabase
-            .from('muro_posts')
-            .insert({
-                usuario_id: session.user.id,
-                contenido: '',
-                imagen_url: publicUrl
-            });
-
-        if (insertError) throw insertError;
-
-        showToast('✅ Imagen subida correctamente');
-        cargarPublicaciones();
-    } catch (error) {
-        console.error('Error al subir imagen:', error);
-        showToast('❌ Error al subir imagen', 'error');
-    }
-}
-
-// ================================================================
 // INICIALIZAR
 // ================================================================
 document.addEventListener('DOMContentLoaded', async function() {
@@ -232,6 +262,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     cargarPublicaciones();
+    suscribirseARealtime();
 
     const btnPublicar = document.getElementById('btnPublicar');
     if (btnPublicar) {
