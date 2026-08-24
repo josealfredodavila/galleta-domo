@@ -686,6 +686,9 @@
                 <a href="/features/mensajes/contactos.html">◈ Contactos</a>
                 <a href="/features/live/live.html">◉ Live</a>
                 <a href="/terminos.html">◈ Términos</a>
+                <a href="/privacidad.html">◈ Privacidad</a>
+                <a href="/cookies.html">◈ Cookies</a>
+                <a href="/live-terminos.html">◉ Live Términos</a>
             </div>
         </footer>
 
@@ -782,6 +785,7 @@
             btn.disabled = true;
 
             try {
+                // Simulación de API (en producción, aquí se llama a /api/esim/orden)
                 status.innerHTML = `
                     ✅ <b>¡Orden generada!</b><br>
                     Paquete: ${selectedPack.nombre} - ${selectedPack.datos}<br>
