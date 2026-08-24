@@ -1,10 +1,10 @@
 /* ================================================================
-   LIVE ULTRA MEGA PRO - SARIEL'S
-   Con LiveKit SDK + Supabase + Lector de Voz
+   MURO ULTRA MEGA PRO - SARIEL'S
+   Con Supabase Realtime + Subida de Fotos
    ================================================================ */
 
 // ================================================================
-// SUPABASE CLIENTE (EL MISMO DE APP.JS)
+// SUPABASE CLIENTE (El mismo de app.js)
 // ================================================================
 const supabase = window.supabase.createClient(
     'https://hbbwopkfpkvahgtawqke.supabase.co',
@@ -32,46 +32,6 @@ function showToast(msg, type = '') {
 }
 
 // ================================================================
-// LECTOR DE VOZ (WEB SPEECH API - GRATIS)
-// ================================================================
-let isVoiceActive = false;
-
-function toggleVoice() {
-    isVoiceActive = !isVoiceActive;
-    const voiceBtn = document.getElementById('voiceBtn');
-    if (voiceBtn) {
-        voiceBtn.classList.toggle('voice-active', isVoiceActive);
-        voiceBtn.textContent = isVoiceActive ? '🔊' : '🔇';
-    }
-    showToast(isVoiceActive ? '🔊 Lector de voz activado' : '🔇 Lector de voz desactivado');
-}
-
-function leerMensaje(texto) {
-    if (!isVoiceActive || !texto) return;
-    
-    if ('speechSynthesis' in window) {
-        const utterance = new SpeechSynthesisUtterance(texto);
-        utterance.lang = 'es-ES';
-        utterance.rate = 1.0;
-        utterance.pitch = 1.0;
-        window.speechSynthesis.speak(utterance);
-    }
-}
-
-// ================================================================
-// VARIABLES GLOBALES
-// ================================================================
-let localStream = null;
-let isPlaying = false;
-let isMuted = false;
-let isLive = false;
-let chatMessages = [];
-let viewersCount = 0;
-let currentRoom = null;
-let livekitToken = null;
-let room = null; // Sala LiveKit
-
-// ================================================================
 // OBTENER SESIÓN
 // ================================================================
 async function getSession() {
@@ -80,372 +40,269 @@ async function getSession() {
 }
 
 // ================================================================
+// CARGAR PUBLICACIONES (Para el estado inicial)
+// ================================================================
+async function cargarPublicaciones() {
+    try {
+        const { data, error } = await supabase
+            .from('muro_posts')
+            .select('*, usuarios(nombre, avatar_url), muro_likes(count), muro_comentarios(count)')
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+            renderizarPublicaciones(data);
+        } else {
+            const feedContainer = document.getElementById('feedContainer');
+            if (feedContainer) {
+                feedContainer.innerHTML = `
+                    <div class="empty-state">
+                        <span class="icon">◈</span>
+                        <h3>Sin publicaciones</h3>
+                        <p>Sé el primero en compartir algo.</p>
+                    </div>
+                `;
+            }
+        }
+    } catch (error) {
+        console.error('Error cargando publicaciones desde Supabase:', error);
+        showToast('❌ Error al cargar publicaciones', 'error');
+    }
+}
+
+// ================================================================
+// SUSCRIBIRSE A REALTIME
+// ================================================================
+async function suscribirseARealtime() {
+    const channel = supabase
+        .channel('muro-realtime')
+        .on('postgres_changes',
+            { event: 'INSERT', schema: 'public', table: 'muro_posts' },
+            (payload) => {
+                // Agregar la publicación nueva al DOM sin recargar
+                agregarPostRealtime(payload.new);
+            }
+        )
+        .on('postgres_changes',
+            { event: 'UPDATE', schema: 'public', table: 'muro_posts' },
+            () => cargarPublicaciones()
+        )
+        .subscribe();
+
+    return channel;
+}
+
+// ================================================================
+// AGREGAR POST EN TIEMPO REAL
+// ================================================================
+async function agregarPostRealtime(post) {
+    const feedContainer = document.getElementById('feedContainer');
+    if (!feedContainer) return;
+
+    // Obtener usuario
+    const { data: userData } = await supabase
+        .from('usuarios')
+        .select('nombre, avatar_url')
+        .eq('id', post.usuario_id)
+        .single();
+
+    const avatar = userData?.avatar_url ? `<img src="${userData.avatar_url}">` : '◈';
+    const nombre = userData?.nombre || 'Explorador';
+
+    const newPost = `
+        <div class="post-card">
+            <div class="post-header">
+                <div class="post-avatar">${avatar}</div>
+                <div>
+                    <div class="post-author">${nombre} <span class="badge-verificado">✦ Verificado</span></div>
+                    <div class="post-date">${new Date(post.created_at).toLocaleString()}</div>
+                </div>
+            </div>
+            <div class="post-content">${post.contenido || ''}</div>
+            ${post.imagen_url ? `<img src="${post.imagen_url}" style="width:100%; border-radius:12px; margin-top:12px;" />` : ''}
+        </div>
+    `;
+
+    feedContainer.insertAdjacentHTML('afterbegin', newPost);
+}
+
+// ================================================================
+// RENDERIZAR PUBLICACIONES (Para el estado inicial)
+// ================================================================
+function renderizarPublicaciones(posts) {
+    const feedContainer = document.getElementById('feedContainer');
+    if (!feedContainer) return;
+
+    feedContainer.innerHTML = posts.map(post => {
+        const avatar = post.usuarios?.avatar_url ? `<img src="${post.usuarios.avatar_url}">` : '◈';
+        const likes = post.muro_likes?.length || 0;
+        const comentarios = post.muro_comentarios?.length || 0;
+
+        return `
+            <div class="post-card">
+                <div class="post-header">
+                    <div class="post-avatar">${avatar}</div>
+                    <div>
+                        <div class="post-author">${post.usuarios?.nombre || 'Explorador'} <span class="badge-verificado">✦ Verificado</span></div>
+                        <div class="post-date">${new Date(post.created_at).toLocaleString()}</div>
+                    </div>
+                </div>
+                <div class="post-content">${post.contenido || ''}</div>
+                ${post.imagen_url ? `<img src="${post.imagen_url}" style="width:100%; border-radius:12px; margin-top:12px;" />` : ''}
+                <div class="post-stats">
+                    <span>❤️ ${likes}</span>
+                    <span>💬 ${comentarios}</span>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// ================================================================
+// PUBLICAR NUEVA PUBLICACIÓN
+// ================================================================
+async function publicar() {
+    const postContent = document.getElementById('postContent');
+    const btnPublicar = document.getElementById('btnPublicar');
+    const contenido = postContent ? postContent.value.trim() : '';
+
+    if (!contenido) {
+        showToast('⚠️ Escribe algo para publicar', 'error');
+        return;
+    }
+
+    try {
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ Inicia sesión para publicar', 'error');
+            return;
+        }
+
+        btnPublicar.disabled = true;
+
+        const { error } = await supabase
+            .from('muro_posts')
+            .insert({
+                usuario_id: session.user.id,
+                contenido: contenido
+            });
+
+        if (error) throw error;
+
+        postContent.value = '';
+        showToast('✅ Publicación creada');
+        cargarPublicaciones();
+    } catch (error) {
+        console.error('Error al publicar:', error);
+        showToast('❌ Error al publicar', 'error');
+    } finally {
+        btnPublicar.disabled = false;
+    }
+}
+
+// ================================================================
+// SUBIR IMAGEN AL MURO
+// ================================================================
+async function subirImagenMuro(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const session = await getSession();
+    if (!session) {
+        showToast('⚠️ Inicia sesión para subir imagen', 'error');
+        return;
+    }
+
+    // ✅ Regla correcta de AMI: `${user.id}/${Date.now()}.${fileExt}`
+    const fileExt = file.name.split('.').pop().toLowerCase();
+    const filePath = `${session.user.id}/${Date.now()}.${fileExt}`;
+
+    try {
+        showToast('⏳ Subiendo imagen...');
+
+        const { error: uploadError } = await supabase.storage
+            .from('muro-imagenes')
+            .upload(filePath, file, { upsert: true });
+
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = supabase.storage
+            .from('muro-imagenes')
+            .getPublicUrl(filePath);
+
+        const publicUrl = urlData.publicUrl;
+
+        // Guardar como publicación de imagen
+        const { error: insertError } = await supabase
+            .from('muro_posts')
+            .insert({
+                usuario_id: session.user.id,
+                contenido: '',
+                imagen_url: publicUrl
+            });
+
+        if (insertError) throw insertError;
+
+        showToast('✅ Imagen subida correctamente');
+        cargarPublicaciones();
+    } catch (error) {
+        console.error('Error al subir imagen:', error);
+        showToast('❌ Error al subir imagen', 'error');
+    }
+}
+
+// ================================================================
+// DAR LIKE
+// ================================================================
+async function likePublicacion(postId) {
+    try {
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ Inicia sesión para dar like', 'error');
+            return;
+        }
+
+        const { error } = await supabase
+            .from('muro_likes')
+            .insert({
+                post_id: postId,
+                usuario_id: session.user.id
+            });
+
+        if (error) throw error;
+
+        showToast('❤️ Like dado');
+        cargarPublicaciones();
+    } catch (error) {
+        console.error('Error al dar like:', error);
+        showToast('❌ Error al dar like', 'error');
+    }
+}
+
+// ================================================================
 // INICIALIZAR
 // ================================================================
 document.addEventListener('DOMContentLoaded', async function() {
     const session = await getSession();
     if (!session) {
-        showToast('⚠️ Inicia sesión para transmitir', 'warning');
+        showToast('⚠️ Inicia sesión para ver y publicar', 'warning');
     }
 
-    cargarStreams();
-    
-    const chatInput = document.getElementById('chatInput');
-    if (chatInput) {
-        chatInput.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') enviarMensaje();
-        });
-    }
+    cargarPublicaciones();
+    suscribirseARealtime();
 
-    console.log('◉ Sariel\'s - Live Ultra Mega Pro con LiveKit');
+    const btnPublicar = document.getElementById('btnPublicar');
+    if (btnPublicar) {
+        btnPublicar.addEventListener('click', publicar);
+    }
 });
-
-// ================================================================
-// OBTENER TOKEN DE LIVEKIT (desde /api/token)
-// ================================================================
-async function obtenerTokenLiveKit(roomName, participantName) {
-    try {
-        const session = await getSession();
-        const response = await fetch(`/api/token?room=${roomName}&name=${participantName}`, {
-            headers: {
-                'Authorization': `Bearer ${session?.access_token || ''}`
-            }
-        });
-        if (response.ok) {
-            const data = await response.json();
-            return data.token;
-        } else {
-            console.warn('Error obteniendo token LiveKit');
-            return null;
-        }
-    } catch (error) {
-        console.warn('Error obteniendo token LiveKit:', error);
-        return null;
-    }
-}
-
-// ================================================================
-// INICIAR TRANSMISIÓN (Con LiveKit SDK)
-// ================================================================
-async function iniciarTransmision() {
-    try {
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            showToast('⚠️ Tu navegador no soporta transmisiones', 'error');
-            return;
-        }
-
-        const session = await getSession();
-        if (!session) {
-            showToast('⚠️ Inicia sesión para transmitir', 'error');
-            return;
-        }
-
-        showToast('⏳ Solicitando acceso a cámara y micrófono...');
-
-        // 1. Obtener stream local
-        localStream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
-            audio: true
-        });
-
-        document.getElementById('liveVideo').srcObject = localStream;
-        await document.getElementById('liveVideo').play();
-
-        // 2. Crear transmisión en Supabase
-        const roomName = `live_${Date.now()}`;
-        const { data: streamData, error: streamError } = await supabase
-            .from('live_streams')
-            .insert({
-                host_id: session.user.id,
-                room_name: roomName,
-                titulo: 'Live de Sariel\'s',
-                is_live: true
-            })
-            .select()
-            .single();
-
-        if (streamError) throw streamError;
-
-        currentRoom = roomName;
-
-        // 3. Obtener token de LiveKit
-        const participantName = session.user.email?.split('@')[0] || 'Explorador';
-        livekitToken = await obtenerTokenLiveKit(currentRoom, participantName);
-
-        // 4. Conectar a la sala LiveKit
-        if (livekitToken && typeof LivekitClient !== 'undefined') {
-            room = new LivekitClient.Room();
-            await room.connect('wss://csariels-domo-57ujk04t.livekit.cloud', livekitToken);
-            
-            // Publicar video y audio
-            await room.localParticipant.setCameraEnabled(true);
-            await room.localParticipant.setMicrophoneEnabled(true);
-            
-            // Publicar tracks locales en la sala
-            localStream.getTracks().forEach(track => {
-                room.localParticipant.publishTrack(track);
-            });
-            
-            showToast('✅ Conectado a LiveKit');
-        } else {
-            showToast('⚠️ No se pudo conectar a LiveKit (SDK no disponible)', 'warning');
-        }
-
-        isPlaying = true;
-        isLive = true;
-
-        document.getElementById('playBtn').textContent = '◈';
-
-        const container = document.getElementById('liveVideoContainer');
-        if (container) {
-            container.style.borderColor = 'var(--live-red)';
-            container.style.boxShadow = '0 0 60px var(--live-red-glow)';
-        }
-
-        showToast('✅ Transmisión iniciada');
-
-        // 5. Actualizar lista de transmisiones
-        cargarStreams();
-
-    } catch (error) {
-        console.error('Error iniciando transmisión:', error);
-        showToast('❌ Error al iniciar transmisión', 'error');
-    }
-}
-
-// ================================================================
-// FINALIZAR TRANSMISIÓN
-// ================================================================
-async function finalizarTransmision() {
-    if (!isLive) {
-        showToast('⚠️ No hay transmisión activa', 'warning');
-        return;
-    }
-
-    // Detener cámara
-    if (localStream) {
-        localStream.getTracks().forEach(track => track.stop());
-        localStream = null;
-    }
-
-    // Desconectar de LiveKit
-    if (room) {
-        await room.disconnect();
-        room = null;
-    }
-
-    document.getElementById('liveVideo').srcObject = null;
-    isLive = false;
-    isPlaying = false;
-
-    // Actualizar Supabase
-    if (currentRoom) {
-        const { error } = await supabase
-            .from('live_streams')
-            .update({ is_live: false, ended_at: new Date().toISOString() })
-            .eq('room_name', currentRoom);
-
-        if (error) console.error('Error al finalizar en Supabase:', error);
-    }
-
-    currentRoom = null;
-    livekitToken = null;
-    showToast('🔴 Transmisión finalizada');
-
-    cargarStreams();
-}
-
-// ================================================================
-// CARGAR TRANSMISIONES ACTIVAS (Supabase)
-// ================================================================
-async function cargarStreams() {
-    try {
-        const { data, error } = await supabase
-            .from('live_streams')
-            .select('id, room_name, titulo, is_live, usuarios(nombre)')
-            .eq('is_live', true)
-            .order('started_at', { ascending: false });
-
-        if (error) throw error;
-
-        const container = document.getElementById('streamsList');
-        if (!container) return;
-
-        if (data && data.length === 0) {
-            container.innerHTML = `
-                <div class="empty-state" style="grid-column:1/-1;padding:20px;">
-                    <span class="icon">◉</span>
-                    <h3>Sin transmisiones activas</h3>
-                    <p>Sé el primero en iniciar una transmisión</p>
-                </div>
-            `;
-            return;
-        }
-
-        container.innerHTML = data.map(stream => `
-            <div class="stream-card" onclick="unirseTransmision('${stream.room_name}')">
-                <div class="stream-thumb">
-                    <span class="live-badge">● EN VIVO</span>
-                    ◉
-                </div>
-                <div class="stream-name">${stream.titulo}</div>
-                <div class="stream-host">${stream.usuarios?.nombre || 'Anfitrión'} · Sariel's</div>
-            </div>
-        `).join('');
-
-    } catch (error) {
-        console.error('Error cargando transmisiones:', error);
-    }
-}
-
-// ================================================================
-// UNIRSE A UNA TRANSMISIÓN
-// ================================================================
-async function unirseTransmision(roomName) {
-    showToast(`◈ Uniéndose a ${roomName}...`);
-    
-    try {
-        const session = await getSession();
-        if (!session) {
-            showToast('⚠️ Inicia sesión para unirte', 'error');
-            return;
-        }
-
-        const participantName = session.user.email?.split('@')[0] || 'Espectador';
-        const token = await obtenerTokenLiveKit(roomName, participantName);
-
-        if (token && typeof LivekitClient !== 'undefined') {
-            const viewerRoom = new LivekitClient.Room();
-            await viewerRoom.connect('wss://csariels-domo-57ujk04t.livekit.cloud', token);
-            
-            viewerRoom.on('trackSubscribed', track => {
-                if (track.kind === 'video') {
-                    const videoElement = document.createElement('video');
-                    videoElement.srcObject = new MediaStream([track.mediaStreamTrack]);
-                    videoElement.autoplay = true;
-                    document.body.appendChild(videoElement);
-                }
-            });
-            
-            showToast('✅ Conectado a la transmisión');
-        } else {
-            showToast('⚠️ No se pudo unir (SDK no disponible)', 'warning');
-        }
-    } catch (error) {
-        showToast('❌ Error al unirse', 'error');
-    }
-}
-
-// ================================================================
-// PLAY/PAUSE
-// ================================================================
-function togglePlay() {
-    const video = document.getElementById('liveVideo');
-    if (!video.srcObject) return;
-
-    if (isPlaying) {
-        video.pause();
-        isPlaying = false;
-        document.getElementById('playBtn').textContent = '▶';
-    } else {
-        video.play();
-        isPlaying = true;
-        document.getElementById('playBtn').textContent = '◈';
-    }
-}
-
-// ================================================================
-// MUTE/UNMUTE
-// ================================================================
-function toggleMute() {
-    const video = document.getElementById('liveVideo');
-    if (!video.srcObject) return;
-
-    isMuted = !isMuted;
-    video.muted = isMuted;
-    document.getElementById('muteBtn').textContent = isMuted ? '◌' : '◉';
-}
-
-// ================================================================
-// CAPTURAR PANTALLA
-// ================================================================
-async function capturarPantalla() {
-    try {
-        const screenStream = await navigator.mediaDevices.getDisplayMedia({
-            video: true,
-            audio: true
-        });
-        document.getElementById('liveVideo').srcObject = screenStream;
-        showToast('✦ Compartiendo pantalla');
-    } catch (error) {
-        showToast('❌ Error al compartir pantalla', 'error');
-    }
-}
-
-// ================================================================
-// ENVIAR MENSAJE
-// ================================================================
-async function enviarMensaje() {
-    const input = document.getElementById('chatInput');
-    const texto = input.value.trim();
-    if (!texto) return;
-
-    const session = await getSession();
-    const nombre = session?.user?.email?.split('@')[0] || 'Anónimo';
-
-    const msg = {
-        nombre: nombre,
-        avatar: '◈',
-        texto: texto,
-        hora: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    };
-
-    chatMessages.push(msg);
-    renderizarMensaje(msg);
-    input.value = '';
-
-    leerMensaje(`${msg.nombre} dice: ${msg.texto}`);
-}
-
-// ================================================================
-// RENDERIZAR MENSAJE
-// ================================================================
-function renderizarMensaje(msg) {
-    const container = document.getElementById('chatMessages');
-    const div = document.createElement('div');
-    div.className = 'chat-msg';
-    div.innerHTML = `
-        <div class="avatar">${msg.avatar}</div>
-        <div class="msg">
-            <span class="name">${msg.nombre}</span>
-            <span class="time">${msg.hora}</span>
-            <div class="text">${msg.texto}</div>
-        </div>
-    `;
-    container.appendChild(div);
-    container.scrollTop = container.scrollHeight;
-}
-
-// ================================================================
-// VER TODAS LAS TRANSMISIONES
-// ================================================================
-function verTodasLasTransmisiones() {
-    cargarStreams();
-    showToast('◈ Cargando transmisiones...');
-}
 
 // ================================================================
 // EXPONER FUNCIONES
 // ================================================================
+window.publicar = publicar;
+window.cargarPublicaciones = cargarPublicaciones;
+window.likePublicacion = likePublicacion;
+window.subirImagenMuro = subirImagenMuro;
 window.showToast = showToast;
-window.iniciarTransmision = iniciarTransmision;
-window.finalizarTransmision = finalizarTransmision;
-window.togglePlay = togglePlay;
-window.toggleMute = toggleMute;
-window.capturarPantalla = capturarPantalla;
-window.enviarMensaje = enviarMensaje;
-window.cargarStreams = cargarStreams;
-window.unirseTransmision = unirseTransmision;
-window.toggleVoice = toggleVoice;
-window.leerMensaje = leerMensaje;
-window.getSession = getSession;
