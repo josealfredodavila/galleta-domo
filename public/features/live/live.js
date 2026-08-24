@@ -1,7 +1,15 @@
 /* ================================================================
    LIVE ULTRA MEGA PRO - SARIEL'S
-   Lógica premium competitiva con Silicon Valley
+   Con LiveKit SDK + Supabase + Lector de Voz
    ================================================================ */
+
+// ================================================================
+// SUPABASE CLIENTE (EL MISMO DE APP.JS)
+// ================================================================
+const supabase = window.supabase.createClient(
+    'https://hbbwopkfpkvahgtawqke.supabase.co',
+    'sb_publishable_4gJWA-t7Eg6ruuI2EF-K2A_GQlahb2j'
+);
 
 // ================================================================
 // TOAST
@@ -24,90 +32,10 @@ function showToast(msg, type = '') {
 }
 
 // ================================================================
-// SUPABASE CLIENTE
-// ================================================================
-const SUPABASE_URL = 'https://hbbwopkfpkvahgtawqke.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_4gJWA-t7Eg6ruuI2EF-K2A_GQlahb2j';
-let supabase = null;
-
-if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
-    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    console.log('◉ Supabase cliente inicializado en live.js');
-}
-
-// ================================================================
-// API URL - PRODUCCIÓN (RAILWAY)
-// ================================================================
-const API_URL = '/api';
-
-// ================================================================
-// HEADERS DE AUTENTICACIÓN
-// ================================================================
-async function getAuthHeaders() {
-    const headers = { 'Content-Type': 'application/json' };
-    if (supabase) {
-        try {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session && session.access_token) {
-                headers['Authorization'] = `Bearer ${session.access_token}`;
-            }
-        } catch (e) {
-            console.warn('No se pudo obtener sesión de Supabase:', e);
-        }
-    }
-    return headers;
-}
-
-async function fetchWithAuth(url, options = {}) {
-    const headers = await getAuthHeaders();
-    return fetch(url, {
-        ...options,
-        headers: {
-            ...headers,
-            ...(options.headers || {})
-        }
-    });
-}
-
-// ================================================================
-// VARIABLES GLOBALES
-// ================================================================
-let localStream = null;
-let isPlaying = false;
-let isMuted = false;
-let isLive = false;
-let chatMessages = [];
-let viewersCount = 0;
-let streamsList = [];
-let peerConnections = [];
-let currentRoom = null;
-let livekitToken = null;
-let socket = null;
-let isVoiceActive = false; // Lector de voz activo/inactivo
-
-// ================================================================
-// INICIALIZAR
-// ================================================================
-document.addEventListener('DOMContentLoaded', function() {
-    initStars();
-    actualizarViewers();
-    cargarStreams();
-    iniciarSocket();
-
-    const chatInput = document.getElementById('chatInput');
-    if (chatInput) {
-        chatInput.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') enviarMensaje();
-        });
-    }
-
-    console.log('◉ Sariel\'s - Live Ultra Mega Pro');
-    console.log('🔴 Sistema de transmisiones en vivo');
-});
-
-// ================================================================
 // LECTOR DE VOZ (WEB SPEECH API - GRATIS)
 // ================================================================
+let isVoiceActive = false;
+
 function toggleVoice() {
     isVoiceActive = !isVoiceActive;
     const voiceBtn = document.getElementById('voiceBtn');
@@ -121,7 +49,6 @@ function toggleVoice() {
 function leerMensaje(texto) {
     if (!isVoiceActive || !texto) return;
     
-    // Usar la Web Speech API (gratis)
     if ('speechSynthesis' in window) {
         const utterance = new SpeechSynthesisUtterance(texto);
         utterance.lang = 'es-ES';
@@ -132,68 +59,63 @@ function leerMensaje(texto) {
 }
 
 // ================================================================
-// SOCKET.IO (para chat en tiempo real)
+// VARIABLES GLOBALES
 // ================================================================
-function iniciarSocket() {
-    try {
-        const socketUrl = window.location.hostname === 'localhost'
-            ? 'http://localhost:3001'
-            : window.location.origin;
+let localStream = null;
+let isPlaying = false;
+let isMuted = false;
+let isLive = false;
+let chatMessages = [];
+let viewersCount = 0;
+let currentRoom = null;
+let livekitToken = null;
+let room = null; // Sala LiveKit
 
-        socket = io(socketUrl, {
-            transports: ['polling', 'websocket'],
-            reconnection: true,
-            reconnectionAttempts: 5
-        });
-
-        socket.on('connect', () => {
-            console.log('◈ Conectado al servidor de Live');
-        });
-
-        socket.on('live_message', (data) => {
-            if (data.room === currentRoom || !currentRoom) {
-                const msg = {
-                    nombre: data.userName || 'Usuario',
-                    avatar: data.userAvatar || '◈',
-                    texto: data.message,
-                    hora: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                };
-                chatMessages.push(msg);
-                renderizarMensaje(msg);
-                actualizarContadorChat();
-                
-                // Lector de voz: leer solo si está activo
-                leerMensaje(`${msg.nombre} dice: ${msg.texto}`);
-            }
-        });
-
-        socket.on('live_viewers', (data) => {
-            if (data.room === currentRoom || !currentRoom) {
-                viewersCount = data.count || viewersCount;
-                actualizarViewers();
-            }
-        });
-
-        socket.on('disconnect', () => {
-            console.log('◈ Desconectado del servidor de Live');
-        });
-
-    } catch (error) {
-        console.warn('⚠️ Socket.IO no disponible, modo offline:', error);
-    }
+// ================================================================
+// OBTENER SESIÓN
+// ================================================================
+async function getSession() {
+    const { data: { session } } = await supabase.auth.getSession();
+    return session;
 }
 
 // ================================================================
-// OBTENER TOKEN DE LIVEKIT
+// INICIALIZAR
+// ================================================================
+document.addEventListener('DOMContentLoaded', async function() {
+    const session = await getSession();
+    if (!session) {
+        showToast('⚠️ Inicia sesión para transmitir', 'warning');
+    }
+
+    cargarStreams();
+    
+    const chatInput = document.getElementById('chatInput');
+    if (chatInput) {
+        chatInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') enviarMensaje();
+        });
+    }
+
+    console.log('◉ Sariel\'s - Live Ultra Mega Pro con LiveKit');
+});
+
+// ================================================================
+// OBTENER TOKEN DE LIVEKIT (desde /api/token)
 // ================================================================
 async function obtenerTokenLiveKit(roomName, participantName) {
     try {
-        const response = await fetchWithAuth(`${API_URL}/token?room=${roomName}&name=${participantName}`);
+        const session = await getSession();
+        const response = await fetch(`/api/token?room=${roomName}&name=${participantName}`, {
+            headers: {
+                'Authorization': `Bearer ${session?.access_token || ''}`
+            }
+        });
         if (response.ok) {
             const data = await response.json();
             return data.token;
         } else {
-            console.warn('Error obteniendo token LiveKit, usando modo simulado');
+            console.warn('Error obteniendo token LiveKit');
             return null;
         }
     } catch (error) {
@@ -203,7 +125,7 @@ async function obtenerTokenLiveKit(roomName, participantName) {
 }
 
 // ================================================================
-// INICIAR TRANSMISIÓN
+// INICIAR TRANSMISIÓN (Con LiveKit SDK)
 // ================================================================
 async function iniciarTransmision() {
     try {
@@ -214,41 +136,65 @@ async function iniciarTransmision() {
 
         const session = await getSession();
         if (!session) {
-            showToast('⚠️ Conecta tu wallet primero', 'warning');
+            showToast('⚠️ Inicia sesión para transmitir', 'error');
             return;
         }
 
-        showToast('◉ Solicitando acceso a cámara y micrófono...');
+        showToast('⏳ Solicitando acceso a cámara y micrófono...');
 
-        const stream = await navigator.mediaDevices.getUserMedia({
+        // 1. Obtener stream local
+        localStream = await navigator.mediaDevices.getUserMedia({
             video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
             audio: true
         });
 
-        localStream = stream;
+        document.getElementById('liveVideo').srcObject = localStream;
+        await document.getElementById('liveVideo').play();
 
-        const perfil = JSON.parse(localStorage.getItem('sariels_perfil') || '{}');
+        // 2. Crear transmisión en Supabase
         const roomName = `live_${Date.now()}`;
-        const participantName = perfil.nombre || 'Explorador';
+        const { data: streamData, error: streamError } = await supabase
+            .from('live_streams')
+            .insert({
+                host_id: session.user.id,
+                room_name: roomName,
+                titulo: 'Live de Sariel\'s',
+                is_live: true
+            })
+            .select()
+            .single();
 
-        const token = await obtenerTokenLiveKit(roomName, participantName);
-        if (token) {
-            livekitToken = token;
-            currentRoom = roomName;
+        if (streamError) throw streamError;
+
+        currentRoom = roomName;
+
+        // 3. Obtener token de LiveKit
+        const participantName = session.user.email?.split('@')[0] || 'Explorador';
+        livekitToken = await obtenerTokenLiveKit(currentRoom, participantName);
+
+        // 4. Conectar a la sala LiveKit
+        if (livekitToken && typeof LivekitClient !== 'undefined') {
+            room = new LivekitClient.Room();
+            await room.connect('wss://csariels-domo-57ujk04t.livekit.cloud', livekitToken);
+            
+            // Publicar video y audio
+            await room.localParticipant.setCameraEnabled(true);
+            await room.localParticipant.setMicrophoneEnabled(true);
+            
+            // Publicar tracks locales en la sala
+            localStream.getTracks().forEach(track => {
+                room.localParticipant.publishTrack(track);
+            });
+            
             showToast('✅ Conectado a LiveKit');
-        }
-
-        const video = document.getElementById('liveVideo');
-        if (video) {
-            video.srcObject = stream;
-            await video.play();
+        } else {
+            showToast('⚠️ No se pudo conectar a LiveKit (SDK no disponible)', 'warning');
         }
 
         isPlaying = true;
         isLive = true;
 
-        const playBtn = document.getElementById('playBtn');
-        if (playBtn) playBtn.textContent = '◈';
+        document.getElementById('playBtn').textContent = '◈';
 
         const container = document.getElementById('liveVideoContainer');
         if (container) {
@@ -256,135 +202,137 @@ async function iniciarTransmision() {
             container.style.boxShadow = '0 0 60px var(--live-red-glow)';
         }
 
-        showToast('✅ Transmisión iniciada', 'success');
+        showToast('✅ Transmisión iniciada');
 
-        viewersCount = Math.floor(Math.random() * 30) + 5;
-        actualizarViewers();
-
-        agregarStreamLocal();
-
-        if (socket && socket.connected) {
-            socket.emit('live_start', {
-                room: roomName,
-                host: participantName,
-                hostId: session.user.id
-            });
-        }
-
-        simularMensajes();
+        // 5. Actualizar lista de transmisiones
+        cargarStreams();
 
     } catch (error) {
         console.error('Error iniciando transmisión:', error);
-        if (error.name === 'NotAllowedError') {
-            showToast('❌ Permiso denegado para cámara/micrófono', 'error');
-        } else {
-            showToast('❌ Error al iniciar la transmisión', 'error');
-        }
+        showToast('❌ Error al iniciar transmisión', 'error');
     }
-}
-
-// ================================================================
-// OBTENER SESIÓN DE SUPABASE
-// ================================================================
-async function getSession() {
-    if (supabase) {
-        try {
-            const { data: { session } } = await supabase.auth.getSession();
-            return session;
-        } catch (e) {
-            console.warn('Error obteniendo sesión:', e);
-        }
-    }
-    return null;
-}
-
-// ================================================================
-// AGREGAR STREAM LOCAL A LA LISTA
-// ================================================================
-function agregarStreamLocal() {
-    const container = document.getElementById('streamsList');
-    if (!container) return;
-
-    const empty = container.querySelector('.empty-state');
-    if (empty) empty.remove();
-
-    const perfil = JSON.parse(localStorage.getItem('sariels_perfil') || '{}');
-    const nombre = perfil.nombre || 'Explorador';
-
-    const oldLocal = document.getElementById('stream-local');
-    if (oldLocal) oldLocal.remove();
-
-    const card = document.createElement('div');
-    card.className = 'stream-card';
-    card.id = 'stream-local';
-    card.innerHTML = `
-        <div class="stream-thumb">
-            <span class="live-badge">● EN VIVO</span>
-            ◉
-        </div>
-        <div class="stream-name">Transmisión de ${nombre}</div>
-        <div class="stream-host">${nombre} · Sariel's</div>
-        <div class="stream-viewers">◈ ${viewersCount} espectadores</div>
-    `;
-    card.onclick = () => showToast('◈ Ya estás viendo tu transmisión');
-    container.prepend(card);
 }
 
 // ================================================================
 // FINALIZAR TRANSMISIÓN
 // ================================================================
-function finalizarTransmision() {
+async function finalizarTransmision() {
     if (!isLive) {
-        showToast('⚠️ No hay una transmisión activa', 'warning');
+        showToast('⚠️ No hay transmisión activa', 'warning');
         return;
     }
 
-    if (!confirm('¿Finalizar la transmisión?')) return;
-
+    // Detener cámara
     if (localStream) {
         localStream.getTracks().forEach(track => track.stop());
         localStream = null;
     }
 
-    const video = document.getElementById('liveVideo');
-    if (video) video.srcObject = null;
-
-    isPlaying = false;
-    isLive = false;
-
-    const playBtn = document.getElementById('playBtn');
-    if (playBtn) playBtn.textContent = '◈';
-
-    const container = document.getElementById('liveVideoContainer');
-    if (container) {
-        container.style.borderColor = '';
-        container.style.boxShadow = '';
+    // Desconectar de LiveKit
+    if (room) {
+        await room.disconnect();
+        room = null;
     }
 
-    const local = document.getElementById('stream-local');
-    if (local) local.remove();
+    document.getElementById('liveVideo').srcObject = null;
+    isLive = false;
+    isPlaying = false;
 
-    if (socket && socket.connected && currentRoom) {
-        socket.emit('live_end', { room: currentRoom });
+    // Actualizar Supabase
+    if (currentRoom) {
+        const { error } = await supabase
+            .from('live_streams')
+            .update({ is_live: false, ended_at: new Date().toISOString() })
+            .eq('room_name', currentRoom);
+
+        if (error) console.error('Error al finalizar en Supabase:', error);
     }
 
     currentRoom = null;
     livekitToken = null;
-
-    viewersCount = 0;
-    actualizarViewers();
-
     showToast('🔴 Transmisión finalizada');
 
-    const containerList = document.getElementById('streamsList');
-    if (containerList && containerList.children.length === 0) {
-        containerList.innerHTML = `
-            <div class="empty-state" style="grid-column:1/-1;padding:20px;">
-                <span class="icon">◉</span>
-                <h3>Sin transmisiones activas</h3>
-                <p>Sé el primero en iniciar una transmisión</p>
+    cargarStreams();
+}
+
+// ================================================================
+// CARGAR TRANSMISIONES ACTIVAS (Supabase)
+// ================================================================
+async function cargarStreams() {
+    try {
+        const { data, error } = await supabase
+            .from('live_streams')
+            .select('id, room_name, titulo, is_live, usuarios(nombre)')
+            .eq('is_live', true)
+            .order('started_at', { ascending: false });
+
+        if (error) throw error;
+
+        const container = document.getElementById('streamsList');
+        if (!container) return;
+
+        if (data && data.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state" style="grid-column:1/-1;padding:20px;">
+                    <span class="icon">◉</span>
+                    <h3>Sin transmisiones activas</h3>
+                    <p>Sé el primero en iniciar una transmisión</p>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = data.map(stream => `
+            <div class="stream-card" onclick="unirseTransmision('${stream.room_name}')">
+                <div class="stream-thumb">
+                    <span class="live-badge">● EN VIVO</span>
+                    ◉
+                </div>
+                <div class="stream-name">${stream.titulo}</div>
+                <div class="stream-host">${stream.usuarios?.nombre || 'Anfitrión'} · Sariel's</div>
             </div>
-        `;
+        `).join('');
+
+    } catch (error) {
+        console.error('Error cargando transmisiones:', error);
+    }
+}
+
+// ================================================================
+// UNIRSE A UNA TRANSMISIÓN
+// ================================================================
+async function unirseTransmision(roomName) {
+    showToast(`◈ Uniéndose a ${roomName}...`);
+    
+    try {
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ Inicia sesión para unirte', 'error');
+            return;
+        }
+
+        const participantName = session.user.email?.split('@')[0] || 'Espectador';
+        const token = await obtenerTokenLiveKit(roomName, participantName);
+
+        if (token && typeof LivekitClient !== 'undefined') {
+            const viewerRoom = new LivekitClient.Room();
+            await viewerRoom.connect('wss://csariels-domo-57ujk04t.livekit.cloud', token);
+            
+            viewerRoom.on('trackSubscribed', track => {
+                if (track.kind === 'video') {
+                    const videoElement = document.createElement('video');
+                    videoElement.srcObject = new MediaStream([track.mediaStreamTrack]);
+                    videoElement.autoplay = true;
+                    document.body.appendChild(videoElement);
+                }
+            });
+            
+            showToast('✅ Conectado a la transmisión');
+        } else {
+            showToast('⚠️ No se pudo unir (SDK no disponible)', 'warning');
+        }
+    } catch (error) {
+        showToast('❌ Error al unirse', 'error');
     }
 }
 
@@ -393,21 +341,16 @@ function finalizarTransmision() {
 // ================================================================
 function togglePlay() {
     const video = document.getElementById('liveVideo');
-    const btn = document.getElementById('playBtn');
-
-    if (!video || !video.srcObject) {
-        showToast('⚠️ No hay transmisión activa', 'warning');
-        return;
-    }
+    if (!video.srcObject) return;
 
     if (isPlaying) {
         video.pause();
-        if (btn) btn.textContent = '▶';
         isPlaying = false;
+        document.getElementById('playBtn').textContent = '▶';
     } else {
         video.play();
-        if (btn) btn.textContent = '◈';
         isPlaying = true;
+        document.getElementById('playBtn').textContent = '◈';
     }
 }
 
@@ -416,84 +359,43 @@ function togglePlay() {
 // ================================================================
 function toggleMute() {
     const video = document.getElementById('liveVideo');
-    const btn = document.getElementById('muteBtn');
-
-    if (!video || !video.srcObject) {
-        showToast('⚠️ No hay transmisión activa', 'warning');
-        return;
-    }
+    if (!video.srcObject) return;
 
     isMuted = !isMuted;
     video.muted = isMuted;
-    if (btn) {
-        btn.textContent = isMuted ? '◌' : '◉';
-        btn.className = isMuted ? 'mic muted' : 'mic';
-    }
+    document.getElementById('muteBtn').textContent = isMuted ? '◌' : '◉';
 }
 
 // ================================================================
-// COMPARTIR PANTALLA
+// CAPTURAR PANTALLA
 // ================================================================
 async function capturarPantalla() {
     try {
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
-            showToast('⚠️ Tu navegador no soporta compartir pantalla', 'error');
-            return;
-        }
-
         const screenStream = await navigator.mediaDevices.getDisplayMedia({
             video: true,
             audio: true
         });
-
-        const video = document.getElementById('liveVideo');
-        if (video) {
-            video.srcObject = screenStream;
-            await video.play();
-        }
-
-        isPlaying = true;
-        const playBtn = document.getElementById('playBtn');
-        if (playBtn) playBtn.textContent = '◈';
-
-        showToast('✦ Compartiendo pantalla', 'success');
-
-        screenStream.getVideoTracks()[0].onended = () => {
-            if (localStream) {
-                video.srcObject = localStream;
-                video.play();
-                showToast('◈ Volviendo a la cámara');
-            }
-        };
-
+        document.getElementById('liveVideo').srcObject = screenStream;
+        showToast('✦ Compartiendo pantalla');
     } catch (error) {
-        console.error('Error compartiendo pantalla:', error);
-        if (error.name !== 'NotAllowedError') {
-            showToast('❌ Error al compartir pantalla', 'error');
-        }
+        showToast('❌ Error al compartir pantalla', 'error');
     }
 }
 
 // ================================================================
 // ENVIAR MENSAJE
 // ================================================================
-function enviarMensaje() {
+async function enviarMensaje() {
     const input = document.getElementById('chatInput');
-    if (!input) return;
-
     const texto = input.value.trim();
-    if (!texto) {
-        showToast('⚠️ Escribe un mensaje', 'warning');
-        return;
-    }
+    if (!texto) return;
 
-    const perfil = JSON.parse(localStorage.getItem('sariels_perfil') || '{}');
-    const nombre = perfil.nombre || 'Explorador';
-    const avatar = perfil.avatar ? perfil.avatar[0].toUpperCase() : '◈';
+    const session = await getSession();
+    const nombre = session?.user?.email?.split('@')[0] || 'Anónimo';
 
     const msg = {
         nombre: nombre,
-        avatar: avatar,
+        avatar: '◈',
         texto: texto,
         hora: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
@@ -501,42 +403,8 @@ function enviarMensaje() {
     chatMessages.push(msg);
     renderizarMensaje(msg);
     input.value = '';
-    actualizarContadorChat();
 
-    if (socket && socket.connected && currentRoom) {
-        socket.emit('live_message', {
-            room: currentRoom,
-            userName: nombre,
-            userAvatar: avatar,
-            message: texto
-        });
-    }
-
-    if (Math.random() > 0.7) {
-        setTimeout(() => {
-            const respuestas = [
-                '🔥 ¡Buen vibra!',
-                '✨ Excelente comentario',
-                '🚀 Sariel\'s es lo mejor',
-                '💎 Gracias por estar aquí',
-                '🎯 ¡Totalmente de acuerdo!',
-                '🌟 Eres parte de esta comunidad',
-                '◉ ¡Gracias por participar!'
-            ];
-            const random = respuestas[Math.floor(Math.random() * respuestas.length)];
-            const botMsg = {
-                nombre: 'Sariel\'s Bot',
-                avatar: '◈',
-                texto: random,
-                hora: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-            };
-            chatMessages.push(botMsg);
-            renderizarMensaje(botMsg);
-            actualizarContadorChat();
-            
-            leerMensaje(`Nuevo mensaje de ${botMsg.nombre}: ${botMsg.texto}`);
-        }, 2000 + Math.random() * 3000);
-    }
+    leerMensaje(`${msg.nombre} dice: ${msg.texto}`);
 }
 
 // ================================================================
@@ -544,17 +412,10 @@ function enviarMensaje() {
 // ================================================================
 function renderizarMensaje(msg) {
     const container = document.getElementById('chatMessages');
-    if (!container) return;
-
-    const welcome = container.querySelector('.chat-msg:first-child');
-    if (welcome && welcome.querySelector('.name')?.textContent === 'Sariel\'s Bot' && chatMessages.length > 1) {
-        welcome.remove();
-    }
-
     const div = document.createElement('div');
     div.className = 'chat-msg';
     div.innerHTML = `
-        <div class="avatar">${msg.avatar || '◈'}</div>
+        <div class="avatar">${msg.avatar}</div>
         <div class="msg">
             <span class="name">${msg.nombre}</span>
             <span class="time">${msg.hora}</span>
@@ -566,247 +427,15 @@ function renderizarMensaje(msg) {
 }
 
 // ================================================================
-// SIMULAR MENSAJES DE CHAT
-// ================================================================
-function simularMensajes() {
-    const mensajesBienvenida = [
-        '🔥 ¡Qué buena transmisión!',
-        '✨ Alguien tiene talento',
-        '🚀 Sariel\'s en vivo',
-        '💎 Esto es increíble',
-        '🎯 Me encanta esta comunidad'
-    ];
-
-    let index = 0;
-
-    const interval = setInterval(() => {
-        if (!isLive) {
-            clearInterval(interval);
-            return;
-        }
-
-        if (index < mensajesBienvenida.length) {
-            const nombre = `Usuario${Math.floor(Math.random() * 100)}`;
-            const msg = {
-                nombre: nombre,
-                avatar: '✦',
-                texto: mensajesBienvenida[index],
-                hora: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-            };
-            chatMessages.push(msg);
-            renderizarMensaje(msg);
-            actualizarContadorChat();
-            
-            leerMensaje(`${msg.nombre} dice: ${msg.texto}`);
-            index++;
-        } else {
-            clearInterval(interval);
-        }
-    }, 3000);
-
-    const viewerInterval = setInterval(() => {
-        if (!isLive) {
-            clearInterval(viewerInterval);
-            return;
-        }
-        if (Math.random() > 0.7) {
-            viewersCount += Math.floor(Math.random() * 3);
-            actualizarViewers();
-        }
-    }, 5000);
-}
-
-// ================================================================
-// ACTUALIZAR VIEWERS
-// ================================================================
-function actualizarViewers() {
-    const el = document.getElementById('viewersCount');
-    if (el) el.textContent = `${viewersCount} espectadores`;
-}
-
-function actualizarContadorChat() {
-    const el = document.getElementById('chatCount');
-    if (el) el.textContent = `${chatMessages.length} mensajes`;
-}
-
-// ================================================================
-// CARGAR STREAMS DESDE EL SERVIDOR
-// ================================================================
-async function cargarStreams() {
-    try {
-        const response = await fetchWithAuth(`${API_URL}/live/activos`);
-        if (response.ok) {
-            const data = await response.json();
-            if (data.success && data.streams) {
-                streamsList = data.streams;
-                renderizarStreams(streamsList);
-                return;
-            }
-        }
-    } catch (error) {
-        console.warn('Error cargando streams, usando datos locales:', error);
-    }
-
-    streamsList = [];
-    renderizarStreams(streamsList);
-}
-
-// ================================================================
-// RENDERIZAR STREAMS
-// ================================================================
-function renderizarStreams(streams) {
-    const container = document.getElementById('streamsList');
-    if (!container) return;
-
-    const local = document.getElementById('stream-local');
-    container.innerHTML = '';
-    if (local) container.appendChild(local);
-
-    if (streams.length === 0 && !local) {
-        container.innerHTML = `
-            <div class="empty-state" style="grid-column:1/-1;padding:20px;">
-                <span class="icon">◉</span>
-                <h3>Sin transmisiones activas</h3>
-                <p>Sé el primero en iniciar una transmisión</p>
-            </div>
-        `;
-        return;
-    }
-
-    streams.forEach(stream => {
-        const card = document.createElement('div');
-        card.className = 'stream-card';
-        card.onclick = () => unirseTransmision(stream.id);
-        card.innerHTML = `
-            <div class="stream-thumb">
-                ${stream.is_live ? '<span class="live-badge">● EN VIVO</span>' : ''}
-                ${stream.room_name ? '◉' : '◈'}
-            </div>
-            <div class="stream-name">${stream.titulo || 'Transmisión'}</div>
-            <div class="stream-host">${stream.usuarios?.nombre || stream.host || 'Anfitrión'} · Sariel's</div>
-            <div class="stream-viewers">◈ ${stream.viewers_count || 0} espectadores</div>
-        `;
-        container.appendChild(card);
-    });
-}
-
-// ================================================================
-// UNIRSE A UNA TRANSMISIÓN
-// ================================================================
-function unirseTransmision(streamId) {
-    showToast('◈ Uniéndose a la transmisión...');
-    setTimeout(() => {
-        showToast('✅ Transmisión abierta', 'success');
-    }, 1500);
-}
-
-// ================================================================
 // VER TODAS LAS TRANSMISIONES
 // ================================================================
 function verTodasLasTransmisiones() {
-    showToast('◈ Cargando todas las transmisiones...');
     cargarStreams();
+    showToast('◈ Cargando transmisiones...');
 }
 
 // ================================================================
-// CAMBIAR MODO OSCURO/CLARO
-// ================================================================
-function toggleModo() {
-    const body = document.body;
-    const isDark = !body.classList.contains('modo-claro');
-    if (isDark) {
-        body.classList.remove('modo-claro');
-        localStorage.setItem('sariels_modo', 'oscuro');
-        showToast('◈ Modo oscuro');
-    } else {
-        body.classList.add('modo-claro');
-        localStorage.setItem('sariels_modo', 'claro');
-        showToast('✦ Modo claro');
-    }
-}
-
-function cargarModo() {
-    const modo = localStorage.getItem('sariels_modo');
-    if (modo === 'claro') {
-        document.body.classList.add('modo-claro');
-    }
-}
-
-// ================================================================
-// ESTRELLAS
-// ================================================================
-function initStars() {
-    const canvas = document.getElementById('stars-canvas');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    let width, height, stars = [];
-    let animId = null;
-    let isVisible = true;
-
-    const isMobile = window.innerWidth < 600;
-    const STAR_COUNT = isMobile ? 40 : 100;
-
-    function resize() {
-        width = window.innerWidth;
-        height = window.innerHeight;
-        canvas.width = width;
-        canvas.height = height;
-        createStars();
-    }
-
-    function createStars() {
-        stars = [];
-        for (let i = 0; i < STAR_COUNT; i++) {
-            stars.push({
-                x: Math.random() * width,
-                y: Math.random() * height,
-                radius: Math.random() * 0.8 + 0.2,
-                speed: Math.random() * 0.005 + 0.002,
-                opacity: Math.random() * 0.5 + 0.2,
-                twinklePhase: Math.random() * Math.PI * 2
-            });
-        }
-    }
-
-    function draw() {
-        if (!isVisible) {
-            animId = requestAnimationFrame(draw);
-            return;
-        }
-        ctx.clearRect(0, 0, width, height);
-        for (let star of stars) {
-            const opacity = star.opacity * (0.6 + 0.4 * Math.sin(star.twinklePhase));
-            ctx.beginPath();
-            ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
-            ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
-            ctx.fill();
-            star.twinklePhase += 0.02;
-            star.y += star.speed;
-            if (star.y > height) {
-                star.y = 0;
-                star.x = Math.random() * width;
-            }
-        }
-        animId = requestAnimationFrame(draw);
-    }
-
-    function pauseAnimation() { isVisible = false; }
-    function resumeAnimation() { isVisible = true; }
-
-    resize();
-    draw();
-
-    window.addEventListener('resize', resize);
-    document.addEventListener('visibilitychange', function() {
-        if (document.hidden) pauseAnimation();
-        else resumeAnimation();
-    });
-
-    return { pauseAnimation, resumeAnimation };
-}
-
-// ================================================================
-// EXPONER FUNCIONES GLOBALES
+// EXPONER FUNCIONES
 // ================================================================
 window.showToast = showToast;
 window.iniciarTransmision = iniciarTransmision;
@@ -815,14 +444,8 @@ window.togglePlay = togglePlay;
 window.toggleMute = toggleMute;
 window.capturarPantalla = capturarPantalla;
 window.enviarMensaje = enviarMensaje;
-window.verTodasLasTransmisiones = verTodasLasTransmisiones;
-window.actualizarViewers = actualizarViewers;
 window.cargarStreams = cargarStreams;
 window.unirseTransmision = unirseTransmision;
-window.toggleModo = toggleModo;
-window.cargarModo = cargarModo;
-window.getSession = getSession;
 window.toggleVoice = toggleVoice;
 window.leerMensaje = leerMensaje;
-
-console.log('◉ live.js cargado correctamente con Supabase Auth y Lector de Voz');
+window.getSession = getSession;
