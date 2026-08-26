@@ -36,6 +36,9 @@
             --bronze: #CD7F32;
             --bronze-light: #D4A574;
             --bronze-dark: #8B5A2B;
+            --bg-card: rgba(15, 45, 26, 0.4);
+            --bg-dark: rgba(5, 8, 15, 0.8);
+            --border-color: rgba(212, 175, 55, 0.08);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -358,6 +361,204 @@
         .panel-badge { font-size: 0.6rem; background: rgba(212, 175, 55, 0.12); color: var(--gold); padding: 2px 12px; border-radius: 20px; font-weight: 600; text-transform: uppercase; border: 1px solid rgba(212, 175, 55, 0.08); }
         .panel-body { padding: 18px; }
 
+        /* ===== SECCIÓN DE CONEXIÓN ===== */
+        .conexion-section {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            padding: 15px;
+            margin-top: 15px;
+        }
+        .conexion-section .conexion-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .conexion-section .conexion-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .conexion-section .conexion-info .status {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        .conexion-section .conexion-info .velocidad {
+            color: var(--text-muted);
+            font-size: 0.7rem;
+        }
+        .conexion-section .conexion-info .señal {
+            font-size: 0.7rem;
+        }
+        .conexion-buttons {
+            display: flex;
+            gap: 8px;
+        }
+        .conexion-buttons .btn-conexion {
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            border: 1px solid var(--glass-border);
+            background: transparent;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .conexion-buttons .btn-conexion:hover {
+            border-color: var(--gold);
+            color: var(--gold);
+        }
+        .conexion-buttons .btn-conexion.active {
+            border-color: var(--gold);
+            background: rgba(212, 175, 55, 0.15);
+            color: var(--gold);
+        }
+        .conexion-buttons .btn-conexion.wifi.active {
+            border-color: var(--success);
+            background: rgba(0, 214, 143, 0.1);
+            color: var(--success);
+        }
+        .conexion-buttons .btn-conexion.datos.active {
+            border-color: var(--cyan);
+            background: rgba(0, 229, 255, 0.1);
+            color: var(--cyan);
+        }
+
+        /* ===== SECCIÓN DE ESTADO ===== */
+        .estado-section {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            padding: 15px;
+            margin-top: 15px;
+        }
+        .estado-section .estado-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .estado-section .estado-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .estado-section .estado-info .badge {
+            font-size: 1.2rem;
+        }
+        .estado-section .estado-info .texto {
+            font-weight: 600;
+        }
+        .estado-section .estado-info .amigos-online {
+            font-size: 0.6rem;
+            color: var(--text-muted);
+        }
+        .estado-buttons {
+            display: flex;
+            gap: 8px;
+        }
+        .estado-buttons .btn-estado {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.6rem;
+            font-weight: 600;
+            border: 1px solid var(--glass-border);
+            background: transparent;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .estado-buttons .btn-estado:hover {
+            border-color: var(--gold);
+            color: var(--gold);
+        }
+        .estado-buttons .btn-estado.online {
+            border-color: var(--success);
+            color: var(--success);
+        }
+        .estado-buttons .btn-estado.online:hover {
+            background: rgba(0, 214, 143, 0.1);
+        }
+        .estado-buttons .btn-estado.offline {
+            border-color: var(--text-muted);
+            color: var(--text-muted);
+        }
+        .estado-buttons .btn-estado.offline:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        /* ===== LISTA DE AMIGOS ===== */
+        #amigosContainer {
+            margin-top: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        #amigosContainer .amigo-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            border-radius: 10px;
+            border: 1px solid var(--glass-border);
+            transition: var(--transition);
+            cursor: pointer;
+        }
+        #amigosContainer .amigo-item:hover {
+            background: rgba(212, 175, 55, 0.05);
+        }
+        #amigosContainer .amigo-item.online {
+            border-color: rgba(0, 214, 143, 0.2);
+            background: rgba(0, 214, 143, 0.05);
+        }
+        #amigosContainer .amigo-item .avatar-mini {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 2px solid var(--text-muted);
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            background: var(--bg-card);
+        }
+        #amigosContainer .amigo-item.online .avatar-mini {
+            border-color: var(--success);
+        }
+        #amigosContainer .amigo-item .avatar-mini img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        #amigosContainer .amigo-item .info {
+            flex: 1;
+            min-width: 0;
+        }
+        #amigosContainer .amigo-item .info .nombre {
+            font-weight: 600;
+            font-size: 0.8rem;
+        }
+        #amigosContainer .amigo-item .info .estado {
+            font-size: 0.6rem;
+        }
+        #amigosContainer .amigo-item .badge-online {
+            background: rgba(0, 214, 143, 0.1);
+            border: 1px solid rgba(0, 214, 143, 0.2);
+            border-radius: 20px;
+            padding: 2px 10px;
+            font-size: 0.5rem;
+            color: var(--success);
+            font-weight: 600;
+        }
+
         .activity-item {
             display: flex;
             align-items: center;
@@ -378,6 +579,29 @@
         .token-status .item:hover { border-color: var(--gold); transform: translateY(-2px); }
         .token-status .item .value { font-family: 'Orbitron', monospace; font-size: 1.3rem; font-weight: 700; color: var(--gold); }
         .token-status .item .label { font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-family: 'Orbitron', monospace; }
+
+        .progress-bar-container { margin-top: 16px; }
+        .progress-bar-container .bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .progress-bar-container .bar .fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--gold), var(--gold-light));
+            border-radius: 10px;
+            transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .progress-bar-container .label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+            font-family: 'Orbitron', monospace;
+        }
 
         .config-group { margin-bottom: 16px; }
         .config-group label { display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px; font-weight: 500; letter-spacing: 0.3px; }
@@ -425,6 +649,7 @@
         .toast.show { transform: translateY(0); opacity: 1; }
         .toast.error { border-color: var(--danger); color: var(--danger); }
         .toast.warning { border-color: var(--warning); color: var(--warning); }
+        .toast.success { border-color: var(--success); color: var(--success); }
 
         .footer { margin-top: 30px; padding-top: 16px; border-top: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; font-size: 0.7rem; color: var(--text-muted); padding-bottom: 8px; letter-spacing: 0.3px; }
         .footer .brand { color: var(--gold); font-weight: 600; letter-spacing: 1px; }
@@ -441,6 +666,8 @@
             .main-nav .nav-link { font-size: 0.6rem; padding: 6px 10px; }
             .header .logo-text { font-size: 1rem; }
             .header .logo-hex { font-size: 1.4rem; }
+            .conexion-section .conexion-header { flex-direction: column; align-items: stretch; }
+            .estado-section .estado-header { flex-direction: column; align-items: stretch; }
         }
         @media (max-width: 480px) {
             .perfil-header .avatar { width: 70px; height: 70px; font-size: 1.8rem; }
@@ -476,10 +703,12 @@
             <a href="/features/perfil/perfil.html" class="nav-link active">◆ Perfil</a>
             <a href="/features/mensajes/contactos.html" class="nav-link">◈ Contactos</a>
             <a href="/features/live/live.html" class="nav-link live">◉ Live</a>
+            <a href="/features/internet/internet.html" class="nav-link">◈ Internet</a>
         </nav>
 
         <div class="perfil-container">
 
+            <!-- ===== PERFIL HEADER ===== -->
             <div class="perfil-header" id="perfilHeader">
                 <div class="avatar-container">
                     <div class="avatar" id="perfilAvatar">
@@ -499,6 +728,7 @@
                         <span class="badge gold">✦ MIEMBRO</span>
                         <span class="badge success">● ACTIVO</span>
                         <span class="badge">◈ WEB3</span>
+                        <span class="badge" id="nivelUsuario" style="border-color:var(--purple);color:var(--purple);background:rgba(168,85,247,0.05);">🌱 Explorador</span>
                     </div>
                 </div>
                 <div class="stats">
@@ -522,15 +752,55 @@
                 <div class="acciones">
                     <button class="btn btn-gold btn-sm" onclick="editarPerfil()">✎ Editar perfil</button>
                     <button class="btn btn-outline btn-sm" onclick="compartirPerfil()">◈ Compartir</button>
+                    <button class="btn btn-outline btn-sm" onclick="generarQRPerfil()">📱 QR</button>
                 </div>
             </div>
 
+            <!-- ===== SECCIÓN DE ESTADO (ACTIVO/INACTIVO) ===== -->
+            <div class="estado-section">
+                <div class="estado-header">
+                    <div class="estado-info">
+                        <span class="badge" id="estadoBadge">🟢</span>
+                        <span class="texto" id="estadoTexto" style="color:var(--success);">Activo ahora</span>
+                        <span class="amigos-online">· <span id="amigosEnLineaContador">0</span> amigos en línea</span>
+                    </div>
+                    <div class="estado-buttons">
+                        <button class="btn-estado online" onclick="cambiarEstado(true)">🟢 Activo</button>
+                        <button class="btn-estado offline" onclick="cambiarEstado(false)">⭕ Inactivo</button>
+                    </div>
+                </div>
+                <!-- Lista de amigos -->
+                <div id="amigosContainer"></div>
+            </div>
+
+            <!-- ===== SECCIÓN DE CONEXIÓN (WiFi/Datos) ===== -->
+            <div class="conexion-section">
+                <div class="conexion-header">
+                    <div class="conexion-info">
+                        <span class="status" id="conexionStatus">🛜 WiFi</span>
+                        <span class="velocidad" id="conexionVelocidad">0 Mbps</span>
+                        <span class="señal" id="conexionSeñal" style="color:var(--success);">████</span>
+                    </div>
+                    <div class="conexion-buttons">
+                        <button class="btn-conexion wifi active" id="btnWifi" onclick="cambiarConexion('wifi')">🛜 WiFi</button>
+                        <button class="btn-conexion datos" id="btnDatos" onclick="cambiarConexion('datos')">📶 Datos</button>
+                    </div>
+                </div>
+                <div style="font-size:0.6rem;color:var(--text-muted);margin-top:6px;">
+                    Conexión: <span id="conexionTipo">🛜 WiFi</span>
+                    · Operador: <span id="conexionOperador">Sariel's Net</span>
+                </div>
+            </div>
+
+            <!-- ===== TABS ===== -->
             <div class="perfil-tabs">
                 <button class="tab-btn active" onclick="cambiarTab('actividad')">◈ Actividad</button>
                 <button class="tab-btn" onclick="cambiarTab('tokens')">⟡ Tokens</button>
                 <button class="tab-btn" onclick="cambiarTab('config')">◆ Configuración</button>
+                <button class="tab-btn" onclick="cambiarTab('esim')">📱 eSIM</button>
             </div>
 
+            <!-- ===== TAB: ACTIVIDAD ===== -->
             <div id="tab-actividad" class="tab-content active">
                 <div class="panel">
                     <div class="panel-header">
@@ -561,6 +831,7 @@
                 </div>
             </div>
 
+            <!-- ===== TAB: TOKENS ===== -->
             <div id="tab-tokens" class="tab-content">
                 <div class="panel">
                     <div class="panel-header">
@@ -597,8 +868,17 @@
                             </div>
                         </div>
 
-                        <button class="btn btn-gold" style="width:100%;justify-content:center;margin-top:12px;" onclick="irAMuro()">
-                            ⟡ Ir al Muro
+                        <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
+                            <button class="btn btn-gold" style="flex:1;justify-content:center;" onclick="comprarDomo(1)">
+                                ⟡ Comprar Domo
+                            </button>
+                            <button class="btn btn-gold" style="flex:1;justify-content:center;" id="canjearNft" onclick="canjearNFT()" disabled>
+                                🔒 CANJEAR NFT
+                            </button>
+                        </div>
+
+                        <button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:8px;" onclick="irAMuro()">
+                            ◇ Ir al Muro
                         </button>
                     </div>
                 </div>
@@ -618,6 +898,7 @@
                 </div>
             </div>
 
+            <!-- ===== TAB: CONFIGURACIÓN ===== -->
             <div id="tab-config" class="tab-content">
                 <div class="panel">
                     <div class="panel-header">
@@ -631,7 +912,7 @@
                         </div>
                         <div class="config-group">
                             <label>Handle</label>
-                            <input type="text" id="editHandle" value="@explorador" />
+                            <input type="text" id="editHandle" value="explorador" />
                         </div>
                         <div class="config-group">
                             <label>Biografía</label>
@@ -670,6 +951,71 @@
                 </div>
             </div>
 
+            <!-- ===== TAB: eSIM ===== -->
+            <div id="tab-esim" class="tab-content">
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3>📱 Mi eSIM</h3>
+                        <span class="panel-badge">Telnyx</span>
+                    </div>
+                    <div class="panel-body">
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                            <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;border:1px solid var(--glass-border);">
+                                <span style="color:var(--text-muted);font-size:0.6rem;">ESTADO</span>
+                                <div id="esimStatus" style="font-weight:600;font-size:0.9rem;">⏳ Sin eSIM</div>
+                            </div>
+                            <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;border:1px solid var(--glass-border);">
+                                <span style="color:var(--text-muted);font-size:0.6rem;">DATOS USADOS</span>
+                                <div id="esimDataUsed" style="font-weight:600;font-size:0.9rem;">0 GB</div>
+                            </div>
+                            <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;border:1px solid var(--glass-border);">
+                                <span style="color:var(--text-muted);font-size:0.6rem;">LÍMITE</span>
+                                <div id="esimDataLimit" style="font-weight:600;font-size:0.9rem;">0 GB</div>
+                            </div>
+                            <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;border:1px solid var(--glass-border);">
+                                <span style="color:var(--text-muted);font-size:0.6rem;">RESTANTE</span>
+                                <div id="esimDataRestante" style="font-weight:600;font-size:0.9rem;color:var(--success);">0 GB</div>
+                            </div>
+                            <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;border:1px solid var(--glass-border);grid-column:span 2;">
+                                <span style="color:var(--text-muted);font-size:0.6rem;">ICCID</span>
+                                <div id="esimIccid" style="font-weight:600;font-size:0.8rem;font-family:monospace;">No asignado</div>
+                            </div>
+                        </div>
+
+                        <div style="margin-top:10px;">
+                            <div style="background:rgba(0,0,0,0.2);border-radius:10px;height:8px;overflow:hidden;">
+                                <div id="esimDataProgress" style="height:100%;width:0%;background:var(--success);transition:width 0.8s;"></div>
+                            </div>
+                        </div>
+
+                        <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
+                            <button class="btn btn-gold" style="flex:1;justify-content:center;padding:10px;" onclick="comprarESIM(1)">
+                                📱 Comprar eSIM
+                            </button>
+                            <button class="btn btn-outline" style="flex:1;justify-content:center;padding:10px;" onclick="generarQRESIM()">
+                                📲 QR Activación
+                            </button>
+                            <button class="btn btn-outline" style="flex:1;justify-content:center;padding:10px;" onclick="cargarDatosESIM()">
+                                🔄 Actualizar
+                            </button>
+                        </div>
+
+                        <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
+                            <button class="btn btn-outline btn-sm" onclick="activarESIM()" style="border-color:var(--success);color:var(--success);">
+                                ✅ Activar
+                            </button>
+                            <button class="btn btn-danger btn-sm" onclick="desactivarESIM()">
+                                ⛔ Desactivar
+                            </button>
+                        </div>
+
+                        <div style="margin-top:10px;font-size:0.6rem;color:var(--text-muted);">
+                            APN: <span id="esimApn" style="font-family:monospace;color:var(--text-secondary);">data00.telnyx</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </div>
 
         <footer class="footer">
@@ -688,7 +1034,6 @@
     <div class="toast" id="toast"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/web3@1.8.0/dist/web3.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="/features/perfil/perfil.js"></script>
 </body>
