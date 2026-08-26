@@ -798,6 +798,7 @@
                 <button class="tab-btn" onclick="cambiarTab('tokens')">⟡ Tokens</button>
                 <button class="tab-btn" onclick="cambiarTab('config')">◆ Configuración</button>
                 <button class="tab-btn" onclick="cambiarTab('esim')">📱 eSIM</button>
+                <button class="tab-btn" onclick="cambiarTab('qr')">📱 Escanear QR</button>
             </div>
 
             <!-- ===== TAB: ACTIVIDAD ===== -->
@@ -938,11 +939,18 @@
                         <div class="config-group">
                             <label>Wallet conectada</label>
                             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-                                <span id="walletDisplay" style="font-family:monospace;font-size:0.85rem;color:var(--text-secondary);">No conectada</span>
-                                <button class="btn btn-outline btn-sm" onclick="conectarWallet()">◈ Conectar</button>
-                                <button class="btn btn-danger btn-sm" onclick="desconectarWallet()" style="display:none;" id="btnDisconnect">✕ Desconectar</button>
+                                <span id="walletDisplay" style="font-family:monospace;font-size:0.85rem;color:var(--text-secondary);">⚠️ No conectada</span>
+                                <button class="btn btn-gold btn-sm" onclick="conectarWallet()" id="btnConectarWallet">
+                                    ◈ Conectar
+                                </button>
+                                <button class="btn btn-danger btn-sm" onclick="desconectarWallet()" style="display:none;" id="btnDesconectarWallet">
+                                    ✕ Desconectar
+                                </button>
                             </div>
                             <div class="hint">◈ Conecta tu wallet para interactuar con el ecosistema</div>
+                            <div style="font-size:0.6rem;color:var(--text-muted);margin-top:4px;">
+                                Red: <span id="walletRed">Polygon Amoy</span>
+                            </div>
                         </div>
                         <button class="btn btn-danger" style="width:100%;justify-content:center;margin-top:8px;" onclick="cerrarSesion()">
                             ✕ Cerrar sesión
@@ -1011,6 +1019,61 @@
 
                         <div style="margin-top:10px;font-size:0.6rem;color:var(--text-muted);">
                             APN: <span id="esimApn" style="font-family:monospace;color:var(--text-secondary);">data00.telnyx</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== TAB: ESCANEAR QR ===== -->
+            <div id="tab-qr" class="tab-content">
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3>📱 Escanear QR</h3>
+                        <span class="panel-badge">Recibe Es.stoks</span>
+                    </div>
+                    <div class="panel-body">
+                        <!-- Input para código QR -->
+                        <div class="config-group">
+                            <label>Código del QR (escanea o escribe)</label>
+                            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                                <input type="text" id="qrInput" placeholder="Ej: DOMO-2025-ABC123" 
+                                       style="flex:1;padding:10px 14px;background:rgba(0,0,0,0.3);border:1px solid var(--glass-border);border-radius:10px;color:var(--text-primary);font-size:0.85rem;outline:none;">
+                                <button class="btn btn-gold" onclick="escanearQR()" id="btnEscanearQR">
+                                    🔍 Escanear QR
+                                </button>
+                            </div>
+                            <div class="hint">⚡ Escanea el QR de tu domo físico para recibir 1 Es.stok</div>
+                        </div>
+
+                        <!-- Botón para abrir cámara (móvil) -->
+                        <button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:8px;" onclick="abrirCamaraQR()">
+                            📷 Escanear con cámara
+                        </button>
+
+                        <!-- Contenedor para lector QR -->
+                        <div id="qrReaderContainer" style="display:none;margin-top:10px;">
+                            <video id="qrVideo" style="width:100%;max-width:300px;border-radius:10px;background:black;"></video>
+                            <button class="btn btn-danger btn-sm" onclick="cerrarCamaraQR()" style="margin-top:8px;">
+                                ✕ Cerrar cámara
+                            </button>
+                            <div id="qrCamaraStatus" style="font-size:0.7rem;color:var(--text-muted);margin-top:4px;"></div>
+                        </div>
+
+                        <!-- Estado del escaneo -->
+                        <div id="qrStatus" style="margin-top:12px;font-size:0.8rem;color:var(--text-muted);min-height:24px;text-align:center;"></div>
+
+                        <!-- Historial de escaneos -->
+                        <div style="margin-top:16px;border-top:1px solid var(--glass-border);padding-top:12px;">
+                            <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.7rem;color:var(--text-muted);">
+                                <span>📋 Últimos escaneos</span>
+                                <span id="qrHistorialCount">0</span>
+                            </div>
+                            <div id="qrHistorialList" style="margin-top:8px;">
+                                <div class="empty-state" style="padding:10px;">
+                                    <span class="icon" style="font-size:1.5rem;">◈</span>
+                                    <p style="font-size:0.7rem;">Sin escaneos recientes</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
