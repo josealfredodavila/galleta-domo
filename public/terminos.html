@@ -11,11 +11,11 @@
         :root {
             --gold-cosmic: #D4AF37;
             --gold-dim: rgba(212, 168, 87, 0.3);
-            --text-primary: #f0f0f0;
-            --text-secondary: #d0d0d0;
-            --text-muted: #a0a0a0;
+            --text-primary: #FFFFFF;
+            --text-secondary: #E2E8F0;
+            --text-muted: #94A3B8;
             --bg-dark: #0a0c10;
-            --bg-card: rgba(15, 45, 26, 0.3);
+            --bg-card: rgba(15, 45, 26, 0.4);
             --radius: 16px;
         }
 
@@ -153,11 +153,11 @@
             max-width: 900px;
             margin: 0 auto;
             padding: 40px 28px;
-            background: rgba(15, 45, 26, 0.2);
+            background: rgba(15, 45, 26, 0.35);
             backdrop-filter: blur(10px);
             border: 1px solid var(--gold-dim);
             border-radius: var(--radius);
-            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.4);
+            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
         }
 
         .terminos-container h1 {
@@ -189,10 +189,10 @@
         .terminos-container h3 {
             font-family: 'Orbitron', monospace;
             font-size: 1.05rem;
-            color: #ffffff; /* BLANCO PURO PARA MEJOR CONTRASTE */
+            color: #FFFFFF;
             margin-top: 22px;
             margin-bottom: 10px;
-            font-weight: 500;
+            font-weight: 600;
         }
 
         .terminos-container p {
@@ -226,23 +226,27 @@
 
         /* --- MEJORA DE CONTRASTE EN BLOQUES .art --- */
         .terminos-container .art {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(212, 168, 87, 0.2);
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(212, 168, 87, 0.25);
+            border-left: 4px solid var(--gold-cosmic);
             padding: 18px 24px;
             border-radius: 12px;
             margin: 20px 0 24px 0;
             transition: all 0.2s ease;
         }
         .terminos-container .art:hover {
-            background: rgba(255, 255, 255, 0.05);
-            border-color: rgba(212, 168, 87, 0.3);
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(212, 168, 87, 0.4);
+        }
+        .terminos-container .art p {
+            color: #F8FAFC !important;
         }
         .terminos-container .art p:last-child {
             margin-bottom: 0;
         }
         .terminos-container .art strong {
-            color: var(--gold-cosmic);
-            font-weight: 600;
+            color: #FFE066 !important;
+            font-weight: 700;
         }
 
         .terminos-container .divisor {
@@ -295,19 +299,18 @@
         .aceptacion-container {
             margin-top: 36px;
             padding: 24px 28px;
-            background: rgba(212, 168, 87, 0.05);
-            border: 1px solid rgba(212, 168, 87, 0.15);
+            background: rgba(212, 168, 87, 0.08);
+            border: 1px solid rgba(212, 168, 87, 0.25);
             border-radius: 14px;
             display: flex;
             flex-direction: column;
             gap: 16px;
             transition: all 0.3s ease;
-            cursor: pointer;
         }
         .aceptacion-container:hover {
-            background: rgba(212, 168, 87, 0.08);
-            border-color: rgba(212, 168, 87, 0.3);
-            box-shadow: 0 0 25px rgba(212, 168, 87, 0.05);
+            background: rgba(212, 168, 87, 0.12);
+            border-color: rgba(212, 168, 87, 0.4);
+            box-shadow: 0 0 25px rgba(212, 168, 87, 0.08);
         }
         .aceptacion-wrapper {
             display: flex;
@@ -323,8 +326,8 @@
             flex-shrink: 0;
             appearance: none;
             -webkit-appearance: none;
-            background: rgba(255, 255, 255, 0.06);
-            border: 2px solid rgba(212, 168, 87, 0.35);
+            background: rgba(255, 255, 255, 0.08);
+            border: 2px solid rgba(212, 168, 87, 0.4);
             border-radius: 6px;
             transition: all 0.25s ease;
             position: relative;
@@ -358,12 +361,12 @@
         .firma-digital {
             margin-top: 4px;
             padding: 14px 18px;
-            background: rgba(212, 168, 87, 0.06);
-            border: 1px solid rgba(212, 168, 87, 0.12);
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px dashed rgba(212, 168, 87, 0.3);
             border-radius: 8px;
             font-family: 'Courier New', monospace;
             font-size: 0.85rem;
-            color: var(--text-muted);
+            color: var(--text-secondary);
             display: none;
             transition: all 0.4s ease;
             word-break: break-all;
@@ -377,7 +380,7 @@
             font-weight: 600;
         }
         .firma-digital .fecha-hora {
-            color: #8fbc8f;
+            color: #8FBC8F;
         }
 
         @keyframes fadeInFirma {
@@ -477,7 +480,6 @@
                 </a>
                 <div class="header-info">
                     <span class="network-badge">🟢 Polygon</span>
-                    <!-- Botón de wallet ELIMINADO completamente -->
                 </div>
             </div>
         </header>
@@ -588,7 +590,6 @@
                         <p>© <strong>Sariel's</strong>. Todos los derechos reservados. Puebla, México 🇲🇽</p>
                     </div>
 
-                    <!-- CHECKBOX MEJORADO CON FIRMA DIGITAL -->
                     <div class="aceptacion-container" id="aceptacionContainer">
                         <div class="aceptacion-wrapper">
                             <input type="checkbox" id="aceptoPrivacidad" />
@@ -598,7 +599,6 @@
                             </label>
                         </div>
 
-                        <!-- FIRMA DIGITAL DINÁMICA -->
                         <div class="firma-digital" id="firmaDigital">
                             <span>🔐 Firma digital registrada:</span><br />
                             <span class="fecha-hora" id="fechaHoraFirma">--</span><br />
@@ -625,7 +625,6 @@
 
             btnVolver.classList.remove('active');
 
-            // Función para generar un hash simbólico
             function generarHashSimbolico() {
                 const chars = 'ABCDEF0123456789';
                 let hash = '0x';
@@ -635,7 +634,6 @@
                 return hash;
             }
 
-            // Función para formatear fecha y hora
             function obtenerFechaHora() {
                 const ahora = new Date();
                 const opciones = {
@@ -652,10 +650,8 @@
 
             checkbox.addEventListener('change', function() {
                 if (this.checked) {
-                    // Activar botón
                     btnVolver.classList.add('active');
 
-                    // Registrar firma digital
                     const fechaHora = obtenerFechaHora();
                     const hash = generarHashSimbolico();
 
@@ -663,7 +659,6 @@
                     hashFirma.textContent = hash;
                     firmaDigital.classList.add('visible');
 
-                    // Pequeña animación de confirmación
                     const container = document.getElementById('aceptacionContainer');
                     container.style.borderColor = 'rgba(212, 168, 87, 0.5)';
                     setTimeout(() => {
@@ -671,17 +666,13 @@
                     }, 1500);
 
                 } else {
-                    // Desactivar botón
                     btnVolver.classList.remove('active');
-
-                    // Ocultar firma digital
                     firmaDigital.classList.remove('visible');
                     fechaHoraFirma.textContent = '--';
                     hashFirma.textContent = '--';
                 }
             });
 
-            // Validar al hacer clic en el botón (sin checkbox marcado)
             btnVolver.addEventListener('click', function(e) {
                 if (!checkbox.checked) {
                     e.preventDefault();
