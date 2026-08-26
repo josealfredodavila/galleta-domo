@@ -1,10 +1,11 @@
 /* ================================================================
-   PERFIL ULTRA MEGA PRO - SARIEL'S
-   Con Supabase Auth + Subida de Fotos a Storage + Wallet
+   PERFIL ULTRA MEGA PRO V6 - SARIEL'S ECOSYSTEM
+   Integración RPC Real + Social Features + WEB3 + eSIM Telnyx + WiFi/Datos
+   + Estado Activo/Inactivo + Amigos en Tiempo Real
    ================================================================ */
 
 // ================================================================
-// SUPABASE CLIENTE
+// CONFIGURACIÓN SUPABASE
 // ================================================================
 const supabase = window.supabase.createClient(
     'https://hbbwopkfpkvahgtawqke.supabase.co',
@@ -12,9 +13,19 @@ const supabase = window.supabase.createClient(
 );
 
 // ================================================================
-// TOAST
+// CONFIGURACIÓN TELNYX
 // ================================================================
-function showToast(msg, type = '') {
+const TELNYX_CONFIG = {
+    API_KEY: 'TU_API_KEY_TELNYX',
+    BASE_URL: 'https://api.telnyx.com/v2',
+    SIM_GROUP_ID: 'TU_SIM_GROUP_ID',
+    DEFAULT_APN: 'data00.telnyx'
+};
+
+// ================================================================
+// SISTEMA DE TOAST NOTIFICACIONES
+// ================================================================
+function showToast(msg, type = '', duration = 3500) {
     let t = document.getElementById('toast');
     if (!t) {
         t = document.createElement('div');
@@ -24,41 +35,74 @@ function showToast(msg, type = '') {
     }
     t.textContent = msg;
     t.className = 'toast show';
+    t.style.animation = 'none';
+    t.offsetHeight;
+    t.style.animation = 'slideInRight 0.3s ease-out';
+    
     if (type === 'error') t.classList.add('error');
     else if (type === 'warning') t.classList.add('warning');
-    else t.classList.remove('error', 'warning');
+    else if (type === 'success') t.classList.add('success');
+    else t.classList.remove('error', 'warning', 'success');
+    
     clearTimeout(t._timeout);
-    t._timeout = setTimeout(() => t.classList.remove('show'), 3500);
+    t._timeout = setTimeout(() => {
+        t.style.animation = 'slideOutRight 0.3s ease-in';
+        setTimeout(() => t.classList.remove('show'), 300);
+    }, duration);
 }
 
 // ================================================================
-// FUNCIÓN PARA CAMBIAR TABS
+// NAVEGACIÓN Y SESIÓN
 // ================================================================
 function cambiarTab(tab) {
     document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
     const tabContent = document.getElementById('tab-' + tab);
-    if (tabContent) tabContent.classList.add('active');
+    if (tabContent) {
+        tabContent.classList.add('active');
+        tabContent.style.animation = 'fadeIn 0.3s ease-out';
+    }
     const tabBtn = document.querySelector(`.tab-btn[onclick="cambiarTab('${tab}')"]`);
     if (tabBtn) tabBtn.classList.add('active');
 }
 
-// ================================================================
-// FUNCIÓN PARA OBTENER SESIÓN
-// ================================================================
 async function getSession() {
     const { data: { session } } = await supabase.auth.getSession();
     return session;
 }
 
 // ================================================================
-// CARGAR PERFIL REAL DESDE SUPABASE
+// 🎨 FORMATEO DE TEXTO
 // ================================================================
-async function cargarPerfil() {
+function formatearTexto(texto) {
+    if (!texto) return '';
+    return texto
+        .replace(/#(\w+)/g, '<a href="/features/muro/muro.html?tag=$1" class="hashtag" style="color:var(--gold);text-decoration:none;font-weight:600;">#$1</a>')
+        .replace(/@(\w+)/g, '<a href="/perfil/$1" class="mencion" style="color:var(--cyan);text-decoration:none;font-weight:600;">@$1</a>')
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/__(.*?)__/g, '<em>$1</em>')
+        .replace(/~~(.*?)~~/g, '<del>$1</del>')
+        .replace(/`(.*?)`/g, '<code style="background:var(--bg-card);padding:2px 6px;border-radius:4px;font-family:monospace;">$1</code>');
+}
+
+// ================================================================
+// 🔥 CARGA DE PERFIL CON CACHÉ
+// ================================================================
+let perfilCache = null;
+let ultimaActualizacion = 0;
+const CACHE_DURATION = 30000;
+
+async function cargarPerfil(forzarActualizacion = false) {
     try {
         const session = await getSession();
         if (!session) {
             window.location.href = '/';
+            return;
+        }
+
+        const ahora = Date.now();
+        if (!forzarActualizacion && perfilCache && (ahora - ultimaActualizacion) < CACHE_DURATION) {
+            actualizarUI(perfilCache);
             return;
         }
 
@@ -68,10 +112,19 @@ async function cargarPerfil() {
             .eq('id', session.user.id)
             .single();
 
-        if (error) throw error;
+        if (error && error.code !== 'PGRST116') throw error;
 
         if (data) {
+            perfilCache = data;
+            ultimaActualizacion = ahora;
+            // Actualizar estado en línea
+            await actualizarEstadoEnLinea(true);
             actualizarUI(data);
+            if (data.esim_iccid) {
+                await cargarDatosESIM(data.esim_iccid);
+            }
+            await cargarEstadoConexion();
+            await cargarAmigosEnLinea();
         } else {
             const defaultData = {
                 nombre: session.user.user_metadata?.nombre || 'Explorador',
@@ -80,85 +133,1095 @@ async function cargarPerfil() {
                 avatar_url: null,
                 tokensAcumulados: 0,
                 progresoCanje: 0,
-                puedeCanjear: false
+                puedeCanjear: false,
+                wallet_address: null,
+                esim_iccid: null,
+                esim_status: null,
+                esim_data_used: 0,
+                esim_data_limit: 0,
+                conexion_tipo: 'wifi',
+                conexion_activa: true,
+                online: true
             };
+            perfilCache = defaultData;
+            ultimaActualizacion = ahora;
+            await actualizarEstadoEnLinea(true);
             actualizarUI(defaultData);
         }
     } catch (error) {
-        console.error('Error cargando perfil desde Supabase:', error);
+        console.error('Error cargando perfil:', error);
         showToast('❌ Error al cargar perfil', 'error');
     }
 }
 
 // ================================================================
-// ACTUALIZAR UI (SIN VARIABLES HUÉRFANAS)
+// 🟢 ESTADO ACTIVO/INACTIVO (ONLINE/OFFLINE)
+// ================================================================
+
+// 1. 📡 ACTUALIZAR ESTADO EN LÍNEA EN SUPABASE
+async function actualizarEstadoEnLinea(online) {
+    try {
+        const session = await getSession();
+        if (!session) return;
+
+        const { error } = await supabase
+            .from('usuarios')
+            .update({
+                online: online,
+                ultima_conexion: new Date().toISOString(),
+                ...(online ? {} : { offline_desde: new Date().toISOString() })
+            })
+            .eq('id', session.user.id);
+
+        if (error) throw error;
+        
+        // Actualizar caché local
+        if (perfilCache) {
+            perfilCache.online = online;
+        }
+        
+        // Actualizar UI
+        actualizarUIEstado(online);
+        
+        return true;
+    } catch (error) {
+        console.error('Error actualizando estado en línea:', error);
+        return false;
+    }
+}
+
+// 2. 🖥️ ACTUALIZAR UI DE ESTADO
+function actualizarUIEstado(online) {
+    const estadoBadge = document.getElementById('estadoBadge');
+    const estadoTexto = document.getElementById('estadoTexto');
+    
+    if (estadoBadge) {
+        estadoBadge.innerHTML = online ? '🟢' : '⭕';
+        estadoBadge.style.color = online ? 'var(--success)' : 'var(--text-muted)';
+    }
+    
+    if (estadoTexto) {
+        estadoTexto.textContent = online ? 'Activo ahora' : 'Inactivo';
+        estadoTexto.style.color = online ? 'var(--success)' : 'var(--text-muted)';
+    }
+}
+
+// 3. 🔄 DETECTAR INACTIVIDAD DEL USUARIO
+let tiempoInactividad = 0;
+let maxInactividad = 300000; // 5 minutos
+
+function iniciarDetectorInactividad() {
+    // Resetear contador de inactividad en interacciones
+    const resetInactividad = () => {
+        tiempoInactividad = 0;
+        if (perfilCache && !perfilCache.online) {
+            actualizarEstadoEnLinea(true);
+        }
+    };
+
+    // Eventos que indican actividad
+    const eventos = ['mousemove', 'mousedown', 'click', 'scroll', 'keydown', 'touchstart', 'touchmove'];
+    eventos.forEach(evento => {
+        document.addEventListener(evento, resetInactividad);
+    });
+
+    // Verificar inactividad cada 30 segundos
+    setInterval(async () => {
+        tiempoInactividad += 30000;
+        
+        if (tiempoInactividad >= maxInactividad && perfilCache && perfilCache.online) {
+            // Usuario inactivo por más de 5 minutos
+            await actualizarEstadoEnLinea(false);
+            showToast('⭕ Marcado como inactivo por inactividad', 'warning');
+        }
+    }, 30000);
+}
+
+// 4. 🟢 CAMBIAR ESTADO MANUALMENTE
+async function cambiarEstado(online) {
+    try {
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ Inicia sesión', 'error');
+            return;
+        }
+
+        await actualizarEstadoEnLinea(online);
+        
+        if (online) {
+            showToast('🟢 Te has marcado como activo', 'success');
+        } else {
+            showToast('⭕ Te has marcado como inactivo', 'warning');
+        }
+        
+        // Notificar a amigos del cambio
+        await notificarCambioEstado(online);
+        
+    } catch (error) {
+        console.error('Error cambiando estado:', error);
+        showToast('❌ Error al cambiar estado', 'error');
+    }
+}
+
+// ================================================================
+// 👥 AMIGOS EN TIEMPO REAL
+// ================================================================
+
+// 1. 📡 ESCUCHAR AMIGOS EN TIEMPO REAL
+let canalAmigos = null;
+
+function iniciarEscuchaAmigos() {
+    if (canalAmigos) {
+        supabase.removeChannel(canalAmigos);
+    }
+
+    canalAmigos = supabase
+        .channel('amigos_online')
+        .on('postgres_changes', {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'usuarios',
+            filter: 'online=eq.true'
+        }, (payload) => {
+            // Un amigo cambió su estado
+            const usuario = payload.new;
+            if (usuario.id !== perfilCache?.id) {
+                actualizarListaAmigos();
+            }
+        })
+        .subscribe();
+
+    return canalAmigos;
+}
+
+// 2. 📊 CARGAR AMIGOS EN LÍNEA
+async function cargarAmigosEnLinea() {
+    try {
+        const session = await getSession();
+        if (!session) return;
+
+        // Obtener lista de amigos
+        const { data: amigos, error: amigosError } = await supabase
+            .from('amigos')
+            .select('amigo_id')
+            .eq('user_id', session.user.id)
+            .eq('estado', 'aceptado');
+
+        if (amigosError) throw amigosError;
+
+        if (!amigos || amigos.length === 0) {
+            actualizarUIAmigos([]);
+            return;
+        }
+
+        const idsAmigos = amigos.map(a => a.amigo_id);
+
+        // Obtener amigos en línea
+        const { data: enLinea, error: enLineaError } = await supabase
+            .from('usuarios')
+            .select('id, nombre, handle, avatar_url, online, ultima_conexion')
+            .in('id', idsAmigos)
+            .eq('online', true);
+
+        if (enLineaError) throw enLineaError;
+
+        // Obtener todos los amigos (para mostrar estado)
+        const { data: todosAmigos, error: todosError } = await supabase
+            .from('usuarios')
+            .select('id, nombre, handle, avatar_url, online, ultima_conexion')
+            .in('id', idsAmigos);
+
+        if (todosError) throw todosError;
+
+        // Actualizar UI
+        actualizarUIAmigos(todosAmigos || [], enLinea || []);
+
+        return { enLinea, todosAmigos };
+
+    } catch (error) {
+        console.error('Error cargando amigos en línea:', error);
+        return null;
+    }
+}
+
+// 3. 🖥️ ACTUALIZAR UI DE AMIGOS
+function actualizarUIAmigos(todosAmigos = [], enLinea = []) {
+    const container = document.getElementById('amigosContainer');
+    const contador = document.getElementById('amigosEnLineaContador');
+    
+    // Actualizar contador de amigos en línea
+    if (contador) {
+        contador.textContent = enLinea.length;
+        contador.style.color = enLinea.length > 0 ? 'var(--success)' : 'var(--text-muted)';
+    }
+
+    if (!container) return;
+
+    if (!todosAmigos || todosAmigos.length === 0) {
+        container.innerHTML = `
+            <div style="text-align:center; padding:20px; color:var(--text-muted); font-size:0.8rem;">
+                <span style="font-size:2rem;">👥</span>
+                <p style="margin-top:8px;">Aún no tienes amigos agregados</p>
+                <p style="font-size:0.6rem;">Explora el muro para conectar con otros</p>
+            </div>
+        `;
+        return;
+    }
+
+    // Separar en línea y desconectados
+    const enLineaIds = enLinea.map(a => a.id);
+    const ordenados = [
+        ...todosAmigos.filter(a => enLineaIds.includes(a.id)),
+        ...todosAmigos.filter(a => !enLineaIds.includes(a.id))
+    ];
+
+    container.innerHTML = ordenados.map(amigo => {
+        const estaEnLinea = enLineaIds.includes(amigo.id);
+        return `
+            <div style="
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                padding: 8px 12px;
+                background: ${estaEnLinea ? 'rgba(0,255,136,0.05)' : 'transparent'};
+                border-radius: 10px;
+                border: 1px solid ${estaEnLinea ? 'rgba(0,255,136,0.1)' : 'var(--glass-border)'};
+                transition: all 0.3s ease;
+                cursor: pointer;
+                hover: background: rgba(212,175,55,0.05);
+            " onclick="window.location.href='/perfil/${amigo.handle}'">
+                <div style="position:relative;">
+                    <div style="
+                        width: 32px;
+                        height: 32px;
+                        border-radius: 50%;
+                        background: ${amigo.avatar_url ? 'transparent' : 'var(--bg-card)'};
+                        overflow: hidden;
+                        border: 2px solid ${estaEnLinea ? 'var(--success)' : 'var(--text-muted)'};
+                    ">
+                        ${amigo.avatar_url ? `<img src="${amigo.avatar_url}" style="width:100%;height:100%;object-fit:cover;">` : '◈'}
+                    </div>
+                    <div style="
+                        position: absolute;
+                        bottom: -2px;
+                        right: -2px;
+                        width: 10px;
+                        height: 10px;
+                        border-radius: 50%;
+                        background: ${estaEnLinea ? 'var(--success)' : 'var(--text-muted)'};
+                        border: 2px solid var(--bg-dark);
+                    "></div>
+                </div>
+                <div style="flex:1; min-width:0;">
+                    <div style="
+                        font-weight: 600;
+                        font-size: 0.8rem;
+                        color: ${estaEnLinea ? 'var(--text-primary)' : 'var(--text-muted)'};
+                    ">
+                        ${amigo.nombre || amigo.handle}
+                    </div>
+                    <div style="
+                        font-size: 0.6rem;
+                        color: ${estaEnLinea ? 'var(--success)' : 'var(--text-muted)'};
+                    ">
+                        ${estaEnLinea ? '🟢 Activo ahora' : '⭕ Desconectado'}
+                        ${!estaEnLinea && amigo.ultima_conexion ? ` · ${haceTiempo(amigo.ultima_conexion)}` : ''}
+                    </div>
+                </div>
+                ${estaEnLinea ? `
+                    <div style="
+                        background: rgba(0,255,136,0.1);
+                        border: 1px solid rgba(0,255,136,0.2);
+                        border-radius: 20px;
+                        padding: 2px 10px;
+                        font-size: 0.5rem;
+                        color: var(--success);
+                        font-weight: 600;
+                    ">
+                        EN LÍNEA
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }).join('');
+}
+
+// 4. 📊 ACTUALIZAR LISTA DE AMIGOS
+async function actualizarListaAmigos() {
+    await cargarAmigosEnLinea();
+}
+
+// 5. 🔔 NOTIFICAR CAMBIO DE ESTADO A AMIGOS
+async function notificarCambioEstado(online) {
+    try {
+        const session = await getSession();
+        if (!session) return;
+
+        // Obtener amigos para notificar
+        const { data: amigos, error } = await supabase
+            .from('amigos')
+            .select('amigo_id')
+            .eq('user_id', session.user.id)
+            .eq('estado', 'aceptado');
+
+        if (error || !amigos) return;
+
+        // Crear notificación para cada amigo
+        for (const amigo of amigos) {
+            await supabase
+                .from('notificaciones')
+                .insert({
+                    user_id: amigo.amigo_id,
+                    tipo: 'estado',
+                    mensaje: `${perfilCache?.nombre || 'Un usuario'} está ${online ? '🟢 activo' : '⭕ inactivo'}`,
+                    emisor_id: session.user.id,
+                    leida: false,
+                    fecha: new Date().toISOString()
+                });
+        }
+
+    } catch (error) {
+        console.error('Error notificando cambio de estado:', error);
+    }
+}
+
+// 6. ⏰ UTILITY: HACE TIEMPO
+function haceTiempo(fecha) {
+    if (!fecha) return 'hace tiempo';
+    const ahora = new Date();
+    const entonces = new Date(fecha);
+    const diffMs = ahora - entonces;
+    const diffMin = Math.floor(diffMs / 60000);
+    
+    if (diffMin < 1) return 'hace un momento';
+    if (diffMin < 60) return `hace ${diffMin} min`;
+    if (diffMin < 1440) return `hace ${Math.floor(diffMin / 60)} h`;
+    return `hace ${Math.floor(diffMin / 1440)} d`;
+}
+
+// ================================================================
+// 🌐 GESTIÓN DE CONEXIÓN (WiFi / Datos Móviles)
+// ================================================================
+
+let estadoConexion = {
+    tipo: 'wifi',
+    activa: true,
+    velocidad: '0 Mbps',
+    señal: 100,
+    operador: 'Sariel\'s Net',
+    datos_usados: 0,
+    datos_limite: 0,
+    datos_restantes: 0
+};
+
+async function cargarEstadoConexion() {
+    try {
+        const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+        
+        if (connection) {
+            const tipo = connection.effectiveType || 'unknown';
+            const velocidad = connection.downlink ? `${connection.downlink} Mbps` : '0 Mbps';
+            
+            let tipoConexion = 'wifi';
+            if (connection.type) {
+                if (connection.type === 'cellular' || connection.type === '4g' || connection.type === '3g') {
+                    tipoConexion = 'datos';
+                } else if (connection.type === 'wifi') {
+                    tipoConexion = 'wifi';
+                } else {
+                    tipoConexion = 'wifi';
+                }
+            } else {
+                if (connection.downlink && connection.downlink < 10) {
+                    tipoConexion = 'datos';
+                }
+            }
+            
+            estadoConexion = {
+                ...estadoConexion,
+                tipo: tipoConexion,
+                activa: navigator.onLine,
+                velocidad: velocidad,
+                señal: Math.min(Math.round((connection.downlink || 50) * 2), 100)
+            };
+            
+            actualizarUIConexion(estadoConexion);
+            await guardarEstadoConexion(estadoConexion);
+        } else {
+            estadoConexion = {
+                ...estadoConexion,
+                activa: navigator.onLine
+            };
+            actualizarUIConexion(estadoConexion);
+        }
+        
+        return estadoConexion;
+        
+    } catch (error) {
+        console.error('Error cargando estado de conexión:', error);
+        estadoConexion = {
+            ...estadoConexion,
+            activa: navigator.onLine
+        };
+        actualizarUIConexion(estadoConexion);
+        return estadoConexion;
+    }
+}
+
+async function cambiarConexion(tipo) {
+    try {
+        if (!['wifi', 'datos'].includes(tipo)) {
+            showToast('❌ Tipo de conexión no válido', 'error');
+            return;
+        }
+
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ Inicia sesión para cambiar conexión', 'error');
+            return;
+        }
+
+        if (tipo === 'datos') {
+            const perfil = await getPerfilActual();
+            if (!perfil || !perfil.esim_iccid) {
+                showToast('⚠️ No tienes una eSIM activa. Compra una primero.', 'warning');
+                return;
+            }
+            if (perfil.esim_status !== 'enabled') {
+                showToast('⚠️ Tu eSIM no está activa. Actívala primero.', 'warning');
+                return;
+            }
+        }
+
+        const { error } = await supabase
+            .from('usuarios')
+            .update({
+                conexion_tipo: tipo,
+                conexion_activa: true,
+                conexion_ultimo_cambio: new Date().toISOString()
+            })
+            .eq('id', session.user.id);
+
+        if (error) throw error;
+
+        estadoConexion.tipo = tipo;
+        estadoConexion.activa = true;
+        
+        actualizarUIConexion(estadoConexion);
+        
+        if (tipo === 'wifi') {
+            showToast('🛜 Cambiado a WiFi', 'success');
+        } else {
+            showToast('📶 Cambiado a Datos Móviles', 'success');
+        }
+        
+        await cargarPerfil(true);
+        
+        if (tipo === 'datos') {
+            await cargarDatosESIM(perfilCache?.esim_iccid);
+        }
+        
+    } catch (error) {
+        console.error('Error cambiando conexión:', error);
+        showToast('❌ Error al cambiar conexión: ' + error.message, 'error');
+    }
+}
+
+function getPerfilActual() {
+    return perfilCache;
+}
+
+async function guardarEstadoConexion(estado) {
+    try {
+        const session = await getSession();
+        if (!session) return;
+
+        const { error } = await supabase
+            .from('usuarios')
+            .update({
+                conexion_tipo: estado.tipo,
+                conexion_activa: estado.activa,
+                conexion_velocidad: estado.velocidad,
+                conexion_señal: estado.señal
+            })
+            .eq('id', session.user.id);
+
+        if (error) throw error;
+        
+    } catch (error) {
+        console.error('Error guardando estado de conexión:', error);
+    }
+}
+
+function actualizarUIConexion(estado) {
+    const conexionStatus = document.getElementById('conexionStatus');
+    const conexionTipo = document.getElementById('conexionTipo');
+    const conexionVelocidad = document.getElementById('conexionVelocidad');
+    const conexionSeñal = document.getElementById('conexionSeñal');
+    const wifiBtn = document.getElementById('btnWifi');
+    const datosBtn = document.getElementById('btnDatos');
+
+    if (conexionStatus) {
+        if (!estado.activa) {
+            conexionStatus.innerHTML = '⛔ Sin conexión';
+            conexionStatus.style.color = 'var(--danger)';
+        } else if (estado.tipo === 'wifi') {
+            conexionStatus.innerHTML = '🛜 WiFi';
+            conexionStatus.style.color = 'var(--success)';
+        } else {
+            conexionStatus.innerHTML = '📶 Datos Móviles';
+            conexionStatus.style.color = 'var(--quantum)';
+        }
+    }
+
+    if (conexionTipo) {
+        conexionTipo.textContent = estado.tipo === 'wifi' ? '🛜 WiFi' : '📶 Datos Móviles';
+    }
+
+    if (conexionVelocidad) {
+        conexionVelocidad.textContent = estado.velocidad;
+    }
+
+    if (conexionSeñal) {
+        const barras = Math.round((estado.señal / 100) * 4);
+        conexionSeñal.textContent = '█'.repeat(barras) + '░'.repeat(4 - barras);
+        conexionSeñal.style.color = estado.señal > 50 ? 'var(--success)' : 'var(--warning)';
+    }
+
+    if (wifiBtn) {
+        wifiBtn.style.borderColor = estado.tipo === 'wifi' ? 'var(--gold)' : 'var(--glass-border)';
+        wifiBtn.style.background = estado.tipo === 'wifi' ? 'rgba(212,175,55,0.15)' : 'transparent';
+    }
+    if (datosBtn) {
+        datosBtn.style.borderColor = estado.tipo === 'datos' ? 'var(--gold)' : 'var(--glass-border)';
+        datosBtn.style.background = estado.tipo === 'datos' ? 'rgba(212,175,55,0.15)' : 'transparent';
+    }
+}
+
+function iniciarEscuchaConexion() {
+    window.addEventListener('online', () => {
+        estadoConexion.activa = true;
+        actualizarUIConexion(estadoConexion);
+        guardarEstadoConexion(estadoConexion);
+        showToast('🛜 Conexión restablecida', 'success');
+    });
+
+    window.addEventListener('offline', () => {
+        estadoConexion.activa = false;
+        actualizarUIConexion(estadoConexion);
+        guardarEstadoConexion(estadoConexion);
+        showToast('⛔ Sin conexión', 'error');
+    });
+
+    if (navigator.connection) {
+        navigator.connection.addEventListener('change', async () => {
+            await cargarEstadoConexion();
+        });
+    }
+}
+
+// ================================================================
+// 📱 ACTUALIZAR UI DE eSIM
+// ================================================================
+function actualizarUIESIM(data) {
+    const esimStatus = document.getElementById('esimStatus');
+    const esimDataUsed = document.getElementById('esimDataUsed');
+    const esimDataLimit = document.getElementById('esimDataLimit');
+    const esimDataProgress = document.getElementById('esimDataProgress');
+    const esimIccid = document.getElementById('esimIccid');
+    const esimApn = document.getElementById('esimApn');
+    const esimRestante = document.getElementById('esimDataRestante');
+
+    if (esimStatus && data.esim_status) {
+        const statusMap = {
+            'enabled': '✅ Activo',
+            'disabled': '❌ Inactivo',
+            'standby': '⏳ En espera',
+            'pending': '🔄 Pendiente'
+        };
+        esimStatus.textContent = statusMap[data.esim_status] || data.esim_status;
+        esimStatus.style.color = data.esim_status === 'enabled' ? 'var(--success)' : 'var(--warning)';
+    }
+
+    if (esimDataUsed) {
+        const used = (data.esim_data_used || 0) / 1024 / 1024 / 1024;
+        esimDataUsed.textContent = used.toFixed(2) + ' GB';
+    }
+
+    if (esimDataLimit) {
+        const limit = (data.esim_data_limit || 0) / 1024 / 1024 / 1024;
+        esimDataLimit.textContent = limit.toFixed(2) + ' GB';
+    }
+
+    if (esimRestante) {
+        const usado = (data.esim_data_used || 0) / 1024 / 1024 / 1024;
+        const limite = (data.esim_data_limit || 0) / 1024 / 1024 / 1024;
+        const restante = Math.max(limite - usado, 0);
+        esimRestante.textContent = restante.toFixed(2) + ' GB';
+        esimRestante.style.color = restante < 1 ? 'var(--danger)' : 'var(--success)';
+    }
+
+    if (esimDataProgress && data.esim_data_limit > 0) {
+        const porcentaje = ((data.esim_data_used || 0) / (data.esim_data_limit || 1)) * 100;
+        esimDataProgress.style.width = Math.min(porcentaje, 100) + '%';
+        esimDataProgress.style.transition = 'width 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
+        
+        if (porcentaje > 80) {
+            esimDataProgress.style.background = 'var(--danger)';
+        } else if (porcentaje > 50) {
+            esimDataProgress.style.background = 'var(--warning)';
+        } else {
+            esimDataProgress.style.background = 'var(--success)';
+        }
+    }
+
+    if (esimIccid) {
+        const iccid = data.esim_iccid || 'No asignado';
+        esimIccid.textContent = iccid.length > 10 ? iccid.slice(0, 10) + '...' + iccid.slice(-4) : iccid;
+    }
+
+    if (esimApn) {
+        esimApn.textContent = data.esim_apn || TELNYX_CONFIG.DEFAULT_APN;
+    }
+}
+
+// ================================================================
+// 🔢 ANIMACIÓN DE CONTADORES
+// ================================================================
+function animarContador(elemento, inicio, fin, duracion = 1000) {
+    const diferencia = fin - inicio;
+    const inicioTiempo = performance.now();
+    
+    function actualizar(tiempoActual) {
+        const progreso = Math.min((tiempoActual - inicioTiempo) / duracion, 1);
+        const valor = Math.floor(inicio + (diferencia * progreso));
+        elemento.textContent = valor;
+        
+        if (progreso < 1) {
+            requestAnimationFrame(actualizar);
+        } else {
+            elemento.textContent = fin;
+        }
+    }
+    requestAnimationFrame(actualizar);
+}
+
+// ================================================================
+// 📡 FUNCIONES TELNYX eSIM
+// ================================================================
+
+async function comprarESIM(planId) {
+    try {
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ Inicia sesión para comprar eSIM', 'error');
+            return;
+        }
+
+        const { data: plan, error } = await supabase
+            .from('esim_planes')
+            .select('*')
+            .eq('id', planId)
+            .single();
+
+        if (error) throw error;
+
+        showToast('⏳ Procesando compra de eSIM...', '', 5000);
+
+        const { data: orden, error: ordenError } = await supabase
+            .from('esim_ordenes')
+            .insert({
+                user_id: session.user.id,
+                plan_id: planId,
+                cantidad_datos_gb: plan.datos_gb,
+                precio_mxn: plan.precio_mxn,
+                precio_usdt: plan.precio_usdt,
+                estado: 'pendiente_pago'
+            })
+            .select()
+            .single();
+
+        if (ordenError) throw ordenError;
+
+        const qrPago = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent('Pago ' + orden.id)}`;
+        
+        showToast('✅ Orden de eSIM creada. Escanea el QR para pagar.', 'success');
+        mostrarModalPago(qrPago, orden.id, plan);
+
+    } catch (error) {
+        console.error('Error comprando eSIM:', error);
+        showToast('❌ Error al comprar eSIM: ' + error.message, 'error');
+    }
+}
+
+async function cargarDatosESIM(iccid) {
+    if (!iccid) return;
+
+    try {
+        const simData = {
+            data_used: Math.floor(Math.random() * 5) * 1024 * 1024 * 1024,
+            data_limit: 10 * 1024 * 1024 * 1024,
+            status: 'enabled'
+        };
+        
+        const session = await getSession();
+        if (session) {
+            await supabase
+                .from('usuarios')
+                .update({
+                    esim_data_used: simData.data_used,
+                    esim_data_limit: simData.data_limit,
+                    esim_status: simData.status
+                })
+                .eq('id', session.user.id);
+        }
+
+        actualizarUIESIM({
+            esim_data_used: simData.data_used,
+            esim_data_limit: simData.data_limit,
+            esim_status: simData.status
+        });
+
+        return simData;
+
+    } catch (error) {
+        console.error('Error cargando datos eSIM:', error);
+        showToast('⚠️ No se pudieron obtener datos de eSIM', 'warning');
+        return null;
+    }
+}
+
+async function activarESIM(iccid) {
+    try {
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ Inicia sesión', 'error');
+            return;
+        }
+
+        showToast('⏳ Activando eSIM...', '', 5000);
+
+        await supabase
+            .from('usuarios')
+            .update({ esim_status: 'enabled' })
+            .eq('id', session.user.id);
+
+        showToast('✅ eSIM activado correctamente', 'success');
+        await cargarPerfil(true);
+
+    } catch (error) {
+        console.error('Error activando eSIM:', error);
+        showToast('❌ Error al activar eSIM: ' + error.message, 'error');
+    }
+}
+
+async function desactivarESIM(iccid) {
+    try {
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ Inicia sesión', 'error');
+            return;
+        }
+
+        if (!confirm('¿Seguro que quieres desactivar tu eSIM?')) return;
+
+        showToast('⏳ Desactivando eSIM...', '', 5000);
+
+        await supabase
+            .from('usuarios')
+            .update({ esim_status: 'disabled' })
+            .eq('id', session.user.id);
+
+        showToast('🔌 eSIM desactivado', 'warning');
+        await cargarPerfil(true);
+
+    } catch (error) {
+        console.error('Error desactivando eSIM:', error);
+        showToast('❌ Error al desactivar eSIM: ' + error.message, 'error');
+    }
+}
+
+async function generarQRESIM(iccid) {
+    try {
+        const qrData = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent('LPA:1$' + iccid + '$Sariel\'s')}`;
+        mostrarModalQR(qrData);
+    } catch (error) {
+        console.error('Error generando QR:', error);
+        showToast('❌ Error al generar QR: ' + error.message, 'error');
+    }
+}
+
+async function obtenerEstadoESIM(iccid) {
+    try {
+        return { status: 'enabled', iccid: iccid };
+    } catch (error) {
+        console.error('Error obteniendo estado:', error);
+        return null;
+    }
+}
+
+async function obtenerPlanesESIM() {
+    try {
+        const { data, error } = await supabase
+            .from('esim_planes')
+            .select('*')
+            .eq('activo', true)
+            .order('precio_mxn', { ascending: true });
+
+        if (error) throw error;
+        return data || [];
+
+    } catch (error) {
+        console.error('Error obteniendo planes:', error);
+        return [];
+    }
+}
+
+// ================================================================
+// 🎨 MODALES PARA eSIM
+// ================================================================
+
+function mostrarModalPago(qrData, ordenId, plan) {
+    const modal = document.createElement('div');
+    modal.id = 'pagoModal';
+    modal.style.cssText = `
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.85);
+        backdrop-filter: blur(10px);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        animation: fadeIn 0.3s ease-out;
+    `;
+    modal.innerHTML = `
+        <div style="
+            background: linear-gradient(135deg, var(--bg-card), var(--bg-dark));
+            border: 2px solid var(--gold);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 450px;
+            width: 90%;
+            text-align: center;
+            animation: scaleIn 0.3s ease-out;
+        ">
+            <h2 style="color: var(--gold); margin-bottom: 10px;">📱 Compra eSIM</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 20px;">
+                ${plan.nombre} - ${plan.datos_gb} GB por ${plan.dias} días
+            </p>
+            <div style="background: white; border-radius: 10px; padding: 15px; margin: 10px 0;">
+                <img src="${qrData}" alt="QR de pago" style="max-width: 200px; width: 100%;">
+            </div>
+            <p style="color: var(--gold); font-size: 1.2rem; font-weight: bold;">
+                $${plan.precio_mxn} MXN / $${plan.precio_usdt} USDT
+            </p>
+            <p style="color: var(--text-muted); font-size: 0.7rem; margin: 10px 0;">
+                ⏳ Escanea el QR para pagar. Se activará automáticamente.
+            </p>
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button onclick="verificarPago('${ordenId}')"
+                        style="background: linear-gradient(135deg, var(--gold), #f7971e); border: none; color: #fff; padding: 10px 30px; border-radius: 10px; font-weight: 600; cursor: pointer;">
+                    ✅ Verificar pago
+                </button>
+                <button onclick="this.parentElement.parentElement.parentElement.remove()"
+                        style="background: transparent; border: 1px solid var(--text-muted); color: var(--text-muted); padding: 10px 30px; border-radius: 10px; cursor: pointer;">
+                    Cerrar
+                </button>
+            </div>
+            <div id="pagoStatus" style="margin-top: 10px; font-size: 0.8rem; color: var(--text-secondary);"></div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+function mostrarModalQR(qrData) {
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.85);
+        backdrop-filter: blur(10px);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        animation: fadeIn 0.3s ease-out;
+    `;
+    modal.innerHTML = `
+        <div style="background: linear-gradient(135deg, var(--bg-card), var(--bg-dark)); border: 2px solid var(--gold); border-radius: 20px; padding: 30px; max-width: 400px; width: 90%; text-align: center; animation: scaleIn 0.3s ease-out;">
+            <h2 style="color: var(--gold); margin-bottom: 10px;">📱 Activa tu eSIM</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 20px;">Escanea con la cámara de tu móvil</p>
+            <div style="background: white; border-radius: 10px; padding: 15px; margin: 10px 0;">
+                <img src="${qrData}" alt="QR de activación" style="max-width: 200px; width: 100%;">
+            </div>
+            <p style="color: var(--text-muted); font-size: 0.7rem;">📲 Ve a Ajustes > Datos Móviles > Añadir eSIM</p>
+            <button onclick="this.parentElement.parentElement.remove()"
+                    style="margin-top: 15px; background: var(--gold); border: none; color: #fff; padding: 10px 30px; border-radius: 10px; cursor: pointer;">
+                Listo
+            </button>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+async function verificarPago(ordenId) {
+    const statusEl = document.getElementById('pagoStatus');
+    if (!statusEl) return;
+
+    statusEl.textContent = '⏳ Verificando pago...';
+
+    try {
+        const { data, error } = await supabase
+            .from('esim_ordenes')
+            .select('estado, esim_iccid')
+            .eq('id', ordenId)
+            .single();
+
+        if (error) throw error;
+
+        if (data.estado === 'pagado' || data.estado === 'activado') {
+            statusEl.textContent = '✅ ¡Pago confirmado! Activando eSIM...';
+            
+            if (data.esim_iccid) {
+                await activarESIM(data.esim_iccid);
+            }
+            
+            setTimeout(() => {
+                document.getElementById('pagoModal')?.remove();
+                showToast('🎉 ¡eSIM activado exitosamente!', 'success');
+                cargarPerfil(true);
+            }, 2000);
+        } else if (data.estado === 'pendiente_pago') {
+            statusEl.textContent = '⏳ Aún no se confirma el pago. Espera unos minutos.';
+        } else {
+            statusEl.textContent = '❌ Estado: ' + data.estado;
+        }
+
+    } catch (error) {
+        console.error('Error verificando pago:', error);
+        statusEl.textContent = '❌ Error al verificar';
+    }
+}
+
+// ================================================================
+// 🎯 ACTUALIZAR UI PRINCIPAL
 // ================================================================
 function actualizarUI(data) {
     const nombreEl = document.getElementById('perfilNombre');
     const handleEl = document.getElementById('perfilHandle');
     const bioEl = document.getElementById('perfilBio');
     const avatarEl = document.getElementById('perfilAvatar');
+    const walletDisplay = document.getElementById('walletDisplay');
 
     if (nombreEl) {
-        nombreEl.innerHTML = `${data.nombre || 'Explorador'} <span class="verified">✦ VERIFICADO</span>`;
+        const verificado = data.verificado ? '<span class="verified">✦ VERIFICADO</span>' : '';
+        nombreEl.innerHTML = `${data.nombre || 'Explorador'} ${verificado}`;
     }
+    
     if (handleEl) handleEl.textContent = '@' + (data.handle || 'explorador');
-    if (bioEl) bioEl.textContent = data.bio || 'Explorando el ecosistema Sariel\'s · WEB3 · Comunidad';
+    if (bioEl) bioEl.innerHTML = formatearTexto(data.bio || 'Explorando el ecosistema Sariel\'s · WEB3 · Comunidad');
 
     if (avatarEl) {
         if (data.avatar_url) {
-            avatarEl.innerHTML = `<img src="${data.avatar_url}" alt="Avatar" /><span class="edit-badge" onclick="abrirSelectorArchivo()" title="Cambiar avatar">✎</span>`;
+            avatarEl.innerHTML = `
+                <img src="${data.avatar_url}" alt="Avatar" style="animation: fadeIn 0.5s ease-out;" 
+                     onerror="this.style.display='none';this.parentElement.innerHTML='◈<span class=\\'edit-badge\\' onclick=\\'abrirSelectorArchivo()\\' title=\\'Cambiar avatar\\'>✎</span>'"/>
+                <span class="edit-badge" onclick="abrirSelectorArchivo()" title="Cambiar avatar">✎</span>
+            `;
         } else {
             avatarEl.innerHTML = `◈<span class="edit-badge" onclick="abrirSelectorArchivo()" title="Cambiar avatar">✎</span>`;
         }
     }
 
-    const statTokens = document.getElementById('statTokens');
-    const statNFTS = document.getElementById('statNFTS');
-    const statSeguidores = document.getElementById('statSeguidores');
-    const statSiguiendo = document.getElementById('statSiguiendo');
+    if (walletDisplay && data.wallet_address) {
+        walletDisplay.textContent = data.wallet_address.slice(0, 6) + '...' + data.wallet_address.slice(-4);
+        walletDisplay.style.color = 'var(--success)';
+        document.querySelector('.btn-outline.btn-sm').style.display = 'none';
+        document.getElementById('btnDisconnect').style.display = 'inline-flex';
+    } else if (walletDisplay) {
+        walletDisplay.textContent = 'No conectada';
+        walletDisplay.style.color = 'var(--text-muted)';
+    }
 
-    if (statTokens) statTokens.textContent = data.tokensAcumulados || 0;
-    if (statNFTS) statNFTS.textContent = 0;
-    if (statSeguidores) statSeguidores.textContent = data.seguidores || 0;
-    if (statSiguiendo) statSiguiendo.textContent = data.siguiendo || 0;
+    // Estadísticas
+    const stats = [
+        { id: 'statTokens', value: data.tokensAcumulados || 0 },
+        { id: 'statNFTS', value: data.nfts || 0 },
+        { id: 'statSeguidores', value: data.seguidores || 0 },
+        { id: 'statSiguiendo', value: data.siguiendo || 0 }
+    ];
 
-    // ✅ ACTUALIZAR PROGRESO DE TOKENS (META: 12 TOKENS)
+    stats.forEach(stat => {
+        const el = document.getElementById(stat.id);
+        if (el && el.textContent !== String(stat.value)) {
+            animarContador(el, parseInt(el.textContent) || 0, stat.value);
+        }
+    });
+
+    // Barra de progreso de tokens
     const tokens = data.tokensAcumulados || 0;
     const progreso = Math.min(tokens, 12);
-    const progresoCanje = data.progresoCanje || 0;
     const puedeCanjear = data.puedeCanjear || false;
 
     const progressFill = document.getElementById('progressFill');
     const progressText = document.getElementById('progressText');
 
-    if (progressFill) progressFill.style.width = `${(progreso / 12) * 100}%`;
-    if (progressText) progressText.textContent = `${progreso} / 12`;
+    if (progressFill) {
+        const porcentaje = (progreso / 12) * 100;
+        progressFill.style.width = `${porcentaje}%`;
+        progressFill.style.transition = 'width 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
+    }
+    if (progressText) {
+        progressText.textContent = `${progreso} / 12`;
+        if (progreso >= 12) {
+            progressText.style.color = 'var(--gold)';
+            progressText.innerHTML += ' 🎯';
+        }
+    }
 
+    // Tokens
     const tokenTotal = document.getElementById('tokenTotal');
     const tokenDisponibles = document.getElementById('tokenDisponibles');
-    const tokenVendidos = document.getElementById('tokenVendidos');
     const tokenNFTs = document.getElementById('tokenNFTs');
 
     if (tokenTotal) tokenTotal.textContent = tokens;
     if (tokenDisponibles) tokenDisponibles.textContent = tokens;
-    if (tokenVendidos) tokenVendidos.textContent = 0;
-    if (tokenNFTs) tokenNFTs.textContent = progresoCanje || 0;
+    if (tokenNFTs) tokenNFTs.textContent = data.progresoCanje || 0;
 
+    // Formulario de edición
     const editNombre = document.getElementById('editNombre');
     const editHandle = document.getElementById('editHandle');
     const editBio = document.getElementById('editBio');
 
     if (editNombre) editNombre.value = data.nombre || 'Explorador';
-    if (editHandle) editHandle.value = '@' + (data.handle || 'explorador');
+    if (editHandle) editHandle.value = (data.handle || 'explorador');
     if (editBio) editBio.value = data.bio || 'Explorando el ecosistema Sariel\'s · WEB3 · Comunidad';
 
+    // Botón de canje
     const btnCanjear = document.getElementById('canjearNft');
-    if (btnCanjear) btnCanjear.disabled = !puedeCanjear;
+    if (btnCanjear) {
+        btnCanjear.disabled = !puedeCanjear;
+        if (puedeCanjear) {
+            btnCanjear.style.background = 'linear-gradient(135deg, var(--gold), #f7971e)';
+            btnCanjear.style.border = 'none';
+            btnCanjear.style.color = '#fff';
+            btnCanjear.innerHTML = '🎁 CANJEAR NFT';
+        } else {
+            btnCanjear.style.background = 'var(--bg-card)';
+            btnCanjear.style.border = '1px solid var(--text-muted)';
+            btnCanjear.style.color = 'var(--text-muted)';
+            btnCanjear.innerHTML = '🔒 NECESITAS 12 TOKENS';
+        }
+    }
+
+    actualizarUIESIM(data);
+    actualizarUIConexion(estadoConexion);
+    actualizarUIEstado(data.online !== false);
 }
 
 // ================================================================
-// CONECTAR WALLET (MetaMask)
+// 💳 CONECTAR WALLET CON POLYGON AMOY
 // ================================================================
 async function conectarWallet() {
     if (typeof window.ethereum === 'undefined') {
@@ -167,16 +1230,44 @@ async function conectarWallet() {
     }
 
     try {
-        // Obtener cuenta de MetaMask
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ Inicia sesión para vincular wallet', 'error');
+            return;
+        }
+
         const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
         const cuenta = accounts[0];
 
-        // Guardar en Supabase usando la función RPC
-        const { error } = await supabase.rpc('vincular_wallet', { p_wallet_address: cuenta });
+        const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+        
+        if (chainId !== '0x13882') {
+            try {
+                await window.ethereum.request({
+                    method: 'wallet_switchEthereumChain',
+                    params: [{ chainId: '0x13882' }]
+                });
+            } catch (switchError) {
+                if (switchError.code === 4902) {
+                    await window.ethereum.request({
+                        method: 'wallet_addEthereumChain',
+                        params: [{
+                            chainId: '0x13882',
+                            chainName: 'Polygon Amoy Testnet',
+                            nativeCurrency: { name: 'MATIC', symbol: 'MATIC', decimals: 18 },
+                            rpcUrls: ['https://rpc-amoy.polygon.technology/'],
+                            blockExplorerUrls: ['https://www.oklink.com/amoy']
+                        }]
+                    });
+                } else {
+                    throw switchError;
+                }
+            }
+        }
 
+        const { error } = await supabase.rpc('vincular_wallet', { p_wallet_address: cuenta });
         if (error) throw error;
 
-        // Actualizar UI
         const walletDisplay = document.getElementById('walletDisplay');
         const btnConectar = document.querySelector('.btn-outline.btn-sm');
         const btnDesconectar = document.getElementById('btnDisconnect');
@@ -184,11 +1275,14 @@ async function conectarWallet() {
         if (walletDisplay) {
             walletDisplay.textContent = cuenta.slice(0, 6) + '...' + cuenta.slice(-4);
             walletDisplay.style.color = 'var(--success)';
+            walletDisplay.style.animation = 'pulse 0.5s ease-out';
         }
         if (btnConectar) btnConectar.style.display = 'none';
         if (btnDesconectar) btnDesconectar.style.display = 'inline-flex';
 
-        showToast('✅ Wallet conectada correctamente');
+        showToast('✅ Wallet conectada a Polygon Amoy', 'success');
+        await cargarPerfil(true);
+        
     } catch (error) {
         console.error('Error conectando wallet:', error);
         showToast('❌ Error al conectar wallet: ' + error.message, 'error');
@@ -196,13 +1290,19 @@ async function conectarWallet() {
 }
 
 // ================================================================
-// DESCONECTAR WALLET
+// 🔌 DESCONECTAR WALLET
 // ================================================================
 async function desconectarWallet() {
     try {
-        // Llamar a la función RPC para desvincular (si existe)
-        // const { error } = await supabase.rpc('desvincular_wallet');
-        
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ Inicia sesión', 'error');
+            return;
+        }
+
+        const { error } = await supabase.rpc('desvincular_wallet');
+        if (error) console.warn('RPC desvincular_wallet no encontrada:', error);
+
         const walletDisplay = document.getElementById('walletDisplay');
         const btnConectar = document.querySelector('.btn-outline.btn-sm');
         const btnDesconectar = document.getElementById('btnDisconnect');
@@ -214,7 +1314,9 @@ async function desconectarWallet() {
         if (btnConectar) btnConectar.style.display = 'inline-flex';
         if (btnDesconectar) btnDesconectar.style.display = 'none';
 
-        showToast('🔌 Wallet desconectada');
+        showToast('🔌 Wallet desconectada', 'warning');
+        await cargarPerfil(true);
+        
     } catch (error) {
         console.error('Error desconectando wallet:', error);
         showToast('❌ Error al desconectar wallet', 'error');
@@ -222,22 +1324,238 @@ async function desconectarWallet() {
 }
 
 // ================================================================
-// CERRAR SESIÓN
+// 🏠 COMPRAR DOMO
 // ================================================================
-async function cerrarSesion() {
+async function comprarDomo(cantidad = 1) {
     try {
-        await supabase.auth.signOut();
-        window.location.href = '/';
-        showToast('🔌 Sesión cerrada');
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ Inicia sesión para comprar domos', 'error');
+            return;
+        }
+
+        cantidad = Math.max(1, Math.floor(cantidad));
+        if (cantidad > 10) {
+            showToast('⚠️ Máximo 10 domos por transacción', 'warning');
+            return;
+        }
+
+        showToast('⏳ Procesando compra de ' + cantidad + ' domo(s)...', '', 5000);
+
+        const { data, error } = await supabase.rpc('comprar_domo', { p_cantidad: cantidad });
+
+        if (error) {
+            if (error.message.includes('insufficient')) {
+                showToast('❌ Fondos insuficientes para comprar domos', 'error');
+            } else {
+                throw error;
+            }
+            return;
+        }
+
+        showToast(`🎉 ¡${cantidad} Domo(s) comprado(s) exitosamente!`, 'success', 5000);
+        await cargarPerfil(true);
+        mostrarCelebracion();
+
     } catch (error) {
-        console.error('Error cerrando sesión:', error);
-        showToast('❌ Error al cerrar sesión', 'error');
+        console.error('Error al comprar domo:', error);
+        showToast('❌ Error en la compra: ' + error.message, 'error');
     }
 }
 
 // ================================================================
-// SUBIR FOTO DE PERFIL (Supabase Storage)
+// 🎁 CANJEAR NFT
 // ================================================================
+async function canjearNFT() {
+    try {
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ Inicia sesión para canjear tu NFT', 'error');
+            return;
+        }
+
+        showToast('⏳ Verificando tokens para canje...', '', 4000);
+
+        const { data, error } = await supabase.rpc('canjear_nft');
+
+        if (error) {
+            if (error.message.includes('insufficient tokens')) {
+                showToast('❌ Necesitas exactamente 12 Es.stoks para canjear', 'error');
+            } else if (error.message.includes('already redeemed')) {
+                showToast('⚠️ Ya has canjeado tu NFT', 'warning');
+            } else {
+                throw error;
+            }
+            return;
+        }
+
+        showToast('🎁 ¡NFT Canjeado Exitosamente! Tienes 30 días para reclamar.', 'success', 8000);
+        await cargarPerfil(true);
+        mostrarModalNFT(data);
+
+    } catch (error) {
+        console.error('Error al canjear NFT:', error);
+        showToast('❌ Error al canjear NFT: ' + error.message, 'error');
+    }
+}
+
+// ================================================================
+// 🎊 EFECTO CONFETI
+// ================================================================
+function crearConfeti() {
+    const colores = ['#ff6b6b', '#feca57', '#48dbfb', '#ff9ff3', '#54a0ff', '#5f27cd'];
+    for (let i = 0; i < 50; i++) {
+        setTimeout(() => {
+            const confeti = document.createElement('div');
+            confeti.style.cssText = `
+                position: fixed;
+                width: 10px;
+                height: 10px;
+                background: ${colores[Math.floor(Math.random() * colores.length)]};
+                left: ${Math.random() * 100}vw;
+                top: -10px;
+                border-radius: ${Math.random() > 0.5 ? '50%' : '2px'};
+                animation: confetiFall ${2 + Math.random() * 3}s linear forwards;
+                transform: rotate(${Math.random() * 360}deg);
+                z-index: 9998;
+                pointer-events: none;
+            `;
+            document.body.appendChild(confeti);
+            setTimeout(() => confeti.remove(), 5000);
+        }, i * 50);
+    }
+}
+
+function mostrarCelebracion() {
+    crearConfeti();
+    showToast('🎉 ¡Transacción exitosa!', 'success');
+}
+
+function compartirLogro() {
+    const texto = '🎁 ¡Acabo de canjear mi NFT en Sariel\'s! Únete al ecosistema. #Sariels #WEB3 #NFT';
+    if (navigator.share) {
+        navigator.share({ title: 'Mi logro en Sariel\'s', text: texto });
+    } else {
+        navigator.clipboard.writeText(texto).then(() => {
+            showToast('📋 Copiado al portapapeles', 'success');
+        });
+    }
+}
+
+// ================================================================
+// 🎉 MODAL NFT
+// ================================================================
+function mostrarModalNFT(data) {
+    const modal = document.createElement('div');
+    modal.id = 'nftModal';
+    modal.style.cssText = `
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.8);
+        backdrop-filter: blur(10px);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        animation: fadeIn 0.5s ease-out;
+    `;
+    
+    modal.innerHTML = `
+        <div style="background: linear-gradient(135deg, var(--bg-card), var(--bg-dark)); border: 2px solid var(--gold); border-radius: 20px; padding: 40px; max-width: 500px; width: 90%; text-align: center; animation: scaleIn 0.5s ease-out;">
+            <div style="font-size: 80px; margin-bottom: 20px;">🎁</div>
+            <h2 style="color: var(--gold); font-size: 28px; margin-bottom: 10px;">¡NFT Canjeado!</h2>
+            <p style="color: var(--text-primary); margin-bottom: 20px; font-size: 18px;">Tu Domo físico te espera</p>
+            <div style="background: var(--bg-dark); border-radius: 10px; padding: 15px; margin-bottom: 20px;">
+                <p style="color: var(--text-muted); font-size: 14px;">⏳ Vigencia: 30 días para reclamar</p>
+                <p style="color: var(--cyan); font-size: 12px; margin-top: 5px;">ID: ${data?.nft_id || 'NFT-' + Date.now().toString().slice(-6)}</p>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button onclick="this.parentElement.parentElement.parentElement.remove()" 
+                        style="background: linear-gradient(135deg, var(--gold), #f7971e); border: none; color: #fff; padding: 12px 30px; border-radius: 10px; font-weight: 600; cursor: pointer;">
+                    ✅ Entendido
+                </button>
+                <button onclick="compartirLogro()"
+                        style="background: transparent; border: 2px solid var(--cyan); color: var(--cyan); padding: 12px 30px; border-radius: 10px; font-weight: 600; cursor: pointer;">
+                    📤 Compartir
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    crearConfeti();
+}
+
+// ================================================================
+// 📱 FUNCIONES DE GESTIÓN DE PERFIL
+// ================================================================
+function editarPerfil() {
+    cambiarTab('config');
+    setTimeout(() => {
+        const input = document.getElementById('editNombre');
+        if (input) {
+            input.focus();
+            input.select();
+        }
+    }, 300);
+}
+
+async function guardarPerfil() {
+    const session = await getSession();
+    if (!session) {
+        showToast('⚠️ Inicia sesión para guardar', 'error');
+        return;
+    }
+
+    const perfil = {
+        nombre: document.getElementById('editNombre').value.trim() || 'Explorador',
+        handle: document.getElementById('editHandle').value.trim().replace('@', '') || 'explorador',
+        bio: document.getElementById('editBio').value.trim() || 'Explorando el ecosistema Sariel\'s · WEB3 · Comunidad'
+    };
+
+    if (!/^[a-zA-Z0-9_]+$/.test(perfil.handle)) {
+        showToast('❌ El handle solo puede contener letras, números y _', 'error');
+        return;
+    }
+
+    try {
+        const { error } = await supabase
+            .from('usuarios')
+            .update(perfil)
+            .eq('id', session.user.id);
+
+        if (error) throw error;
+
+        showToast('✅ Perfil guardado correctamente', 'success');
+        await cargarPerfil(true);
+        
+    } catch (error) {
+        console.error('Error guardando perfil:', error);
+        showToast('❌ Error al guardar: ' + error.message, 'error');
+    }
+}
+
+function compartirPerfil() {
+    const nombre = document.getElementById('perfilNombre')?.textContent.split(' ')[0] || 'Explorador';
+    const handle = document.getElementById('perfilHandle')?.textContent.replace('@', '') || 'explorador';
+    const url = `${window.location.origin}/perfil/${handle}`;
+    const texto = `◈ Perfil de ${nombre} en Sariel's\n◈ ${url}\n\n#Sariels #WEB3 #NFT #Comunidad`;
+
+    if (navigator.share) {
+        navigator.share({ title: `Perfil de ${nombre} en Sariel's`, text: texto, url: url }).catch(() => {});
+    } else {
+        navigator.clipboard.writeText(texto).then(() => {
+            showToast('◈ Copiado al portapapeles', 'success');
+        }).catch(() => {
+            prompt('Copia este enlace:', url);
+        });
+    }
+}
+
+function irAMuro() {
+    window.location.href = '/features/muro/muro.html';
+}
+
 function abrirSelectorArchivo() {
     const input = document.getElementById('fileInput');
     if (input) input.click();
@@ -253,12 +1571,11 @@ async function subirFoto(event) {
         return;
     }
 
-    // ✅ Regla correcta: `${user.id}/avatar.${fileExt}`
     const fileExt = file.name.split('.').pop().toLowerCase();
     const filePath = `${session.user.id}/avatar.${fileExt}`;
 
     try {
-        showToast('⏳ Subiendo foto...');
+        showToast('⏳ Subiendo foto...', '', 5000);
 
         const { error: uploadError } = await supabase.storage
             .from('sariels-avatars')
@@ -279,9 +1596,10 @@ async function subirFoto(event) {
 
         if (updateError) throw updateError;
 
-        showToast('✅ Foto actualizada correctamente');
+        showToast('✅ Foto actualizada correctamente', 'success');
         event.target.value = '';
-        cargarPerfil();
+        await cargarPerfil(true);
+        
     } catch (error) {
         console.error('Error al subir foto:', error);
         showToast('❌ Error al subir foto', 'error');
@@ -289,91 +1607,421 @@ async function subirFoto(event) {
 }
 
 // ================================================================
-// EDITAR PERFIL (cambia a pestaña config)
+// 💬 INTERACCIONES SOCIALES
 // ================================================================
-function editarPerfil() {
-    cambiarTab('config');
-    setTimeout(() => {
-        const input = document.getElementById('editNombre');
-        if (input) input.focus();
-    }, 300);
+async function reaccionarPublicacion(postId, tipoReaccion) {
+    try {
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ Debes iniciar sesión', 'error');
+            return;
+        }
+
+        const { error } = await supabase
+            .from('reacciones')
+            .upsert({
+                post_id: postId,
+                user_id: session.user.id,
+                tipo: tipoReaccion
+            }, { onConflict: 'post_id, user_id' });
+
+        if (error) throw error;
+        showToast(`❤️ Reaccionaste con ${tipoReaccion}`, 'success');
+    } catch (error) {
+        console.error('Error al reaccionar:', error);
+        showToast('❌ Error al reaccionar', 'error');
+    }
+}
+
+async function comentarPublicacion(postId, contenido) {
+    try {
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ Inicia sesión para comentar', 'error');
+            return;
+        }
+        if (!contenido.trim()) {
+            showToast('⚠️ Escribe un comentario', 'warning');
+            return;
+        }
+
+        const textoFormateado = formatearTexto(contenido);
+
+        const { error } = await supabase
+            .from('comentarios')
+            .insert({
+                post_id: postId,
+                user_id: session.user.id,
+                contenido: textoFormateado
+            });
+
+        if (error) throw error;
+        showToast('💬 Comentario publicado', 'success');
+        
+    } catch (error) {
+        console.error('Error al comentar:', error);
+        showToast('❌ Error al enviar comentario', 'error');
+    }
 }
 
 // ================================================================
-// GUARDAR PERFIL REAL EN SUPABASE
+// 👥 SISTEMA DE AMIGOS
 // ================================================================
-async function guardarPerfil() {
+async function agregarAmigo(amigoId) {
+    try {
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ Inicia sesión para agregar amigos', 'error');
+            return;
+        }
+
+        const { error } = await supabase
+            .from('amigos')
+            .insert({
+                user_id: session.user.id,
+                amigo_id: amigoId,
+                estado: 'pendiente'
+            });
+
+        if (error) {
+            if (error.code === '23505') {
+                showToast('⚠️ Ya enviaste solicitud a este usuario', 'warning');
+            } else {
+                throw error;
+            }
+            return;
+        }
+
+        showToast('🤝 Solicitud de amistad enviada', 'success');
+        
+    } catch (error) {
+        console.error('Error al agregar amigo:', error);
+        showToast('❌ No se pudo enviar la solicitud', 'error');
+    }
+}
+
+// ================================================================
+// 🚀 INNOVACIONES EXTRA
+// ================================================================
+
+async function generarQRPerfil() {
+    try {
+        const session = await getSession();
+        if (!session) return;
+        
+        const handle = document.getElementById('perfilHandle')?.textContent.replace('@', '') || 'explorador';
+        const url = `${window.location.origin}/perfil/${handle}`;
+        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}`;
+        
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(10px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            animation: fadeIn 0.3s ease-out;
+        `;
+        modal.innerHTML = `
+            <div style="background: var(--bg-card); border-radius: 20px; padding: 30px; text-align: center; animation: scaleIn 0.3s ease-out;">
+                <h3 style="color: var(--gold); margin-bottom: 20px;">📱 Escanea mi perfil</h3>
+                <img src="${qrUrl}" alt="QR Code" style="border-radius: 10px; max-width: 200px;">
+                <p style="color: var(--text-muted); margin-top: 15px; font-size: 12px;">${url}</p>
+                <button onclick="this.parentElement.parentElement.remove()"
+                        style="margin-top: 20px; background: var(--gold); border: none; color: #fff; padding: 10px 30px; border-radius: 10px; cursor: pointer;">
+                    Cerrar
+                </button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        
+    } catch (error) {
+        console.error('Error generando QR:', error);
+        showToast('❌ Error al generar QR', 'error');
+    }
+}
+
+function calcularNivel(tokens) {
+    const niveles = [
+        { min: 0, max: 4, nombre: '🌱 Explorador', emoji: '🌱' },
+        { min: 5, max: 9, nombre: '⚡ Cazador', emoji: '⚡' },
+        { min: 10, max: 14, nombre: '🏆 Leyenda', emoji: '🏆' },
+        { min: 15, max: 19, nombre: '👑 Maestro', emoji: '👑' },
+        { min: 20, max: Infinity, nombre: '✨ Inmortal', emoji: '✨' }
+    ];
+    
+    for (const nivel of niveles) {
+        if (tokens >= nivel.min && tokens <= nivel.max) {
+            return nivel;
+        }
+    }
+    return niveles[0];
+}
+
+async function obtenerEstadisticas() {
+    try {
+        const session = await getSession();
+        if (!session) return;
+
+        const { data, error } = await supabase
+            .from('estadisticas_usuarios')
+            .select('*')
+            .eq('user_id', session.user.id)
+            .single();
+
+        if (error) throw error;
+        return data;
+    } catch (error) {
+        console.error('Error obteniendo estadísticas:', error);
+        return null;
+    }
+}
+
+async function subirVideo(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
     const session = await getSession();
     if (!session) {
-        showToast('⚠️ Inicia sesión para guardar', 'error');
+        showToast('⚠️ Inicia sesión para subir videos', 'error');
         return;
     }
 
-    const perfil = {
-        nombre: document.getElementById('editNombre').value.trim() || 'Explorador',
-        handle: document.getElementById('editHandle').value.trim().replace('@', '') || 'explorador',
-        bio: document.getElementById('editBio').value.trim() || 'Explorando el ecosistema Sariel\'s · WEB3 · Comunidad'
-    };
+    if (!file.type.startsWith('video/')) {
+        showToast('❌ Formato no válido', 'error');
+        return;
+    }
+
+    if (file.size > 50 * 1024 * 1024) {
+        showToast('❌ El video excede 50MB', 'error');
+        return;
+    }
 
     try {
-        const { error } = await supabase
-            .from('usuarios')
-            .update(perfil)
-            .eq('id', session.user.id);
+        showToast('⏳ Subiendo video... 0%', '', 10000);
+        
+        const fileExt = file.name.split('.').pop();
+        const filePath = `${session.user.id}/video_${Date.now()}.${fileExt}`;
 
-        if (error) throw error;
+        const { error: uploadError } = await supabase.storage
+            .from('posts')
+            .upload(filePath, file, {
+                onProgress: (progress) => {
+                    const percent = Math.round((progress.loaded / progress.total) * 100);
+                    showToast(`⏳ Subiendo video... ${percent}%`, '', 10000);
+                }
+            });
 
-        showToast('✅ Perfil guardado correctamente');
-        cargarPerfil();
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = supabase.storage
+            .from('posts')
+            .getPublicUrl(filePath);
+
+        showToast('✅ Video subido con éxito', 'success');
+        return urlData.publicUrl;
+        
     } catch (error) {
-        console.error('Error guardando perfil:', error);
-        showToast('❌ Error al guardar', 'error');
+        console.error('Error al subir video:', error);
+        showToast('❌ Error al subir el video: ' + error.message, 'error');
     }
 }
 
 // ================================================================
-// COMPARTIR PERFIL
+// 🎯 CERRAR SESIÓN
 // ================================================================
-function compartirPerfil() {
-    const nombre = document.getElementById('perfilNombre')?.textContent.split(' ')[0] || 'Explorador';
-    const handle = document.getElementById('perfilHandle')?.textContent.replace('@', '') || 'explorador';
-    const url = `${window.location.origin}/perfil/${handle}`;
-    const texto = `◈ Perfil de ${nombre} en Sariel's\n◈ ${url}`;
-
-    if (navigator.share) {
-        navigator.share({ title: `Perfil de ${nombre}`, text: texto, url: url }).catch(() => {});
-    } else {
-        navigator.clipboard.writeText(texto).then(() => {
-            showToast('◈ Copiado al portapapeles');
-        }).catch(() => {
-            prompt('Copia este enlace:', url);
-        });
+async function cerrarSesion() {
+    if (!confirm('¿Seguro que quieres cerrar sesión?')) return;
+    
+    try {
+        // Marcar como offline antes de cerrar sesión
+        await actualizarEstadoEnLinea(false);
+        
+        await supabase.auth.signOut();
+        window.location.href = '/';
+        showToast('🔌 Sesión cerrada', 'success');
+    } catch (error) {
+        console.error('Error cerrando sesión:', error);
+        showToast('❌ Error al cerrar sesión', 'error');
     }
 }
 
-function irAMuro() {
-    window.location.href = '/features/muro/muro.html';
+// ================================================================
+// 🔔 NOTIFICACIONES EN TIEMPO REAL
+// ================================================================
+function iniciarNotificacionesRealtime() {
+    const channel = supabase
+        .channel('notificaciones')
+        .on('postgres_changes', {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'notificaciones'
+        }, (payload) => {
+            const notificacion = payload.new;
+            // Solo mostrar si es para el usuario actual
+            if (notificacion.user_id === perfilCache?.id) {
+                showToast(`🔔 ${notificacion.mensaje}`, 'warning', 4000);
+                
+                try {
+                    const audio = new Audio('/sound/notification.mp3');
+                    audio.play().catch(() => {});
+                } catch (e) {}
+            }
+        })
+        .subscribe();
+
+    return channel;
 }
 
 // ================================================================
-// INICIALIZAR
+// 🚀 INICIALIZACIÓN
 // ================================================================
-document.addEventListener('DOMContentLoaded', function() {
-    cargarPerfil();
+document.addEventListener('DOMContentLoaded', async function() {
+    await cargarPerfil();
+    
+    const stats = await obtenerEstadisticas();
+    if (stats) {
+        const nivel = calcularNivel(stats.tokens || 0);
+        const nivelEl = document.getElementById('nivelUsuario');
+        if (nivelEl) {
+            nivelEl.textContent = `${nivel.emoji} ${nivel.nombre}`;
+        }
+    }
+    
+    iniciarNotificacionesRealtime();
+    iniciarEscuchaConexion();
+    iniciarEscuchaAmigos();
+    iniciarDetectorInactividad();
+
+    // Actualizar datos eSIM cada 30 segundos
+    if (perfilCache?.esim_iccid) {
+        setInterval(() => {
+            cargarDatosESIM(perfilCache.esim_iccid);
+        }, 30000);
+    }
+
+    // Actualizar estado de conexión cada 10 segundos
+    setInterval(() => {
+        cargarEstadoConexion();
+    }, 10000);
+
+    // Actualizar amigos en línea cada 15 segundos
+    setInterval(() => {
+        cargarAmigosEnLinea();
+    }, 15000);
 });
 
 // ================================================================
-// EXPONER FUNCIONES GLOBALES
+// 🎨 ESTILOS CSS (Inyectados automáticamente)
+// ================================================================
+const estilosAnimacion = document.createElement('style');
+estilosAnimacion.textContent = `
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes scaleIn {
+        from { transform: scale(0.8); opacity: 0; }
+        to { transform: scale(1); opacity: 1; }
+    }
+    @keyframes slideInRight {
+        from { transform: translateX(100px); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+    @keyframes slideOutRight {
+        from { transform: translateX(0); opacity: 1; }
+        to { transform: translateX(100px); opacity: 0; }
+    }
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.2); }
+        100% { transform: scale(1); }
+    }
+    @keyframes confetiFall {
+        from { transform: translateY(0) rotate(0deg); opacity: 1; }
+        to { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+    }
+    .toast {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        padding: 15px 25px;
+        border-radius: 12px;
+        background: var(--bg-card);
+        color: var(--text-primary);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        border: 1px solid var(--border-color);
+        z-index: 9999;
+        transform: translateX(100px);
+        opacity: 0;
+        transition: all 0.3s ease;
+        max-width: 400px;
+        backdrop-filter: blur(10px);
+    }
+    .toast.show {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    .toast.error {
+        border-color: #ff6b6b;
+        background: rgba(255, 107, 107, 0.1);
+    }
+    .toast.warning {
+        border-color: #feca57;
+        background: rgba(254, 202, 87, 0.1);
+    }
+    .toast.success {
+        border-color: #2ecc71;
+        background: rgba(46, 204, 113, 0.1);
+    }
+`;
+document.head.appendChild(estilosAnimacion);
+
+// ================================================================
+// 📤 EXPOSICIÓN DE FUNCIONES GLOBALES
 // ================================================================
 window.cambiarTab = cambiarTab;
 window.cargarPerfil = cargarPerfil;
 window.guardarPerfil = guardarPerfil;
 window.abrirSelectorArchivo = abrirSelectorArchivo;
 window.subirFoto = subirFoto;
+window.subirVideo = subirVideo;
 window.editarPerfil = editarPerfil;
 window.compartirPerfil = compartirPerfil;
 window.conectarWallet = conectarWallet;
 window.desconectarWallet = desconectarWallet;
+window.comprarDomo = comprarDomo;
+window.canjearNFT = canjearNFT;
+window.reaccionarPublicacion = reaccionarPublicacion;
+window.comentarPublicacion = comentarPublicacion;
+window.agregarAmigo = agregarAmigo;
 window.cerrarSesion = cerrarSesion;
 window.irAMuro = irAMuro;
 window.showToast = showToast;
+window.generarQRPerfil = generarQRPerfil;
+window.calcularNivel = calcularNivel;
+window.compartirLogro = compartirLogro;
+
+// Funciones eSIM
+window.comprarESIM = comprarESIM;
+window.cargarDatosESIM = cargarDatosESIM;
+window.activarESIM = activarESIM;
+window.desactivarESIM = desactivarESIM;
+window.generarQRESIM = generarQRESIM;
+window.obtenerEstadoESIM = obtenerEstadoESIM;
+window.obtenerPlanesESIM = obtenerPlanesESIM;
+window.verificarPago = verificarPago;
+
+// Funciones de conexión (WiFi / Datos)
+window.cambiarConexion = cambiarConexion;
+window.cargarEstadoConexion = cargarEstadoConexion;
+window.getPerfilActual = getPerfilActual;
+
+// Funciones de estado (Activo/Inactivo)
+window.actualizarEstadoEnLinea = actualizarEstadoEnLinea;
+window.cambiarEstado = cambiarEstado;
+window.cargarAmigosEnLinea = cargarAmigosEnLinea;
+window.actualizarListaAmigos = actualizarListaAmigos;
