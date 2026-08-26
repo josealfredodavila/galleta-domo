@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="/styles.css" />
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <style>
-        /* ===== ESTILOS GLOBALES (HEREDADOS) ===== */
+        /* ===== ESTILOS GLOBALES ===== */
         :root {
             --gold-cosmic: #D4AF37;
             --gold-dim: rgba(212, 168, 87, 0.3);
@@ -38,7 +38,7 @@
             z-index: 10;
         }
 
-        /* ===== FONDOS Y NEUBULAS (NO MODIFICAR) ===== */
+        /* ===== FONDOS Y NEBULAS ===== */
         #stars-canvas {
             position: fixed;
             top: 0;
@@ -140,20 +140,6 @@
             color: var(--gold-cosmic);
             border: 1px solid rgba(212, 168, 87, 0.15);
         }
-        .btn-connect {
-            background: var(--gold-cosmic);
-            border: none;
-            padding: 8px 20px;
-            border-radius: 40px;
-            color: #0a0c10;
-            font-weight: 700;
-            font-size: 0.85rem;
-            cursor: not-allowed;
-            opacity: 0.5;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
 
         /* ===== MAIN CONTAINER ===== */
         .main {
@@ -174,7 +160,6 @@
             box-shadow: 0 8px 40px rgba(0, 0, 0, 0.4);
         }
 
-        /* --- TÍTULOS --- */
         .terminos-container h1 {
             font-family: 'Orbitron', monospace;
             font-size: 2.2rem;
@@ -204,13 +189,12 @@
         .terminos-container h3 {
             font-family: 'Orbitron', monospace;
             font-size: 1.05rem;
-            color: var(--text-secondary);
+            color: #ffffff; /* BLANCO PURO PARA MEJOR CONTRASTE */
             margin-top: 22px;
             margin-bottom: 10px;
             font-weight: 500;
         }
 
-        /* --- PÁRRAFOS --- */
         .terminos-container p {
             color: var(--text-secondary);
             line-height: 1.8;
@@ -219,7 +203,6 @@
             max-width: 85ch;
         }
 
-        /* --- LISTAS --- */
         .terminos-container ul {
             list-style: none;
             padding-left: 8px;
@@ -241,13 +224,18 @@
             top: 10px;
         }
 
-        /* --- BLOQUES DESTACADOS (ART) --- */
+        /* --- MEJORA DE CONTRASTE EN BLOQUES .art --- */
         .terminos-container .art {
-            background: rgba(212, 168, 87, 0.04);
-            border-left: 3px solid rgba(212, 168, 87, 0.25);
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(212, 168, 87, 0.2);
             padding: 18px 24px;
             border-radius: 12px;
             margin: 20px 0 24px 0;
+            transition: all 0.2s ease;
+        }
+        .terminos-container .art:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(212, 168, 87, 0.3);
         }
         .terminos-container .art p:last-child {
             margin-bottom: 0;
@@ -257,14 +245,12 @@
             font-weight: 600;
         }
 
-        /* --- DIVISOR --- */
         .terminos-container .divisor {
             border: none;
             border-top: 1px solid rgba(212, 168, 87, 0.12);
             margin: 44px 0 24px 0;
         }
 
-        /* --- FOOTER LEGAL --- */
         .terminos-container .footer-tyc {
             text-align: center;
             margin-top: 32px;
@@ -278,7 +264,6 @@
             font-weight: 500;
         }
 
-        /* --- BOTÓN VOLVER --- */
         .btn-volver {
             display: inline-block;
             margin-top: 20px;
@@ -306,13 +291,25 @@
             box-shadow: 0 0 30px rgba(212, 168, 87, 0.25);
         }
 
-        /* --- CHECKBOX DE ACEPTACIÓN --- */
+        /* --- CHECKBOX MEJORADO --- */
         .aceptacion-container {
             margin-top: 36px;
             padding: 24px 28px;
             background: rgba(212, 168, 87, 0.05);
             border: 1px solid rgba(212, 168, 87, 0.15);
             border-radius: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .aceptacion-container:hover {
+            background: rgba(212, 168, 87, 0.08);
+            border-color: rgba(212, 168, 87, 0.3);
+            box-shadow: 0 0 25px rgba(212, 168, 87, 0.05);
+        }
+        .aceptacion-wrapper {
             display: flex;
             align-items: flex-start;
             gap: 18px;
@@ -357,12 +354,48 @@
             font-weight: 600;
         }
 
-        /* --- UTILIDADES --- */
+        /* --- FIRMA DIGITAL --- */
+        .firma-digital {
+            margin-top: 4px;
+            padding: 14px 18px;
+            background: rgba(212, 168, 87, 0.06);
+            border: 1px solid rgba(212, 168, 87, 0.12);
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            display: none;
+            transition: all 0.4s ease;
+            word-break: break-all;
+        }
+        .firma-digital.visible {
+            display: block;
+            animation: fadeInFirma 0.5s ease;
+        }
+        .firma-digital .hash {
+            color: var(--gold-cosmic);
+            font-weight: 600;
+        }
+        .firma-digital .fecha-hora {
+            color: #8fbc8f;
+        }
+
+        @keyframes fadeInFirma {
+            0% {
+                opacity: 0;
+                transform: translateY(-8px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
         .text-center {
             text-align: center;
         }
 
-        /* --- RESPONSIVE --- */
+        /* ===== RESPONSIVE ===== */
         @media (max-width: 640px) {
             .terminos-container {
                 padding: 28px 18px;
@@ -382,9 +415,11 @@
                 padding: 14px 16px;
             }
             .aceptacion-container {
-                flex-direction: column;
-                align-items: flex-start;
                 padding: 18px 16px;
+            }
+            .aceptacion-wrapper {
+                flex-direction: row;
+                align-items: flex-start;
             }
             .aceptacion-container input[type="checkbox"] {
                 width: 22px;
@@ -402,6 +437,10 @@
             .header-info {
                 justify-content: center;
             }
+            .firma-digital {
+                font-size: 0.75rem;
+                padding: 12px 14px;
+            }
         }
 
         @media (max-width: 480px) {
@@ -414,6 +453,10 @@
             .terminos-container p,
             .terminos-container ul li {
                 font-size: 0.9rem;
+            }
+            .firma-digital {
+                font-size: 0.7rem;
+                padding: 10px 12px;
             }
         }
     </style>
@@ -434,10 +477,7 @@
                 </a>
                 <div class="header-info">
                     <span class="network-badge">🟢 Polygon</span>
-                    <button id="connectWallet" class="btn-connect" disabled>
-                        <span class="btn-icon">🔗</span>
-                        Conectar Wallet
-                    </button>
+                    <!-- Botón de wallet ELIMINADO completamente -->
                 </div>
             </div>
         </header>
@@ -548,12 +588,22 @@
                         <p>© <strong>Sariel's</strong>. Todos los derechos reservados. Puebla, México 🇲🇽</p>
                     </div>
 
-                    <div class="aceptacion-container">
-                        <input type="checkbox" id="aceptoPrivacidad" />
-                        <label for="aceptoPrivacidad">
-                            <strong>He leído y acepto la Política de Privacidad</strong> de <strong>Sariel's</strong>.
-                            Entiendo cómo se recopilan, utilizan y protegen mis datos personales.
-                        </label>
+                    <!-- CHECKBOX MEJORADO CON FIRMA DIGITAL -->
+                    <div class="aceptacion-container" id="aceptacionContainer">
+                        <div class="aceptacion-wrapper">
+                            <input type="checkbox" id="aceptoPrivacidad" />
+                            <label for="aceptoPrivacidad">
+                                <strong>He leído y acepto la Política de Privacidad</strong> de <strong>Sariel's</strong>.
+                                Entiendo cómo se recopilan, utilizan y protegen mis datos personales.
+                            </label>
+                        </div>
+
+                        <!-- FIRMA DIGITAL DINÁMICA -->
+                        <div class="firma-digital" id="firmaDigital">
+                            <span>🔐 Firma digital registrada:</span><br />
+                            <span class="fecha-hora" id="fechaHoraFirma">--</span><br />
+                            <span>ID: <span class="hash" id="hashFirma">--</span></span>
+                        </div>
                     </div>
 
                     <div class="text-center">
@@ -569,14 +619,69 @@
         document.addEventListener('DOMContentLoaded', function() {
             const checkbox = document.getElementById('aceptoPrivacidad');
             const btnVolver = document.getElementById('btnVolver');
+            const firmaDigital = document.getElementById('firmaDigital');
+            const fechaHoraFirma = document.getElementById('fechaHoraFirma');
+            const hashFirma = document.getElementById('hashFirma');
 
             btnVolver.classList.remove('active');
 
+            // Función para generar un hash simbólico
+            function generarHashSimbolico() {
+                const chars = 'ABCDEF0123456789';
+                let hash = '0x';
+                for (let i = 0; i < 16; i++) {
+                    hash += chars.charAt(Math.floor(Math.random() * chars.length));
+                }
+                return hash;
+            }
+
+            // Función para formatear fecha y hora
+            function obtenerFechaHora() {
+                const ahora = new Date();
+                const opciones = {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    timeZoneName: 'short'
+                };
+                return ahora.toLocaleDateString('es-MX', opciones);
+            }
+
             checkbox.addEventListener('change', function() {
-                if (this.checked) btnVolver.classList.add('active');
-                else btnVolver.classList.remove('active');
+                if (this.checked) {
+                    // Activar botón
+                    btnVolver.classList.add('active');
+
+                    // Registrar firma digital
+                    const fechaHora = obtenerFechaHora();
+                    const hash = generarHashSimbolico();
+
+                    fechaHoraFirma.textContent = `📅 ${fechaHora}`;
+                    hashFirma.textContent = hash;
+                    firmaDigital.classList.add('visible');
+
+                    // Pequeña animación de confirmación
+                    const container = document.getElementById('aceptacionContainer');
+                    container.style.borderColor = 'rgba(212, 168, 87, 0.5)';
+                    setTimeout(() => {
+                        container.style.borderColor = '';
+                    }, 1500);
+
+                } else {
+                    // Desactivar botón
+                    btnVolver.classList.remove('active');
+
+                    // Ocultar firma digital
+                    firmaDigital.classList.remove('visible');
+                    fechaHoraFirma.textContent = '--';
+                    hashFirma.textContent = '--';
+                }
             });
 
+            // Validar al hacer clic en el botón (sin checkbox marcado)
             btnVolver.addEventListener('click', function(e) {
                 if (!checkbox.checked) {
                     e.preventDefault();
