@@ -1,7 +1,7 @@
 /* ================================================================
-   PERFIL ULTRA MEGA PRO V6 - SARIEL'S ECOSYSTEM
+   PERFIL ULTRA MEGA PRO V7 - SARIEL'S ECOSYSTEM
    Integración RPC Real + Social Features + WEB3 + eSIM Telnyx + WiFi/Datos
-   + Estado Activo/Inactivo + Amigos en Tiempo Real
+   + Estado Activo/Inactivo + Amigos en Tiempo Real + Escaneo QR + Cámara
    ================================================================ */
 
 // ================================================================
@@ -117,7 +117,6 @@ async function cargarPerfil(forzarActualizacion = false) {
         if (data) {
             perfilCache = data;
             ultimaActualizacion = ahora;
-            // Actualizar estado en línea
             await actualizarEstadoEnLinea(true);
             actualizarUI(data);
             if (data.esim_iccid) {
@@ -125,6 +124,7 @@ async function cargarPerfil(forzarActualizacion = false) {
             }
             await cargarEstadoConexion();
             await cargarAmigosEnLinea();
+            await cargarHistorialQR();
         } else {
             const defaultData = {
                 nombre: session.user.user_metadata?.nombre || 'Explorador',
@@ -158,7 +158,6 @@ async function cargarPerfil(forzarActualizacion = false) {
 // 🟢 ESTADO ACTIVO/INACTIVO (ONLINE/OFFLINE)
 // ================================================================
 
-// 1. 📡 ACTUALIZAR ESTADO EN LÍNEA EN SUPABASE
 async function actualizarEstadoEnLinea(online) {
     try {
         const session = await getSession();
@@ -175,14 +174,11 @@ async function actualizarEstadoEnLinea(online) {
 
         if (error) throw error;
         
-        // Actualizar caché local
         if (perfilCache) {
             perfilCache.online = online;
         }
         
-        // Actualizar UI
         actualizarUIEstado(online);
-        
         return true;
     } catch (error) {
         console.error('Error actualizando estado en línea:', error);
@@ -190,7 +186,6 @@ async function actualizarEstadoEnLinea(online) {
     }
 }
 
-// 2. 🖥️ ACTUALIZAR UI DE ESTADO
 function actualizarUIEstado(online) {
     const estadoBadge = document.getElementById('estadoBadge');
     const estadoTexto = document.getElementById('estadoTexto');
@@ -206,12 +201,10 @@ function actualizarUIEstado(online) {
     }
 }
 
-// 3. 🔄 DETECTAR INACTIVIDAD DEL USUARIO
 let tiempoInactividad = 0;
-let maxInactividad = 300000; // 5 minutos
+let maxInactividad = 300000;
 
 function iniciarDetectorInactividad() {
-    // Resetear contador de inactividad en interacciones
     const resetInactividad = () => {
         tiempoInactividad = 0;
         if (perfilCache && !perfilCache.online) {
@@ -219,25 +212,21 @@ function iniciarDetectorInactividad() {
         }
     };
 
-    // Eventos que indican actividad
     const eventos = ['mousemove', 'mousedown', 'click', 'scroll', 'keydown', 'touchstart', 'touchmove'];
     eventos.forEach(evento => {
         document.addEventListener(evento, resetInactividad);
     });
 
-    // Verificar inactividad cada 30 segundos
     setInterval(async () => {
         tiempoInactividad += 30000;
         
         if (tiempoInactividad >= maxInactividad && perfilCache && perfilCache.online) {
-            // Usuario inactivo por más de 5 minutos
             await actualizarEstadoEnLinea(false);
             showToast('⭕ Marcado como inactivo por inactividad', 'warning');
         }
     }, 30000);
 }
 
-// 4. 🟢 CAMBIAR ESTADO MANUALMENTE
 async function cambiarEstado(online) {
     try {
         const session = await getSession();
@@ -254,7 +243,6 @@ async function cambiarEstado(online) {
             showToast('⭕ Te has marcado como inactivo', 'warning');
         }
         
-        // Notificar a amigos del cambio
         await notificarCambioEstado(online);
         
     } catch (error) {
@@ -267,7 +255,6 @@ async function cambiarEstado(online) {
 // 👥 AMIGOS EN TIEMPO REAL
 // ================================================================
 
-// 1. 📡 ESCUCHAR AMIGOS EN TIEMPO REAL
 let canalAmigos = null;
 
 function iniciarEscuchaAmigos() {
@@ -283,7 +270,6 @@ function iniciarEscuchaAmigos() {
             table: 'usuarios',
             filter: 'online=eq.true'
         }, (payload) => {
-            // Un amigo cambió su estado
             const usuario = payload.new;
             if (usuario.id !== perfilCache?.id) {
                 actualizarListaAmigos();
@@ -294,13 +280,11 @@ function iniciarEscuchaAmigos() {
     return canalAmigos;
 }
 
-// 2. 📊 CARGAR AMIGOS EN LÍNEA
 async function cargarAmigosEnLinea() {
     try {
         const session = await getSession();
         if (!session) return;
 
-        // Obtener lista de amigos
         const { data: amigos, error: amigosError } = await supabase
             .from('amigos')
             .select('amigo_id')
@@ -316,7 +300,6 @@ async function cargarAmigosEnLinea() {
 
         const idsAmigos = amigos.map(a => a.amigo_id);
 
-        // Obtener amigos en línea
         const { data: enLinea, error: enLineaError } = await supabase
             .from('usuarios')
             .select('id, nombre, handle, avatar_url, online, ultima_conexion')
@@ -325,7 +308,6 @@ async function cargarAmigosEnLinea() {
 
         if (enLineaError) throw enLineaError;
 
-        // Obtener todos los amigos (para mostrar estado)
         const { data: todosAmigos, error: todosError } = await supabase
             .from('usuarios')
             .select('id, nombre, handle, avatar_url, online, ultima_conexion')
@@ -333,7 +315,6 @@ async function cargarAmigosEnLinea() {
 
         if (todosError) throw todosError;
 
-        // Actualizar UI
         actualizarUIAmigos(todosAmigos || [], enLinea || []);
 
         return { enLinea, todosAmigos };
@@ -344,12 +325,10 @@ async function cargarAmigosEnLinea() {
     }
 }
 
-// 3. 🖥️ ACTUALIZAR UI DE AMIGOS
 function actualizarUIAmigos(todosAmigos = [], enLinea = []) {
     const container = document.getElementById('amigosContainer');
     const contador = document.getElementById('amigosEnLineaContador');
     
-    // Actualizar contador de amigos en línea
     if (contador) {
         contador.textContent = enLinea.length;
         contador.style.color = enLinea.length > 0 ? 'var(--success)' : 'var(--text-muted)';
@@ -368,7 +347,6 @@ function actualizarUIAmigos(todosAmigos = [], enLinea = []) {
         return;
     }
 
-    // Separar en línea y desconectados
     const enLineaIds = enLinea.map(a => a.id);
     const ordenados = [
         ...todosAmigos.filter(a => enLineaIds.includes(a.id)),
@@ -378,86 +356,34 @@ function actualizarUIAmigos(todosAmigos = [], enLinea = []) {
     container.innerHTML = ordenados.map(amigo => {
         const estaEnLinea = enLineaIds.includes(amigo.id);
         return `
-            <div style="
-                display: flex;
-                align-items: center;
-                gap: 10px;
-                padding: 8px 12px;
-                background: ${estaEnLinea ? 'rgba(0,255,136,0.05)' : 'transparent'};
-                border-radius: 10px;
-                border: 1px solid ${estaEnLinea ? 'rgba(0,255,136,0.1)' : 'var(--glass-border)'};
-                transition: all 0.3s ease;
-                cursor: pointer;
-                hover: background: rgba(212,175,55,0.05);
-            " onclick="window.location.href='/perfil/${amigo.handle}'">
-                <div style="position:relative;">
-                    <div style="
-                        width: 32px;
-                        height: 32px;
-                        border-radius: 50%;
-                        background: ${amigo.avatar_url ? 'transparent' : 'var(--bg-card)'};
-                        overflow: hidden;
-                        border: 2px solid ${estaEnLinea ? 'var(--success)' : 'var(--text-muted)'};
-                    ">
-                        ${amigo.avatar_url ? `<img src="${amigo.avatar_url}" style="width:100%;height:100%;object-fit:cover;">` : '◈'}
-                    </div>
-                    <div style="
-                        position: absolute;
-                        bottom: -2px;
-                        right: -2px;
-                        width: 10px;
-                        height: 10px;
-                        border-radius: 50%;
-                        background: ${estaEnLinea ? 'var(--success)' : 'var(--text-muted)'};
-                        border: 2px solid var(--bg-dark);
-                    "></div>
+            <div class="amigo-item ${estaEnLinea ? 'online' : ''}" onclick="window.location.href='/perfil/${amigo.handle}'">
+                <div class="avatar-mini">
+                    ${amigo.avatar_url ? `<img src="${amigo.avatar_url}">` : '◈'}
                 </div>
-                <div style="flex:1; min-width:0;">
-                    <div style="
-                        font-weight: 600;
-                        font-size: 0.8rem;
-                        color: ${estaEnLinea ? 'var(--text-primary)' : 'var(--text-muted)'};
-                    ">
+                <div class="info">
+                    <div class="nombre" style="color:${estaEnLinea ? 'var(--text-primary)' : 'var(--text-muted)'}">
                         ${amigo.nombre || amigo.handle}
                     </div>
-                    <div style="
-                        font-size: 0.6rem;
-                        color: ${estaEnLinea ? 'var(--success)' : 'var(--text-muted)'};
-                    ">
+                    <div class="estado" style="color:${estaEnLinea ? 'var(--success)' : 'var(--text-muted)'}">
                         ${estaEnLinea ? '🟢 Activo ahora' : '⭕ Desconectado'}
                         ${!estaEnLinea && amigo.ultima_conexion ? ` · ${haceTiempo(amigo.ultima_conexion)}` : ''}
                     </div>
                 </div>
-                ${estaEnLinea ? `
-                    <div style="
-                        background: rgba(0,255,136,0.1);
-                        border: 1px solid rgba(0,255,136,0.2);
-                        border-radius: 20px;
-                        padding: 2px 10px;
-                        font-size: 0.5rem;
-                        color: var(--success);
-                        font-weight: 600;
-                    ">
-                        EN LÍNEA
-                    </div>
-                ` : ''}
+                ${estaEnLinea ? '<div class="badge-online">EN LÍNEA</div>' : ''}
             </div>
         `;
     }).join('');
 }
 
-// 4. 📊 ACTUALIZAR LISTA DE AMIGOS
 async function actualizarListaAmigos() {
     await cargarAmigosEnLinea();
 }
 
-// 5. 🔔 NOTIFICAR CAMBIO DE ESTADO A AMIGOS
 async function notificarCambioEstado(online) {
     try {
         const session = await getSession();
         if (!session) return;
 
-        // Obtener amigos para notificar
         const { data: amigos, error } = await supabase
             .from('amigos')
             .select('amigo_id')
@@ -466,7 +392,6 @@ async function notificarCambioEstado(online) {
 
         if (error || !amigos) return;
 
-        // Crear notificación para cada amigo
         for (const amigo of amigos) {
             await supabase
                 .from('notificaciones')
@@ -485,7 +410,6 @@ async function notificarCambioEstado(online) {
     }
 }
 
-// 6. ⏰ UTILITY: HACE TIEMPO
 function haceTiempo(fecha) {
     if (!fecha) return 'hace tiempo';
     const ahora = new Date();
@@ -721,8 +645,9 @@ function iniciarEscuchaConexion() {
 }
 
 // ================================================================
-// 📱 ACTUALIZAR UI DE eSIM
+// 📱 FUNCIONES eSIM TELNYX
 // ================================================================
+
 function actualizarUIESIM(data) {
     const esimStatus = document.getElementById('esimStatus');
     const esimDataUsed = document.getElementById('esimDataUsed');
@@ -784,31 +709,6 @@ function actualizarUIESIM(data) {
         esimApn.textContent = data.esim_apn || TELNYX_CONFIG.DEFAULT_APN;
     }
 }
-
-// ================================================================
-// 🔢 ANIMACIÓN DE CONTADORES
-// ================================================================
-function animarContador(elemento, inicio, fin, duracion = 1000) {
-    const diferencia = fin - inicio;
-    const inicioTiempo = performance.now();
-    
-    function actualizar(tiempoActual) {
-        const progreso = Math.min((tiempoActual - inicioTiempo) / duracion, 1);
-        const valor = Math.floor(inicio + (diferencia * progreso));
-        elemento.textContent = valor;
-        
-        if (progreso < 1) {
-            requestAnimationFrame(actualizar);
-        } else {
-            elemento.textContent = fin;
-        }
-    }
-    requestAnimationFrame(actualizar);
-}
-
-// ================================================================
-// 📡 FUNCIONES TELNYX eSIM
-// ================================================================
 
 async function comprarESIM(planId) {
     try {
@@ -977,10 +877,6 @@ async function obtenerPlanesESIM() {
     }
 }
 
-// ================================================================
-// 🎨 MODALES PARA eSIM
-// ================================================================
-
 function mostrarModalPago(qrData, ordenId, plan) {
     const modal = document.createElement('div');
     modal.id = 'pagoModal';
@@ -1105,6 +1001,266 @@ async function verificarPago(ordenId) {
 }
 
 // ================================================================
+// 📱 ESCANEO QR - NUEVA FUNCIONALIDAD
+// ================================================================
+
+// Variables para cámara
+let qrScannerInterval = null;
+let scannerActive = false;
+let qrHistorial = [];
+
+// 1. 📷 ABRIR CÁMARA PARA ESCANEAR QR
+async function abrirCamaraQR() {
+    const container = document.getElementById('qrReaderContainer');
+    const video = document.getElementById('qrVideo');
+    const status = document.getElementById('qrCamaraStatus');
+    
+    if (scannerActive) {
+        cerrarCamaraQR();
+        return;
+    }
+
+    try {
+        // Solicitar acceso a la cámara trasera
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 480 } }
+        });
+        
+        video.srcObject = stream;
+        await video.play();
+        container.style.display = 'block';
+        scannerActive = true;
+        status.textContent = '📷 Enfoca el QR...';
+
+        // Función para capturar y leer QR
+        const leerQR = async () => {
+            if (!scannerActive || !video.readyState || video.readyState < 2) return;
+
+            try {
+                // Crear canvas para capturar frame
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth || 400;
+                canvas.height = video.videoHeight || 300;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                
+                // Obtener datos de la imagen
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                
+                // Aquí se integraría una librería como jsQR para leer el QR
+                // Por ahora, simulamos la lectura
+                // En producción, usar: import { jsQR } from 'jsqr';
+                
+                // Simulación: mostrar mensaje y pedir entrada manual
+                status.textContent = '📱 Escanea el QR o ingresa el código manualmente';
+                
+                // Detectar texto en la imagen (simulado)
+                // En producción, aquí iría la lectura real del QR
+                
+            } catch (error) {
+                console.error('Error leyendo QR:', error);
+            }
+        };
+
+        // Iniciar lectura cada 500ms
+        if (qrScannerInterval) {
+            clearInterval(qrScannerInterval);
+        }
+        qrScannerInterval = setInterval(leerQR, 500);
+
+        showToast('📷 Apunta la cámara al QR', 'warning');
+
+    } catch (error) {
+        console.error('Error abriendo cámara:', error);
+        status.textContent = '❌ No se pudo acceder a la cámara';
+        showToast('❌ No se pudo acceder a la cámara', 'error');
+    }
+}
+
+// 2. 📷 CERRAR CÁMARA
+function cerrarCamaraQR() {
+    const container = document.getElementById('qrReaderContainer');
+    const video = document.getElementById('qrVideo');
+    const status = document.getElementById('qrCamaraStatus');
+    
+    if (video.srcObject) {
+        video.srcObject.getTracks().forEach(track => track.stop());
+    }
+    video.srcObject = null;
+    container.style.display = 'none';
+    scannerActive = false;
+    status.textContent = '';
+    
+    if (qrScannerInterval) {
+        clearInterval(qrScannerInterval);
+        qrScannerInterval = null;
+    }
+}
+
+// 3. 🔍 ESCANEAR QR MANUAL (INPUT)
+async function escanearQR() {
+    const input = document.getElementById('qrInput');
+    const status = document.getElementById('qrStatus');
+    const btn = document.getElementById('btnEscanearQR');
+    const qrCode = input.value.trim();
+
+    if (!qrCode) {
+        showToast('⚠️ Escribe o escanea el código QR', 'error');
+        return;
+    }
+
+    const session = await getSession();
+    if (!session) {
+        showToast('⚠️ Inicia sesión para escanear QR', 'error');
+        return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = '⏳ Verificando...';
+    status.textContent = '⏳ Validando QR...';
+
+    try {
+        // 1. VALIDAR QR EN SUPABASE
+        const { data: qrData, error: qrError } = await supabase
+            .from('qr_domos')
+            .select('*')
+            .eq('codigo', qrCode)
+            .single();
+
+        if (qrError || !qrData) {
+            status.textContent = '❌ QR inválido o no existe';
+            showToast('❌ QR inválido', 'error');
+            btn.disabled = false;
+            btn.textContent = '🔍 Escanear QR';
+            return;
+        }
+
+        // 2. VERIFICAR QUE NO ESTÉ USADO
+        if (qrData.usado) {
+            status.textContent = '❌ Este QR ya fue usado';
+            showToast('❌ QR ya utilizado', 'error');
+            btn.disabled = false;
+            btn.textContent = '🔍 Escanear QR';
+            return;
+        }
+
+        // 3. VERIFICAR QUE EL PRODUCTO SEA DOMO
+        if (qrData.producto !== 'domo') {
+            status.textContent = '❌ Este QR no corresponde a un domo';
+            showToast('❌ QR no válido para domo', 'error');
+            btn.disabled = false;
+            btn.textContent = '🔍 Escanear QR';
+            return;
+        }
+
+        // 4. ASIGNAR 1 Es.stok AL USUARIO
+        const { error: tokenError } = await supabase.rpc('asignar_es_stok', {
+            p_user_id: session.user.id
+        });
+
+        if (tokenError) throw tokenError;
+
+        // 5. MARCAR QR COMO USADO
+        const { error: updateError } = await supabase
+            .from('qr_domos')
+            .update({
+                usado: true,
+                usado_por: session.user.id,
+                fecha_uso: new Date().toISOString()
+            })
+            .eq('codigo', qrCode);
+
+        if (updateError) throw updateError;
+
+        // 6. REGISTRAR EN HISTORIAL
+        await supabase
+            .from('qr_historial')
+            .insert({
+                qr_id: qrData.id,
+                user_id: session.user.id,
+                fecha: new Date().toISOString()
+            });
+
+        // 7. ACTUALIZAR UI
+        status.textContent = '✅ ¡Felicidades! Has recibido 1 Es.stok';
+        showToast('🎉 ¡QR escaneado! +1 Es.stok', 'success');
+        
+        input.value = '';
+        await cargarPerfil(true);
+        await cargarHistorialQR();
+        mostrarCelebracion();
+
+    } catch (error) {
+        console.error('Error escaneando QR:', error);
+        status.textContent = '❌ Error al procesar QR';
+        showToast('❌ Error al escanear QR: ' + error.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = '🔍 Escanear QR';
+    }
+}
+
+// 4. 📋 CARGAR HISTORIAL DE ESCANEOS QR
+async function cargarHistorialQR() {
+    try {
+        const session = await getSession();
+        if (!session) return;
+
+        const { data, error } = await supabase
+            .from('qr_historial')
+            .select('*')
+            .eq('user_id', session.user.id)
+            .order('fecha', { ascending: false })
+            .limit(10);
+
+        if (error) throw error;
+
+        qrHistorial = data || [];
+        actualizarUIHistorialQR(qrHistorial);
+
+    } catch (error) {
+        console.error('Error cargando historial QR:', error);
+    }
+}
+
+// 5. 🖥️ ACTUALIZAR UI DE HISTORIAL QR
+function actualizarUIHistorialQR(historial = []) {
+    const container = document.getElementById('qrHistorialList');
+    const contador = document.getElementById('qrHistorialCount');
+
+    if (contador) {
+        contador.textContent = `${historial.length} escaneos`;
+    }
+
+    if (!container) return;
+
+    if (!historial || historial.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state" style="padding:10px;">
+                <span class="icon" style="font-size:1.5rem;">◈</span>
+                <p style="font-size:0.7rem;">Sin escaneos recientes</p>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = historial.map(item => `
+        <div style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+            border-bottom: 1px solid rgba(212,175,55,0.05);
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        ">
+            <span>📱 QR: ${item.qr_id?.slice(0, 15) || 'N/A'}</span>
+            <span>${new Date(item.fecha).toLocaleDateString()} ${new Date(item.fecha).toLocaleTimeString()}</span>
+        </div>
+    `).join('');
+}
+
+// ================================================================
 // 🎯 ACTUALIZAR UI PRINCIPAL
 // ================================================================
 function actualizarUI(data) {
@@ -1134,14 +1290,17 @@ function actualizarUI(data) {
         }
     }
 
+    // Actualizar wallet
     if (walletDisplay && data.wallet_address) {
         walletDisplay.textContent = data.wallet_address.slice(0, 6) + '...' + data.wallet_address.slice(-4);
         walletDisplay.style.color = 'var(--success)';
-        document.querySelector('.btn-outline.btn-sm').style.display = 'none';
-        document.getElementById('btnDisconnect').style.display = 'inline-flex';
+        document.getElementById('btnConectarWallet').style.display = 'none';
+        document.getElementById('btnDesconectarWallet').style.display = 'inline-flex';
     } else if (walletDisplay) {
-        walletDisplay.textContent = 'No conectada';
+        walletDisplay.textContent = '⚠️ No conectada';
         walletDisplay.style.color = 'var(--text-muted)';
+        document.getElementById('btnConectarWallet').style.display = 'inline-flex';
+        document.getElementById('btnDesconectarWallet').style.display = 'none';
     }
 
     // Estadísticas
@@ -1269,13 +1428,12 @@ async function conectarWallet() {
         if (error) throw error;
 
         const walletDisplay = document.getElementById('walletDisplay');
-        const btnConectar = document.querySelector('.btn-outline.btn-sm');
-        const btnDesconectar = document.getElementById('btnDisconnect');
+        const btnConectar = document.getElementById('btnConectarWallet');
+        const btnDesconectar = document.getElementById('btnDesconectarWallet');
 
         if (walletDisplay) {
             walletDisplay.textContent = cuenta.slice(0, 6) + '...' + cuenta.slice(-4);
             walletDisplay.style.color = 'var(--success)';
-            walletDisplay.style.animation = 'pulse 0.5s ease-out';
         }
         if (btnConectar) btnConectar.style.display = 'none';
         if (btnDesconectar) btnDesconectar.style.display = 'inline-flex';
@@ -1304,11 +1462,11 @@ async function desconectarWallet() {
         if (error) console.warn('RPC desvincular_wallet no encontrada:', error);
 
         const walletDisplay = document.getElementById('walletDisplay');
-        const btnConectar = document.querySelector('.btn-outline.btn-sm');
-        const btnDesconectar = document.getElementById('btnDisconnect');
+        const btnConectar = document.getElementById('btnConectarWallet');
+        const btnDesconectar = document.getElementById('btnDesconectarWallet');
 
         if (walletDisplay) {
-            walletDisplay.textContent = 'No conectada';
+            walletDisplay.textContent = '⚠️ No conectada';
             walletDisplay.style.color = 'var(--text-muted)';
         }
         if (btnConectar) btnConectar.style.display = 'inline-flex';
@@ -1837,9 +1995,7 @@ async function cerrarSesion() {
     if (!confirm('¿Seguro que quieres cerrar sesión?')) return;
     
     try {
-        // Marcar como offline antes de cerrar sesión
         await actualizarEstadoEnLinea(false);
-        
         await supabase.auth.signOut();
         window.location.href = '/';
         showToast('🔌 Sesión cerrada', 'success');
@@ -1861,7 +2017,6 @@ function iniciarNotificacionesRealtime() {
             table: 'notificaciones'
         }, (payload) => {
             const notificacion = payload.new;
-            // Solo mostrar si es para el usuario actual
             if (notificacion.user_id === perfilCache?.id) {
                 showToast(`🔔 ${notificacion.mensaje}`, 'warning', 4000);
                 
@@ -1895,6 +2050,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     iniciarEscuchaConexion();
     iniciarEscuchaAmigos();
     iniciarDetectorInactividad();
+    await cargarHistorialQR();
 
     // Actualizar datos eSIM cada 30 segundos
     if (perfilCache?.esim_iccid) {
@@ -2025,3 +2181,10 @@ window.actualizarEstadoEnLinea = actualizarEstadoEnLinea;
 window.cambiarEstado = cambiarEstado;
 window.cargarAmigosEnLinea = cargarAmigosEnLinea;
 window.actualizarListaAmigos = actualizarListaAmigos;
+
+// Funciones QR
+window.escanearQR = escanearQR;
+window.abrirCamaraQR = abrirCamaraQR;
+window.cerrarCamaraQR = cerrarCamaraQR;
+window.cargarHistorialQR = cargarHistorialQR;
+window.actualizarUIHistorialQR = actualizarUIHistorialQR;
