@@ -5,10 +5,10 @@
    ================================================================ */
 
 // ================================================================
-// CONFIGURACIÓN SUPABASE
+// CONFIGURACIÓN SUPABASE (CON NUEVA LLAVE)
 // ================================================================
-const SUPABASE_URL = 'https://hbbwopkfpkvahgtawqke.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_4gJWA-t7Eg6ruuI2EF-K2A_GQlahb2j';
+const SUPABASE_URL = 'https://zultnlogdoajehbswlih.supabase.co';  // ✅ NUEVA URL
+const SUPABASE_ANON_KEY = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';  // ✅ NUEVA LLAVE
 
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -25,12 +25,11 @@ let web3 = null;
 class GalletaDomoApp {
     constructor() {
         this.supabase = supabaseClient;
-        this.apiUrl = 'https://galleta-domo.up.railway.app/api'; // ✅ RUTA RAILWAY MANTENIDA
+        this.apiUrl = 'https://galleta-domo.up.railway.app/api';
         this.usuario = null;
         this.wallet = null;
         this.tokens = 0;
         this.isOnline = false;
-        // ✅ Eliminado: this.init(); (se llama una sola vez abajo)
     }
 
     async init() {
@@ -95,7 +94,7 @@ class GalletaDomoApp {
     }
 
     // ================================================================
-    // 🪙 SISTEMA DE TOKENS (NUEVO)
+    // 🪙 SISTEMA DE TOKENS
     // ================================================================
 
     async cargarTokens() {
@@ -167,7 +166,7 @@ class GalletaDomoApp {
     }
 
     // ================================================================
-    // 🟢 ESTADO ONLINE (NUEVO)
+    // 🟢 ESTADO ONLINE
     // ================================================================
 
     async actualizarOnline(online) {
@@ -182,7 +181,6 @@ class GalletaDomoApp {
             
             this.isOnline = online;
             
-            // Actualizar UI si existe el elemento
             const estadoEl = document.getElementById('estadoOnline');
             if (estadoEl) {
                 estadoEl.textContent = online ? '🟢 En línea' : '⚪ Desconectado';
@@ -212,7 +210,7 @@ class GalletaDomoApp {
     }
 
     // ================================================================
-    // 📊 ESTADÍSTICAS DE USUARIO (NUEVO)
+    // 📊 ESTADÍSTICAS DE USUARIO
     // ================================================================
 
     async obtenerEstadisticas() {
@@ -238,11 +236,9 @@ class GalletaDomoApp {
         try {
             if (!this.usuario) return;
 
-            // Obtener datos actuales
             const stats = await this.obtenerEstadisticas();
             
             if (stats) {
-                // Actualizar estadísticas existentes
                 await this.supabase
                     .from('estadisticas_usuarios')
                     .update({
@@ -251,7 +247,6 @@ class GalletaDomoApp {
                     })
                     .eq('user_id', this.usuario.id);
             } else {
-                // Crear nuevas estadísticas
                 await this.supabase
                     .from('estadisticas_usuarios')
                     .insert({
@@ -309,7 +304,6 @@ class GalletaDomoApp {
     }
 
     async cerrarSesion() {
-        // ✅ Confirmación antes de cerrar sesión
         if (!confirm('¿Seguro que quieres cerrar sesión?')) return;
 
         try {
@@ -789,15 +783,10 @@ class GalletaDomoApp {
         }
     }
 
-    // ================================================================
-    // 🔄 FUNCIÓN PARA ACTUALIZAR UI DE TOKENS
-    // ================================================================
-
     async actualizarUITokens() {
         await this.cargarTokens();
         this.actualizarUIUsuario(this.usuario);
         
-        // Actualizar badge si existe
         const tokenBadge = document.getElementById('tokenBadgeCantidad');
         if (tokenBadge) {
             tokenBadge.textContent = this.tokens;
@@ -843,15 +832,12 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('◉ Supabase conectado');
     console.log('◆ Wallet: ' + (localStorage.getItem('sariels_wallet') ? 'Conectada' : 'Desconectada'));
     
-    // ✅ UNA SOLA LLAMADA A init()
     app.init();
     
-    // Si hay usuario logueado, actualizar UI
     if (app.usuario) {
         app.actualizarUIUsuario(app.usuario);
     }
     
-    // Si hay wallet guardada, actualizar UI
     const walletGuardada = localStorage.getItem('sariels_wallet');
     if (walletGuardada) {
         app.actualizarUIWallet(walletGuardada);
