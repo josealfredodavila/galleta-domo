@@ -1,6 +1,8 @@
-// ================================================================
-// APP.JS - VERSIÓN COMPLETA CON SUPABASE + WALLET + AUTENTICACIÓN
-// ================================================================
+/* ================================================================
+   APP.JS - VERSIÓN COMPLETA CORREGIDA
+   Con Supabase + Wallet + Autenticación + Tokens + Estado Online
+   RUTA RAILWAY: https://galleta-domo.up.railway.app
+   ================================================================ */
 
 // ================================================================
 // CONFIGURACIÓN SUPABASE
@@ -23,36 +25,48 @@ let web3 = null;
 class GalletaDomoApp {
     constructor() {
         this.supabase = supabaseClient;
-        this.apiUrl = 'https://galleta-domo.up.railway.app/api';
+        this.apiUrl = 'https://galleta-domo.up.railway.app/api'; // ✅ RUTA RAILWAY MANTENIDA
         this.usuario = null;
         this.wallet = null;
-        this.init();
+        this.tokens = 0;
+        this.isOnline = false;
+        // ✅ Eliminado: this.init(); (se llama una sola vez abajo)
     }
 
     async init() {
         console.log('◈ Sariel\'s - App inicializada');
+        console.log('🌐 API:', this.apiUrl);
 
         // Verificar sesión existente
         const { data: { session } } = await this.supabase.auth.getSession();
         if (session) {
             this.usuario = session.user;
             usuarioActual = session.user;
+            await this.cargarTokens();
+            await this.actualizarOnline(true);
             this.actualizarUIUsuario(session.user);
         }
 
         // Escuchar cambios de autenticación
-        this.supabase.auth.onAuthStateChange((event, session) => {
+        this.supabase.auth.onAuthStateChange(async (event, session) => {
             if (event === 'SIGNED_IN' && session) {
                 this.usuario = session.user;
                 usuarioActual = session.user;
+                await this.cargarTokens();
+                await this.actualizarOnline(true);
                 this.actualizarUIUsuario(session.user);
                 showToast('✅ ¡Bienvenido ' + (session.user.user_metadata?.nombre || 'Usuario') + '!');
             }
             if (event === 'SIGNED_OUT') {
+                await this.actualizarOnline(false);
                 this.usuario = null;
                 usuarioActual = null;
+                this.tokens = 0;
                 this.actualizarUIUsuario(null);
                 showToast('🔌 Sesión cerrada');
+            }
+            if (event === 'TOKEN_REFRESHED') {
+                console.log('🔄 Token refrescado automáticamente');
             }
         });
 
@@ -62,11 +76,200 @@ class GalletaDomoApp {
             this.wallet = walletGuardada;
             this.actualizarUIWallet(walletGuardada);
         }
+
+        // Detectar cierre de página para marcar offline
+        window.addEventListener('beforeunload', () => {
+            if (this.usuario) {
+                this.actualizarOnline(false);
+            }
+        });
+
+        // Detectar visibilidad de página para actualizar estado
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible' && this.usuario) {
+                this.actualizarOnline(true);
+            } else if (document.visibilityState === 'hidden' && this.usuario) {
+                this.actualizarOnline(false);
+            }
+        });
     }
 
     // ================================================================
-    // AUTENTICACIÓN CON EMAIL
+    // 🪙 SISTEMA DE TOKENS (NUEVO)
     // ================================================================
+
+    async cargarTokens() {
+        try {
+            if (!this.usuario) return 0;
+            const { data, error } = await this.supabase
+                .from('usuarios')
+                .select('tokens')
+                .eq('id', this.usuario.id)
+                .single();
+
+            if (error) throw error;
+            this.tokens = data?.tokens || 0;
+            return this.tokens;
+        } catch (error) {
+            console.error('Error cargando tokens:', error);
+            return 0;
+        }
+    }
+
+    async obtenerTokens() {
+        if (!this.usuario) return 0;
+        await this.cargarTokens();
+        return this.tokens;
+    }
+
+    async transferirTokens(destinoId, cantidad) {
+        try {
+            if (!this.usuario) {
+                showToast('⚠️ Inicia sesión para transferir', 'error');
+                return false;
+            }
+
+            if (this.tokens < cantidad) {
+                showToast('⚠️ No tienes suficientes tokens', 'error');
+                return false;
+            }
+
+            if (cantidad <= 0) {
+                showToast('⚠️ Cantidad inválida', 'error');
+                return false;
+            }
+
+            // Restar al emisor
+            const { error: errorEmisor } = await this.supabase.rpc('decrement_tokens', {
+                p_user_id: this.usuario.id,
+                p_cantidad: cantidad
+            });
+
+            if (errorEmisor) throw errorEmisor;
+
+            // Sumar al receptor
+            const { error: errorReceptor } = await this.supabase.rpc('increment_tokens', {
+                p_user_id: destinoId,
+                p_cantidad: cantidad
+            });
+
+            if (errorReceptor) throw errorReceptor;
+
+            this.tokens -= cantidad;
+            showToast(`✅ ${cantidad} Es.stoks transferidos`, 'success');
+            return true;
+
+        } catch (error) {
+            console.error('Error transfiriendo tokens:', error);
+            showToast('❌ Error al transferir tokens', 'error');
+            return false;
+        }
+    }
+
+    // ================================================================
+    // 🟢 ESTADO ONLINE (NUEVO)
+    // ================================================================
+
+    async actualizarOnline(online) {
+        try {
+            if (!this.usuario) return;
+
+            const { error } = await this.supabase.rpc('actualizar_online', {
+                p_online: online
+            });
+
+            if (error) throw error;
+            
+            this.isOnline = online;
+            
+            // Actualizar UI si existe el elemento
+            const estadoEl = document.getElementById('estadoOnline');
+            if (estadoEl) {
+                estadoEl.textContent = online ? '🟢 En línea' : '⚪ Desconectado';
+                estadoEl.style.color = online ? 'var(--success)' : 'var(--text-muted)';
+            }
+
+        } catch (error) {
+            console.error('Error actualizando estado online:', error);
+        }
+    }
+
+    async obtenerEstadoOnline(usuarioId) {
+        try {
+            const { data, error } = await this.supabase
+                .from('usuarios')
+                .select('online, ultima_conexion')
+                .eq('id', usuarioId)
+                .single();
+
+            if (error) throw error;
+            return data;
+
+        } catch (error) {
+            console.error('Error obteniendo estado online:', error);
+            return null;
+        }
+    }
+
+    // ================================================================
+    // 📊 ESTADÍSTICAS DE USUARIO (NUEVO)
+    // ================================================================
+
+    async obtenerEstadisticas() {
+        try {
+            if (!this.usuario) return null;
+
+            const { data, error } = await this.supabase
+                .from('estadisticas_usuarios')
+                .select('*')
+                .eq('user_id', this.usuario.id)
+                .single();
+
+            if (error && error.code !== 'PGRST116') throw error;
+            return data || null;
+
+        } catch (error) {
+            console.error('Error obteniendo estadísticas:', error);
+            return null;
+        }
+    }
+
+    async actualizarEstadisticas() {
+        try {
+            if (!this.usuario) return;
+
+            // Obtener datos actuales
+            const stats = await this.obtenerEstadisticas();
+            
+            if (stats) {
+                // Actualizar estadísticas existentes
+                await this.supabase
+                    .from('estadisticas_usuarios')
+                    .update({
+                        tokens_actuales: this.tokens,
+                        ultima_actividad: new Date().toISOString()
+                    })
+                    .eq('user_id', this.usuario.id);
+            } else {
+                // Crear nuevas estadísticas
+                await this.supabase
+                    .from('estadisticas_usuarios')
+                    .insert({
+                        user_id: this.usuario.id,
+                        tokens_actuales: this.tokens,
+                        ultima_actividad: new Date().toISOString()
+                    });
+            }
+
+        } catch (error) {
+            console.error('Error actualizando estadísticas:', error);
+        }
+    }
+
+    // ================================================================
+    // 🔐 AUTENTICACIÓN CON EMAIL
+    // ================================================================
+
     async registrarUsuario(email, password, nombre) {
         try {
             const { data, error } = await this.supabase.auth.signUp({
@@ -105,9 +308,28 @@ class GalletaDomoApp {
         }
     }
 
+    async cerrarSesion() {
+        // ✅ Confirmación antes de cerrar sesión
+        if (!confirm('¿Seguro que quieres cerrar sesión?')) return;
+
+        try {
+            await this.actualizarOnline(false);
+            await this.supabase.auth.signOut();
+            localStorage.removeItem('sariels_wallet');
+            this.wallet = null;
+            this.usuario = null;
+            usuarioActual = null;
+            this.tokens = 0;
+            showToast('🔌 Sesión cerrada');
+        } catch (error) {
+            showToast('❌ Error al cerrar sesión', 'error');
+        }
+    }
+
     // ================================================================
-    // 🔐 RECUPERAR CONTRASEÑA - VERSIÓN PRO
+    // 🔐 RECUPERAR CONTRASEÑA
     // ================================================================
+
     async recuperarContraseña(email) {
         try {
             const { data, error } = await this.supabase.auth.resetPasswordForEmail(email, {
@@ -124,9 +346,6 @@ class GalletaDomoApp {
         }
     }
 
-    // ================================================================
-    // 🔐 ACTUALIZAR CONTRASEÑA - VERSIÓN PRO
-    // ================================================================
     async actualizarContraseña(nuevaContraseña) {
         try {
             const { data, error } = await this.supabase.auth.updateUser({
@@ -146,6 +365,7 @@ class GalletaDomoApp {
     // ================================================================
     // 🔐 RECUPERAR CON WALLET (WEB3)
     // ================================================================
+
     async recuperarConWallet() {
         try {
             if (typeof window.ethereum === 'undefined') {
@@ -180,24 +400,9 @@ class GalletaDomoApp {
     }
 
     // ================================================================
-    // CERRAR SESIÓN
+    // 💳 WALLET (MetaMask)
     // ================================================================
-    async cerrarSesion() {
-        try {
-            await this.supabase.auth.signOut();
-            localStorage.removeItem('sariels_wallet');
-            this.wallet = null;
-            this.usuario = null;
-            usuarioActual = null;
-            showToast('🔌 Sesión cerrada');
-        } catch (error) {
-            showToast('❌ Error al cerrar sesión', 'error');
-        }
-    }
 
-    // ================================================================
-    // WALLET (MetaMask)
-    // ================================================================
     async conectarWallet() {
         if (typeof window.ethereum === 'undefined') {
             showToast('⚠️ Instala MetaMask para continuar', 'warning');
@@ -251,9 +456,19 @@ class GalletaDomoApp {
         }
     }
 
+    async desconectarWallet() {
+        if (!confirm('¿Seguro que quieres desconectar tu wallet?')) return;
+        
+        localStorage.removeItem('sariels_wallet');
+        this.wallet = null;
+        this.actualizarUIWallet(null);
+        showToast('🔌 Wallet desconectada');
+    }
+
     // ================================================================
-    // TRANSMISIONES
+    // 🎬 TRANSMISIONES
     // ================================================================
+
     async crearTransmision(datos) {
         try {
             if (!this.usuario) {
@@ -318,8 +533,9 @@ class GalletaDomoApp {
     }
 
     // ================================================================
-    // CHAT
+    // 💬 CHAT
     // ================================================================
+
     async enviarMensaje(transmisionId, mensaje) {
         try {
             if (!this.usuario) {
@@ -377,8 +593,9 @@ class GalletaDomoApp {
     }
 
     // ================================================================
-    // PAGOS
+    // 💰 PAGOS
     // ================================================================
+
     async registrarPago(transmisionId, monto, metodo) {
         try {
             if (!this.usuario) {
@@ -432,8 +649,9 @@ class GalletaDomoApp {
     }
 
     // ================================================================
-    // SUSCRIPCIONES
+    // 📝 SUSCRIPCIONES
     // ================================================================
+
     async suscribirse(streamerId, precioMensual) {
         try {
             if (!this.usuario) {
@@ -462,8 +680,9 @@ class GalletaDomoApp {
     }
 
     // ================================================================
-    // PROMOCIONES
+    // 🚀 PROMOCIONES
     // ================================================================
+
     async activarPromocion(transmisionId, nivel, horas) {
         try {
             if (!this.usuario) {
@@ -508,14 +727,14 @@ class GalletaDomoApp {
     }
 
     // ================================================================
-    // UI UPDATES - VERSIÓN SEGURA (SOLO ACTUALIZA, NO CREA)
+    // 🎨 UI UPDATES - VERSIÓN SEGURA
     // ================================================================
+
     actualizarUIUsuario(user) {
-        // Solo actualizar si los elementos existen en el DOM
         const loginBtn = document.getElementById('loginBtn');
         const userInfo = document.getElementById('userInfo');
 
-        if (!loginBtn && !userInfo) return; // No crear elementos
+        if (!loginBtn && !userInfo) return;
 
         if (user) {
             if (loginBtn) loginBtn.style.display = 'none';
@@ -523,7 +742,10 @@ class GalletaDomoApp {
                 userInfo.style.display = 'flex';
                 userInfo.innerHTML = `
                     <span style="font-size:0.7rem;color:var(--gold);">
-                        ${user.user_metadata?.nombre || 'Usuario'}
+                        ${user.user_metadata?.nombre || 'Usuario'} 
+                        <span style="font-size:0.5rem;color:var(--text-muted);">
+                            (${this.tokens} Es.stoks)
+                        </span>
                     </span>
                     <button onclick="app.cerrarSesion()" style="background:transparent;border:none;color:var(--text-muted);cursor:pointer;font-size:0.6rem;">
                         ✕
@@ -540,11 +762,10 @@ class GalletaDomoApp {
     }
 
     actualizarUIWallet(wallet) {
-        // Solo actualizar si los elementos existen en el DOM
         const walletBtn = document.getElementById('walletBtn');
         const walletInfo = document.getElementById('walletInfo');
 
-        if (!walletBtn && !walletInfo) return; // No crear elementos
+        if (!walletBtn && !walletInfo) return;
 
         if (wallet) {
             if (walletBtn) walletBtn.style.display = 'none';
@@ -554,7 +775,7 @@ class GalletaDomoApp {
                     <span style="font-size:0.6rem;color:var(--text-muted);">
                         🟢 ${wallet.slice(0, 6)}...${wallet.slice(-4)}
                     </span>
-                    <button onclick="app.desconectarWalletUI()" style="background:transparent;border:none;color:var(--text-muted);cursor:pointer;font-size:0.5rem;">
+                    <button onclick="app.desconectarWallet()" style="background:transparent;border:none;color:var(--text-muted);cursor:pointer;font-size:0.5rem;">
                         ✕
                     </button>
                 `;
@@ -568,16 +789,24 @@ class GalletaDomoApp {
         }
     }
 
-    desconectarWalletUI() {
-        localStorage.removeItem('sariels_wallet');
-        this.wallet = null;
-        this.actualizarUIWallet(null);
-        showToast('🔌 Wallet desconectada');
+    // ================================================================
+    // 🔄 FUNCIÓN PARA ACTUALIZAR UI DE TOKENS
+    // ================================================================
+
+    async actualizarUITokens() {
+        await this.cargarTokens();
+        this.actualizarUIUsuario(this.usuario);
+        
+        // Actualizar badge si existe
+        const tokenBadge = document.getElementById('tokenBadgeCantidad');
+        if (tokenBadge) {
+            tokenBadge.textContent = this.tokens;
+        }
     }
 }
 
 // ================================================================
-// TOAST - VERSIÓN SEGURA (NO DUPLICAR)
+// TOAST - VERSIÓN SEGURA
 // ================================================================
 function showToast(msg, type = '') {
     let t = document.getElementById('toast');
@@ -606,15 +835,16 @@ window.usuarioActual = usuarioActual;
 window.showToast = showToast;
 
 // ================================================================
-// INICIALIZACIÓN SEGURA - NO MODIFICA EL HEADER
+// INICIALIZACIÓN - UNA SOLA VEZ
 // ================================================================
 document.addEventListener('DOMContentLoaded', function() {
     console.log('◈ Sariel\'s App - Lista');
+    console.log('🌐 API:', app.apiUrl);
     console.log('◉ Supabase conectado');
     console.log('◆ Wallet: ' + (localStorage.getItem('sariels_wallet') ? 'Conectada' : 'Desconectada'));
     
-    // SOLO actualizar UI si los elementos existen
-    // NO crear nuevos elementos en el header
+    // ✅ UNA SOLA LLAMADA A init()
+    app.init();
     
     // Si hay usuario logueado, actualizar UI
     if (app.usuario) {
@@ -626,7 +856,4 @@ document.addEventListener('DOMContentLoaded', function() {
     if (walletGuardada) {
         app.actualizarUIWallet(walletGuardada);
     }
-    
-    // Recuperar sesión (ya se hace en el constructor, pero por seguridad)
-    app.init();
 });
