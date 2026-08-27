@@ -110,7 +110,6 @@
         .btn-donacion .monto { font-weight: 700; color: var(--gold); }
         .btn-donacion .label { font-size: 0.5rem; color: var(--text-muted); display: block; }
 
-        /* Cámara */
         .live-video-container {
             background: var(--space); border: 1px solid var(--glass-border); border-radius: var(--radius-xl);
             overflow: hidden; margin-bottom: 20px; position: relative;
@@ -137,7 +136,6 @@
         .live-video-container .live-controls button.voice.voice-active { color: var(--gold); background: rgba(212, 175, 55, 0.2); }
         .live-video-container .live-controls button.end { color: var(--danger); font-size: 0.8rem; padding: 4px 12px; border-radius: 20px; }
 
-        /* ===== DONACIONES FLOTANTES ===== */
         .donacion-overlay {
             position: absolute;
             top: 0;
@@ -151,7 +149,6 @@
             justify-content: center;
         }
 
-        /* ===== CHAT ===== */
         .live-chat-container {
             background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-xl);
             overflow: hidden; margin-bottom: 20px;
@@ -183,12 +180,10 @@
         .live-chat-container .chat-input button { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); border: none; padding: 6px 16px; border-radius: 20px; font-weight: 700; cursor: pointer; transition: var(--transition); }
         .live-chat-container .chat-input button:hover { transform: scale(1.05); }
 
-        /* ===== DONACIONES RÁPIDAS ===== */
         .donaciones-rapidas {
             display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; justify-content: center;
         }
 
-        /* ===== STREAMS ===== */
         .streams-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
         .stream-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius); padding: 14px; cursor: pointer; transition: var(--transition); }
         .stream-card:hover { border-color: var(--gold); transform: translateY(-3px); box-shadow: var(--shadow-gold); }
@@ -209,7 +204,7 @@
         }
         .toast.show { transform: translateY(0); opacity: 1; }
         .toast.error { border-color: var(--danger); color: var(--danger); }
-        .toast.warning { border-color: #f7d44a; color: #f7d44a; }
+        .toast.warning { border-color: var(--warning); color: var(--warning); }
         .toast.success { border-color: var(--success); color: var(--success); }
 
         .footer { margin-top: 30px; padding-top: 16px; border-top: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center; font-size: 0.7rem; color: var(--text-muted); flex-wrap: wrap; gap: 10px; }
@@ -218,46 +213,39 @@
         .footer-links a { color: var(--text-muted); text-decoration: none; transition: var(--transition); }
         .footer-links a:hover { color: var(--gold); }
 
-        /* ===== KEYFRAMES ===== */
         @keyframes fadeInOut {
             0% { opacity: 0; transform: scale(0.5); }
             20% { opacity: 1; transform: scale(1); }
             80% { opacity: 1; transform: scale(1); }
             100% { opacity: 0; transform: scale(1.2); }
         }
-
         @keyframes cuboGirar {
             0% { transform: rotateY(0deg) scale(0.5); opacity: 0; }
             20% { transform: rotateY(180deg) scale(1.2); opacity: 1; }
             80% { transform: rotateY(360deg) scale(1); opacity: 1; }
             100% { transform: rotateY(720deg) scale(0.8); opacity: 0; }
         }
-
         @keyframes brillo {
             0%, 100% { text-shadow: 0 0 20px currentColor; }
             50% { text-shadow: 0 0 60px currentColor, 0 0 100px currentColor; }
         }
-
         @keyframes coheteVuelo {
             0% { transform: translateX(-200%) rotate(-45deg); opacity: 0; }
             30% { transform: translateX(0%) rotate(0deg); opacity: 1; }
             70% { transform: translateX(0%) rotate(0deg); opacity: 1; }
             100% { transform: translateX(200%) rotate(45deg); opacity: 0; }
         }
-
         @keyframes coheteGirar {
             0% { transform: rotate(0deg) scale(0.3); opacity: 0; }
             20% { transform: rotate(180deg) scale(1.5); opacity: 1; }
             80% { transform: rotate(720deg) scale(1); opacity: 1; }
             100% { transform: rotate(1080deg) scale(0.5); opacity: 0; }
         }
-
         @keyframes explosion {
             0% { opacity: 0; transform: scale(0.3); }
             20% { opacity: 1; transform: scale(1.5); }
             100% { opacity: 1; transform: scale(2); }
         }
-
         @keyframes explosionParticulas {
             0% { opacity: 0; transform: scale(0.1) rotate(0deg); }
             30% { opacity: 1; transform: scale(2) rotate(180deg); }
@@ -304,7 +292,6 @@
 
         <div class="live-container">
 
-            <!-- ===== HEADER LIVE ===== -->
             <div class="live-header">
                 <h1>
                     <span class="live-dot"></span>
@@ -318,7 +305,6 @@
                 </div>
             </div>
 
-            <!-- ===== VIDEO ===== -->
             <div class="live-video-container" id="liveVideoContainer">
                 <video id="liveVideo" autoplay playsinline muted></video>
                 <div class="live-overlay">
@@ -335,7 +321,6 @@
                 </div>
             </div>
 
-            <!-- ===== DONACIONES RÁPIDAS ===== -->
             <div class="donaciones-rapidas">
                 <button class="btn-donacion" onclick="enviarDonacion(5)">
                     <span class="monto">$5</span>
@@ -359,7 +344,6 @@
                 </button>
             </div>
 
-            <!-- ===== CHAT ===== -->
             <div class="live-chat-container">
                 <div class="chat-header">
                     <h3>◈ Chat en vivo</h3>
@@ -381,7 +365,6 @@
                 </div>
             </div>
 
-            <!-- ===== STREAMS ACTIVOS ===== -->
             <h3 style="font-family:'Orbitron',monospace;color:var(--gold);font-size:0.85rem;margin:16px 0 8px;">
                 ◈ Transmisiones activas
             </h3>
@@ -410,13 +393,8 @@
 
     <div class="toast" id="toast"></div>
 
-    <!-- ===== SCRIPTS ===== -->
     <script src="https://cdn.jsdelivr.net/npm/web3@1.8.0/dist/web3.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-    
-    <!-- SDK DE LIVEKIT -->
-    <script src="https://cdn.jsdelivr.net/npm/livekit-client/dist/livekit-client.umd.min.js"></script>
-    
     <script src="/features/live/live.js"></script>
 </body>
 </html>
