@@ -1,5 +1,5 @@
 /* ================================================================
-   SERVER.JS - SARIEL'S BACKEND (VERSIÓN COMPLETA)
+   SERVER.JS - SARIEL'S BACKEND (VERSIÓN RAILWAY)
    RUTA RAILWAY: https://galleta-domo.up.railway.app
    ================================================================ */
 
@@ -14,6 +14,7 @@ const rateLimit = require('express-rate-limit');
 const { createClient } = require('@supabase/supabase-js');
 const crypto = require('crypto');
 const axios = require('axios');
+const fs = require('fs');
 
 // FIX: WebSocket para Node.js
 globalThis.WebSocket = require('ws');
@@ -81,10 +82,16 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // ================================================================
-// ARCHIVOS ESTÁTICOS - CORREGIDO (busca public/ en la raíz)
+// ARCHIVOS ESTÁTICOS - VERSIÓN RAILWAY (CORREGIDA)
 // ================================================================
-// ✅ __dirname = backend/, subimos un nivel con '..' para llegar a la raíz
-app.use(express.static(path.join(__dirname, '..', 'public')));
+const publicPath = path.join(__dirname, 'public');
+
+if (fs.existsSync(publicPath)) {
+    app.use(express.static(publicPath));
+    console.log('✅ Sirviendo archivos estáticos desde:', publicPath);
+} else {
+    console.warn('⚠️ No se encontró la carpeta public/ en:', publicPath);
+}
 
 // ================================================================
 // HEALTH CHECK
@@ -828,49 +835,49 @@ app.post('/api/esim/orden', async (req, res) => {
 });
 
 // ================================================================
-// RUTAS PRINCIPALES (HTML) - CORREGIDAS
+// RUTAS PRINCIPALES (HTML) - CORREGIDAS PARA RAILWAY
 // ================================================================
 
-// ✅ Todas las rutas ahora usan path.join(__dirname, '..', 'public', ...)
+// ✅ Todas las rutas ahora usan path.join(__dirname, 'public', ...)
 
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 app.get('/perfil', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'public', 'features', 'perfil', 'perfil.html'));
+    res.sendFile(path.join(__dirname, 'public', 'features', 'perfil', 'perfil.html'));
 });
 
 app.get('/muro', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'public', 'features', 'muro', 'muro.html'));
+    res.sendFile(path.join(__dirname, 'public', 'features', 'muro', 'muro.html'));
 });
 
 app.get('/mensajes', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'public', 'features', 'mensajes', 'mensajes.html'));
+    res.sendFile(path.join(__dirname, 'public', 'features', 'mensajes', 'mensajes.html'));
 });
 
 app.get('/contactos', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'public', 'features', 'mensajes', 'contactos.html'));
+    res.sendFile(path.join(__dirname, 'public', 'features', 'mensajes', 'contactos.html'));
 });
 
 app.get('/live', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'public', 'features', 'live', 'live.html'));
+    res.sendFile(path.join(__dirname, 'public', 'features', 'live', 'live.html'));
 });
 
 app.get('/internet', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'public', 'features', 'internet', 'internet.html'));
+    res.sendFile(path.join(__dirname, 'public', 'features', 'internet', 'internet.html'));
 });
 
 app.get('/admin-internet', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'public', 'features', 'internet', 'admin-internet.html'));
+    res.sendFile(path.join(__dirname, 'public', 'features', 'internet', 'admin-internet.html'));
 });
 
 app.get('/qr', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'public', 'qr-generator.html'));
+    res.sendFile(path.join(__dirname, 'public', 'qr-generator.html'));
 });
 
 app.get('/actualizar-contrasena', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'public', 'actualizar-contrasena.html'));
+    res.sendFile(path.join(__dirname, 'public', 'actualizar-contrasena.html'));
 });
 
 // ================================================================
@@ -878,19 +885,19 @@ app.get('/actualizar-contrasena', (req, res) => {
 // ================================================================
 
 app.get('/terminos', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'public', 'terminos.html'));
+    res.sendFile(path.join(__dirname, 'public', 'terminos.html'));
 });
 
 app.get('/privacidad', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'public', 'privacidad.html'));
+    res.sendFile(path.join(__dirname, 'public', 'privacidad.html'));
 });
 
 app.get('/cookies', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'public', 'cookies.html'));
+    res.sendFile(path.join(__dirname, 'public', 'cookies.html'));
 });
 
 app.get('/live-terminos', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'public', 'live-terminos.html'));
+    res.sendFile(path.join(__dirname, 'public', 'live-terminos.html'));
 });
 
 // ================================================================
@@ -912,7 +919,7 @@ app.use((err, req, res, next) => {
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`========================================`);
     console.log(`✅ Servidor corriendo en el puerto ${PORT}`);
-    console.log(`📁 Sirviendo archivos desde: ../public`);
+    console.log(`📁 Sirviendo archivos desde: ${publicPath}`);
     console.log(`🌐 URL: http://localhost:${PORT}`);
     console.log(`🚂 Railway: https://galleta-domo.up.railway.app`);
     console.log(`========================================`);
