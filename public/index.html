@@ -78,6 +78,27 @@
         .hero p { color: var(--text-secondary); font-size: 0.95rem; max-width: 600px; margin: 0 auto 16px; }
         .hero .btn { margin-top: 10px; }
 
+        .ir-perfil-btn {
+            background: rgba(212, 175, 55, 0.15);
+            border: 1px solid var(--gold);
+            color: var(--gold);
+            padding: 8px 20px;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            text-decoration: none;
+            font-family: 'Inter', sans-serif;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .ir-perfil-btn:hover {
+            background: rgba(212, 175, 55, 0.25);
+            transform: translateY(-2px);
+        }
+
         .tabs-container { margin-bottom: 20px; }
         .tabs { display: flex; gap: 4px; background: var(--glass-bg); border-radius: var(--radius); padding: 4px; border: 1px solid var(--glass-border); }
         .tab-btn { flex: 1; padding: 10px 16px; border: none; background: transparent; color: var(--text-muted); font-size: 0.75rem; font-weight: 600; border-radius: 10px; cursor: pointer; }
@@ -151,27 +172,6 @@
             cursor: pointer; 
             font-size: 0.6rem;
         }
-
-        .ir-perfil-btn {
-            background: rgba(212, 175, 55, 0.15);
-            border: 1px solid var(--gold);
-            color: var(--gold);
-            padding: 8px 20px;
-            border-radius: 30px;
-            font-size: 0.7rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: var(--transition);
-            text-decoration: none;
-            font-family: 'Inter', sans-serif;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .ir-perfil-btn:hover {
-            background: rgba(212, 175, 55, 0.25);
-            transform: translateY(-2px);
-        }
     </style>
 </head>
 <body>
@@ -234,8 +234,6 @@
                 </div>
             </div>
 
-            <!-- ❌ ELIMINADA SECCIÓN DE WALLET -->
-
             <div class="grid-2">
                 <section class="panel">
                     <div class="panel-header"><h2>◈ Comprar Domo</h2><span class="panel-badge">Nuevo</span></div>
@@ -262,7 +260,6 @@
                             <div class="status-item" style="grid-column: span 2;"><div class="status-label">◈ Progreso NFT</div><div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%;"></div></div><span id="progressText">0 / 12</span></div>
                             <div class="status-item" style="grid-column: span 2;"><div class="status-label">◈ NFT</div><div class="status-value" id="haCanjeado">No</div></div>
                         </div>
-                        <!-- ❌ ELIMINADO BOTÓN DE CANJE NFT -->
                         <div style="font-size:0.6rem;color:var(--text-muted);text-align:center;margin-top:8px;">
                             Canjea tu NFT desde tu <a href="/features/perfil/perfil.html" style="color:var(--gold);">perfil</a>
                         </div>
@@ -507,14 +504,6 @@
         }
 
         // ================================================================
-        // ❌ ELIMINADA FUNCIÓN conectarWallet()
-        // ================================================================
-
-        // ================================================================
-        // ❌ ELIMINADA FUNCIÓN desconectarWallet()
-        // ================================================================
-
-        // ================================================================
         // COMPRAR DOMO (RPC real)
         // ================================================================
         async function comprarDomo() {
@@ -545,10 +534,6 @@
                 btn.textContent = 'Comprar Domo';
             }
         }
-
-        // ================================================================
-        // ❌ ELIMINADA FUNCIÓN canjearNFT()
-        // ================================================================
 
         // ================================================================
         // GENERADOR QR (Admin)
