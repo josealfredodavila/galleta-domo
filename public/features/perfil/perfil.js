@@ -1,7 +1,8 @@
 /* ================================================================
-   PERFIL ULTRA MEGA PRO V7 - SARIEL'S ECOSYSTEM
+   PERFIL ULTRA MEGA PRO V8 - SARIEL'S ECOSYSTEM
    Integración RPC Real + Social Features + WEB3 + eSIM Telnyx + WiFi/Datos
    + Estado Activo/Inactivo + Amigos en Tiempo Real + Escaneo QR + Cámara
+   + 💳 PAGOS CRIPTO CON NOWPAYMENTS
    ================================================================ */
 
 // ================================================================
@@ -20,6 +21,28 @@ const TELNYX_CONFIG = {
     BASE_URL: 'https://api.telnyx.com/v2',
     SIM_GROUP_ID: 'TU_SIM_GROUP_ID',
     DEFAULT_APN: 'data00.telnyx'
+};
+
+// ================================================================
+// 💳 CONFIGURACIÓN NOWPAYMENTS
+// ================================================================
+const NOWPAYMENTS_CONFIG = {
+    // ⚠️ ESTAS LLAVES VAN EN EL BACKEND (EDGE FUNCTIONS)
+    // NO LAS PONGAS AQUÍ EN PRODUCCIÓN
+    API_KEY: 'TU_API_KEY_NOWPAYMENTS', // Reemplazar en backend
+    API_URL: 'https://api.nowpayments.io/v1',
+    
+    // Tu comisión del 2%
+    COMISION: 0.02,
+    
+    // Monedas aceptadas
+    MONEDAS: ['USDT', 'USDC'],
+    
+    // Red recomendada (TRC-20 es más barata)
+    RED_RECOMENDADA: 'TRC-20',
+    
+    // Precio del domo en USD (75 MXN ≈ 4.50 USD)
+    PRECIO_DOMO_USD: 4.50
 };
 
 // ================================================================
@@ -2032,6 +2055,270 @@ function iniciarNotificacionesRealtime() {
 }
 
 // ================================================================
+// 💳 FUNCIONES DE PAGO CON NOWPAYMENTS (NUEVO)
+// ================================================================
+
+// 1. 🛒 CREAR ORDEN DE PAGO
+async function crearOrdenPago(cantidad = 1) {
+    try {
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ Inicia sesión para comprar', 'error');
+            return;
+        }
+
+        // Calcular total con comisión
+        const precioBase = NOWPAYMENTS_CONFIG.PRECIO_DOMO_USD * cantidad;
+        const comision = precioBase * NOWPAYMENTS_CONFIG.COMISION;
+        const total = precioBase + comision;
+
+        // Crear orden en Supabase
+        const { data: orden, error } = await supabase
+            .from('ordenes_pago')
+            .insert({
+                user_id: session.user.id,
+                cantidad_domos: cantidad,
+                precio_base_usd: precioBase,
+                comision_usd: comision,
+                total_usd: total,
+                estado: 'pendiente',
+                moneda: 'USDT',
+                created_at: new Date().toISOString()
+            })
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        showToast('✅ Orden creada. Generando pago...', 'success', 3000);
+
+        // Generar pago en NOWPayments (llamar a Edge Function)
+        const pago = await generarPagoNOWPayments(orden.id, total);
+
+        // Actualizar orden con ID de pago
+        await supabase
+            .from('ordenes_pago')
+            .update({ payment_id: pago.id })
+            .eq('id', orden.id);
+
+        // Mostrar modal con QR de pago
+        mostrarModalPagoCrypto(pago, orden);
+
+        return orden;
+
+    } catch (error) {
+        console.error('Error creando orden:', error);
+        showToast('❌ Error al crear orden: ' + error.message, 'error');
+        return null;
+    }
+}
+
+// 2. 💰 GENERAR PAGO EN NOWPAYMENTS (Edge Function)
+async function generarPagoNOWPayments(ordenId, totalUSD) {
+    try {
+        // ⚠️ ESTA FUNCIÓN DEBE LLAMAR A UNA EDGE FUNCTION DE SUPABASE
+        // O A UN BACKEND PROPIO PARA NO EXPONER LA API KEY
+        
+        // Por ahora, simulamos la respuesta
+        // En producción, reemplazar con llamada real:
+        /*
+        const response = await fetch(`${NOWPAYMENTS_CONFIG.API_URL}/payment`, {
+            method: 'POST',
+            headers: {
+                'x-api-key': NOWPAYMENTS_CONFIG.API_KEY,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                price_amount: totalUSD,
+                price_currency: 'usd',
+                pay_currency: 'usdt',
+                ipn_callback_url: 'https://tusitio.com/api/webhook/nowpayments',
+                order_id: ordenId,
+                order_description: `Compra de domo(s) Sariel's`
+            })
+        });
+        const data = await response.json();
+        return data;
+        */
+
+        // 🔴 SIMULACIÓN (eliminar en producción)
+        return {
+            id: 'pay_' + Date.now(),
+            pay_address: '0x' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15),
+            pay_amount: totalUSD,
+            pay_currency: 'USDT',
+            order_id: ordenId
+        };
+
+    } catch (error) {
+        console.error('Error generando pago:', error);
+        throw error;
+    }
+}
+
+// 3. 💳 COMPRAR CON CRIPTO
+async function comprarConCripto() {
+    const cantidad = parseInt(document.getElementById('cryptoQuantity').textContent) || 1;
+    await crearOrdenPago(cantidad);
+}
+
+// 4. 🔍 VERIFICAR PAGO CRIPTO
+async function verificarPagoCrypto() {
+    const modal = document.getElementById('cryptoPaymentModal');
+    const statusEl = document.getElementById('cryptoStatus');
+    const ordenId = modal?.dataset?.ordenId;
+
+    if (!ordenId) {
+        showToast('⚠️ No hay orden activa', 'error');
+        return;
+    }
+
+    statusEl.textContent = '⏳ Verificando pago...';
+
+    try {
+        // Obtener orden
+        const { data: orden, error } = await supabase
+            .from('ordenes_pago')
+            .select('*')
+            .eq('id', ordenId)
+            .single();
+
+        if (error) throw error;
+
+        // Si ya está pagada, asignar tokens
+        if (orden.estado === 'pagado') {
+            await asignarTokensPorPago(orden);
+            statusEl.textContent = '✅ ¡Pago confirmado! Tokens asignados.';
+            showToast('🎉 ¡Pago confirmado!', 'success');
+            await cargarPerfil(true);
+            setTimeout(() => cerrarModalPago(), 2000);
+            return;
+        }
+
+        // Consultar estado en NOWPayments
+        // En producción: llamar a Edge Function
+        // Simulación:
+        const estadoPago = Math.random() > 0.5 ? 'finished' : 'pending';
+
+        if (estadoPago === 'finished') {
+            // Pago completado
+            await supabase
+                .from('ordenes_pago')
+                .update({ 
+                    estado: 'pagado',
+                    pagado_en: new Date().toISOString()
+                })
+                .eq('id', ordenId);
+
+            await asignarTokensPorPago(orden);
+            statusEl.textContent = '✅ ¡Pago confirmado!';
+            showToast('🎉 ¡Pago confirmado!', 'success');
+            await cargarPerfil(true);
+            setTimeout(() => cerrarModalPago(), 2000);
+        } else {
+            statusEl.textContent = '⏳ El pago aún no se confirma. Espera unos minutos.';
+            showToast('⏳ Esperando confirmación de pago', 'warning');
+        }
+
+    } catch (error) {
+        console.error('Error verificando pago:', error);
+        statusEl.textContent = '❌ Error al verificar pago';
+        showToast('❌ Error al verificar pago', 'error');
+    }
+}
+
+// 5. 🏠 ASIGNAR TOKENS POR PAGO
+async function asignarTokensPorPago(orden) {
+    try {
+        // Llamar RPC para asignar tokens (compra de domos)
+        const { error } = await supabase.rpc('comprar_domo', {
+            p_cantidad: orden.cantidad_domos
+        });
+
+        if (error) throw error;
+
+        // Registrar transacción
+        await supabase
+            .from('transacciones')
+            .insert({
+                user_id: orden.user_id,
+                tipo: 'compra_domo_crypto',
+                cantidad: orden.cantidad_domos,
+                monto_usd: orden.total_usd,
+                orden_id: orden.id,
+                fecha: new Date().toISOString()
+            });
+
+        showToast(`✅ ${orden.cantidad_domos} Domo(s) asignados`, 'success');
+        await cargarPerfil(true);
+
+    } catch (error) {
+        console.error('Error asignando tokens:', error);
+        throw error;
+    }
+}
+
+// 6. 🎨 MODAL DE PAGO CRIPTO
+function mostrarModalPagoCrypto(pago, orden) {
+    const modal = document.getElementById('cryptoPaymentModal');
+    const qr = document.getElementById('cryptoQR');
+    const address = document.getElementById('cryptoAddress');
+    const monto = document.getElementById('cryptoMonto');
+    const moneda = document.getElementById('cryptoMoneda');
+    
+    if (!modal) {
+        showToast('⚠️ Modal no encontrado', 'error');
+        return;
+    }
+    
+    // Guardar orden ID para verificación
+    modal.dataset.ordenId = orden.id;
+    
+    // Mostrar datos de pago
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(pago.pay_address)}`;
+    qr.src = qrUrl;
+    address.textContent = pago.pay_address;
+    monto.textContent = `${pago.pay_amount} ${pago.pay_currency}`;
+    moneda.textContent = pago.pay_currency;
+    
+    modal.style.display = 'flex';
+    showToast('💳 Escanea el QR para pagar', 'warning', 5000);
+}
+
+function cerrarModalPago() {
+    const modal = document.getElementById('cryptoPaymentModal');
+    if (modal) {
+        modal.style.display = 'none';
+        modal.dataset.ordenId = '';
+    }
+}
+
+async function copiarDireccion() {
+    const address = document.getElementById('cryptoAddress')?.textContent;
+    if (!address) return;
+    
+    try {
+        await navigator.clipboard.writeText(address);
+        showToast('📋 Dirección copiada', 'success');
+    } catch (error) {
+        prompt('Copia esta dirección:', address);
+    }
+}
+
+// 7. 🔄 ACTUALIZAR TOTAL CRIPTO EN UI
+function actualizarTotalCrypto() {
+    const cantidad = parseInt(document.getElementById('cryptoQuantity')?.textContent) || 1;
+    const precioBase = NOWPAYMENTS_CONFIG.PRECIO_DOMO_USD * cantidad;
+    const comision = precioBase * NOWPAYMENTS_CONFIG.COMISION;
+    const total = precioBase + comision;
+    
+    const totalEl = document.getElementById('cryptoTotal');
+    if (totalEl) {
+        totalEl.textContent = `$${total.toFixed(2)} USDT`;
+    }
+}
+
+// ================================================================
 // 🚀 INICIALIZACIÓN
 // ================================================================
 document.addEventListener('DOMContentLoaded', async function() {
@@ -2051,6 +2338,28 @@ document.addEventListener('DOMContentLoaded', async function() {
     iniciarEscuchaAmigos();
     iniciarDetectorInactividad();
     await cargarHistorialQR();
+
+    // Controles de cantidad para cripto
+    const qtyDisplay = document.getElementById('cryptoQuantity');
+    if (qtyDisplay) {
+        document.getElementById('cryptoDecreaseQty')?.addEventListener('click', () => {
+            let val = parseInt(qtyDisplay.textContent);
+            if (val > 1) {
+                qtyDisplay.textContent = val - 1;
+                actualizarTotalCrypto();
+            }
+        });
+        document.getElementById('cryptoIncreaseQty')?.addEventListener('click', () => {
+            let val = parseInt(qtyDisplay.textContent);
+            if (val < 10) {
+                qtyDisplay.textContent = val + 1;
+                actualizarTotalCrypto();
+            }
+        });
+    }
+    
+    // Inicializar total crypto
+    actualizarTotalCrypto();
 
     // Actualizar datos eSIM cada 30 segundos
     if (perfilCache?.esim_iccid) {
@@ -2137,7 +2446,7 @@ estilosAnimacion.textContent = `
 document.head.appendChild(estilosAnimacion);
 
 // ================================================================
-// 📤 EXPOSICIÓN DE FUNCIONES GLOBALES
+// 📤 EXPOSICIÓN DE FUNCIONES GLOBALES (ACTUALIZADO)
 // ================================================================
 window.cambiarTab = cambiarTab;
 window.cargarPerfil = cargarPerfil;
@@ -2188,3 +2497,11 @@ window.abrirCamaraQR = abrirCamaraQR;
 window.cerrarCamaraQR = cerrarCamaraQR;
 window.cargarHistorialQR = cargarHistorialQR;
 window.actualizarUIHistorialQR = actualizarUIHistorialQR;
+
+// 💳 NUEVAS FUNCIONES DE PAGO CRIPTO
+window.comprarConCripto = comprarConCripto;
+window.crearOrdenPago = crearOrdenPago;
+window.verificarPagoCrypto = verificarPagoCrypto;
+window.copiarDireccion = copiarDireccion;
+window.cerrarModalPago = cerrarModalPago;
+window.actualizarTotalCrypto = actualizarTotalCrypto;
