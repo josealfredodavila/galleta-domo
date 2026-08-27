@@ -4,11 +4,11 @@
    ================================================================ */
 
 // ================================================================
-// SUPABASE CLIENTE
+// SUPABASE CLIENTE (CON NUEVAS LLAVES)
 // ================================================================
 const supabase = window.supabase.createClient(
-    'https://hbbwopkfpkvahgtawqke.supabase.co',
-    'sb_publishable_4gJWA-t7Eg6ruuI2EF-K2A_GQlahb2j'
+    'https://zultnlogdoajehbswlih.supabase.co',
+    'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
 );
 
 // ================================================================
@@ -90,14 +90,12 @@ async function cargarContactos() {
             return;
         }
 
-        // Usar la función RPC para obtener contactos con estado online
         const { data, error } = await supabase
             .rpc('obtener_contactos_con_estado', {
                 p_usuario_id: usuarioActual.id
             });
 
         if (error) {
-            // Fallback: consulta tradicional
             const { data: fallbackData, error: fallbackError } = await supabase
                 .from('contactos')
                 .select('*, usuarios!contactos_contacto_id_fkey(id, nombre, handle, avatar_url, online, ultima_conexion)')
@@ -121,7 +119,6 @@ async function cargarContactos() {
                 };
             });
         } else {
-            // Mapear datos de la RPC
             contactos = (data || []).map(c => ({
                 _id: c.contacto_id,
                 nombre: c.nombre || 'Usuario',
@@ -134,11 +131,8 @@ async function cargarContactos() {
             }));
         }
 
-        // Actualizar UI
         actualizarContadores();
         aplicarFiltros();
-        
-        // Iniciar escucha de cambios en tiempo real
         iniciarEscuchaContactos();
 
     } catch (error) {
@@ -162,7 +156,6 @@ function iniciarEscuchaContactos() {
             schema: 'public',
             table: 'contactos'
         }, () => {
-            // Recargar contactos cuando haya cambios
             cargarContactos();
         })
         .on('postgres_changes', {
@@ -171,7 +164,6 @@ function iniciarEscuchaContactos() {
             table: 'usuarios',
             filter: `id=neq.${usuarioActual?.id}`
         }, (payload) => {
-            // Actualizar estado online de un contacto
             const usuario = payload.new;
             const contacto = contactos.find(c => c._id === usuario.id);
             if (contacto) {
@@ -311,7 +303,7 @@ function aplicarFiltros() {
 }
 
 // ================================================================
-// 🔍 BUSCAR USUARIOS POR NOMBRE/HANDLE (NUEVO)
+// 🔍 BUSCAR USUARIOS POR NOMBRE/HANDLE
 // ================================================================
 async function buscarUsuarios(query) {
     if (!query || query.length < 2) {
@@ -344,7 +336,6 @@ async function buscarUsuarios(query) {
             return;
         }
 
-        // Verificar contactos existentes
         const { data: contactosExistentes } = await supabase
             .from('contactos')
             .select('contacto_id')
@@ -408,7 +399,6 @@ async function agregarContactoDesdeBusqueda(contactoId) {
             return;
         }
 
-        // Verificar si ya es contacto
         const { data: existe } = await supabase
             .from('contactos')
             .select('id')
@@ -447,7 +437,6 @@ async function agregarContactoDesdeBusqueda(contactoId) {
 // ➕ AGREGAR CONTACTO POR WALLET
 // ================================================================
 async function abrirAgregarContacto() {
-    // Mostrar modal de búsqueda
     const modal = document.getElementById('modalBuscarContacto');
     if (modal) {
         modal.style.display = 'flex';
@@ -464,7 +453,7 @@ function cerrarModalBuscar() {
 }
 
 // ================================================================
-// 🚫 BLOQUEAR CONTACTO (NUEVO)
+// 🚫 BLOQUEAR CONTACTO
 // ================================================================
 async function bloquearContacto(contactoId) {
     if (!confirm('¿Bloquear a este usuario? No podrán enviarte mensajes ni ver tu perfil.')) return;
@@ -476,7 +465,6 @@ async function bloquearContacto(contactoId) {
             return;
         }
 
-        // Llamar función RPC bloquear_usuario
         const { error } = await supabase.rpc('bloquear_usuario', {
             p_usuario_id: session.user.id,
             p_bloqueado_id: contactoId
@@ -484,7 +472,6 @@ async function bloquearContacto(contactoId) {
 
         if (error) throw error;
 
-        // Eliminar de la lista local
         contactos = contactos.filter(c => c._id !== contactoId);
         actualizarContadores();
         aplicarFiltros();
@@ -497,7 +484,7 @@ async function bloquearContacto(contactoId) {
 }
 
 // ================================================================
-// 🔓 DESBLOQUEAR USUARIO (NUEVO)
+// 🔓 DESBLOQUEAR USUARIO
 // ================================================================
 async function desbloquearUsuario(contactoId) {
     try {
@@ -597,7 +584,7 @@ async function eliminarContacto(contactoId) {
 }
 
 // ================================================================
-// 📧 INVITAR CONTACTO POR CÓDIGO (NUEVO)
+// 📧 INVITAR CONTACTO POR CÓDIGO
 // ================================================================
 async function invitarContacto() {
     try {
@@ -607,7 +594,6 @@ async function invitarContacto() {
             return;
         }
 
-        // Generar código de invitación
         const codigo = 'SAR-' + Math.random().toString(36).substring(2, 8).toUpperCase();
 
         const { data, error } = await supabase
@@ -621,7 +607,6 @@ async function invitarContacto() {
 
         if (error) throw error;
 
-        // Mostrar modal con código
         const modal = document.getElementById('modalInvitacion');
         const codigoEl = document.getElementById('codigoInvitacion');
         if (modal && codigoEl) {
@@ -654,14 +639,14 @@ async function copiarCodigoInvitacion() {
 }
 
 // ================================================================
-// 👁️ VER PERFIL DE CONTACTO (NUEVO)
+// 👁️ VER PERFIL DE CONTACTO
 // ================================================================
 function verPerfilContacto(contactoId) {
     window.location.href = `/features/perfil/perfil.html?contacto=${contactoId}`;
 }
 
 // ================================================================
-// 🔄 ORDENAR CONTACTOS (NUEVO)
+// 🔄 ORDENAR CONTACTOS
 // ================================================================
 function ordenarContactos(criterio) {
     switch (criterio) {
@@ -688,23 +673,17 @@ function ordenarContactos(criterio) {
 // 🎯 INICIALIZAR
 // ================================================================
 document.addEventListener('DOMContentLoaded', async function() {
-    // Verificar autenticación
     const autenticado = await verificarAutenticacion();
     
     if (autenticado) {
-        // Actualizar estado online
         await actualizarOnline(true);
-        
-        // Cargar contactos
         await cargarContactos();
         
-        // Detectar cierre de página para marcar offline
         window.addEventListener('beforeunload', function() {
             actualizarOnline(false);
         });
     }
 
-    // Eventos de búsqueda en modal
     const searchModal = document.getElementById('searchInputModal');
     if (searchModal) {
         let timeout;
@@ -721,7 +700,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
 
-    // Eventos de búsqueda principal
     const searchInput = document.getElementById('searchInput');
     if (searchInput) {
         searchInput.addEventListener('input', function() {
@@ -729,14 +707,12 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
 
-    // Filtros
     document.querySelectorAll('.filtro').forEach(btn => {
         btn.addEventListener('click', function() {
             document.querySelectorAll('.filtro').forEach(b => b.classList.remove('active'));
             this.classList.add('active');
             filtroActual = this.dataset.filtro;
             
-            // Ordenar según filtro
             if (filtroActual === 'recientes') {
                 ordenarContactos('reciente');
             } else if (filtroActual === 'online') {
@@ -749,7 +725,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     });
 
-    // Cerrar modales con click fuera
     document.querySelectorAll('.modal-overlay').forEach(modal => {
         modal.addEventListener('click', function(e) {
             if (e.target === this) {
@@ -758,7 +733,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     });
 
-    // Cerrar modales con ESC
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
             document.querySelectorAll('.modal-overlay.show').forEach(modal => {
