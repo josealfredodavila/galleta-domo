@@ -16,7 +16,7 @@ const supabase = window.supabase.createClient(
 // ================================================================
 const LIVEKIT_CONFIG = {
     url: 'wss://csariels-domo-57ujk04t.livekit.cloud',
-    apiKey: 'APITtqsWfiUjSKk',
+    apiKey: 'APITtqsWfiUjSKk',  // ✅ NUEVA API KEY
 };
 
 // ================================================================
