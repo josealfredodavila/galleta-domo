@@ -48,7 +48,7 @@ function clienteDelUsuario(req) {
 }
 
 // ================================================================
-// MIDDLEWARES DE SEGURIDAD Y RENDIMIENTO (NUEVO)
+// MIDDLEWARES DE SEGURIDAD Y RENDIMIENTO
 // ================================================================
 
 // Helmet - Protege cabeceras HTTP
@@ -59,7 +59,7 @@ app.use(helmet({
 // Compresión - Mejora rendimiento
 app.use(compression());
 
-// CORS (mantenido)
+// CORS
 app.use(cors());
 
 // Morgan - Logs de peticiones
@@ -80,8 +80,11 @@ app.use(limiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Archivos estáticos
-app.use(express.static(path.join(__dirname, 'public')));
+// ================================================================
+// ARCHIVOS ESTÁTICOS - CORREGIDO (busca public/ en la raíz)
+// ================================================================
+// ✅ __dirname = backend/, subimos un nivel con '..' para llegar a la raíz
+app.use(express.static(path.join(__dirname, '..', 'public')));
 
 // ================================================================
 // HEALTH CHECK
@@ -129,7 +132,7 @@ app.get('/api/token', async (req, res) => {
 });
 
 // ================================================================
-// 🪙 SISTEMA DE TOKENS (NUEVO)
+// 🪙 SISTEMA DE TOKENS
 // ================================================================
 
 // Obtener tokens del usuario
@@ -166,7 +169,6 @@ app.post('/api/tokens/transferir', async (req, res) => {
             return res.status(400).json({ success: false, error: 'Datos inválidos' });
         }
 
-        // Verificar tokens del usuario
         const { data: userData } = await supabase
             .from('usuarios')
             .select('tokens')
@@ -177,13 +179,11 @@ app.post('/api/tokens/transferir', async (req, res) => {
             return res.status(400).json({ success: false, error: 'Tokens insuficientes' });
         }
 
-        // Restar al emisor
         await supabase.rpc('decrement_tokens', {
             p_user_id: user.id,
             p_cantidad: cantidad
         });
 
-        // Sumar al receptor
         await supabase.rpc('increment_tokens', {
             p_user_id: destinoId,
             p_cantidad: cantidad
@@ -197,7 +197,7 @@ app.post('/api/tokens/transferir', async (req, res) => {
 });
 
 // ================================================================
-// 💳 PAGOS CON CRYPTO (NOWPayments) (NUEVO)
+// 💳 PAGOS CON CRYPTO (NOWPayments)
 // ================================================================
 
 // Crear orden de pago
@@ -212,10 +212,9 @@ app.post('/api/pagos/crear', async (req, res) => {
             return res.status(400).json({ success: false, error: 'Datos inválidos' });
         }
 
-        const comisionSariels = monto * 0.02; // 2%
+        const comisionSariels = monto * 0.02;
         const montoStreamer = monto - comisionSariels;
 
-        // Guardar orden en Supabase
         const { data: orden, error } = await supabase
             .from('pagos_transmision')
             .insert({
@@ -233,7 +232,6 @@ app.post('/api/pagos/crear', async (req, res) => {
 
         if (error) throw error;
 
-        // Si es crypto, generar pago en NOWPayments
         let paymentData = orden;
         if (metodo === 'crypto' || !metodo) {
             try {
@@ -252,7 +250,6 @@ app.post('/api/pagos/crear', async (req, res) => {
                 paymentData = { ...orden, payment_url: nowpayments.data.payment_url };
             } catch (nowError) {
                 console.error('Error en NOWPayments:', nowError.message);
-                // Continuamos sin payment_url
             }
         }
 
@@ -287,10 +284,9 @@ app.get('/api/pagos/estado/:ordenId', async (req, res) => {
 });
 
 // ================================================================
-// 📡 WEBHOOKS (NUEVO)
+// 📡 WEBHOOKS
 // ================================================================
 
-// Función para verificar firma HMAC
 function verificarHMAC(payload, firmaRecibida, secret) {
     try {
         const firmaCalculada = crypto
@@ -306,7 +302,6 @@ function verificarHMAC(payload, firmaRecibida, secret) {
     }
 }
 
-// Webhook de NOWPayments
 app.post('/api/webhooks/nowpayments', async (req, res) => {
     try {
         const payload = req.body;
@@ -314,7 +309,6 @@ app.post('/api/webhooks/nowpayments', async (req, res) => {
 
         console.log('📡 Webhook NOWPayments recibido:', payload.event);
 
-        // Verificar firma
         const esValido = verificarHMAC(payload, firmaRecibida, process.env.NOWPAYMENTS_WEBHOOK_SECRET);
 
         if (!esValido) {
@@ -325,7 +319,6 @@ app.post('/api/webhooks/nowpayments', async (req, res) => {
         if (payload.event === 'payment.finished') {
             const ordenId = payload.data.order_id;
 
-            // Verificar que la orden existe
             const { data: orden, error: ordenError } = await supabaseAdmin
                 .from('pagos_transmision')
                 .select('*')
@@ -342,7 +335,6 @@ app.post('/api/webhooks/nowpayments', async (req, res) => {
                 return res.json({ success: true, message: 'Ya procesado' });
             }
 
-            // Actualizar estado
             await supabaseAdmin
                 .from('pagos_transmision')
                 .update({
@@ -362,10 +354,9 @@ app.post('/api/webhooks/nowpayments', async (req, res) => {
 });
 
 // ================================================================
-// 📝 SUSCRIPCIONES (NUEVO)
+// 📝 SUSCRIPCIONES
 // ================================================================
 
-// Crear suscripción
 app.post('/api/suscripciones/crear', async (req, res) => {
     try {
         const supabase = clienteDelUsuario(req);
@@ -399,10 +390,9 @@ app.post('/api/suscripciones/crear', async (req, res) => {
 });
 
 // ================================================================
-// 🚀 PROMOCIONES (NUEVO)
+// 🚀 PROMOCIONES
 // ================================================================
 
-// Activar promoción
 app.post('/api/promociones/activar', async (req, res) => {
     try {
         const supabase = clienteDelUsuario(req);
@@ -442,7 +432,7 @@ app.post('/api/promociones/activar', async (req, res) => {
 });
 
 // ================================================================
-// PERFIL (MANTENIDO)
+// PERFIL
 // ================================================================
 
 app.get('/api/perfil', async (req, res) => {
@@ -504,7 +494,7 @@ app.put('/api/perfil', async (req, res) => {
 });
 
 // ================================================================
-// MURO (MANTENIDO)
+// MURO
 // ================================================================
 
 app.get('/api/muro', async (req, res) => {
@@ -626,7 +616,7 @@ app.post('/api/muro/:postId/comentarios', async (req, res) => {
 });
 
 // ================================================================
-// CONTACTOS Y MENSAJES (MANTENIDOS)
+// CONTACTOS Y MENSAJES
 // ================================================================
 
 app.get('/api/contactos', async (req, res) => {
@@ -727,7 +717,7 @@ app.put('/api/mensajes/:mensajeId/leido', async (req, res) => {
 });
 
 // ================================================================
-// LIVE (MANTENIDO)
+// LIVE
 // ================================================================
 
 app.get('/api/live/activos', async (req, res) => {
@@ -775,7 +765,7 @@ app.post('/api/live/:streamId/finalizar', async (req, res) => {
 });
 
 // ================================================================
-// ESIM / INTERNET (MANTENIDO)
+// ESIM / INTERNET
 // ================================================================
 
 app.get('/api/esim/planes', async (req, res) => {
@@ -838,67 +828,69 @@ app.post('/api/esim/orden', async (req, res) => {
 });
 
 // ================================================================
-// RUTAS PRINCIPALES (HTML) - MANTENIDAS
+// RUTAS PRINCIPALES (HTML) - CORREGIDAS
 // ================================================================
 
+// ✅ Todas las rutas ahora usan path.join(__dirname, '..', 'public', ...)
+
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
 });
 
 app.get('/perfil', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'features', 'perfil', 'perfil.html'));
+    res.sendFile(path.join(__dirname, '..', 'public', 'features', 'perfil', 'perfil.html'));
 });
 
 app.get('/muro', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'features', 'muro', 'muro.html'));
+    res.sendFile(path.join(__dirname, '..', 'public', 'features', 'muro', 'muro.html'));
 });
 
 app.get('/mensajes', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'features', 'mensajes', 'mensajes.html'));
+    res.sendFile(path.join(__dirname, '..', 'public', 'features', 'mensajes', 'mensajes.html'));
 });
 
 app.get('/contactos', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'features', 'mensajes', 'contactos.html'));
+    res.sendFile(path.join(__dirname, '..', 'public', 'features', 'mensajes', 'contactos.html'));
 });
 
 app.get('/live', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'features', 'live', 'live.html'));
+    res.sendFile(path.join(__dirname, '..', 'public', 'features', 'live', 'live.html'));
 });
 
 app.get('/internet', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'features', 'internet', 'internet.html'));
+    res.sendFile(path.join(__dirname, '..', 'public', 'features', 'internet', 'internet.html'));
 });
 
 app.get('/admin-internet', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'features', 'internet', 'admin-internet.html'));
+    res.sendFile(path.join(__dirname, '..', 'public', 'features', 'internet', 'admin-internet.html'));
 });
 
 app.get('/qr', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'qr-generator.html'));
+    res.sendFile(path.join(__dirname, '..', 'public', 'qr-generator.html'));
 });
 
 app.get('/actualizar-contrasena', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'actualizar-contrasena.html'));
+    res.sendFile(path.join(__dirname, '..', 'public', 'actualizar-contrasena.html'));
 });
 
 // ================================================================
-// RUTAS LEGALES - MANTENIDAS
+// RUTAS LEGALES
 // ================================================================
 
 app.get('/terminos', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'terminos.html'));
+    res.sendFile(path.join(__dirname, '..', 'public', 'terminos.html'));
 });
 
 app.get('/privacidad', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'privacidad.html'));
+    res.sendFile(path.join(__dirname, '..', 'public', 'privacidad.html'));
 });
 
 app.get('/cookies', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'cookies.html'));
+    res.sendFile(path.join(__dirname, '..', 'public', 'cookies.html'));
 });
 
 app.get('/live-terminos', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'live-terminos.html'));
+    res.sendFile(path.join(__dirname, '..', 'public', 'live-terminos.html'));
 });
 
 // ================================================================
@@ -920,7 +912,7 @@ app.use((err, req, res, next) => {
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`========================================`);
     console.log(`✅ Servidor corriendo en el puerto ${PORT}`);
-    console.log(`📁 Sirviendo archivos desde: /public`);
+    console.log(`📁 Sirviendo archivos desde: ../public`);
     console.log(`🌐 URL: http://localhost:${PORT}`);
     console.log(`🚂 Railway: https://galleta-domo.up.railway.app`);
     console.log(`========================================`);
