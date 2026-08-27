@@ -4,17 +4,24 @@
    ================================================================ */
 
 // ================================================================
-// CONFIGURACIÓN
+// CONFIGURACIÓN SUPABASE (CON NUEVAS LLAVES)
 // ================================================================
+const supabase = window.supabase.createClient(
+    'https://zultnlogdoajehbswlih.supabase.co',
+    'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
+);
 
-// Configuración de LiveKit (desde variables de entorno en Railway)
+// ================================================================
+// CONFIGURACIÓN LIVEKIT
+// ================================================================
 const LIVEKIT_CONFIG = {
     url: 'wss://csariels-domo-57ujk04t.livekit.cloud',
     apiKey: 'APIKhu3viHnZRdQ',
-    // API_SECRET está en Railway (NO se expone aquí)
 };
 
-// Configuración de donaciones
+// ================================================================
+// CONFIGURACIÓN DONACIONES
+// ================================================================
 const DONACIONES = {
     5: {
         nombre: 'Cubo Plata',
@@ -53,34 +60,19 @@ const DONACIONES = {
     }
 };
 
-// Palabras prohibidas para moderación
+// ================================================================
+// PALABRAS PROHIBIDAS (MODERACIÓN)
+// ================================================================
 const PALABRAS_PROHIBIDAS = [
-    // Groserías
     'puta', 'verga', 'mierda', 'pendejo', 'chingar', 'chingada',
     'cabron', 'cabrón', 'pinche', 'wey', 'güey', 'culero',
-    'puto', 'maricon', 'maricón', 'joto', 'lesbiana',
-    // Discriminación
+    'puto', 'maricon', 'maricón', 'joto',
     'negro', 'indio', 'naco', 'naca', 'sudaca',
-    // Violencia
     'matar', 'mata', 'asesinar', 'suicidio', 'violar',
-    // Drogas
     'droga', 'cocaína', 'marihuana', 'perico', 'cristal',
-    'crack', 'heroína', 'extasis', 'éxtasis',
-    // Alcohol
     'cerveza', 'tequila', 'whisky', 'ron', 'vodka',
-    'alcohol', 'borracho', 'borracha',
-    // Groserías en inglés
-    'fuck', 'shit', 'bitch', 'asshole', 'motherfucker',
-    'damn', 'hell', 'bastard', 'whore', 'slut'
+    'fuck', 'shit', 'bitch', 'asshole', 'motherfucker'
 ];
-
-// ================================================================
-// SUPABASE CLIENTE
-// ================================================================
-const supabase = window.supabase.createClient(
-    'https://hbbwopkfpkvahgtawqke.supabase.co',
-    'sb_publishable_4gJWA-t7Eg6ruuI2EF-K2A_GQlahb2j'
-);
 
 // ================================================================
 // ESTADO GLOBAL
@@ -97,7 +89,7 @@ let channelChat = null;
 let espectadores = 0;
 
 // ================================================================
-// TOAST NOTIFICACIONES
+// TOAST
 // ================================================================
 function showToast(msg, type = '', duration = 3500) {
     let t = document.getElementById('toast');
@@ -114,7 +106,10 @@ function showToast(msg, type = '', duration = 3500) {
     else if (type === 'success') t.classList.add('success');
     else t.classList.remove('error', 'warning', 'success');
     clearTimeout(t._timeout);
-    t._timeout = setTimeout(() => t.classList.remove('show'), duration);
+    t._timeout = setTimeout(() => {
+        t.style.animation = 'slideOutRight 0.3s ease-in';
+        setTimeout(() => t.classList.remove('show'), 300);
+    }, duration);
 }
 
 // ================================================================
@@ -137,7 +132,6 @@ async function iniciarTransmision() {
         }
         currentUser = session.user;
 
-        // Verificar si ya tiene una transmisión activa
         const { data: streamActivo } = await supabase
             .from('live_streams')
             .select('id')
@@ -152,7 +146,6 @@ async function iniciarTransmision() {
 
         showToast('⏳ Iniciando transmisión...', '', 3000);
 
-        // 1. Obtener cámara y micrófono
         const stream = await navigator.mediaDevices.getUserMedia({
             video: { facingMode: 'user', width: 1280, height: 720 },
             audio: true
@@ -164,7 +157,6 @@ async function iniciarTransmision() {
             video.play();
         }
 
-        // 2. Crear transmisión en Supabase
         const titulo = prompt('Título de tu transmisión:', 'Mi live en Sariel\'s');
         const categoria = prompt('Categoría (juego, charla, música, etc.):', 'Charla');
 
@@ -184,27 +176,18 @@ async function iniciarTransmision() {
 
         currentStream = streamData;
 
-        // 3. Conectar a LiveKit (si está disponible)
         try {
-            // Simulación de conexión a LiveKit
-            // En producción, aquí se conectaría con:
-            // const room = new LivekitRoom(...)
+            // Conexión LiveKit simulada
             showToast('🔗 Conectando a LiveKit...', '', 2000);
         } catch (e) {
             console.warn('LiveKit no disponible, usando modo local:', e);
         }
 
-        // 4. Actualizar UI
         isLive = true;
         document.getElementById('viewersCount').textContent = '0 espectadores';
         
-        // 5. Iniciar contador de espectadores
         iniciarContadorEspectadores();
-
-        // 6. Suscribirse al chat
         suscribirseAlChat();
-
-        // 7. Notificar a seguidores
         await notificarSeguidores();
 
         showToast('🎥 ¡Transmisión iniciada!', 'success', 4000);
@@ -229,14 +212,12 @@ async function finalizarTransmision() {
 
         showToast('⏳ Finalizando transmisión...', '', 3000);
 
-        // 1. Detener cámara
         const video = document.getElementById('liveVideo');
         if (video && video.srcObject) {
             video.srcObject.getTracks().forEach(track => track.stop());
             video.srcObject = null;
         }
 
-        // 2. Actualizar en Supabase
         const duracion = Math.floor((Date.now() - new Date(currentStream.iniciado_en).getTime()) / 1000);
 
         const { error } = await supabase
@@ -251,25 +232,21 @@ async function finalizarTransmision() {
 
         if (error) throw error;
 
-        // 3. Desconectar de LiveKit
         if (liveKitRoom) {
             liveKitRoom.disconnect();
             liveKitRoom = null;
         }
 
-        // 4. Detener contador
         if (streamInterval) {
             clearInterval(streamInterval);
             streamInterval = null;
         }
 
-        // 5. Desuscribirse del chat
         if (channelChat) {
             supabase.removeChannel(channelChat);
             channelChat = null;
         }
 
-        // 6. Actualizar UI
         isLive = false;
         currentStream = null;
         document.getElementById('viewersCount').textContent = '0 espectadores';
@@ -286,7 +263,6 @@ async function finalizarTransmision() {
 // 💬 CHAT EN TIEMPO REAL
 // ================================================================
 
-// Suscribirse al chat
 function suscribirseAlChat() {
     if (!currentStream) return;
 
@@ -302,13 +278,11 @@ function suscribirseAlChat() {
             table: 'live_mensajes',
             filter: `transmision_id=eq.${currentStream.id}`
         }, (payload) => {
-            // Mostrar mensaje en el chat
             agregarMensajeAlChat(payload.new);
         })
         .subscribe();
 }
 
-// Enviar mensaje
 async function enviarMensaje() {
     const input = document.getElementById('chatInput');
     const mensaje = input.value.trim();
@@ -329,13 +303,11 @@ async function enviarMensaje() {
         return;
     }
 
-    // Moderación: verificar palabras prohibidas
     const moderationResult = verificarContenido(mensaje);
     
     if (moderationResult.prohibido) {
         showToast(`⚠️ ${moderationResult.razon}`, 'warning');
         
-        // Guardar reporte de moderación
         await supabase
             .from('live_reportes')
             .insert({
@@ -372,7 +344,6 @@ async function enviarMensaje() {
     }
 }
 
-// Agregar mensaje al chat (UI)
 function agregarMensajeAlChat(mensaje) {
     const container = document.getElementById('chatMessages');
     if (!container) return;
@@ -394,7 +365,6 @@ function agregarMensajeAlChat(mensaje) {
     container.appendChild(div);
     container.scrollTop = container.scrollHeight;
 
-    // Actualizar contador
     const countEl = document.getElementById('chatCount');
     if (countEl) {
         const messages = container.querySelectorAll('.chat-msg').length;
@@ -403,13 +373,12 @@ function agregarMensajeAlChat(mensaje) {
 }
 
 // ================================================================
-// 🛡️ MODERACIÓN DE CONTENIDO
+// 🛡️ MODERACIÓN
 // ================================================================
 
 function verificarContenido(texto) {
     const textoLower = texto.toLowerCase();
     
-    // Verificar palabras prohibidas
     for (const palabra of PALABRAS_PROHIBIDAS) {
         if (textoLower.includes(palabra)) {
             return {
@@ -419,7 +388,6 @@ function verificarContenido(texto) {
         }
     }
 
-    // Verificar patrones de acoso
     const patronesAcoso = /acoso|bullying|hostigamiento|amenaza/i;
     if (patronesAcoso.test(texto)) {
         return {
@@ -428,7 +396,6 @@ function verificarContenido(texto) {
         };
     }
 
-    // Verificar spam (más de 5 palabras repetidas)
     const palabras = texto.split(' ');
     const repetidas = palabras.filter((p, i) => palabras.indexOf(p) !== i);
     if (repetidas.length > 5) {
@@ -448,7 +415,7 @@ function escapeHTML(texto) {
 }
 
 // ================================================================
-// 💰 SISTEMA DE DONACIONES
+// 💰 DONACIONES
 // ================================================================
 
 async function enviarDonacion(monto) {
@@ -472,7 +439,6 @@ async function enviarDonacion(monto) {
 
         showToast(`⏳ Procesando donación de $${monto} USD...`, '', 3000);
 
-        // 1. Registrar donación en Supabase
         const { data, error } = await supabase
             .from('live_donaciones')
             .insert({
@@ -488,10 +454,8 @@ async function enviarDonacion(monto) {
 
         if (error) throw error;
 
-        // 2. Mostrar efecto visual
         mostrarEfectoDonacion(monto, donacion, session.user);
 
-        // 3. Mostrar mensaje en chat
         const mensajeDonacion = {
             nombre_usuario: session.user.user_metadata?.nombre || 'Explorador',
             mensaje: `🎉 ¡Donó $${monto} USD (${donacion.nombre})!`,
@@ -499,7 +463,6 @@ async function enviarDonacion(monto) {
         };
         agregarMensajeAlChat(mensajeDonacion);
 
-        // 4. Actualizar estadísticas del streamer
         await supabase
             .from('live_streams')
             .update({
@@ -519,7 +482,7 @@ async function enviarDonacion(monto) {
 }
 
 // ================================================================
-// 🎨 EFECTOS VISUALES DE DONACIONES
+// 🎨 EFECTOS VISUALES
 // ================================================================
 
 function mostrarEfectoDonacion(monto, donacion, usuario) {
@@ -541,7 +504,6 @@ function mostrarEfectoDonacion(monto, donacion, usuario) {
         animation: fadeInOut ${donacion.duracion}ms ease forwards;
     `;
 
-    // Contenido según el tipo de donación
     let contenido = '';
     
     switch (donacion.efecto) {
@@ -665,7 +627,6 @@ function mostrarEfectoDonacion(monto, donacion, usuario) {
     overlay.innerHTML = contenido;
     container.appendChild(overlay);
 
-    // Eliminar overlay después de la animación
     setTimeout(() => {
         if (overlay.parentNode) {
             overlay.remove();
@@ -685,12 +646,10 @@ function iniciarContadorEspectadores() {
     streamInterval = setInterval(async () => {
         if (!currentStream) return;
 
-        // Simular espectadores (en producción, sería de LiveKit)
         espectadores = Math.floor(Math.random() * 20) + 1;
         
         document.getElementById('viewersCount').textContent = `${espectadores} espectadores`;
 
-        // Actualizar en Supabase
         await supabase
             .from('live_streams')
             .update({ espectadores: espectadores })
@@ -736,27 +695,6 @@ async function seguirStreamer(streamerId) {
     } catch (error) {
         console.error('Error siguiendo:', error);
         showToast('❌ Error al seguir', 'error');
-    }
-}
-
-async function dejarDeSeguir(streamerId) {
-    try {
-        const session = await getSession();
-        if (!session) return;
-
-        const { error } = await supabase
-            .from('live_seguidores')
-            .delete()
-            .eq('streamer_id', streamerId)
-            .eq('seguidor_id', session.user.id);
-
-        if (error) throw error;
-
-        showToast('⭕ Dejaste de seguir a este streamer', 'warning');
-
-    } catch (error) {
-        console.error('Error dejando de seguir:', error);
-        showToast('❌ Error al dejar de seguir', 'error');
     }
 }
 
@@ -842,7 +780,6 @@ async function unirseATransmision(streamId) {
 
         showToast('⏳ Uniéndose a la transmisión...', '', 2000);
 
-        // Obtener datos de la transmisión
         const { data: stream, error } = await supabase
             .from('live_streams')
             .select('*, usuarios(id, nombre)')
@@ -851,14 +788,10 @@ async function unirseATransmision(streamId) {
 
         if (error) throw error;
 
-        // Simular unirse a la transmisión (LiveKit real aquí)
-        // En producción: room.join(...)
-
-        showToast(`📺 Viendo: ${stream.titulo}`, 'success');
-
-        // Marcar como transmisión actual para el chat
         currentStream = stream;
         suscribirseAlChat();
+
+        showToast(`📺 Viendo: ${stream.titulo}`, 'success');
 
     } catch (error) {
         console.error('Error uniéndose:', error);
@@ -874,7 +807,6 @@ async function notificarSeguidores() {
     try {
         if (!currentStream || !currentUser) return;
 
-        // Obtener seguidores
         const { data: seguidores } = await supabase
             .from('live_seguidores')
             .select('seguidor_id')
@@ -882,7 +814,6 @@ async function notificarSeguidores() {
 
         if (!seguidores || seguidores.length === 0) return;
 
-        // Crear notificación para cada seguidor
         for (const s of seguidores) {
             await supabase
                 .from('notificaciones')
@@ -904,7 +835,7 @@ async function notificarSeguidores() {
 }
 
 // ================================================================
-// 🎮 CONTROLES DE LA CÁMARA
+// 🎮 CONTROLES
 // ================================================================
 
 function togglePlay() {
@@ -952,9 +883,7 @@ async function capturarPantalla() {
 
         showToast('🖥️ Compartiendo pantalla', 'success');
 
-        // Detener captura cuando el usuario cierra el selector
         screenStream.getVideoTracks()[0].onended = () => {
-            // Volver a la cámara
             restaurarCamara();
         };
 
@@ -989,44 +918,19 @@ function toggleVoice() {
     if (isVoiceActive) {
         btn.textContent = '🔊';
         btn.classList.add('voice-active');
-        iniciarLectorVoz();
     } else {
         btn.textContent = '🔈';
         btn.classList.remove('voice-active');
-        detenerLectorVoz();
     }
 }
 
-let speechSynthesis = null;
-
-function iniciarLectorVoz() {
-    if ('speechSynthesis' in window) {
-        speechSynthesis = window.speechSynthesis;
-        showToast('🔊 Lector de voz activado', 'success');
-    } else {
-        showToast('⚠️ Lector de voz no disponible', 'error');
-        isVoiceActive = false;
-    }
-}
-
-function detenerLectorVoz() {
-    if (speechSynthesis) {
-        speechSynthesis.cancel();
-    }
-}
-
-function leerTexto(texto) {
-    if (!isVoiceActive || !speechSynthesis) return;
-    
-    const utterance = new SpeechSynthesisUtterance(texto);
-    utterance.lang = 'es-ES';
-    utterance.rate = 1;
-    utterance.pitch = 1;
-    speechSynthesis.speak(utterance);
+function verTodasLasTransmisiones() {
+    cargarTransmisionesActivas();
+    showToast('📺 Cargando transmisiones activas...', '', 2000);
 }
 
 // ================================================================
-// 📊 DASHBOARD DE ESTADÍSTICAS
+// 📊 ESTADÍSTICAS
 // ================================================================
 
 async function cargarEstadisticas() {
@@ -1047,7 +951,6 @@ async function cargarEstadisticas() {
             return;
         }
 
-        // Calcular totales
         const totalStreams = data.length;
         const totalHoras = data.reduce((acc, s) => acc + (s.duracion || 0), 0) / 3600;
         const totalEspectadores = data.reduce((acc, s) => acc + (s.espectadores || 0), 0);
@@ -1067,15 +970,6 @@ async function cargarEstadisticas() {
 }
 
 // ================================================================
-// 🚀 FUNCIONES ADICIONALES
-// ================================================================
-
-function verTodasLasTransmisiones() {
-    cargarTransmisionesActivas();
-    showToast('📺 Cargando transmisiones activas...', '', 2000);
-}
-
-// ================================================================
 // 🚀 INICIALIZACIÓN
 // ================================================================
 
@@ -1087,13 +981,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         currentUser = session.user;
     }
 
-    // Cargar transmisiones activas
     cargarTransmisionesActivas();
-
-    // Actualizar cada 30 segundos
     setInterval(cargarTransmisionesActivas, 30000);
 
-    // Evento para enviar mensaje con Enter
     document.getElementById('chatInput')?.addEventListener('keydown', function(e) {
         if (e.key === 'Enter') {
             enviarMensaje();
@@ -1102,38 +992,23 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     console.log('◈ Sariel\'s - Live Ultra Mega Pro');
     console.log('📡 LiveKit URL:', LIVEKIT_CONFIG.url);
-    console.log('🔑 LiveKit API Key:', LIVEKIT_CONFIG.apiKey);
 });
 
 // ================================================================
 // 📤 EXPOSICIÓN DE FUNCIONES GLOBALES
 // ================================================================
 
-// Transmisión
 window.iniciarTransmision = iniciarTransmision;
 window.finalizarTransmision = finalizarTransmision;
 window.verTodasLasTransmisiones = verTodasLasTransmisiones;
 window.unirseATransmision = unirseATransmision;
-
-// Chat
 window.enviarMensaje = enviarMensaje;
-
-// Donaciones
 window.enviarDonacion = enviarDonacion;
-
-// Controles
 window.togglePlay = togglePlay;
 window.toggleMute = toggleMute;
 window.capturarPantalla = capturarPantalla;
 window.toggleVoice = toggleVoice;
-
-// Seguidores
 window.seguirStreamer = seguirStreamer;
-window.dejarDeSeguir = dejarDeSeguir;
 window.getSeguidores = getSeguidores;
-
-// Estadísticas
 window.cargarEstadisticas = cargarEstadisticas;
-
-// Toast
 window.showToast = showToast;
