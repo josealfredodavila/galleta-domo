@@ -308,6 +308,12 @@
         .btn-sm { padding: 4px 12px; font-size: 0.65rem; }
         .btn-danger { background: rgba(255, 51, 102, 0.1); color: var(--danger); border: 1px solid rgba(255, 51, 102, 0.2); }
         .btn-danger:hover { background: rgba(255, 51, 102, 0.2); }
+        .btn-crypto {
+            background: linear-gradient(135deg, #00ff88, #00b894);
+            color: var(--space);
+            box-shadow: 0 4px 20px rgba(0, 255, 136, 0.2);
+        }
+        .btn-crypto:hover { transform: translateY(-2px); box-shadow: 0 0 40px rgba(0, 255, 136, 0.3); }
 
         .perfil-tabs {
             display: flex;
@@ -657,6 +663,162 @@
         .footer-links a { color: var(--text-muted); text-decoration: none; transition: var(--transition); }
         .footer-links a:hover { color: var(--gold); }
 
+        /* ===== MODAL CRIPTO ===== */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(12px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            animation: fadeIn 0.3s ease-out;
+        }
+        .modal-overlay.active {
+            display: flex;
+        }
+        .modal-content {
+            background: linear-gradient(135deg, var(--bg-card), var(--bg-dark));
+            border: 2px solid var(--gold);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 480px;
+            width: 90%;
+            text-align: center;
+            animation: scaleIn 0.3s ease-out;
+            position: relative;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal-content .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .modal-content .close-btn:hover {
+            color: var(--text-primary);
+            transform: rotate(90deg);
+        }
+        .modal-content h2 {
+            color: var(--gold);
+            font-family: 'Orbitron', monospace;
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+        }
+        .modal-content .subtitle {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            margin-bottom: 16px;
+        }
+        .modal-content .qr-container {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            margin: 10px 0;
+            display: inline-block;
+        }
+        .modal-content .qr-container img {
+            max-width: 200px;
+            width: 100%;
+        }
+        .modal-content .address-box {
+            background: var(--bg-dark);
+            border-radius: 10px;
+            padding: 12px;
+            margin: 10px 0;
+            word-break: break-all;
+        }
+        .modal-content .address-box .label {
+            font-size: 0.6rem;
+            color: var(--text-muted);
+        }
+        .modal-content .address-box .address {
+            font-family: monospace;
+            font-size: 0.75rem;
+            color: var(--gold);
+            margin-top: 4px;
+        }
+        .modal-content .amount {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.4rem;
+            color: var(--gold);
+            margin: 10px 0;
+        }
+        .modal-content .actions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 12px;
+        }
+        .modal-content .status {
+            margin-top: 10px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            min-height: 20px;
+        }
+
+        /* ===== CRIPTO SECTION ===== */
+        .crypto-controls {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .crypto-controls .qty-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 4px 12px;
+            border-radius: 30px;
+            border: 1px solid var(--glass-border);
+        }
+        .crypto-controls .qty-group .qty-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: none;
+            background: transparent;
+            color: var(--text-primary);
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .crypto-controls .qty-group .qty-btn:hover {
+            background: rgba(212, 175, 55, 0.1);
+        }
+        .crypto-controls .qty-group .qty-value {
+            font-family: 'Orbitron', monospace;
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--gold);
+            min-width: 20px;
+            text-align: center;
+        }
+        .crypto-total {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.2rem;
+            color: var(--gold);
+            font-weight: 700;
+        }
+        .crypto-hint {
+            font-size: 0.55rem;
+            color: var(--text-muted);
+            margin-top: 6px;
+            text-align: center;
+        }
+
         @media (max-width: 768px) {
             .app { padding: 12px 14px; }
             .perfil-header { flex-direction: column; text-align: center; padding: 20px; }
@@ -668,12 +830,15 @@
             .header .logo-hex { font-size: 1.4rem; }
             .conexion-section .conexion-header { flex-direction: column; align-items: stretch; }
             .estado-section .estado-header { flex-direction: column; align-items: stretch; }
+            .crypto-controls { flex-direction: column; }
+            .modal-content { padding: 20px; }
         }
         @media (max-width: 480px) {
             .perfil-header .avatar { width: 70px; height: 70px; font-size: 1.8rem; }
             .perfil-header .info .nombre { font-size: 1.1rem; }
             .perfil-header .stats { gap: 16px; }
             .main-nav .nav-link { font-size: 0.55rem; padding: 4px 8px; }
+            .modal-content .qr-container img { max-width: 150px; }
         }
     </style>
 </head>
@@ -871,11 +1036,35 @@
 
                         <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
                             <button class="btn btn-gold" style="flex:1;justify-content:center;" onclick="comprarDomo(1)">
-                                ⟡ Comprar Domo
+                                ⟡ Comprar Domo (MXN)
                             </button>
                             <button class="btn btn-gold" style="flex:1;justify-content:center;" id="canjearNft" onclick="canjearNFT()" disabled>
                                 🔒 CANJEAR NFT
                             </button>
+                        </div>
+
+                        <!-- ===== NUEVO: COMPRAR CON CRIPTO ===== -->
+                        <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--glass-border);">
+                            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+                                <span style="font-size:0.75rem;color:var(--gold);font-weight:600;">💳 Comprar con Cripto</span>
+                                <span style="font-size:0.55rem;color:var(--text-muted);">USDT / USDC · 2% comisión</span>
+                            </div>
+                            <div class="crypto-controls">
+                                <div class="qty-group">
+                                    <button class="qty-btn" id="cryptoDecreaseQty">−</button>
+                                    <span class="qty-value" id="cryptoQuantity">1</span>
+                                    <button class="qty-btn" id="cryptoIncreaseQty">+</button>
+                                </div>
+                                <div style="flex:1;text-align:center;">
+                                    <span class="crypto-total" id="cryptoTotal">$4.59 USDT</span>
+                                </div>
+                            </div>
+                            <button class="btn btn-crypto" style="width:100%;justify-content:center;margin-top:8px;padding:10px;" onclick="comprarConCripto()">
+                                💳 Pagar con USDT/USDC
+                            </button>
+                            <div class="crypto-hint">
+                                ⚡ Red: TRC-20 (tarifas bajas) · Acepta USDT y USDC
+                            </div>
                         </div>
 
                         <button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:8px;" onclick="irAMuro()">
@@ -1032,7 +1221,6 @@
                         <span class="panel-badge">Recibe Es.stoks</span>
                     </div>
                     <div class="panel-body">
-                        <!-- Input para código QR -->
                         <div class="config-group">
                             <label>Código del QR (escanea o escribe)</label>
                             <div style="display:flex;gap:8px;flex-wrap:wrap;">
@@ -1045,12 +1233,10 @@
                             <div class="hint">⚡ Escanea el QR de tu domo físico para recibir 1 Es.stok</div>
                         </div>
 
-                        <!-- Botón para abrir cámara (móvil) -->
                         <button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:8px;" onclick="abrirCamaraQR()">
                             📷 Escanear con cámara
                         </button>
 
-                        <!-- Contenedor para lector QR -->
                         <div id="qrReaderContainer" style="display:none;margin-top:10px;">
                             <video id="qrVideo" style="width:100%;max-width:300px;border-radius:10px;background:black;"></video>
                             <button class="btn btn-danger btn-sm" onclick="cerrarCamaraQR()" style="margin-top:8px;">
@@ -1059,10 +1245,8 @@
                             <div id="qrCamaraStatus" style="font-size:0.7rem;color:var(--text-muted);margin-top:4px;"></div>
                         </div>
 
-                        <!-- Estado del escaneo -->
                         <div id="qrStatus" style="margin-top:12px;font-size:0.8rem;color:var(--text-muted);min-height:24px;text-align:center;"></div>
 
-                        <!-- Historial de escaneos -->
                         <div style="margin-top:16px;border-top:1px solid var(--glass-border);padding-top:12px;">
                             <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.7rem;color:var(--text-muted);">
                                 <span>📋 Últimos escaneos</span>
@@ -1095,6 +1279,36 @@
     </div>
 
     <div class="toast" id="toast"></div>
+
+    <!-- ===== MODAL DE PAGO CRIPTO ===== -->
+    <div class="modal-overlay" id="cryptoPaymentModal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="cerrarModalPago()">✕</button>
+            <h2>💳 Pagar con Cripto</h2>
+            <p class="subtitle">Escanea el QR o copia la dirección para pagar</p>
+            
+            <div class="qr-container">
+                <img id="cryptoQR" src="" alt="QR de pago" />
+            </div>
+
+            <div class="address-box">
+                <div class="label">📤 Dirección de pago</div>
+                <div class="address" id="cryptoAddress">Cargando dirección...</div>
+            </div>
+
+            <div class="amount">
+                <span id="cryptoMonto">0.00</span> <span id="cryptoMoneda">USDT</span>
+            </div>
+
+            <div class="actions">
+                <button class="btn btn-outline btn-sm" onclick="copiarDireccion()">📋 Copiar dirección</button>
+                <button class="btn btn-gold btn-sm" onclick="verificarPagoCrypto()">✅ Verificar pago</button>
+                <button class="btn btn-outline btn-sm" onclick="cerrarModalPago()">Cerrar</button>
+            </div>
+
+            <div class="status" id="cryptoStatus">⏳ Esperando confirmación de pago...</div>
+        </div>
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/web3@1.8.0/dist/web3.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
