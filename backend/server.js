@@ -34,10 +34,10 @@ const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
 const supabaseServiceRole = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-// Cliente Admin (para lecturas públicas)
+// Cliente Admin (para lecturas públicas y campos privados con filtro)
 const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRole || supabaseAnonKey);
 
-// Cliente por request (con token del usuario)
+// Cliente por request (con token del usuario) - SOLO para columnas públicas
 function clienteDelUsuario(req) {
     const token = req.headers.authorization?.replace('Bearer ', '');
     if (token) {
@@ -139,7 +139,7 @@ app.get('/api/token', async (req, res) => {
 });
 
 // ================================================================
-// 🪙 SISTEMA DE TOKENS
+// 🪙 SISTEMA DE TOKENS - USANDO supabaseAdmin
 // ================================================================
 
 // Obtener tokens del usuario
@@ -149,7 +149,8 @@ app.get('/api/tokens', async (req, res) => {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return res.status(401).json({ success: false, error: 'No autenticado' });
 
-        const { data, error } = await supabase
+        // 🔥 CAMBIO: usar supabaseAdmin para leer campos privados
+        const { data, error } = await supabaseAdmin
             .from('usuarios')
             .select('tokens')
             .eq('id', user.id)
@@ -176,7 +177,8 @@ app.post('/api/tokens/transferir', async (req, res) => {
             return res.status(400).json({ success: false, error: 'Datos inválidos' });
         }
 
-        const { data: userData } = await supabase
+        // 🔥 CAMBIO: usar supabaseAdmin para leer tokens privados
+        const { data: userData } = await supabaseAdmin
             .from('usuarios')
             .select('tokens')
             .eq('id', user.id)
@@ -186,12 +188,12 @@ app.post('/api/tokens/transferir', async (req, res) => {
             return res.status(400).json({ success: false, error: 'Tokens insuficientes' });
         }
 
-        await supabase.rpc('decrement_tokens', {
+        await supabaseAdmin.rpc('decrement_tokens', {
             p_user_id: user.id,
             p_cantidad: cantidad
         });
 
-        await supabase.rpc('increment_tokens', {
+        await supabaseAdmin.rpc('increment_tokens', {
             p_user_id: destinoId,
             p_cantidad: cantidad
         });
@@ -439,7 +441,7 @@ app.post('/api/promociones/activar', async (req, res) => {
 });
 
 // ================================================================
-// PERFIL
+// PERFIL - USANDO supabaseAdmin PARA CAMPOS PRIVADOS
 // ================================================================
 
 app.get('/api/perfil', async (req, res) => {
@@ -448,7 +450,8 @@ app.get('/api/perfil', async (req, res) => {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return res.status(401).json({ success: false, error: 'No autenticado' });
 
-        const { data, error } = await supabase
+        // 🔥 CAMBIO: usar supabaseAdmin para leer campos privados (tokens, wallet, eSIM)
+        const { data, error } = await supabaseAdmin
             .from('usuarios')
             .select('*')
             .eq('id', user.id)
@@ -465,7 +468,7 @@ app.get('/api/perfil', async (req, res) => {
                 handle: 'explorador',
                 bio: 'Explorando el ecosistema Sariel\'s',
                 avatar_url: null,
-                tokens_acumulados: 0
+                tokens: 0
             }});
         }
     } catch (error) {
@@ -481,16 +484,19 @@ app.put('/api/perfil', async (req, res) => {
         if (!user) return res.status(401).json({ success: false, error: 'No autenticado' });
 
         const { nombre, handle, bio, avatar_url } = req.body;
+        
+        // 🔥 CAMBIO: quitar updated_at (no existe en la tabla)
         const { data, error } = await supabase
             .from('usuarios')
-            .upsert({
-                id: user.id,
+            .update({
                 nombre,
                 handle,
                 bio,
-                avatar_url,
-                updated_at: new Date().toISOString()
-            });
+                avatar_url
+            })
+            .eq('id', user.id)
+            .select()
+            .single();
 
         if (error) throw error;
         return res.json({ success: true, perfil: data });
@@ -513,7 +519,7 @@ app.get('/api/muro', async (req, res) => {
     const { data, error } = await supabaseAdmin
         .from('muro_posts')
         .select(`
-            id, contenido, imagen_url, created_at,
+            id, contenido, imagen_url, created_at, cantidad_venta, precio_venta,
             usuarios ( id, nombre, handle, avatar_url ),
             muro_likes ( count ),
             muro_comentarios ( count )
@@ -724,31 +730,51 @@ app.put('/api/mensajes/:mensajeId/leido', async (req, res) => {
 });
 
 // ================================================================
-// LIVE
+// 🔥 LIVE - TABLA transmisiones CORREGIDA
 // ================================================================
 
+// GET /api/live/activos - transmisiones activas
 app.get('/api/live/activos', async (req, res) => {
+    // 🔥 CAMBIO: live_streams → transmisiones
+    // 🔥 CAMBIO: host_id → streamer_id, started_at → fecha_inicio, is_live → estado = 'activa'
     const { data, error } = await supabaseAdmin
-        .from('live_streams')
-        .select('id, room_name, titulo, viewers_count, started_at, usuarios ( id, nombre, handle, avatar_url )')
-        .eq('is_live', true)
-        .order('started_at', { ascending: false });
+        .from('transmisiones')
+        .select(`
+            id, 
+            room_name, 
+            titulo, 
+            viewers_count,
+            fecha_inicio,
+            streamer_id,
+            usuarios!transmisiones_streamer_id_fkey ( id, nombre, handle, avatar_url )
+        `)
+        .eq('estado', 'activa')
+        .order('fecha_inicio', { ascending: false });
 
     if (error) return res.status(500).json({ success: false, error: error.message });
     res.json({ success: true, streams: data });
 });
 
+// POST /api/live/iniciar
 app.post('/api/live/iniciar', async (req, res) => {
     const supabase = clienteDelUsuario(req);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return res.status(401).json({ success: false, error: 'No autenticado' });
 
-    const { titulo } = req.body;
+    const { titulo, categoria } = req.body;
     const roomName = `live-${user.id}-${Date.now()}`;
 
+    // 🔥 CAMBIO: host_id → streamer_id, tabla transmisiones
     const { data, error } = await supabase
-        .from('live_streams')
-        .insert({ host_id: user.id, room_name: roomName, titulo })
+        .from('transmisiones')
+        .insert({
+            streamer_id: user.id,
+            room_name: roomName,
+            titulo: titulo || 'Live en Sariel\'s',
+            categoria: categoria || 'Charla',
+            estado: 'activa',
+            fecha_inicio: new Date().toISOString()
+        })
         .select()
         .single();
 
@@ -756,23 +782,28 @@ app.post('/api/live/iniciar', async (req, res) => {
     res.json({ success: true, stream: data });
 });
 
+// POST /api/live/:streamId/finalizar
 app.post('/api/live/:streamId/finalizar', async (req, res) => {
     const supabase = clienteDelUsuario(req);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return res.status(401).json({ success: false, error: 'No autenticado' });
 
+    // 🔥 CAMBIO: is_live → estado, ended_at → fecha_fin
     const { error } = await supabase
-        .from('live_streams')
-        .update({ is_live: false, ended_at: new Date().toISOString() })
+        .from('transmisiones')
+        .update({
+            estado: 'finalizada',
+            fecha_fin: new Date().toISOString()
+        })
         .eq('id', req.params.streamId)
-        .eq('host_id', user.id);
+        .eq('streamer_id', user.id);
 
     if (error) return res.status(500).json({ success: false, error: error.message });
     res.json({ success: true });
 });
 
 // ================================================================
-// ESIM / INTERNET
+// ESIM / INTERNET - CORREGIDO
 // ================================================================
 
 app.get('/api/esim/planes', async (req, res) => {
@@ -786,13 +817,15 @@ app.get('/api/esim/planes', async (req, res) => {
     res.json({ success: true, planes: data });
 });
 
+// 🔥 CAMBIO: GET /api/esim/mis-suscripciones → usar ordenes_esim
 app.get('/api/esim/mis-suscripciones', async (req, res) => {
     const supabase = clienteDelUsuario(req);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return res.status(401).json({ success: false, error: 'No autenticado' });
 
+    // 🔥 CAMBIO: suscripciones_esim → ordenes_esim
     const { data, error } = await supabase
-        .from('suscripciones_esim')
+        .from('ordenes_esim')
         .select('*, planes_esim ( nombre, datos_gb, duracion_dias )')
         .eq('usuario_id', user.id)
         .order('created_at', { ascending: false });
@@ -811,7 +844,7 @@ app.post('/api/esim/orden', async (req, res) => {
 
     const { data: plan, error: planError } = await supabaseAdmin
         .from('planes_esim')
-        .select('precio_mxn')
+        .select('precio_mxn, datos_gb')
         .eq('id', planId)
         .single();
 
@@ -824,6 +857,7 @@ app.post('/api/esim/orden', async (req, res) => {
         .insert({
             usuario_id: user.id,
             plan_id: planId,
+            cantidad_datos_gb: plan.datos_gb,
             monto_mxn: plan.precio_mxn,
             estado_pago: 'pendiente'
         })
