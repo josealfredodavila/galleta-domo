@@ -1,5 +1,6 @@
 /* ================================================================
    SERVER.JS - SARIEL'S BACKEND (VERSIÓN RAILWAY)
+   RUTA RAILWAY: https://galleta-domo.up.railway.app
    ================================================================ */
 
 const express = require('express');
@@ -117,12 +118,28 @@ app.get('/api/health', (req, res) => {
 });
 
 // ================================================================
-// LIVEKIT TOKEN
+// 🔐 LIVEKIT TOKEN - CON AUTENTICACIÓN Y VERIFICACIÓN DE STREAMER
 // ================================================================
 app.get('/api/token', async (req, res) => {
     try {
+        const supabase = clienteDelUsuario(req);
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        
+        if (authError || !user) {
+            return res.status(401).json({ error: 'No autenticado' });
+        }
+
         const roomName = req.query.room || 'muro-live-general';
-        const participantName = req.query.name || `usuario_${Math.floor(Math.random() * 1000)}`;
+        const participantName = user.id;
+
+        // Verificar si el usuario es el streamer de esta sala
+        const { data: stream } = await supabaseAdmin
+            .from('transmisiones')
+            .select('streamer_id')
+            .eq('room_name', roomName)
+            .single();
+
+        const esStreamer = stream?.streamer_id === user.id;
 
         if (!process.env.LIVEKIT_API_KEY || !process.env.LIVEKIT_API_SECRET) {
             return res.status(500).json({ error: 'LiveKit credentials not configured' });
@@ -137,8 +154,8 @@ app.get('/api/token', async (req, res) => {
         at.addGrant({
             roomJoin: true,
             room: roomName,
-            canPublish: true,
-            canSubscribe: true
+            canPublish: esStreamer,   // Solo el streamer puede publicar
+            canSubscribe: true        // Todos pueden ver
         });
 
         const token = await at.toJwt();
@@ -323,7 +340,7 @@ app.post('/api/webhooks/nowpayments', async (req, res) => {
 
         console.log('📡 Webhook NOWPayments recibido:', payload.event);
 
-        const esValido = verificarHMAC(payload, firmaRecibida, process.env.NOWPAYMENTS_WEBHOOK_SECRET);
+        const esValido = verificarHMAC(payload, firmaRecibida, process.env.NOWPAYMENTS_IPN_SECRET);
 
         if (!esValido) {
             console.warn('⚠️ Webhook inválido - Firma no coincide');
@@ -831,7 +848,6 @@ app.post('/api/esim/orden', async (req, res) => {
             return res.status(400).json({ success: false, error: 'Se requiere planId' });
         }
 
-        // 🔥 Consultar el plan REAL desde Supabase
         const { data: plan, error: planError } = await supabaseAdmin
             .from('planes_esim')
             .select('*')
@@ -842,12 +858,10 @@ app.post('/api/esim/orden', async (req, res) => {
             return res.status(404).json({ success: false, error: 'Plan no encontrado' });
         }
 
-        // 🔥 Verificar que el plan esté activo
         if (!plan.activo) {
             return res.status(400).json({ success: false, error: 'Este plan no está disponible actualmente' });
         }
 
-        // 🔥 Crear la orden con los datos REALES de Supabase
         const { data: orden, error: ordenError } = await supabaseAdmin
             .from('ordenes_esim')
             .insert({
@@ -909,7 +923,6 @@ app.post('/api/admin/planes', verificarAdmin, async (req, res) => {
     try {
         const { nombre, datos_gb, duracion_dias, precio_mxn, precio_usdt, activo } = req.body;
 
-        // Validaciones básicas
         if (!nombre || typeof nombre !== 'string' || nombre.trim() === '') {
             return res.status(400).json({ success: false, error: 'Nombre es requerido' });
         }
@@ -962,7 +975,6 @@ app.put('/api/admin/planes/:id', verificarAdmin, async (req, res) => {
 
         const { nombre, datos_gb, duracion_dias, precio_mxn, precio_usdt, activo } = req.body;
 
-        // Verificar que el plan existe
         const { data: planExistente, error: existError } = await supabaseAdmin
             .from('planes_esim')
             .select('id')
@@ -973,7 +985,6 @@ app.put('/api/admin/planes/:id', verificarAdmin, async (req, res) => {
             return res.status(404).json({ success: false, error: 'Plan no encontrado' });
         }
 
-        // Construir objeto de actualización
         const updates = {};
         if (nombre !== undefined) updates.nombre = nombre.trim();
         if (datos_gb !== undefined) updates.datos_gb = parseInt(datos_gb);
@@ -1002,7 +1013,7 @@ app.put('/api/admin/planes/:id', verificarAdmin, async (req, res) => {
     }
 });
 
-// DELETE /api/admin/planes/:id - Eliminar plan (admin) - solo si no tiene órdenes
+// DELETE /api/admin/planes/:id - Eliminar plan (admin)
 app.delete('/api/admin/planes/:id', verificarAdmin, async (req, res) => {
     try {
         const planId = parseInt(req.params.id);
@@ -1010,7 +1021,6 @@ app.delete('/api/admin/planes/:id', verificarAdmin, async (req, res) => {
             return res.status(400).json({ success: false, error: 'ID de plan inválido' });
         }
 
-        // Verificar que el plan existe
         const { data: planExistente, error: existError } = await supabaseAdmin
             .from('planes_esim')
             .select('id')
@@ -1021,7 +1031,6 @@ app.delete('/api/admin/planes/:id', verificarAdmin, async (req, res) => {
             return res.status(404).json({ success: false, error: 'Plan no encontrado' });
         }
 
-        // Verificar si tiene órdenes asociadas
         const { count, error: countError } = await supabaseAdmin
             .from('ordenes_esim')
             .select('id', { count: 'exact', head: true })
@@ -1030,7 +1039,6 @@ app.delete('/api/admin/planes/:id', verificarAdmin, async (req, res) => {
         if (countError) throw countError;
 
         if (count > 0) {
-            // 🔥 En lugar de eliminar, desactivar el plan
             const { data, error } = await supabaseAdmin
                 .from('planes_esim')
                 .update({ activo: false })
@@ -1047,7 +1055,6 @@ app.delete('/api/admin/planes/:id', verificarAdmin, async (req, res) => {
             });
         }
 
-        // Si no tiene órdenes, eliminar
         const { error } = await supabaseAdmin
             .from('planes_esim')
             .delete()
@@ -1113,9 +1120,8 @@ app.get('/internet', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'features', 'internet', 'internet.html'));
 });
 
-// 🔥 Ruta de administración - SIN ENLACE PÚBLICO
-app.get('/admin-internet', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'features', 'internet', 'admin-internet.html'));
+app.get('/admin.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
 app.get('/qr', (req, res) => {
