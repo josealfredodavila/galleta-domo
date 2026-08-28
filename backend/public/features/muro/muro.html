@@ -1,1 +1,435 @@
-<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"/><title>◈ Muro - Sariel's</title></head><body><h1>Muro</h1></body></html>
+<!-- ================================================================
+     MURO ULTRA MEGA PRO - SARIEL'S
+     VERSIÓN COMPLETA CON PRECIOS DINÁMICOS + NOWPAYMENTS
+     ================================================================ -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>◈ Muro · Sariel's</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --gold: #D4AF37;
+            --gold-dark: #b8923a;
+            --gold-light: #e8c84a;
+            --gold-bright: #f0d060;
+            --green-deep: #0F2D1A;
+            --green-mid: #1a4a2a;
+            --green-bright: #2a6a3a;
+            --space: #05080f;
+            --text-primary: #f0f4f8;
+            --text-secondary: #c0d8e8;
+            --text-muted: #8aa8b8;
+            --glass-bg: rgba(15, 45, 26, 0.55);
+            --glass-border: rgba(212, 175, 55, 0.15);
+            --shadow-gold: 0 8px 32px rgba(212, 175, 55, 0.25);
+            --shadow-gold-strong: 0 0 60px rgba(212, 175, 55, 0.15);
+            --radius: 16px;
+            --radius-xl: 24px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --success: #00d68f;
+            --danger: #ff3366;
+            --warning: #f7d44a;
+            --cyan: #00e5ff;
+            --purple: #a855f7;
+            --pink: #ec4899;
+            --bronze: #CD7F32;
+            --bronze-light: #D4A574;
+            --bronze-dark: #8B5A2B;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: var(--space);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            background-image: radial-gradient(ellipse at 20% 50%, rgba(26, 74, 42, 0.4) 0%, transparent 60%), radial-gradient(ellipse at 80% 50%, rgba(212, 175, 55, 0.08) 0%, transparent 60%);
+        }
+
+        #stars-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+        .nebula { position: fixed; border-radius: 50%; filter: blur(120px); opacity: 0.12; pointer-events: none; z-index: 0; animation: nebula-drift 25s ease-in-out infinite alternate; }
+        .nebula-1 { width: 700px; height: 700px; background: var(--green-bright); top: -15%; right: -15%; }
+        .nebula-2 { width: 600px; height: 600px; background: var(--gold-light); bottom: -15%; left: -15%; animation-delay: -8s; opacity: 0.06; }
+        .nebula-3 { width: 500px; height: 500px; background: var(--purple); top: 50%; left: 50%; transform: translate(-50%, -50%); animation-delay: -15s; opacity: 0.04; }
+        @keyframes nebula-drift { 0% { transform: translate(0,0) scale(1); } 100% { transform: translate(40px,-30px) scale(1.15); } }
+
+        .app { position: relative; z-index: 1; max-width: 100%; width: 100%; margin: 0 auto; padding: 12px 16px 30px; }
+
+        .header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 0 14px; border-bottom: 1px solid var(--glass-border);
+            background: rgba(5, 8, 15, 0.92); position: sticky; top: 0; z-index: 100;
+        }
+        .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+        .logo-hex { font-size: 1.8rem; color: var(--gold); font-family: 'Orbitron', monospace; }
+        .logo-text { font-family: 'Orbitron', monospace; font-size: 1.2rem; color: var(--text-primary); letter-spacing: 2px; }
+        .logo-text span { color: var(--gold); }
+        .logo-badge { font-size: 0.45rem; background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: var(--space); padding: 2px 10px; border-radius: 20px; font-weight: 700; }
+        .network-badge { display: flex; align-items: center; gap: 6px; font-size: 0.6rem; color: var(--gold); background: rgba(212,175,55,0.1); padding: 4px 12px; border-radius: 20px; }
+        .token-badge { display: flex; align-items: center; gap: 6px; background: rgba(212,175,55,0.1); border: 1px solid rgba(212,175,55,0.15); padding: 4px 14px; border-radius: 20px; font-size: 0.7rem; color: var(--gold); font-family: 'Orbitron', monospace; cursor: pointer; }
+
+        .main-nav {
+            display: flex; gap: 4px; background: rgba(15,45,26,0.3); border-radius: var(--radius);
+            padding: 4px; border: 1px solid var(--glass-border); margin: 16px 0 20px; overflow-x: auto;
+        }
+        .main-nav .nav-link { padding: 8px 16px; border-radius: 12px; color: var(--text-muted); text-decoration: none; font-size: 0.7rem; white-space: nowrap; }
+        .main-nav .nav-link.active { background: rgba(212,175,55,0.12); color: var(--gold); }
+        .main-nav .nav-link.live { color: var(--danger); }
+
+        .valor-mercado {
+            background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-xl);
+            padding: 16px 20px; margin-bottom: 20px; display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center;
+        }
+        .valor-mercado .info .titulo { font-family: 'Orbitron', monospace; color: var(--text-muted); font-size: 0.6rem; letter-spacing: 1px; text-transform: uppercase; }
+        .valor-mercado .info .precio { font-family: 'Orbitron', monospace; font-size: 1.8rem; font-weight: 700; color: var(--gold); }
+        .valor-mercado .info .detalles { display: flex; gap: 16px; font-size: 0.65rem; color: var(--text-muted); margin-top: 4px; flex-wrap: wrap; }
+        .valor-mercado .info .detalles .up { color: var(--success); }
+        .valor-mercado .info .detalles .down { color: var(--danger); }
+        .valor-mercado .btn-vender-token { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); border: none; padding: 10px 20px; border-radius: 30px; font-family: 'Orbitron', monospace; font-weight: 700; font-size: 0.7rem; cursor: pointer; }
+
+        .trending-section {
+            background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-xl);
+            padding: 16px 20px; margin-bottom: 20px;
+        }
+        .trending-section .header { display: flex; justify-content: space-between; margin-bottom: 10px; }
+        .trending-section .header h3 { font-family: 'Orbitron', monospace; color: var(--gold); font-size: 0.85rem; }
+        .trending-tags { display: flex; gap: 8px; flex-wrap: wrap; }
+        .trending-tags .tag { padding: 4px 14px; border-radius: 20px; font-size: 0.7rem; background: rgba(212,175,55,0.08); border: 1px solid rgba(212,175,55,0.08); color: var(--text-secondary); cursor: pointer; }
+        .trending-tags .tag:hover { background: rgba(212,175,55,0.15); color: var(--gold); }
+        .trending-tags .tag .count { color: var(--text-muted); font-size: 0.6rem; }
+
+        .post-form {
+            background: rgba(15, 25, 20, 0.85) !important;
+            border: 1px solid rgba(212, 175, 55, 0.3) !important;
+            border-radius: 20px;
+            padding: 16px;
+            margin-bottom: 20px;
+            width: 100%;
+        }
+        .post-form .form-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+        .post-form .form-header .avatar { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #1a4a2a, #D4AF37); display: flex; align-items: center; justify-content: center; font-size: 1.1rem; color: #fff; font-family: 'Orbitron', monospace; }
+        .post-form .form-header .nombre { font-weight: 700; color: #fff; font-size: 0.9rem; }
+        .post-form .form-header .handle { font-size: 0.75rem; color: #8aa8b8; }
+        .post-form textarea { width: 100% !important; box-sizing: border-box !important; padding: 12px 14px; background: rgba(5,8,15,0.7) !important; border: 1px solid rgba(212,175,55,0.2) !important; border-radius: 12px; color: #fff !important; font-size: 0.9rem; resize: none; min-height: 80px; outline: none; }
+        .post-form textarea:focus { border-color: #D4AF37 !important; box-shadow: 0 0 12px rgba(212,175,55,0.2); }
+        .post-form .form-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; gap: 10px; flex-wrap: wrap; }
+        .post-form .form-actions .tools { display: flex; gap: 4px; flex-wrap: wrap; }
+        .post-form .form-actions .tools button { background: transparent; border: none; color: var(--text-muted); font-size: 0.65rem; cursor: pointer; padding: 4px 8px; border-radius: 12px; }
+        .post-form .form-actions .tools button:hover { color: var(--gold); background: rgba(212,175,55,0.05); }
+        .post-form .form-actions .tools button.venta { color: var(--gold); border: 1px solid rgba(212,175,55,0.2); }
+        .post-form .form-actions .tools button.venta:hover { background: rgba(212,175,55,0.1); }
+        .btn-publicar { background: linear-gradient(135deg, #D4AF37, #b8923a) !important; color: #05080f !important; border: none !important; padding: 10px 24px !important; border-radius: 30px !important; font-family: 'Orbitron', monospace !important; font-weight: 700 !important; font-size: 0.8rem !important; cursor: pointer; }
+        .btn-publicar:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(212,175,55,0.4); }
+
+        .post-card {
+            background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-xl);
+            padding: 20px 24px; margin-bottom: 16px;
+        }
+        .post-card .post-header { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+        .post-card .post-avatar { width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, var(--green-deep), var(--gold)); display: flex; align-items: center; justify-content: center; color: white; font-size: 1.2rem; overflow: hidden; }
+        .post-card .post-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .post-card .post-author { font-family: 'Orbitron', monospace; font-weight: 700; color: var(--gold); font-size: 0.85rem; }
+        .post-card .post-author .badge-verificado { font-size: 0.5rem; background: rgba(212,175,55,0.15); color: var(--gold); padding: 2px 8px; border-radius: 12px; margin-left: 6px; }
+        .post-card .post-date { font-size: 0.65rem; color: var(--text-muted); }
+        .post-card .post-content { color: var(--text-secondary); font-size: 0.9rem; line-height: 1.7; margin-bottom: 12px; word-wrap: break-word; }
+        .post-card .post-content .hashtag { color: var(--gold) !important; text-decoration: none; font-weight: 600; }
+        .post-card .post-content .hashtag:hover { text-decoration: underline; }
+        .post-card .post-content .mencion { color: var(--cyan) !important; text-decoration: none; font-weight: 600; }
+        .post-card .post-content .mencion:hover { text-decoration: underline; }
+        .post-card .post-actions-header { display: flex; gap: 4px; margin-left: auto; }
+        .post-card .post-actions-header button { background: none; border: none; font-size: 0.7rem; cursor: pointer; padding: 2px 6px; border-radius: 8px; }
+        .post-card .post-actions-header .btn-edit { color: var(--gold); }
+        .post-card .post-actions-header .btn-delete { color: var(--danger); }
+        .post-card .post-actions-header .btn-report { color: var(--warning); }
+        .post-card .post-actions-header .btn-save { color: var(--text-muted); }
+        .post-card .post-actions-header .btn-share { color: var(--cyan); }
+        .post-card .post-actions-header button:hover { background: rgba(255,255,255,0.05); }
+        
+        .post-card .post-venta { background: rgba(212,175,55,0.05); border: 1px solid rgba(212,175,55,0.1); border-radius: 12px; padding: 12px 16px; margin: 12px 0; }
+        .post-card .post-venta .precio { font-family: 'Orbitron', monospace; color: var(--gold); font-size: 1.1rem; font-weight: 700; }
+        .post-card .post-venta .btn-comprar { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); border: none; padding: 6px 16px; border-radius: 20px; font-family: 'Orbitron', monospace; font-size: 0.6rem; font-weight: 700; cursor: pointer; }
+        .post-card .post-venta .btn-comprar:hover { transform: scale(1.02); box-shadow: var(--shadow-gold); }
+        
+        .post-card .post-stats { display: flex; gap: 16px; font-size: 0.65rem; color: var(--text-muted); padding: 8px 0; border-top: 1px solid var(--glass-border); }
+        .post-card .post-stats span { cursor: pointer; }
+        .post-card .post-stats span:hover { color: var(--gold); }
+
+        .post-card .post-comentarios { margin-top: 10px; }
+        .post-card .post-comentarios .comentario { display: flex; gap: 8px; padding: 6px 0; border-bottom: 1px solid rgba(212,175,55,0.04); }
+        .post-card .post-comentarios .comentario .avatar { width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, var(--green-deep), var(--gold)); display: flex; align-items: center; justify-content: center; font-size: 0.6rem; color: #fff; overflow: hidden; }
+        .post-card .post-comentarios .comentario .avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .post-card .post-comentarios .comentario .texto { flex: 1; font-size: 0.75rem; }
+        .post-card .post-comentarios .comentario .texto strong { color: var(--gold); }
+        .post-card .post-comentarios .comentario .texto .fecha { font-size: 0.55rem; color: var(--text-muted); }
+        .post-card .post-comentarios .comentario .texto .btn-eliminar-comentario { background: none; border: none; color: var(--danger); font-size: 0.55rem; cursor: pointer; }
+        .post-card .post-comentarios .input-comentario { display: flex; gap: 8px; margin-top: 8px; }
+        .post-card .post-comentarios .input-comentario input { flex: 1; padding: 6px 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 20px; color: var(--text-primary); font-size: 0.75rem; outline: none; }
+        .post-card .post-comentarios .input-comentario input:focus { border-color: var(--gold); }
+        .post-card .post-comentarios .input-comentario button { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); border: none; padding: 4px 16px; border-radius: 20px; font-weight: 700; cursor: pointer; }
+
+        .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
+        .empty-state .icon { font-size: 2.5rem; display: block; margin-bottom: 16px; color: var(--gold); opacity: 0.4; font-family: 'Orbitron', monospace; }
+
+        .footer { margin-top: 30px; padding-top: 16px; border-top: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center; font-size: 0.7rem; color: var(--text-muted); flex-wrap: wrap; gap: 10px; }
+        .footer .brand { color: var(--gold); font-weight: 600; }
+        .footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
+        .footer-links a { color: var(--text-muted); text-decoration: none; }
+        .footer-links a:hover { color: var(--gold); }
+
+        /* MODALES */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5,8,15,0.9); display: none; align-items: center; justify-content: center; z-index: 1000; }
+        .modal-overlay.show { display: flex; }
+        .modal { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-xl); padding: 32px; max-width: 480px; width: 92%; max-height: 85vh; overflow-y: auto; }
+        .modal .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .modal .modal-header h2 { font-family: 'Orbitron', monospace; color: var(--gold); font-size: 1.1rem; }
+        .modal .modal-header .btn-cerrar { background: none; border: none; color: var(--text-muted); font-size: 1.6rem; cursor: pointer; }
+        .modal .form-group { margin-bottom: 16px; }
+        .modal .form-group label { display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px; }
+        .modal .form-group input, .modal .form-group select { width: 100%; padding: 10px 14px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 10px; color: var(--text-primary); font-size: 0.9rem; outline: none; }
+        .modal .form-group input:focus { border-color: var(--gold); }
+        .modal .form-group .precio-sugerido { font-size: 0.65rem; color: var(--text-muted); margin-top: 4px; }
+        .modal .btn-guardar { width: 100%; padding: 12px; border-radius: 30px; border: none; background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); font-weight: 700; font-size: 0.85rem; cursor: pointer; }
+        .modal .btn-guardar:hover { transform: scale(1.02); }
+        .modal .btn-cancelar { background: transparent; border: 1px solid var(--glass-border); color: var(--text-muted); padding: 10px 20px; border-radius: 30px; font-weight: 600; font-size: 0.8rem; cursor: pointer; flex: 1; }
+        .modal .btn-confirmar { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); border: none; padding: 10px 20px; border-radius: 30px; font-weight: 700; font-size: 0.8rem; cursor: pointer; flex: 2; }
+        .modal .modal-body .detalle-pago { background: rgba(0,0,0,0.2); border-radius: 10px; padding: 12px; margin: 8px 0; }
+        .modal .modal-body .detalle-pago .label { font-size: 0.6rem; color: var(--text-muted); }
+        .modal .modal-body .detalle-pago .valor { font-family: 'Orbitron', monospace; color: var(--gold); font-size: 1rem; }
+        .modal .modal-body .detalle-pago .valor.comision { color: var(--warning); font-size: 0.8rem; }
+
+        .toast { position: fixed; bottom: 30px; right: 30px; background: var(--green-deep); border: 1px solid var(--gold); color: var(--gold); padding: 14px 28px; border-radius: 14px; font-size: 0.8rem; transform: translateY(100px); opacity: 0; transition: all 0.5s ease; z-index: 9999; max-width: 400px; }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.error { border-color: var(--danger); color: var(--danger); }
+        .toast.warning { border-color: var(--warning); color: var(--warning); }
+        .toast.success { border-color: var(--success); color: var(--success); }
+
+        /* Crypto Payment Modal */
+        #cryptoPaymentModal .modal-content { text-align: center; }
+        #cryptoPaymentModal .qr-container { background: white; border-radius: 12px; padding: 15px; margin: 10px 0; display: inline-block; }
+        #cryptoPaymentModal .qr-container img { max-width: 200px; width: 100%; }
+        #cryptoPaymentModal .address-box { background: var(--bg-dark); border-radius: 10px; padding: 12px; margin: 10px 0; word-break: break-all; }
+        #cryptoPaymentModal .address-box .address { font-family: monospace; font-size: 0.75rem; color: var(--gold); }
+        #cryptoPaymentModal .monto-final { font-family: 'Orbitron', monospace; font-size: 1.4rem; color: var(--gold); margin: 10px 0; }
+        #cryptoPaymentModal .actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+        #cryptoPaymentModal .status { margin-top: 10px; font-size: 0.8rem; color: var(--text-muted); }
+        .btn-outline-crypto { background: transparent; color: var(--text-secondary); border: 1px solid var(--glass-border); padding: 8px 16px; border-radius: 30px; font-size: 0.65rem; cursor: pointer; }
+        .btn-outline-crypto:hover { border-color: var(--gold); color: var(--gold); }
+
+        @media (max-width: 768px) {
+            .app { padding: 12px 14px; }
+            .post-card { padding: 14px 16px; }
+            .valor-mercado { grid-template-columns: 1fr; text-align: center; }
+            .valor-mercado .btn-vender-token { width: 100%; justify-content: center; }
+            .post-form .form-actions { flex-direction: column; }
+            .post-form .form-actions .tools { width: 100%; justify-content: center; }
+            .btn-publicar { width: 100%; justify-content: center; }
+        }
+        @media (max-width: 480px) {
+            .post-card .post-header { flex-wrap: wrap; }
+            .post-card .post-actions-header { margin-left: auto; }
+            .modal { padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="stars-canvas" aria-hidden="true"></canvas>
+    <div class="nebula nebula-1" aria-hidden="true"></div>
+    <div class="nebula nebula-2" aria-hidden="true"></div>
+    <div class="nebula nebula-3" aria-hidden="true"></div>
+
+    <div class="app">
+
+        <header class="header">
+            <a href="/" class="logo" aria-label="Ir a la página de inicio">
+                <span class="logo-hex">◈</span>
+                <span class="logo-text">Sariel<span>'s</span></span>
+                <span class="logo-badge">✦ WEB3</span>
+            </a>
+            <div class="header-actions">
+                <span class="network-badge"><span class="dot"></span> Polygon</span>
+                <span class="token-badge" id="tokenBadge" onclick="verTokens()">
+                    ◈ <span id="tokenBadgeCantidad">0</span> Es.stoks
+                </span>
+            </div>
+        </header>
+
+        <nav class="main-nav" aria-label="Navegación principal">
+            <a href="/" class="nav-link">⌂ Inicio</a>
+            <a href="/features/muro/muro.html" class="nav-link active">◇ Muro</a>
+            <a href="/features/perfil/perfil.html" class="nav-link">◆ Perfil</a>
+            <a href="/features/mensajes/contactos.html" class="nav-link">◈ Contactos</a>
+            <a href="/features/live/live.html" class="nav-link live">◉ Live</a>
+            <a href="/features/internet/internet.html" class="nav-link">◈ Internet</a>
+        </nav>
+
+        <!-- VALOR DE MERCADO -->
+        <div class="valor-mercado" id="valorMercado">
+            <div class="info">
+                <div class="titulo">◈ Valor de Mercado Sariel's</div>
+                <div class="precio" id="precioToken">6.20 <span class="moneda">MXN</span></div>
+                <div class="detalles">
+                    <span>◈ Oferta: <strong id="ofertaTotal">0</strong> tokens</span>
+                    <span>◉ Demanda: <strong id="demandaTotal">0</strong></span>
+                    <span id="tendenciaLabel">⟡ Tendencia: <strong id="tendenciaValor" class="up">Estable</strong></span>
+                </div>
+                <div class="extra">1 Domo = 75 MXN = 12 tokens · 12 tokens = 1 NFT</div>
+            </div>
+            <button class="btn-vender-token" onclick="abrirModalVenta()">◆ Vender Es.stoks</button>
+        </div>
+
+        <!-- TENDENCIAS -->
+        <div class="trending-section">
+            <div class="header">
+                <h3>◈ Tendencia ahora</h3>
+                <span class="actualizado">Actualizado</span>
+            </div>
+            <div class="trending-tags" id="trendingTags">
+                <span class="tag" onclick="buscarHashtag('Sariels')">#Sariels <span class="count">124</span></span>
+                <span class="tag" onclick="buscarHashtag('GalletaDomo')">#GalletaDomo <span class="count">87</span></span>
+                <span class="tag" onclick="buscarHashtag('Web3')">#Web3 <span class="count">56</span></span>
+                <span class="tag" onclick="buscarHashtag('EsStoks')">#EsStoks <span class="count">43</span></span>
+                <span class="tag" onclick="buscarHashtag('NFT')">#NFT <span class="count">31</span></span>
+            </div>
+        </div>
+
+        <!-- FORMULARIO DE PUBLICACIÓN -->
+        <div class="post-form">
+            <div class="form-header">
+                <div class="avatar" id="userAvatar">◈</div>
+                <div>
+                    <div class="nombre" id="userNombre">Explorador</div>
+                    <div class="handle" id="userHandle">@explorador</div>
+                </div>
+            </div>
+            <textarea id="postContent" placeholder="¿Qué está pasando en tu mundo? Escribe :feliz: para emojis"></textarea>
+            <div class="form-actions">
+                <div class="tools">
+                    <button onclick="insertarHashtag()"># Hashtag</button>
+                    <button onclick="insertarEmoji()">😊 Emoji</button>
+                    <button onclick="abrirSelectorImagen()">🖼️ Imagen</button>
+                    <button class="venta" onclick="abrirModalVenta()">💰 Vender tokens</button>
+                </div>
+                <button class="btn-publicar" id="btnPublicar">⟡ Publicar</button>
+            </div>
+            <input type="file" id="inputImagen" accept="image/*" style="display:none;" onchange="subirImagenMuro(event)" />
+        </div>
+
+        <!-- FEED -->
+        <div id="feedContainer"></div>
+
+        <footer class="footer">
+            <span><span class="brand">◈ Sariel's</span> · Sabor al Paladar · WEB3</span>
+            <div class="footer-links">
+                <a href="/terminos">📜 Términos</a>
+                <a href="/privacidad">🔒 Privacidad</a>
+                <a href="/cookies">🍪 Cookies</a>
+                <a href="/live-terminos">📡 Términos de Live</a>
+                <span style="opacity:0.3;">⚡ Polygon</span>
+            </div>
+        </footer>
+
+    </div>
+
+    <!-- ===== MODAL VENDER TOKENS ===== -->
+    <div class="modal-overlay" id="modalVender">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>💰 Vender Es.stoks</h2>
+                <button class="btn-cerrar" onclick="cerrarModalVenta()">✕</button>
+            </div>
+            <div class="form-group">
+                <label>Cantidad de tokens</label>
+                <input type="number" id="inputCantidadTokens" min="1" max="100" value="1" />
+                <div style="font-size:0.65rem;color:var(--text-muted);margin-top:4px;">Tokens disponibles: <strong id="tokensDisponibles">0</strong></div>
+            </div>
+            <div class="form-group">
+                <label>Precio por token (MXN)</label>
+                <input type="number" id="inputPrecioToken" min="6.20" step="0.1" value="6.20" />
+                <div class="precio-sugerido">⟡ Precio sugerido: <strong id="precioSugerido">6.20</strong> MXN · <span id="precioUsdtSugerido">≈ $0.32 USDT</span></div>
+                <div style="font-size:0.55rem;color:var(--text-muted);margin-top:4px;">💳 El comprador pagará con USDT/USDC vía NOWPayments</div>
+            </div>
+            <button class="btn-guardar" onclick="publicarVenta()">◆ Publicar venta</button>
+        </div>
+    </div>
+
+    <!-- ===== MODAL CONFIRMAR COMPRA ===== -->
+    <div class="modal-overlay" id="modalConfirmarCompra">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>⟡ Confirmar compra</h2>
+                <button class="btn-cerrar" onclick="cerrarModalConfirmacion()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div style="text-align:center;padding:10px 0;">
+                    <div style="font-size:2rem;margin-bottom:8px;font-family:'Orbitron',monospace;color:var(--gold);">◈</div>
+                    <p style="color:var(--text-muted);font-size:0.9rem;">
+                        Confirmas la compra de 
+                        <strong style="color:var(--gold);" id="confirmCantidad">1</strong> 
+                        token(s) a 
+                        <strong style="color:var(--gold);" id="confirmPrecio">6.20 MXN</strong>
+                    </p>
+                    <div class="detalle-pago">
+                        <div class="label">💳 Total en MXN</div>
+                        <div class="valor" id="confirmTotal">6.20 MXN</div>
+                    </div>
+                    <div class="detalle-pago">
+                        <div class="label">💳 Total en USDT</div>
+                        <div class="valor" id="confirmTotalFinal">0.32 USDT</div>
+                    </div>
+                    <div class="detalle-pago" style="border-color:rgba(247,212,74,0.2);">
+                        <div class="label">🔶 Comisión de plataforma (2%)</div>
+                        <div class="valor comision" id="confirmComision">0.01 USDT</div>
+                    </div>
+                    <div style="display:flex;gap:10px;margin-top:12px;">
+                        <button class="btn-cancelar" onclick="cerrarModalConfirmacion()">Cancelar</button>
+                        <button class="btn-confirmar" onclick="confirmarCompraCrypto()">💳 Pagar con Crypto</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== MODAL PAGO CRIPTO ===== -->
+    <div class="modal-overlay" id="cryptoPaymentModal">
+        <div class="modal modal-content">
+            <div class="modal-header">
+                <h2>💳 Pagar con USDT/USDC</h2>
+                <button class="btn-cerrar" onclick="cerrarModalPago()">✕</button>
+            </div>
+            <div style="text-align:center;">
+                <p style="color:var(--text-secondary);font-size:0.85rem;margin-bottom:10px;">Escanea el QR o copia la dirección</p>
+                <div class="qr-container">
+                    <img id="cryptoQR" src="" alt="QR de pago" />
+                </div>
+                <div class="address-box">
+                    <div class="label" style="font-size:0.6rem;color:var(--text-muted);">📤 Dirección de pago</div>
+                    <div class="address" id="cryptoAddress">Cargando...</div>
+                </div>
+                <div class="monto-final">
+                    <span id="cryptoMonto">0.00</span> USDT
+                </div>
+                <div class="actions">
+                    <button class="btn-outline-crypto" onclick="copiarDireccionCrypto()">📋 Copiar dirección</button>
+                    <button class="btn-gold" style="padding:8px 16px;border-radius:30px;border:none;background:linear-gradient(135deg,var(--gold),var(--gold-dark));color:var(--space);font-weight:700;cursor:pointer;" onclick="verificarPagoCrypto()">✅ Verificar pago</button>
+                </div>
+                <div class="status" id="cryptoStatus">⏳ Esperando confirmación de pago...</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast" role="alert" aria-live="polite"></div>
+
+    <!-- ===== SCRIPTS ===== -->
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.8.0/dist/web3.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="/features/muro/muro.js"></script>
+</body>
+</html>
