@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>◈ Admin · Internet</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;700&display=swap" rel="stylesheet" />
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #05080f;
+            color: #e8f0f8;
+            font-family: 'Inter', sans-serif;
+            padding: 24px;
+        }
+        .container { max-width: 1000px; margin: 0 auto; }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.1);
+        }
+        .header h1 {
+            font-family: 'Orbitron', monospace;
+            color: #D4AF37;
+            font-size: 1.4rem;
+        }
+        .header .badge {
+            font-size: 0.6rem;
+            background: rgba(212, 175, 55, 0.1);
+            color: #D4AF37;
+            padding: 4px 12px;
+            border-radius: 20px;
+            border: 1px solid rgba(212, 175, 55, 0.2);
+        }
+        .header .status {
+            font-size: 0.6rem;
+            padding: 4px 12px;
+            border-radius: 20px;
+        }
+        .header .status.online {
+            background: rgba(0, 184, 148, 0.15);
+            color: #00b894;
+            border: 1px solid rgba(0, 184, 148, 0.2);
+        }
+        .header .status.offline {
+            background: rgba(255, 51, 102, 0.15);
+            color: #ff3366;
+            border: 1px solid rgba(255, 51, 102, 0.2);
+        }
+
+        .pack-card {
+            background: rgba(15, 45, 26, 0.3);
+            border: 1px solid rgba(212, 175, 55, 0.08);
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-bottom: 12px;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr 100px 80px auto;
+            gap: 10px;
+            align-items: center;
+            transition: all 0.3s;
+        }
+        .pack-card:hover {
+            border-color: rgba(212, 175, 55, 0.2);
+            background: rgba(15, 45, 26, 0.4);
+        }
+        .pack-card.inactivo {
+            opacity: 0.5;
+            border-color: rgba(255, 51, 102, 0.2);
+        }
+        .pack-card .label {
+            font-size: 0.55rem;
+            color: #4a6a8a;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: block;
+            margin-bottom: 2px;
+        }
+        .pack-card input, .pack-card select {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(212, 175, 55, 0.1);
+            border-radius: 8px;
+            color: white;
+            padding: 6px 10px;
+            font-size: 0.8rem;
+            width: 100%;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.3s;
+        }
+        .pack-card input:focus, .pack-card select:focus {
+            outline: none;
+            border-color: #D4AF37;
+        }
+        .pack-card .nombre { font-weight: 600; color: #D4AF37; }
+        .pack-card .check-activo {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+        .pack-card .check-activo input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #D4AF37;
+            cursor: pointer;
+        }
+
+        .btn {
+            padding: 6px 14px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.7rem;
+            font-family: 'Inter', sans-serif;
+            white-space: nowrap;
+        }
+        .btn-gold {
+            background: linear-gradient(135deg, #D4AF37, #b8923a);
+            color: #05080f;
+        }
+        .btn-gold:hover { transform: scale(1.02); box-shadow: 0 0 20px rgba(212, 175, 55, 0.2); }
+        .btn-danger {
+            background: rgba(255, 51, 102, 0.15);
+            color: #ff3366;
+            border: 1px solid rgba(255, 51, 102, 0.2);
+        }
+        .btn-danger:hover { background: rgba(255, 51, 102, 0.25); }
+        .btn-success {
+            background: rgba(0, 184, 148, 0.15);
+            color: #00b894;
+            border: 1px solid rgba(0, 184, 148, 0.2);
+        }
+        .btn-success:hover { background: rgba(0, 184, 148, 0.25); }
+        .btn-secondary {
+            background: rgba(255,255,255,0.05);
+            color: var(--text-secondary);
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .btn-secondary:hover { background: rgba(255,255,255,0.1); }
+
+        .actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #0F2D1A;
+            border: 1px solid #D4AF37;
+            color: #D4AF37;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.4s ease;
+            z-index: 999;
+            font-family: 'Inter', sans-serif;
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.error { border-color: #ff3366; color: #ff3366; }
+        .toast.success { border-color: #00b894; color: #00b894; }
+
+        .preview-link {
+            color: #D4AF37;
+            text-decoration: none;
+            font-size: 0.7rem;
+            border-bottom: 1px dotted rgba(212, 175, 55, 0.2);
+        }
+        .preview-link:hover { border-bottom-color: #D4AF37; }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+        .loading .spinner {
+            display: inline-block;
+            animation: spin 1s linear infinite;
+            font-size: 1.5rem;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .footer {
+            margin-top: 30px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(212, 175, 55, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            font-size: 0.7rem;
+            color: #4a6a8a;
+            padding-bottom: 8px;
+            letter-spacing: 0.3px;
+        }
+        .footer .brand { color: #D4AF37; font-weight: 600; letter-spacing: 1px; }
+        .footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
+        .footer-links a { color: #4a6a8a; text-decoration: none; transition: all 0.3s; }
+        .footer-links a:hover { color: #D4AF37; }
+
+        @media (max-width: 900px) {
+            .pack-card {
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+            }
+            .pack-card .acciones {
+                grid-column: 1 / -1;
+                display: flex;
+                justify-content: flex-end;
+                gap: 6px;
+            }
+        }
+        @media (max-width: 600px) {
+            .pack-card { grid-template-columns: 1fr; }
+            .header { flex-direction: column; align-items: flex-start; gap: 8px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div>
+                <h1>◈ Admin Internet</h1>
+                <span style="font-size:0.6rem;color:#4a6a8a;">Gestión real de planes · Supabase</span>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                <span class="badge">⚡ Panel de control</span>
+                <span id="adminStatus" class="status offline">⏳ Verificando...</span>
+            </div>
+        </div>
+
+        <div style="margin-bottom:20px;display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+            <span style="font-size:0.7rem;color:#4a6a8a;">📌 Los cambios se guardan DIRECTAMENTE en Supabase y se reflejan al instante en el portal público.</span>
+            <a href="/features/internet/internet.html" target="_blank" class="preview-link">👁️ Ver página pública</a>
+        </div>
+
+        <div id="packsContainer">
+            <div class="loading">
+                <span class="spinner">⟳</span> Cargando planes...
+            </div>
+        </div>
+
+        <div class="actions">
+            <button class="btn btn-gold" onclick="agregarPlan()">➕ Agregar plan</button>
+            <button class="btn btn-success" onclick="recargarPlanes()">🔄 Recargar</button>
+        </div>
+
+        <div style="margin-top:30px;padding-top:20px;border-top:1px solid rgba(212,175,55,0.05);font-size:0.6rem;color:#4a6a8a;">
+            <p>⚡ Los planes se almacenan en <code>planes_esim</code> en Supabase.</p>
+            <p>📌 Los cambios son inmediatos. No se requiere localStorage.</p>
+            <p>🔐 Solo el administrador autorizado puede modificar planes.</p>
+        </div>
+    </div>
+
+    <footer class="footer" style="max-width:1000px; margin: 30px auto 0;">
+        <span><span class="brand">◈ Sariel's</span> · Sabor al Paladar · WEB3</span>
+        <div class="footer-links">
+            <a href="/terminos.html">◈ Términos</a>
+            <a href="/privacidad.html">◈ Privacidad</a>
+            <a href="/cookies.html">◈ Cookies</a>
+            <a href="/live-terminos.html">◉ Live Términos</a>
+            <span style="opacity:0.3;">⚡ Polygon</span>
+        </div>
+    </footer>
+
+    <div class="toast" id="toast"></div>
+
+    <!-- ================================================================
+    SCRIPTS - SUPABASE SDK + ADMIN REAL
+    ================================================================ -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        // ================================================================
+        // CONFIGURACIÓN SUPABASE
+        // ================================================================
+        const supabase = window.supabase.createClient(
+            'https://zultnlogdoajehbswlih.supabase.co',
+            'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
+        );
+
+        // ================================================================
+        // ESTADO
+        // ================================================================
+        let planes = [];
+        let esAdmin = false;
+
+        // ================================================================
+        // TOAST
+        // ================================================================
+        function mostrarToast(msg, tipo = '') {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.className = 'toast show';
+            if (tipo === 'error') t.classList.add('error');
+            else if (tipo === 'success') t.classList.add('success');
+            else t.classList.remove('error', 'success');
+            clearTimeout(t._timeout);
+            t._timeout = setTimeout(() => t.classList.remove('show'), 3500);
+        }
+
+        // ================================================================
+        // OBTENER SESIÓN
+        // ================================================================
+        async function getSession() {
+            const { data: { session } } = await supabase.auth.getSession();
+            return session;
+        }
+
+        // ================================================================
+        // VERIFICAR ADMIN
+        // ================================================================
+        async function verificarAdmin() {
+            try {
+                const session = await getSession();
+                if (!session) {
+                    document.getElementById('adminStatus').textContent = '❌ No autenticado';
+                    document.getElementById('adminStatus').className = 'status offline';
+                    return false;
+                }
+
+                // Verificar admin via backend
+                const response = await fetch('/api/admin/planes', {
+                    headers: {
+                        'Authorization': `Bearer ${session.access_token}`
+                    }
+                });
+
+                if (response.status === 401 || response.status === 403) {
+                    document.getElementById('adminStatus').textContent = '⛔ No autorizado';
+                    document.getElementById('adminStatus').className = 'status offline';
+                    mostrarToast('⚠️ No tienes permisos de administrador', 'error');
+                    return false;
+                }
+
+                if (!response.ok) {
+                    throw new Error('Error al verificar admin');
+                }
+
+                document.getElementById('adminStatus').textContent = '✅ Administrador';
+                document.getElementById('adminStatus').className = 'status online';
+                esAdmin = true;
+                return true;
+
+            } catch (error) {
+                console.error('Error verificando admin:', error);
+                document.getElementById('adminStatus').textContent = '❌ Error';
+                document.getElementById('adminStatus').className = 'status offline';
+                return false;
+            }
+        }
+
+        // ================================================================
+        // 🔥 CARGAR PLANES DESDE SUPABASE (ADMIN)
+        // ================================================================
+        async function cargarPlanesAdmin() {
+            const container = document.getElementById('packsContainer');
+
+            try {
+                const session = await getSession();
+                if (!session) {
+                    container.innerHTML = `
+                        <div style="text-align:center;padding:40px;color:var(--text-muted);">
+                            <span style="font-size:2rem;">🔐</span>
+                            <p style="margin-top:10px;">Inicia sesión para administrar</p>
+                            <button onclick="window.location.href='/'" class="btn btn-gold" style="margin-top:10px;">Ir a Inicio</button>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const response = await fetch('/api/admin/planes', {
+                    headers: {
+                        'Authorization': `Bearer ${session.access_token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    if (response.status === 401 || response.status === 403) {
+                        container.innerHTML = `
+                            <div style="text-align:center;padding:40px;color:var(--text-muted);">
+                                <span style="font-size:2rem;">⛔</span>
+                                <p style="margin-top:10px;">No tienes permisos de administrador</p>
+                                <p style="font-size:0.7rem;">Contacta al administrador del sistema</p>
+                            </div>
+                        `;
+                        return;
+                    }
+                    throw new Error('Error al cargar planes');
+                }
+
+                const data = await response.json();
+                if (!data.success) throw new Error(data.error || 'Error al cargar planes');
+
+                planes = data.planes || [];
+                renderPacksAdmin();
+
+            } catch (error) {
+                console.error('Error cargando planes:', error);
+                container.innerHTML = `
+                    <div style="text-align:center;padding:40px;color:var(--text-muted);">
+                        <span style="font-size:2rem;">❌</span>
+                        <p style="margin-top:10px;">Error al cargar planes</p>
+                        <button onclick="recargarPlanes()" class="btn btn-gold" style="margin-top:10px;">Reintentar</button>
+                    </div>
+                `;
+                mostrarToast('❌ Error al cargar planes', 'error');
+            }
+        }
+
+        // ================================================================
+        // RENDERIZAR PLANES (ADMIN)
+        // ================================================================
+        function renderPacksAdmin() {
+            const container = document.getElementById('packsContainer');
+
+            if (!planes || planes.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align:center;padding:40px;color:var(--text-muted);">
+                        <span style="font-size:2rem;">📡</span>
+                        <p style="margin-top:10px;">No hay planes creados</p>
+                        <button onclick="agregarPlan()" class="btn btn-gold" style="margin-top:10px;">Crear primer plan</button>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = planes.map((p, index) => `
+                <div class="pack-card ${!p.activo ? 'inactivo' : ''}" data-index="${index}">
+                    <div>
+                        <span class="label">ID</span>
+                        <span style="font-size:0.7rem;color:var(--text-muted);">#${p.id}</span>
+                    </div>
+                    <div>
+                        <span class="label">Nombre</span>
+                        <input type="text" value="${p.nombre || ''}" data-field="nombre" />
+                    </div>
+                    <div>
+                        <span class="label">GB</span>
+                        <input type="number" value="${p.datos_gb || 0}" data-field="datos_gb" min="0" step="1" />
+                    </div>
+                    <div>
+                        <span class="label">Días</span>
+                        <input type="number" value="${p.duracion_dias || 0}" data-field="duracion_dias" min="1" step="1" />
+                    </div>
+                    <div>
+                        <span class="label">Precio MXN</span>
+                        <input type="number" value="${p.precio_mxn || 0}" data-field="precio_mxn" min="0" step="1" />
+                    </div>
+                    <div>
+                        <span class="label">Precio USDT</span>
+                        <input type="number" value="${p.precio_usdt || 0}" data-field="precio_usdt" min="0" step="0.5" />
+                    </div>
+                    <div class="check-activo">
+                        <input type="checkbox" ${p.activo ? 'checked' : ''} data-field="activo" id="activo-${p.id}" />
+                        <label for="activo-${p.id}">Activo</label>
+                    </div>
+                    <div class="acciones" style="display:flex;gap:4px;">
+                        <button class="btn btn-success" onclick="guardarPlan(${index})" style="font-size:0.6rem;padding:4px 10px;">💾</button>
+                        <button class="btn btn-danger" onclick="eliminarPlan(${index})" style="font-size:0.6rem;padding:4px 10px;">🗑️</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // ================================================================
+        // GUARDAR PLAN (ACTUALIZAR)
+        // ================================================================
+        async function guardarPlan(index) {
+            const card = document.querySelectorAll('.pack-card')[index];
+            if (!card) return;
+
+            const inputs = card.querySelectorAll('input[data-field]');
+            const data = {};
+            inputs.forEach(inp => {
+                const field = inp.dataset.field;
+                if (inp.type === 'checkbox') {
+                    data[field] = inp.checked;
+                } else {
+                    data[field] = inp.value;
+                }
+            });
+
+            const planOriginal = planes[index];
+            if (!planOriginal) return;
+
+            try {
+                const session = await getSession();
+                if (!session) {
+                    mostrarToast('⚠️ Inicia sesión', 'error');
+                    return;
+                }
+
+                const response = await fetch(`/api/admin/planes/${planOriginal.id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${session.access_token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        nombre: data.nombre,
+                        datos_gb: parseInt(data.datos_gb) || 0,
+                        duracion_dias: parseInt(data.duracion_dias) || 1,
+                        precio_mxn: parseFloat(data.precio_mxn) || 0,
+                        precio_usdt: parseFloat(data.precio_usdt) || 0,
+                        activo: data.activo !== undefined ? data.activo : true
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Error al actualizar');
+                }
+
+                const result = await response.json();
+                if (!result.success) throw new Error(result.error || 'Error al actualizar');
+
+                // Actualizar local
+                planes[index] = result.plan;
+                mostrarToast('✅ Plan actualizado', 'success');
+                renderPacksAdmin();
+
+            } catch (error) {
+                console.error('Error guardando plan:', error);
+                mostrarToast('❌ ' + error.message, 'error');
+            }
+        }
+
+        // ================================================================
+        // AGREGAR PLAN (CREAR)
+        // ================================================================
+        async function agregarPlan() {
+            try {
+                const session = await getSession();
+                if (!session) {
+                    mostrarToast('⚠️ Inicia sesión', 'error');
+                    return;
+                }
+
+                const nombre = prompt('Nombre del paquete:', 'Nuevo Plan');
+                if (!nombre) return;
+
+                const gb = prompt('Datos en GB:', '10');
+                if (!gb) return;
+
+                const dias = prompt('Duración en días:', '30');
+                if (!dias) return;
+
+                const precioMXN = prompt('Precio en MXN:', '199');
+                if (!precioMXN) return;
+
+                const precioUSDT = prompt('Precio en USDT:', '10');
+                if (!precioUSDT) return;
+
+                const response = await fetch('/api/admin/planes', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${session.access_token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        nombre: nombre.trim(),
+                        datos_gb: parseInt(gb) || 0,
+                        duracion_dias: parseInt(dias) || 1,
+                        precio_mxn: parseFloat(precioMXN) || 0,
+                        precio_usdt: parseFloat(precioUSDT) || 0,
+                        activo: true
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Error al crear');
+                }
+
+                const result = await response.json();
+                if (!result.success) throw new Error(result.error || 'Error al crear');
+
+                planes.push(result.plan);
+                mostrarToast('✅ Plan creado', 'success');
+                renderPacksAdmin();
+
+            } catch (error) {
+                console.error('Error creando plan:', error);
+                mostrarToast('❌ ' + error.message, 'error');
+            }
+        }
+
+        // ================================================================
+        // ELIMINAR PLAN
+        // ================================================================
+        async function eliminarPlan(index) {
+            const plan = planes[index];
+            if (!plan) return;
+
+            if (!confirm(`¿Eliminar el plan "${plan.nombre}"?`)) return;
+
+            try {
+                const session = await getSession();
+                if (!session) {
+                    mostrarToast('⚠️ Inicia sesión', 'error');
+                    return;
+                }
+
+                const response = await fetch(`/api/admin/planes/${plan.id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${session.access_token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Error al eliminar');
+                }
+
+                const result = await response.json();
+                if (!result.success) throw new Error(result.error || 'Error al eliminar');
+
+                planes.splice(index, 1);
+                mostrarToast(result.mensaje || '✅ Plan eliminado', 'success');
+                renderPacksAdmin();
+
+            } catch (error) {
+                console.error('Error eliminando plan:', error);
+                mostrarToast('❌ ' + error.message, 'error');
+            }
+        }
+
+        // ================================================================
+        // RECARGAR PLANES
+        // ================================================================
+        async function recargarPlanes() {
+            await cargarPlanesAdmin();
+            mostrarToast('🔄 Planes recargados', 'success');
+        }
+
+        // ================================================================
+        // INICIALIZAR
+        // ================================================================
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Primero verificar autenticación
+            await verificarAdmin();
+            // Luego cargar planes
+            await cargarPlanesAdmin();
+
+            console.log('◈ Sariel\'s - Admin Internet REAL');
+            console.log('📦 Planes cargados desde Supabase:', planes.length);
+            console.log('🔐 Admin verificado:', esAdmin);
+        });
+
+        // ================================================================
+        // EXPONER FUNCIONES GLOBALES
+        // ================================================================
+        window.agregarPlan = agregarPlan;
+        window.guardarPlan = guardarPlan;
+        window.eliminarPlan = eliminarPlan;
+        window.recargarPlanes = recargarPlanes;
+        window.mostrarToast = mostrarToast;
+        window.cargarPlanesAdmin = cargarPlanesAdmin;
+    </script>
+</body>
+</html>
