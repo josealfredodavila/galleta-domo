@@ -1,1 +1,362 @@
-<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"/><title>◈ Contactos - Sariel's</title></head><body><h1>Contactos</h1></body></html>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>◈ Contactos · Sariel's</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --gold: #D4AF37;
+            --gold-dark: #b8923a;
+            --gold-light: #e8c84a;
+            --green-deep: #0F2D1A;
+            --green-mid: #1a4a2a;
+            --space: #05080f;
+            --text-primary: #f0f4f8;
+            --text-secondary: #c0d8e8;
+            --text-muted: #8aa8b8;
+            --glass-bg: rgba(15, 45, 26, 0.55);
+            --glass-border: rgba(212, 175, 55, 0.15);
+            --shadow-gold: 0 8px 32px rgba(212, 175, 55, 0.25);
+            --radius: 16px;
+            --radius-xl: 24px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --success: #00d68f;
+            --danger: #ff3366;
+            --warning: #f7d44a;
+            --live-red: #ff0044;
+            --bg-dark: rgba(5, 8, 15, 0.8);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: var(--space);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            background-image: radial-gradient(ellipse at 20% 50%, rgba(26, 74, 42, 0.4) 0%, transparent 60%), radial-gradient(ellipse at 80% 50%, rgba(212, 175, 55, 0.08) 0%, transparent 60%);
+        }
+
+        .app { max-width: 1100px; margin: 0 auto; padding: 16px 20px 30px; }
+
+        .header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 0 14px; border-bottom: 1px solid var(--glass-border);
+            background: rgba(5, 8, 15, 0.92); position: sticky; top: 0; z-index: 100;
+        }
+        .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+        .logo-hex { font-size: 1.8rem; color: var(--gold); font-family: 'Orbitron', monospace; }
+        .logo-text { font-family: 'Orbitron', monospace; font-size: 1.2rem; color: var(--text-primary); letter-spacing: 2px; }
+        .logo-text span { color: var(--gold); }
+        .logo-badge { font-size: 0.45rem; background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: var(--space); padding: 2px 10px; border-radius: 20px; font-weight: 700; }
+        .network-badge { display: flex; align-items: center; gap: 6px; font-size: 0.6rem; color: var(--gold); background: rgba(212, 175, 55, 0.1); padding: 4px 12px; border-radius: 20px; }
+
+        .main-nav {
+            display: flex; gap: 4px; background: rgba(15, 45, 26, 0.3); border-radius: var(--radius);
+            padding: 4px; border: 1px solid var(--glass-border); margin: 16px 0 20px; overflow-x: auto;
+        }
+        .main-nav .nav-link {
+            padding: 8px 16px; border-radius: 12px; color: var(--text-muted); text-decoration: none;
+            font-size: 0.7rem; transition: var(--transition); white-space: nowrap;
+        }
+        .main-nav .nav-link.active { background: rgba(212, 175, 55, 0.12); color: var(--gold); }
+        .main-nav .nav-link.live { color: var(--live-red); }
+
+        .contactos-container { max-width: 900px; margin: 0 auto; }
+
+        .contactos-stats {
+            display: flex; gap: 24px; margin-bottom: 20px; padding: 12px 20px;
+            background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius);
+            font-size: 0.7rem; color: var(--text-muted); flex-wrap: wrap;
+        }
+        .contactos-stats .numero { color: var(--gold); font-family: 'Orbitron', monospace; font-size: 0.9rem; font-weight: 700; }
+        .contactos-stats .stat { display: flex; align-items: center; gap: 4px; }
+        .contactos-stats .stat .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+        .contactos-stats .stat .dot.online { background: var(--success); }
+        .contactos-stats .stat .dot.offline { background: var(--text-muted); }
+
+        .search-bar { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+        .search-bar input {
+            flex: 1; padding: 12px 20px; background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--glass-border); border-radius: 30px; color: var(--text-primary); outline: none;
+            font-size: 0.85rem; min-width: 150px;
+        }
+        .search-bar input:focus { border-color: var(--gold); }
+        .search-bar input::placeholder { color: var(--text-muted); }
+        .search-bar .btn-agregar {
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space);
+            border: none; padding: 12px 24px; border-radius: 30px; font-weight: 700; cursor: pointer;
+            font-size: 0.8rem; transition: var(--transition); white-space: nowrap;
+        }
+        .search-bar .btn-agregar:hover { transform: scale(1.02); box-shadow: var(--shadow-gold); }
+        .search-bar .btn-invitar {
+            background: transparent; color: var(--text-secondary);
+            border: 1px solid var(--glass-border); padding: 12px 24px; border-radius: 30px;
+            font-weight: 600; cursor: pointer; font-size: 0.8rem; transition: var(--transition); white-space: nowrap;
+        }
+        .search-bar .btn-invitar:hover { border-color: var(--gold); color: var(--gold); }
+
+        .filtros { display: flex; gap: 4px; margin-bottom: 20px; flex-wrap: wrap; background: rgba(0, 0, 0, 0.15); border-radius: var(--radius); padding: 4px; border: 1px solid var(--glass-border); }
+        .filtros .filtro { padding: 6px 18px; border: none; border-radius: 12px; background: transparent; color: var(--text-muted); cursor: pointer; font-size: 0.7rem; transition: var(--transition); }
+        .filtros .filtro:hover { color: var(--text-primary); }
+        .filtros .filtro.active { background: rgba(212, 175, 55, 0.12); color: var(--gold); }
+
+        .contactos-list { display: grid; grid-template-columns: 1fr; gap: 10px; }
+
+        .contacto-card {
+            display: flex; align-items: center; gap: 16px; padding: 14px 20px;
+            background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius);
+            transition: var(--transition);
+        }
+        .contacto-card:hover { border-color: rgba(212, 175, 55, 0.3); transform: translateY(-2px); box-shadow: var(--shadow-gold); }
+
+        .contacto-card .contacto-avatar {
+            width: 48px; height: 48px; border-radius: 50%;
+            background: linear-gradient(135deg, var(--green-deep), var(--gold));
+            display: flex; align-items: center; justify-content: center; color: white; font-size: 1.2rem;
+            position: relative; flex-shrink: 0; overflow: hidden;
+            border: 2px solid rgba(212, 175, 55, 0.2);
+        }
+        .contacto-card .contacto-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .contacto-card .contacto-avatar.online { border-color: var(--success); }
+        .contacto-card .contacto-avatar .online-dot {
+            position: absolute; bottom: 0; right: 0; width: 12px; height: 12px; border-radius: 50%;
+            background: var(--success); border: 2px solid var(--space);
+        }
+        .contacto-card .contacto-avatar .favorito-badge {
+            position: absolute; top: -2px; right: -2px; font-size: 0.7rem; color: var(--gold);
+        }
+
+        .contacto-card .contacto-info { flex: 1; min-width: 0; }
+        .contacto-card .contacto-info .nombre { font-weight: 600; color: var(--text-primary); font-size: 0.95rem; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+        .contacto-card .contacto-info .nombre .verified { font-size: 0.45rem; background: rgba(212, 175, 55, 0.1); color: var(--gold); padding: 2px 10px; border-radius: 12px; }
+        .contacto-card .contacto-info .estado { font-size: 0.65rem; color: var(--text-muted); margin-top: 2px; }
+        .contacto-card .contacto-info .estado.online { color: var(--success); }
+        .contacto-card .contacto-info .contacto-meta { font-size: 0.55rem; color: var(--text-muted); margin-top: 2px; }
+
+        .contacto-card .contacto-actions { display: flex; gap: 2px; flex-shrink: 0; }
+        .contacto-card .contacto-actions button {
+            background: none; border: none; color: var(--text-muted); font-size: 0.85rem; cursor: pointer;
+            padding: 6px 8px; border-radius: 8px; transition: var(--transition);
+        }
+        .contacto-card .contacto-actions button:hover { color: var(--gold); background: rgba(212, 175, 55, 0.05); }
+        .contacto-card .contacto-actions button.favorito.active { color: var(--gold); }
+        .contacto-card .contacto-actions button.bloquear:hover { color: var(--danger); }
+        .contacto-card .contacto-actions button.eliminar:hover { color: var(--danger); }
+        .contacto-card .contacto-actions button.mensaje:hover { color: var(--cyan); }
+
+        .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); grid-column: 1 / -1; }
+        .empty-state .icon { font-size: 3rem; display: block; margin-bottom: 16px; color: var(--gold); opacity: 0.3; font-family: 'Orbitron', monospace; }
+        .empty-state .btn-accion {
+            margin-top: 12px; background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            color: var(--space); border: none; padding: 10px 24px; border-radius: 30px;
+            font-weight: 700; cursor: pointer; font-size: 0.8rem;
+        }
+
+        .toast {
+            position: fixed; bottom: 30px; right: 30px; background: var(--green-deep);
+            border: 1px solid var(--gold); color: var(--gold); padding: 14px 28px;
+            border-radius: 14px; font-size: 0.8rem; transform: translateY(100px);
+            opacity: 0; transition: all 0.5s ease; z-index: 9999; max-width: 400px;
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.error { border-color: var(--danger); color: var(--danger); }
+        .toast.warning { border-color: var(--warning); color: var(--warning); }
+        .toast.success { border-color: var(--success); color: var(--success); }
+
+        .footer { margin-top: 30px; padding-top: 16px; border-top: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center; font-size: 0.7rem; color: var(--text-muted); flex-wrap: wrap; gap: 10px; }
+        .footer .brand { color: var(--gold); font-weight: 600; }
+        .footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
+        .footer-links a { color: var(--text-muted); text-decoration: none; }
+        .footer-links a:hover { color: var(--gold); }
+
+        /* ===== MODALES ===== */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(5, 8, 15, 0.9); display: none; align-items: center; justify-content: center;
+            z-index: 1000; backdrop-filter: blur(10px);
+        }
+        .modal-overlay.show { display: flex; }
+        .modal {
+            background: var(--glass-bg); border: 1px solid var(--glass-border);
+            border-radius: var(--radius-xl); padding: 32px; max-width: 480px;
+            width: 92%; max-height: 85vh; overflow-y: auto;
+        }
+        .modal .modal-header {
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;
+        }
+        .modal .modal-header h2 {
+            font-family: 'Orbitron', monospace; color: var(--gold); font-size: 1.1rem;
+        }
+        .modal .modal-header .btn-cerrar {
+            background: none; border: none; color: var(--text-muted); font-size: 1.6rem; cursor: pointer;
+        }
+        .modal .modal-header .btn-cerrar:hover { color: var(--text-primary); }
+        .modal .form-group { margin-bottom: 16px; }
+        .modal .form-group label {
+            display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;
+        }
+        .modal .form-group input {
+            width: 100%; padding: 10px 14px; background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--glass-border); border-radius: 10px; color: var(--text-primary);
+            font-size: 0.9rem; outline: none;
+        }
+        .modal .form-group input:focus { border-color: var(--gold); }
+        .modal .resultados-busqueda { margin-top: 8px; max-height: 200px; overflow-y: auto; }
+        .modal .codigo-box {
+            background: var(--bg-dark); border-radius: 12px; padding: 16px; text-align: center; margin: 12px 0;
+            border: 1px solid rgba(212, 175, 55, 0.1);
+        }
+        .modal .codigo-box .codigo {
+            font-family: 'Orbitron', monospace; font-size: 1.8rem; color: var(--gold); letter-spacing: 2px;
+        }
+        .modal .btn-copiar {
+            background: transparent; border: 1px solid var(--glass-border); color: var(--text-secondary);
+            padding: 8px 20px; border-radius: 20px; cursor: pointer; font-size: 0.7rem; transition: var(--transition);
+        }
+        .modal .btn-copiar:hover { border-color: var(--gold); color: var(--gold); }
+
+        @media (max-width: 768px) {
+            .contacto-card { padding: 12px 14px; flex-wrap: wrap; gap: 10px; }
+            .contacto-card .contacto-actions {
+                width: 100%; justify-content: flex-end; padding-top: 8px; border-top: 1px solid var(--glass-border);
+            }
+            .main-nav .nav-link { font-size: 0.6rem; padding: 6px 10px; }
+            .search-bar .btn-invitar { display: none; }
+        }
+        @media (max-width: 480px) {
+            .search-bar { flex-direction: column; }
+            .search-bar .btn-agregar { width: 100%; justify-content: center; }
+            .contacto-card .contacto-avatar { width: 40px; height: 40px; font-size: 1rem; }
+            .main-nav .nav-link { font-size: 0.55rem; padding: 4px 8px; }
+            .modal { padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app">
+
+        <header class="header">
+            <a href="/" class="logo">
+                <span class="logo-hex">◈</span>
+                <span class="logo-text">Sariel<span>'s</span></span>
+                <span class="logo-badge">✦ WEB3</span>
+            </a>
+            <div class="header-actions">
+                <span class="network-badge"><span class="dot"></span> Polygon</span>
+            </div>
+        </header>
+
+        <nav class="main-nav">
+            <a href="/" class="nav-link">⌂ Inicio</a>
+            <a href="/features/muro/muro.html" class="nav-link">◇ Muro</a>
+            <a href="/features/perfil/perfil.html" class="nav-link">◆ Perfil</a>
+            <a href="/features/mensajes/contactos.html" class="nav-link active">◈ Contactos</a>
+            <a href="/features/mensajes/mensajes.html" class="nav-link">◈ Mensajes</a>
+            <a href="/features/live/live.html" class="nav-link live">◉ Live</a>
+            <a href="/features/internet/internet.html" class="nav-link">◈ Internet</a>
+        </nav>
+
+        <div class="contactos-container">
+
+            <!-- ===== ESTADÍSTICAS ===== -->
+            <div class="contactos-stats">
+                <span class="stat">◈ Total: <span class="numero" id="totalContactos">0</span></span>
+                <span class="stat"><span class="dot online"></span> En línea: <span class="numero" id="onlineContactos">0</span></span>
+            </div>
+
+            <!-- ===== BÚSQUEDA Y ACCIONES ===== -->
+            <div class="search-bar">
+                <input type="text" id="searchInput" placeholder="🔍 Buscar contactos por nombre o @handle..." />
+                <button class="btn-agregar" onclick="abrirAgregarContacto()">◆ Agregar contacto</button>
+                <button class="btn-invitar" onclick="invitarContacto()">✉️ Invitar</button>
+            </div>
+
+            <!-- ===== FILTROS ===== -->
+            <div class="filtros">
+                <button class="filtro active" data-filtro="todos" onclick="document.querySelectorAll('.filtro').forEach(b=>b.classList.remove('active'));this.classList.add('active');filtroActual='todos';ordenarContactos('nombre');aplicarFiltros();">◈ Todos</button>
+                <button class="filtro" data-filtro="online" onclick="document.querySelectorAll('.filtro').forEach(b=>b.classList.remove('active'));this.classList.add('active');filtroActual='online';ordenarContactos('online');aplicarFiltros();">🟢 En línea</button>
+                <button class="filtro" data-filtro="favoritos" onclick="document.querySelectorAll('.filtro').forEach(b=>b.classList.remove('active'));this.classList.add('active');filtroActual='favoritos';ordenarContactos('nombre');aplicarFiltros();">◆ Favoritos</button>
+                <button class="filtro" data-filtro="recientes" onclick="document.querySelectorAll('.filtro').forEach(b=>b.classList.remove('active'));this.classList.add('active');filtroActual='recientes';ordenarContactos('reciente');aplicarFiltros();">⟡ Recientes</button>
+            </div>
+
+            <!-- ===== LISTA DE CONTACTOS ===== -->
+            <div class="contactos-list" id="contactosList">
+                <div class="empty-state">
+                    <span class="icon">◈</span>
+                    <h3>Cargando contactos...</h3>
+                </div>
+            </div>
+
+        </div>
+
+        <footer class="footer">
+            <span><span class="brand">◈ Sariel's</span> · Sabor al Paladar · WEB3</span>
+            <div class="footer-links">
+                <a href="/terminos">◈ Términos</a>
+                <a href="/privacidad">◈ Privacidad</a>
+                <a href="/cookies">◈ Cookies</a>
+                <a href="/live-terminos">◉ Live Términos</a>
+                <span style="opacity:0.3;">⚡ Polygon</span>
+            </div>
+        </footer>
+
+    </div>
+
+    <!-- ===== MODAL BUSCAR CONTACTO ===== -->
+    <div class="modal-overlay" id="modalBuscarContacto">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>◈ Buscar contacto</h2>
+                <button class="btn-cerrar" onclick="cerrarModalBuscar()">✕</button>
+            </div>
+            <div class="form-group">
+                <label>Buscar por nombre o @handle</label>
+                <input type="text" id="searchInputModal" placeholder="Ej: Juan o @juan123" />
+            </div>
+            <div class="resultados-busqueda" id="resultadosBusqueda">
+                <div style="padding:20px;text-align:center;color:var(--text-muted);font-size:0.75rem;">
+                    Escribe al menos 2 caracteres para buscar
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== MODAL INVITACIÓN ===== -->
+    <div class="modal-overlay" id="modalInvitacion">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>✉️ Invitar contacto</h2>
+                <button class="btn-cerrar" onclick="cerrarModalInvitacion()">✕</button>
+            </div>
+            <div style="text-align:center;">
+                <p style="color:var(--text-secondary);font-size:0.85rem;margin-bottom:12px;">
+                    Comparte este código con quien quieras invitar
+                </p>
+                <div class="codigo-box">
+                    <div class="codigo" id="codigoInvitacion">SAR-XXXX</div>
+                </div>
+                <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+                    <button class="btn-copiar" onclick="copiarCodigoInvitacion()">📋 Copiar código</button>
+                    <button class="btn-copiar" onclick="cerrarModalInvitacion()">Cerrar</button>
+                </div>
+                <p style="font-size:0.6rem;color:var(--text-muted);margin-top:12px;">
+                    El código expira después de 7 días
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.8.0/dist/web3.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="/features/mensajes/contactos.js"></script>
+</body>
+</html>
