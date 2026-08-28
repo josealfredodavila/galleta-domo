@@ -1,6 +1,5 @@
 /* ================================================================
    SERVER.JS - SARIEL'S BACKEND (VERSIÓN RAILWAY)
-   RUTA RAILWAY: https://galleta-domo.up.railway.app
    ================================================================ */
 
 const express = require('express');
@@ -34,10 +33,10 @@ const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
 const supabaseServiceRole = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-// Cliente Admin (para lecturas públicas y campos privados con filtro)
+// Cliente Admin (para operaciones privilegiadas)
 const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRole || supabaseAnonKey);
 
-// Cliente por request (con token del usuario) - SOLO para columnas públicas
+// Cliente por request (con token del usuario)
 function clienteDelUsuario(req) {
     const token = req.headers.authorization?.replace('Bearer ', '');
     if (token) {
@@ -49,40 +48,52 @@ function clienteDelUsuario(req) {
 }
 
 // ================================================================
+// MIDDLEWARE DE ADMINISTRADOR
+// ================================================================
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'csarielcontacto@gmail.com';
+
+async function verificarAdmin(req, res, next) {
+    try {
+        const supabase = clienteDelUsuario(req);
+        const { data: { user }, error } = await supabase.auth.getUser();
+
+        if (error || !user) {
+            return res.status(401).json({ success: false, error: 'No autenticado' });
+        }
+
+        if (user.email !== ADMIN_EMAIL) {
+            return res.status(403).json({ success: false, error: 'No autorizado: se requiere administrador' });
+        }
+
+        req.user = user;
+        next();
+    } catch (error) {
+        console.error('Error verificando admin:', error);
+        return res.status(500).json({ success: false, error: 'Error de autenticación' });
+    }
+}
+
+// ================================================================
 // MIDDLEWARES DE SEGURIDAD Y RENDIMIENTO
 // ================================================================
 
-// Helmet - Protege cabeceras HTTP
-app.use(helmet({
-    contentSecurityPolicy: false
-}));
-
-// Compresión - Mejora rendimiento
+app.use(helmet({ contentSecurityPolicy: false }));
 app.use(compression());
-
-// CORS
 app.use(cors());
-
-// Morgan - Logs de peticiones
 app.use(morgan('combined'));
 
-// Rate Limiting - Protección contra DDoS
 const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutos
-    max: 100, // 100 peticiones por IP
-    message: {
-        error: 'Demasiadas peticiones, intenta de nuevo más tarde',
-        success: false
-    }
+    windowMs: 15 * 60 * 1000,
+    max: 100,
+    message: { error: 'Demasiadas peticiones, intenta de nuevo más tarde', success: false }
 });
 app.use(limiter);
 
-// Body parser
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // ================================================================
-// ARCHIVOS ESTÁTICOS - VERSIÓN RAILWAY (CORREGIDA)
+// ARCHIVOS ESTÁTICOS
 // ================================================================
 const publicPath = path.join(__dirname, 'public');
 
@@ -139,17 +150,15 @@ app.get('/api/token', async (req, res) => {
 });
 
 // ================================================================
-// 🪙 SISTEMA DE TOKENS - USANDO supabaseAdmin
+// 🪙 SISTEMA DE TOKENS
 // ================================================================
 
-// Obtener tokens del usuario
 app.get('/api/tokens', async (req, res) => {
     try {
         const supabase = clienteDelUsuario(req);
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return res.status(401).json({ success: false, error: 'No autenticado' });
 
-        // 🔥 CAMBIO: usar supabaseAdmin para leer campos privados
         const { data, error } = await supabaseAdmin
             .from('usuarios')
             .select('tokens')
@@ -165,7 +174,6 @@ app.get('/api/tokens', async (req, res) => {
     }
 });
 
-// Transferir tokens
 app.post('/api/tokens/transferir', async (req, res) => {
     try {
         const supabase = clienteDelUsuario(req);
@@ -177,7 +185,6 @@ app.post('/api/tokens/transferir', async (req, res) => {
             return res.status(400).json({ success: false, error: 'Datos inválidos' });
         }
 
-        // 🔥 CAMBIO: usar supabaseAdmin para leer tokens privados
         const { data: userData } = await supabaseAdmin
             .from('usuarios')
             .select('tokens')
@@ -209,7 +216,6 @@ app.post('/api/tokens/transferir', async (req, res) => {
 // 💳 PAGOS CON CRYPTO (NOWPayments)
 // ================================================================
 
-// Crear orden de pago
 app.post('/api/pagos/crear', async (req, res) => {
     try {
         const supabase = clienteDelUsuario(req);
@@ -269,7 +275,6 @@ app.post('/api/pagos/crear', async (req, res) => {
     }
 });
 
-// Verificar estado de pago
 app.get('/api/pagos/estado/:ordenId', async (req, res) => {
     try {
         const supabase = clienteDelUsuario(req);
@@ -441,7 +446,7 @@ app.post('/api/promociones/activar', async (req, res) => {
 });
 
 // ================================================================
-// PERFIL - USANDO supabaseAdmin PARA CAMPOS PRIVADOS
+// PERFIL
 // ================================================================
 
 app.get('/api/perfil', async (req, res) => {
@@ -450,7 +455,6 @@ app.get('/api/perfil', async (req, res) => {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return res.status(401).json({ success: false, error: 'No autenticado' });
 
-        // 🔥 CAMBIO: usar supabaseAdmin para leer campos privados (tokens, wallet, eSIM)
         const { data, error } = await supabaseAdmin
             .from('usuarios')
             .select('*')
@@ -484,16 +488,10 @@ app.put('/api/perfil', async (req, res) => {
         if (!user) return res.status(401).json({ success: false, error: 'No autenticado' });
 
         const { nombre, handle, bio, avatar_url } = req.body;
-        
-        // 🔥 CAMBIO: quitar updated_at (no existe en la tabla)
+
         const { data, error } = await supabase
             .from('usuarios')
-            .update({
-                nombre,
-                handle,
-                bio,
-                avatar_url
-            })
+            .update({ nombre, handle, bio, avatar_url })
             .eq('id', user.id)
             .select()
             .single();
@@ -730,13 +728,10 @@ app.put('/api/mensajes/:mensajeId/leido', async (req, res) => {
 });
 
 // ================================================================
-// 🔥 LIVE - TABLA transmisiones CORREGIDA
+// 🔥 LIVE - TABLA transmisiones
 // ================================================================
 
-// GET /api/live/activos - transmisiones activas
 app.get('/api/live/activos', async (req, res) => {
-    // 🔥 CAMBIO: live_streams → transmisiones
-    // 🔥 CAMBIO: host_id → streamer_id, started_at → fecha_inicio, is_live → estado = 'activa'
     const { data, error } = await supabaseAdmin
         .from('transmisiones')
         .select(`
@@ -755,7 +750,6 @@ app.get('/api/live/activos', async (req, res) => {
     res.json({ success: true, streams: data });
 });
 
-// POST /api/live/iniciar
 app.post('/api/live/iniciar', async (req, res) => {
     const supabase = clienteDelUsuario(req);
     const { data: { user } } = await supabase.auth.getUser();
@@ -764,7 +758,6 @@ app.post('/api/live/iniciar', async (req, res) => {
     const { titulo, categoria } = req.body;
     const roomName = `live-${user.id}-${Date.now()}`;
 
-    // 🔥 CAMBIO: host_id → streamer_id, tabla transmisiones
     const { data, error } = await supabase
         .from('transmisiones')
         .insert({
@@ -782,13 +775,11 @@ app.post('/api/live/iniciar', async (req, res) => {
     res.json({ success: true, stream: data });
 });
 
-// POST /api/live/:streamId/finalizar
 app.post('/api/live/:streamId/finalizar', async (req, res) => {
     const supabase = clienteDelUsuario(req);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return res.status(401).json({ success: false, error: 'No autenticado' });
 
-    // 🔥 CAMBIO: is_live → estado, ended_at → fecha_fin
     const { error } = await supabase
         .from('transmisiones')
         .update({
@@ -803,27 +794,283 @@ app.post('/api/live/:streamId/finalizar', async (req, res) => {
 });
 
 // ================================================================
-// ESIM / INTERNET - CORREGIDO
+// 🌐 INTERNET - ESIM
 // ================================================================
 
+// GET /api/esim/planes - Público (solo activos)
 app.get('/api/esim/planes', async (req, res) => {
-    const { data, error } = await supabaseAdmin
-        .from('planes_esim')
-        .select('*')
-        .eq('activo', true)
-        .order('precio_mxn', { ascending: true });
+    try {
+        const { data, error } = await supabaseAdmin
+            .from('planes_esim')
+            .select('*')
+            .eq('activo', true)
+            .order('precio_mxn', { ascending: true });
 
-    if (error) return res.status(500).json({ success: false, error: error.message });
-    res.json({ success: true, planes: data });
+        if (error) throw error;
+
+        res.json({ success: true, planes: data || [] });
+    } catch (error) {
+        console.error('Error obteniendo planes:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
 });
 
-// 🔥 CAMBIO: GET /api/esim/mis-suscripciones → usar ordenes_esim
+// POST /api/esim/orden - Crear orden de compra (autenticado)
+app.post('/api/esim/orden', async (req, res) => {
+    try {
+        const supabase = clienteDelUsuario(req);
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (!user) {
+            return res.status(401).json({ success: false, error: 'No autenticado' });
+        }
+
+        const { planId } = req.body;
+
+        if (!planId) {
+            return res.status(400).json({ success: false, error: 'Se requiere planId' });
+        }
+
+        // 🔥 Consultar el plan REAL desde Supabase
+        const { data: plan, error: planError } = await supabaseAdmin
+            .from('planes_esim')
+            .select('*')
+            .eq('id', planId)
+            .single();
+
+        if (planError || !plan) {
+            return res.status(404).json({ success: false, error: 'Plan no encontrado' });
+        }
+
+        // 🔥 Verificar que el plan esté activo
+        if (!plan.activo) {
+            return res.status(400).json({ success: false, error: 'Este plan no está disponible actualmente' });
+        }
+
+        // 🔥 Crear la orden con los datos REALES de Supabase
+        const { data: orden, error: ordenError } = await supabaseAdmin
+            .from('ordenes_esim')
+            .insert({
+                usuario_id: user.id,
+                plan_id: plan.id,
+                cantidad_datos_gb: plan.datos_gb,
+                monto_mxn: plan.precio_mxn,
+                monto_usdt: plan.precio_usdt,
+                estado_pago: 'pendiente'
+            })
+            .select()
+            .single();
+
+        if (ordenError) throw ordenError;
+
+        res.json({
+            success: true,
+            orden: {
+                id: orden.id,
+                plan: plan.nombre,
+                datos_gb: plan.datos_gb,
+                duracion_dias: plan.duracion_dias,
+                monto_mxn: plan.precio_mxn,
+                monto_usdt: plan.precio_usdt,
+                estado: orden.estado_pago
+            },
+            mensaje: 'Orden creada. Pendiente de pago.'
+        });
+
+    } catch (error) {
+        console.error('Error creando orden:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// ================================================================
+// 🔐 ADMINISTRACIÓN DE PLANES (PROTEGIDO)
+// ================================================================
+
+// GET /api/admin/planes - Listar todos los planes (admin)
+app.get('/api/admin/planes', verificarAdmin, async (req, res) => {
+    try {
+        const { data, error } = await supabaseAdmin
+            .from('planes_esim')
+            .select('*')
+            .order('id', { ascending: true });
+
+        if (error) throw error;
+
+        res.json({ success: true, planes: data || [] });
+    } catch (error) {
+        console.error('Error obteniendo planes (admin):', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// POST /api/admin/planes - Crear nuevo plan (admin)
+app.post('/api/admin/planes', verificarAdmin, async (req, res) => {
+    try {
+        const { nombre, datos_gb, duracion_dias, precio_mxn, precio_usdt, activo } = req.body;
+
+        // Validaciones básicas
+        if (!nombre || typeof nombre !== 'string' || nombre.trim() === '') {
+            return res.status(400).json({ success: false, error: 'Nombre es requerido' });
+        }
+
+        if (!datos_gb || datos_gb <= 0) {
+            return res.status(400).json({ success: false, error: 'Datos en GB es requerido y debe ser mayor a 0' });
+        }
+
+        if (!duracion_dias || duracion_dias <= 0) {
+            return res.status(400).json({ success: false, error: 'Duración en días es requerida y debe ser mayor a 0' });
+        }
+
+        if (precio_mxn === undefined || precio_mxn === null || precio_mxn < 0) {
+            return res.status(400).json({ success: false, error: 'Precio MXN es requerido' });
+        }
+
+        if (precio_usdt === undefined || precio_usdt === null || precio_usdt < 0) {
+            return res.status(400).json({ success: false, error: 'Precio USDT es requerido' });
+        }
+
+        const { data, error } = await supabaseAdmin
+            .from('planes_esim')
+            .insert({
+                nombre: nombre.trim(),
+                datos_gb: parseInt(datos_gb),
+                duracion_dias: parseInt(duracion_dias),
+                precio_mxn: parseFloat(precio_mxn),
+                precio_usdt: parseFloat(precio_usdt),
+                activo: activo !== undefined ? activo : true
+            })
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        res.json({ success: true, plan: data });
+    } catch (error) {
+        console.error('Error creando plan:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// PUT /api/admin/planes/:id - Actualizar plan (admin)
+app.put('/api/admin/planes/:id', verificarAdmin, async (req, res) => {
+    try {
+        const planId = parseInt(req.params.id);
+        if (isNaN(planId)) {
+            return res.status(400).json({ success: false, error: 'ID de plan inválido' });
+        }
+
+        const { nombre, datos_gb, duracion_dias, precio_mxn, precio_usdt, activo } = req.body;
+
+        // Verificar que el plan existe
+        const { data: planExistente, error: existError } = await supabaseAdmin
+            .from('planes_esim')
+            .select('id')
+            .eq('id', planId)
+            .single();
+
+        if (existError || !planExistente) {
+            return res.status(404).json({ success: false, error: 'Plan no encontrado' });
+        }
+
+        // Construir objeto de actualización
+        const updates = {};
+        if (nombre !== undefined) updates.nombre = nombre.trim();
+        if (datos_gb !== undefined) updates.datos_gb = parseInt(datos_gb);
+        if (duracion_dias !== undefined) updates.duracion_dias = parseInt(duracion_dias);
+        if (precio_mxn !== undefined) updates.precio_mxn = parseFloat(precio_mxn);
+        if (precio_usdt !== undefined) updates.precio_usdt = parseFloat(precio_usdt);
+        if (activo !== undefined) updates.activo = activo;
+
+        if (Object.keys(updates).length === 0) {
+            return res.status(400).json({ success: false, error: 'No se proporcionaron campos para actualizar' });
+        }
+
+        const { data, error } = await supabaseAdmin
+            .from('planes_esim')
+            .update(updates)
+            .eq('id', planId)
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        res.json({ success: true, plan: data });
+    } catch (error) {
+        console.error('Error actualizando plan:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// DELETE /api/admin/planes/:id - Eliminar plan (admin) - solo si no tiene órdenes
+app.delete('/api/admin/planes/:id', verificarAdmin, async (req, res) => {
+    try {
+        const planId = parseInt(req.params.id);
+        if (isNaN(planId)) {
+            return res.status(400).json({ success: false, error: 'ID de plan inválido' });
+        }
+
+        // Verificar que el plan existe
+        const { data: planExistente, error: existError } = await supabaseAdmin
+            .from('planes_esim')
+            .select('id')
+            .eq('id', planId)
+            .single();
+
+        if (existError || !planExistente) {
+            return res.status(404).json({ success: false, error: 'Plan no encontrado' });
+        }
+
+        // Verificar si tiene órdenes asociadas
+        const { count, error: countError } = await supabaseAdmin
+            .from('ordenes_esim')
+            .select('id', { count: 'exact', head: true })
+            .eq('plan_id', planId);
+
+        if (countError) throw countError;
+
+        if (count > 0) {
+            // 🔥 En lugar de eliminar, desactivar el plan
+            const { data, error } = await supabaseAdmin
+                .from('planes_esim')
+                .update({ activo: false })
+                .eq('id', planId)
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            return res.json({
+                success: true,
+                plan: data,
+                mensaje: `El plan tiene ${count} órdenes asociadas. Se ha desactivado en lugar de eliminarlo.`
+            });
+        }
+
+        // Si no tiene órdenes, eliminar
+        const { error } = await supabaseAdmin
+            .from('planes_esim')
+            .delete()
+            .eq('id', planId);
+
+        if (error) throw error;
+
+        res.json({ success: true, mensaje: 'Plan eliminado correctamente' });
+    } catch (error) {
+        console.error('Error eliminando plan:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// ================================================================
+// ESIM - SUSCRIPCIONES (ordenes_esim)
+// ================================================================
+
 app.get('/api/esim/mis-suscripciones', async (req, res) => {
     const supabase = clienteDelUsuario(req);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return res.status(401).json({ success: false, error: 'No autenticado' });
 
-    // 🔥 CAMBIO: suscripciones_esim → ordenes_esim
     const { data, error } = await supabase
         .from('ordenes_esim')
         .select('*, planes_esim ( nombre, datos_gb, duracion_dias )')
@@ -834,45 +1081,9 @@ app.get('/api/esim/mis-suscripciones', async (req, res) => {
     res.json({ success: true, suscripciones: data });
 });
 
-app.post('/api/esim/orden', async (req, res) => {
-    const supabase = clienteDelUsuario(req);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return res.status(401).json({ success: false, error: 'No autenticado' });
-
-    const { planId } = req.body;
-    if (!planId) return res.status(400).json({ success: false, error: 'Falta planId' });
-
-    const { data: plan, error: planError } = await supabaseAdmin
-        .from('planes_esim')
-        .select('precio_mxn, datos_gb')
-        .eq('id', planId)
-        .single();
-
-    if (planError || !plan) {
-        return res.status(404).json({ success: false, error: 'Plan no encontrado' });
-    }
-
-    const { data, error } = await supabaseAdmin
-        .from('ordenes_esim')
-        .insert({
-            usuario_id: user.id,
-            plan_id: planId,
-            cantidad_datos_gb: plan.datos_gb,
-            monto_mxn: plan.precio_mxn,
-            estado_pago: 'pendiente'
-        })
-        .select()
-        .single();
-
-    if (error) return res.status(500).json({ success: false, error: error.message });
-    res.json({ success: true, orden: data });
-});
-
 // ================================================================
-// RUTAS PRINCIPALES (HTML) - CORREGIDAS PARA RAILWAY
+// RUTAS PRINCIPALES (HTML)
 // ================================================================
-
-// ✅ Todas las rutas ahora usan path.join(__dirname, 'public', ...)
 
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
@@ -902,6 +1113,7 @@ app.get('/internet', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'features', 'internet', 'internet.html'));
 });
 
+// 🔥 Ruta de administración - SIN ENLACE PÚBLICO
 app.get('/admin-internet', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'features', 'internet', 'admin-internet.html'));
 });
