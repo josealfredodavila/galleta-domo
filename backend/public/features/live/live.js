@@ -1,6 +1,6 @@
 /* ================================================================
    LIVE ULTRA MEGA PRO - SARIEL'S
-   Integración completa: LiveKit + Supabase Realtime + Donaciones + Chat + Moderación
+   Integración REAL con LiveKit + Supabase Realtime + Donaciones + Chat + Moderación
    ================================================================ */
 
 // ================================================================
@@ -12,11 +12,11 @@ const supabase = window.supabase.createClient(
 );
 
 // ================================================================
-// CONFIGURACIÓN LIVEKIT
+// CONFIGURACIÓN LIVEKIT - SIN API KEY HARDCODEADA
 // ================================================================
 const LIVEKIT_CONFIG = {
-    url: 'wss://csariels-domo-57ujk04t.livekit.cloud',
-    apiKey: 'APITtqsWfiUjSKk',  // ✅ NUEVA API KEY
+    url: 'wss://csariels-domo-57ujk04t.livekit.cloud'
+    // ✅ apiKey eliminado - se obtiene token del servidor
 };
 
 // ================================================================
@@ -121,7 +121,22 @@ async function getSession() {
 }
 
 // ================================================================
-// 🎥 INICIAR TRANSMISIÓN
+// OBTENER TOKEN LIVEKIT DEL SERVIDOR
+// ================================================================
+async function obtenerTokenLiveKit(roomName, participantName) {
+    try {
+        const response = await fetch(`/api/token?room=${encodeURIComponent(roomName)}&name=${encodeURIComponent(participantName)}`);
+        if (!response.ok) throw new Error('Error al obtener token');
+        const data = await response.json();
+        return data.token;
+    } catch (error) {
+        console.error('Error obteniendo token LiveKit:', error);
+        throw error;
+    }
+}
+
+// ================================================================
+// 🎥 INICIAR TRANSMISIÓN - CON LIVEKIT REAL
 // ================================================================
 async function iniciarTransmision() {
     try {
@@ -132,10 +147,11 @@ async function iniciarTransmision() {
         }
         currentUser = session.user;
 
+        // Verificar si ya tiene transmisión activa
         const { data: streamActivo } = await supabase
-            .from('live_streams')
+            .from('transmisiones')
             .select('id')
-            .eq('usuario_id', currentUser.id)
+            .eq('streamer_id', currentUser.id)
             .eq('estado', 'activa')
             .single();
 
@@ -146,11 +162,13 @@ async function iniciarTransmision() {
 
         showToast('⏳ Iniciando transmisión...', '', 3000);
 
+        // Obtener cámara y micrófono
         const stream = await navigator.mediaDevices.getUserMedia({
             video: { facingMode: 'user', width: 1280, height: 720 },
             audio: true
         });
 
+        // Mostrar preview local
         const video = document.getElementById('liveVideo');
         if (video) {
             video.srcObject = stream;
@@ -160,14 +178,16 @@ async function iniciarTransmision() {
         const titulo = prompt('Título de tu transmisión:', 'Mi live en Sariel\'s');
         const categoria = prompt('Categoría (juego, charla, música, etc.):', 'Charla');
 
+        // Crear transmisión en Supabase - tabla transmisiones
         const { data: streamData, error: streamError } = await supabase
-            .from('live_streams')
+            .from('transmisiones')
             .insert({
-                usuario_id: currentUser.id,
+                streamer_id: currentUser.id,
                 titulo: titulo || 'Live en Sariel\'s',
                 categoria: categoria || 'Charla',
                 estado: 'activa',
-                iniciado_en: new Date().toISOString()
+                fecha_inicio: new Date().toISOString(),
+                room_name: `live-${currentUser.id}-${Date.now()}`
             })
             .select()
             .single();
@@ -176,11 +196,52 @@ async function iniciarTransmision() {
 
         currentStream = streamData;
 
+        // 🔥 CONEXIÓN LIVEKIT REAL
         try {
-            // Conexión LiveKit simulada
             showToast('🔗 Conectando a LiveKit...', '', 2000);
+            
+            // Importar LiveKit dinámicamente
+            const { Room } = await import('https://cdn.jsdelivr.net/npm/livekit-client@1/dist/index.js');
+            
+            liveKitRoom = new Room();
+            
+            // Obtener token del servidor
+            const token = await obtenerTokenLiveKit(
+                currentStream.room_name,
+                currentUser.user_metadata?.nombre || currentUser.email || 'streamer'
+            );
+            
+            // Conectar a la sala
+            await liveKitRoom.connect(LIVEKIT_CONFIG.url, token);
+            
+            // Publicar video local
+            await liveKitRoom.localParticipant.setCameraEnabled(true);
+            await liveKitRoom.localParticipant.setMicrophoneEnabled(true);
+            
+            // Publicar el stream de cámara
+            const videoTrack = stream.getVideoTracks()[0];
+            if (videoTrack) {
+                // Ya está publicado automáticamente al habilitar cámara
+            }
+            
+            showToast('✅ Conectado a LiveKit', 'success');
+            
+            // Escuchar cuando se unan espectadores
+            liveKitRoom.on('participantConnected', (participant) => {
+                console.log('👤 Espectador conectado:', participant.identity);
+                espectadores++;
+                document.getElementById('viewersCount').textContent = `${espectadores} espectadores`;
+            });
+            
+            liveKitRoom.on('participantDisconnected', (participant) => {
+                console.log('👤 Espectador desconectado:', participant.identity);
+                espectadores = Math.max(0, espectadores - 1);
+                document.getElementById('viewersCount').textContent = `${espectadores} espectadores`;
+            });
+            
         } catch (e) {
             console.warn('LiveKit no disponible, usando modo local:', e);
+            showToast('⚠️ Modo local - sin transmisión real', 'warning');
         }
 
         isLive = true;
@@ -199,7 +260,7 @@ async function iniciarTransmision() {
 }
 
 // ================================================================
-// ✋ FINALIZAR TRANSMISIÓN
+// ✋ FINALIZAR TRANSMISIÓN - CON LIVEKIT REAL
 // ================================================================
 async function finalizarTransmision() {
     try {
@@ -218,22 +279,29 @@ async function finalizarTransmision() {
             video.srcObject = null;
         }
 
-        const duracion = Math.floor((Date.now() - new Date(currentStream.iniciado_en).getTime()) / 1000);
+        const duracion = Math.floor((Date.now() - new Date(currentStream.fecha_inicio).getTime()) / 1000);
 
+        // 🔥 CAMBIO: transmisiones con estado y fecha_fin
         const { error } = await supabase
-            .from('live_streams')
+            .from('transmisiones')
             .update({
                 estado: 'finalizada',
-                finalizado_en: new Date().toISOString(),
+                fecha_fin: new Date().toISOString(),
                 duracion: duracion,
-                espectadores: espectadores
+                viewers_count: espectadores
             })
             .eq('id', currentStream.id);
 
         if (error) throw error;
 
+        // 🔥 DESCONECTAR LIVEKIT
         if (liveKitRoom) {
-            liveKitRoom.disconnect();
+            try {
+                await liveKitRoom.disconnect();
+                console.log('✅ LiveKit desconectado');
+            } catch (lkError) {
+                console.warn('Error desconectando LiveKit:', lkError);
+            }
             liveKitRoom = null;
         }
 
@@ -275,7 +343,7 @@ function suscribirseAlChat() {
         .on('postgres_changes', {
             event: 'INSERT',
             schema: 'public',
-            table: 'live_mensajes',
+            table: 'mensajes_live', // 🔥 CAMBIO: live_mensajes → mensajes_live
             filter: `transmision_id=eq.${currentStream.id}`
         }, (payload) => {
             agregarMensajeAlChat(payload.new);
@@ -323,14 +391,15 @@ async function enviarMensaje() {
     }
 
     try {
+        // 🔥 CAMBIO: mensajes_live, quitar moderated
         const { error } = await supabase
-            .from('live_mensajes')
+            .from('mensajes_live')
             .insert({
                 transmision_id: currentStream.id,
                 usuario_id: session.user.id,
                 mensaje: mensaje,
-                nombre_usuario: session.user.user_metadata?.nombre || 'Explorador',
-                moderated: false
+                nombre_usuario: session.user.user_metadata?.nombre || 'Explorador'
+                // moderated eliminado - no existe en la tabla
             });
 
         if (error) throw error;
@@ -415,7 +484,7 @@ function escapeHTML(texto) {
 }
 
 // ================================================================
-// 💰 DONACIONES
+// 💰 DONACIONES - CORREGIDO (solo RPC, sin update anidado)
 // ================================================================
 
 async function enviarDonacion(monto) {
@@ -444,7 +513,7 @@ async function enviarDonacion(monto) {
             .insert({
                 transmision_id: currentStream.id,
                 donante_id: session.user.id,
-                streamer_id: currentStream.usuario_id,
+                streamer_id: currentStream.streamer_id,
                 monto_usd: monto,
                 tipo_donacion: donacion.nombre,
                 efecto_mostrado: false
@@ -463,15 +532,11 @@ async function enviarDonacion(monto) {
         };
         agregarMensajeAlChat(mensajeDonacion);
 
-        await supabase
-            .from('live_streams')
-            .update({
-                donaciones_totales: supabase.rpc('increment_donaciones', { 
-                    p_stream_id: currentStream.id, 
-                    p_monto: monto 
-                })
-            })
-            .eq('id', currentStream.id);
+        // 🔥 CORREGIDO: Solo llamar a la RPC, sin update anidado
+        await supabase.rpc('increment_donaciones', {
+            p_stream_id: currentStream.id,
+            p_monto: monto
+        });
 
         showToast(`🎉 ¡${donacion.nombre} recibido!`, 'success', 5000);
 
@@ -646,16 +711,13 @@ function iniciarContadorEspectadores() {
     streamInterval = setInterval(async () => {
         if (!currentStream) return;
 
-        espectadores = Math.floor(Math.random() * 20) + 1;
-        
-        document.getElementById('viewersCount').textContent = `${espectadores} espectadores`;
-
+        // Actualizar viewers_count en transmisiones
         await supabase
-            .from('live_streams')
-            .update({ espectadores: espectadores })
+            .from('transmisiones')
+            .update({ viewers_count: espectadores })
             .eq('id', currentStream.id);
 
-    }, 5000);
+    }, 10000);
 }
 
 // ================================================================
@@ -715,19 +777,20 @@ async function getSeguidores(streamerId) {
 }
 
 // ================================================================
-// 📋 LISTA DE TRANSMISIONES ACTIVAS
+// 📋 LISTA DE TRANSMISIONES ACTIVAS - TABLA transmisiones
 // ================================================================
 
 async function cargarTransmisionesActivas() {
     try {
+        // 🔥 CAMBIO: live_streams → transmisiones
         const { data, error } = await supabase
-            .from('live_streams')
+            .from('transmisiones')
             .select(`
                 *,
                 usuarios(id, nombre, avatar_url)
             `)
             .eq('estado', 'activa')
-            .order('iniciado_en', { ascending: false });
+            .order('fecha_inicio', { ascending: false });
 
         if (error) throw error;
 
@@ -761,14 +824,18 @@ function renderizarTransmisiones(streams) {
             </div>
             <div class="stream-name">${stream.titulo || 'Live'}</div>
             <div class="stream-host">
-                ${stream.usuarios?.nombre || 'Streamer'} · ${stream.espectadores || 0} espectadores
+                ${stream.usuarios?.nombre || 'Streamer'} · ${stream.viewers_count || 0} espectadores
             </div>
             <div style="font-size:0.55rem;color:var(--text-muted);margin-top:4px;">
-                ${stream.categoria || 'General'} · ${new Date(stream.iniciado_en).toLocaleTimeString()}
+                ${stream.categoria || 'General'} · ${new Date(stream.fecha_inicio).toLocaleTimeString()}
             </div>
         </div>
     `).join('');
 }
+
+// ================================================================
+// 📺 UNIRSE A TRANSMISIÓN - CON LIVEKIT REAL
+// ================================================================
 
 async function unirseATransmision(streamId) {
     try {
@@ -780,8 +847,9 @@ async function unirseATransmision(streamId) {
 
         showToast('⏳ Uniéndose a la transmisión...', '', 2000);
 
+        // Obtener datos de la transmisión - tabla transmisiones
         const { data: stream, error } = await supabase
-            .from('live_streams')
+            .from('transmisiones')
             .select('*, usuarios(id, nombre)')
             .eq('id', streamId)
             .single();
@@ -789,6 +857,50 @@ async function unirseATransmision(streamId) {
         if (error) throw error;
 
         currentStream = stream;
+
+        // 🔥 CONEXIÓN LIVEKIT REAL COMO ESPECTADOR
+        try {
+            const { Room } = await import('https://cdn.jsdelivr.net/npm/livekit-client@1/dist/index.js');
+            
+            liveKitRoom = new Room();
+            
+            const token = await obtenerTokenLiveKit(
+                stream.room_name,
+                session.user.user_metadata?.nombre || session.user.email || 'espectador'
+            );
+            
+            await liveKitRoom.connect(LIVEKIT_CONFIG.url, token);
+            
+            // Suscribirse a tracks remotos
+            liveKitRoom.on('participantConnected', (participant) => {
+                console.log('Streamer conectado:', participant.identity);
+                // Mostrar video del streamer
+                if (participant.videoTracks.size > 0) {
+                    const video = document.getElementById('liveVideo');
+                    if (video) {
+                        // El track remoto se mostrará automáticamente
+                        // usando el elemento <video> del room
+                    }
+                }
+            });
+            
+            // Mostrar el video del streamer en el elemento
+            liveKitRoom.on('trackSubscribed', (track, publication, participant) => {
+                if (track.kind === 'video') {
+                    const video = document.getElementById('liveVideo');
+                    if (video) {
+                        track.attach(video);
+                    }
+                }
+            });
+            
+            showToast('📺 Conectado a la transmisión', 'success');
+            
+        } catch (e) {
+            console.warn('LiveKit no disponible, modo solo chat:', e);
+            showToast('⚠️ Modo solo chat - sin video', 'warning');
+        }
+
         suscribirseAlChat();
 
         showToast(`📺 Viendo: ${stream.titulo}`, 'success');
@@ -938,11 +1050,12 @@ async function cargarEstadisticas() {
         const session = await getSession();
         if (!session) return;
 
+        // 🔥 CAMBIO: transmisiones
         const { data, error } = await supabase
-            .from('live_streams')
+            .from('transmisiones')
             .select('*')
-            .eq('usuario_id', session.user.id)
-            .order('iniciado_en', { ascending: false });
+            .eq('streamer_id', session.user.id)
+            .order('fecha_inicio', { ascending: false });
 
         if (error) throw error;
 
@@ -953,7 +1066,7 @@ async function cargarEstadisticas() {
 
         const totalStreams = data.length;
         const totalHoras = data.reduce((acc, s) => acc + (s.duracion || 0), 0) / 3600;
-        const totalEspectadores = data.reduce((acc, s) => acc + (s.espectadores || 0), 0);
+        const totalEspectadores = data.reduce((acc, s) => acc + (s.viewers_count || 0), 0);
         const totalDonaciones = data.reduce((acc, s) => acc + (s.donaciones_totales || 0), 0);
 
         showToast(`
