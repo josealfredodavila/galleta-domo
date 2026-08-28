@@ -96,7 +96,7 @@ function formatearTexto(texto) {
 }
 
 // ================================================================
-// 🔥 CARGA DE PERFIL CON CACHÉ
+// 🔥 CARGA DE PERFIL CON CACHÉ - USANDO RPC obtener_mi_perfil
 // ================================================================
 let perfilCache = null;
 let ultimaActualizacion = 0;
@@ -116,21 +116,21 @@ async function cargarPerfil(forzarActualizacion = false) {
             return;
         }
 
-        const { data, error } = await supabase
-            .from('usuarios')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
+        // 🔥 CAMBIO: usar RPC obtener_mi_perfil en lugar de select().single()
+        const { data, error } = await supabase.rpc('obtener_mi_perfil');
 
-        if (error && error.code !== 'PGRST116') throw error;
+        if (error) throw error;
 
-        if (data) {
-            perfilCache = data;
+        // data es un array, tomar el primer elemento
+        const perfil = data && data.length > 0 ? data[0] : null;
+
+        if (perfil) {
+            perfilCache = perfil;
             ultimaActualizacion = ahora;
             await actualizarEstadoEnLinea(true);
-            actualizarUI(data);
-            if (data.esim_iccid) {
-                await cargarDatosESIM(data.esim_iccid);
+            actualizarUI(perfil);
+            if (perfil.esim_iccid) {
+                await cargarDatosESIM(perfil.esim_iccid);
             }
             await cargarEstadoConexion();
             await cargarAmigosEnLinea();
@@ -141,9 +141,9 @@ async function cargarPerfil(forzarActualizacion = false) {
                 handle: session.user.email?.split('@')[0] || 'explorador',
                 bio: 'Explorando el ecosistema Sariel\'s · WEB3 · Comunidad',
                 avatar_url: null,
-                tokensAcumulados: 0,
-                progresoCanje: 0,
-                puedeCanjear: false,
+                tokens: 0,
+                progreso_canje: 0,
+                puede_canjear: false,
                 wallet_address: null,
                 esim_iccid: null,
                 esim_status: null,
@@ -262,7 +262,7 @@ async function cambiarEstado(online) {
 }
 
 // ================================================================
-// 👥 AMIGOS EN TIEMPO REAL
+// 👥 AMIGOS EN TIEMPO REAL - TABLA contactos
 // ================================================================
 
 let canalAmigos = null;
@@ -295,39 +295,40 @@ async function cargarAmigosEnLinea() {
         const session = await getSession();
         if (!session) return;
 
-        const { data: amigos, error: amigosError } = await supabase
-            .from('amigos')
-            .select('amigo_id')
-            .eq('user_id', session.user.id)
+        // 🔥 CAMBIO: contactos con usuario_id/contacto_id en lugar de amigos con user_id/amigo_id
+        const { data: contactos, error: contactosError } = await supabase
+            .from('contactos')
+            .select('contacto_id')
+            .eq('usuario_id', session.user.id)
             .eq('estado', 'aceptado');
 
-        if (amigosError) throw amigosError;
+        if (contactosError) throw contactosError;
 
-        if (!amigos || amigos.length === 0) {
+        if (!contactos || contactos.length === 0) {
             actualizarUIAmigos([]);
             return;
         }
 
-        const idsAmigos = amigos.map(a => a.amigo_id);
+        const idsContactos = contactos.map(c => c.contacto_id);
 
         const { data: enLinea, error: enLineaError } = await supabase
             .from('usuarios')
             .select('id, nombre, handle, avatar_url, online, ultima_conexion')
-            .in('id', idsAmigos)
+            .in('id', idsContactos)
             .eq('online', true);
 
         if (enLineaError) throw enLineaError;
 
-        const { data: todosAmigos, error: todosError } = await supabase
+        const { data: todosContactos, error: todosError } = await supabase
             .from('usuarios')
             .select('id, nombre, handle, avatar_url, online, ultima_conexion')
-            .in('id', idsAmigos);
+            .in('id', idsContactos);
 
         if (todosError) throw todosError;
 
-        actualizarUIAmigos(todosAmigos || [], enLinea || []);
+        actualizarUIAmigos(todosContactos || [], enLinea || []);
 
-        return { enLinea, todosAmigos };
+        return { enLinea, todosContactos };
 
     } catch (error) {
         console.error('Error cargando amigos en línea:', error);
@@ -394,19 +395,20 @@ async function notificarCambioEstado(online) {
         const session = await getSession();
         if (!session) return;
 
-        const { data: amigos, error } = await supabase
-            .from('amigos')
-            .select('amigo_id')
-            .eq('user_id', session.user.id)
+        // 🔥 CAMBIO: contactos con usuario_id/contacto_id
+        const { data: contactos, error } = await supabase
+            .from('contactos')
+            .select('contacto_id')
+            .eq('usuario_id', session.user.id)
             .eq('estado', 'aceptado');
 
-        if (error || !amigos) return;
+        if (error || !contactos) return;
 
-        for (const amigo of amigos) {
+        for (const contacto of contactos) {
             await supabase
                 .from('notificaciones')
                 .insert({
-                    user_id: amigo.amigo_id,
+                    user_id: contacto.contacto_id,
                     tipo: 'estado',
                     mensaje: `${perfilCache?.nombre || 'Un usuario'} está ${online ? '🟢 activo' : '⭕ inactivo'}`,
                     emisor_id: session.user.id,
@@ -728,8 +730,9 @@ async function comprarESIM(planId) {
             return;
         }
 
+        // 🔥 CAMBIO: planes_esim en lugar de esim_planes
         const { data: plan, error } = await supabase
-            .from('esim_planes')
+            .from('planes_esim')
             .select('*')
             .eq('id', planId)
             .single();
@@ -738,15 +741,16 @@ async function comprarESIM(planId) {
 
         showToast('⏳ Procesando compra de eSIM...', '', 5000);
 
+        // 🔥 CAMBIO: ordenes_esim con usuario_id, monto_mxn, monto_usdt, estado_pago
         const { data: orden, error: ordenError } = await supabase
-            .from('esim_ordenes')
+            .from('ordenes_esim')
             .insert({
-                user_id: session.user.id,
+                usuario_id: session.user.id,
                 plan_id: planId,
                 cantidad_datos_gb: plan.datos_gb,
-                precio_mxn: plan.precio_mxn,
-                precio_usdt: plan.precio_usdt,
-                estado: 'pendiente_pago'
+                monto_mxn: plan.precio_mxn,
+                monto_usdt: plan.precio_usdt,
+                estado_pago: 'pendiente'
             })
             .select()
             .single();
@@ -872,8 +876,9 @@ async function obtenerEstadoESIM(iccid) {
 
 async function obtenerPlanesESIM() {
     try {
+        // 🔥 CAMBIO: planes_esim en lugar de esim_planes
         const { data, error } = await supabase
-            .from('esim_planes')
+            .from('planes_esim')
             .select('*')
             .eq('activo', true)
             .order('precio_mxn', { ascending: true });
@@ -978,15 +983,16 @@ async function verificarPago(ordenId) {
     statusEl.textContent = '⏳ Verificando pago...';
 
     try {
+        // 🔥 CAMBIO: ordenes_esim con estado_pago
         const { data, error } = await supabase
-            .from('esim_ordenes')
-            .select('estado, esim_iccid')
+            .from('ordenes_esim')
+            .select('estado_pago, esim_iccid')
             .eq('id', ordenId)
             .single();
 
         if (error) throw error;
 
-        if (data.estado === 'pagado' || data.estado === 'activado') {
+        if (data.estado_pago === 'pagado' || data.estado_pago === 'activado') {
             statusEl.textContent = '✅ ¡Pago confirmado! Activando eSIM...';
             
             if (data.esim_iccid) {
@@ -998,10 +1004,10 @@ async function verificarPago(ordenId) {
                 showToast('🎉 ¡eSIM activado exitosamente!', 'success');
                 cargarPerfil(true);
             }, 2000);
-        } else if (data.estado === 'pendiente_pago') {
+        } else if (data.estado_pago === 'pendiente') {
             statusEl.textContent = '⏳ Aún no se confirma el pago. Espera unos minutos.';
         } else {
-            statusEl.textContent = '❌ Estado: ' + data.estado;
+            statusEl.textContent = '❌ Estado: ' + data.estado_pago;
         }
 
     } catch (error) {
@@ -1241,7 +1247,7 @@ function actualizarUIHistorialQR(historial = []) {
 }
 
 // ================================================================
-// 🎯 ACTUALIZAR UI PRINCIPAL
+// 🎯 ACTUALIZAR UI PRINCIPAL - CAMPOS CORREGIDOS
 // ================================================================
 function actualizarUI(data) {
     const nombreEl = document.getElementById('perfilNombre');
@@ -1282,8 +1288,9 @@ function actualizarUI(data) {
         document.getElementById('btnDesconectarWallet').style.display = 'none';
     }
 
+    // 🔥 CAMBIO: tokens en lugar de tokensAcumulados
     const stats = [
-        { id: 'statTokens', value: data.tokensAcumulados || 0 },
+        { id: 'statTokens', value: data.tokens || 0 },
         { id: 'statNFTS', value: data.nfts || 0 },
         { id: 'statSeguidores', value: data.seguidores || 0 },
         { id: 'statSiguiendo', value: data.siguiendo || 0 }
@@ -1296,9 +1303,10 @@ function actualizarUI(data) {
         }
     });
 
-    const tokens = data.tokensAcumulados || 0;
+    // 🔥 CAMBIO: tokens, progreso_canje, puede_canjear
+    const tokens = data.tokens || 0;
     const progreso = Math.min(tokens, 12);
-    const puedeCanjear = data.puedeCanjear || false;
+    const puedeCanjear = data.puede_canjear || false;
 
     const progressFill = document.getElementById('progressFill');
     const progressText = document.getElementById('progressText');
@@ -1322,7 +1330,7 @@ function actualizarUI(data) {
 
     if (tokenTotal) tokenTotal.textContent = tokens;
     if (tokenDisponibles) tokenDisponibles.textContent = tokens;
-    if (tokenNFTs) tokenNFTs.textContent = data.progresoCanje || 0;
+    if (tokenNFTs) tokenNFTs.textContent = data.progreso_canje || 0;
 
     const editNombre = document.getElementById('editNombre');
     const editHandle = document.getElementById('editHandle');
@@ -1739,7 +1747,7 @@ async function subirFoto(event) {
 }
 
 // ================================================================
-// 💬 INTERACCIONES SOCIALES
+// 💬 INTERACCIONES SOCIALES - TABLAS CORREGIDAS
 // ================================================================
 async function reaccionarPublicacion(postId, tipoReaccion) {
     try {
@@ -1749,13 +1757,14 @@ async function reaccionarPublicacion(postId, tipoReaccion) {
             return;
         }
 
+        // 🔥 CAMBIO: usuario_id en lugar de user_id
         const { error } = await supabase
             .from('reacciones')
             .upsert({
                 post_id: postId,
-                user_id: session.user.id,
+                usuario_id: session.user.id,
                 tipo: tipoReaccion
-            }, { onConflict: 'post_id, user_id' });
+            }, { onConflict: 'post_id, usuario_id' });
 
         if (error) throw error;
         showToast(`❤️ Reaccionaste con ${tipoReaccion}`, 'success');
@@ -1779,11 +1788,12 @@ async function comentarPublicacion(postId, contenido) {
 
         const textoFormateado = formatearTexto(contenido);
 
+        // 🔥 CAMBIO: muro_comentarios en lugar de comentarios, usuario_id en lugar de user_id
         const { error } = await supabase
-            .from('comentarios')
+            .from('muro_comentarios')
             .insert({
                 post_id: postId,
-                user_id: session.user.id,
+                usuario_id: session.user.id,
                 contenido: textoFormateado
             });
 
@@ -1797,7 +1807,7 @@ async function comentarPublicacion(postId, contenido) {
 }
 
 // ================================================================
-// 👥 SISTEMA DE AMIGOS
+// 👥 SISTEMA DE AMIGOS - TABLA contactos
 // ================================================================
 async function agregarAmigo(amigoId) {
     try {
@@ -1807,11 +1817,12 @@ async function agregarAmigo(amigoId) {
             return;
         }
 
+        // 🔥 CAMBIO: contactos con usuario_id/contacto_id
         const { error } = await supabase
-            .from('amigos')
+            .from('contactos')
             .insert({
-                user_id: session.user.id,
-                amigo_id: amigoId,
+                usuario_id: session.user.id,
+                contacto_id: amigoId,
                 estado: 'pendiente'
             });
 
