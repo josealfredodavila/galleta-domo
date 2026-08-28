@@ -1,1 +1,415 @@
-<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"/><title>◈ Cookies - Sariel's</title></head><body><h1>Política de Cookies</h1></body></html>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>◈ Aviso de Cookies · Sariel's</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+    <style>
+        /* ===== ESTILOS COMPARTIDOS ===== */
+        :root {
+            --gold-cosmic: #D4AF37;
+            --gold-dim: rgba(212, 168, 87, 0.15);
+            --text-primary: #e8f0f8;
+            --text-secondary: #8ba3c7;
+            --text-muted: #4a6a8a;
+            --space-deep: #05080f;
+            --radius: 16px;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: var(--space-deep);
+            color: var(--text-primary);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            min-height: 100vh;
+            line-height: 1.6;
+            padding: 0;
+        }
+        .terminos-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            background: rgba(15, 45, 26, 0.3);
+            border: 1px solid var(--gold-dim);
+            border-radius: var(--radius);
+            backdrop-filter: blur(10px);
+        }
+        .terminos-container h1 {
+            font-family: 'Orbitron', monospace;
+            font-size: 2rem;
+            color: var(--gold-cosmic);
+            text-align: center;
+            margin-bottom: 8px;
+        }
+        .terminos-container .fecha {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-bottom: 30px;
+            border-bottom: 1px solid var(--gold-dim);
+            padding-bottom: 20px;
+        }
+        .terminos-container h2 {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.2rem;
+            color: var(--gold-cosmic);
+            margin-top: 30px;
+            margin-bottom: 12px;
+            border-left: 4px solid var(--gold-cosmic);
+            padding-left: 14px;
+        }
+        .terminos-container p {
+            color: var(--text-secondary);
+            line-height: 1.7;
+            margin-bottom: 12px;
+            font-size: 0.95rem;
+        }
+        .terminos-container ul {
+            list-style: none;
+            padding-left: 10px;
+            margin: 12px 0 18px 0;
+        }
+        .terminos-container ul li {
+            padding: 6px 0 6px 28px;
+            position: relative;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+        .terminos-container ul li::before {
+            content: "✦";
+            color: var(--gold-cosmic);
+            position: absolute;
+            left: 4px;
+            font-size: 0.8rem;
+            top: 8px;
+        }
+        .terminos-container .art {
+            background: rgba(212, 168, 87, 0.04);
+            border-left: 3px solid rgba(212, 168, 87, 0.2);
+            padding: 14px 20px;
+            border-radius: 10px;
+            margin: 18px 0;
+        }
+        .terminos-container .art strong {
+            color: var(--gold-cosmic);
+        }
+        .terminos-container .divisor {
+            border: none;
+            border-top: 1px solid rgba(212, 168, 87, 0.12);
+            margin: 40px 0 20px 0;
+        }
+        .terminos-container .footer-tyc {
+            text-align: center;
+            margin-top: 45px;
+            padding-top: 25px;
+            border-top: 1px solid rgba(212, 168, 87, 0.1);
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+        .btn-volver {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 12px 32px;
+            background: linear-gradient(135deg, var(--gold-cosmic), #b8923a);
+            color: #0a0c10;
+            font-weight: 700;
+            text-decoration: none;
+            border-radius: 40px;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            font-family: 'Orbitron', monospace;
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        .btn-volver.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .btn-volver.active:hover {
+            transform: scale(1.03);
+            box-shadow: 0 0 30px rgba(212, 168, 87, 0.25);
+        }
+        .text-center { text-align: center; }
+        .aceptacion-container {
+            margin-top: 30px;
+            padding: 20px;
+            background: rgba(212, 168, 87, 0.05);
+            border: 1px solid rgba(212, 168, 87, 0.15);
+            border-radius: 12px;
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+        }
+        .aceptacion-container input[type="checkbox"] {
+            width: 22px;
+            height: 22px;
+            accent-color: #D4AF37;
+            cursor: pointer;
+            flex-shrink: 0;
+            appearance: none;
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(212, 168, 87, 0.3);
+            border-radius: 4px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        .aceptacion-container input[type="checkbox"]:checked {
+            background: #D4AF37;
+            border-color: #D4AF37;
+        }
+        .aceptacion-container input[type="checkbox"]:checked::after {
+            content: "✓";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #05080f;
+            font-size: 14px;
+            font-weight: 700;
+        }
+        .aceptacion-container label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            cursor: pointer;
+        }
+        .aceptacion-container label strong {
+            color: var(--gold-cosmic);
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0 16px;
+            border-bottom: 2px solid var(--gold-dim);
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 10px;
+            backdrop-filter: blur(10px);
+            position: relative;
+            max-width: 900px;
+            margin-left: auto;
+            margin-right: auto;
+            padding-left: 20px;
+            padding-right: 20px;
+        }
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--gold-cosmic), var(--gold-cosmic), transparent);
+            opacity: 0.4;
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+        }
+        .logo-icon { font-size: 2rem; filter: drop-shadow(0 0 20px rgba(212, 168, 87, 0.2)); }
+        .logo-text {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.3rem;
+            font-weight: 900;
+            letter-spacing: 2px;
+            background: linear-gradient(135deg, var(--gold-cosmic), #b8923a);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .logo-badge {
+            font-size: 0.5rem;
+            background: linear-gradient(135deg, var(--gold-cosmic), #b8923a);
+            color: #0a0c10;
+            padding: 2px 12px;
+            border-radius: 20px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .header-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .network-badge {
+            font-size: 0.7rem;
+            color: var(--gold-cosmic);
+            background: rgba(212, 168, 87, 0.1);
+            padding: 4px 14px;
+            border-radius: 20px;
+            border: 1px solid rgba(212, 168, 87, 0.2);
+        }
+        #stars-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+        .nebula {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(120px);
+            opacity: 0.10;
+            pointer-events: none;
+            z-index: 0;
+            animation: nebula-drift 25s ease-in-out infinite alternate;
+        }
+        .nebula-1 { width: 700px; height: 700px; background: #0B3D2E; top: -15%; right: -15%; }
+        .nebula-2 { width: 600px; height: 600px; background: var(--gold-cosmic); bottom: -15%; left: -15%; animation-delay: -8s; opacity: 0.05; }
+        .nebula-3 { width: 500px; height: 500px; background: #00e5ff; top: 50%; left: 50%; transform: translate(-50%, -50%); animation-delay: -15s; opacity: 0.04; }
+        @keyframes nebula-drift {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(40px, -30px) scale(1.15); }
+        }
+        .container { max-width: 900px; margin: 0 auto; padding: 0 20px; }
+        .main { position: relative; z-index: 1; }
+    </style>
+</head>
+<body>
+    <canvas id="stars-canvas"></canvas>
+    <div class="nebula nebula-1"></div>
+    <div class="nebula nebula-2"></div>
+    <div class="nebula nebula-3"></div>
+
+    <div id="app">
+        <header class="header">
+            <div class="header-content" style="display:flex;justify-content:space-between;align-items:center;width:100%;flex-wrap:wrap;gap:10px;">
+                <a href="/" class="logo">
+                    <span class="logo-icon"><span style="font-size:2rem;color:var(--gold-cosmic);">◈</span></span>
+                    <span class="logo-text">Sariel's</span>
+                    <span class="logo-badge">✦ WEB3</span>
+                </a>
+                <div class="header-info">
+                    <span class="network-badge">🟢 Polygon</span>
+                </div>
+            </div>
+        </header>
+
+        <main class="main">
+            <div class="container">
+                <div class="terminos-container">
+
+                    <h1>✦ Aviso de Cookies</h1>
+                    <div class="fecha">📅 Última actualización: 10 de agosto de 2026</div>
+
+                    <h2>📘 1. ¿Qué son las Cookies?</h2>
+                    <div class="art">
+                        <p>Las cookies son pequeños archivos de texto que los sitios web colocan en tu dispositivo cuando los visitas. Estas permiten recordar tus preferencias, mejorar la experiencia de navegación y analizar el tráfico del sitio.</p>
+                    </div>
+
+                    <h2>📗 2. Tipos de Cookies que Utilizamos</h2>
+                    <div class="art">
+                        <p><strong>2.1. Cookies Técnicas (Esenciales):</strong> Necesarias para el funcionamiento básico de la plataforma. Permiten la autenticación, la navegación y la gestión de sesiones.</p>
+                        <p><strong>2.2. Cookies de Preferencias:</strong> Guardan tus configuraciones personales (idioma, tema oscuro/claro, etc.).</p>
+                        <p><strong>2.3. Cookies de Rendimiento:</strong> Nos ayudan a entender cómo los usuarios interactúan con la plataforma (análisis de tráfico y comportamiento).</p>
+                        <p><strong>2.4. Cookies de Marketing:</strong> Utilizadas para mostrarte contenido relevante y medir la efectividad de campañas publicitarias.</p>
+                    </div>
+
+                    <h2>📙 3. ¿Qué Cookies Específicas Usamos?</h2>
+                    <div class="art">
+                        <p><strong>3.1. Cookies de Supabase:</strong> Para autenticación y gestión de sesiones de usuarios.</p>
+                        <p><strong>3.2. Cookies de Cloudflare:</strong> Para optimización de seguridad y rendimiento (CDN).</p>
+                        <p><strong>3.3. Cookies de LocalStorage:</strong> Almacenamiento local para preferencias y datos temporales de la plataforma.</p>
+                        <p><strong>3.4. Cookies de Terceros:</strong> (Si usamos Google Analytics, Stripe o similares).</p>
+                    </div>
+
+                    <h2>📕 4. ¿Cómo Controlar las Cookies?</h2>
+                    <div class="art">
+                        <p><strong>4.1. Configuración del Navegador:</strong> Puedes gestionar las cookies desde la configuración de tu navegador.</p>
+                        <ul>
+                            <li><strong>Google Chrome:</strong> Configuración → Privacidad y seguridad → Cookies y otros datos de sitios.</li>
+                            <li><strong>Mozilla Firefox:</strong> Opciones → Privacidad y seguridad → Cookies y datos del sitio.</li>
+                            <li><strong>Microsoft Edge:</strong> Configuración → Privacidad, búsqueda y servicios → Cookies.</li>
+                            <li><strong>Safari:</strong> Preferencias → Privacidad → Gestionar datos de sitios web.</li>
+                        </ul>
+                        <p><strong>4.2. Desactivar Cookies:</strong> Puedes bloquear todas las cookies, pero esto puede afectar la funcionalidad de la plataforma.</p>
+                    </div>
+
+                    <h2>📒 5. Cookies de Terceros</h2>
+                    <div class="art">
+                        <p><strong>5.1. Proveedores Externos:</strong> Algunos servicios que utilizamos (como Stripe, Cloudflare o Supabase) pueden colocar cookies propias para funcionar correctamente.</p>
+                        <p><strong>5.2. Políticas de Terceros:</strong> Te recomendamos revisar las políticas de privacidad de estos proveedores para más información.</p>
+                    </div>
+
+                    <h2>📘 6. Duración de las Cookies</h2>
+                    <div class="art">
+                        <p><strong>6.1. Cookies de Sesión:</strong> Se eliminan cuando cierras el navegador.</p>
+                        <p><strong>6.2. Cookies Persistentes:</strong> Permanecen en tu dispositivo por un período determinado (hasta 1 año) para recordar tus preferencias.</p>
+                    </div>
+
+                    <h2>📙 7. Actualizaciones del Aviso de Cookies</h2>
+                    <div class="art">
+                        <p><strong>7.1. Modificaciones:</strong> Podemos actualizar este aviso periódicamente para reflejar cambios en nuestras prácticas.</p>
+                        <p><strong>7.2. Notificaciones:</strong> Te informaremos de cambios significativos a través de la plataforma o por correo electrónico.</p>
+                    </div>
+
+                    <h2>📗 8. Contacto</h2>
+                    <div class="art">
+                        <p><strong>Correo electrónico:</strong> csarielscontacto@gmail.com</p>
+                        <p><strong>Dirección postal:</strong> Puebla, México.</p>
+                    </div>
+
+                    <hr class="divisor" />
+
+                    <div class="footer-tyc">
+                        <p>© <strong>Sariel's</strong>. Todos los derechos reservados. Puebla, México 🇲🇽</p>
+                    </div>
+
+                    <div class="aceptacion-container">
+                        <input type="checkbox" id="aceptoCookies" />
+                        <label for="aceptoCookies">
+                            <strong>Acepto el uso de cookies</strong> según lo descrito en este aviso.
+                            <br /><br />
+                            <span style="font-size: 0.85rem; opacity: 0.7;">
+                                🍪 Puedes cambiar tus preferencias en cualquier momento desde la configuración de tu navegador.
+                            </span>
+                        </label>
+                    </div>
+
+                    <div class="text-center">
+                        <a href="/" class="btn-volver" id="btnVolver">← Volver a la plataforma</a>
+                    </div>
+
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const checkbox = document.getElementById('aceptoCookies');
+            const btnVolver = document.getElementById('btnVolver');
+
+            btnVolver.classList.remove('active');
+
+            checkbox.addEventListener('change', function() {
+                if (this.checked) btnVolver.classList.add('active');
+                else btnVolver.classList.remove('active');
+            });
+
+            btnVolver.addEventListener('click', function(e) {
+                if (!checkbox.checked) {
+                    e.preventDefault();
+                    checkbox.style.borderColor = '#ff3366';
+                    checkbox.style.boxShadow = '0 0 20px rgba(255, 51, 102, 0.3)';
+                    setTimeout(() => {
+                        checkbox.style.borderColor = '';
+                        checkbox.style.boxShadow = '';
+                    }, 1500);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
