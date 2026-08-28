@@ -66,7 +66,7 @@
         .header-actions .nav-link.active { color: var(--gold); background: rgba(212, 175, 55, 0.1); }
         .header-actions .nav-link.admin { color: var(--gold); border: 1px solid var(--gold); }
 
-        .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 20px; border-radius: 30px; font-size: 0.7rem; font-weight: 600; border: none; cursor: pointer; transition: var(--transition); font-family: 'Inter', sans-serif; }
+        .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 20px; border-radius: 30px; font-size: 0.7rem; font-weight: 600; border: none; cursor: pointer; transition: var(--transition); font-family: 'Inter', sans-serif; text-decoration: none; }
         .btn-gold { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); box-shadow: 0 4px 20px rgba(212, 175, 55, 0.2); }
         .btn-gold:hover { transform: translateY(-2px); box-shadow: var(--shadow-gold); }
         .btn-outline { background: transparent; color: var(--text-secondary); border: 1px solid var(--glass-border); }
@@ -100,8 +100,8 @@
         }
 
         .tabs-container { margin-bottom: 20px; }
-        .tabs { display: flex; gap: 4px; background: var(--glass-bg); border-radius: var(--radius); padding: 4px; border: 1px solid var(--glass-border); }
-        .tab-btn { flex: 1; padding: 10px 16px; border: none; background: transparent; color: var(--text-muted); font-size: 0.75rem; font-weight: 600; border-radius: 10px; cursor: pointer; }
+        .tabs { display: flex; gap: 4px; background: var(--glass-bg); border-radius: var(--radius); padding: 4px; border: 1px solid var(--glass-border); flex-wrap: wrap; }
+        .tab-btn { flex: 1; padding: 10px 16px; border: none; background: transparent; color: var(--text-muted); font-size: 0.75rem; font-weight: 600; border-radius: 10px; cursor: pointer; min-width: 80px; }
         .tab-btn.active { background: rgba(212, 175, 55, 0.15); color: var(--gold); }
         .tab-content { display: none; animation: fadeIn 0.3s ease; }
         .tab-content.active { display: block; }
@@ -111,7 +111,9 @@
         @media (max-width: 768px) { .auth-section { grid-template-columns: 1fr; } }
         .auth-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius); padding: 24px; }
         .auth-card h3 { font-family: 'Orbitron', monospace; color: var(--gold); font-size: 0.95rem; margin-bottom: 12px; }
+        .auth-card .sub { font-size: 0.7rem; color: var(--text-muted); margin-bottom: 12px; }
         .auth-card input { width: 100%; padding: 10px 14px; background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); border-radius: 10px; color: var(--text-primary); font-size: 0.85rem; margin-bottom: 10px; }
+        .auth-card input:focus { outline: none; border-color: var(--gold); }
         .auth-card .btn { width: 100%; justify-content: center; padding: 10px; }
 
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
@@ -125,6 +127,7 @@
         .domo-price { font-size: 1.5rem; font-weight: 700; color: var(--gold); font-family: 'Orbitron', monospace; }
         .qty-control { display: flex; align-items: center; justify-content: center; gap: 14px; margin: 12px 0; }
         .qty-btn { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--glass-border); background: transparent; color: var(--text-primary); font-size: 1rem; cursor: pointer; }
+        .qty-btn:hover { border-color: var(--gold); color: var(--gold); }
         .qty-value { font-size: 1.1rem; font-weight: 600; color: var(--gold); }
 
         .status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
@@ -133,6 +136,24 @@
         .status-value { font-size: 1.1rem; font-weight: 700; color: var(--gold); }
         .progress-bar { width: 100%; height: 4px; background: rgba(212, 175, 55, 0.1); border-radius: 2px; margin: 4px 0; }
         .progress-fill { height: 100%; background: linear-gradient(90deg, var(--gold), var(--gold-light)); border-radius: 2px; }
+
+        .internet-grid-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 12px;
+            margin-top: 12px;
+        }
+        .internet-card {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+        }
+        .internet-card .name { font-family: 'Orbitron', monospace; font-size: 0.8rem; color: var(--gold); }
+        .internet-card .data { font-size: 1.2rem; font-weight: 700; color: white; }
+        .internet-card .price { color: var(--gold); font-size: 0.9rem; }
+        .internet-card .btn { margin-top: 8px; width: 100%; justify-content: center; padding: 6px; font-size: 0.6rem; }
 
         .footer { margin-top: 30px; padding-top: 16px; border-top: 1px solid var(--glass-border); display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--text-muted); flex-wrap: wrap; gap: 10px; }
         .footer .brand { color: var(--gold); font-weight: 600; }
@@ -171,6 +192,23 @@
             border-radius: 12px; 
             cursor: pointer; 
             font-size: 0.6rem;
+        }
+        .logout-btn:hover { background: rgba(255, 51, 102, 0.1); }
+
+        .admin-link {
+            color: var(--gold);
+            text-decoration: none;
+            font-size: 0.6rem;
+            border-bottom: 1px dotted rgba(212, 175, 55, 0.2);
+        }
+        .admin-link:hover { border-bottom-color: var(--gold); }
+
+        @media (max-width: 600px) {
+            .tabs { flex-direction: column; }
+            .tab-btn { flex: none; }
+            .header { flex-direction: column; align-items: flex-start; gap: 10px; }
+            .header-actions { width: 100%; flex-wrap: wrap; }
+            #sessionInfo { flex-wrap: wrap; }
         }
     </style>
 </head>
@@ -268,10 +306,56 @@
             </div>
         </div>
 
+        <!-- ===== PESTAÑA INTERNET ACTUALIZADA ===== -->
         <div id="tab-internet" class="tab-content">
             <div class="panel">
-                <h2>◈ Internet Sariel's</h2>
-                <p style="color:var(--text-secondary);">Próximamente: Navegador descentralizado, DNS on-chain y más.</p>
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                    <h2 style="color:var(--gold); font-family:'Orbitron',monospace; font-size:1rem;">◈ Internet de alta velocidad</h2>
+                    <span style="font-size:0.6rem; background:rgba(0,214,143,0.15); color:#00d68f; padding:2px 12px; border-radius:20px;">4G/5G</span>
+                </div>
+                <p style="color:var(--text-secondary); font-size:0.8rem; margin-top:4px;">
+                    Paquetes de datos móviles · Activación en 2 minutos · Paga en MXN o USDT
+                </p>
+                
+                <!-- Previsualización de paquetes -->
+                <div class="internet-grid-cards" id="internetPreview">
+                    <div class="internet-card">
+                        <div class="name">Básico</div>
+                        <div class="data">3 GB</div>
+                        <div style="font-size:0.6rem;color:var(--text-muted);">7 días</div>
+                        <div class="price">$79 MXN</div>
+                        <a href="/internet" class="btn btn-gold" style="text-decoration:none;">Ver</a>
+                    </div>
+                    <div class="internet-card" style="border-color:var(--gold);">
+                        <div class="name" style="color:var(--gold);">Chido</div>
+                        <div class="data">10 GB</div>
+                        <div style="font-size:0.6rem;color:var(--text-muted);">15 días</div>
+                        <div class="price">$169 MXN</div>
+                        <a href="/internet" class="btn btn-gold" style="text-decoration:none;">Ver</a>
+                    </div>
+                    <div class="internet-card">
+                        <div class="name">Pro</div>
+                        <div class="data">30 GB</div>
+                        <div style="font-size:0.6rem;color:var(--text-muted);">30 días</div>
+                        <div class="price">$299 MXN</div>
+                        <a href="/internet" class="btn btn-gold" style="text-decoration:none;">Ver</a>
+                    </div>
+                    <div class="internet-card">
+                        <div class="name">Ilimitado</div>
+                        <div class="data">∞</div>
+                        <div style="font-size:0.6rem;color:var(--text-muted);">30 días</div>
+                        <div class="price">$549 MXN</div>
+                        <a href="/internet" class="btn btn-gold" style="text-decoration:none;">Ver</a>
+                    </div>
+                </div>
+                
+                <div style="margin-top:16px; display:flex; gap:12px; flex-wrap:wrap; justify-content:center;">
+                    <a href="/internet" class="btn btn-gold" style="text-decoration:none; padding:10px 32px;">⟡ Ver todos los paquetes</a>
+                    <a href="/admin-internet" class="btn btn-outline" style="text-decoration:none; padding:10px 24px;">⚙️ Admin</a>
+                </div>
+                <p style="font-size:0.55rem;color:var(--text-muted);text-align:center;margin-top:8px;">
+                    ◈ Cobertura: Puebla, CDMX, Edomex · Tethering incluido
+                </p>
             </div>
         </div>
 
