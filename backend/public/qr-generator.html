@@ -1,1 +1,1066 @@
-<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"/><title>◈ QR Generator - Sariel's</title></head><body><h1>Generador de QRs</h1></body></html>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>◈ Generador de QRs · Sariel's</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet" />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+    <style>
+        /* ================================================================
+           ESTILOS PROFESIONALES - GENERADOR DE QRs
+           ================================================================ */
+        :root {
+            --gold: #D4AF37;
+            --gold-dark: #b8923a;
+            --gold-light: #e8c84a;
+            --green-deep: #0F2D1A;
+            --green-mid: #1a3d2a;
+            --space: #05080f;
+            --text-primary: #f0f4f8;
+            --text-secondary: #a0b8cc;
+            --text-muted: #5a7a8a;
+            --glass-bg: rgba(15, 45, 26, 0.4);
+            --glass-border: rgba(212, 175, 55, 0.1);
+            --shadow-gold: 0 8px 32px rgba(212, 175, 55, 0.15);
+            --shadow-gold-strong: 0 0 60px rgba(212, 175, 55, 0.15);
+            --radius: 16px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --success: #00b894;
+            --danger: #ff3366;
+            --warning: #f7d44a;
+            --bronze: #CD7F32;
+            --bronze-light: #D4A574;
+            --bronze-dark: #8B5A2B;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: var(--space);
+            color: var(--text-primary);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            min-height: 100vh;
+            line-height: 1.6;
+            background-image: 
+                radial-gradient(ellipse at 20% 50%, rgba(15, 45, 26, 0.3) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 50%, rgba(212, 175, 55, 0.05) 0%, transparent 60%);
+            padding: 20px;
+        }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--space); }
+        ::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 3px; }
+
+        .container { max-width: 1000px; margin: 0 auto; }
+
+        /* ===== HEADER ===== */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 0;
+            border-bottom: 2px solid var(--glass-border);
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+        }
+        .logo-hex {
+            font-size: 2rem;
+            color: var(--gold);
+            font-weight: 800;
+            font-family: 'Orbitron', monospace;
+            text-shadow: 0 0 30px rgba(212, 175, 55, 0.3);
+        }
+        .logo-text {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: 1px;
+        }
+        .logo-text span { color: var(--gold); }
+        .logo-badge {
+            font-size: 0.5rem;
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            color: var(--space);
+            padding: 2px 12px;
+            border-radius: 20px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        /* ===== BOTONES ===== */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 20px;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: var(--transition);
+            text-decoration: none;
+            font-family: 'Inter', sans-serif;
+        }
+        .btn-gold {
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            color: var(--space);
+            box-shadow: 0 4px 20px rgba(212, 175, 55, 0.2);
+        }
+        .btn-gold:hover { transform: translateY(-2px); box-shadow: var(--shadow-gold); }
+        .btn-gold:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; }
+        .btn-outline {
+            background: transparent;
+            color: var(--text-secondary);
+            border: 1px solid var(--glass-border);
+        }
+        .btn-outline:hover { border-color: var(--gold); color: var(--gold); }
+        .btn-success {
+            background: linear-gradient(135deg, var(--success), #00a876);
+            color: var(--space);
+            box-shadow: 0 4px 20px rgba(0, 214, 143, 0.2);
+        }
+        .btn-success:hover { transform: translateY(-2px); box-shadow: 0 0 30px rgba(0, 214, 143, 0.3); }
+        .btn-danger {
+            background: rgba(255, 51, 102, 0.1);
+            color: var(--danger);
+            border: 1px solid rgba(255, 51, 102, 0.2);
+        }
+        .btn-danger:hover { background: rgba(255, 51, 102, 0.2); }
+        .btn-warning {
+            background: rgba(247, 212, 74, 0.1);
+            color: var(--warning);
+            border: 1px solid rgba(247, 212, 74, 0.2);
+        }
+        .btn-warning:hover { background: rgba(247, 212, 74, 0.2); }
+        .btn-sm { padding: 4px 12px; font-size: 0.55rem; }
+
+        /* ===== PANEL ===== */
+        .panel {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            padding: 24px;
+            backdrop-filter: blur(10px);
+            margin-bottom: 20px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.15);
+        }
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .panel-header h2 {
+            font-family: 'Orbitron', monospace;
+            color: var(--gold);
+            font-size: 1.1rem;
+        }
+        .panel-header .badge {
+            font-size: 0.55rem;
+            background: rgba(212, 175, 55, 0.1);
+            color: var(--gold);
+            padding: 2px 12px;
+            border-radius: 20px;
+            border: 1px solid rgba(212, 175, 55, 0.1);
+        }
+        .panel-header .badge.warning {
+            background: rgba(247, 212, 74, 0.1);
+            color: var(--warning);
+            border-color: rgba(247, 212, 74, 0.2);
+        }
+        .panel-body { display: flex; flex-direction: column; gap: 16px; }
+
+        /* ===== FORM ===== */
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .form-group label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+        .form-group input, .form-group select {
+            padding: 10px 14px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            outline: none;
+            transition: var(--transition);
+        }
+        .form-group input:focus, .form-group select:focus {
+            border-color: var(--gold);
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.05);
+        }
+        .form-group select option { background: var(--green-deep); }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        /* ===== QR GRID ===== */
+        .qr-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 16px;
+        }
+        .qr-card {
+            background: rgba(0,0,0,0.2);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            transition: var(--transition);
+        }
+        .qr-card:hover {
+            border-color: var(--gold);
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-gold);
+        }
+        .qr-card canvas, .qr-card img {
+            width: 150px;
+            height: 150px;
+            border-radius: 8px;
+            background: white;
+            padding: 8px;
+        }
+        .qr-card .qr-id {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.5rem;
+            color: var(--text-muted);
+            margin-top: 8px;
+            word-break: break-all;
+        }
+        .qr-card .qr-status {
+            font-size: 0.6rem;
+            margin-top: 4px;
+            padding: 2px 10px;
+            border-radius: 12px;
+            display: inline-block;
+        }
+        .qr-card .qr-status.usado {
+            background: rgba(255, 51, 102, 0.1);
+            color: var(--danger);
+            border: 1px solid rgba(255, 51, 102, 0.2);
+        }
+        .qr-card .qr-status.disponible {
+            background: rgba(0, 184, 148, 0.1);
+            color: var(--success);
+            border: 1px solid rgba(0, 184, 148, 0.2);
+        }
+        .qr-card .qr-actions {
+            display: flex;
+            gap: 6px;
+            justify-content: center;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+        .qr-card .qr-actions .btn { font-size: 0.5rem; padding: 3px 10px; }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-muted);
+        }
+        .empty-state .icon { font-size: 3rem; display: block; margin-bottom: 12px; }
+        .empty-state h3 { font-family: 'Orbitron', monospace; color: var(--text-secondary); font-size: 1rem; }
+        .empty-state p { font-size: 0.85rem; }
+
+        /* ===== TOAST ===== */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: var(--green-deep);
+            border: 2px solid var(--gold);
+            color: var(--gold);
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            box-shadow: var(--shadow-gold-strong);
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.4s ease;
+            z-index: 9999;
+            max-width: 400px;
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.error { border-color: var(--danger); color: var(--danger); }
+        .toast.warning { border-color: var(--warning); color: var(--warning); }
+
+        /* ===== PANTALLA DE AUTENTICACIÓN (CAPA 1) ===== */
+        #qrAuthScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(5, 8, 15, 0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            backdrop-filter: blur(20px);
+        }
+        #qrAuthScreen .auth-box {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            padding: 40px;
+            max-width: 420px;
+            width: 90%;
+            text-align: center;
+            box-shadow: var(--shadow-gold-strong);
+        }
+        #qrAuthScreen .auth-box .icon { font-size: 3rem; margin-bottom: 8px; }
+        #qrAuthScreen .auth-box h2 {
+            font-family: 'Orbitron', monospace;
+            color: var(--gold);
+            font-size: 1.4rem;
+            margin-bottom: 8px;
+        }
+        #qrAuthScreen .auth-box p {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-bottom: 20px;
+        }
+        #qrAuthScreen .auth-box input {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(0,0,0,0.4);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            outline: none;
+            transition: var(--transition);
+            margin-bottom: 12px;
+        }
+        #qrAuthScreen .auth-box input:focus {
+            border-color: var(--gold);
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.1);
+        }
+        #qrAuthScreen .auth-box .btn {
+            width: 100%;
+            justify-content: center;
+            padding: 12px;
+            font-size: 0.85rem;
+        }
+        #qrAuthScreen .auth-box .error-msg {
+            color: var(--danger);
+            font-size: 0.8rem;
+            margin-top: 8px;
+            min-height: 20px;
+        }
+        #qrAuthScreen .auth-box .hint {
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            margin-top: 12px;
+            opacity: 0.5;
+        }
+
+        /* ===== CAPA 2 ===== */
+        #qrGenerateLock {
+            display: none;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 16px;
+        }
+        #qrGenerateLock .icon { font-size: 2rem; display: block; margin-bottom: 8px; }
+        #qrGenerateLock h4 {
+            font-family: 'Orbitron', monospace;
+            color: var(--warning);
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+        }
+        #qrGenerateLock p {
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            margin-bottom: 12px;
+        }
+        #qrGenerateLock input {
+            padding: 10px 14px;
+            background: rgba(0,0,0,0.4);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            outline: none;
+            transition: var(--transition);
+            width: 100%;
+            max-width: 300px;
+            margin: 0 auto 10px;
+        }
+        #qrGenerateLock input:focus {
+            border-color: var(--gold);
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.1);
+        }
+        #qrGenerateLock .btn {
+            width: 100%;
+            max-width: 300px;
+            justify-content: center;
+            padding: 10px;
+        }
+        #qrGenerateLock .error-msg {
+            color: var(--danger);
+            font-size: 0.75rem;
+            margin-top: 8px;
+            min-height: 18px;
+        }
+
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 8px 12px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+        .status-bar .online {
+            color: var(--success);
+        }
+        .status-bar .offline {
+            color: var(--danger);
+        }
+
+        @media (max-width: 768px) {
+            .form-row { grid-template-columns: 1fr; }
+            .qr-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+            .header { flex-direction: column; align-items: flex-start; }
+            .header-actions { width: 100%; flex-wrap: wrap; }
+            #qrAuthScreen .auth-box { padding: 30px 20px; }
+        }
+
+        @media (max-width: 480px) {
+            .qr-grid { grid-template-columns: 1fr; }
+            .panel { padding: 16px; }
+            .qr-card canvas, .qr-card img { width: 120px; height: 120px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ===== PANTALLA DE AUTENTICACIÓN (CAPA 1) ===== -->
+    <div id="qrAuthScreen">
+        <div class="auth-box">
+            <div class="icon">🔒</div>
+            <h2>◈ Acceso restringido</h2>
+            <p>Ingresa la contraseña para acceder al <strong>Generador de QRs</strong></p>
+            <input type="password" id="qrPasswordInput" placeholder="Contraseña de acceso" autocomplete="off" />
+            <button class="btn btn-gold" onclick="verificarPasswordQR()">🔓 Acceder</button>
+            <div class="error-msg" id="qrAuthError"></div>
+            <div class="hint">🔑 Pista: El nombre de la marca + año actual</div>
+        </div>
+    </div>
+
+    <!-- ===== CONTENIDO PRINCIPAL ===== -->
+    <div id="qrContent" style="display:none;">
+
+        <div class="container">
+
+            <!-- ===== HEADER ===== -->
+            <header class="header">
+                <a href="/" class="logo">
+                    <span class="logo-hex">◈</span>
+                    <span class="logo-text">Sariel<span>'s</span></span>
+                    <span class="logo-badge">✦ ADMIN</span>
+                </a>
+                <div class="header-actions">
+                    <span style="font-size:0.6rem;color:var(--gold);background:rgba(212,175,55,0.1);padding:4px 14px;border-radius:20px;border:1px solid rgba(212,175,55,0.2);">
+                        🔒 Panel de administración
+                    </span>
+                    <a href="/" class="btn btn-outline btn-sm">🏠 Inicio</a>
+                    <button class="btn btn-outline btn-sm" onclick="cerrarSesionQR()" style="border-color:rgba(255,51,102,0.3);color:var(--danger);">🚪 Cerrar</button>
+                </div>
+            </header>
+
+            <!-- ===== STATUS BAR ===== -->
+            <div class="status-bar" id="statusBar">
+                <span>🔌 Servidor: <span id="serverStatus" class="offline">Desconectado</span></span>
+                <span id="qrCount">📋 0 QRs generados</span>
+                <span id="apiUrlDisplay">🌐 API: <span id="apiUrlText">https://galleta-domo.up.railway.app</span></span>
+            </div>
+
+            <!-- ===== PANEL: GENERAR QR ===== -->
+            <div class="panel">
+                <div class="panel-header">
+                    <h2>📱 Generar QR para domo</h2>
+                    <span class="badge warning">🔒 Doble seguridad</span>
+                </div>
+                <div class="panel-body">
+
+                    <!-- CAPA 2: Contraseña para generar -->
+                    <div id="qrGenerateLock">
+                        <span class="icon">🔐</span>
+                        <h4>Contraseña de generación</h4>
+                        <p>Para generar nuevos QRs necesitas la <strong>contraseña de administrador</strong></p>
+                        <input type="password" id="qrGeneratePassword" placeholder="Contraseña para generar" autocomplete="off" />
+                        <button class="btn btn-warning" onclick="verificarPasswordGenerar()">🔓 Desbloquear generación</button>
+                        <div class="error-msg" id="qrGenerateError"></div>
+                        <div style="font-size:0.55rem;color:var(--text-muted);margin-top:8px;opacity:0.5;">🔑 Pista: La palabra "Generar" + año actual</div>
+                    </div>
+
+                    <!-- Formulario de generación -->
+                    <div id="qrGenerateForm" style="display:none;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
+                            <span style="font-size:0.7rem;color:var(--text-muted);">🔓 Generación desbloqueada</span>
+                            <button class="btn btn-outline btn-sm" onclick="bloquearGeneracion()" style="border-color:rgba(255,51,102,0.3);color:var(--danger);">🔒 Bloquear generación</button>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Cantidad de QRs</label>
+                                <input type="number" id="qrCantidad" value="1" min="1" max="50" />
+                            </div>
+                            <div class="form-group">
+                                <label>Producto</label>
+                                <select id="qrProducto">
+                                    <option value="domo">🍪 Domo de galleta</option>
+                                    <option value="internet">🌐 Internet / SIM</option>
+                                    <option value="promocion">🎁 Promoción especial</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button class="btn btn-gold" onclick="generarQRsAPI()" style="width:100%;justify-content:center;padding:12px;">
+                            🚀 Generar QRs
+                        </button>
+                        <div id="generacionStatus" style="font-size:0.7rem;color:var(--text-muted);text-align:center;min-height:20px;margin-top:4px;"></div>
+                    </div>
+
+                    <div id="qrGenerateBloqueado" style="display:none;text-align:center;padding:20px;color:var(--text-muted);">
+                        <span style="font-size:2rem;display:block;margin-bottom:8px;">🔒</span>
+                        <p>La generación de QRs está bloqueada.<br />Ingresa la contraseña para habilitar.</p>
+                        <button class="btn btn-outline btn-sm" onclick="mostrarLockGenerar()" style="margin-top:8px;">🔓 Desbloquear</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== PANEL: QRs GENERADOS ===== -->
+            <div class="panel">
+                <div class="panel-header">
+                    <h2>📋 QRs generados</h2>
+                    <span class="badge" id="qrTotal">0 QRs</span>
+                </div>
+                <div class="panel-body">
+                    <div class="qr-grid" id="qrGrid">
+                        <div class="empty-state">
+                            <span class="icon">📭</span>
+                            <h3>No hay QRs generados</h3>
+                            <p>Genera QRs para tus domos y pégalos dentro de cada producto</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- ===== TOAST ===== -->
+    <div class="toast" id="toast"></div>
+
+    <!-- ===== SCRIPTS ===== -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <script>
+        // ================================================================
+        // CONFIGURACIÓN
+        // ================================================================
+        const QR_ACCESS_PASSWORD = 'Sariel2025';
+        const QR_GENERATE_PASSWORD = 'Generar2025';
+
+        // 🔥 URL CORRECTA DE LA API EN RAILWAY (sin /api al final)
+        const API_URL = window.location.hostname === 'localhost' 
+            ? 'http://localhost:3001' 
+            : 'https://galleta-domo.up.railway.app';
+
+        let generateUnlocked = false;
+        let token = localStorage.getItem('galleta_token') || null;
+
+        // ================================================================
+        // TOAST
+        // ================================================================
+        function showToast(msg, type = '') {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.className = 'toast show';
+            if (type === 'error') t.classList.add('error');
+            else if (type === 'warning') t.classList.add('warning');
+            else t.classList.remove('error', 'warning');
+            clearTimeout(t._timeout);
+            t._timeout = setTimeout(() => t.classList.remove('show'), 3500);
+        }
+
+        // ================================================================
+        // CAPA 1: AUTENTICACIÓN DE ACCESO
+        // ================================================================
+        function verificarPasswordQR() {
+            const input = document.getElementById('qrPasswordInput');
+            const error = document.getElementById('qrAuthError');
+            const password = input.value.trim();
+
+            if (password === QR_ACCESS_PASSWORD) {
+                document.getElementById('qrAuthScreen').style.display = 'none';
+                document.getElementById('qrContent').style.display = 'block';
+                localStorage.setItem('sariels_qr_auth', 'true');
+                cargarQRsDesdeAPI();
+                mostrarLockGenerar();
+                verificarConexionAPI();
+                showToast('✅ Acceso concedido. Bienvenido al panel de QRs.');
+            } else {
+                error.textContent = '❌ Contraseña incorrecta. Intenta de nuevo.';
+                input.value = '';
+                input.focus();
+                setTimeout(() => { error.textContent = ''; }, 3000);
+            }
+        }
+
+        function cerrarSesionQR() {
+            localStorage.removeItem('sariels_qr_auth');
+            localStorage.removeItem('sariels_qr_generate');
+            generateUnlocked = false;
+            document.getElementById('qrContent').style.display = 'none';
+            document.getElementById('qrAuthScreen').style.display = 'flex';
+            document.getElementById('qrPasswordInput').value = '';
+            document.getElementById('qrAuthError').textContent = '';
+            document.getElementById('qrGenerateLock').style.display = 'block';
+            document.getElementById('qrGenerateForm').style.display = 'none';
+            document.getElementById('qrGenerateBloqueado').style.display = 'none';
+            document.getElementById('qrGeneratePassword').value = '';
+            document.getElementById('qrGenerateError').textContent = '';
+            showToast('🔒 Sesión cerrada');
+        }
+
+        function verificarSesionQR() {
+            if (localStorage.getItem('sariels_qr_auth') === 'true') {
+                document.getElementById('qrAuthScreen').style.display = 'none';
+                document.getElementById('qrContent').style.display = 'block';
+                cargarQRsDesdeAPI();
+                mostrarLockGenerar();
+                verificarConexionAPI();
+                return true;
+            }
+            return false;
+        }
+
+        // ================================================================
+        // CAPA 2: CONTRASEÑA PARA GENERAR
+        // ================================================================
+        function mostrarLockGenerar() {
+            if (generateUnlocked) {
+                document.getElementById('qrGenerateLock').style.display = 'none';
+                document.getElementById('qrGenerateForm').style.display = 'block';
+                document.getElementById('qrGenerateBloqueado').style.display = 'none';
+            } else {
+                document.getElementById('qrGenerateLock').style.display = 'block';
+                document.getElementById('qrGenerateForm').style.display = 'none';
+                document.getElementById('qrGenerateBloqueado').style.display = 'none';
+                document.getElementById('qrGeneratePassword').value = '';
+                document.getElementById('qrGenerateError').textContent = '';
+            }
+        }
+
+        function verificarPasswordGenerar() {
+            const input = document.getElementById('qrGeneratePassword');
+            const error = document.getElementById('qrGenerateError');
+            const password = input.value.trim();
+
+            if (password === QR_GENERATE_PASSWORD) {
+                generateUnlocked = true;
+                document.getElementById('qrGenerateLock').style.display = 'none';
+                document.getElementById('qrGenerateForm').style.display = 'block';
+                document.getElementById('qrGenerateBloqueado').style.display = 'none';
+                error.textContent = '';
+                localStorage.setItem('sariels_qr_generate', 'true');
+                showToast('✅ Generación de QRs desbloqueada');
+            } else {
+                error.textContent = '❌ Contraseña de generación incorrecta';
+                input.value = '';
+                input.focus();
+                setTimeout(() => { error.textContent = ''; }, 3000);
+                showToast('❌ Contraseña de generación incorrecta', 'error');
+            }
+        }
+
+        function bloquearGeneracion() {
+            generateUnlocked = false;
+            localStorage.removeItem('sariels_qr_generate');
+            document.getElementById('qrGenerateLock').style.display = 'block';
+            document.getElementById('qrGenerateForm').style.display = 'none';
+            document.getElementById('qrGenerateBloqueado').style.display = 'none';
+            document.getElementById('qrGeneratePassword').value = '';
+            showToast('🔒 Generación bloqueada');
+        }
+
+        // ================================================================
+        // VERIFICAR CONEXIÓN A LA API
+        // ================================================================
+        async function verificarConexionAPI() {
+            const statusEl = document.getElementById('serverStatus');
+            const urlEl = document.getElementById('apiUrlText');
+            urlEl.textContent = API_URL;
+
+            try {
+                const response = await fetch(`${API_URL}/health`);
+                if (response.ok) {
+                    statusEl.textContent = '🟢 Conectado';
+                    statusEl.className = 'online';
+                } else {
+                    statusEl.textContent = '🟡 Error';
+                    statusEl.className = 'offline';
+                }
+            } catch (error) {
+                statusEl.textContent = '🔴 Desconectado';
+                statusEl.className = 'offline';
+                showToast('⚠️ No se pudo conectar al servidor', 'warning');
+            }
+        }
+
+        // ================================================================
+        // CARGAR QRs DESDE LA API
+        // ================================================================
+        async function cargarQRsDesdeAPI() {
+            try {
+                const response = await fetch(`${API_URL}/qrs`, {
+                    headers: {
+                        'Authorization': token ? `Bearer ${token}` : ''
+                    }
+                });
+
+                if (!response.ok) {
+                    renderizarQRsLocal();
+                    return;
+                }
+
+                const data = await response.json();
+                if (data.success && data.qrs) {
+                    renderizarQRs(data.qrs);
+                    document.getElementById('qrTotal').textContent = `${data.qrs.length} QRs`;
+                    document.getElementById('qrCount').textContent = `📋 ${data.qrs.length} QRs generados`;
+                } else {
+                    renderizarQRsLocal();
+                }
+            } catch (error) {
+                console.error('Error cargando QRs:', error);
+                renderizarQRsLocal();
+            }
+        }
+
+        // ================================================================
+        // RENDERIZAR QRs
+        // ================================================================
+        function renderizarQRs(qrs) {
+            const grid = document.getElementById('qrGrid');
+
+            if (!qrs || qrs.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-state" style="grid-column:1/-1;">
+                        <span class="icon">📭</span>
+                        <h3>No hay QRs generados</h3>
+                        <p>Genera QRs para tus domos y pégalos dentro de cada producto</p>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = qrs.map(qr => `
+                <div class="qr-card" id="qr-${qr.id}">
+                    <div id="qr-${qr.id}-canvas"></div>
+                    <div class="qr-id">${qr.id}</div>
+                    <div class="qr-status ${qr.usado ? 'usado' : 'disponible'}">
+                        ${qr.usado ? '❌ Usado' : '✅ Disponible'}
+                    </div>
+                    <div style="font-size:0.5rem;color:var(--text-muted);margin-top:2px;">
+                        ${qr.fecha ? new Date(qr.fecha).toLocaleDateString() : ''}
+                        ${qr.producto ? ` · ${qr.producto}` : ''}
+                    </div>
+                    <div class="qr-actions">
+                        ${!qr.usado ? `<button class="btn btn-success btn-sm" onclick="marcarUsadoAPI('${qr.id}')">✅ Marcar usado</button>` : ''}
+                        <button class="btn btn-outline btn-sm" onclick="descargarQR('${qr.id}')">📥 Descargar</button>
+                        <button class="btn btn-danger btn-sm" onclick="eliminarQRAPI('${qr.id}')">🗑️</button>
+                    </div>
+                </div>
+            `).join('');
+
+            qrs.forEach(qr => {
+                const container = document.getElementById(`qr-${qr.id}-canvas`);
+                if (container) {
+                    container.innerHTML = '';
+                    try {
+                        new QRCode(container, {
+                            text: JSON.stringify({ 
+                                qrId: qr.id, 
+                                producto: qr.producto || 'domo',
+                                apiUrl: API_URL
+                            }),
+                            width: 150,
+                            height: 150,
+                            colorDark: '#0F2D1A',
+                            colorLight: '#ffffff'
+                        });
+                    } catch (e) {
+                        container.innerHTML = '<div style="width:150px;height:150px;background:#f0f0f0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:0.7rem;color:#999;">QR</div>';
+                    }
+                }
+            });
+        }
+
+        function renderizarQRsLocal() {
+            const qrs = cargarQRsLocal();
+            renderizarQRs(qrs);
+            document.getElementById('qrTotal').textContent = `${qrs.length} QRs`;
+            document.getElementById('qrCount').textContent = `📋 ${qrs.length} QRs generados (local)`;
+        }
+
+        function cargarQRsLocal() {
+            const saved = localStorage.getItem('sariels_qrs');
+            if (saved) {
+                try { return JSON.parse(saved); } catch (e) {}
+            }
+            return [];
+        }
+
+        function guardarQRsLocal(qrs) {
+            localStorage.setItem('sariels_qrs', JSON.stringify(qrs));
+        }
+
+        // ================================================================
+        // GENERAR QRs VÍA API
+        // ================================================================
+        async function generarQRsAPI() {
+            if (!generateUnlocked) {
+                showToast('⚠️ Primero desbloquea la generación con la contraseña', 'warning');
+                document.getElementById('qrGenerateLock').style.display = 'block';
+                document.getElementById('qrGenerateForm').style.display = 'none';
+                return;
+            }
+
+            const cantidad = parseInt(document.getElementById('qrCantidad').value) || 1;
+            const producto = document.getElementById('qrProducto').value;
+            const status = document.getElementById('generacionStatus');
+
+            if (cantidad < 1 || cantidad > 50) {
+                showToast('⚠️ La cantidad debe ser entre 1 y 50', 'error');
+                return;
+            }
+
+            status.textContent = '⏳ Generando QRs...';
+
+            try {
+                const response = await fetch(`${API_URL}/generar-qrs`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': token ? `Bearer ${token}` : ''
+                    },
+                    body: JSON.stringify({ 
+                        cantidad: cantidad, 
+                        producto: producto 
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    const qrs = cargarQRsLocal();
+                    data.qrs.forEach(qr => {
+                        qrs.push({
+                            id: qr.id,
+                            producto: qr.producto || producto,
+                            usado: false,
+                            fecha: new Date().toISOString()
+                        });
+                    });
+                    guardarQRsLocal(qrs);
+
+                    renderizarQRs(data.qrs);
+                    document.getElementById('qrTotal').textContent = `${data.qrs.length} QRs`;
+                    document.getElementById('qrCount').textContent = `📋 ${data.qrs.length} QRs generados`;
+                    status.textContent = `✅ ${data.qrs.length} QR${data.qrs.length > 1 ? 's' : ''} generado${data.qrs.length > 1 ? 's' : ''} en el servidor`;
+                    showToast(`✅ ${data.qrs.length} QR${data.qrs.length > 1 ? 's' : ''} generado${data.qrs.length > 1 ? 's' : ''}`);
+                } else {
+                    generarQRsLocal(cantidad, producto);
+                }
+            } catch (error) {
+                console.error('Error generando QRs:', error);
+                generarQRsLocal(cantidad, producto);
+            }
+
+            setTimeout(() => { status.textContent = ''; }, 4000);
+        }
+
+        // ================================================================
+        // GENERAR QRs LOCAL (FALLBACK)
+        // ================================================================
+        function generarQRsLocal(cantidad, producto) {
+            const status = document.getElementById('generacionStatus');
+            const qrs = cargarQRsLocal();
+            const timestamp = Date.now();
+            const random = Math.random().toString(36).substring(2, 8);
+
+            for (let i = 0; i < cantidad; i++) {
+                qrs.push({
+                    id: `${producto.toUpperCase()}-${timestamp}-${random}-${i}`,
+                    producto: producto,
+                    usado: false,
+                    fecha: new Date().toISOString()
+                });
+            }
+
+            guardarQRsLocal(qrs);
+            renderizarQRs(qrs);
+            document.getElementById('qrTotal').textContent = `${qrs.length} QRs`;
+            document.getElementById('qrCount').textContent = `📋 ${qrs.length} QRs generados (local)`;
+            status.textContent = `✅ ${cantidad} QR${cantidad > 1 ? 's' : ''} generado${cantidad > 1 ? 's' : ''} (modo local)`;
+            showToast(`✅ ${cantidad} QR${cantidad > 1 ? 's' : ''} generado${cantidad > 1 ? 's' : ''}`);
+            setTimeout(() => { status.textContent = ''; }, 4000);
+        }
+
+        // ================================================================
+        // MARCAR USADO VÍA API
+        // ================================================================
+        async function marcarUsadoAPI(id) {
+            try {
+                const response = await fetch(`${API_URL}/qr/usar/${id}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': token ? `Bearer ${token}` : ''
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    await cargarQRsDesdeAPI();
+                    showToast(`✅ QR ${id} marcado como usado`);
+                } else {
+                    marcarUsadoLocal(id);
+                }
+            } catch (error) {
+                console.error('Error marcando QR:', error);
+                marcarUsadoLocal(id);
+            }
+        }
+
+        function marcarUsadoLocal(id) {
+            const qrs = cargarQRsLocal();
+            const qr = qrs.find(q => q.id === id);
+            if (qr) {
+                qr.usado = true;
+                guardarQRsLocal(qrs);
+                renderizarQRs(qrs);
+                showToast(`✅ QR ${id} marcado como usado (local)`);
+            }
+        }
+
+        // ================================================================
+        // ELIMINAR QR VÍA API
+        // ================================================================
+        async function eliminarQRAPI(id) {
+            if (!confirm(`¿Eliminar QR ${id}?`)) return;
+
+            try {
+                const response = await fetch(`${API_URL}/qr/eliminar/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': token ? `Bearer ${token}` : ''
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    await cargarQRsDesdeAPI();
+                    showToast(`🗑️ QR ${id} eliminado`);
+                } else {
+                    eliminarQRLocal(id);
+                }
+            } catch (error) {
+                console.error('Error eliminando QR:', error);
+                eliminarQRLocal(id);
+            }
+        }
+
+        function eliminarQRLocal(id) {
+            let qrs = cargarQRsLocal();
+            qrs = qrs.filter(q => q.id !== id);
+            guardarQRsLocal(qrs);
+            renderizarQRs(qrs);
+            showToast(`🗑️ QR ${id} eliminado (local)`);
+        }
+
+        // ================================================================
+        // DESCARGAR QR
+        // ================================================================
+        function descargarQR(id) {
+            const canvas = document.querySelector(`#qr-${id}-canvas canvas`);
+            if (canvas) {
+                const link = document.createElement('a');
+                link.download = `qr-${id}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                showToast(`📥 Descargando QR ${id}`);
+            } else {
+                showToast('⚠️ No se pudo descargar el QR', 'error');
+            }
+        }
+
+        // ================================================================
+        // ENTER PARA AUTENTICAR
+        // ================================================================
+        document.addEventListener('DOMContentLoaded', function() {
+            if (!verificarSesionQR()) {
+                document.getElementById('qrAuthScreen').style.display = 'flex';
+                document.getElementById('qrContent').style.display = 'none';
+            }
+
+            document.getElementById('qrPasswordInput').addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') verificarPasswordQR();
+            });
+
+            document.getElementById('qrGeneratePassword').addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') verificarPasswordGenerar();
+            });
+
+            console.log('◈ Sariel\'s - Generador de QRs con DOBLE CONTRASEÑA');
+            console.log('🔑 CAPA 1 (Acceso):', QR_ACCESS_PASSWORD);
+            console.log('🔑 CAPA 2 (Generar):', QR_GENERATE_PASSWORD);
+            console.log('🌐 API:', API_URL);
+        });
+    </script>
+
+</body>
+</html>
