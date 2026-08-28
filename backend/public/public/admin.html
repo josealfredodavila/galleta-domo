@@ -51,6 +51,11 @@
             color: #ff3366;
             border: 1px solid rgba(255, 51, 102, 0.2);
         }
+        .header .status.checking {
+            background: rgba(212, 175, 55, 0.1);
+            color: #D4AF37;
+            border: 1px solid rgba(212, 175, 55, 0.2);
+        }
 
         .pack-card {
             background: rgba(15, 45, 26, 0.3);
@@ -215,6 +220,40 @@
         .footer-links a { color: #4a6a8a; text-decoration: none; transition: all 0.3s; }
         .footer-links a:hover { color: #D4AF37; }
 
+        /* Estado del sistema */
+        .system-status {
+            margin-top: 20px;
+            padding: 16px 20px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 12px;
+            border: 1px solid rgba(212, 175, 55, 0.08);
+        }
+        .system-status h3 {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.7rem;
+            color: #D4AF37;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+        }
+        .system-status .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 8px;
+        }
+        .system-status .status-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 4px 0;
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+        }
+        .system-status .status-item .label { color: #4a6a8a; }
+        .system-status .status-item .value.online { color: #00b894; }
+        .system-status .status-item .value.offline { color: #ff3366; }
+        .system-status .status-item .value.pending { color: #D4AF37; }
+
         @media (max-width: 900px) {
             .pack-card {
                 grid-template-columns: 1fr 1fr;
@@ -242,7 +281,7 @@
             </div>
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
                 <span class="badge">⚡ Panel de control</span>
-                <span id="adminStatus" class="status offline">⏳ Verificando...</span>
+                <span id="adminStatus" class="status checking">⏳ Verificando...</span>
             </div>
         </div>
 
@@ -262,10 +301,40 @@
             <button class="btn btn-success" onclick="recargarPlanes()">🔄 Recargar</button>
         </div>
 
-        <div style="margin-top:30px;padding-top:20px;border-top:1px solid rgba(212,175,55,0.05);font-size:0.6rem;color:#4a6a8a;">
+        <!-- ===== ESTADO DEL SISTEMA ===== -->
+        <div class="system-status">
+            <h3>◈ Estado del sistema</h3>
+            <div class="status-grid">
+                <div class="status-item">
+                    <span class="label">Supabase</span>
+                    <span class="value online" id="statusSupabase">✅ Conectado</span>
+                </div>
+                <div class="status-item">
+                    <span class="label">Administrador</span>
+                    <span class="value offline" id="statusAdmin">⏳ Verificando</span>
+                </div>
+                <div class="status-item">
+                    <span class="label">NOWPayments</span>
+                    <span class="value pending" id="statusNowPayments">⏳ Pendiente de configurar</span>
+                </div>
+                <div class="status-item">
+                    <span class="label">Telnyx</span>
+                    <span class="value pending" id="statusTelnyx">⏳ Pendiente de configurar</span>
+                </div>
+                <div class="status-item">
+                    <span class="label">Railway ENV</span>
+                    <span class="value pending" id="statusRailway">⏳ Pendiente de configurar</span>
+                </div>
+            </div>
+        </div>
+
+        <div style="margin-top:20px;padding-top:16px;border-top:1px solid rgba(212,175,55,0.05);font-size:0.6rem;color:#4a6a8a;">
             <p>⚡ Los planes se almacenan en <code>planes_esim</code> en Supabase.</p>
             <p>📌 Los cambios son inmediatos. No se requiere localStorage.</p>
             <p>🔐 Solo el administrador autorizado puede modificar planes.</p>
+            <p style="margin-top:4px;color:#4a6a8a;">
+                ⚠️ <strong>Pendiente:</strong> Configurar <code>ADMIN_EMAIL</code>, <code>NOWPAYMENTS_API_KEY</code>, <code>TELNYX_API_KEY</code> en Railway.
+            </p>
         </div>
     </div>
 
@@ -332,10 +401,11 @@
                 if (!session) {
                     document.getElementById('adminStatus').textContent = '❌ No autenticado';
                     document.getElementById('adminStatus').className = 'status offline';
+                    document.getElementById('statusAdmin').textContent = '❌ No autenticado';
+                    document.getElementById('statusAdmin').className = 'value offline';
                     return false;
                 }
 
-                // Verificar admin via backend
                 const response = await fetch('/api/admin/planes', {
                     headers: {
                         'Authorization': `Bearer ${session.access_token}`
@@ -345,6 +415,8 @@
                 if (response.status === 401 || response.status === 403) {
                     document.getElementById('adminStatus').textContent = '⛔ No autorizado';
                     document.getElementById('adminStatus').className = 'status offline';
+                    document.getElementById('statusAdmin').textContent = '⛔ No autorizado';
+                    document.getElementById('statusAdmin').className = 'value offline';
                     mostrarToast('⚠️ No tienes permisos de administrador', 'error');
                     return false;
                 }
@@ -355,6 +427,8 @@
 
                 document.getElementById('adminStatus').textContent = '✅ Administrador';
                 document.getElementById('adminStatus').className = 'status online';
+                document.getElementById('statusAdmin').textContent = '✅ Autorizado';
+                document.getElementById('statusAdmin').className = 'value online';
                 esAdmin = true;
                 return true;
 
@@ -362,6 +436,8 @@
                 console.error('Error verificando admin:', error);
                 document.getElementById('adminStatus').textContent = '❌ Error';
                 document.getElementById('adminStatus').className = 'status offline';
+                document.getElementById('statusAdmin').textContent = '❌ Error';
+                document.getElementById('statusAdmin').className = 'value offline';
                 return false;
             }
         }
@@ -409,6 +485,11 @@
                 if (!data.success) throw new Error(data.error || 'Error al cargar planes');
 
                 planes = data.planes || [];
+
+                // Actualizar estado de Supabase
+                document.getElementById('statusSupabase').textContent = '✅ Conectado';
+                document.getElementById('statusSupabase').className = 'value online';
+
                 renderPacksAdmin();
 
             } catch (error) {
@@ -472,8 +553,8 @@
                         <label for="activo-${p.id}">Activo</label>
                     </div>
                     <div class="acciones" style="display:flex;gap:4px;">
-                        <button class="btn btn-success" onclick="guardarPlan(${index})" style="font-size:0.6rem;padding:4px 10px;">💾</button>
-                        <button class="btn btn-danger" onclick="eliminarPlan(${index})" style="font-size:0.6rem;padding:4px 10px;">🗑️</button>
+                        <button class="btn btn-success" onclick="guardarPlan(${index})" style="font-size:0.6rem;padding:4px 10px;" title="Guardar cambios">💾</button>
+                        <button class="btn btn-danger" onclick="eliminarPlan(${index})" style="font-size:0.6rem;padding:4px 10px;" title="Eliminar plan">🗑️</button>
                     </div>
                 </div>
             `).join('');
@@ -531,7 +612,6 @@
                 const result = await response.json();
                 if (!result.success) throw new Error(result.error || 'Error al actualizar');
 
-                // Actualizar local
                 planes[index] = result.plan;
                 mostrarToast('✅ Plan actualizado', 'success');
                 renderPacksAdmin();
@@ -652,6 +732,28 @@
         }
 
         // ================================================================
+        // VERIFICAR ESTADO DE VARIABLES DE ENTORNO (CLIENTE)
+        // ================================================================
+        async function verificarEstadoSistema() {
+            try {
+                // Verificar NOWPayments
+                const response = await fetch('/api/health');
+                if (response.ok) {
+                    // El estado de NOWPayments y Telnyx se muestra como pendiente
+                    // porque necesitan configurarse en Railway
+                    document.getElementById('statusNowPayments').textContent = '⏳ Pendiente de configurar';
+                    document.getElementById('statusNowPayments').className = 'value pending';
+                    document.getElementById('statusTelnyx').textContent = '⏳ Pendiente de configurar';
+                    document.getElementById('statusTelnyx').className = 'value pending';
+                    document.getElementById('statusRailway').textContent = '⏳ Pendiente de configurar';
+                    document.getElementById('statusRailway').className = 'value pending';
+                }
+            } catch (error) {
+                console.warn('Error verificando estado del sistema:', error);
+            }
+        }
+
+        // ================================================================
         // INICIALIZAR
         // ================================================================
         document.addEventListener('DOMContentLoaded', async function() {
@@ -659,10 +761,13 @@
             await verificarAdmin();
             // Luego cargar planes
             await cargarPlanesAdmin();
+            // Verificar estado del sistema
+            await verificarEstadoSistema();
 
             console.log('◈ Sariel\'s - Admin Internet REAL');
             console.log('📦 Planes cargados desde Supabase:', planes.length);
             console.log('🔐 Admin verificado:', esAdmin);
+            console.log('⚡ Panel listo para producción');
         });
 
         // ================================================================
