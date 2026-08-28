@@ -94,7 +94,6 @@
             contain: layout style;
         }
 
-        /* ===== HEADER ===== */
         .header {
             display: flex;
             justify-content: space-between;
@@ -220,7 +219,6 @@
             50% { box-shadow: 0 0 40px rgba(0, 214, 143, 0.4); }
         }
 
-        /* ===== NAVEGACIÓN ===== */
         .main-nav {
             display: flex;
             gap: 4px;
@@ -280,7 +278,6 @@
             background: rgba(255,0,68,0.08);
         }
 
-        /* ===== INTERNET CONTAINER ===== */
         .internet-container {
             background: var(--glass-bg);
             border: 1px solid var(--glass-border);
@@ -526,7 +523,6 @@
             color: var(--quantum);
         }
 
-        /* ===== TOAST ===== */
         .toast {
             position: fixed;
             bottom: 30px;
@@ -552,7 +548,6 @@
         .toast.show { transform: translateY(0); opacity: 1; }
         .toast.error { border-color: var(--danger); color: var(--danger); }
 
-        /* ===== FOOTER ===== */
         .footer {
             margin-top: 24px;
             padding-top: 14px;
@@ -575,14 +570,9 @@
         }
         .footer-links a:hover { color: var(--gold-cosmic); }
 
-        /* ===== RESPONSIVE ===== */
         @media (max-width: 900px) {
-            .internet-grid {
-                grid-template-columns: 1fr;
-            }
-            .checkout-card {
-                position: static;
-            }
+            .internet-grid { grid-template-columns: 1fr; }
+            .checkout-card { position: static; }
         }
         @media (max-width: 768px) {
             .app { padding: 12px 14px; }
@@ -601,15 +591,12 @@
     </style>
 </head>
 <body>
-    <!-- ===== FONDO ESTELAR ===== -->
     <canvas id="stars-canvas"></canvas>
     <div class="nebula nebula-1"></div>
     <div class="nebula nebula-2"></div>
     <div class="nebula nebula-3"></div>
 
     <div class="app">
-
-        <!-- ===== HEADER ===== -->
         <header class="header">
             <a href="/" class="logo">
                 <span class="logo-hex">◈</span>
@@ -627,7 +614,6 @@
             </div>
         </header>
 
-        <!-- ===== NAVEGACIÓN ===== -->
         <nav class="main-nav">
             <a href="/" class="nav-link">⌂ Inicio</a>
             <a href="/features/muro/muro.html" class="nav-link">◇ Muro</a>
@@ -637,7 +623,6 @@
             <a href="/features/internet/internet.html" class="nav-link active">◈ Internet</a>
         </nav>
 
-        <!-- ===== INTERNET ===== -->
         <div class="internet-container">
             <div class="internet-header">
                 <h2>◈ Internet de alta velocidad <span class="badge">Pago MXN / USDT</span></h2>
@@ -677,7 +662,6 @@
             </div>
         </div>
 
-        <!-- ===== FOOTER ===== -->
         <footer class="footer">
             <span><span class="brand">◈ Sariel's</span> · Internet de alta velocidad · 4G/5G</span>
             <div class="footer-links">
@@ -693,154 +677,33 @@
                 <a href="/live-terminos.html">◉ Live Términos</a>
             </div>
         </footer>
-
     </div>
 
-    <!-- ===== TOAST ===== -->
     <div class="toast" id="toast"></div>
 
-    <!-- ===== SCRIPTS ===== -->
+    <!-- ================================================================
+    SCRIPTS - SUPABASE SDK + LÓGICA REAL
+    ================================================================ -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/web3@1.8.0/dist/web3.min.js"></script>
     <script>
+        // ================================================================
+        // CONFIGURACIÓN SUPABASE
+        // ================================================================
+        const supabase = window.supabase.createClient(
+            'https://zultnlogdoajehbswlih.supabase.co',
+            'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
+        );
+
+        // ================================================================
+        // ESTADO
+        // ================================================================
         let selectedPack = null;
+        let planes = [];
 
-        // ===== CARGAR PAQUETES DESDE localStorage =====
-        function cargarPacks() {
-            const saved = localStorage.getItem('sariels_internet_packs');
-            if (saved) {
-                try {
-                    return JSON.parse(saved);
-                } catch (e) {}
-            }
-            return [
-                { id: 1, nombre: 'Básico', datos: '3 GB', dias: 7, precioMXN: 79, precioUSD: 4, color: '#8ba3c7', popular: false },
-                { id: 2, nombre: 'Chido', datos: '10 GB', dias: 15, precioMXN: 169, precioUSD: 8.5, color: '#f7d44a', popular: true },
-                { id: 3, nombre: 'Pro', datos: '30 GB', dias: 30, precioMXN: 299, precioUSD: 15, color: '#00ff88', popular: false },
-                { id: 4, nombre: 'Ilimitado', datos: 'Ilimitado', dias: 30, precioMXN: 549, precioUSD: 28, color: '#a855f7', popular: false },
-                { id: 5, nombre: '1 Día Prueba', datos: '1.5 GB', dias: 1, precioMXN: 29, precioUSD: 1.5, color: '#00eaff', popular: false }
-            ];
-        }
-
-        let packs = cargarPacks();
-
-        // ===== INTENTAR CARGAR DESDE API REAL =====
-        async function obtenerPlanesAPI() {
-            try {
-                const response = await fetch('/api/esim/planes');
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.success && data.planes && data.planes.length > 0) {
-                        packs = data.planes;
-                    }
-                }
-            } catch (e) {
-                console.warn('Usando datos locales para Internet');
-            }
-            renderPacks();
-        }
-
-        function renderPacks() {
-            const grid = document.getElementById('internetGrid');
-            if (!grid) return;
-            grid.innerHTML = packs.map(p => `
-                <div onclick="selectPack(${p.id})" id="pack-${p.id}" class="pack-card ${p.popular ? 'popular' : ''}">
-                    ${p.popular ? '<div class="popular-badge">MÁS VENDIDO</div>' : ''}
-                    <div class="pack-header">
-                        <span class="pack-name" style="color:${p.color}">${p.nombre}</span>
-                        <span class="pack-vel">4G/5G</span>
-                    </div>
-                    <div class="pack-data">
-                        <span class="size">${p.datos}</span>
-                        <span class="days"> / ${p.dias} días</span>
-                    </div>
-                    <div class="pack-price">
-                        <span style="font-size:0.7rem;color:var(--text-muted);">MXN</span> $${p.precioMXN}
-                        <span style="font-size:0.6rem;color:var(--text-muted);margin-left:8px;">·</span>
-                        <span style="font-size:0.7rem;color:var(--text-muted);">USDT</span> $${p.precioUSD}
-                    </div>
-                    <div class="pack-features">
-                        <span>◈ Hotspot</span>
-                        <span>◆ Sin contrato</span>
-                        <span>◉ Activa al instante</span>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function selectPack(id) {
-            selectedPack = packs.find(p => p.id === id);
-            document.querySelectorAll('.pack-card').forEach(el => el.style.transform = 'scale(1)');
-            const el = document.getElementById('pack-' + id);
-            if (el) el.style.transform = 'scale(1.02)';
-
-            const phone = document.getElementById('netPhone').value.trim() || 'tu número';
-            const resumen = document.getElementById('internetResumen');
-            if (resumen) {
-                resumen.innerHTML = `
-                    <strong>${selectedPack.nombre}</strong> - ${selectedPack.datos}<br>
-                    ${selectedPack.dias} días<br><br>
-                    <span class="precio-final">$${selectedPack.precioMXN} MXN</span>
-                    <span style="font-size:0.7rem;color:var(--text-muted);margin-left:8px;">·</span>
-                    <span class="precio-final">$${selectedPack.precioUSD} USDT</span><br>
-                    <span style="font-size:0.65rem;">Activa al: ${phone}</span>
-                    <br><br>
-                    <span style="font-size:0.6rem;color:var(--text-muted);">◈ Pago: Transferencia bancaria (CLABE) o USDT/USDC (Polygon)</span>
-                `;
-            }
-        }
-
-        async function comprarInternet() {
-            const phone = document.getElementById('netPhone').value.trim();
-            const status = document.getElementById('netStatus');
-            const terms = document.getElementById('checkNetTerms').checked;
-            const btn = document.getElementById('btnPagar');
-
-            if (!selectedPack) { status.innerText = '⚠️ Selecciona un paquete'; return; }
-            if (!phone) { status.innerText = '⚠️ Pon tu número o ID'; return; }
-            if (!terms) { status.innerText = '⚠️ Acepta términos'; return; }
-
-            status.innerText = '⏳ Generando datos de pago...';
-            btn.disabled = true;
-
-            try {
-                // Intentar crear orden en Supabase
-                const token = localStorage.getItem('galleta_token');
-                if (token) {
-                    const response = await fetch('/api/esim/orden', {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ planId: selectedPack.id })
-                    });
-                    if (response.ok) {
-                        const data = await response.json();
-                        if (data.success) {
-                            showToast('✅ Orden creada en Supabase');
-                        }
-                    }
-                }
-
-                // Simulación de API (en producción, aquí se llama a /api/esim/orden)
-                status.innerHTML = `
-                    ✅ <b>¡Orden generada!</b><br>
-                    Paquete: ${selectedPack.nombre} - ${selectedPack.datos}<br>
-                    Total: $${selectedPack.precioMXN} MXN / $${selectedPack.precioUSD} USDT<br><br>
-                    <span style="font-size:0.65rem;">📌 Realiza el pago a la CLABE o wallet USDT que aparece en el footer.</span>
-                    <span style="font-size:0.65rem;">⏳ Una vez confirmado, se activa en 2-5 min.</span>
-                `;
-                const resumen = document.getElementById('internetResumen');
-                if (resumen) resumen.innerHTML = '◈ Orden generada. Esperando confirmación de pago.';
-                showToast('✅ Orden de pago generada');
-            } catch (e) {
-                status.innerText = '❌ Error: ' + e.message;
-                showToast('❌ ' + e.message, 'error');
-            } finally {
-                btn.disabled = false;
-            }
-        }
-
+        // ================================================================
+        // TOAST
+        // ================================================================
         function showToast(mensaje, tipo = '') {
             const toast = document.getElementById('toast');
             toast.textContent = mensaje;
@@ -851,6 +714,204 @@
             toast._timeout = setTimeout(() => toast.classList.remove('show'), 3500);
         }
 
+        // ================================================================
+        // OBTENER SESIÓN
+        // ================================================================
+        async function getSession() {
+            const { data: { session } } = await supabase.auth.getSession();
+            return session;
+        }
+
+        // ================================================================
+        // 🔥 CARGAR PLANES DESDE SUPABASE (FUENTE ÚNICA DE VERDAD)
+        // ================================================================
+        async function cargarPlanes() {
+            try {
+                const response = await fetch('/api/esim/planes');
+                if (!response.ok) throw new Error('Error al cargar planes');
+
+                const data = await response.json();
+                if (!data.success) throw new Error(data.error || 'Error al cargar planes');
+
+                planes = data.planes || [];
+                renderPacks();
+                return planes;
+            } catch (error) {
+                console.error('Error cargando planes:', error);
+                showToast('❌ Error al cargar paquetes de Internet', 'error');
+                return [];
+            }
+        }
+
+        // ================================================================
+        // RENDERIZAR PAQUETES
+        // ================================================================
+        function renderPacks() {
+            const grid = document.getElementById('internetGrid');
+            if (!grid) return;
+
+            if (!planes || planes.length === 0) {
+                grid.innerHTML = `
+                    <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted);">
+                        <span style="font-size:2rem;">📡</span>
+                        <p style="margin-top:10px;">No hay paquetes disponibles en este momento</p>
+                        <p style="font-size:0.7rem;">Vuelve más tarde</p>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = planes.map(p => `
+                <div onclick="selectPack(${p.id})" id="pack-${p.id}" class="pack-card">
+                    <div class="pack-header">
+                        <span class="pack-name" style="color:#D4AF37;">${p.nombre}</span>
+                        <span class="pack-vel">4G/5G</span>
+                    </div>
+                    <div class="pack-data">
+                        <span class="size">${p.datos_gb} GB</span>
+                        <span class="days"> / ${p.duracion_dias} días</span>
+                    </div>
+                    <div class="pack-price">
+                        <span style="font-size:0.7rem;color:var(--text-muted);">MXN</span> $${p.precio_mxn}
+                        <span style="font-size:0.6rem;color:var(--text-muted);margin-left:8px;">·</span>
+                        <span style="font-size:0.7rem;color:var(--text-muted);">USDT</span> $${p.precio_usdt}
+                    </div>
+                    <div class="pack-features">
+                        <span>◈ Hotspot</span>
+                        <span>◆ Sin contrato</span>
+                        <span>◉ Activa al instante</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // ================================================================
+        // SELECCIONAR PAQUETE
+        // ================================================================
+        function selectPack(id) {
+            selectedPack = planes.find(p => p.id === id);
+            if (!selectedPack) return;
+
+            document.querySelectorAll('.pack-card').forEach(el => el.style.transform = 'scale(1)');
+            const el = document.getElementById('pack-' + id);
+            if (el) el.style.transform = 'scale(1.02)';
+
+            const phone = document.getElementById('netPhone').value.trim() || 'tu número';
+            const resumen = document.getElementById('internetResumen');
+            if (resumen) {
+                resumen.innerHTML = `
+                    <strong>${selectedPack.nombre}</strong> - ${selectedPack.datos_gb} GB<br>
+                    ${selectedPack.duracion_dias} días<br><br>
+                    <span class="precio-final">$${selectedPack.precio_mxn} MXN</span>
+                    <span style="font-size:0.7rem;color:var(--text-muted);margin-left:8px;">·</span>
+                    <span class="precio-final">$${selectedPack.precio_usdt} USDT</span><br>
+                    <span style="font-size:0.65rem;">Activa al: ${phone}</span>
+                    <br><br>
+                    <span style="font-size:0.6rem;color:var(--text-muted);">◈ Pago: Transferencia bancaria (CLABE) o USDT/USDC (Polygon)</span>
+                `;
+            }
+        }
+
+        // ================================================================
+        // 🔥 COMPRAR INTERNET - REAL, SIN SIMULACIONES
+        // ================================================================
+        async function comprarInternet() {
+            const phone = document.getElementById('netPhone').value.trim();
+            const status = document.getElementById('netStatus');
+            const terms = document.getElementById('checkNetTerms').checked;
+            const btn = document.getElementById('btnPagar');
+
+            if (!selectedPack) {
+                status.innerText = '⚠️ Selecciona un paquete';
+                return;
+            }
+            if (!phone) {
+                status.innerText = '⚠️ Pon tu número o ID';
+                return;
+            }
+            if (!terms) {
+                status.innerText = '⚠️ Acepta términos';
+                return;
+            }
+
+            status.innerText = '⏳ Autenticando...';
+            btn.disabled = true;
+
+            try {
+                // Obtener sesión real de Supabase
+                const session = await getSession();
+                if (!session) {
+                    status.innerText = '⚠️ Inicia sesión para comprar';
+                    showToast('⚠️ Inicia sesión primero', 'error');
+                    btn.disabled = false;
+                    return;
+                }
+
+                const token = session.access_token;
+
+                status.innerText = '⏳ Creando orden...';
+
+                // 🔥 Enviar SOLO planId al backend
+                const response = await fetch('/api/esim/orden', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ planId: selectedPack.id })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok || !data.success) {
+                    throw new Error(data.error || 'Error al crear la orden');
+                }
+
+                // ✅ Mostrar información REAL de la orden
+                const orden = data.orden;
+                status.innerHTML = `
+                    ✅ <b>¡Orden creada!</b><br>
+                    Paquete: ${orden.plan}<br>
+                    Datos: ${orden.datos_gb} GB · ${orden.duracion_dias} días<br>
+                    Total: $${orden.monto_mxn} MXN / $${orden.monto_usdt} USDT<br><br>
+                    <span style="font-size:0.65rem;color:var(--gold-cosmic);">
+                        🟡 Estado: ${orden.estado}
+                    </span><br>
+                    <span style="font-size:0.6rem;color:var(--text-muted);">
+                        ID de orden: ${orden.id}
+                    </span><br><br>
+                    <span style="font-size:0.65rem;">
+                        📌 Realiza el pago. Una vez confirmado, se activará automáticamente.
+                    </span>
+                `;
+
+                const resumen = document.getElementById('internetResumen');
+                if (resumen) {
+                    resumen.innerHTML = `
+                        ◈ Orden #${orden.id}<br>
+                        ${orden.plan}<br>
+                        ${orden.datos_gb} GB · ${orden.duracion_dias} días<br>
+                        <span class="precio-final">$${orden.monto_mxn} MXN</span>
+                        <span style="font-size:0.7rem;color:var(--text-muted);margin-left:8px;">·</span>
+                        <span class="precio-final">$${orden.monto_usdt} USDT</span><br>
+                        <span style="font-size:0.6rem;color:var(--gold-cosmic);">🟡 Pendiente de pago</span>
+                    `;
+                }
+
+                showToast('✅ Orden creada. Pendiente de pago.', 'success');
+
+            } catch (error) {
+                console.error('Error en compra:', error);
+                status.innerText = '❌ Error: ' + error.message;
+                showToast('❌ ' + error.message, 'error');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        // ================================================================
+        // ESTRELLAS (efecto visual)
+        // ================================================================
         function initStars() {
             const canvas = document.getElementById('stars-canvas');
             if (!canvas) return;
@@ -921,20 +982,14 @@
             return { pauseAnimation, resumeAnimation };
         }
 
-        // ===== ESCUCHAR CAMBIOS EN localStorage =====
-        window.addEventListener('storage', (e) => {
-            if (e.key === 'sariels_internet_packs') {
-                packs = cargarPacks();
-                renderPacks();
-                showToast('◈ Paquetes actualizados');
-            }
-        });
-
-        document.addEventListener('DOMContentLoaded', function() {
+        // ================================================================
+        // INICIALIZAR
+        // ================================================================
+        document.addEventListener('DOMContentLoaded', async function() {
             initStars();
-            packs = cargarPacks();
-            renderPacks();
-            obtenerPlanesAPI();
+
+            // 🔥 Cargar planes desde Supabase (FUENTE ÚNICA)
+            await cargarPlanes();
 
             const phoneInput = document.getElementById('netPhone');
             if (phoneInput) {
@@ -946,8 +1001,8 @@
                 });
             }
 
-            console.log('◈ Sariel\'s - Internet Ultra Mega Pro');
-            console.log('📦 Paquetes cargados:', packs.length);
+            console.log('◈ Sariel\'s - Internet REAL');
+            console.log('📦 Planes cargados desde Supabase:', planes.length);
         });
 
         // ================================================================
@@ -956,6 +1011,7 @@
         window.selectPack = selectPack;
         window.comprarInternet = comprarInternet;
         window.showToast = showToast;
+        window.cargarPlanes = cargarPlanes;
     </script>
 </body>
 </html>
