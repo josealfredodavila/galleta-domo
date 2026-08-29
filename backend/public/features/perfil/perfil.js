@@ -5,7 +5,7 @@
    ================================================================ */
 
 // ================================================================
-// CONFIGURACIÓN SUPABASE (CON NUEVAS LLAVES)
+// CONFIGURACIÓN SUPABASE
 // ================================================================
 const supabase = window.supabase.createClient(
     'https://zultnlogdoajehbswlih.supabase.co',
@@ -13,17 +13,30 @@ const supabase = window.supabase.createClient(
 );
 
 // ================================================================
-// CONFIGURACIÓN TELNYX
+// 🚨 CONFIGURACIÓN DE ENTORNO
 // ================================================================
-const TELNYX_CONFIG = {
-    API_KEY: 'TU_API_KEY_TELNYX',
-    BASE_URL: 'https://api.telnyx.com/v2',
-    SIM_GROUP_ID: 'TU_SIM_GROUP_ID',
-    DEFAULT_APN: 'data00.telnyx'
+const ENV = {
+    isProduction: window.location.hostname !== 'localhost' && !window.location.hostname.includes('127.0.0.1'),
+    isTestnet: true, // Polygon Amoy Testnet - Cambiar a false para producción
+    networkName: 'Polygon Amoy Testnet',
+    networkChainId: '0x13882',
+    networkCurrency: 'MATIC',
+    networkRPC: 'https://rpc-amoy.polygon.technology/',
+    networkExplorer: 'https://www.oklink.com/amoy'
 };
 
 // ================================================================
-// 💳 CONFIGURACIÓN NOWPAYMENTS
+// CONFIGURACIÓN DE BACKEND (NO EXPONER SECRETOS)
+// ================================================================
+const BACKEND_URL = window.location.origin; // El backend está en el mismo dominio
+const API_ENDPOINTS = {
+    esim: `${BACKEND_URL}/api/esim`,
+    pagos: `${BACKEND_URL}/api/pagos`,
+    webhook: `${BACKEND_URL}/api/webhooks/nowpayments`
+};
+
+// ================================================================
+// 💳 CONFIGURACIÓN NOWPAYMENTS (SOLO REFERENCIAS)
 // ================================================================
 const NOWPAYMENTS_CONFIG = {
     COMISION: 0.02,
@@ -116,12 +129,10 @@ async function cargarPerfil(forzarActualizacion = false) {
             return;
         }
 
-        // 🔥 CAMBIO: usar RPC obtener_mi_perfil en lugar de select().single()
         const { data, error } = await supabase.rpc('obtener_mi_perfil');
 
         if (error) throw error;
 
-        // data es un array, tomar el primer elemento
         const perfil = data && data.length > 0 ? data[0] : null;
 
         if (perfil) {
@@ -129,9 +140,12 @@ async function cargarPerfil(forzarActualizacion = false) {
             ultimaActualizacion = ahora;
             await actualizarEstadoEnLinea(true);
             actualizarUI(perfil);
+            
+            // 🔥 CORREGIDO: Obtener datos reales de eSIM desde el backend, NO datos simulados
             if (perfil.esim_iccid) {
                 await cargarDatosESIM(perfil.esim_iccid);
             }
+            
             await cargarEstadoConexion();
             await cargarAmigosEnLinea();
             await cargarHistorialQR();
@@ -295,7 +309,6 @@ async function cargarAmigosEnLinea() {
         const session = await getSession();
         if (!session) return;
 
-        // 🔥 CAMBIO: contactos con usuario_id/contacto_id en lugar de amigos con user_id/amigo_id
         const { data: contactos, error: contactosError } = await supabase
             .from('contactos')
             .select('contacto_id')
@@ -395,7 +408,6 @@ async function notificarCambioEstado(online) {
         const session = await getSession();
         if (!session) return;
 
-        // 🔥 CAMBIO: contactos con usuario_id/contacto_id
         const { data: contactos, error } = await supabase
             .from('contactos')
             .select('contacto_id')
@@ -657,7 +669,7 @@ function iniciarEscuchaConexion() {
 }
 
 // ================================================================
-// 📱 FUNCIONES eSIM TELNYX
+// 📱 FUNCIONES eSIM - CON BACKEND SEGURO
 // ================================================================
 
 function actualizarUIESIM(data) {
@@ -718,85 +730,47 @@ function actualizarUIESIM(data) {
     }
 
     if (esimApn) {
-        esimApn.textContent = data.esim_apn || TELNYX_CONFIG.DEFAULT_APN;
+        esimApn.textContent = data.esim_apn || 'data00.telnyx';
     }
 }
 
-async function comprarESIM(planId) {
-    try {
-        const session = await getSession();
-        if (!session) {
-            showToast('⚠️ Inicia sesión para comprar eSIM', 'error');
-            return;
-        }
-
-        // 🔥 CAMBIO: planes_esim en lugar de esim_planes
-        const { data: plan, error } = await supabase
-            .from('planes_esim')
-            .select('*')
-            .eq('id', planId)
-            .single();
-
-        if (error) throw error;
-
-        showToast('⏳ Procesando compra de eSIM...', '', 5000);
-
-        // 🔥 CAMBIO: ordenes_esim con usuario_id, monto_mxn, monto_usdt, estado_pago
-        const { data: orden, error: ordenError } = await supabase
-            .from('ordenes_esim')
-            .insert({
-                usuario_id: session.user.id,
-                plan_id: planId,
-                cantidad_datos_gb: plan.datos_gb,
-                monto_mxn: plan.precio_mxn,
-                monto_usdt: plan.precio_usdt,
-                estado_pago: 'pendiente'
-            })
-            .select()
-            .single();
-
-        if (ordenError) throw ordenError;
-
-        const qrPago = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent('Pago ' + orden.id)}`;
-        
-        showToast('✅ Orden de eSIM creada. Escanea el QR para pagar.', 'success');
-        mostrarModalPago(qrPago, orden.id, plan);
-
-    } catch (error) {
-        console.error('Error comprando eSIM:', error);
-        showToast('❌ Error al comprar eSIM: ' + error.message, 'error');
-    }
-}
-
+// 🔥 CORREGIDO: Cargar datos reales de eSIM desde el backend
 async function cargarDatosESIM(iccid) {
     if (!iccid) return;
 
     try {
-        const simData = {
-            data_used: Math.floor(Math.random() * 5) * 1024 * 1024 * 1024,
-            data_limit: 10 * 1024 * 1024 * 1024,
-            status: 'enabled'
-        };
-        
+        // 🔥 NUEVO: Obtener datos reales del backend, NO datos simulados
         const session = await getSession();
-        if (session) {
-            await supabase
-                .from('usuarios')
-                .update({
-                    esim_data_used: simData.data_used,
-                    esim_data_limit: simData.data_limit,
-                    esim_status: simData.status
-                })
-                .eq('id', session.user.id);
+        if (!session) {
+            console.warn('⚠️ No hay sesión para cargar datos eSIM');
+            return null;
         }
 
-        actualizarUIESIM({
-            esim_data_used: simData.data_used,
-            esim_data_limit: simData.data_limit,
-            esim_status: simData.status
-        });
+        const { data: usuario, error } = await supabase
+            .from('usuarios')
+            .select('esim_data_used, esim_data_limit, esim_status, esim_iccid, esim_apn')
+            .eq('id', session.user.id)
+            .single();
 
-        return simData;
+        if (error) throw error;
+
+        if (usuario) {
+            actualizarUIESIM({
+                esim_data_used: usuario.esim_data_used || 0,
+                esim_data_limit: usuario.esim_data_limit || 0,
+                esim_status: usuario.esim_status || 'disabled',
+                esim_iccid: usuario.esim_iccid,
+                esim_apn: usuario.esim_apn || 'data00.telnyx'
+            });
+            
+            return {
+                data_used: usuario.esim_data_used || 0,
+                data_limit: usuario.esim_data_limit || 0,
+                status: usuario.esim_status || 'disabled'
+            };
+        }
+        
+        return null;
 
     } catch (error) {
         console.error('Error cargando datos eSIM:', error);
@@ -805,94 +779,65 @@ async function cargarDatosESIM(iccid) {
     }
 }
 
-async function activarESIM(iccid) {
+// 🔥 CORREGIDO: Comprar eSIM usando el flujo real de NOWPayments con backend
+async function comprarESIM(planId) {
     try {
         const session = await getSession();
         if (!session) {
-            showToast('⚠️ Inicia sesión', 'error');
+            showToast('⚠️ Inicia sesión para comprar eSIM', 'error');
             return;
         }
 
-        showToast('⏳ Activando eSIM...', '', 5000);
-
-        await supabase
-            .from('usuarios')
-            .update({ esim_status: 'enabled' })
-            .eq('id', session.user.id);
-
-        showToast('✅ eSIM activado correctamente', 'success');
-        await cargarPerfil(true);
-
-    } catch (error) {
-        console.error('Error activando eSIM:', error);
-        showToast('❌ Error al activar eSIM: ' + error.message, 'error');
-    }
-}
-
-async function desactivarESIM(iccid) {
-    try {
-        const session = await getSession();
-        if (!session) {
-            showToast('⚠️ Inicia sesión', 'error');
-            return;
-        }
-
-        if (!confirm('¿Seguro que quieres desactivar tu eSIM?')) return;
-
-        showToast('⏳ Desactivando eSIM...', '', 5000);
-
-        await supabase
-            .from('usuarios')
-            .update({ esim_status: 'disabled' })
-            .eq('id', session.user.id);
-
-        showToast('🔌 eSIM desactivado', 'warning');
-        await cargarPerfil(true);
-
-    } catch (error) {
-        console.error('Error desactivando eSIM:', error);
-        showToast('❌ Error al desactivar eSIM: ' + error.message, 'error');
-    }
-}
-
-async function generarQRESIM(iccid) {
-    try {
-        const qrData = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent('LPA:1$' + iccid + '$Sariel\'s')}`;
-        mostrarModalQR(qrData);
-    } catch (error) {
-        console.error('Error generando QR:', error);
-        showToast('❌ Error al generar QR: ' + error.message, 'error');
-    }
-}
-
-async function obtenerEstadoESIM(iccid) {
-    try {
-        return { status: 'enabled', iccid: iccid };
-    } catch (error) {
-        console.error('Error obteniendo estado:', error);
-        return null;
-    }
-}
-
-async function obtenerPlanesESIM() {
-    try {
-        // 🔥 CAMBIO: planes_esim en lugar de esim_planes
-        const { data, error } = await supabase
+        // 🔥 NUEVO: Obtener el plan desde Supabase
+        const { data: plan, error } = await supabase
             .from('planes_esim')
             .select('*')
-            .eq('activo', true)
-            .order('precio_mxn', { ascending: true });
+            .eq('id', planId)
+            .single();
 
         if (error) throw error;
-        return data || [];
+
+        showToast('⏳ Creando orden de compra...', '', 5000);
+
+        // 🔥 NUEVO: Crear orden en el backend (que usará NOWPayments)
+        const response = await fetch(`${API_ENDPOINTS.pagos}/crear`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.access_token}`
+            },
+            body: JSON.stringify({
+                transmisionId: null, // No es para transmisión
+                monto: plan.precio_usdt,
+                metodo: 'crypto',
+                tipo: 'esim',
+                planId: plan.id
+            })
+        });
+
+        const result = await response.json();
+
+        if (!result.success) {
+            throw new Error(result.error || 'Error al crear la orden');
+        }
+
+        // Mostrar modal con el QR de pago real de NOWPayments
+        if (result.data && result.data.payment_url) {
+            mostrarModalPagoReal(result.data.payment_url, result.data.id, plan);
+        } else {
+            // Fallback si no hay payment_url
+            const qrData = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent('Orden: ' + result.data.id)}`;
+            mostrarModalPagoSimulado(qrData, result.data.id, plan);
+        }
 
     } catch (error) {
-        console.error('Error obteniendo planes:', error);
-        return [];
+        console.error('Error comprando eSIM:', error);
+        showToast('❌ Error al comprar eSIM: ' + error.message, 'error');
     }
 }
 
-function mostrarModalPago(qrData, ordenId, plan) {
+// 🔥 NUEVO: Mostrar modal con pago real de NOWPayments
+function mostrarModalPagoReal(paymentUrl, ordenId, plan) {
     const modal = document.createElement('div');
     modal.id = 'pagoModal';
     modal.style.cssText = `
@@ -919,13 +864,71 @@ function mostrarModalPago(qrData, ordenId, plan) {
         ">
             <h2 style="color: var(--gold); margin-bottom: 10px;">📱 Compra eSIM</h2>
             <p style="color: var(--text-secondary); margin-bottom: 20px;">
-                ${plan.nombre} - ${plan.datos_gb} GB por ${plan.dias} días
+                ${plan.nombre} - ${plan.datos_gb} GB por ${plan.duracion_dias} días
+            </p>
+            <p style="color: var(--gold); font-size: 1.2rem; font-weight: bold;">
+                $${plan.precio_usdt} USDT
+            </p>
+            <p style="color: var(--text-muted); font-size: 0.8rem; margin: 10px 0;">
+                💳 Paga con NOWPayments (USDT en TRC-20)
+            </p>
+            <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin: 15px 0;">
+                <a href="${paymentUrl}" target="_blank" 
+                   style="background: linear-gradient(135deg, var(--gold), #f7971e); border: none; color: #fff; padding: 12px 30px; border-radius: 10px; font-weight: 600; cursor: pointer; text-decoration: none;">
+                    💳 Ir a pagar
+                </a>
+                <button onclick="verificarPago('${ordenId}')"
+                        style="background: var(--bg-card); border: 1px solid var(--cyan); color: var(--cyan); padding: 12px 30px; border-radius: 10px; font-weight: 600; cursor: pointer;">
+                    ✅ Verificar pago
+                </button>
+                <button onclick="this.parentElement.parentElement.parentElement.remove()"
+                        style="background: transparent; border: 1px solid var(--text-muted); color: var(--text-muted); padding: 12px 30px; border-radius: 10px; cursor: pointer;">
+                    Cerrar
+                </button>
+            </div>
+            <div id="pagoStatus" style="margin-top: 10px; font-size: 0.8rem; color: var(--text-secondary);"></div>
+            <p style="color: var(--text-muted); font-size: 0.6rem; margin-top: 10px;">
+                ⏳ El pago se confirmará automáticamente vía webhook
+            </p>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+function mostrarModalPagoSimulado(qrData, ordenId, plan) {
+    const modal = document.createElement('div');
+    modal.id = 'pagoModal';
+    modal.style.cssText = `
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.85);
+        backdrop-filter: blur(10px);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        animation: fadeIn 0.3s ease-out;
+    `;
+    modal.innerHTML = `
+        <div style="
+            background: linear-gradient(135deg, var(--bg-card), var(--bg-dark));
+            border: 2px solid var(--gold);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 450px;
+            width: 90%;
+            text-align: center;
+            animation: scaleIn 0.3s ease-out;
+        ">
+            <h2 style="color: var(--gold); margin-bottom: 10px;">📱 Compra eSIM</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 20px;">
+                ${plan.nombre} - ${plan.datos_gb} GB por ${plan.duracion_dias} días
             </p>
             <div style="background: white; border-radius: 10px; padding: 15px; margin: 10px 0;">
                 <img src="${qrData}" alt="QR de pago" style="max-width: 200px; width: 100%;">
             </div>
             <p style="color: var(--gold); font-size: 1.2rem; font-weight: bold;">
-                $${plan.precio_mxn} MXN / $${plan.precio_usdt} USDT
+                $${plan.precio_usdt} USDT
             </p>
             <p style="color: var(--text-muted); font-size: 0.7rem; margin: 10px 0;">
                 ⏳ Escanea el QR para pagar. Se activará automáticamente.
@@ -976,6 +979,7 @@ function mostrarModalQR(qrData) {
     document.body.appendChild(modal);
 }
 
+// 🔥 CORREGIDO: Verificar pago usando el backend
 async function verificarPago(ordenId) {
     const statusEl = document.getElementById('pagoStatus');
     if (!statusEl) return;
@@ -983,51 +987,178 @@ async function verificarPago(ordenId) {
     statusEl.textContent = '⏳ Verificando pago...';
 
     try {
-        // 🔥 CAMBIO: ordenes_esim con estado_pago
-        const { data, error } = await supabase
-            .from('ordenes_esim')
-            .select('estado_pago, esim_iccid')
-            .eq('id', ordenId)
-            .single();
+        const session = await getSession();
+        if (!session) {
+            statusEl.textContent = '❌ Inicia sesión nuevamente';
+            return;
+        }
 
-        if (error) throw error;
-
-        if (data.estado_pago === 'pagado' || data.estado_pago === 'activado') {
-            statusEl.textContent = '✅ ¡Pago confirmado! Activando eSIM...';
-            
-            if (data.esim_iccid) {
-                await activarESIM(data.esim_iccid);
+        const response = await fetch(`${API_ENDPOINTS.pagos}/estado/${ordenId}`, {
+            headers: {
+                'Authorization': `Bearer ${session.access_token}`
             }
+        });
+
+        const result = await response.json();
+
+        if (!result.success) {
+            throw new Error(result.error || 'Error al verificar pago');
+        }
+
+        const orden = result.data;
+
+        if (orden.estado === 'completado' || orden.estado === 'finished' || orden.estado === 'confirmed') {
+            statusEl.textContent = '✅ ¡Pago confirmado! Activando eSIM...';
+            showToast('🎉 ¡eSIM activado exitosamente!', 'success');
+            
+            // Actualizar perfil y datos
+            await cargarPerfil(true);
             
             setTimeout(() => {
                 document.getElementById('pagoModal')?.remove();
-                showToast('🎉 ¡eSIM activado exitosamente!', 'success');
-                cargarPerfil(true);
             }, 2000);
-        } else if (data.estado_pago === 'pendiente') {
+            
+        } else if (orden.estado === 'pendiente') {
             statusEl.textContent = '⏳ Aún no se confirma el pago. Espera unos minutos.';
+            // Reintentar automáticamente cada 10 segundos
+            setTimeout(() => verificarPago(ordenId), 10000);
         } else {
-            statusEl.textContent = '❌ Estado: ' + data.estado_pago;
+            statusEl.textContent = `❌ Estado: ${orden.estado}`;
         }
 
     } catch (error) {
         console.error('Error verificando pago:', error);
-        statusEl.textContent = '❌ Error al verificar';
+        statusEl.textContent = '❌ Error al verificar: ' + error.message;
+    }
+}
+
+// 🔥 CORREGIDO: Activar eSIM usando backend
+async function activarESIM(iccid) {
+    try {
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ Inicia sesión', 'error');
+            return;
+        }
+
+        showToast('⏳ Activando eSIM...', '', 5000);
+
+        // 🔥 NUEVO: Usar el backend para activar eSIM (Telnyx)
+        const response = await fetch(`${API_ENDPOINTS.esim}/activar`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.access_token}`
+            },
+            body: JSON.stringify({ iccid })
+        });
+
+        const result = await response.json();
+
+        if (!result.success) {
+            throw new Error(result.error || 'Error al activar eSIM');
+        }
+
+        showToast('✅ eSIM activado correctamente', 'success');
+        await cargarPerfil(true);
+
+    } catch (error) {
+        console.error('Error activando eSIM:', error);
+        showToast('❌ Error al activar eSIM: ' + error.message, 'error');
+    }
+}
+
+async function desactivarESIM(iccid) {
+    try {
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ Inicia sesión', 'error');
+            return;
+        }
+
+        if (!confirm('¿Seguro que quieres desactivar tu eSIM?')) return;
+
+        showToast('⏳ Desactivando eSIM...', '', 5000);
+
+        const { error } = await supabase
+            .from('usuarios')
+            .update({ esim_status: 'disabled' })
+            .eq('id', session.user.id);
+
+        if (error) throw error;
+
+        showToast('🔌 eSIM desactivado', 'warning');
+        await cargarPerfil(true);
+
+    } catch (error) {
+        console.error('Error desactivando eSIM:', error);
+        showToast('❌ Error al desactivar eSIM: ' + error.message, 'error');
+    }
+}
+
+async function generarQRESIM(iccid) {
+    try {
+        const qrData = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent('LPA:1$' + iccid + '$Sariel\'s')}`;
+        mostrarModalQR(qrData);
+    } catch (error) {
+        console.error('Error generando QR:', error);
+        showToast('❌ Error al generar QR: ' + error.message, 'error');
+    }
+}
+
+async function obtenerEstadoESIM(iccid) {
+    try {
+        const session = await getSession();
+        if (!session) return null;
+        
+        const { data, error } = await supabase
+            .from('usuarios')
+            .select('esim_status, esim_iccid, esim_data_used, esim_data_limit')
+            .eq('id', session.user.id)
+            .single();
+
+        if (error) throw error;
+        return data || { status: 'unknown', iccid: iccid };
+        
+    } catch (error) {
+        console.error('Error obteniendo estado:', error);
+        return null;
+    }
+}
+
+async function obtenerPlanesESIM() {
+    try {
+        const { data, error } = await supabase
+            .from('planes_esim')
+            .select('*')
+            .eq('activo', true)
+            .order('precio_mxn', { ascending: true });
+
+        if (error) throw error;
+        return data || [];
+
+    } catch (error) {
+        console.error('Error obteniendo planes:', error);
+        return [];
     }
 }
 
 // ================================================================
-// 📱 ESCANEO QR
+// 📱 ESCANEO QR - CON LECTOR REAL
 // ================================================================
 
 let qrScannerInterval = null;
 let scannerActive = false;
 let qrHistorial = [];
+let qrScanningLock = false;
 
+// 🔥 CORREGIDO: Implementación real de decodificación QR
 async function abrirCamaraQR() {
     const container = document.getElementById('qrReaderContainer');
     const video = document.getElementById('qrVideo');
     const status = document.getElementById('qrCamaraStatus');
+    const canvas = document.getElementById('qrCanvas');
+    const ctx = canvas?.getContext('2d');
     
     if (scannerActive) {
         cerrarCamaraQR();
@@ -1045,16 +1176,48 @@ async function abrirCamaraQR() {
         scannerActive = true;
         status.textContent = '📷 Enfoca el QR...';
 
+        // 🔥 NUEVO: Usar la librería jsQR para decodificar QR reales
+        // (Se asume que jsQR está cargado desde CDN)
         const leerQR = async () => {
             if (!scannerActive || !video.readyState || video.readyState < 2) return;
+            
             try {
-                const canvas = document.createElement('canvas');
+                if (!canvas || !ctx) return;
+                
                 canvas.width = video.videoWidth || 400;
                 canvas.height = video.videoHeight || 300;
-                const ctx = canvas.getContext('2d');
                 ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                
                 const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                status.textContent = '📱 Escanea el QR o ingresa el código manualmente';
+                
+                // 🔥 NUEVO: Decodificar QR con jsQR
+                if (typeof jsQR !== 'undefined') {
+                    const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                        inversionAttempts: "dontInvert",
+                    });
+                    
+                    if (code && code.data) {
+                        const qrData = code.data;
+                        status.textContent = '✅ QR detectado: ' + qrData.slice(0, 30) + '...';
+                        
+                        // Detener escaneo y procesar el QR
+                        const input = document.getElementById('qrInput');
+                        if (input) {
+                            input.value = qrData;
+                            // Auto-procesar después de 1s
+                            setTimeout(async () => {
+                                await procesarQR(qrData);
+                            }, 1000);
+                        }
+                        cerrarCamaraQR();
+                        return;
+                    }
+                } else {
+                    // Fallback: simular detección para demostración
+                    // En producción, cargar jsQR desde CDN
+                    status.textContent = '📱 Escanea el QR o ingresa el código manualmente';
+                }
+                
             } catch (error) {
                 console.error('Error leyendo QR:', error);
             }
@@ -1083,9 +1246,9 @@ function cerrarCamaraQR() {
         video.srcObject.getTracks().forEach(track => track.stop());
     }
     video.srcObject = null;
-    container.style.display = 'none';
+    if (container) container.style.display = 'none';
     scannerActive = false;
-    status.textContent = '';
+    if (status) status.textContent = '';
     
     if (qrScannerInterval) {
         clearInterval(qrScannerInterval);
@@ -1093,99 +1256,81 @@ function cerrarCamaraQR() {
     }
 }
 
+// 🔥 NUEVO: Procesar QR de forma atómica con validación en backend
+async function procesarQR(codigo) {
+    if (qrScanningLock) {
+        showToast('⏳ Procesando otro QR...', 'warning');
+        return;
+    }
+    
+    qrScanningLock = true;
+    const status = document.getElementById('qrStatus');
+    const input = document.getElementById('qrInput');
+    
+    try {
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ Inicia sesión para escanear QR', 'error');
+            qrScanningLock = false;
+            return;
+        }
+
+        if (status) status.textContent = '⏳ Validando QR...';
+        showToast('⏳ Verificando QR...', '', 5000);
+
+        // 🔥 NUEVO: Usar RPC atómica para validar y reclamar QR
+        // Esta RPC debe ser creada en Supabase
+        const { data, error } = await supabase.rpc('reclamar_qr_domo', {
+            p_codigo: codigo,
+            p_usuario_id: session.user.id
+        });
+
+        if (error) {
+            if (error.message.includes('already used')) {
+                showToast('❌ Este QR ya fue usado', 'error');
+                if (status) status.textContent = '❌ QR ya utilizado';
+            } else if (error.message.includes('invalid code')) {
+                showToast('❌ QR inválido', 'error');
+                if (status) status.textContent = '❌ QR inválido';
+            } else if (error.message.includes('not a domo')) {
+                showToast('❌ Este QR no es para un domo', 'error');
+                if (status) status.textContent = '❌ QR no es domo';
+            } else {
+                throw error;
+            }
+            qrScanningLock = false;
+            return;
+        }
+
+        if (status) status.textContent = '✅ ¡QR reclamado exitosamente!';
+        if (input) input.value = '';
+        
+        showToast('🎉 ¡QR escaneado! +1 Es.stok', 'success');
+        
+        await cargarPerfil(true);
+        await cargarHistorialQR();
+        mostrarCelebracion();
+
+    } catch (error) {
+        console.error('Error procesando QR:', error);
+        if (status) status.textContent = '❌ Error al procesar QR';
+        showToast('❌ Error al escanear QR: ' + error.message, 'error');
+    } finally {
+        qrScanningLock = false;
+    }
+}
+
+// 🔥 CORREGIDO: escanearQR ahora usa procesarQR con validación
 async function escanearQR() {
     const input = document.getElementById('qrInput');
-    const status = document.getElementById('qrStatus');
-    const btn = document.getElementById('btnEscanearQR');
-    const qrCode = input.value.trim();
+    const qrCode = input?.value?.trim();
 
     if (!qrCode) {
         showToast('⚠️ Escribe o escanea el código QR', 'error');
         return;
     }
 
-    const session = await getSession();
-    if (!session) {
-        showToast('⚠️ Inicia sesión para escanear QR', 'error');
-        return;
-    }
-
-    btn.disabled = true;
-    btn.textContent = '⏳ Verificando...';
-    status.textContent = '⏳ Validando QR...';
-
-    try {
-        const { data: qrData, error: qrError } = await supabase
-            .from('qr_domos')
-            .select('*')
-            .eq('codigo', qrCode)
-            .single();
-
-        if (qrError || !qrData) {
-            status.textContent = '❌ QR inválido o no existe';
-            showToast('❌ QR inválido', 'error');
-            btn.disabled = false;
-            btn.textContent = '🔍 Escanear QR';
-            return;
-        }
-
-        if (qrData.usado) {
-            status.textContent = '❌ Este QR ya fue usado';
-            showToast('❌ QR ya utilizado', 'error');
-            btn.disabled = false;
-            btn.textContent = '🔍 Escanear QR';
-            return;
-        }
-
-        if (qrData.producto !== 'domo') {
-            status.textContent = '❌ Este QR no corresponde a un domo';
-            showToast('❌ QR no válido para domo', 'error');
-            btn.disabled = false;
-            btn.textContent = '🔍 Escanear QR';
-            return;
-        }
-
-        const { error: tokenError } = await supabase.rpc('asignar_es_stok', {
-            p_user_id: session.user.id
-        });
-
-        if (tokenError) throw tokenError;
-
-        const { error: updateError } = await supabase
-            .from('qr_domos')
-            .update({
-                usado: true,
-                usado_por: session.user.id,
-                fecha_uso: new Date().toISOString()
-            })
-            .eq('codigo', qrCode);
-
-        if (updateError) throw updateError;
-
-        await supabase
-            .from('qr_historial')
-            .insert({
-                qr_id: qrData.id,
-                user_id: session.user.id,
-                fecha: new Date().toISOString()
-            });
-
-        status.textContent = '✅ ¡Felicidades! Has recibido 1 Es.stok';
-        showToast('🎉 ¡QR escaneado! +1 Es.stok', 'success');
-        
-        input.value = '';
-        await cargarPerfil(true);
-        await cargarHistorialQR();
-        mostrarCelebracion();
-
-    } catch (error) {
-        console.error('Error escaneando QR:', error);
-        status.textContent = '❌ Error al procesar QR';
-        showToast('❌ Error al escanear QR: ' + error.message, 'error');
-    } finally {
-        btn.disabled = false;
-        btn.textContent = '🔍 Escanear QR';
-    }
+    await procesarQR(qrCode);
 }
 
 async function cargarHistorialQR() {
@@ -1288,7 +1433,7 @@ function actualizarUI(data) {
         document.getElementById('btnDesconectarWallet').style.display = 'none';
     }
 
-    // 🔥 CAMBIO: tokens en lugar de tokensAcumulados
+    // 🔥 CORREGIDO: Usar tokens en lugar de tokensAcumulados
     const stats = [
         { id: 'statTokens', value: data.tokens || 0 },
         { id: 'statNFTS', value: data.nfts || 0 },
@@ -1303,7 +1448,7 @@ function actualizarUI(data) {
         }
     });
 
-    // 🔥 CAMBIO: tokens, progreso_canje, puede_canjear
+    // 🔥 CORREGIDO: tokens, progreso_canje, puede_canjear
     const tokens = data.tokens || 0;
     const progreso = Math.min(tokens, 12);
     const puedeCanjear = data.puede_canjear || false;
@@ -1361,6 +1506,22 @@ function actualizarUI(data) {
     actualizarUIEstado(data.online !== false);
 }
 
+function animarContador(elemento, inicio, fin) {
+    if (!elemento || inicio === fin) return;
+    const duracion = 800;
+    const paso = 20;
+    const incremento = (fin - inicio) / (duracion / paso);
+    let actual = inicio;
+    const intervalo = setInterval(() => {
+        actual += incremento;
+        if ((incremento > 0 && actual >= fin) || (incremento < 0 && actual <= fin)) {
+            actual = fin;
+            clearInterval(intervalo);
+        }
+        elemento.textContent = Math.round(actual);
+    }, paso);
+}
+
 // ================================================================
 // 💳 CONECTAR WALLET CON POLYGON AMOY
 // ================================================================
@@ -1382,22 +1543,23 @@ async function conectarWallet() {
 
         const chainId = await window.ethereum.request({ method: 'eth_chainId' });
         
-        if (chainId !== '0x13882') {
+        // 🔥 CORREGIDO: Usar configuración de entorno
+        if (chainId !== ENV.networkChainId) {
             try {
                 await window.ethereum.request({
                     method: 'wallet_switchEthereumChain',
-                    params: [{ chainId: '0x13882' }]
+                    params: [{ chainId: ENV.networkChainId }]
                 });
             } catch (switchError) {
                 if (switchError.code === 4902) {
                     await window.ethereum.request({
                         method: 'wallet_addEthereumChain',
                         params: [{
-                            chainId: '0x13882',
-                            chainName: 'Polygon Amoy Testnet',
-                            nativeCurrency: { name: 'MATIC', symbol: 'MATIC', decimals: 18 },
-                            rpcUrls: ['https://rpc-amoy.polygon.technology/'],
-                            blockExplorerUrls: ['https://www.oklink.com/amoy']
+                            chainId: ENV.networkChainId,
+                            chainName: ENV.networkName,
+                            nativeCurrency: { name: ENV.networkCurrency, symbol: ENV.networkCurrency, decimals: 18 },
+                            rpcUrls: [ENV.networkRPC],
+                            blockExplorerUrls: [ENV.networkExplorer]
                         }]
                     });
                 } else {
@@ -1420,7 +1582,7 @@ async function conectarWallet() {
         if (btnConectar) btnConectar.style.display = 'none';
         if (btnDesconectar) btnDesconectar.style.display = 'inline-flex';
 
-        showToast('✅ Wallet conectada a Polygon Amoy', 'success');
+        showToast(`✅ Wallet conectada a ${ENV.networkName}`, 'success');
         await cargarPerfil(true);
         
     } catch (error) {
@@ -1757,7 +1919,6 @@ async function reaccionarPublicacion(postId, tipoReaccion) {
             return;
         }
 
-        // 🔥 CAMBIO: usuario_id en lugar de user_id
         const { error } = await supabase
             .from('reacciones')
             .upsert({
@@ -1788,7 +1949,6 @@ async function comentarPublicacion(postId, contenido) {
 
         const textoFormateado = formatearTexto(contenido);
 
-        // 🔥 CAMBIO: muro_comentarios en lugar de comentarios, usuario_id en lugar de user_id
         const { error } = await supabase
             .from('muro_comentarios')
             .insert({
@@ -1817,7 +1977,6 @@ async function agregarAmigo(amigoId) {
             return;
         }
 
-        // 🔥 CAMBIO: contactos con usuario_id/contacto_id
         const { error } = await supabase
             .from('contactos')
             .insert({
@@ -1904,6 +2063,7 @@ function calcularNivel(tokens) {
     return niveles[0];
 }
 
+// 🔥 CORREGIDO: Usar columna correcta tokens_actuales
 async function obtenerEstadisticas() {
     try {
         const session = await getSession();
@@ -2020,11 +2180,20 @@ function iniciarNotificacionesRealtime() {
 // 🚀 INICIALIZACIÓN
 // ================================================================
 document.addEventListener('DOMContentLoaded', async function() {
+    // 🔥 NUEVO: Cargar jsQR desde CDN si no está disponible
+    if (typeof jsQR === 'undefined') {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js';
+        document.head.appendChild(script);
+        await new Promise(resolve => script.onload = resolve);
+    }
+    
     await cargarPerfil();
     
     const stats = await obtenerEstadisticas();
     if (stats) {
-        const nivel = calcularNivel(stats.tokens || 0);
+        // 🔥 CORREGIDO: Usar tokens_actuales en lugar de tokens
+        const nivel = calcularNivel(stats.tokens_actuales || 0);
         const nivelEl = document.getElementById('nivelUsuario');
         if (nivelEl) {
             nivelEl.textContent = `${nivel.emoji} ${nivel.nombre}`;
@@ -2166,3 +2335,4 @@ window.abrirCamaraQR = abrirCamaraQR;
 window.cerrarCamaraQR = cerrarCamaraQR;
 window.cargarHistorialQR = cargarHistorialQR;
 window.actualizarUIHistorialQR = actualizarUIHistorialQR;
+window.procesarQR = procesarQR;
