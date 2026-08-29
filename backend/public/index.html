@@ -396,18 +396,11 @@
             'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
         );
 
-        // 🔍 DEBUG TEMPORAL - Captura errores para verlos en pantalla
-        window.addEventListener('error', function(e) {
-            alert('❌ ERROR JS: ' + e.message + '\nArchivo: ' + e.filename + '\nLínea: ' + e.lineno);
-        });
-        window.addEventListener('unhandledrejection', function(e) {
-            alert('❌ ERROR PROMESA: ' + (e.reason?.message || e.reason));
-        });
-
         let currentUser = null;
         let userTokens = 0;
         let userDomos = 0;
         let userHasNft = false;
+        let isRegistering = false;
 
         // ================================================================
         // TOAST
@@ -418,9 +411,10 @@
             t.className = 'toast show';
             if (type === 'error') t.classList.add('error');
             else if (type === 'warning') t.classList.add('warning');
-            else t.classList.remove('error', 'warning');
+            else if (type === 'success') t.classList.add('success');
+            else t.classList.remove('error', 'warning', 'success');
             clearTimeout(t._timeout);
-            t._timeout = setTimeout(() => t.classList.remove('show'), 3500);
+            t._timeout = setTimeout(() => t.classList.remove('show'), 4000);
         }
 
         // ================================================================
@@ -434,7 +428,7 @@
         }
 
         // ================================================================
-        // SESIÓN (Auth) - CORREGIDA
+        // SESIÓN
         // ================================================================
         async function checkSession() {
             const { data: { session }, error } = await supabase.auth.getSession();
@@ -449,7 +443,6 @@
                 document.getElementById('logoutBtn').style.display = 'inline-block';
                 document.getElementById('registerCard').style.display = 'none';
                 document.getElementById('loginCard').style.display = 'none';
-                
                 await loadUserData();
             } else {
                 document.getElementById('userEmail').textContent = 'No autenticado';
@@ -470,11 +463,22 @@
             const email = document.getElementById('regEmail').value.trim();
             const password = document.getElementById('regPassword').value.trim();
             const name = document.getElementById('regName').value.trim();
+            const btn = document.querySelector('#registerCard .btn-gold');
 
             if (!email || !password) {
                 showToast('⚠️ Correo y contraseña son obligatorios', 'error');
                 return;
             }
+
+            if (password.length < 6) {
+                showToast('⚠️ La contraseña debe tener al menos 6 caracteres', 'error');
+                return;
+            }
+
+            if (isRegistering) return;
+            isRegistering = true;
+            btn.disabled = true;
+            btn.textContent = '⏳ Creando...';
 
             try {
                 const { data, error } = await supabase.auth.signUp({
@@ -487,24 +491,39 @@
 
                 if (error) throw error;
 
-                // ✅ CORRECCIÓN: Verificar si hay sesión o si requiere confirmación
+                // ✅ Caso 1: Sesión iniciada inmediatamente
                 if (data.session) {
-                    // Usuario confirmado o sin confirmación requerida
                     currentUser = data.user;
                     showToast('✅ Cuenta creada. Sesión iniciada.', 'success');
                     await checkSession();
-                } else if (data.user) {
-                    // Usuario creado pero requiere confirmación de email
-                    showToast('✅ Cuenta creada. Revisa tu correo para confirmar tu cuenta.', 'success');
+                } 
+                // ✅ Caso 2: Requiere confirmación de email
+                else if (data.user) {
+                    showToast('✅ Cuenta creada. Revisa tu correo para confirmar.', 'success');
                     document.getElementById('regEmail').value = '';
                     document.getElementById('regPassword').value = '';
                     document.getElementById('regName').value = '';
-                } else {
-                    showToast('⚠️ Error inesperado al crear la cuenta.', 'warning');
+                } 
+                // ✅ Caso 3: Respuesta inesperada
+                else {
+                    showToast('⚠️ Cuenta creada, pero no se pudo iniciar sesión. Intenta iniciar sesión.', 'warning');
                 }
+
             } catch (error) {
                 console.error('Error registrando usuario:', error);
-                showToast('❌ ' + error.message, 'error');
+                let msg = error.message;
+                if (msg.includes('already registered')) {
+                    msg = '⚠️ Este correo ya está registrado';
+                } else if (msg.includes('password')) {
+                    msg = '⚠️ Contraseña inválida';
+                } else if (msg.includes('rate limit')) {
+                    msg = '⏳ Demasiados intentos. Espera unos minutos.';
+                }
+                showToast('❌ ' + msg, 'error');
+            } finally {
+                isRegistering = false;
+                btn.disabled = false;
+                btn.textContent = '⟡ Crear cuenta';
             }
         }
 
@@ -514,11 +533,15 @@
         async function iniciarSesion() {
             const email = document.getElementById('loginEmail').value.trim();
             const password = document.getElementById('loginPassword').value.trim();
+            const btn = document.querySelector('#loginCard .btn-gold');
 
             if (!email || !password) {
                 showToast('⚠️ Correo y contraseña son obligatorios', 'error');
                 return;
             }
+
+            btn.disabled = true;
+            btn.textContent = '⏳ Iniciando...';
 
             try {
                 const { data, error } = await supabase.auth.signInWithPassword({
@@ -532,7 +555,14 @@
                 await checkSession();
             } catch (error) {
                 console.error('Error iniciando sesión:', error);
-                showToast('❌ ' + error.message, 'error');
+                let msg = error.message;
+                if (msg.includes('Invalid login credentials')) {
+                    msg = '⚠️ Correo o contraseña incorrectos';
+                }
+                showToast('❌ ' + msg, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '◈ Iniciar sesión';
             }
         }
 
@@ -562,7 +592,7 @@
         }
 
         // ================================================================
-        // CARGAR DATOS DEL USUARIO - SOLO RPC obtener_mi_perfil
+        // CARGAR DATOS DEL USUARIO - SOLO RPC
         // ================================================================
         async function loadUserData() {
             if (!currentUser) {
@@ -574,12 +604,10 @@
             }
 
             try {
-                // ✅ ÚNICO MECANISMO: RPC obtener_mi_perfil
                 const { data, error } = await supabase.rpc('obtener_mi_perfil');
 
                 if (error) {
                     console.error('Error en obtener_mi_perfil:', error);
-                    // Si el usuario no tiene registro en usuarios, mostrar valores por defecto
                     userTokens = 0;
                     userDomos = 0;
                     userHasNft = false;
@@ -587,7 +615,6 @@
                     return;
                 }
 
-                // data es un array, tomar el primer elemento
                 const perfil = data && data.length > 0 ? data[0] : null;
 
                 if (perfil) {
@@ -709,15 +736,14 @@
 
             checkSession();
 
-            // ✅ Escuchar cambios de autenticación
             supabase.auth.onAuthStateChange((event, session) => {
                 if (event === 'SIGNED_IN' && session) {
                     currentUser = session.user;
-                    loadUserData();
                     document.getElementById('userEmail').textContent = currentUser.email || 'Usuario';
                     document.getElementById('logoutBtn').style.display = 'inline-block';
                     document.getElementById('registerCard').style.display = 'none';
                     document.getElementById('loginCard').style.display = 'none';
+                    loadUserData();
                 } else if (event === 'SIGNED_OUT') {
                     currentUser = null;
                     userDomos = 0;
