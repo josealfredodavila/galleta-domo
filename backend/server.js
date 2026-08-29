@@ -197,6 +197,31 @@ if (fs.existsSync(publicPath)) {
 }
 
 /* ================================================================
+   SPA FALLBACK - Corregido para Railway
+   ================================================================ */
+
+// Las rutas HTML específicas ya están definidas abajo.
+// Este fallback captura cualquier ruta que no sea /api/* o archivo estático
+// y devuelve index.html para que el cliente SPA maneje el routing.
+app.get('*', (req, res, next) => {
+    // Excluir rutas de API y archivos estáticos (ya manejados por express.static)
+    if (req.path.startsWith('/api/') || req.path.startsWith('/webhooks/')) {
+        return next();
+    }
+    // Verificar si la ruta corresponde a un archivo con extensión
+    if (path.extname(req.path) !== '') {
+        return next();
+    }
+    // Servir index.html para rutas SPA
+    const indexPath = path.join(__dirname, 'public', 'index.html');
+    if (fs.existsSync(indexPath)) {
+        res.sendFile(indexPath);
+    } else {
+        next();
+    }
+});
+
+/* ================================================================
    HEALTH CHECK
    ================================================================ */
 
