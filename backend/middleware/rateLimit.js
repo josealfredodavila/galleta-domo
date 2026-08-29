@@ -1,56 +1,81 @@
 // ================================================================
-// RATE LIMITING - PROTECCIÓN CONTRA DDoS
+// MIDDLEWARE/RATELIMIT.JS
+// RATE LIMITING - PROTECCIÓN DEL BACKEND SARIEL'S
 // ================================================================
 
 const rateLimit = require('express-rate-limit');
 
-// Límite general para todas las rutas
+// ================================================================
+// CONFIGURACIÓN GENERAL
+// ================================================================
+
 const limitadorGeneral = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutos
-    max: 100, // 100 peticiones por IP
-    message: {
-        error: 'Demasiadas peticiones, intenta de nuevo más tarde',
-        success: false
-    },
+    max: 100,
+
     standardHeaders: true,
-    legacyHeaders: false
+    legacyHeaders: false,
+
+    message: {
+        success: false,
+        error: 'Demasiadas peticiones. Intenta nuevamente más tarde.'
+    }
 });
 
-// Límite más estricto para autenticación
+// ================================================================
+// AUTENTICACIÓN
+// ================================================================
+
 const limitadorAuth = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutos
-    max: 10, // 10 intentos por IP
-    message: {
-        error: 'Demasiados intentos de inicio de sesión, intenta de nuevo más tarde',
-        success: false
-    },
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+
     standardHeaders: true,
-    legacyHeaders: false
+    legacyHeaders: false,
+
+    message: {
+        success: false,
+        error: 'Demasiados intentos de autenticación. Intenta nuevamente más tarde.'
+    }
 });
 
-// Límite para pagos
+// ================================================================
+// PAGOS
+// ================================================================
+
 const limitadorPagos = rateLimit({
-    windowMs: 60 * 60 * 1000, // 1 hora
-    max: 5, // 5 pagos por IP
-    message: {
-        error: 'Demasiados intentos de pago, intenta de nuevo más tarde',
-        success: false
-    },
+    windowMs: 60 * 60 * 1000,
+    max: 20,
+
     standardHeaders: true,
-    legacyHeaders: false
+    legacyHeaders: false,
+
+    message: {
+        success: false,
+        error: 'Se alcanzó el límite temporal de operaciones de pago.'
+    }
 });
 
-// Límite para webhooks (IPN)
+// ================================================================
+// WEBHOOKS
+// ================================================================
+
 const limitadorWebhook = rateLimit({
-    windowMs: 60 * 60 * 1000, // 1 hora
-    max: 100, // 100 webhooks por IP
-    message: {
-        error: 'Demasiadas notificaciones, intenta de nuevo más tarde',
-        success: false
-    },
+    windowMs: 60 * 60 * 1000,
+    max: 100,
+
     standardHeaders: true,
-    legacyHeaders: false
+    legacyHeaders: false,
+
+    message: {
+        success: false,
+        error: 'Demasiadas notificaciones recibidas. Intenta nuevamente más tarde.'
+    }
 });
+
+// ================================================================
+// EXPORTACIONES
+// ================================================================
 
 module.exports = {
     limitadorGeneral,
