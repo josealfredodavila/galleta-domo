@@ -1,3 +1,7 @@
+<!-- ================================================================
+     LIVE - SARIEL'S ECOSYSTEM
+     VERSIÓN FUNCIONAL - CONEXIÓN REAL CON SUPABASE + LIVEKIT
+     ================================================================ -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -21,6 +25,7 @@
             --glass-bg: rgba(15, 45, 26, 0.55);
             --glass-border: rgba(212, 175, 55, 0.15);
             --shadow-gold: 0 8px 32px rgba(212, 175, 55, 0.25);
+            --shadow-gold-strong: 0 0 60px rgba(212, 175, 55, 0.15);
             --radius: 16px;
             --radius-xl: 24px;
             --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -241,16 +246,6 @@
             80% { transform: rotate(720deg) scale(1); opacity: 1; }
             100% { transform: rotate(1080deg) scale(0.5); opacity: 0; }
         }
-        @keyframes explosion {
-            0% { opacity: 0; transform: scale(0.3); }
-            20% { opacity: 1; transform: scale(1.5); }
-            100% { opacity: 1; transform: scale(2); }
-        }
-        @keyframes explosionParticulas {
-            0% { opacity: 0; transform: scale(0.1) rotate(0deg); }
-            30% { opacity: 1; transform: scale(2) rotate(180deg); }
-            100% { opacity: 0; transform: scale(4) rotate(360deg); }
-        }
 
         @media (max-width: 768px) {
             .live-video-container { height: 50vh; min-height: 300px; }
@@ -393,7 +388,7 @@
 
     <div class="toast" id="toast"></div>
 
-    <script src="https://cdn.jsdelivr.net/npm/web3@1.8.0/dist/web3.min.js"></script>
+    <!-- ✅ SOLO SUPABASE - SIN WEB3 -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="/features/live/live.js"></script>
 </body>
