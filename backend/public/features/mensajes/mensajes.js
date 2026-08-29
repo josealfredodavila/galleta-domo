@@ -1,11 +1,10 @@
 /* ================================================================
-   MENSAJES ULTRA MEGA PRO - SARIEL'S
-   Con Supabase Realtime + Sincronización de Conversaciones
-   + Búsqueda + Agregar Contactos + Eliminar/Editar + Imágenes + Reacciones
+   MENSAJES - SARIEL'S ECOSYSTEM
+   VERSIÓN FUNCIONAL - CONEXIÓN REAL CON SUPABASE
    ================================================================ */
 
 // ================================================================
-// SUPABASE CLIENTE (CON NUEVAS LLAVES)
+// CONFIGURACIÓN SUPABASE
 // ================================================================
 const supabase = window.supabase.createClient(
     'https://zultnlogdoajehbswlih.supabase.co',
@@ -16,11 +15,14 @@ let usuarioActual = null;
 let conversacionActual = null;
 let realtimeChannel = null;
 let archivosSeleccionados = [];
+let grabacionActiva = false;
+let mediaRecorder = null;
+let audioChunks = [];
 
 // ================================================================
 // TOAST
 // ================================================================
-function showToast(msg, type = '') {
+function showToast(msg, type = '', duration = 3500) {
     let t = document.getElementById('toast');
     if (!t) {
         t = document.createElement('div');
@@ -32,9 +34,10 @@ function showToast(msg, type = '') {
     t.className = 'toast show';
     if (type === 'error') t.classList.add('error');
     else if (type === 'warning') t.classList.add('warning');
-    else t.classList.remove('error', 'warning');
+    else if (type === 'success') t.classList.add('success');
+    else t.classList.remove('error', 'warning', 'success');
     clearTimeout(t._timeout);
-    t._timeout = setTimeout(() => t.classList.remove('show'), 3500);
+    t._timeout = setTimeout(() => t.classList.remove('show'), duration);
 }
 
 // ================================================================
@@ -59,7 +62,16 @@ async function verificarAutenticacion() {
 }
 
 // ================================================================
-// 🏷️ FORMATEAR TEXTO (Emojis + Hashtags + Menciones)
+// ESCAPE HTML
+// ================================================================
+function escapeHTML(texto) {
+    const div = document.createElement('div');
+    div.textContent = texto;
+    return div.innerHTML;
+}
+
+// ================================================================
+// FORMATEAR TEXTO (Emojis)
 // ================================================================
 function formatearTexto(texto) {
     if (!texto) return '';
@@ -80,11 +92,7 @@ function formatearTexto(texto) {
         ':cafe:': '☕',
         ':helado:': '🍦',
         ':rocket:': '🚀',
-        ':sariel:': '◈',
-        ':enfadado:': '😡',
-        ':triste:': '😢',
-        ':sonrisa:': '😄',
-        ':guiño:': '😉'
+        ':sariel:': '◈'
     };
     
     for (const [key, value] of Object.entries(emojis)) {
@@ -92,12 +100,6 @@ function formatearTexto(texto) {
     }
     
     return textoFormateado;
-}
-
-function escapeHTML(texto) {
-    const div = document.createElement('div');
-    div.textContent = texto;
-    return div.innerHTML;
 }
 
 // ================================================================
@@ -158,8 +160,8 @@ async function buscarContactos(query) {
                         ${usuario.avatar_url ? `<img src="${usuario.avatar_url}" style="width:100%;height:100%;object-fit:cover;">` : (usuario.nombre ? usuario.nombre[0].toUpperCase() : '◈')}
                     </div>
                     <div style="flex:1;">
-                        <div style="font-weight:600;font-size:0.8rem;">${usuario.nombre || 'Usuario'}</div>
-                        <div style="font-size:0.6rem;color:var(--text-muted);">@${usuario.handle || 'usuario'}</div>
+                        <div style="font-weight:600;font-size:0.8rem;">${escapeHTML(usuario.nombre || 'Usuario')}</div>
+                        <div style="font-size:0.6rem;color:var(--text-muted);">@${escapeHTML(usuario.handle || 'usuario')}</div>
                     </div>
                     ${yaEsContacto ? `
                         <span style="font-size:0.55rem;color:var(--success);background:rgba(0,214,143,0.1);padding:2px 10px;border-radius:12px;">
@@ -199,7 +201,7 @@ async function agregarContacto(contactoId) {
             .select('id')
             .eq('usuario_id', session.user.id)
             .eq('contacto_id', contactoId)
-            .single();
+            .maybeSingle();
 
         if (existe) {
             showToast('⚠️ Este usuario ya es tu contacto', 'warning');
@@ -218,8 +220,9 @@ async function agregarContacto(contactoId) {
 
         showToast('✅ Contacto agregado correctamente', 'success');
         
-        document.getElementById('searchInput').value = '';
+        document.getElementById('searchInputModal').value = '';
         document.getElementById('resultadosBusqueda').innerHTML = '';
+        cerrarModalNuevoContacto();
         await cargarConversaciones();
 
     } catch (error) {
@@ -272,7 +275,8 @@ async function cargarConversaciones() {
                 .select('id', { count: 'exact' })
                 .eq('remitente_id', contactoInfo.id)
                 .eq('destinatario_id', usuarioActual.id)
-                .eq('leido', false);
+                .eq('leido', false)
+                .is('eliminado', false);
 
             return {
                 id: contactoInfo.id,
@@ -303,11 +307,12 @@ async function cargarConversaciones() {
                          onclick="abrirConversacion('${conv.id}')">
                         <div class="conv-avatar">${avatar}</div>
                         <div class="conv-info">
-                            <div class="conv-nombre">${conv.nombre}</div>
+                            <div class="conv-nombre">${escapeHTML(conv.nombre)}</div>
                             <div class="conv-msg">${conv.ultimoMensaje.length > 40 ? conv.ultimoMensaje.substring(0, 40) + '...' : conv.ultimoMensaje}</div>
                         </div>
                         <div class="conv-meta">
                             ${conv.noLeidos > 0 ? `<span class="conv-badge">${conv.noLeidos}</span>` : ''}
+                            ${conv.fecha ? `<span class="conv-hora">${new Date(conv.fecha).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</span>` : ''}
                         </div>
                         <div style="display:flex;gap:4px;flex-shrink:0;">
                             <button onclick="event.stopPropagation();eliminarConversacion('${conv.id}')" 
@@ -423,7 +428,6 @@ async function cargarMensajes(contactoId) {
         .from('mensajes_chat')
         .select('*')
         .or(`and(remitente_id.eq.${session.user.id},destinatario_id.eq.${contactoId}),and(remitente_id.eq.${contactoId},destinatario_id.eq.${session.user.id})`)
-        .eq('eliminado', false)
         .order('created_at', { ascending: true });
 
     if (error) {
@@ -436,10 +440,10 @@ async function cargarMensajes(contactoId) {
         container.scrollTop = container.scrollHeight;
     } else {
         container.innerHTML = `
-            <div class="empty-chat" style="display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;color:var(--text-muted);text-align:center;padding:40px 20px;">
-                <span class="icon" style="font-size:2.5rem;display:block;margin-bottom:16px;color:var(--gold);opacity:0.4;font-family:'Orbitron',monospace;">◈</span>
-                <h3 style="font-family:'Orbitron',monospace;color:var(--text-secondary);font-size:1rem;font-weight:400;">Inicia la conversación</h3>
-                <p style="font-size:0.8rem;">Envía un mensaje para comenzar</p>
+            <div class="empty-chat">
+                <span class="icon">◈</span>
+                <h3>Inicia la conversación</h3>
+                <p>Envía un mensaje para comenzar</p>
             </div>
         `;
     }
@@ -456,57 +460,11 @@ function crearMensajeHTML(msg) {
     const contenidoFormateado = formatearTexto(msg.contenido || '');
 
     if (msg.tipo === 'imagen' && msg.imagen_url) {
-        if (esEnviado) {
-            return `
-                <div class="msg-wrapper enviado">
-                    <div class="burbuja" style="padding:4px;background:transparent;border-radius:12px;">
-                        <img src="${msg.imagen_url}" style="max-width:200px;border-radius:12px;border:2px solid var(--gold);" />
-                    </div>
-                    <div class="meta">${hora} ${msg.editado ? '✎' : ''} <span class="leido leido">${msg.leido ? '◆◆' : '◆◇'}</span></div>
-                </div>
-            `;
-        }
-        return `
-            <div class="msg-wrapper recibido">
-                <div class="fila">
-                    <div class="avatar estado-conectado">◈</div>
-                    <div class="burbuja" style="padding:4px;background:transparent;border-radius:12px;border:1px solid var(--glass-border);">
-                        <img src="${msg.imagen_url}" style="max-width:200px;border-radius:12px;" />
-                    </div>
-                </div>
-                <div class="meta">${hora} ${msg.editado ? '✎' : ''}</div>
-            </div>
-        `;
+        return crearMensajeImagen(msg, esEnviado, hora);
     }
 
     if (msg.tipo === 'voz' && msg.imagen_url) {
-        if (esEnviado) {
-            return `
-                <div class="msg-wrapper enviado">
-                    <div class="burbuja" style="display:flex;align-items:center;gap:8px;">
-                        <span>🎵</span>
-                        <audio controls style="max-width:150px;height:30px;">
-                            <source src="${msg.imagen_url}" type="audio/mpeg">
-                        </audio>
-                    </div>
-                    <div class="meta">${hora} <span class="leido leido">${msg.leido ? '◆◆' : '◆◇'}</span></div>
-                </div>
-            `;
-        }
-        return `
-            <div class="msg-wrapper recibido">
-                <div class="fila">
-                    <div class="avatar estado-conectado">◈</div>
-                    <div class="burbuja" style="display:flex;align-items:center;gap:8px;">
-                        <span>🎵</span>
-                        <audio controls style="max-width:150px;height:30px;">
-                            <source src="${msg.imagen_url}" type="audio/mpeg">
-                        </audio>
-                    </div>
-                </div>
-                <div class="meta">${hora}</div>
-            </div>
-        `;
+        return crearMensajeAudio(msg, esEnviado, hora);
     }
 
     if (esEnviado) {
@@ -515,7 +473,7 @@ function crearMensajeHTML(msg) {
                 <div class="burbuja">${contenidoFormateado}</div>
                 <div class="meta">
                     ${hora} ${msg.editado ? '✎' : ''}
-                    <span class="leido leido">${msg.leido ? '◆◆' : '◆◇'}</span>
+                    <span class="leido ${msg.leido ? 'leido' : 'no-leido'}">${msg.leido ? '◆◆' : '◆◇'}</span>
                     <button onclick="eliminarMensaje('${msg.id}')" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:0.5rem;">✕</button>
                     <button onclick="editarMensaje('${msg.id}')" style="background:none;border:none;color:var(--gold);cursor:pointer;font-size:0.5rem;">✎</button>
                 </div>
@@ -533,6 +491,60 @@ function crearMensajeHTML(msg) {
                 ${hora} ${msg.editado ? '✎' : ''}
                 <button onclick="reportarMensaje('${msg.id}')" style="background:none;border:none;color:var(--warning);cursor:pointer;font-size:0.5rem;">⚠️</button>
             </div>
+        </div>
+    `;
+}
+
+function crearMensajeImagen(msg, esEnviado, hora) {
+    if (esEnviado) {
+        return `
+            <div class="msg-wrapper enviado">
+                <div class="burbuja" style="padding:4px;background:transparent;border-radius:12px;">
+                    <img src="${msg.imagen_url}" style="max-width:200px;border-radius:12px;border:2px solid var(--gold);" />
+                </div>
+                <div class="meta">${hora} ${msg.editado ? '✎' : ''} <span class="leido ${msg.leido ? 'leido' : 'no-leido'}">${msg.leido ? '◆◆' : '◆◇'}</span></div>
+            </div>
+        `;
+    }
+    return `
+        <div class="msg-wrapper recibido">
+            <div class="fila">
+                <div class="avatar estado-conectado">◈</div>
+                <div class="burbuja" style="padding:4px;background:transparent;border-radius:12px;border:1px solid var(--glass-border);">
+                    <img src="${msg.imagen_url}" style="max-width:200px;border-radius:12px;" />
+                </div>
+            </div>
+            <div class="meta">${hora} ${msg.editado ? '✎' : ''}</div>
+        </div>
+    `;
+}
+
+function crearMensajeAudio(msg, esEnviado, hora) {
+    if (esEnviado) {
+        return `
+            <div class="msg-wrapper enviado">
+                <div class="burbuja" style="display:flex;align-items:center;gap:8px;">
+                    <span>🎵</span>
+                    <audio controls style="max-width:150px;height:30px;">
+                        <source src="${msg.imagen_url}" type="audio/mpeg">
+                    </audio>
+                </div>
+                <div class="meta">${hora} <span class="leido ${msg.leido ? 'leido' : 'no-leido'}">${msg.leido ? '◆◆' : '◆◇'}</span></div>
+            </div>
+        `;
+    }
+    return `
+        <div class="msg-wrapper recibido">
+            <div class="fila">
+                <div class="avatar estado-conectado">◈</div>
+                <div class="burbuja" style="display:flex;align-items:center;gap:8px;">
+                    <span>🎵</span>
+                    <audio controls style="max-width:150px;height:30px;">
+                        <source src="${msg.imagen_url}" type="audio/mpeg">
+                    </audio>
+                </div>
+            </div>
+            <div class="meta">${hora}</div>
         </div>
     `;
 }
@@ -608,7 +620,7 @@ async function enviarMensaje() {
 }
 
 // ================================================================
-// 🖼️ SUBIR ARCHIVO (Imagen/Voz)
+// 🖼️ SUBIR ARCHIVO
 // ================================================================
 async function subirArchivo(file, session) {
     try {
@@ -688,6 +700,64 @@ function handleFileSelect(event) {
 }
 
 // ================================================================
+// 🎙️ GRABACIÓN DE VOZ
+// ================================================================
+function toggleGrabacionVoz() {
+    const btn = document.getElementById('btnGrabarVoz');
+    
+    if (!grabacionActiva) {
+        iniciarGrabacionVoz(btn);
+    } else {
+        detenerGrabacionVoz(btn);
+    }
+}
+
+async function iniciarGrabacionVoz(btn) {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+        audioChunks = [];
+
+        mediaRecorder.ondataavailable = event => {
+            audioChunks.push(event.data);
+        };
+
+        mediaRecorder.onstop = async () => {
+            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+            const file = new File([audioBlob], `voz_${Date.now()}.webm`, { type: 'audio/webm' });
+            
+            const session = await getSession();
+            if (session && conversacionActual) {
+                archivosSeleccionados = [file];
+                await enviarMensaje();
+            }
+            
+            stream.getTracks().forEach(track => track.stop());
+        };
+
+        mediaRecorder.start();
+        grabacionActiva = true;
+        btn.textContent = '⏹️';
+        btn.style.color = 'var(--danger)';
+        showToast('🎙️ Grabando...', '', 2000);
+
+    } catch (error) {
+        console.error('Error iniciando grabación:', error);
+        showToast('❌ Error al acceder al micrófono', 'error');
+    }
+}
+
+function detenerGrabacionVoz(btn) {
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+        mediaRecorder.stop();
+        grabacionActiva = false;
+        btn.textContent = '🎙️';
+        btn.style.color = '';
+        showToast('✅ Grabación finalizada', 'success');
+    }
+}
+
+// ================================================================
 // 🗑️ ELIMINAR MENSAJE
 // ================================================================
 async function eliminarMensaje(mensajeId) {
@@ -702,7 +772,7 @@ async function eliminarMensaje(mensajeId) {
 
         const { error } = await supabase
             .from('mensajes_chat')
-            .update({ eliminado: true, fecha_eliminacion: new Date().toISOString() })
+            .update({ eliminado: true })
             .eq('id', mensajeId)
             .eq('remitente_id', session.user.id);
 
@@ -742,8 +812,7 @@ async function editarMensaje(mensajeId) {
             .from('mensajes_chat')
             .update({
                 contenido: nuevoContenido,
-                editado: true,
-                fecha_edicion: new Date().toISOString()
+                editado: true
             })
             .eq('id', mensajeId)
             .eq('remitente_id', session.user.id);
@@ -765,6 +834,11 @@ async function editarMensaje(mensajeId) {
 // 🗑️ ELIMINAR CONVERSACIÓN
 // ================================================================
 async function eliminarConversacion(contactoId) {
+    if (!contactoId) {
+        showToast('⚠️ No hay conversación seleccionada', 'error');
+        return;
+    }
+    
     if (!confirm('¿Eliminar toda la conversación con este contacto?')) return;
 
     try {
@@ -774,11 +848,13 @@ async function eliminarConversacion(contactoId) {
             return;
         }
 
+        // Marcar todos los mensajes como eliminados
         await supabase
             .from('mensajes_chat')
-            .update({ eliminado: true, fecha_eliminacion: new Date().toISOString() })
+            .update({ eliminado: true })
             .or(`and(remitente_id.eq.${session.user.id},destinatario_id.eq.${contactoId}),and(remitente_id.eq.${contactoId},destinatario_id.eq.${session.user.id})`);
 
+        // Eliminar contacto
         await supabase
             .from('contactos')
             .delete()
@@ -789,9 +865,9 @@ async function eliminarConversacion(contactoId) {
             conversacionActual = null;
             document.getElementById('chatNombre').textContent = 'Selecciona una conversación';
             document.getElementById('chatMessages').innerHTML = `
-                <div class="empty-chat" style="display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;color:var(--text-muted);text-align:center;padding:40px 20px;">
-                    <span class="icon" style="font-size:2.5rem;display:block;margin-bottom:16px;color:var(--gold);opacity:0.4;font-family:'Orbitron',monospace;">◈</span>
-                    <h3 style="font-family:'Orbitron',monospace;color:var(--text-secondary);font-size:1rem;font-weight:400;">Conversación eliminada</h3>
+                <div class="empty-chat">
+                    <span class="icon">◈</span>
+                    <h3>Conversación eliminada</h3>
                 </div>
             `;
         }
@@ -813,10 +889,21 @@ async function marcarMensajesLeidos(contactoId) {
         const session = await getSession();
         if (!session) return;
 
-        await supabase.rpc('marcar_mensajes_leidos', {
-            p_remitente_id: contactoId,
-            p_destinatario_id: session.user.id
-        });
+        // Usar RPC si existe, o UPDATE directo
+        try {
+            await supabase.rpc('marcar_mensajes_leidos', {
+                p_remitente_id: contactoId,
+                p_destinatario_id: session.user.id
+            });
+        } catch (rpcError) {
+            // Fallback: UPDATE directo
+            await supabase
+                .from('mensajes_chat')
+                .update({ leido: true })
+                .eq('remitente_id', contactoId)
+                .eq('destinatario_id', session.user.id)
+                .eq('leido', false);
+        }
 
     } catch (error) {
         console.error('Error marcando mensajes como leídos:', error);
@@ -845,7 +932,13 @@ async function reportarMensaje(mensajeId) {
                 motivo: motivo
             });
 
-        if (error) throw error;
+        if (error) {
+            if (error.code === '42P01') {
+                showToast('⚠️ La tabla de reportes no está configurada', 'warning');
+                return;
+            }
+            throw error;
+        }
 
         showToast('⚠️ Reporte enviado. Gracias por ayudar.', 'warning');
 
@@ -859,6 +952,11 @@ async function reportarMensaje(mensajeId) {
 // 🚫 BLOQUEAR USUARIO
 // ================================================================
 async function bloquearUsuario(usuarioId) {
+    if (!usuarioId) {
+        showToast('⚠️ No hay usuario seleccionado', 'error');
+        return;
+    }
+    
     if (!confirm('¿Bloquear a este usuario? No podrán enviarte mensajes.')) return;
 
     try {
@@ -868,13 +966,23 @@ async function bloquearUsuario(usuarioId) {
             return;
         }
 
-        await supabase
-            .from('bloqueos')
-            .insert({
-                usuario_id: session.user.id,
-                bloqueado_id: usuarioId
-            });
+        // Insertar bloqueo
+        try {
+            await supabase
+                .from('bloqueos')
+                .insert({
+                    usuario_id: session.user.id,
+                    bloqueado_id: usuarioId
+                });
+        } catch (insertError) {
+            if (insertError.code === '42P01') {
+                showToast('⚠️ La tabla de bloqueos no está configurada', 'warning');
+                return;
+            }
+            throw insertError;
+        }
 
+        // Eliminar contacto
         await supabase
             .from('contactos')
             .delete()
@@ -887,5 +995,143 @@ async function bloquearUsuario(usuarioId) {
             conversacionActual = null;
             document.getElementById('chatNombre').textContent = 'Selecciona una conversación';
             document.getElementById('chatMessages').innerHTML = `
-                <div class="empty-chat" style="display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;color:var(--text-muted);text-align:center;padding:40px 20px;">
-                    <span class="icon" style="font-size:2.
+                <div class="empty-chat">
+                    <span class="icon">◈</span>
+                    <h3>Usuario bloqueado</h3>
+                </div>
+            `;
+        }
+
+        await cargarConversaciones();
+
+    } catch (error) {
+        console.error('Error bloqueando usuario:', error);
+        showToast('❌ Error al bloquear usuario', 'error');
+    }
+}
+
+// ================================================================
+// 🔍 BUSCAR EN CONVERSACIÓN
+// ================================================================
+async function buscarEnConversacion(query) {
+    if (!query || !query.trim()) {
+        showToast('⚠️ Escribe algo para buscar', 'warning');
+        return;
+    }
+
+    if (!conversacionActual) {
+        showToast('⚠️ Selecciona una conversación', 'error');
+        return;
+    }
+
+    try {
+        const session = await getSession();
+        if (!session) return;
+
+        const { data, error } = await supabase
+            .from('mensajes_chat')
+            .select('*')
+            .or(`and(remitente_id.eq.${session.user.id},destinatario_id.eq.${conversacionActual.id}),and(remitente_id.eq.${conversacionActual.id},destinatario_id.eq.${session.user.id})`)
+            .ilike('contenido', `%${query}%`)
+            .order('created_at', { ascending: true });
+
+        if (error) throw error;
+
+        const container = document.getElementById('chatMessages');
+        if (!data || data.length === 0) {
+            container.innerHTML = `
+                <div class="empty-chat">
+                    <span class="icon">◈</span>
+                    <h3>No se encontraron resultados</h3>
+                    <p>No hay mensajes que coincidan con "${escapeHTML(query)}"</p>
+                    <button onclick="cargarMensajes('${conversacionActual.id}')" style="margin-top:12px;padding:8px 20px;background:linear-gradient(135deg,var(--gold),var(--gold-dark));border:none;border-radius:30px;color:var(--space);font-weight:600;cursor:pointer;">
+                        Volver
+                    </button>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = data.map(msg => crearMensajeHTML(msg)).join('');
+        container.scrollTop = container.scrollHeight;
+        showToast(`🔍 Encontrados ${data.length} mensajes`, 'success');
+
+    } catch (error) {
+        console.error('Error buscando:', error);
+        showToast('❌ Error al buscar', 'error');
+    }
+}
+
+// ================================================================
+// ✎ NUEVA CONVERSACIÓN (ABRIR MODAL)
+// ================================================================
+function nuevaConversacion() {
+    document.getElementById('modalNuevoContacto').classList.add('show');
+    document.getElementById('searchInputModal').value = '';
+    document.getElementById('resultadosBusqueda').innerHTML = `
+        <div style="padding:20px;text-align:center;color:var(--text-muted);font-size:0.75rem;">
+            Escribe al menos 2 caracteres para buscar
+        </div>
+    `;
+    setTimeout(() => {
+        document.getElementById('searchInputModal').focus();
+    }, 200);
+}
+
+function cerrarModalNuevoContacto() {
+    document.getElementById('modalNuevoContacto').classList.remove('show');
+}
+
+// ================================================================
+// 🔄 INICIALIZACIÓN
+// ================================================================
+document.addEventListener('DOMContentLoaded', async function() {
+    await cargarConversaciones();
+
+    // Event listeners
+    document.getElementById('chatInput')?.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            enviarMensaje();
+        }
+    });
+
+    document.getElementById('btnEnviar')?.addEventListener('click', enviarMensaje);
+
+    document.getElementById('searchInput')?.addEventListener('input', function(e) {
+        buscarContactos(e.target.value);
+    });
+
+    document.getElementById('searchInputModal')?.addEventListener('input', function(e) {
+        buscarContactos(e.target.value);
+    });
+
+    // Cerrar modal con ESC
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            cerrarModalNuevoContacto();
+        }
+    });
+
+    console.log('◈ Sariel\'s - Mensajes');
+});
+
+// ================================================================
+// EXPOSICIÓN DE FUNCIONES GLOBALES
+// ================================================================
+window.cargarConversaciones = cargarConversaciones;
+window.abrirConversacion = abrirConversacion;
+window.enviarMensaje = enviarMensaje;
+window.eliminarMensaje = eliminarMensaje;
+window.editarMensaje = editarMensaje;
+window.eliminarConversacion = eliminarConversacion;
+window.bloquearUsuario = bloquearUsuario;
+window.reportarMensaje = reportarMensaje;
+window.buscarEnConversacion = buscarEnConversacion;
+window.nuevaConversacion = nuevaConversacion;
+window.cerrarModalNuevoContacto = cerrarModalNuevoContacto;
+window.agregarContacto = agregarContacto;
+window.buscarContactos = buscarContactos;
+window.seleccionarArchivo = seleccionarArchivo;
+window.handleFileSelect = handleFileSelect;
+window.toggleGrabacionVoz = toggleGrabacionVoz;
+window.showToast = showToast;
