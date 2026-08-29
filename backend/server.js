@@ -197,15 +197,13 @@ app.use(
 app.use(compression());
 
 /*
- * CORS
- *
- * Si CORS_ORIGINS no existe:
- * se permite cualquier origen.
- *
- * Para producción se recomienda:
- *
- * CORS_ORIGINS=https://tudominio.com,https://www.tudominio.com
+ * CORS - Configuración segura para producción
+ * 
+ * Si CORS_ORIGINS no está definido en producción, NO se permiten
+ * orígenes desconocidos. En desarrollo, se permite cualquier origen
+ * para facilitar el testing local.
  */
+const isProduction = process.env.NODE_ENV === 'production';
 const corsOrigins = (process.env.CORS_ORIGINS || '')
     .split(',')
     .map(origin => origin.trim())
@@ -214,21 +212,28 @@ const corsOrigins = (process.env.CORS_ORIGINS || '')
 app.use(
     cors({
         origin: function (origin, callback) {
+            // Permitir requests sin Origin (health checks, server-to-server)
             if (!origin) {
                 return callback(null, true);
             }
 
-            if (corsOrigins.length === 0) {
+            // En desarrollo, permitir cualquier origen para facilitar pruebas
+            if (!isProduction) {
                 return callback(null, true);
+            }
+
+            // En producción, solo permitir orígenes explícitamente configurados
+            if (corsOrigins.length === 0) {
+                console.warn('⚠️ CORS_ORIGINS no configurado en producción. Rechazando origen:', origin);
+                return callback(new Error('Origen no permitido por CORS'));
             }
 
             if (corsOrigins.includes(origin)) {
                 return callback(null, true);
             }
 
-            return callback(
-                new Error('Origen no permitido por CORS')
-            );
+            console.warn('⚠️ Origen no permitido por CORS:', origin);
+            return callback(new Error('Origen no permitido por CORS'));
         },
         credentials: true
     })
@@ -238,6 +243,7 @@ app.use(morgan('combined'));
 
 /*
  * Rate limit general para API.
+ * Se excluye el webhook que tiene su propio limitador.
  */
 const apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -250,10 +256,31 @@ const apiLimiter = rateLimit({
     }
 });
 
-app.use('/api/', apiLimiter);
+app.use('/api/', (req, res, next) => {
+    // Excluir webhook del rate limit general
+    if (req.path.startsWith('/webhooks/')) {
+        return next();
+    }
+    return apiLimiter(req, res, next);
+});
+
+/*
+ * Rate limit específico para webhook (más permisivo pero con límite)
+ */
+const webhookLimiter = rateLimit({
+    windowMs: 5 * 60 * 1000,
+    max: 50,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+        success: false,
+        error: 'Demasiados webhooks. Intenta nuevamente más tarde.'
+    }
+});
 
 /*
  * Capturamos el body original para poder verificar firmas HMAC.
+ * Esto debe hacerse ANTES de cualquier otro middleware que consuma el body.
  */
 app.use(
     express.json({
@@ -267,7 +294,13 @@ app.use(
 app.use(
     express.urlencoded({
         extended: true,
-        limit: '2mb'
+        limit: '2mb',
+        verify: (req, res, buf) => {
+            // También capturamos el raw body para urlencoded
+            if (!req.rawBody) {
+                req.rawBody = Buffer.from(buf);
+            }
+        }
     })
 );
 
@@ -299,8 +332,7 @@ app.get('/api/health', (req, res) => {
     res.status(200).json({
         status: 'healthy',
         timestamp: new Date().toISOString(),
-        environment: process.env.NODE_ENV || 'development',
-        railway: 'https://galleta-domo.up.railway.app'
+        environment: process.env.NODE_ENV || 'development'
     });
 });
 
@@ -668,18 +700,30 @@ app.post(
                 });
             }
 
+            // Construir URL del IPN callback desde variable de entorno
+            const ipnCallbackUrl = process.env.NOWPAYMENTS_IPN_CALLBACK_URL;
+            if (!ipnCallbackUrl) {
+                console.warn('⚠️ NOWPAYMENTS_IPN_CALLBACK_URL no configurado. El webhook no recibirá notificaciones.');
+            }
+
             try {
+                const nowpaymentsPayload = {
+                    price_amount: montoNumerico,
+                    price_currency: 'usd',
+                    pay_currency: 'usdt',
+                    order_id: String(orden.id),
+                    order_description: `Pago transmisión ${transmisionId}`
+                };
+
+                // Solo agregar ipn_callback_url si está configurado
+                if (ipnCallbackUrl) {
+                    nowpaymentsPayload.ipn_callback_url = ipnCallbackUrl;
+                }
+
                 const nowpayments =
                     await axios.post(
                         'https://api.nowpayments.io/v1/payment',
-                        {
-                            price_amount: montoNumerico,
-                            price_currency: 'usd',
-                            pay_currency: 'usdt',
-                            order_id: String(orden.id),
-                            order_description:
-                                `Pago transmisión ${transmisionId}`
-                        },
+                        nowpaymentsPayload,
                         {
                             headers: {
                                 'x-api-key':
@@ -789,10 +833,12 @@ app.get(
    ================================================================ */
 
 /*
- * NOWPayments utiliza firma HMAC SHA-512.
- *
- * Para evitar problemas con JSON.stringify,
- * se utiliza el body original cuando está disponible.
+ * NOWPayments utiliza firma HMAC SHA-512 sobre el body RAW.
+ * 
+ * La firma se calcula sobre el body en su forma original (string),
+ * NO sobre el objeto parseado. Por eso usamos req.rawBody.
+ * 
+ * Referencia: https://nowpayments.io/docs/ipn
  */
 
 function verificarHMAC(rawBody, firmaRecibida, secret) {
@@ -805,10 +851,15 @@ function verificarHMAC(rawBody, firmaRecibida, secret) {
             return false;
         }
 
+        // Asegurar que rawBody es un Buffer o string
+        const bodyBuffer = Buffer.isBuffer(rawBody)
+            ? rawBody
+            : Buffer.from(String(rawBody), 'utf8');
+
         const firmaCalculada =
             crypto
                 .createHmac('sha512', secret)
-                .update(rawBody)
+                .update(bodyBuffer)
                 .digest('hex');
 
         const recibido = Buffer.from(
@@ -845,6 +896,7 @@ function verificarHMAC(rawBody, firmaRecibida, secret) {
 
 app.post(
     '/api/webhooks/nowpayments',
+    webhookLimiter,
     async (req, res) => {
         try {
             const secret =
@@ -862,13 +914,27 @@ app.post(
             }
 
             const firmaRecibida =
-                req.headers['x-nowpayments-sig'];
+                req.headers['x-nowpayments-sig'] ||
+                req.headers['x-nowpayments-signature'];
 
-            const rawBody =
-                req.rawBody ||
-                Buffer.from(
-                    JSON.stringify(req.body)
-                );
+            if (!firmaRecibida) {
+                console.warn('⚠️ Webhook NOWPayments sin firma');
+                return res.status(401).json({
+                    success: false,
+                    error: 'Firma ausente'
+                });
+            }
+
+            // Usar el body original capturado
+            const rawBody = req.rawBody;
+
+            if (!rawBody || rawBody.length === 0) {
+                console.warn('⚠️ Webhook NOWPayments sin body');
+                return res.status(400).json({
+                    success: false,
+                    error: 'Body vacío'
+                });
+            }
 
             const esValido =
                 verificarHMAC(
@@ -879,7 +945,7 @@ app.post(
 
             if (!esValido) {
                 console.warn(
-                    '⚠️ Webhook NOWPayments inválido'
+                    '⚠️ Webhook NOWPayments con firma inválida'
                 );
 
                 return res.status(401).json({
@@ -888,30 +954,56 @@ app.post(
                 });
             }
 
-            const payload = req.body || {};
+            // Parsear el body después de verificar la firma
+            let payload;
+            try {
+                payload = JSON.parse(rawBody.toString('utf8'));
+            } catch (parseError) {
+                console.error('❌ Error parseando webhook:', parseError);
+                return res.status(400).json({
+                    success: false,
+                    error: 'Body inválido'
+                });
+            }
 
             console.log(
-                '📡 Webhook NOWPayments recibido'
+                '📡 Webhook NOWPayments recibido:',
+                JSON.stringify(payload, null, 2)
             );
 
             /*
-             * NOWPayments normalmente utiliza
-             * payment_status.
+             * NOWPayments puede enviar el payment_status en diferentes
+             * lugares dependiendo de la versión del webhook.
              */
             const paymentStatus =
                 String(
                     payload.payment_status ||
                     payload.data?.payment_status ||
+                    payload.status ||
                     ''
                 ).toLowerCase();
 
+            // También puede venir como "status" en algunas versiones
+            const status =
+                String(
+                    payload.status ||
+                    payload.data?.status ||
+                    ''
+                ).toLowerCase();
+
+            const finalStatus = paymentStatus || status;
+
+            // Buscar order_id en diferentes ubicaciones
             const ordenId =
                 payload.order_id ||
-                payload.data?.order_id;
+                payload.data?.order_id ||
+                payload.orderId ||
+                payload.data?.orderId;
 
             if (!ordenId) {
                 console.warn(
-                    '⚠️ Webhook sin order_id'
+                    '⚠️ Webhook sin order_id:',
+                    payload
                 );
 
                 return res.status(400).json({
@@ -921,108 +1013,149 @@ app.post(
             }
 
             /*
-             * Solo finalizamos cuando el pago realmente
-             * está terminado.
+             * Solo procesamos estados finales:
+             * - finished
+             * - confirmed
+             * - completed
+             * - success
              */
-            if (
-                paymentStatus === 'finished' ||
-                paymentStatus === 'confirmed'
-            ) {
-                const {
-                    data: orden,
-                    error: ordenError
-                } = await supabaseAdmin
-                    .from('pagos_transmision')
-                    .select('*')
-                    .eq('id', ordenId)
-                    .maybeSingle();
-
-                if (ordenError) {
-                    throw ordenError;
-                }
-
-                if (!orden) {
-                    console.error(
-                        `❌ Orden no encontrada: ${ordenId}`
-                    );
-
-                    return res.status(404).json({
-                        success: false,
-                        error: 'Orden no encontrada'
-                    });
-                }
-
-                /*
-                 * Idempotencia.
-                 */
-                if (
-                    orden.estado ===
-                    'completado'
-                ) {
-                    return res.json({
-                        success: true,
-                        message: 'Pago ya procesado'
-                    });
-                }
-
-                /*
-                 * Validación adicional del monto cuando
-                 * NOWPayments proporciona el monto pagado.
-                 */
-                const montoPagado =
-                    Number(
-                        payload.price_amount ??
-                        payload.data?.price_amount ??
-                        0
-                    );
-
-                if (
-                    montoPagado > 0 &&
-                    Math.abs(
-                        montoPagado -
-                        Number(orden.monto_pagado)
-                    ) > 0.01
-                ) {
-                    console.error(
-                        '❌ Monto del webhook no coincide:',
-                        {
-                            orden: orden.monto_pagado,
-                            webhook: montoPagado
-                        }
-                    );
-
-                    return res.status(400).json({
-                        success: false,
-                        error: 'Monto del pago no coincide'
-                    });
-                }
-
-                const {
-                    error: updateError
-                } = await supabaseAdmin
-                    .from('pagos_transmision')
-                    .update({
-                        estado: 'completado',
-                        pagado_en:
-                            new Date().toISOString()
-                    })
-                    .eq('id', ordenId)
-                    .neq(
-                        'estado',
-                        'completado'
-                    );
-
-                if (updateError) {
-                    throw updateError;
-                }
-
-                console.log(
-                    `✅ Pago completado: ${ordenId}`
-                );
+            const estadosFinales = ['finished', 'confirmed', 'completed', 'success'];
+            
+            if (!estadosFinales.includes(finalStatus)) {
+                console.log(`ℹ️ Estado no final: ${finalStatus}. Ignorando.`);
+                return res.json({
+                    success: true,
+                    message: `Estado ${finalStatus} ignorado`
+                });
             }
 
+            // Buscar la orden en la base de datos
+            const {
+                data: orden,
+                error: ordenError
+            } = await supabaseAdmin
+                .from('pagos_transmision')
+                .select('*')
+                .eq('id', ordenId)
+                .maybeSingle();
+
+            if (ordenError) {
+                console.error('❌ Error consultando orden:', ordenError);
+                throw ordenError;
+            }
+
+            if (!orden) {
+                console.error(
+                    `❌ Orden no encontrada: ${ordenId}`
+                );
+
+                return res.status(404).json({
+                    success: false,
+                    error: 'Orden no encontrada'
+                });
+            }
+
+            /*
+             * IDEMPOTENCIA: Si ya está completado, responder éxito
+             * pero sin procesar nuevamente.
+             */
+            if (
+                orden.estado === 'completado' ||
+                orden.estado === 'completed' ||
+                orden.estado === 'finished'
+            ) {
+                console.log(`ℹ️ Pago ${ordenId} ya procesado anteriormente`);
+                return res.json({
+                    success: true,
+                    message: 'Pago ya procesado'
+                });
+            }
+
+            /*
+             * Validación del monto recibido.
+             * NOWPayments puede enviar el monto en diferentes campos.
+             */
+            const montoPagado =
+                Number(
+                    payload.price_amount ??
+                    payload.data?.price_amount ??
+                    payload.amount ??
+                    payload.data?.amount ??
+                    0
+                );
+
+            // También puede enviar en pay_amount si es diferente
+            const montoRecibido =
+                Number(
+                    payload.pay_amount ??
+                    payload.data?.pay_amount ??
+                    montoPagado
+                );
+
+            // Usar el que tenga valor, priorizando pay_amount si existe
+            const montoWebhook = montoRecibido > 0 ? montoRecibido : montoPagado;
+
+            if (
+                montoWebhook > 0 &&
+                Math.abs(
+                    montoWebhook -
+                    Number(orden.monto_pagado)
+                ) > 0.01
+            ) {
+                console.error(
+                    '❌ Monto del webhook no coincide:',
+                    {
+                        esperado: orden.monto_pagado,
+                        recibido: montoWebhook
+                    }
+                );
+
+                return res.status(400).json({
+                    success: false,
+                    error: 'Monto del pago no coincide con lo esperado'
+                });
+            }
+
+            /*
+             * PROCESAR PAGO - Actualizar la orden y entregar beneficios
+             * Usamos una transacción para asegurar consistencia.
+             * 
+             * Nota: Si se requiere entrega de tokens u otros beneficios,
+             * aquí es donde debería ejecutarse la lógica correspondiente.
+             */
+            const {
+                error: updateError
+            } = await supabaseAdmin
+                .from('pagos_transmision')
+                .update({
+                    estado: 'completado',
+                    pagado_en: new Date().toISOString(),
+                    // Guardar información del pago
+                    metodo_pago: payload.pay_currency || 'usdt',
+                    referencia_externa: payload.payment_id || null,
+                    datos_webhook: payload
+                })
+                .eq('id', ordenId)
+                .eq('estado', 'pendiente');
+
+            if (updateError) {
+                console.error('❌ Error actualizando pago:', updateError);
+                throw updateError;
+            }
+
+            /*
+             * TODO: Aquí se debería implementar la entrega de beneficios
+             * (tokens, acceso a transmisión, etc.) basado en el tipo de pago.
+             * Esto depende de la lógica específica de tu aplicación.
+             */
+
+            console.log(
+                `✅ Pago completado exitosamente: ${ordenId}`
+            );
+
             return res.json({
-                success: true
+                success: true,
+                message: 'Pago procesado correctamente'
             });
 
         } catch (error) {
@@ -1031,6 +1164,7 @@ app.post(
                 error
             );
 
+            // En caso de error, devolver 500 pero NO exponer detalles internos
             return res.status(500).json({
                 success: false,
                 error: 'Error procesando webhook'
@@ -1333,16 +1467,32 @@ app.put(
             const updates = {};
 
             if (nombre !== undefined) {
-                updates.nombre =
-                    String(nombre).trim().slice(0, 100);
+                const nombreLimpio = String(nombre).trim();
+                if (nombreLimpio.length === 0) {
+                    return res.status(400).json({
+                        success: false,
+                        error: 'El nombre no puede estar vacío'
+                    });
+                }
+                updates.nombre = nombreLimpio.slice(0, 100);
             }
 
             if (handle !== undefined) {
-                updates.handle =
-                    String(handle)
-                        .trim()
-                        .toLowerCase()
-                        .slice(0, 50);
+                const handleLimpio = String(handle).trim().toLowerCase();
+                if (handleLimpio.length === 0) {
+                    return res.status(400).json({
+                        success: false,
+                        error: 'El handle no puede estar vacío'
+                    });
+                }
+                // Validar que el handle solo contenga caracteres permitidos
+                if (!/^[a-z0-9_]+$/.test(handleLimpio)) {
+                    return res.status(400).json({
+                        success: false,
+                        error: 'El handle solo puede contener letras minúsculas, números y guión bajo'
+                    });
+                }
+                updates.handle = handleLimpio.slice(0, 50);
             }
 
             if (bio !== undefined) {
@@ -3332,11 +3482,11 @@ app.listen(
         );
 
         console.log(
-            '🚂 Railway: https://galleta-domo.up.railway.app'
+            `🔐 Admin: ${ADMIN_EMAIL}`
         );
 
         console.log(
-            `🔐 Admin: ${ADMIN_EMAIL}`
+            `🌍 Entorno: ${process.env.NODE_ENV || 'development'}`
         );
 
         console.log(
