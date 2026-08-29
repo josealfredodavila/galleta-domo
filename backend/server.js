@@ -1,6 +1,6 @@
 /* ================================================================
    SERVER.JS - SARIEL'S BACKEND
-   VERSIÓN FINAL - PRODUCCIÓN SEGURA
+   VERSIÓN FINAL - PRODUCCIÓN
    ================================================================ */
 
 const express = require('express');
@@ -32,6 +32,12 @@ if (!SUPABASE_URL) console.error('❌ Falta SUPABASE_URL');
 if (!SUPABASE_ANON_KEY) console.error('❌ Falta SUPABASE_ANON_KEY');
 if (!SUPABASE_SERVICE_ROLE_KEY) console.error('❌ Falta SUPABASE_SERVICE_ROLE_KEY');
 
+/* 
+ * Service Role - SOLO para:
+ * - Webhooks
+ * - Operaciones administrativas
+ * - Procesos internos
+ */
 const supabaseAdmin = SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY
     ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
         auth: { autoRefreshToken: false, persistSession: false }
@@ -39,7 +45,7 @@ const supabaseAdmin = SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY
     : null;
 
 /* ================================================================
-   CLIENTE SUPABASE DEL USUARIO
+   CLIENTE SUPABASE DEL USUARIO - PARA OPERACIONES NORMALES
    ================================================================ */
 
 function clienteDelUsuario(req) {
@@ -87,10 +93,8 @@ async function verificarAutenticacion(req, res, next) {
 }
 
 /* ================================================================
-   ADMINISTRADOR
+   ADMINISTRADOR - CON TABLA DE ROLES
    ================================================================ */
-
-const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'csarielcontacto@gmail.com').trim().toLowerCase();
 
 async function verificarAdmin(req, res, next) {
     try {
@@ -98,12 +102,22 @@ async function verificarAdmin(req, res, next) {
         if (!user) {
             return res.status(401).json({ success: false, error: 'No autenticado' });
         }
-        const email = (user.email || '').trim().toLowerCase();
-        if (!email || email !== ADMIN_EMAIL) {
+
+        // ✅ Verificar rol en tabla user_roles
+        const { data: roleData, error: roleError } = await supabaseAdmin
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', user.id)
+            .eq('role', 'admin')
+            .maybeSingle();
+
+        if (roleError || !roleData) {
             return res.status(403).json({ success: false, error: 'No autorizado' });
         }
+
         req.user = user;
         next();
+
     } catch (error) {
         console.error('❌ Error verificando admin:', error);
         return res.status(500).json({ success: false, error: 'Error de autenticación' });
@@ -252,12 +266,13 @@ app.get('/api/token', verificarAutenticacion, async (req, res) => {
 });
 
 /* ================================================================
-   TOKENS
+   TOKENS - USANDO CLIENTE DEL USUARIO
    ================================================================ */
 
 app.get('/api/tokens', verificarAutenticacion, async (req, res) => {
     try {
-        const { data, error } = await supabaseAdmin
+        const supabase = clienteDelUsuario(req);
+        const { data, error } = await supabase
             .from('usuarios')
             .select('tokens')
             .eq('id', req.user.id)
@@ -290,6 +305,7 @@ app.post('/api/tokens/transferir', verificarAutenticacion, async (req, res) => {
             return res.status(400).json({ success: false, error: 'No puedes transferirte a ti mismo' });
         }
 
+        // ✅ Usar admin para RPC que requiere service_role
         const { data, error } = await supabaseAdmin.rpc('transfer_tokens', {
             p_sender_id: req.user.id,
             p_receiver_id: destinoId,
@@ -310,7 +326,7 @@ app.post('/api/tokens/transferir', verificarAutenticacion, async (req, res) => {
 });
 
 /* ================================================================
-   PAGOS - NOWPAYMENTS - VERSIÓN SEGURA FINAL
+   PAGOS - NOWPAYMENTS - VERSIÓN FINAL
    ================================================================ */
 
 app.post('/api/pagos/crear', verificarAutenticacion, async (req, res) => {
@@ -318,14 +334,13 @@ app.post('/api/pagos/crear', verificarAutenticacion, async (req, res) => {
         const { transmisionId, tipo, planId } = req.body;
 
         // ============================================
-        // 1. VALIDAR Y OBTENER PRECIO OFICIAL DEL SERVIDOR
+        // 1. VALIDAR Y OBTENER PRECIO OFICIAL
         // ============================================
 
-        let precioOficial = 0;
-        let monedaOficial = 'usdt';
+        let precioOficialUSD = 0;
+        let precioOficialUSDT = 0;
         let ordenData = {};
         let esimPlan = null;
-        let transmisionData = null;
 
         if (tipo === 'esim' && planId) {
             // ✅ eSIM: Precio desde la base de datos
@@ -341,10 +356,10 @@ app.post('/api/pagos/crear', verificarAutenticacion, async (req, res) => {
             }
 
             esimPlan = plan;
-            precioOficial = Number(plan.precio_usdt);
-            monedaOficial = 'usdt';
+            precioOficialUSDT = Number(plan.precio_usdt);
+            precioOficialUSD = Number(plan.precio_usdt); // Asumimos 1:1 para simplificar
 
-            // Crear orden eSIM
+            // ✅ CREAR ORDEN eSIM (SOLO UNA VEZ)
             const { data: ordenESIM, error: ordenError } = await supabaseAdmin
                 .from('ordenes_esim')
                 .insert({
@@ -366,14 +381,16 @@ app.post('/api/pagos/crear', verificarAutenticacion, async (req, res) => {
                 .insert({
                     transmision_id: null,
                     espectador_id: req.user.id,
-                    monto_pagado: precioOficial,
-                    comision_sariels: precioOficial * 0.02,
-                    monto_streamer: precioOficial * 0.98,
+                    monto_pagado: precioOficialUSDT,
+                    monto_usd_esperado: precioOficialUSD,
+                    comision_sariels: precioOficialUSDT * 0.02,
+                    monto_streamer: precioOficialUSDT * 0.98,
                     metodo_pago: 'crypto',
                     tipo_pago: 'esim',
                     estado: 'pendiente',
                     orden_esim_id: ordenESIM.id,
-                    moneda: monedaOficial
+                    moneda_orden: 'USDT',
+                    moneda_pago_esperada: 'USDT'
                 })
                 .select()
                 .single();
@@ -400,25 +417,26 @@ app.post('/api/pagos/crear', verificarAutenticacion, async (req, res) => {
                 return res.status(400).json({ success: false, error: 'La transmisión no está activa' });
             }
 
-            transmisionData = transmision;
-            precioOficial = Number(transmision.precio_acceso || 4.50);
-            monedaOficial = 'usdt';
+            precioOficialUSDT = Number(transmision.precio_acceso || 4.50);
+            precioOficialUSD = Number(transmision.precio_acceso || 4.50);
 
-            const comisionSariels = Math.round(precioOficial * 0.02 * 100) / 100;
-            const montoStreamer = Math.round((precioOficial - comisionSariels) * 100) / 100;
+            const comisionSariels = Math.round(precioOficialUSDT * 0.02 * 100) / 100;
+            const montoStreamer = Math.round((precioOficialUSDT - comisionSariels) * 100) / 100;
 
             const { data: orden, error: ordenError } = await supabaseAdmin
                 .from('pagos_transmision')
                 .insert({
                     transmision_id: transmisionId,
                     espectador_id: req.user.id,
-                    monto_pagado: precioOficial,
+                    monto_pagado: precioOficialUSDT,
+                    monto_usd_esperado: precioOficialUSD,
                     comision_sariels: comisionSariels,
                     monto_streamer: montoStreamer,
                     metodo_pago: 'crypto',
                     tipo_pago: 'acceso',
                     estado: 'pendiente',
-                    moneda: monedaOficial
+                    moneda_orden: 'USDT',
+                    moneda_pago_esperada: 'USDT'
                 })
                 .select()
                 .single();
@@ -434,7 +452,7 @@ app.post('/api/pagos/crear', verificarAutenticacion, async (req, res) => {
         }
 
         // ============================================
-        // 2. CREAR PAGO EN NOWPAYMENTS CON PRECIO OFICIAL
+        // 2. CREAR PAGO EN NOWPAYMENTS
         // ============================================
 
         if (!process.env.NOWPAYMENTS_API_KEY) {
@@ -446,8 +464,9 @@ app.post('/api/pagos/crear', verificarAutenticacion, async (req, res) => {
             console.warn('⚠️ NOWPAYMENTS_IPN_CALLBACK_URL no configurado');
         }
 
+        // ✅ NOWPayments recibe precio en USD, paga en USDT
         const nowpaymentsPayload = {
-            price_amount: precioOficial,
+            price_amount: precioOficialUSD,
             price_currency: 'usd',
             pay_currency: 'usdt',
             order_id: String(ordenData.id),
@@ -474,18 +493,19 @@ app.post('/api/pagos/crear', verificarAutenticacion, async (req, res) => {
 
         const paymentId = String(nowpayments.data?.payment_id || '');
         if (paymentId && ordenData.id) {
-            // ✅ Guardar payment_id en la orden
             const { error: updateError } = await supabaseAdmin
                 .from('pagos_transmision')
                 .update({ 
                     payment_id: paymentId,
-                    payment_url: nowpayments.data?.payment_url || null
+                    payment_url: nowpayments.data?.payment_url || null,
+                    price_amount_enviado: precioOficialUSD,
+                    price_currency_enviado: 'usd',
+                    pay_currency_enviado: 'usdt'
                 })
                 .eq('id', ordenData.id);
 
             if (updateError) {
                 console.error('❌ Error guardando payment_id:', updateError);
-                // No devolver éxito si falla guardar payment_id
                 return res.status(500).json({
                     success: false,
                     error: 'Error guardando información del pago'
@@ -499,8 +519,9 @@ app.post('/api/pagos/crear', verificarAutenticacion, async (req, res) => {
                 ...ordenData,
                 payment_url: nowpayments.data?.payment_url || null,
                 payment_id: paymentId || null,
-                precio_oficial: precioOficial,
-                moneda: monedaOficial
+                precio_usd: precioOficialUSD,
+                precio_usdt_esperado: precioOficialUSDT,
+                moneda: 'USDT'
             }
         });
 
@@ -542,7 +563,7 @@ app.get('/api/pagos/estado/:ordenId', verificarAutenticacion, async (req, res) =
 });
 
 /* ================================================================
-   WEBHOOK NOWPAYMENTS - VERSIÓN FINAL SEGURA
+   WEBHOOK NOWPAYMENTS - VERSIÓN FINAL
    ================================================================ */
 
 function verificarHMAC(rawBody, firmaRecibida, secret) {
@@ -642,7 +663,7 @@ app.post('/api/webhooks/nowpayments', webhookLimiter, async (req, res) => {
         }
 
         // ============================================
-        // 5. VALIDAR ESTADO - MÁQUINA DE ESTADOS
+        // 5. VALIDAR ESTADO
         // ============================================
 
         const estadosFinales = ['finished', 'confirmed'];
@@ -691,7 +712,7 @@ app.post('/api/webhooks/nowpayments', webhookLimiter, async (req, res) => {
         }
 
         // ============================================
-        // 7. VERIFICAR IDEMPOTENCIA - CON BLOQUEO
+        // 7. VERIFICAR IDEMPOTENCIA
         // ============================================
 
         if (orden.estado === 'completado' || orden.estado === 'finished' || orden.estado === 'confirmed') {
@@ -706,50 +727,58 @@ app.post('/api/webhooks/nowpayments', webhookLimiter, async (req, res) => {
         }
 
         // ============================================
-        // 8. VALIDAR MONTO - CONTRA ORDEN
+        // 8. VALIDAR MONTO Y MONEDA - CORREGIDO
         // ============================================
 
-        const montoRecibido = Number(payload.pay_amount || payload.data?.pay_amount || 0);
-        const montoEsperado = Number(payload.price_amount || payload.data?.price_amount || 0);
-        const monedaRecibida = String(payload.pay_currency || payload.data?.pay_currency || '').toLowerCase();
-        const monedaEsperada = String(payload.price_currency || payload.data?.price_currency || '').toLowerCase();
-        const monedaOrden = String(orden.moneda || 'usdt').toLowerCase();
+        // ✅ Separar conceptos
+        const priceAmount = Number(payload.price_amount || payload.data?.price_amount || 0);
+        const priceCurrency = String(payload.price_currency || payload.data?.price_currency || '').toLowerCase();
+        const payAmount = Number(payload.pay_amount || payload.data?.pay_amount || 0);
+        const payCurrency = String(payload.pay_currency || payload.data?.pay_currency || '').toLowerCase();
 
-        const montoWebhook = montoRecibido > 0 ? montoRecibido : montoEsperado;
-        const montoOrden = Number(orden.monto_pagado);
+        // ✅ Validar que lo que esperamos coincide con lo que NOWPayments envió
+        const expectedPriceAmount = Number(orden.price_amount_enviado || orden.monto_usd_esperado || orden.monto_pagado);
+        const expectedPriceCurrency = String(orden.price_currency_enviado || 'usd').toLowerCase();
+        const expectedPayCurrency = String(orden.pay_currency_enviado || 'usdt').toLowerCase();
 
-        // ✅ Validación estricta de moneda
-        // La moneda recibida debe coincidir con la moneda de la orden
-        // NOWPayments puede devolver USDT como pay_currency incluso si pedimos USD
-        const monedasValidas = ['usdt', 'usd', 'usdc'];
-        
-        if (!monedasValidas.includes(monedaRecibida) || !monedasValidas.includes(monedaOrden)) {
-            console.error(`❌ Moneda no soportada. Orden: ${monedaOrden}, Webhook: ${monedaRecibida}`);
+        // Validar price_currency
+        if (priceCurrency !== expectedPriceCurrency) {
+            console.error(`❌ price_currency no coincide. Esperado: ${expectedPriceCurrency}, Recibido: ${priceCurrency}`);
             return res.status(400).json({
                 success: false,
-                error: `Moneda no soportada`
+                error: `price_currency no coincide`
             });
         }
 
-        // Validar que la moneda coincida
-        if (monedaRecibida !== monedaOrden) {
-            // Solo permitir USD/USDT como equivalentes si la orden está en USD
-            if (!(monedaOrden === 'usd' && monedaRecibida === 'usdt') &&
-                !(monedaOrden === 'usdt' && monedaRecibida === 'usd')) {
-                console.error(`❌ Moneda no coincide. Orden: ${monedaOrden}, Webhook: ${monedaRecibida}`);
-                return res.status(400).json({
-                    success: false,
-                    error: `Moneda no coincide: orden ${monedaOrden} vs webhook ${monedaRecibida}`
-                });
-            }
-        }
-
-        // Validar monto con tolerancia
-        if (Math.abs(montoWebhook - montoOrden) > 0.01) {
-            console.error(`❌ Monto no coincide. Orden: ${montoOrden} ${monedaOrden}, Webhook: ${montoWebhook} ${monedaRecibida}`);
+        // Validar pay_currency
+        if (payCurrency !== expectedPayCurrency) {
+            console.error(`❌ pay_currency no coincide. Esperado: ${expectedPayCurrency}, Recibido: ${payCurrency}`);
             return res.status(400).json({
                 success: false,
-                error: 'Monto del pago no coincide con lo esperado'
+                error: `pay_currency no coincide`
+            });
+        }
+
+        // Validar price_amount (lo que el usuario pidió pagar en USD)
+        if (Math.abs(priceAmount - expectedPriceAmount) > 0.01) {
+            console.error(`❌ price_amount no coincide. Esperado: ${expectedPriceAmount}, Recibido: ${priceAmount}`);
+            return res.status(400).json({
+                success: false,
+                error: `price_amount no coincide con lo esperado`
+            });
+        }
+
+        // ✅ Validar pay_amount (lo que realmente se pagó en USDT)
+        // NOWPayments puede devolver pay_amount ligeramente diferente por fluctuaciones
+        // Usamos una tolerancia del 5% para crypto
+        const montoOrden = Number(orden.monto_pagado);
+        const tolerancia = montoOrden * 0.05;
+
+        if (Math.abs(payAmount - montoOrden) > tolerancia) {
+            console.error(`❌ pay_amount fuera de tolerancia. Esperado: ${montoOrden}, Recibido: ${payAmount}, Tolerancia: ${tolerancia}`);
+            return res.status(400).json({
+                success: false,
+                error: `pay_amount fuera de tolerancia aceptable`
             });
         }
 
@@ -809,11 +838,13 @@ app.post('/api/webhooks/nowpayments', webhookLimiter, async (req, res) => {
 });
 
 /* ================================================================
-   MURO - TODAS LAS RUTAS EXISTENTES
+   MURO - TODAS LAS RUTAS - USANDO clienteDelUsuario
    ================================================================ */
 
 app.get('/api/muro', async (req, res) => {
     try {
+        // ✅ Usar cliente del usuario para operaciones normales
+        const supabase = clienteDelUsuario(req);
         let page = parseInt(req.query.page, 10) || 1;
         let limit = parseInt(req.query.limit, 10) || 20;
         page = Math.max(1, page);
@@ -821,7 +852,7 @@ app.get('/api/muro', async (req, res) => {
         const from = (page - 1) * limit;
         const to = from + limit - 1;
 
-        const { data, error } = await supabaseAdmin
+        const { data, error } = await supabase
             .from('muro_posts')
             .select(`
                 id, contenido, imagen_url, created_at, cantidad_venta, precio_venta,
@@ -843,6 +874,7 @@ app.get('/api/muro', async (req, res) => {
 
 app.post('/api/muro', verificarAutenticacion, async (req, res) => {
     try {
+        const supabase = clienteDelUsuario(req);
         const contenido = req.body.contenido !== undefined ? String(req.body.contenido).trim() : '';
         const imagenUrl = req.body.imagenUrl !== undefined ? String(req.body.imagenUrl).trim() : '';
 
@@ -856,7 +888,7 @@ app.post('/api/muro', verificarAutenticacion, async (req, res) => {
             return res.status(400).json({ success: false, error: 'La URL de imagen es demasiado larga' });
         }
 
-        const { data, error } = await supabaseAdmin
+        const { data, error } = await supabase
             .from('muro_posts')
             .insert({
                 usuario_id: req.user.id,
@@ -877,7 +909,8 @@ app.post('/api/muro', verificarAutenticacion, async (req, res) => {
 
 app.delete('/api/muro/:postId', verificarAutenticacion, async (req, res) => {
     try {
-        const { error } = await supabaseAdmin
+        const supabase = clienteDelUsuario(req);
+        const { error } = await supabase
             .from('muro_posts')
             .delete()
             .eq('id', req.params.postId)
@@ -894,7 +927,8 @@ app.delete('/api/muro/:postId', verificarAutenticacion, async (req, res) => {
 
 app.post('/api/muro/:postId/like', verificarAutenticacion, async (req, res) => {
     try {
-        const { error } = await supabaseAdmin
+        const supabase = clienteDelUsuario(req);
+        const { error } = await supabase
             .from('muro_likes')
             .insert({
                 post_id: req.params.postId,
@@ -917,7 +951,8 @@ app.post('/api/muro/:postId/like', verificarAutenticacion, async (req, res) => {
 
 app.delete('/api/muro/:postId/like', verificarAutenticacion, async (req, res) => {
     try {
-        const { error } = await supabaseAdmin
+        const supabase = clienteDelUsuario(req);
+        const { error } = await supabase
             .from('muro_likes')
             .delete()
             .eq('post_id', req.params.postId)
@@ -934,7 +969,8 @@ app.delete('/api/muro/:postId/like', verificarAutenticacion, async (req, res) =>
 
 app.get('/api/muro/:postId/comentarios', async (req, res) => {
     try {
-        const { data, error } = await supabaseAdmin
+        const supabase = clienteDelUsuario(req);
+        const { data, error } = await supabase
             .from('muro_comentarios')
             .select(`
                 id, contenido, created_at,
@@ -954,6 +990,7 @@ app.get('/api/muro/:postId/comentarios', async (req, res) => {
 
 app.post('/api/muro/:postId/comentarios', verificarAutenticacion, async (req, res) => {
     try {
+        const supabase = clienteDelUsuario(req);
         const contenido = String(req.body.contenido || '').trim();
         if (!contenido) {
             return res.status(400).json({ success: false, error: 'Falta el contenido' });
@@ -962,7 +999,7 @@ app.post('/api/muro/:postId/comentarios', verificarAutenticacion, async (req, re
             return res.status(400).json({ success: false, error: 'El comentario es demasiado largo' });
         }
 
-        const { data, error } = await supabaseAdmin
+        const { data, error } = await supabase
             .from('muro_comentarios')
             .insert({
                 post_id: req.params.postId,
@@ -982,12 +1019,13 @@ app.post('/api/muro/:postId/comentarios', verificarAutenticacion, async (req, re
 });
 
 /* ================================================================
-   CONTACTOS
+   CONTACTOS - USANDO clienteDelUsuario
    ================================================================ */
 
 app.get('/api/contactos', verificarAutenticacion, async (req, res) => {
     try {
-        const { data, error } = await supabaseAdmin
+        const supabase = clienteDelUsuario(req);
+        const { data, error } = await supabase
             .from('contactos')
             .select(`
                 id, created_at,
@@ -1006,6 +1044,7 @@ app.get('/api/contactos', verificarAutenticacion, async (req, res) => {
 
 app.post('/api/contactos', verificarAutenticacion, async (req, res) => {
     try {
+        const supabase = clienteDelUsuario(req);
         const { contactoId } = req.body;
         if (!contactoId) {
             return res.status(400).json({ success: false, error: 'Falta contactoId' });
@@ -1014,7 +1053,7 @@ app.post('/api/contactos', verificarAutenticacion, async (req, res) => {
             return res.status(400).json({ success: false, error: 'No puedes agregarte a ti mismo' });
         }
 
-        const { data, error } = await supabaseAdmin
+        const { data, error } = await supabase
             .from('contactos')
             .insert({
                 usuario_id: req.user.id,
@@ -1039,7 +1078,8 @@ app.post('/api/contactos', verificarAutenticacion, async (req, res) => {
 
 app.delete('/api/contactos/:contactoId', verificarAutenticacion, async (req, res) => {
     try {
-        const { error } = await supabaseAdmin
+        const supabase = clienteDelUsuario(req);
+        const { error } = await supabase
             .from('contactos')
             .delete()
             .eq('usuario_id', req.user.id)
@@ -1055,13 +1095,14 @@ app.delete('/api/contactos/:contactoId', verificarAutenticacion, async (req, res
 });
 
 /* ================================================================
-   MENSAJES
+   MENSAJES - USANDO clienteDelUsuario
    ================================================================ */
 
 app.get('/api/mensajes/:contactoId', verificarAutenticacion, async (req, res) => {
     try {
+        const supabase = clienteDelUsuario(req);
         const contactoId = req.params.contactoId;
-        const { data, error } = await supabaseAdmin
+        const { data, error } = await supabase
             .from('mensajes_chat')
             .select('*')
             .or(`and(remitente_id.eq.${req.user.id},destinatario_id.eq.${contactoId}),and(remitente_id.eq.${contactoId},destinatario_id.eq.${req.user.id})`)
@@ -1078,6 +1119,7 @@ app.get('/api/mensajes/:contactoId', verificarAutenticacion, async (req, res) =>
 
 app.post('/api/mensajes', verificarAutenticacion, async (req, res) => {
     try {
+        const supabase = clienteDelUsuario(req);
         const destinatarioId = req.body.destinatarioId;
         const contenido = String(req.body.contenido || '').trim();
 
@@ -1091,7 +1133,7 @@ app.post('/api/mensajes', verificarAutenticacion, async (req, res) => {
             return res.status(400).json({ success: false, error: 'El mensaje es demasiado largo' });
         }
 
-        const { data, error } = await supabaseAdmin
+        const { data, error } = await supabase
             .from('mensajes_chat')
             .insert({
                 remitente_id: req.user.id,
@@ -1112,7 +1154,8 @@ app.post('/api/mensajes', verificarAutenticacion, async (req, res) => {
 
 app.put('/api/mensajes/:mensajeId/leido', verificarAutenticacion, async (req, res) => {
     try {
-        const { error } = await supabaseAdmin
+        const supabase = clienteDelUsuario(req);
+        const { error } = await supabase
             .from('mensajes_chat')
             .update({ leido: true })
             .eq('id', req.params.mensajeId)
@@ -1128,12 +1171,13 @@ app.put('/api/mensajes/:mensajeId/leido', verificarAutenticacion, async (req, re
 });
 
 /* ================================================================
-   LIVE
+   LIVE - USANDO clienteDelUsuario PARA CONSULTAS
    ================================================================ */
 
 app.get('/api/live/activos', async (req, res) => {
     try {
-        const { data, error } = await supabaseAdmin
+        const supabase = clienteDelUsuario(req);
+        const { data, error } = await supabase
             .from('transmisiones')
             .select(`
                 id, room_name, titulo, viewers_count, fecha_inicio, streamer_id,
@@ -1153,10 +1197,11 @@ app.get('/api/live/activos', async (req, res) => {
 
 app.post('/api/live/iniciar', verificarAutenticacion, async (req, res) => {
     try {
+        const supabase = clienteDelUsuario(req);
         const titulo = String(req.body.titulo || "Live en Sariel's").trim().slice(0, 200);
         const categoria = String(req.body.categoria || 'Charla').trim().slice(0, 100);
 
-        const { data: liveActivo, error: activoError } = await supabaseAdmin
+        const { data: liveActivo, error: activoError } = await supabase
             .from('transmisiones')
             .select('id')
             .eq('streamer_id', req.user.id)
@@ -1174,7 +1219,7 @@ app.post('/api/live/iniciar', verificarAutenticacion, async (req, res) => {
 
         const roomName = `live-${req.user.id}-${Date.now()}`;
 
-        const { data, error } = await supabaseAdmin
+        const { data, error } = await supabase
             .from('transmisiones')
             .insert({
                 streamer_id: req.user.id,
@@ -1199,7 +1244,8 @@ app.post('/api/live/iniciar', verificarAutenticacion, async (req, res) => {
 
 app.post('/api/live/:streamId/finalizar', verificarAutenticacion, async (req, res) => {
     try {
-        const { data, error } = await supabaseAdmin
+        const supabase = clienteDelUsuario(req);
+        const { data, error } = await supabase
             .from('transmisiones')
             .update({
                 estado: 'finalizada',
@@ -1228,7 +1274,8 @@ app.post('/api/live/:streamId/finalizar', verificarAutenticacion, async (req, re
 
 app.get('/api/esim/planes', async (req, res) => {
     try {
-        const { data, error } = await supabaseAdmin
+        const supabase = clienteDelUsuario(req);
+        const { data, error } = await supabase
             .from('planes_esim')
             .select('*')
             .eq('activo', true)
@@ -1245,12 +1292,13 @@ app.get('/api/esim/planes', async (req, res) => {
 
 app.post('/api/esim/orden', verificarAutenticacion, async (req, res) => {
     try {
+        const supabase = clienteDelUsuario(req);
         const { planId } = req.body;
         if (!planId) {
             return res.status(400).json({ success: false, error: 'Se requiere planId' });
         }
 
-        const { data: plan, error: planError } = await supabaseAdmin
+        const { data: plan, error: planError } = await supabase
             .from('planes_esim')
             .select('*')
             .eq('id', planId)
@@ -1264,7 +1312,7 @@ app.post('/api/esim/orden', verificarAutenticacion, async (req, res) => {
             return res.status(400).json({ success: false, error: 'Este plan no está disponible actualmente' });
         }
 
-        const { data: orden, error: ordenError } = await supabaseAdmin
+        const { data: orden, error: ordenError } = await supabase
             .from('ordenes_esim')
             .insert({
                 usuario_id: req.user.id,
@@ -1301,7 +1349,8 @@ app.post('/api/esim/orden', verificarAutenticacion, async (req, res) => {
 
 app.get('/api/esim/mis-suscripciones', verificarAutenticacion, async (req, res) => {
     try {
-        const { data, error } = await supabaseAdmin
+        const supabase = clienteDelUsuario(req);
+        const { data, error } = await supabase
             .from('ordenes_esim')
             .select(`
                 *,
@@ -1320,7 +1369,7 @@ app.get('/api/esim/mis-suscripciones', verificarAutenticacion, async (req, res) 
 });
 
 /* ================================================================
-   ADMIN - PLANES ESIM
+   ADMIN - PLANES ESIM - USANDO supabaseAdmin (solo admin)
    ================================================================ */
 
 app.get('/api/admin/planes', verificarAdmin, async (req, res) => {
@@ -1599,7 +1648,7 @@ app.listen(PORT, '0.0.0.0', () => {
     console.log(`✅ Servidor corriendo en puerto ${PORT}`);
     console.log(`📁 Archivos: ${publicPath}`);
     console.log(`🌐 Local: http://localhost:${PORT}`);
-    console.log(`🔐 Admin: ${ADMIN_EMAIL}`);
+    console.log(`🔐 Admin configurado con user_roles`);
     console.log(`🌍 Entorno: ${process.env.NODE_ENV || 'development'}`);
     console.log('========================================');
 });
