@@ -1,63 +1,163 @@
 // ================================================================
-// MIDDLEWARE DE AUTENTICACIÓN
+// MIDDLEWARE/AUTH.JS
+// AUTENTICACIÓN - SARIEL'S BACKEND
 // ================================================================
 
-const jwt = require('jsonwebtoken');
-const { supabase } = require('../config/supabase');
+const {
+    supabase
+} = require('../config/supabase');
+
 const logger = require('../utils/logger');
+
+// ================================================================
+// VERIFICAR TOKEN SUPABASE
+// ================================================================
 
 async function verificarToken(req, res, next) {
     try {
         const authHeader = req.headers.authorization;
-        
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+
+        // --------------------------------------------------------
+        // COMPROBAR HEADER
+        // --------------------------------------------------------
+
+        if (
+            !authHeader ||
+            !authHeader.startsWith('Bearer ')
+        ) {
             return res.status(401).json({
-                error: 'Token no proporcionado',
-                success: false
+                success: false,
+                error: 'Token no proporcionado'
             });
         }
 
-        const token = authHeader.split(' ')[1];
-        
-        // Verificar con Supabase
-        const { data: { user }, error } = await supabase.auth.getUser(token);
-        
-        if (error || !user) {
-            throw new Error('Token inválido');
+        const token =
+            authHeader.substring(7).trim();
+
+        if (!token) {
+            return res.status(401).json({
+                success: false,
+                error: 'Token vacío'
+            });
         }
 
-        req.usuario = user;
-        next();
+        // --------------------------------------------------------
+        // VALIDAR TOKEN CON SUPABASE
+        // --------------------------------------------------------
+
+        const {
+            data,
+            error
+        } = await supabase.auth.getUser(token);
+
+        if (error || !data?.user) {
+            logger.warn(
+                `Token Supabase inválido: ${
+                    error?.message || 'usuario no encontrado'
+                }`
+            );
+
+            return res.status(401).json({
+                success: false,
+                error: 'Token inválido o expirado'
+            });
+        }
+
+        // --------------------------------------------------------
+        // USUARIO AUTENTICADO
+        // --------------------------------------------------------
+
+        req.usuario = data.user;
+
+        // También dejamos disponible el ID directamente.
+        req.usuarioId = data.user.id;
+
+        return next();
+
     } catch (error) {
-        logger.error(`Error verificando token: ${error.message}`);
+
+        logger.error(
+            `Error verificando token: ${error.message}`
+        );
+
         return res.status(401).json({
-            error: 'Token inválido o expirado',
-            success: false
+            success: false,
+            error: 'Token inválido o expirado'
         });
     }
 }
 
-async function verificarRol(rolesPermitidos) {
+// ================================================================
+// VERIFICAR ROL
+// ================================================================
+
+function verificarRol(rolesPermitidos = []) {
+
     return (req, res, next) => {
-        if (!req.usuario) {
-            return res.status(401).json({
-                error: 'No autenticado',
-                success: false
+
+        try {
+
+            if (!req.usuario) {
+                return res.status(401).json({
+                    success: false,
+                    error: 'No autenticado'
+                });
+            }
+
+            if (!Array.isArray(rolesPermitidos)) {
+                return res.status(500).json({
+                    success: false,
+                    error: 'Configuración de roles inválida'
+                });
+            }
+
+            // ----------------------------------------------------
+            // OBTENER ROL
+            // ----------------------------------------------------
+
+            const userRole =
+                req.usuario.user_metadata?.role ||
+                'user';
+
+            // ----------------------------------------------------
+            // COMPROBAR PERMISO
+            // ----------------------------------------------------
+
+            if (
+                rolesPermitidos.length === 0 ||
+                !rolesPermitidos.includes(userRole)
+            ) {
+                logger.warn(
+                    `Acceso denegado por rol. Usuario: ${
+                        req.usuario.id
+                    }, rol: ${userRole}`
+                );
+
+                return res.status(403).json({
+                    success: false,
+                    error: 'No tienes permisos para esta acción'
+                });
+            }
+
+            return next();
+
+        } catch (error) {
+
+            logger.error(
+                `Error verificando rol: ${error.message}`
+            );
+
+            return res.status(500).json({
+                success: false,
+                error: 'Error verificando permisos'
             });
         }
-
-        const userRole = req.usuario.user_metadata?.role || 'user';
-        
-        if (!rolesPermitidos.includes(userRole)) {
-            return res.status(403).json({
-                error: 'No tienes permisos para esta acción',
-                success: false
-            });
-        }
-
-        next();
     };
 }
+
+// ================================================================
+// EXPORTACIONES
+// ================================================================
 
 module.exports = {
     verificarToken,
