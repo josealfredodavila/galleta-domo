@@ -25,7 +25,8 @@ let web3 = null;
 class GalletaDomoApp {
     constructor() {
         this.supabase = supabaseClient;
-        this.apiUrl = 'https://galleta-domo.up.railway.app/api';
+        // ✅ CORREGIDO: Usar origen dinámico para Railway
+        this.apiUrl = window.location.origin + '/api';
         this.usuario = null;
         this.wallet = null;
         this.tokens = 0;
@@ -327,7 +328,7 @@ class GalletaDomoApp {
     async recuperarContraseña(email) {
         try {
             const { data, error } = await this.supabase.auth.resetPasswordForEmail(email, {
-                redirectTo: 'https://galleta-domo.up.railway.app/actualizar-contraseña.html'
+                redirectTo: window.location.origin + '/actualizar-contraseña.html'
             });
 
             if (error) throw error;
