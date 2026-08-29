@@ -1185,6 +1185,7 @@
                             </div>
                         </div>
 
+                        <!-- ✅ BOTONES eSIM CORREGIDOS -->
                         <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
                             <button class="btn btn-gold" style="flex:1;justify-content:center;padding:10px;" onclick="comprarESIM(1)">
                                 📱 Comprar eSIM
@@ -1192,8 +1193,8 @@
                             <button class="btn btn-outline" style="flex:1;justify-content:center;padding:10px;" onclick="generarQRESIM()">
                                 📲 QR Activación
                             </button>
-                            <button class="btn btn-outline" style="flex:1;justify-content:center;padding:10px;" onclick="cargarDatosESIM()">
-                                🔄 Actualizar
+                            <button class="btn btn-outline" style="flex:1;justify-content:center;padding:10px;" onclick="sincronizarESIM()">
+                                🔄 Sincronizar
                             </button>
                         </div>
 
@@ -1310,8 +1311,9 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/web3@1.8.0/dist/web3.min.js"></script>
+    <!-- ✅ SOLO SUPABASE - SIN WEB3 -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
     <script src="/features/perfil/perfil.js"></script>
 </body>
 </html>
