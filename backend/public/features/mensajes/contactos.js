@@ -1,10 +1,10 @@
 /* ================================================================
-   CONTACTOS ULTRA MEGA PRO - SARIEL'S
-   Con Supabase REAL + Estado Online + Buscar Usuarios + Bloquear + Invitar
+   CONTACTOS - SARIEL'S ECOSYSTEM
+   VERSIÓN FUNCIONAL - CONEXIÓN REAL CON SUPABASE
    ================================================================ */
 
 // ================================================================
-// SUPABASE CLIENTE (CON NUEVAS LLAVES)
+// CONFIGURACIÓN SUPABASE
 // ================================================================
 const supabase = window.supabase.createClient(
     'https://zultnlogdoajehbswlih.supabase.co',
@@ -18,13 +18,13 @@ let contactos = [];
 let contactosFiltrados = [];
 let filtroActual = 'todos';
 let usuarioActual = null;
-let modoOscuro = true;
 let canalContactos = null;
+let modoOscuro = true;
 
 // ================================================================
 // TOAST
 // ================================================================
-function showToast(msg, type = '') {
+function showToast(msg, type = '', duration = 3500) {
     let t = document.getElementById('toast');
     if (!t) {
         t = document.createElement('div');
@@ -36,9 +36,10 @@ function showToast(msg, type = '') {
     t.className = 'toast show';
     if (type === 'error') t.classList.add('error');
     else if (type === 'warning') t.classList.add('warning');
-    else t.classList.remove('error', 'warning');
+    else if (type === 'success') t.classList.add('success');
+    else t.classList.remove('error', 'warning', 'success');
     clearTimeout(t._timeout);
-    t._timeout = setTimeout(() => t.classList.remove('show'), 3500);
+    t._timeout = setTimeout(() => t.classList.remove('show'), duration);
 }
 
 // ================================================================
@@ -63,15 +64,34 @@ async function verificarAutenticacion() {
 }
 
 // ================================================================
-// ACTUALIZAR ESTADO ONLINE EN SUPABASE
+// ESCAPE HTML (XSS)
+// ================================================================
+function escapeHTML(texto) {
+    if (!texto) return '';
+    const div = document.createElement('div');
+    div.textContent = texto;
+    return div.innerHTML;
+}
+
+// ================================================================
+// ACTUALIZAR ESTADO ONLINE
 // ================================================================
 async function actualizarOnline(online) {
     try {
         const session = await getSession();
         if (!session) return;
 
-        await supabase.rpc('actualizar_online', { p_online: online });
-        
+        // Usar UPDATE directo en lugar de RPC no verificada
+        const { error } = await supabase
+            .from('usuarios')
+            .update({
+                online: online,
+                ultima_conexion: online ? new Date().toISOString() : new Date().toISOString()
+            })
+            .eq('id', session.user.id);
+
+        if (error) throw error;
+
         if (usuarioActual) {
             usuarioActual.online = online;
         }
@@ -81,63 +101,86 @@ async function actualizarOnline(online) {
 }
 
 // ================================================================
-// CARGAR CONTACTOS CON ESTADO ONLINE REAL
+// CARGAR CONTACTOS
 // ================================================================
 async function cargarContactos() {
     try {
         if (!await verificarAutenticacion()) {
-            cargarContactosEjemplo();
+            mostrarSinContactos();
             return;
         }
 
+        // Obtener contactos con información de usuario
         const { data, error } = await supabase
-            .rpc('obtener_contactos_con_estado', {
-                p_usuario_id: usuarioActual.id
-            });
+            .from('contactos')
+            .select(`
+                id,
+                contacto_id,
+                estado,
+                es_favorito,
+                created_at,
+                usuarios:contacto_id (
+                    id,
+                    nombre,
+                    handle,
+                    avatar_url,
+                    online,
+                    ultima_conexion,
+                    verificado
+                )
+            `)
+            .eq('usuario_id', usuarioActual.id)
+            .eq('estado', 'activo');
 
-        if (error) {
-            const { data: fallbackData, error: fallbackError } = await supabase
-                .from('contactos')
-                .select('*, usuarios!contactos_contacto_id_fkey(id, nombre, handle, avatar_url, online, ultima_conexion)')
-                .eq('usuario_id', usuarioActual.id)
-                .eq('estado', 'activo');
+        if (error) throw error;
 
-            if (fallbackError) throw fallbackError;
-
-            contactos = (fallbackData || []).map(c => {
-                const contacto = c.usuarios || {};
-                return {
-                    _id: contacto.id,
-                    nombre: contacto.nombre || 'Usuario',
-                    handle: contacto.handle || '',
-                    avatar_url: contacto.avatar_url || null,
-                    walletAddress: c.wallet_address || 'Sin wallet',
-                    online: contacto.online || false,
-                    ultima_conexion: contacto.ultima_conexion || null,
-                    esFavorito: c.es_favorito || false,
-                    verificado: true
-                };
-            });
-        } else {
-            contactos = (data || []).map(c => ({
-                _id: c.contacto_id,
-                nombre: c.nombre || 'Usuario',
-                handle: c.handle || '',
-                avatar_url: c.avatar_url || null,
-                online: c.online || false,
-                ultima_conexion: c.ultima_conexion || null,
-                esFavorito: c.es_favorito || false,
-                verificado: true
-            }));
+        if (!data || data.length === 0) {
+            mostrarSinContactos();
+            contactos = [];
+            actualizarContadores();
+            aplicarFiltros();
+            return;
         }
+
+        contactos = data.map(c => {
+            const usuario = c.usuarios || {};
+            return {
+                _id: c.contacto_id,
+                nombre: usuario.nombre || 'Usuario',
+                handle: usuario.handle || '',
+                avatar_url: usuario.avatar_url || null,
+                online: usuario.online || false,
+                ultima_conexion: usuario.ultima_conexion || null,
+                esFavorito: c.es_favorito || false,
+                verificado: usuario.verificado || false,
+                estado_relacion: c.estado || 'activo'
+            };
+        });
 
         actualizarContadores();
         aplicarFiltros();
         iniciarEscuchaContactos();
 
     } catch (error) {
-        console.error('Error cargando contactos desde Supabase:', error);
-        cargarContactosEjemplo();
+        console.error('Error cargando contactos:', error);
+        mostrarSinContactos();
+    }
+}
+
+// ================================================================
+// MOSTRAR SIN CONTACTOS
+// ================================================================
+function mostrarSinContactos() {
+    const contactosListEl = document.getElementById('contactosList');
+    if (contactosListEl) {
+        contactosListEl.innerHTML = `
+            <div class="empty-state">
+                <span class="icon">◈</span>
+                <h3>Sin contactos</h3>
+                <p>Comienza a agregar personas a tu red</p>
+                <button class="btn-accion" onclick="abrirAgregarContacto()">◈ Agregar contacto</button>
+            </div>
+        `;
     }
 }
 
@@ -154,39 +197,26 @@ function iniciarEscuchaContactos() {
         .on('postgres_changes', {
             event: '*',
             schema: 'public',
-            table: 'contactos'
+            table: 'contactos',
+            filter: `usuario_id=eq.${usuarioActual?.id}`
         }, () => {
             cargarContactos();
         })
         .on('postgres_changes', {
             event: 'UPDATE',
             schema: 'public',
-            table: 'usuarios',
-            filter: `id=neq.${usuarioActual?.id}`
+            table: 'usuarios'
         }, (payload) => {
             const usuario = payload.new;
             const contacto = contactos.find(c => c._id === usuario.id);
             if (contacto) {
                 contacto.online = usuario.online || false;
                 contacto.ultima_conexion = usuario.ultima_conexion;
+                actualizarContadores();
                 aplicarFiltros();
             }
         })
         .subscribe();
-}
-
-// ================================================================
-// CONTACTOS DE EJEMPLO (FALLBACK)
-// ================================================================
-function cargarContactosEjemplo() {
-    contactos = [
-        { _id: '1', nombre: 'Ana Martínez', online: true, esFavorito: true, verificado: true },
-        { _id: '2', nombre: 'Carlos López', online: false, esFavorito: false, verificado: false },
-        { _id: '3', nombre: 'María García', online: true, esFavorito: false, verificado: true }
-    ];
-    actualizarContadores();
-    aplicarFiltros();
-    showToast('⚠️ Inicia sesión para ver contactos reales', 'warning');
 }
 
 // ================================================================
@@ -204,7 +234,7 @@ function actualizarContadores() {
 }
 
 // ================================================================
-// FORMATEAR TIEMPO DE ÚLTIMA CONEXIÓN
+// FORMATEAR TIEMPO
 // ================================================================
 function formatearTiempo(fecha) {
     if (!fecha) return 'Desconectado';
@@ -227,14 +257,7 @@ function renderizarContactos(lista) {
     if (!contactosListEl) return;
 
     if (!lista || lista.length === 0) {
-        contactosListEl.innerHTML = `
-            <div class="empty-state">
-                <span class="icon">◈</span>
-                <h3>Sin contactos</h3>
-                <p>Comienza a agregar personas a tu red</p>
-                <button class="btn-accion" onclick="abrirAgregarContacto()">◈ Agregar contacto</button>
-            </div>
-        `;
+        mostrarSinContactos();
         return;
     }
 
@@ -243,32 +266,33 @@ function renderizarContactos(lista) {
         const esFavorito = contacto.esFavorito || false;
         const inicial = contacto.nombre ? contacto.nombre[0].toUpperCase() : '✦';
         const estadoTexto = esOnline ? '◉ En línea' : `◈ ${formatearTiempo(contacto.ultima_conexion)}`;
+        const nombreSanitizado = escapeHTML(contacto.nombre || 'Usuario');
+        const handleSanitizado = escapeHTML(contacto.handle || 'usuario');
 
         return `
-            <div class="contacto-card" data-id="${contacto._id}">
+            <div class="contacto-card" data-id="${escapeHTML(contacto._id)}">
                 <div class="contacto-avatar ${esOnline ? 'online' : 'offline'} ${esFavorito ? 'favorito' : ''}">
-                    ${contacto.avatar_url ? `<img src="${contacto.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">` : inicial}
+                    ${contacto.avatar_url ? `<img src="${escapeHTML(contacto.avatar_url)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">` : inicial}
                     ${esOnline ? '<span class="online-dot"></span>' : ''}
                     ${esFavorito ? '<span class="favorito-badge">◆</span>' : ''}
                 </div>
                 <div class="contacto-info">
                     <div class="nombre">
-                        ${contacto.nombre || 'Usuario'}
+                        ${nombreSanitizado}
                         ${contacto.verificado ? '<span class="verified">✦ VERIFICADO</span>' : ''}
                     </div>
                     <div class="estado ${esOnline ? 'online' : 'offline'}">
                         ${estadoTexto}
                     </div>
                     <div class="contacto-meta">
-                        <span>@${contacto.handle || 'usuario'}</span>
-                        ${contacto.walletAddress ? `<span>· ◈ ${contacto.walletAddress.slice(0, 6)}...${contacto.walletAddress.slice(-4)}</span>` : ''}
+                        <span>@${handleSanitizado}</span>
                     </div>
                 </div>
                 <div class="contacto-actions">
-                    <button class="mensaje" onclick="irAMensajes('${contacto._id}')" title="Enviar mensaje">◈</button>
-                    <button class="favorito ${esFavorito ? 'active' : ''}" onclick="toggleFavorito('${contacto._id}')" title="Favorito">◆</button>
-                    <button class="bloquear" onclick="bloquearContacto('${contacto._id}')" title="Bloquear">🚫</button>
-                    <button class="eliminar" onclick="eliminarContacto('${contacto._id}')" title="Eliminar">✕</button>
+                    <button class="mensaje" onclick="irAMensajes('${escapeHTML(contacto._id)}')" title="Enviar mensaje">◈</button>
+                    <button class="favorito ${esFavorito ? 'active' : ''}" onclick="toggleFavorito('${escapeHTML(contacto._id)}')" title="Favorito">◆</button>
+                    <button class="bloquear" onclick="bloquearContacto('${escapeHTML(contacto._id)}')" title="Bloquear">🚫</button>
+                    <button class="eliminar" onclick="eliminarContacto('${escapeHTML(contacto._id)}')" title="Eliminar">✕</button>
                 </div>
             </div>
         `;
@@ -303,7 +327,7 @@ function aplicarFiltros() {
 }
 
 // ================================================================
-// 🔍 BUSCAR USUARIOS POR NOMBRE/HANDLE
+// 🔍 BUSCAR USUARIOS
 // ================================================================
 async function buscarUsuarios(query) {
     if (!query || query.length < 2) {
@@ -346,6 +370,9 @@ async function buscarUsuarios(query) {
         container.innerHTML = data.map(usuario => {
             const yaEsContacto = idsExistentes.includes(usuario.id);
             const estaOnline = usuario.online || false;
+            const nombreSanitizado = escapeHTML(usuario.nombre || 'Usuario');
+            const handleSanitizado = escapeHTML(usuario.handle || 'usuario');
+
             return `
                 <div class="resultado-item" style="
                     display:flex;align-items:center;gap:10px;padding:8px 12px;
@@ -358,20 +385,20 @@ async function buscarUsuarios(query) {
                         display:flex;align-items:center;justify-content:center;
                         color:white;font-size:0.8rem;overflow:hidden;
                         border:2px solid ${estaOnline ? 'var(--success)' : 'var(--text-muted)'};
+                        position:relative;
                     ">
-                        ${usuario.avatar_url ? `<img src="${usuario.avatar_url}" style="width:100%;height:100%;object-fit:cover;">` : (usuario.nombre ? usuario.nombre[0].toUpperCase() : '◈')}
-                        ${estaOnline ? '<span style="position:absolute;bottom:0;right:0;width:10px;height:10px;border-radius:50%;background:var(--success);border:2px solid var(--space);"></span>' : ''}
+                        ${usuario.avatar_url ? `<img src="${escapeHTML(usuario.avatar_url)}" style="width:100%;height:100%;object-fit:cover;">` : (usuario.nombre ? nombreSanitizado[0].toUpperCase() : '◈')}
                     </div>
                     <div style="flex:1;">
-                        <div style="font-weight:600;font-size:0.8rem;">${usuario.nombre || 'Usuario'}</div>
-                        <div style="font-size:0.6rem;color:var(--text-muted);">@${usuario.handle || 'usuario'} ${estaOnline ? '· 🟢 En línea' : ''}</div>
+                        <div style="font-weight:600;font-size:0.8rem;">${nombreSanitizado}</div>
+                        <div style="font-size:0.6rem;color:var(--text-muted);">@${handleSanitizado} ${estaOnline ? '· 🟢 En línea' : ''}</div>
                     </div>
                     ${yaEsContacto ? `
                         <span style="font-size:0.55rem;color:var(--success);background:rgba(0,214,143,0.1);padding:2px 10px;border-radius:12px;">
                             ✓ Contacto
                         </span>
                     ` : `
-                        <button onclick="agregarContactoDesdeBusqueda('${usuario.id}')" style="
+                        <button onclick="agregarContacto('${escapeHTML(usuario.id)}')" style="
                             background:linear-gradient(135deg,var(--gold),var(--gold-dark));
                             color:var(--space);border:none;padding:4px 12px;border-radius:12px;
                             font-size:0.6rem;font-weight:600;cursor:pointer;
@@ -389,9 +416,9 @@ async function buscarUsuarios(query) {
 }
 
 // ================================================================
-// ➕ AGREGAR CONTACTO DESDE BÚSQUEDA
+// ➕ AGREGAR CONTACTO
 // ================================================================
-async function agregarContactoDesdeBusqueda(contactoId) {
+async function agregarContacto(contactoId) {
     try {
         const session = await getSession();
         if (!session) {
@@ -399,12 +426,13 @@ async function agregarContactoDesdeBusqueda(contactoId) {
             return;
         }
 
+        // Verificar si ya existe
         const { data: existe } = await supabase
             .from('contactos')
             .select('id')
             .eq('usuario_id', session.user.id)
             .eq('contacto_id', contactoId)
-            .single();
+            .maybeSingle();
 
         if (existe) {
             showToast('⚠️ Este usuario ya es tu contacto', 'warning');
@@ -416,15 +444,17 @@ async function agregarContactoDesdeBusqueda(contactoId) {
             .insert({
                 usuario_id: session.user.id,
                 contacto_id: contactoId,
-                estado: 'activo'
+                estado: 'activo',
+                es_favorito: false
             });
 
         if (error) throw error;
 
         showToast('✅ Contacto agregado correctamente', 'success');
         
-        document.getElementById('searchInput').value = '';
+        document.getElementById('searchInputModal').value = '';
         document.getElementById('resultadosBusqueda').innerHTML = '';
+        cerrarModalBuscar();
         await cargarContactos();
 
     } catch (error) {
@@ -434,22 +464,10 @@ async function agregarContactoDesdeBusqueda(contactoId) {
 }
 
 // ================================================================
-// ➕ AGREGAR CONTACTO POR WALLET
+// ➕ AGREGAR CONTACTO DESDE BÚSQUEDA (alias)
 // ================================================================
-async function abrirAgregarContacto() {
-    const modal = document.getElementById('modalBuscarContacto');
-    if (modal) {
-        modal.style.display = 'flex';
-        setTimeout(() => {
-            document.getElementById('searchInputModal')?.focus();
-        }, 300);
-    }
-}
-
-function cerrarModalBuscar() {
-    document.getElementById('modalBuscarContacto').style.display = 'none';
-    document.getElementById('searchInputModal').value = '';
-    document.getElementById('resultadosBusqueda').innerHTML = '';
+async function agregarContactoDesdeBusqueda(contactoId) {
+    await agregarContacto(contactoId);
 }
 
 // ================================================================
@@ -465,12 +483,34 @@ async function bloquearContacto(contactoId) {
             return;
         }
 
-        const { error } = await supabase.rpc('bloquear_usuario', {
-            p_usuario_id: session.user.id,
-            p_bloqueado_id: contactoId
-        });
+        // Verificar si existe tabla bloqueos
+        try {
+            const { error } = await supabase
+                .from('bloqueos')
+                .insert({
+                    usuario_id: session.user.id,
+                    bloqueado_id: contactoId
+                });
 
-        if (error) throw error;
+            if (error) {
+                if (error.code === '42P01') {
+                    showToast('⚠️ La tabla de bloqueos no está configurada', 'warning');
+                    return;
+                }
+                throw error;
+            }
+        } catch (insertError) {
+            console.error('Error insertando bloqueo:', insertError);
+            showToast('❌ Error al bloquear usuario', 'error');
+            return;
+        }
+
+        // Eliminar de contactos
+        await supabase
+            .from('contactos')
+            .delete()
+            .eq('usuario_id', session.user.id)
+            .eq('contacto_id', contactoId);
 
         contactos = contactos.filter(c => c._id !== contactoId);
         actualizarContadores();
@@ -494,12 +534,19 @@ async function desbloquearUsuario(contactoId) {
             return;
         }
 
-        const { error } = await supabase.rpc('desbloquear_usuario', {
-            p_usuario_id: session.user.id,
-            p_bloqueado_id: contactoId
-        });
+        const { error } = await supabase
+            .from('bloqueos')
+            .delete()
+            .eq('usuario_id', session.user.id)
+            .eq('bloqueado_id', contactoId);
 
-        if (error) throw error;
+        if (error) {
+            if (error.code === '42P01') {
+                showToast('⚠️ La tabla de bloqueos no está configurada', 'warning');
+                return;
+            }
+            throw error;
+        }
 
         showToast('✅ Usuario desbloqueado', 'success');
         await cargarContactos();
@@ -596,25 +643,39 @@ async function invitarContacto() {
 
         const codigo = 'SAR-' + Math.random().toString(36).substring(2, 8).toUpperCase();
 
-        const { data, error } = await supabase
-            .from('invitaciones')
-            .insert({
-                usuario_id: session.user.id,
-                codigo: codigo
-            })
-            .select()
-            .single();
+        // Verificar si tabla invitaciones existe
+        try {
+            const { data, error } = await supabase
+                .from('invitaciones')
+                .insert({
+                    usuario_id: session.user.id,
+                    codigo: codigo,
+                    activo: true
+                })
+                .select()
+                .single();
 
-        if (error) throw error;
+            if (error) {
+                if (error.code === '42P01') {
+                    showToast('⚠️ La tabla de invitaciones no está configurada', 'warning');
+                    return;
+                }
+                throw error;
+            }
 
-        const modal = document.getElementById('modalInvitacion');
-        const codigoEl = document.getElementById('codigoInvitacion');
-        if (modal && codigoEl) {
-            codigoEl.textContent = codigo;
-            modal.style.display = 'flex';
+            const modal = document.getElementById('modalInvitacion');
+            const codigoEl = document.getElementById('codigoInvitacion');
+            if (modal && codigoEl) {
+                codigoEl.textContent = codigo;
+                modal.style.display = 'flex';
+            }
+
+            showToast('✅ Código de invitación generado', 'success');
+
+        } catch (insertError) {
+            console.error('Error generando invitación:', insertError);
+            showToast('❌ Error al generar invitación', 'error');
         }
-
-        showToast('✅ Código de invitación generado', 'success');
 
     } catch (error) {
         console.error('Error generando invitación:', error);
@@ -670,6 +731,25 @@ function ordenarContactos(criterio) {
 }
 
 // ================================================================
+// ABRIR MODAL AGREGAR CONTACTO
+// ================================================================
+function abrirAgregarContacto() {
+    const modal = document.getElementById('modalBuscarContacto');
+    if (modal) {
+        modal.style.display = 'flex';
+        setTimeout(() => {
+            document.getElementById('searchInputModal')?.focus();
+        }, 300);
+    }
+}
+
+function cerrarModalBuscar() {
+    document.getElementById('modalBuscarContacto').style.display = 'none';
+    document.getElementById('searchInputModal').value = '';
+    document.getElementById('resultadosBusqueda').innerHTML = '';
+}
+
+// ================================================================
 // 🎯 INICIALIZAR
 // ================================================================
 document.addEventListener('DOMContentLoaded', async function() {
@@ -682,8 +762,11 @@ document.addEventListener('DOMContentLoaded', async function() {
         window.addEventListener('beforeunload', function() {
             actualizarOnline(false);
         });
+    } else {
+        mostrarSinContactos();
     }
 
+    // Event listeners
     const searchModal = document.getElementById('searchInputModal');
     if (searchModal) {
         let timeout;
@@ -707,32 +790,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
 
-    document.querySelectorAll('.filtro').forEach(btn => {
-        btn.addEventListener('click', function() {
-            document.querySelectorAll('.filtro').forEach(b => b.classList.remove('active'));
-            this.classList.add('active');
-            filtroActual = this.dataset.filtro;
-            
-            if (filtroActual === 'recientes') {
-                ordenarContactos('reciente');
-            } else if (filtroActual === 'online') {
-                ordenarContactos('online');
-            } else {
-                ordenarContactos('nombre');
-            }
-            
-            aplicarFiltros();
-        });
-    });
-
-    document.querySelectorAll('.modal-overlay').forEach(modal => {
-        modal.addEventListener('click', function(e) {
-            if (e.target === this) {
-                this.style.display = 'none';
-            }
-        });
-    });
-
+    // Cerrar modales con ESC
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
             document.querySelectorAll('.modal-overlay.show').forEach(modal => {
@@ -743,13 +801,13 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     });
 
-    console.log('◈ Sariel\'s - Contactos Ultra Mega Pro');
+    console.log('◈ Sariel\'s - Contactos');
     console.log('👥 Contactos cargados:', contactos.length);
     console.log('📡 Realtime activado');
 });
 
 // ================================================================
-// 📤 EXPONER FUNCIONES GLOBALES
+// 📤 EXPOSICIÓN DE FUNCIONES GLOBALES
 // ================================================================
 window.cargarContactos = cargarContactos;
 window.irAMensajes = irAMensajes;
@@ -757,6 +815,7 @@ window.toggleFavorito = toggleFavorito;
 window.eliminarContacto = eliminarContacto;
 window.abrirAgregarContacto = abrirAgregarContacto;
 window.buscarUsuarios = buscarUsuarios;
+window.agregarContacto = agregarContacto;
 window.agregarContactoDesdeBusqueda = agregarContactoDesdeBusqueda;
 window.bloquearContacto = bloquearContacto;
 window.desbloquearUsuario = desbloquearUsuario;
