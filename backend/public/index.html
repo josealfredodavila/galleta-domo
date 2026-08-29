@@ -58,7 +58,7 @@
         .logo-hex { font-size: 2rem; color: var(--gold); font-family: 'Orbitron', monospace; text-shadow: 0 0 30px rgba(212, 175, 55, 0.3); }
         .logo-text { font-family: 'Orbitron', monospace; font-size: 1.3rem; color: var(--text-primary); letter-spacing: 2px; }
         .logo-text span { color: var(--gold); }
-        <a href="https://es.wikipedia.org/wiki/Web3" target="_blank" rel="noopener noreferrer" class="logo-badge" style="text-decoration:none; cursor:pointer;">✦ WEB3</a>
+        .logo-badge { font-size: 0.5rem; background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: var(--space); padding: 2px 12px; border-radius: 20px; font-weight: 700; }
         .header-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
         .network-badge { display: flex; align-items: center; gap: 6px; font-size: 0.65rem; color: var(--gold); background: rgba(212, 175, 55, 0.1); padding: 4px 14px; border-radius: 20px; }
         .header-actions .nav-link { font-size: 0.7rem; padding: 4px 12px; border-radius: 20px; color: var(--text-muted); text-decoration: none; transition: var(--transition); }
@@ -219,13 +219,10 @@
             <a href="/" class="logo">
                 <span class="logo-hex">◈</span>
                 <span class="logo-text">Sariel<span>'s</span></span>
-                <a href="https://es.wikipedia.org/wiki/Web3" target="_blank" rel="noopener noreferrer" class="logo-badge" style="text-decoration:none; cursor:pointer;">✦ WEB3</a>
+                <span class="logo-badge">✦ WEB3</span>
             </a>
             <div class="header-actions">
-                <span class="network-badge">
-                    <span class="dot"></span>
-                    <a href="https://es.wikipedia.org/wiki/Polygon_(blockchain)" target="_blank" rel="noopener noreferrer" style="color:var(--gold); text-decoration:none; cursor:pointer;">Polygon</a>
-                </span>
+                <span class="network-badge"><span class="dot"></span> Polygon</span>
                 <div id="sessionInfo">
                     <span>🔐</span>
                     <span class="email" id="userEmail">No autenticado</span>
@@ -379,7 +376,7 @@
                 <a href="/privacidad.html">◈ Privacidad</a>
                 <a href="/cookies.html">◈ Cookies</a>
                 <a href="/live-terminos.html">◉ Live Términos</a>
-                <a href="https://es.wikipedia.org/wiki/Polygon_(blockchain)" target="_blank" rel="noopener noreferrer" style="opacity:0.3; color:var(--text-muted); text-decoration:none; cursor:pointer;">⚡ Polygon</a>
+                <span style="opacity:0.3;">⚡ Polygon</span>
             </div>
         </footer>
     </div>
@@ -437,7 +434,7 @@
         }
 
         // ================================================================
-        // SESIÓN (Auth)
+        // SESIÓN (Auth) - CORREGIDA
         // ================================================================
         async function checkSession() {
             const { data: { session }, error } = await supabase.auth.getSession();
@@ -459,9 +456,16 @@
                 document.getElementById('logoutBtn').style.display = 'none';
                 document.getElementById('registerCard').style.display = 'block';
                 document.getElementById('loginCard').style.display = 'none';
+                userTokens = 0;
+                userDomos = 0;
+                userHasNft = false;
+                actualizarEstado();
             }
         }
 
+        // ================================================================
+        // REGISTRO DE USUARIO - CORREGIDO
+        // ================================================================
         async function registrarUsuario() {
             const email = document.getElementById('regEmail').value.trim();
             const password = document.getElementById('regPassword').value.trim();
@@ -476,21 +480,37 @@
                 const { data, error } = await supabase.auth.signUp({
                     email: email,
                     password: password,
-                    options: { data: { full_name: name } }
+                    options: { 
+                        data: { full_name: name || 'Explorador' } 
+                    }
                 });
 
                 if (error) throw error;
 
-                showToast('✅ Cuenta creada. Revisa tu correo para confirmar.');
-                if (data.user) {
+                // ✅ CORRECCIÓN: Verificar si hay sesión o si requiere confirmación
+                if (data.session) {
+                    // Usuario confirmado o sin confirmación requerida
                     currentUser = data.user;
-                    await loadUserData();
+                    showToast('✅ Cuenta creada. Sesión iniciada.', 'success');
+                    await checkSession();
+                } else if (data.user) {
+                    // Usuario creado pero requiere confirmación de email
+                    showToast('✅ Cuenta creada. Revisa tu correo para confirmar tu cuenta.', 'success');
+                    document.getElementById('regEmail').value = '';
+                    document.getElementById('regPassword').value = '';
+                    document.getElementById('regName').value = '';
+                } else {
+                    showToast('⚠️ Error inesperado al crear la cuenta.', 'warning');
                 }
             } catch (error) {
+                console.error('Error registrando usuario:', error);
                 showToast('❌ ' + error.message, 'error');
             }
         }
 
+        // ================================================================
+        // INICIO DE SESIÓN
+        // ================================================================
         async function iniciarSesion() {
             const email = document.getElementById('loginEmail').value.trim();
             const password = document.getElementById('loginPassword').value.trim();
@@ -508,20 +528,25 @@
 
                 if (error) throw error;
 
-                showToast('✅ Sesión iniciada correctamente');
+                showToast('✅ Sesión iniciada correctamente', 'success');
                 await checkSession();
             } catch (error) {
+                console.error('Error iniciando sesión:', error);
                 showToast('❌ ' + error.message, 'error');
             }
         }
 
+        // ================================================================
+        // CERRAR SESIÓN
+        // ================================================================
         async function cerrarSesion() {
             try {
                 await supabase.auth.signOut();
                 currentUser = null;
-                showToast('🔌 Sesión cerrada');
+                showToast('🔌 Sesión cerrada', 'success');
                 await checkSession();
             } catch (error) {
+                console.error('Error cerrando sesión:', error);
                 showToast('❌ ' + error.message, 'error');
             }
         }
@@ -537,17 +562,28 @@
         }
 
         // ================================================================
-        // CARGAR DATOS DEL USUARIO - USANDO TABLA REAL
+        // CARGAR DATOS DEL USUARIO - SOLO RPC obtener_mi_perfil
         // ================================================================
         async function loadUserData() {
-            if (!currentUser) return;
+            if (!currentUser) {
+                userTokens = 0;
+                userDomos = 0;
+                userHasNft = false;
+                actualizarEstado();
+                return;
+            }
 
             try {
-                // ✅ Usar RPC obtener_mi_perfil
+                // ✅ ÚNICO MECANISMO: RPC obtener_mi_perfil
                 const { data, error } = await supabase.rpc('obtener_mi_perfil');
 
                 if (error) {
-                    console.error('Error loading user data:', error);
+                    console.error('Error en obtener_mi_perfil:', error);
+                    // Si el usuario no tiene registro en usuarios, mostrar valores por defecto
+                    userTokens = 0;
+                    userDomos = 0;
+                    userHasNft = false;
+                    actualizarEstado();
                     return;
                 }
 
@@ -567,23 +603,10 @@
                 actualizarEstado();
             } catch (error) {
                 console.error('Error in loadUserData:', error);
-                // Si falla RPC, intentar SELECT directo
-                try {
-                    const { data: userData, error: userError } = await supabase
-                        .from('usuarios')
-                        .select('tokens, domos, nft_canjeado')
-                        .eq('id', currentUser.id)
-                        .maybeSingle();
-
-                    if (userData) {
-                        userTokens = userData.tokens || 0;
-                        userDomos = userData.domos || 0;
-                        userHasNft = userData.nft_canjeado || false;
-                    }
-                    actualizarEstado();
-                } catch (e) {
-                    console.error('Fallback error:', e);
-                }
+                userTokens = 0;
+                userDomos = 0;
+                userHasNft = false;
+                actualizarEstado();
             }
         }
 
@@ -591,14 +614,25 @@
         // ACTUALIZAR ESTADO UI
         // ================================================================
         function actualizarEstado() {
-            document.getElementById('domosCount').textContent = userDomos || 0;
-            document.getElementById('tokensCount').textContent = userTokens || 0;
+            const domosEl = document.getElementById('domosCount');
+            const tokensEl = document.getElementById('tokensCount');
+            const progressFillEl = document.getElementById('progressFill');
+            const progressTextEl = document.getElementById('progressText');
+            const haCanjeadoEl = document.getElementById('haCanjeado');
+
+            if (domosEl) domosEl.textContent = userDomos || 0;
+            if (tokensEl) tokensEl.textContent = userTokens || 0;
 
             const progreso = Math.min(userTokens || 0, 12);
-            document.getElementById('progressFill').style.width = `${(progreso / 12) * 100}%`;
-            document.getElementById('progressText').textContent = `${progreso} / 12`;
-
-            document.getElementById('haCanjeado').textContent = userHasNft ? '✅ Sí' : 'No';
+            if (progressFillEl) {
+                progressFillEl.style.width = `${(progreso / 12) * 100}%`;
+            }
+            if (progressTextEl) {
+                progressTextEl.textContent = `${progreso} / 12`;
+            }
+            if (haCanjeadoEl) {
+                haCanjeadoEl.textContent = userHasNft ? '✅ Sí' : 'No';
+            }
         }
 
         // ================================================================
@@ -675,16 +709,30 @@
 
             checkSession();
 
+            // ✅ Escuchar cambios de autenticación
             supabase.auth.onAuthStateChange((event, session) => {
                 if (event === 'SIGNED_IN' && session) {
                     currentUser = session.user;
                     loadUserData();
+                    document.getElementById('userEmail').textContent = currentUser.email || 'Usuario';
+                    document.getElementById('logoutBtn').style.display = 'inline-block';
+                    document.getElementById('registerCard').style.display = 'none';
+                    document.getElementById('loginCard').style.display = 'none';
                 } else if (event === 'SIGNED_OUT') {
                     currentUser = null;
                     userDomos = 0;
                     userTokens = 0;
                     userHasNft = false;
+                    document.getElementById('userEmail').textContent = 'No autenticado';
+                    document.getElementById('logoutBtn').style.display = 'none';
+                    document.getElementById('registerCard').style.display = 'block';
+                    document.getElementById('loginCard').style.display = 'none';
                     actualizarEstado();
+                } else if (event === 'USER_UPDATED') {
+                    if (session) {
+                        currentUser = session.user;
+                        loadUserData();
+                    }
                 }
             });
         });
