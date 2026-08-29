@@ -249,9 +249,8 @@
             <div class="auth-section">
                 <div class="auth-card" id="registerCard">
                     <h3>◈ Regístrate gratis</h3>
-                    <div class="sub">Crea tu cuenta con email o teléfono</div>
+                    <div class="sub">Crea tu cuenta con email</div>
                     <input type="email" id="regEmail" placeholder="Correo electrónico" />
-                    <input type="tel" id="regPhone" placeholder="Teléfono (opcional)" />
                     <input type="password" id="regPassword" placeholder="Contraseña" />
                     <input type="text" id="regName" placeholder="Nombre (opcional)" />
                     <button class="btn btn-gold" onclick="registrarUsuario()">⟡ Crear cuenta</button>
@@ -262,7 +261,7 @@
 
                 <div class="auth-card" id="loginCard" style="display:none;">
                     <h3>◈ Iniciar sesión</h3>
-                    <div class="sub">Entra con tu email o wallet</div>
+                    <div class="sub">Entra con tu email</div>
                     <input type="email" id="loginEmail" placeholder="Correo electrónico" />
                     <input type="password" id="loginPassword" placeholder="Contraseña" />
                     <button class="btn btn-gold" onclick="iniciarSesion()">◈ Iniciar sesión</button>
@@ -306,7 +305,7 @@
             </div>
         </div>
 
-        <!-- ===== PESTAÑA INTERNET ACTUALIZADA ===== -->
+        <!-- ===== PESTAÑA INTERNET ===== -->
         <div id="tab-internet" class="tab-content">
             <div class="panel">
                 <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
@@ -384,13 +383,13 @@
 
     <div class="toast" id="toast"></div>
 
-    <script src="https://cdn.jsdelivr.net/npm/web3@1.8.0/dist/web3.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <!-- ✅ SOLO Supabase - SIN Web3 en Index -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     
     <script>
         // ================================================================
-        // CONFIGURACIÓN
+        // CONFIGURACIÓN SUPABASE
         // ================================================================
         const supabase = window.supabase.createClient(
             'https://zultnlogdoajehbswlih.supabase.co',
@@ -527,49 +526,53 @@
         }
 
         // ================================================================
-        // CARGAR DATOS DEL USUARIO
+        // CARGAR DATOS DEL USUARIO - USANDO TABLA REAL
         // ================================================================
         async function loadUserData() {
             if (!currentUser) return;
 
             try {
-                const { data: userData, error: userError } = await supabase
-                    .from('usuarios')
-                    .select('domos, tokens, nft_canjeado')
-                    .eq('id', currentUser.id)
-                    .single();
+                // ✅ Usar RPC obtener_mi_perfil
+                const { data, error } = await supabase.rpc('obtener_mi_perfil');
 
-                if (userError && userError.code !== 'PGRST116') {
-                    console.error('Error loading user data:', userError);
+                if (error) {
+                    console.error('Error loading user data:', error);
                     return;
                 }
 
-                if (userData) {
-                    userDomos = userData.domos || 0;
-                    userTokens = userData.tokens || 0;
-                    userHasNft = userData.nft_canjeado || false;
-                } else {
-                    const { error: insertError } = await supabase
-                        .from('usuarios')
-                        .insert({
-                            id: currentUser.id,
-                            email: currentUser.email,
-                            domos: 0,
-                            tokens: 0,
-                            nft_canjeado: false
-                        });
+                // data es un array, tomar el primer elemento
+                const perfil = data && data.length > 0 ? data[0] : null;
 
-                    if (insertError) {
-                        console.error('Error creating user record:', insertError);
-                    }
-                    userDomos = 0;
+                if (perfil) {
+                    userTokens = perfil.tokens || 0;
+                    userDomos = perfil.domos || 0;
+                    userHasNft = perfil.nft_canjeado || false;
+                } else {
                     userTokens = 0;
+                    userDomos = 0;
                     userHasNft = false;
                 }
 
                 actualizarEstado();
             } catch (error) {
                 console.error('Error in loadUserData:', error);
+                // Si falla RPC, intentar SELECT directo
+                try {
+                    const { data: userData, error: userError } = await supabase
+                        .from('usuarios')
+                        .select('tokens, domos, nft_canjeado')
+                        .eq('id', currentUser.id)
+                        .maybeSingle();
+
+                    if (userData) {
+                        userTokens = userData.tokens || 0;
+                        userDomos = userData.domos || 0;
+                        userHasNft = userData.nft_canjeado || false;
+                    }
+                    actualizarEstado();
+                } catch (e) {
+                    console.error('Fallback error:', e);
+                }
             }
         }
 
@@ -577,10 +580,10 @@
         // ACTUALIZAR ESTADO UI
         // ================================================================
         function actualizarEstado() {
-            document.getElementById('domosCount').textContent = userDomos;
-            document.getElementById('tokensCount').textContent = userTokens;
+            document.getElementById('domosCount').textContent = userDomos || 0;
+            document.getElementById('tokensCount').textContent = userTokens || 0;
 
-            const progreso = Math.min(userTokens, 12);
+            const progreso = Math.min(userTokens || 0, 12);
             document.getElementById('progressFill').style.width = `${(progreso / 12) * 100}%`;
             document.getElementById('progressText').textContent = `${progreso} / 12`;
 
@@ -588,7 +591,7 @@
         }
 
         // ================================================================
-        // COMPRAR DOMO (RPC real)
+        // COMPRAR DOMO - RPC REAL
         // ================================================================
         async function comprarDomo() {
             if (!currentUser) {
