@@ -25,11 +25,8 @@ const logger = require('../utils/logger');
 // ================================================================
 
 const IPN_SECRET = process.env.NOWPAYMENTS_IPN_SECRET;
-
 if (!IPN_SECRET) {
-    throw new Error(
-        'Falta la variable de entorno NOWPAYMENTS_IPN_SECRET'
-    );
+    console.warn('⚠️ NOWPAYMENTS_IPN_SECRET no configurado. Webhook NOWPayments estará inhabilitado hasta que se defina.');
 }
 
 // ================================================================
@@ -41,6 +38,20 @@ router.post(
     limitadorWebhook,
     async (req, res) => {
         try {
+            // ----------------------------------------------------
+            // VALIDAR CONFIGURACIÓN EN TIEMPO DE PETICIÓN
+            // ----------------------------------------------------
+            const secret = process.env.NOWPAYMENTS_IPN_SECRET;
+            if (!secret) {
+                logger.error('NOWPayments IPN recibido pero NOWPAYMENTS_IPN_SECRET no está configurado');
+                return res.status(500).json({ success: false, error: 'Webhook NOWPayments no configurado en servidor' });
+            }
+
+            if (!supabaseAdmin) {
+                logger.error('NOWPayments IPN recibido pero SUPABASE_SERVICE_ROLE_KEY no está configurada (supabaseAdmin ausente)');
+                return res.status(500).json({ success: false, error: 'Servicio interno no configurado: supabaseAdmin ausente' });
+            }
+
             const payload = req.body;
 
             const firmaRecibida =
@@ -79,7 +90,7 @@ router.post(
             const firmaValida = verificarHMAC(
                 payload,
                 firmaRecibida,
-                IPN_SECRET
+                secret
             );
 
             if (!firmaValida) {
