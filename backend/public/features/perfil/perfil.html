@@ -497,6 +497,17 @@
             background: rgba(255, 255, 255, 0.05);
         }
 
+        /* ===== SOLICITUDES PENDIENTES ===== */
+        #solicitudesSection {
+            margin-top: 10px;
+            padding: 10px 0;
+        }
+        #solicitudesSection h4 {
+            color: var(--gold);
+            font-size: 0.85rem;
+            margin-bottom: 8px;
+        }
+
         /* ===== LISTA DE AMIGOS ===== */
         #amigosContainer {
             margin-top: 10px;
@@ -819,6 +830,19 @@
             text-align: center;
         }
 
+        /* ===== QR SCANNER ===== */
+        #qrReaderContainer {
+            display: none;
+            margin-top: 10px;
+            text-align: center;
+        }
+        #qrReaderContainer video {
+            width: 100%;
+            max-width: 300px;
+            border-radius: 10px;
+            background: black;
+        }
+
         @media (max-width: 768px) {
             .app { padding: 12px 14px; }
             .perfil-header { flex-direction: column; text-align: center; padding: 20px; }
@@ -934,6 +958,18 @@
                         <button class="btn-estado offline" onclick="cambiarEstado(false)">⭕ Inactivo</button>
                     </div>
                 </div>
+
+                <!-- ===== SOLICITUDES PENDIENTES (NUEVO) ===== -->
+                <div id="solicitudesSection">
+                    <h4>📨 Solicitudes pendientes <span id="solicitudesContador" style="font-size:0.7rem;color:var(--warning);">0</span></h4>
+                    <div id="solicitudesContainer" style="max-height: 200px; overflow-y: auto;">
+                        <div style="text-align:center; padding:10px; color:var(--text-muted); font-size:0.7rem;">
+                            <span style="font-size:1.2rem;">✅</span>
+                            <p>No tienes solicitudes pendientes</p>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Lista de amigos -->
                 <div id="amigosContainer"></div>
             </div>
@@ -1043,7 +1079,7 @@
                             </button>
                         </div>
 
-                        <!-- ===== NUEVO: COMPRAR CON CRIPTO ===== -->
+                        <!-- ===== COMPRAR CON CRIPTO ===== -->
                         <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--glass-border);">
                             <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
                                 <span style="font-size:0.75rem;color:var(--gold);font-weight:600;">💳 Comprar con Cripto</span>
@@ -1185,7 +1221,6 @@
                             </div>
                         </div>
 
-                        <!-- ✅ BOTONES eSIM CORREGIDOS -->
                         <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
                             <button class="btn btn-gold" style="flex:1;justify-content:center;padding:10px;" onclick="comprarESIM(1)">
                                 📱 Comprar eSIM
@@ -1238,7 +1273,7 @@
                             📷 Escanear con cámara
                         </button>
 
-                        <div id="qrReaderContainer" style="display:none;margin-top:10px;">
+                        <div id="qrReaderContainer">
                             <video id="qrVideo" style="width:100%;max-width:300px;border-radius:10px;background:black;"></video>
                             <button class="btn btn-danger btn-sm" onclick="cerrarCamaraQR()" style="margin-top:8px;">
                                 ✕ Cerrar cámara
