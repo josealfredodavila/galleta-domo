@@ -145,6 +145,7 @@ async function cargarPerfil(forzarActualizacion = false) {
             await cargarEstadoConexion();
             await cargarAmigosEnLinea();
             await cargarHistorialQR();
+            await cargarSolicitudesPendientes();
         } else {
             const defaultData = {
                 nombre: session.user.user_metadata?.nombre || 'Explorador',
@@ -403,16 +404,24 @@ async function actualizarListaAmigos() {
     await cargarAmigosEnLinea();
 }
 
+// ================================================================
+// SISTEMA DE AMISTADES - COMPLETO CON RPCs
+// ================================================================
+
+// ================================================================
+// CORRECCIÓN: notificarCambioEstado() - estado 'aceptado' → 'activo'
+// ================================================================
 async function notificarCambioEstado(online) {
     try {
         const session = await getSession();
         if (!session) return;
 
+        // CORREGIDO: 'aceptado' → 'activo' (coincide con la función obtener_contactos_con_estado)
         const { data: contactos, error } = await supabase
             .from('contactos')
             .select('contacto_id')
             .eq('usuario_id', session.user.id)
-            .eq('estado', 'aceptado');
+            .eq('estado', 'activo');
 
         if (error || !contactos) return;
 
@@ -432,6 +441,244 @@ async function notificarCambioEstado(online) {
     } catch (error) {
         console.error('Error notificando cambio de estado:', error);
     }
+}
+
+// ================================================================
+// OBTENER SOLICITUDES PENDIENTES
+// ================================================================
+async function obtenerSolicitudesPendientes() {
+    try {
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ Inicia sesión para ver solicitudes', 'error');
+            return [];
+        }
+
+        const { data, error } = await supabase.rpc('obtener_solicitudes_pendientes');
+
+        if (error) throw error;
+
+        return data || [];
+
+    } catch (error) {
+        console.error('Error obteniendo solicitudes pendientes:', error);
+        showToast('❌ Error al cargar solicitudes: ' + error.message, 'error');
+        return [];
+    }
+}
+
+// ================================================================
+// ACEPTAR SOLICITUD DE AMISTAD
+// ================================================================
+async function aceptarSolicitudAmistad(solicitanteId) {
+    try {
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ Inicia sesión para aceptar solicitudes', 'error');
+            return false;
+        }
+
+        if (!solicitanteId) {
+            showToast('⚠️ ID de solicitante inválido', 'error');
+            return false;
+        }
+
+        showToast('⏳ Aceptando solicitud...', '', 3000);
+
+        const { data, error } = await supabase.rpc('aceptar_solicitud_amistad', {
+            p_solicitante_id: solicitanteId
+        });
+
+        if (error) throw error;
+
+        showToast('✅ Solicitud aceptada. ¡Ahora son amigos!', 'success', 4000);
+        
+        // Actualizar UI
+        await cargarSolicitudesPendientes();
+        await cargarAmigosEnLinea();
+        await cargarPerfil(true);
+        
+        return true;
+
+    } catch (error) {
+        console.error('Error aceptando solicitud:', error);
+        showToast('❌ Error al aceptar solicitud: ' + error.message, 'error');
+        return false;
+    }
+}
+
+// ================================================================
+// RECHAZAR SOLICITUD DE AMISTAD
+// ================================================================
+async function rechazarSolicitudAmistad(solicitanteId) {
+    try {
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ Inicia sesión para rechazar solicitudes', 'error');
+            return false;
+        }
+
+        if (!solicitanteId) {
+            showToast('⚠️ ID de solicitante inválido', 'error');
+            return false;
+        }
+
+        if (!confirm('¿Seguro que quieres rechazar esta solicitud de amistad?')) {
+            return false;
+        }
+
+        showToast('⏳ Rechazando solicitud...', '', 3000);
+
+        const { data, error } = await supabase.rpc('rechazar_solicitud_amistad', {
+            p_solicitante_id: solicitanteId
+        });
+
+        if (error) throw error;
+
+        showToast('❌ Solicitud rechazada', 'warning', 3000);
+        
+        // Actualizar UI
+        await cargarSolicitudesPendientes();
+        
+        return true;
+
+    } catch (error) {
+        console.error('Error rechazando solicitud:', error);
+        showToast('❌ Error al rechazar solicitud: ' + error.message, 'error');
+        return false;
+    }
+}
+
+// ================================================================
+// CARGAR Y MOSTRAR SOLICITUDES PENDIENTES EN UI
+// ================================================================
+async function cargarSolicitudesPendientes() {
+    try {
+        const solicitudes = await obtenerSolicitudesPendientes();
+        actualizarUISolicitudes(solicitudes);
+        return solicitudes;
+    } catch (error) {
+        console.error('Error cargando solicitudes:', error);
+        return [];
+    }
+}
+
+function actualizarUISolicitudes(solicitudes = []) {
+    const container = document.getElementById('solicitudesContainer');
+    const contador = document.getElementById('solicitudesContador');
+    
+    if (contador) {
+        contador.textContent = solicitudes.length;
+        contador.style.color = solicitudes.length > 0 ? 'var(--warning)' : 'var(--text-muted)';
+        contador.style.display = solicitudes.length > 0 ? 'inline' : 'none';
+    }
+
+    if (!container) {
+        // Si no existe el contenedor, crearlo en la pestaña de contactos
+        const contactosTab = document.getElementById('tab-contactos');
+        if (contactosTab) {
+            const solicitudesSection = document.createElement('div');
+            solicitudesSection.id = 'solicitudesSection';
+            solicitudesSection.innerHTML = `
+                <div style="margin-top: 20px;">
+                    <h4 style="color: var(--gold); font-size: 0.9rem; margin-bottom: 10px;">
+                        📨 Solicitudes pendientes 
+                        <span id="solicitudesContador" style="font-size:0.7rem; color:var(--warning);">${solicitudes.length}</span>
+                    </h4>
+                    <div id="solicitudesContainer" style="max-height: 200px; overflow-y: auto;">
+                        ${renderSolicitudes(solicitudes)}
+                    </div>
+                </div>
+            `;
+            contactosTab.insertBefore(solicitudesSection, contactosTab.querySelector('#amigosContainer'));
+        }
+        return;
+    }
+
+    container.innerHTML = renderSolicitudes(solicitudes);
+}
+
+function renderSolicitudes(solicitudes) {
+    if (!solicitudes || solicitudes.length === 0) {
+        return `
+            <div style="text-align:center; padding:10px; color:var(--text-muted); font-size:0.7rem;">
+                <span style="font-size:1.2rem;">✅</span>
+                <p>No tienes solicitudes pendientes</p>
+            </div>
+        `;
+    }
+
+    return solicitudes.map(solicitud => `
+        <div style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            margin-bottom: 6px;
+            background: rgba(212,175,55,0.05);
+            border-radius: 10px;
+            border: 1px solid rgba(212,175,55,0.1);
+            animation: fadeIn 0.3s ease-out;
+        ">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="
+                    width: 32px;
+                    height: 32px;
+                    border-radius: 50%;
+                    background: var(--bg-dark);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 0.8rem;
+                    overflow: hidden;
+                ">
+                    ${solicitud.avatar_url ? `<img src="${solicitud.avatar_url}" style="width:100%;height:100%;object-fit:cover;">` : '◈'}
+                </div>
+                <div>
+                    <div style="font-weight:600; font-size:0.8rem; color:var(--text-primary);">
+                        ${solicitud.nombre || solicitud.handle}
+                    </div>
+                    <div style="font-size:0.6rem; color:var(--text-muted);">
+                        @${solicitud.handle} · ${haceTiempo(solicitud.fecha_solicitud)}
+                    </div>
+                </div>
+            </div>
+            <div style="display: flex; gap: 5px;">
+                <button onclick="aceptarSolicitudAmistad('${solicitud.solicitante_id}')" 
+                        style="
+                            background: linear-gradient(135deg, #2ecc71, #27ae60);
+                            border: none;
+                            color: #fff;
+                            padding: 4px 12px;
+                            border-radius: 6px;
+                            font-size: 0.6rem;
+                            font-weight: 600;
+                            cursor: pointer;
+                            transition: all 0.2s ease;
+                        "
+                        onmouseover="this.style.transform='scale(1.05)'"
+                        onmouseout="this.style.transform='scale(1)'">
+                    ✅ Aceptar
+                </button>
+                <button onclick="rechazarSolicitudAmistad('${solicitud.solicitante_id}')" 
+                        style="
+                            background: transparent;
+                            border: 1px solid #ff6b6b;
+                            color: #ff6b6b;
+                            padding: 4px 12px;
+                            border-radius: 6px;
+                            font-size: 0.6rem;
+                            font-weight: 600;
+                            cursor: pointer;
+                            transition: all 0.2s ease;
+                        "
+                        onmouseover="this.style.background='rgba(255,107,107,0.1)'; this.style.transform='scale(1.05)'"
+                        onmouseout="this.style.background='transparent'; this.style.transform='scale(1)'">
+                    ✕ Rechazar
+                </button>
+            </div>
+        </div>
+    `).join('');
 }
 
 function haceTiempo(fecha) {
@@ -578,6 +825,9 @@ function getPerfilActual() {
     return perfilCache;
 }
 
+// ================================================================
+// CORRECCIÓN 1: guardarEstadoConexion() - conexion_senal (sin ñ)
+// ================================================================
 async function guardarEstadoConexion(estado) {
     try {
         const session = await getSession();
@@ -589,7 +839,7 @@ async function guardarEstadoConexion(estado) {
                 conexion_tipo: estado.tipo,
                 conexion_activa: estado.activa,
                 conexion_velocidad: estado.velocidad,
-                conexion_señal: estado.señal
+                conexion_senal: estado.señal
             })
             .eq('id', session.user.id);
 
@@ -753,9 +1003,6 @@ function mostrarSinESIM() {
     }
 }
 
-/**
- * Cargar datos reales de eSIM desde el backend
- */
 async function cargarDatosESIM(iccid) {
     if (!iccid) {
         console.warn('⚠️ No hay ICCID para cargar datos eSIM');
@@ -817,9 +1064,6 @@ async function cargarDatosESIM(iccid) {
     }
 }
 
-/**
- * Fallback: Cargar datos locales de Supabase
- */
 async function cargarDatosESIMLocal(iccid) {
     try {
         const session = await getSession();
@@ -849,9 +1093,6 @@ async function cargarDatosESIMLocal(iccid) {
     }
 }
 
-/**
- * Sincronizar eSIM manualmente con Telnyx
- */
 async function sincronizarESIM() {
     try {
         const session = await getSession();
@@ -885,9 +1126,6 @@ async function sincronizarESIM() {
     }
 }
 
-/**
- * Comprar eSIM
- */
 async function comprarESIM(planId) {
     try {
         const session = await getSession();
@@ -939,9 +1177,6 @@ async function comprarESIM(planId) {
     }
 }
 
-/**
- * Activar eSIM
- */
 async function activarESIM(iccid) {
     try {
         const session = await getSession();
@@ -982,9 +1217,6 @@ async function activarESIM(iccid) {
     }
 }
 
-/**
- * Desactivar eSIM
- */
 async function desactivarESIM(iccid) {
     try {
         const session = await getSession();
@@ -1027,9 +1259,6 @@ async function desactivarESIM(iccid) {
     }
 }
 
-/**
- * Generar QR de activación eSIM
- */
 async function generarQRESIM(iccid) {
     try {
         const iccidParam = iccid || perfilCache?.esim_iccid;
@@ -1045,9 +1274,6 @@ async function generarQRESIM(iccid) {
     }
 }
 
-/**
- * Obtener estado de eSIM
- */
 async function obtenerEstadoESIM() {
     try {
         const session = await getSession();
@@ -1068,9 +1294,6 @@ async function obtenerEstadoESIM() {
     }
 }
 
-/**
- * Obtener planes eSIM
- */
 async function obtenerPlanesESIM() {
     try {
         const { data, error } = await supabase
@@ -1658,6 +1881,10 @@ function animarContador(elemento, inicio, fin) {
 // ================================================================
 // WALLET
 // ================================================================
+
+// ================================================================
+// CORRECCIÓN 2: conectarWallet() - Ahora envía p_chain_id y p_network_name
+// ================================================================
 async function conectarWallet() {
     if (typeof window.ethereum === 'undefined') {
         showToast('⚠️ Instala MetaMask para conectar tu wallet', 'error');
@@ -1700,7 +1927,12 @@ async function conectarWallet() {
             }
         }
 
-        const { error } = await supabase.rpc('vincular_wallet', { p_wallet_address: cuenta });
+        // CORREGIDO: Ahora incluye p_chain_id y p_network_name
+        const { error } = await supabase.rpc('vincular_wallet', { 
+            p_wallet_address: cuenta,
+            p_chain_id: chainId,
+            p_network_name: ENV.networkName
+        });
         if (error) throw error;
 
         const walletDisplay = document.getElementById('walletDisplay');
@@ -2246,13 +2478,18 @@ async function comentarPublicacion(postId, contenido) {
 }
 
 // ================================================================
-// SISTEMA DE AMIGOS
+// SISTEMA DE AMIGOS - SOLICITUDES MEJORADA
 // ================================================================
 async function agregarAmigo(amigoId) {
     try {
         const session = await getSession();
         if (!session) {
             showToast('⚠️ Inicia sesión para agregar amigos', 'error');
+            return;
+        }
+
+        if (amigoId === session.user.id) {
+            showToast('⚠️ No puedes agregarte a ti mismo', 'warning');
             return;
         }
 
@@ -2274,10 +2511,11 @@ async function agregarAmigo(amigoId) {
         }
 
         showToast('🤝 Solicitud de amistad enviada', 'success');
+        await cargarSolicitudesPendientes();
         
     } catch (error) {
         console.error('Error al agregar amigo:', error);
-        showToast('❌ No se pudo enviar la solicitud', 'error');
+        showToast('❌ No se pudo enviar la solicitud: ' + error.message, 'error');
     }
 }
 
@@ -2483,6 +2721,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     iniciarEscuchaAmigos();
     iniciarDetectorInactividad();
     await cargarHistorialQR();
+    await cargarSolicitudesPendientes();
 
     if (perfilCache?.esim_iccid) {
         setInterval(() => {
@@ -2646,3 +2885,10 @@ window.cerrarCamaraQR = cerrarCamaraQR;
 window.cargarHistorialQR = cargarHistorialQR;
 window.actualizarUIHistorialQR = actualizarUIHistorialQR;
 window.procesarQR = procesarQR;
+
+// Funciones del sistema de amistades
+window.obtenerSolicitudesPendientes = obtenerSolicitudesPendientes;
+window.aceptarSolicitudAmistad = aceptarSolicitudAmistad;
+window.rechazarSolicitudAmistad = rechazarSolicitudAmistad;
+window.cargarSolicitudesPendientes = cargarSolicitudesPendientes;
+window.actualizarUISolicitudes = actualizarUISolicitudes;
