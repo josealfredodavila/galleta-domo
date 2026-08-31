@@ -13,6 +13,11 @@ const SUPABASE_ANON_KEY = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';  // 
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ================================================================
+// EXPONER SUPABASE GLOBALMENTE PARA index.html Y OTROS SCRIPTS
+// ================================================================
+window.supabase = supabaseClient;
+
+// ================================================================
 // VARIABLES GLOBALES
 // ================================================================
 let usuarioActual = null;
