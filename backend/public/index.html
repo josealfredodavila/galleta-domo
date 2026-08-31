@@ -437,7 +437,7 @@
 
     <script>
         // ================================================================
-        // CONFIGURACIÓN SUPABASE - USAR LA INSTANCIA GLOBAL DE app.js
+        // CONFIGURACIÓN SUPABASE - app.js YA LA DECLARA COMO window.supabase
         // ================================================================
 
         let currentUser = null;
@@ -446,8 +446,7 @@
         let userHasNft = false;
         let isRegistering = false;
 
-        // ✅ Usar la instancia global que app.js expone como window.supabase
-        const supabase = window.supabase;
+        // ✅ NO DECLARAMOS supabase - usamos window.supabase directamente
 
         // ================================================================
         // TOAST
@@ -475,16 +474,16 @@
         }
 
         // ================================================================
-        // SESIÓN
+        // SESIÓN - usando window.supabase
         // ================================================================
         async function checkSession() {
-            if (!supabase) {
-                console.error('❌ supabase no está disponible');
+            if (!window.supabase) {
+                console.error('❌ window.supabase no está disponible');
                 mostrarErrorEnPantalla('Supabase no está disponible. Revisa la carga de app.js');
                 return;
             }
 
-            const { data: { session }, error } = await supabase.auth.getSession();
+            const { data: { session }, error } = await window.supabase.auth.getSession();
             if (error) {
                 console.error('Error checking session:', error);
                 return;
@@ -518,7 +517,6 @@
             const name = document.getElementById('regName').value.trim();
             const btn = document.querySelector('#registerCard .btn-gold');
 
-            // Loader inmediato
             btn.disabled = true;
             btn.textContent = '⏳ Procesando...';
 
@@ -544,7 +542,7 @@
             isRegistering = true;
 
             try {
-                const { data, error } = await supabase.auth.signUp({
+                const { data, error } = await window.supabase.auth.signUp({
                     email: email,
                     password: password,
                     options: { 
@@ -593,7 +591,6 @@
             const password = document.getElementById('loginPassword').value.trim();
             const btn = document.querySelector('#loginCard .btn-gold');
 
-            // Loader inmediato
             btn.disabled = true;
             btn.textContent = '⏳ Entrando...';
 
@@ -605,7 +602,7 @@
             }
 
             try {
-                const { data, error } = await supabase.auth.signInWithPassword({
+                const { data, error } = await window.supabase.auth.signInWithPassword({
                     email: email,
                     password: password
                 });
@@ -632,7 +629,7 @@
         // ================================================================
         async function cerrarSesion() {
             try {
-                await supabase.auth.signOut();
+                await window.supabase.auth.signOut();
                 currentUser = null;
                 showToast('🔌 Sesión cerrada', 'success');
                 await checkSession();
@@ -653,7 +650,7 @@
         }
 
         // ================================================================
-        // CARGAR DATOS DEL USUARIO - SOLO RPC
+        // CARGAR DATOS DEL USUARIO
         // ================================================================
         async function loadUserData() {
             if (!currentUser) {
@@ -665,7 +662,7 @@
             }
 
             try {
-                const { data, error } = await supabase.rpc('obtener_mi_perfil');
+                const { data, error } = await window.supabase.rpc('obtener_mi_perfil');
 
                 if (error) {
                     console.error('Error en obtener_mi_perfil:', error);
@@ -724,7 +721,7 @@
         }
 
         // ================================================================
-        // COMPRAR DOMO - RPC REAL
+        // COMPRAR DOMO
         // ================================================================
         async function comprarDomo() {
             if (!currentUser) {
@@ -738,7 +735,7 @@
             btn.textContent = '⏳ Procesando...';
 
             try {
-                const { data, error } = await supabase.rpc('comprar_domo', {
+                const { data, error } = await window.supabase.rpc('comprar_domo', {
                     p_cantidad: qty
                 });
 
@@ -797,8 +794,8 @@
 
             checkSession();
 
-            if (supabase) {
-                supabase.auth.onAuthStateChange((event, session) => {
+            if (window.supabase) {
+                window.supabase.auth.onAuthStateChange((event, session) => {
                     if (event === 'SIGNED_IN' && session) {
                         currentUser = session.user;
                         document.getElementById('userEmail').textContent = currentUser.email || 'Usuario';
