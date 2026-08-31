@@ -1,0 +1,1404 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>◈ Perfil · Sariel's</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --gold: #D4AF37;
+            --gold-dark: #b8923a;
+            --gold-light: #e8c84a;
+            --gold-bright: #f0d060;
+            --green-deep: #0F2D1A;
+            --green-mid: #1a4a2a;
+            --green-bright: #2a6a3a;
+            --space: #05080f;
+            --text-primary: #f0f4f8;
+            --text-secondary: #c0d8e8;
+            --text-muted: #8aa8b8;
+            --glass-bg: rgba(15, 45, 26, 0.55);
+            --glass-border: rgba(212, 175, 55, 0.15);
+            --shadow-gold: 0 8px 32px rgba(212, 175, 55, 0.25);
+            --shadow-gold-strong: 0 0 60px rgba(212, 175, 55, 0.15);
+            --radius: 16px;
+            --radius-xl: 24px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --success: #00d68f;
+            --danger: #ff3366;
+            --warning: #f7d44a;
+            --cyan: #00e5ff;
+            --purple: #a855f7;
+            --pink: #ec4899;
+            --bronze: #CD7F32;
+            --bronze-light: #D4A574;
+            --bronze-dark: #8B5A2B;
+            --bg-card: rgba(15, 45, 26, 0.4);
+            --bg-dark: rgba(5, 8, 15, 0.8);
+            --border-color: rgba(212, 175, 55, 0.08);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: var(--space);
+            color: var(--text-primary);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            min-height: 100vh;
+            line-height: 1.6;
+            background-image: 
+                radial-gradient(ellipse at 20% 50%, rgba(26, 74, 42, 0.4) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 50%, rgba(212, 175, 55, 0.08) 0%, transparent 60%);
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        #stars-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .nebula {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(120px);
+            opacity: 0.12;
+            pointer-events: none;
+            z-index: 0;
+            animation: nebula-drift 25s ease-in-out infinite alternate;
+        }
+        .nebula-1 { width: 700px; height: 700px; background: var(--green-bright); top: -15%; right: -15%; }
+        .nebula-2 { width: 600px; height: 600px; background: var(--gold-light); bottom: -15%; left: -15%; animation-delay: -8s; opacity: 0.06; }
+        .nebula-3 { width: 500px; height: 500px; background: var(--purple); top: 50%; left: 50%; transform: translate(-50%, -50%); animation-delay: -15s; opacity: 0.04; }
+
+        @keyframes nebula-drift {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(40px, -30px) scale(1.15); }
+        }
+
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: var(--space); }
+        ::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 2px; }
+
+        .app {
+            position: relative;
+            z-index: 1;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 16px 20px 30px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0 14px;
+            border-bottom: 1px solid var(--glass-border);
+            flex-wrap: wrap;
+            gap: 10px;
+            background: rgba(5, 8, 15, 0.92);
+            border-radius: var(--radius) var(--radius) 0 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+        .logo-hex { font-size: 1.8rem; color: var(--gold); font-weight: 800; font-family: 'Orbitron', monospace; text-shadow: 0 0 30px rgba(212, 175, 55, 0.3); animation: glow-pulse 3s ease-in-out infinite; }
+        @keyframes glow-pulse {
+            0%, 100% { text-shadow: 0 0 30px rgba(212, 175, 55, 0.3); }
+            50% { text-shadow: 0 0 60px rgba(212, 175, 55, 0.6); }
+        }
+        .logo-text { font-family: 'Orbitron', monospace; font-size: 1.2rem; font-weight: 700; color: var(--text-primary); letter-spacing: 2px; }
+        .logo-text span { color: var(--gold); }
+        .logo-badge { font-size: 0.45rem; background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: var(--space); padding: 2px 10px; border-radius: 20px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
+        .network-badge { display: flex; align-items: center; gap: 6px; font-size: 0.6rem; color: var(--gold); background: rgba(212, 175, 55, 0.1); padding: 4px 12px; border-radius: 20px; border: 1px solid rgba(212, 175, 55, 0.15); }
+        .network-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); animation: pulse-dot 2s infinite; }
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.3; transform: scale(0.8); }
+        }
+
+        .main-nav {
+            display: flex;
+            gap: 4px;
+            background: rgba(15, 45, 26, 0.3);
+            border-radius: var(--radius);
+            padding: 4px;
+            border: 1px solid var(--glass-border);
+            margin: 16px 0 20px;
+            overflow-x: auto;
+        }
+        .main-nav .nav-link {
+            padding: 8px 16px;
+            border-radius: 12px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.7rem;
+            font-weight: 500;
+            transition: var(--transition);
+            white-space: nowrap;
+            position: relative;
+        }
+        .main-nav .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: 2px;
+            left: 50%;
+            width: 0;
+            height: 2px;
+            background: var(--gold);
+            transition: var(--transition);
+            transform: translateX(-50%);
+        }
+        .main-nav .nav-link:hover::after, .main-nav .nav-link.active::after { width: 60%; }
+        .main-nav .nav-link:hover { color: var(--text-primary); background: rgba(212, 175, 55, 0.05); }
+        .main-nav .nav-link.active { background: rgba(212, 175, 55, 0.12); color: var(--gold); }
+        .main-nav .nav-link.live { color: var(--danger); }
+
+        .perfil-container { max-width: 1100px; margin: 0 auto; }
+
+        .perfil-header {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-xl);
+            padding: 24px 28px;
+            margin-bottom: 24px;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            flex-wrap: wrap;
+            position: relative;
+            overflow: hidden;
+        }
+        .perfil-header::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(135deg, var(--gold), var(--green-deep), var(--gold));
+            background-size: 300% 300%;
+            border-radius: var(--radius-xl);
+            z-index: -1;
+            opacity: 0.1;
+            animation: border-flow 6s ease-in-out infinite;
+        }
+        @keyframes border-flow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .perfil-header .avatar-container { position: relative; flex-shrink: 0; }
+        .perfil-header .avatar {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--green-deep), var(--gold));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.4rem;
+            font-weight: 700;
+            color: white;
+            overflow: hidden;
+            border: 3px solid var(--gold);
+            box-shadow: 0 0 40px rgba(212, 175, 55, 0.15);
+            font-family: 'Orbitron', monospace;
+        }
+        .perfil-header .avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .perfil-header .avatar .edit-badge {
+            position: absolute;
+            bottom: 4px;
+            right: 4px;
+            background: var(--gold);
+            border-radius: 50%;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.65rem;
+            color: var(--space);
+            border: 2px solid var(--space);
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+        }
+
+        .perfil-header .info { flex: 1; min-width: 200px; }
+        .perfil-header .info .nombre {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.4rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--gold), var(--text-primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .perfil-header .info .nombre .verified {
+            font-size: 0.5rem;
+            background: rgba(212, 175, 55, 0.15);
+            color: var(--gold);
+            padding: 2px 12px;
+            border-radius: 12px;
+            font-family: 'Orbitron', monospace;
+            border: 1px solid rgba(212, 175, 55, 0.1);
+            -webkit-text-fill-color: var(--gold);
+        }
+        .perfil-header .info .handle { font-size: 0.85rem; color: var(--text-muted); letter-spacing: 0.5px; }
+        .perfil-header .info .bio { font-size: 0.9rem; color: var(--text-secondary); margin-top: 6px; max-width: 500px; line-height: 1.5; }
+        .perfil-header .info .badges { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+        .perfil-header .info .badges .badge {
+            font-size: 0.55rem;
+            padding: 3px 14px;
+            border-radius: 20px;
+            font-family: 'Orbitron', monospace;
+            border: 1px solid var(--glass-border);
+            color: var(--text-muted);
+            background: rgba(255, 255, 255, 0.03);
+        }
+        .perfil-header .info .badges .badge.gold { border-color: var(--gold); color: var(--gold); background: rgba(212, 175, 55, 0.05); }
+        .perfil-header .info .badges .badge.success { border-color: var(--success); color: var(--success); background: rgba(0, 214, 143, 0.05); }
+
+        .perfil-header .stats { display: flex; gap: 24px; flex-wrap: wrap; margin-left: auto; }
+        .perfil-header .stats .stat { text-align: center; }
+        .perfil-header .stats .stat .number {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--gold);
+            text-shadow: 0 0 20px rgba(212, 175, 55, 0.05);
+        }
+        .perfil-header .stats .stat .label { font-size: 0.55rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-family: 'Orbitron', monospace; }
+        .perfil-header .acciones { display: flex; gap: 8px; flex-wrap: wrap; margin-left: 10px; }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 20px;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: var(--transition);
+            font-family: 'Inter', sans-serif;
+        }
+        .btn-gold { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); box-shadow: 0 4px 20px rgba(212, 175, 55, 0.2); }
+        .btn-gold:hover { transform: translateY(-2px); box-shadow: var(--shadow-gold); }
+        .btn-outline { background: transparent; color: var(--text-secondary); border: 1px solid var(--glass-border); }
+        .btn-outline:hover { border-color: var(--gold); color: var(--gold); box-shadow: 0 0 20px rgba(212, 175, 55, 0.1); }
+        .btn-sm { padding: 4px 12px; font-size: 0.65rem; }
+        .btn-danger { background: rgba(255, 51, 102, 0.1); color: var(--danger); border: 1px solid rgba(255, 51, 102, 0.2); }
+        .btn-danger:hover { background: rgba(255, 51, 102, 0.2); }
+        .btn-crypto {
+            background: linear-gradient(135deg, #00ff88, #00b894);
+            color: var(--space);
+            box-shadow: 0 4px 20px rgba(0, 255, 136, 0.2);
+        }
+        .btn-crypto:hover { transform: translateY(-2px); box-shadow: 0 0 40px rgba(0, 255, 136, 0.3); }
+
+        .perfil-tabs {
+            display: flex;
+            gap: 4px;
+            background: var(--glass-bg);
+            border-radius: var(--radius);
+            padding: 4px;
+            border: 1px solid var(--glass-border);
+            margin-bottom: 20px;
+            overflow-x: auto;
+        }
+        .perfil-tabs .tab-btn {
+            padding: 10px 20px;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.7rem;
+            font-weight: 600;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: var(--transition);
+            white-space: nowrap;
+        }
+        .perfil-tabs .tab-btn.active { background: rgba(212, 175, 55, 0.12); color: var(--gold); box-shadow: 0 0 20px rgba(212, 175, 55, 0.05); }
+
+        .tab-content { display: none; animation: fadeIn 0.3s ease; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .panel {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            transition: var(--transition);
+            margin-bottom: 16px;
+        }
+        .panel-header {
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(212, 175, 55, 0.03);
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .panel-header h3 { font-size: 0.85rem; font-weight: 600; color: var(--gold); }
+        .panel-badge { font-size: 0.6rem; background: rgba(212, 175, 55, 0.12); color: var(--gold); padding: 2px 12px; border-radius: 20px; font-weight: 600; text-transform: uppercase; border: 1px solid rgba(212, 175, 55, 0.08); }
+        .panel-body { padding: 18px; }
+
+        /* ===== SECCIÓN DE CONEXIÓN ===== */
+        .conexion-section {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            padding: 15px;
+            margin-top: 15px;
+        }
+        .conexion-section .conexion-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .conexion-section .conexion-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .conexion-section .conexion-info .status {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        .conexion-section .conexion-info .velocidad {
+            color: var(--text-muted);
+            font-size: 0.7rem;
+        }
+        .conexion-section .conexion-info .señal {
+            font-size: 0.7rem;
+        }
+        .conexion-buttons {
+            display: flex;
+            gap: 8px;
+        }
+        .conexion-buttons .btn-conexion {
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            border: 1px solid var(--glass-border);
+            background: transparent;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .conexion-buttons .btn-conexion:hover {
+            border-color: var(--gold);
+            color: var(--gold);
+        }
+        .conexion-buttons .btn-conexion.active {
+            border-color: var(--gold);
+            background: rgba(212, 175, 55, 0.15);
+            color: var(--gold);
+        }
+        .conexion-buttons .btn-conexion.wifi.active {
+            border-color: var(--success);
+            background: rgba(0, 214, 143, 0.1);
+            color: var(--success);
+        }
+        .conexion-buttons .btn-conexion.datos.active {
+            border-color: var(--cyan);
+            background: rgba(0, 229, 255, 0.1);
+            color: var(--cyan);
+        }
+
+        /* ===== SECCIÓN DE ESTADO ===== */
+        .estado-section {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            padding: 15px;
+            margin-top: 15px;
+        }
+        .estado-section .estado-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .estado-section .estado-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .estado-section .estado-info .badge {
+            font-size: 1.2rem;
+        }
+        .estado-section .estado-info .texto {
+            font-weight: 600;
+        }
+        .estado-section .estado-info .amigos-online {
+            font-size: 0.6rem;
+            color: var(--text-muted);
+        }
+        .estado-buttons {
+            display: flex;
+            gap: 8px;
+        }
+        .estado-buttons .btn-estado {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.6rem;
+            font-weight: 600;
+            border: 1px solid var(--glass-border);
+            background: transparent;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .estado-buttons .btn-estado:hover {
+            border-color: var(--gold);
+            color: var(--gold);
+        }
+        .estado-buttons .btn-estado.online {
+            border-color: var(--success);
+            color: var(--success);
+        }
+        .estado-buttons .btn-estado.online:hover {
+            background: rgba(0, 214, 143, 0.1);
+        }
+        .estado-buttons .btn-estado.offline {
+            border-color: var(--text-muted);
+            color: var(--text-muted);
+        }
+        .estado-buttons .btn-estado.offline:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        /* ===== SOLICITUDES PENDIENTES ===== */
+        #solicitudesSection {
+            margin-top: 10px;
+            padding: 10px 0;
+        }
+        #solicitudesSection h4 {
+            color: var(--gold);
+            font-size: 0.85rem;
+            margin-bottom: 8px;
+        }
+
+        /* ===== LISTA DE AMIGOS ===== */
+        #amigosContainer {
+            margin-top: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        #amigosContainer .amigo-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            border-radius: 10px;
+            border: 1px solid var(--glass-border);
+            transition: var(--transition);
+            cursor: pointer;
+        }
+        #amigosContainer .amigo-item:hover {
+            background: rgba(212, 175, 55, 0.05);
+        }
+        #amigosContainer .amigo-item.online {
+            border-color: rgba(0, 214, 143, 0.2);
+            background: rgba(0, 214, 143, 0.05);
+        }
+        #amigosContainer .amigo-item .avatar-mini {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 2px solid var(--text-muted);
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            background: var(--bg-card);
+        }
+        #amigosContainer .amigo-item.online .avatar-mini {
+            border-color: var(--success);
+        }
+        #amigosContainer .amigo-item .avatar-mini img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        #amigosContainer .amigo-item .info {
+            flex: 1;
+            min-width: 0;
+        }
+        #amigosContainer .amigo-item .info .nombre {
+            font-weight: 600;
+            font-size: 0.8rem;
+        }
+        #amigosContainer .amigo-item .info .estado {
+            font-size: 0.6rem;
+        }
+        #amigosContainer .amigo-item .badge-online {
+            background: rgba(0, 214, 143, 0.1);
+            border: 1px solid rgba(0, 214, 143, 0.2);
+            border-radius: 20px;
+            padding: 2px 10px;
+            font-size: 0.5rem;
+            color: var(--success);
+            font-weight: 600;
+        }
+
+        .activity-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.04);
+            transition: var(--transition);
+        }
+        .activity-item:hover { background: rgba(255, 255, 255, 0.02); padding-left: 8px; border-radius: 8px; }
+        .activity-item .icon { font-size: 1.2rem; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: rgba(212, 175, 55, 0.05); flex-shrink: 0; }
+        .activity-item .content { flex: 1; }
+        .activity-item .content .text { font-size: 0.85rem; color: var(--text-secondary); }
+        .activity-item .content .text strong { color: var(--text-primary); }
+        .activity-item .content .fecha { font-size: 0.6rem; color: var(--text-muted); margin-top: 2px; }
+
+        .token-status { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; }
+        .token-status .item { background: rgba(0, 0, 0, 0.2); border: 1px solid var(--glass-border); border-radius: 12px; padding: 14px; text-align: center; transition: var(--transition); }
+        .token-status .item:hover { border-color: var(--gold); transform: translateY(-2px); }
+        .token-status .item .value { font-family: 'Orbitron', monospace; font-size: 1.3rem; font-weight: 700; color: var(--gold); }
+        .token-status .item .label { font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-family: 'Orbitron', monospace; }
+
+        .progress-bar-container { margin-top: 16px; }
+        .progress-bar-container .bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .progress-bar-container .bar .fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--gold), var(--gold-light));
+            border-radius: 10px;
+            transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .progress-bar-container .label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+            font-family: 'Orbitron', monospace;
+        }
+
+        .config-group { margin-bottom: 16px; }
+        .config-group label { display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px; font-weight: 500; letter-spacing: 0.3px; }
+        .config-group input, .config-group textarea {
+            width: 100%;
+            padding: 10px 14px;
+            background: rgba(0, 0, 0, 0.25);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            outline: none;
+            transition: var(--transition);
+            font-family: 'Inter', sans-serif;
+        }
+        .config-group input:focus, .config-group textarea:focus { border-color: var(--gold); box-shadow: 0 0 30px rgba(212, 175, 55, 0.05); background: rgba(0, 0, 0, 0.35); }
+        .config-group textarea { resize: vertical; min-height: 80px; }
+        .config-group .hint { font-size: 0.6rem; color: var(--text-muted); margin-top: 4px; }
+
+        .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); }
+        .empty-state .icon { font-size: 2.5rem; display: block; margin-bottom: 12px; font-family: 'Orbitron', monospace; color: var(--gold); opacity: 0.3; }
+        .empty-state h4 { font-family: 'Orbitron', monospace; color: var(--text-secondary); font-size: 1rem; font-weight: 400; letter-spacing: 0.5px; }
+        .empty-state p { font-size: 0.8rem; }
+
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: var(--green-deep);
+            border: 1px solid var(--gold);
+            color: var(--gold);
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            box-shadow: var(--shadow-gold-strong);
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.4s ease;
+            z-index: 9999;
+            max-width: 400px;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.error { border-color: var(--danger); color: var(--danger); }
+        .toast.warning { border-color: var(--warning); color: var(--warning); }
+        .toast.success { border-color: var(--success); color: var(--success); }
+
+        .footer { margin-top: 30px; padding-top: 16px; border-top: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; font-size: 0.7rem; color: var(--text-muted); padding-bottom: 8px; letter-spacing: 0.3px; }
+        .footer .brand { color: var(--gold); font-weight: 600; letter-spacing: 1px; }
+        .footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
+        .footer-links a { color: var(--text-muted); text-decoration: none; transition: var(--transition); }
+        .footer-links a:hover { color: var(--gold); }
+
+        /* ===== MODAL CRIPTO ===== */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(12px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            animation: fadeIn 0.3s ease-out;
+        }
+        .modal-overlay.active {
+            display: flex;
+        }
+        .modal-content {
+            background: linear-gradient(135deg, var(--bg-card), var(--bg-dark));
+            border: 2px solid var(--gold);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 480px;
+            width: 90%;
+            text-align: center;
+            animation: scaleIn 0.3s ease-out;
+            position: relative;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal-content .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .modal-content .close-btn:hover {
+            color: var(--text-primary);
+            transform: rotate(90deg);
+        }
+        .modal-content h2 {
+            color: var(--gold);
+            font-family: 'Orbitron', monospace;
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+        }
+        .modal-content .subtitle {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            margin-bottom: 16px;
+        }
+        .modal-content .qr-container {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            margin: 10px 0;
+            display: inline-block;
+        }
+        .modal-content .qr-container img {
+            max-width: 200px;
+            width: 100%;
+        }
+        .modal-content .address-box {
+            background: var(--bg-dark);
+            border-radius: 10px;
+            padding: 12px;
+            margin: 10px 0;
+            word-break: break-all;
+        }
+        .modal-content .address-box .label {
+            font-size: 0.6rem;
+            color: var(--text-muted);
+        }
+        .modal-content .address-box .address {
+            font-family: monospace;
+            font-size: 0.75rem;
+            color: var(--gold);
+            margin-top: 4px;
+        }
+        .modal-content .amount {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.4rem;
+            color: var(--gold);
+            margin: 10px 0;
+        }
+        .modal-content .actions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 12px;
+        }
+        .modal-content .status {
+            margin-top: 10px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            min-height: 20px;
+        }
+
+        /* ===== CRIPTO SECTION ===== */
+        .crypto-controls {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .crypto-controls .qty-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 4px 12px;
+            border-radius: 30px;
+            border: 1px solid var(--glass-border);
+        }
+        .crypto-controls .qty-group .qty-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: none;
+            background: transparent;
+            color: var(--text-primary);
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .crypto-controls .qty-group .qty-btn:hover {
+            background: rgba(212, 175, 55, 0.1);
+        }
+        .crypto-controls .qty-group .qty-value {
+            font-family: 'Orbitron', monospace;
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--gold);
+            min-width: 20px;
+            text-align: center;
+        }
+        .crypto-total {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.2rem;
+            color: var(--gold);
+            font-weight: 700;
+        }
+        .crypto-hint {
+            font-size: 0.55rem;
+            color: var(--text-muted);
+            margin-top: 6px;
+            text-align: center;
+        }
+
+        /* ===== QR SCANNER ===== */
+        #qrReaderContainer {
+            display: none;
+            margin-top: 10px;
+            text-align: center;
+        }
+        #qrReaderContainer video {
+            width: 100%;
+            max-width: 300px;
+            border-radius: 10px;
+            background: black;
+        }
+
+        @media (max-width: 768px) {
+            .app { padding: 12px 14px; }
+            .perfil-header { flex-direction: column; text-align: center; padding: 20px; }
+            .perfil-header .stats { margin-left: 0; justify-content: center; width: 100%; }
+            .perfil-header .acciones { margin-left: 0; justify-content: center; width: 100%; }
+            .perfil-tabs .tab-btn { font-size: 0.6rem; padding: 8px 14px; }
+            .main-nav .nav-link { font-size: 0.6rem; padding: 6px 10px; }
+            .header .logo-text { font-size: 1rem; }
+            .header .logo-hex { font-size: 1.4rem; }
+            .conexion-section .conexion-header { flex-direction: column; align-items: stretch; }
+            .estado-section .estado-header { flex-direction: column; align-items: stretch; }
+            .crypto-controls { flex-direction: column; }
+            .modal-content { padding: 20px; }
+        }
+        @media (max-width: 480px) {
+            .perfil-header .avatar { width: 70px; height: 70px; font-size: 1.8rem; }
+            .perfil-header .info .nombre { font-size: 1.1rem; }
+            .perfil-header .stats { gap: 16px; }
+            .main-nav .nav-link { font-size: 0.55rem; padding: 4px 8px; }
+            .modal-content .qr-container img { max-width: 150px; }
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="stars-canvas"></canvas>
+    <div class="nebula nebula-1"></div>
+    <div class="nebula nebula-2"></div>
+    <div class="nebula nebula-3"></div>
+
+    <div class="app">
+
+        <header class="header">
+            <a href="/" class="logo">
+                <span class="logo-hex">◈</span>
+                <span class="logo-text">Sariel<span>'s</span></span>
+                <span class="logo-badge">✦ WEB3</span>
+            </a>
+            <div class="header-actions">
+                <span class="network-badge"><span class="dot"></span> Polygon</span>
+            </div>
+        </header>
+
+        <nav class="main-nav">
+            <a href="/" class="nav-link">⌂ Inicio</a>
+            <a href="/features/muro/muro.html" class="nav-link">◇ Muro</a>
+            <a href="/features/perfil/perfil.html" class="nav-link active">◆ Perfil</a>
+            <a href="/features/mensajes/contactos.html" class="nav-link">◈ Contactos</a>
+            <a href="/features/live/live.html" class="nav-link live">◉ Live</a>
+            <a href="/features/internet/internet.html" class="nav-link">◈ Internet</a>
+        </nav>
+
+        <div class="perfil-container">
+
+            <!-- ===== PERFIL HEADER ===== -->
+            <div class="perfil-header" id="perfilHeader">
+                <div class="avatar-container">
+                    <div class="avatar" id="perfilAvatar">
+                        ◈
+                        <span class="edit-badge" onclick="abrirSelectorArchivo()" title="Cambiar avatar">✎</span>
+                    </div>
+                    <input type="file" id="fileInput" accept="image/*" style="display:none;" onchange="subirFoto(event)" />
+                </div>
+                <div class="info">
+                    <div class="nombre" id="perfilNombre">
+                        Explorador
+                        <span class="verified">✦ VERIFICADO</span>
+                    </div>
+                    <div class="handle" id="perfilHandle">@explorador</div>
+                    <div class="bio" id="perfilBio">Explorando el ecosistema Sariel's · WEB3 · Comunidad</div>
+                    <div class="badges">
+                        <span class="badge gold">✦ MIEMBRO</span>
+                        <span class="badge success">● ACTIVO</span>
+                        <span class="badge">◈ WEB3</span>
+                        <span class="badge" id="nivelUsuario" style="border-color:var(--purple);color:var(--purple);background:rgba(168,85,247,0.05);">🌱 Explorador</span>
+                    </div>
+                </div>
+                <div class="stats">
+                    <div class="stat">
+                        <div class="number" id="statTokens">0</div>
+                        <div class="label">◈ Tokens</div>
+                    </div>
+                    <div class="stat">
+                        <div class="number" id="statNFTS">0</div>
+                        <div class="label">◈ NFTs</div>
+                    </div>
+                    <div class="stat">
+                        <div class="number" id="statSeguidores">0</div>
+                        <div class="label">◈ Seguidores</div>
+                    </div>
+                    <div class="stat">
+                        <div class="number" id="statSiguiendo">0</div>
+                        <div class="label">◈ Siguiendo</div>
+                    </div>
+                </div>
+                <div class="acciones">
+                    <!-- ✅ CORREGIDO: editorPerfil → editarPerfil -->
+                    <button class="btn btn-gold btn-sm" onclick="editarPerfil()">✎ Editar perfil</button>
+                    <button class="btn btn-outline btn-sm" onclick="compartirPerfil()">◈ Compartir</button>
+                    <button class="btn btn-outline btn-sm" onclick="generarQRPerfil()">📱 QR</button>
+                </div>
+            </div>
+
+            <!-- ===== SECCIÓN DE ESTADO (ACTIVO/INACTIVO) ===== -->
+            <div class="estado-section">
+                <div class="estado-header">
+                    <div class="estado-info">
+                        <span class="badge" id="estadoBadge">🟢</span>
+                        <span class="texto" id="estadoTexto" style="color:var(--success);">Activo ahora</span>
+                        <span class="amigos-online">· <span id="amigosEnLineaContador">0</span> amigos en línea</span>
+                    </div>
+                    <div class="estado-buttons">
+                        <button class="btn-estado online" onclick="cambiarEstado(true)">🟢 Activo</button>
+                        <button class="btn-estado offline" onclick="cambiarEstado(false)">⭕ Inactivo</button>
+                    </div>
+                </div>
+
+                <!-- ===== SOLICITUDES PENDIENTES ===== -->
+                <div id="solicitudesSection">
+                    <h4>📨 Solicitudes pendientes <span id="solicitudesContador" style="font-size:0.7rem;color:var(--warning);">0</span></h4>
+                    <div id="solicitudesContainer" style="max-height: 200px; overflow-y: auto;">
+                        <div style="text-align:center; padding:10px; color:var(--text-muted); font-size:0.7rem;">
+                            <span style="font-size:1.2rem;">✅</span>
+                            <p>No tienes solicitudes pendientes</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lista de amigos -->
+                <div id="amigosContainer"></div>
+            </div>
+
+            <!-- ===== SECCIÓN DE CONEXIÓN (WiFi/Datos) ===== -->
+            <div class="conexion-section">
+                <div class="conexion-header">
+                    <div class="conexion-info">
+                        <span class="status" id="conexionStatus">🛜 WiFi</span>
+                        <span class="velocidad" id="conexionVelocidad">0 Mbps</span>
+                        <span class="señal" id="conexionSeñal" style="color:var(--success);">████</span>
+                    </div>
+                    <div class="conexion-buttons">
+                        <button class="btn-conexion wifi active" id="btnWifi" onclick="cambiarConexion('wifi')">🛜 WiFi</button>
+                        <button class="btn-conexion datos" id="btnDatos" onclick="cambiarConexion('datos')">📶 Datos</button>
+                    </div>
+                </div>
+                <div style="font-size:0.6rem;color:var(--text-muted);margin-top:6px;">
+                    Conexión: <span id="conexionTipo">🛜 WiFi</span>
+                    · Operador: <span id="conexionOperador">Sariel's Net</span>
+                </div>
+            </div>
+
+            <!-- ===== TABS ===== -->
+            <div class="perfil-tabs">
+                <button class="tab-btn active" onclick="cambiarTab('actividad')">◈ Actividad</button>
+                <button class="tab-btn" onclick="cambiarTab('tokens')">⟡ Tokens</button>
+                <button class="tab-btn" onclick="cambiarTab('config')">◆ Configuración</button>
+                <button class="tab-btn" onclick="cambiarTab('esim')">📱 eSIM</button>
+                <button class="tab-btn" onclick="cambiarTab('qr')">📱 Escanear QR</button>
+            </div>
+
+            <!-- ===== TAB: ACTIVIDAD ===== -->
+            <div id="tab-actividad" class="tab-content active">
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3>◈ Última actividad</h3>
+                        <span class="panel-badge">En tiempo real</span>
+                    </div>
+                    <div class="panel-body" id="actividadList">
+                        <div class="empty-state">
+                            <span class="icon">◈</span>
+                            <h4>Sin actividad reciente</h4>
+                            <p>Comienza a interactuar en el Muro</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3>◈ Publicaciones</h3>
+                        <span class="panel-badge" id="postsCount">0</span>
+                    </div>
+                    <div class="panel-body" id="postsList">
+                        <div class="empty-state">
+                            <span class="icon">◈</span>
+                            <h4>Sin publicaciones</h4>
+                            <p>Publica algo en el Muro</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== TAB: TOKENS ===== -->
+            <div id="tab-tokens" class="tab-content">
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3>⟡ Estado de tokens</h3>
+                        <span class="panel-badge">Actualizado</span>
+                    </div>
+                    <div class="panel-body">
+                        <div class="token-status">
+                            <div class="item">
+                                <div class="value" id="tokenTotal">0</div>
+                                <div class="label">◈ Total tokens</div>
+                            </div>
+                            <div class="item">
+                                <div class="value" id="tokenDisponibles">0</div>
+                                <div class="label">◈ Disponibles</div>
+                            </div>
+                            <div class="item">
+                                <div class="value" id="tokenVendidos">0</div>
+                                <div class="label">◈ Vendidos</div>
+                            </div>
+                            <div class="item">
+                                <div class="value" id="tokenNFTs">0</div>
+                                <div class="label">◈ NFTs</div>
+                            </div>
+                        </div>
+
+                        <div class="progress-bar-container">
+                            <div class="bar">
+                                <div class="fill" id="progressFill" style="width: 0%;"></div>
+                            </div>
+                            <div class="label">
+                                <span>Progreso NFT</span>
+                                <span id="progressText">0 / 12</span>
+                            </div>
+                        </div>
+
+                        <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
+                            <button class="btn btn-gold" style="flex:1;justify-content:center;" onclick="comprarDomo(1)">
+                                ⟡ Comprar Domo (MXN)
+                            </button>
+                            <button class="btn btn-gold" style="flex:1;justify-content:center;" id="canjearNft" onclick="canjearNFT()" disabled>
+                                🔒 CANJEAR NFT
+                            </button>
+                        </div>
+
+                        <!-- ===== COMPRAR CON CRIPTO ===== -->
+                        <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--glass-border);">
+                            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+                                <span style="font-size:0.75rem;color:var(--gold);font-weight:600;">💳 Comprar con Cripto</span>
+                                <span style="font-size:0.55rem;color:var(--text-muted);">USDT / USDC · 2% comisión</span>
+                            </div>
+                            <div class="crypto-controls">
+                                <div class="qty-group">
+                                    <button class="qty-btn" id="cryptoDecreaseQty">−</button>
+                                    <span class="qty-value" id="cryptoQuantity">1</span>
+                                    <button class="qty-btn" id="cryptoIncreaseQty">+</button>
+                                </div>
+                                <div style="flex:1;text-align:center;">
+                                    <span class="crypto-total" id="cryptoTotal">$4.59 USDT</span>
+                                </div>
+                            </div>
+                            <button class="btn btn-crypto" style="width:100%;justify-content:center;margin-top:8px;padding:10px;" onclick="comprarConCripto()">
+                                💳 Pagar con USDT/USDC
+                            </button>
+                            <div class="crypto-hint">
+                                ⚡ Red: TRC-20 (tarifas bajas) · Acepta USDT y USDC
+                            </div>
+                        </div>
+
+                        <button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:8px;" onclick="irAMuro()">
+                            ◇ Ir al Muro
+                        </button>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3>◈ Historial de transacciones</h3>
+                        <span class="panel-badge" id="historialCount">0</span>
+                    </div>
+                    <div class="panel-body" id="historialList">
+                        <div class="empty-state">
+                            <span class="icon">◈</span>
+                            <h4>Sin transacciones</h4>
+                            <p>Compra domos para acumular tokens</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== TAB: CONFIGURACIÓN ===== -->
+            <div id="tab-config" class="tab-content">
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3>◆ Editar perfil</h3>
+                        <span class="panel-badge">Privado</span>
+                    </div>
+                    <div class="panel-body">
+                        <div class="config-group">
+                            <label>Nombre</label>
+                            <input type="text" id="editNombre" value="Explorador" />
+                        </div>
+                        <div class="config-group">
+                            <label>Handle</label>
+                            <input type="text" id="editHandle" value="explorador" />
+                        </div>
+                        <div class="config-group">
+                            <label>Biografía</label>
+                            <textarea id="editBio" rows="3">Explorando el ecosistema Sariel's · WEB3 · Comunidad</textarea>
+                        </div>
+                        <div class="config-group">
+                            <label>Foto de perfil</label>
+                            <button class="btn btn-outline" style="width:100%;" onclick="abrirSelectorArchivo()">📸 Subir foto</button>
+                            <div class="hint">◈ Sube una foto para personalizar tu perfil</div>
+                        </div>
+                        <button class="btn btn-gold" style="width:100%;justify-content:center;" onclick="guardarPerfil()">
+                            ◆ Guardar cambios
+                        </button>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3>◆ Seguridad</h3>
+                        <span class="panel-badge">Recomendado</span>
+                    </div>
+                    <div class="panel-body">
+                        <div class="config-group">
+                            <label>Wallet conectada</label>
+                            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                                <span id="walletDisplay" style="font-family:monospace;font-size:0.85rem;color:var(--text-secondary);">⚠️ No conectada</span>
+                                <button class="btn btn-gold btn-sm" onclick="conectarWallet()" id="btnConectarWallet">
+                                    ◈ Conectar
+                                </button>
+                                <button class="btn btn-danger btn-sm" onclick="desconectarWallet()" style="display:none;" id="btnDesconectarWallet">
+                                    ✕ Desconectar
+                                </button>
+                            </div>
+                            <div class="hint">◈ Conecta tu wallet para interactuar con el ecosistema</div>
+                            <div style="font-size:0.6rem;color:var(--text-muted);margin-top:4px;">
+                                Red: <span id="walletRed">Polygon Amoy</span>
+                            </div>
+                        </div>
+                        <button class="btn btn-danger" style="width:100%;justify-content:center;margin-top:8px;" onclick="cerrarSesion()">
+                            ✕ Cerrar sesión
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== TAB: eSIM ===== -->
+            <div id="tab-esim" class="tab-content">
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3>📱 Mi eSIM</h3>
+                        <span class="panel-badge">Telnyx</span>
+                    </div>
+                    <div class="panel-body">
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                            <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;border:1px solid var(--glass-border);">
+                                <span style="color:var(--text-muted);font-size:0.6rem;">ESTADO</span>
+                                <div id="esimStatus" style="font-weight:600;font-size:0.9rem;">⏳ Sin eSIM</div>
+                            </div>
+                            <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;border:1px solid var(--glass-border);">
+                                <span style="color:var(--text-muted);font-size:0.6rem;">DATOS USADOS</span>
+                                <div id="esimDataUsed" style="font-weight:600;font-size:0.9rem;">0 GB</div>
+                            </div>
+                            <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;border:1px solid var(--glass-border);">
+                                <span style="color:var(--text-muted);font-size:0.6rem;">LÍMITE</span>
+                                <div id="esimDataLimit" style="font-weight:600;font-size:0.9rem;">0 GB</div>
+                            </div>
+                            <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;border:1px solid var(--glass-border);">
+                                <span style="color:var(--text-muted);font-size:0.6rem;">RESTANTE</span>
+                                <div id="esimDataRestante" style="font-weight:600;font-size:0.9rem;color:var(--success);">0 GB</div>
+                            </div>
+                            <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;border:1px solid var(--glass-border);grid-column:span 2;">
+                                <span style="color:var(--text-muted);font-size:0.6rem;">ICCID</span>
+                                <div id="esimIccid" style="font-weight:600;font-size:0.8rem;font-family:monospace;">No asignado</div>
+                            </div>
+                        </div>
+
+                        <div style="margin-top:10px;">
+                            <div style="background:rgba(0,0,0,0.2);border-radius:10px;height:8px;overflow:hidden;">
+                                <div id="esimDataProgress" style="height:100%;width:0%;background:var(--success);transition:width 0.8s;"></div>
+                            </div>
+                        </div>
+
+                        <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
+                            <button class="btn btn-gold" style="flex:1;justify-content:center;padding:10px;" onclick="comprarESIM(1)">
+                                📱 Comprar eSIM
+                            </button>
+                            <button class="btn btn-outline" style="flex:1;justify-content:center;padding:10px;" onclick="generarQRESIM()">
+                                📲 QR Activación
+                            </button>
+                            <button class="btn btn-outline" style="flex:1;justify-content:center;padding:10px;" onclick="sincronizarESIM()">
+                                🔄 Sincronizar
+                            </button>
+                        </div>
+
+                        <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
+                            <button class="btn btn-outline btn-sm" onclick="activarESIM()" style="border-color:var(--success);color:var(--success);">
+                                ✅ Activar
+                            </button>
+                            <button class="btn btn-danger btn-sm" onclick="desactivarESIM()">
+                                ⛔ Desactivar
+                            </button>
+                        </div>
+
+                        <div style="margin-top:10px;font-size:0.6rem;color:var(--text-muted);">
+                            APN: <span id="esimApn" style="font-family:monospace;color:var(--text-secondary);">data00.telnyx</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== TAB: ESCANEAR QR ===== -->
+            <div id="tab-qr" class="tab-content">
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3>📱 Escanear QR</h3>
+                        <span class="panel-badge">Recibe Es.stoks</span>
+                    </div>
+                    <div class="panel-body">
+                        <div class="config-group">
+                            <label>Código del QR (escanea o escribe)</label>
+                            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                                <input type="text" id="qrInput" placeholder="Ej: DOMO-2025-ABC123" 
+                                       style="flex:1;padding:10px 14px;background:rgba(0,0,0,0.3);border:1px solid var(--glass-border);border-radius:10px;color:var(--text-primary);font-size:0.85rem;outline:none;">
+                                <button class="btn btn-gold" onclick="escanearQR()" id="btnEscanearQR">
+                                    🔍 Escanear QR
+                                </button>
+                            </div>
+                            <div class="hint">⚡ Escanea el QR de tu domo físico para recibir 1 Es.stok</div>
+                        </div>
+
+                        <button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:8px;" onclick="abrirCamaraQR()">
+                            📷 Escanear con cámara
+                        </button>
+
+                        <div id="qrReaderContainer">
+                            <video id="qrVideo" style="width:100%;max-width:300px;border-radius:10px;background:black;"></video>
+                            <canvas id="qrCanvas" style="display:none;"></canvas>
+                            <button class="btn btn-danger btn-sm" onclick="cerrarCamaraQR()" style="margin-top:8px;">
+                                ✕ Cerrar cámara
+                            </button>
+                            <div id="qrCamaraStatus" style="font-size:0.7rem;color:var(--text-muted);margin-top:4px;"></div>
+                        </div>
+
+                        <div id="qrStatus" style="margin-top:12px;font-size:0.8rem;color:var(--text-muted);min-height:24px;text-align:center;"></div>
+
+                        <div style="margin-top:16px;border-top:1px solid var(--glass-border);padding-top:12px;">
+                            <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.7rem;color:var(--text-muted);">
+                                <span>📋 Últimos escaneos</span>
+                                <span id="qrHistorialCount">0</span>
+                            </div>
+                            <div id="qrHistorialList" style="margin-top:8px;">
+                                <div class="empty-state" style="padding:10px;">
+                                    <span class="icon" style="font-size:1.5rem;">◈</span>
+                                    <p style="font-size:0.7rem;">Sin escaneos recientes</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <footer class="footer">
+            <span><span class="brand">◈ Sariel's</span> · Sabor al Paladar · WEB3</span>
+            <div class="footer-links">
+                <a href="/terminos">◈ Términos</a>
+                <a href="/privacidad">◈ Privacidad</a>
+                <a href="/cookies">◈ Cookies</a>
+                <a href="/live-terminos">◈ Términos Live</a>
+                <span style="opacity:0.3;">⚡ Polygon</span>
+            </div>
+        </footer>
+
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <!-- ===== MODAL DE PAGO CRIPTO ===== -->
+    <div class="modal-overlay" id="cryptoPaymentModal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="cerrarModalPago()">✕</button>
+            <h2>💳 Pagar con Cripto</h2>
+            <p class="subtitle">Escanea el QR o copia la dirección para pagar</p>
+            
+            <div class="qr-container">
+                <img id="cryptoQR" src="" alt="QR de pago" />
+            </div>
+
+            <div class="address-box">
+                <div class="label">📤 Dirección de pago</div>
+                <div class="address" id="cryptoAddress">Cargando dirección...</div>
+            </div>
+
+            <div class="amount">
+                <span id="cryptoMonto">0.00</span> <span id="cryptoMoneda">USDT</span>
+            </div>
+
+            <div class="actions">
+                <button class="btn btn-outline btn-sm" onclick="copiarDireccion()">📋 Copiar dirección</button>
+                <button class="btn btn-gold btn-sm" onclick="verificarPagoCrypto()">✅ Verificar pago</button>
+                <button class="btn btn-outline btn-sm" onclick="cerrarModalPago()">Cerrar</button>
+            </div>
+
+            <div class="status" id="cryptoStatus">⏳ Esperando confirmación de pago...</div>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- BANNER DE ERRORES VISIBLES EN PANTALLA                       -->
+    <!-- ============================================================ -->
+    <div id="errorBanner" style="
+        display:none; position:fixed; top:0; left:0; right:0; z-index:99999;
+        background:#ff3366; color:#fff; padding:12px 16px; font-family:monospace;
+        font-size:0.75rem; word-break:break-word; box-shadow:0 4px 20px rgba(0,0,0,0.4);
+    ">
+        <strong>⚠️ Error detectado:</strong>
+        <span id="errorBannerText"></span>
+        <button onclick="document.getElementById('errorBanner').style.display='none'"
+            style="float:right; background:none; border:1px solid #fff; color:#fff; border-radius:6px; padding:2px 10px; cursor:pointer;">
+            Cerrar
+        </button>
+    </div>
+
+    <script>
+        function mostrarErrorEnPantalla(mensaje) {
+            const banner = document.getElementById('errorBanner');
+            const texto = document.getElementById('errorBannerText');
+            if (banner && texto) {
+                texto.textContent = mensaje;
+                banner.style.display = 'block';
+            }
+        }
+
+        window.addEventListener('error', function (event) {
+            mostrarErrorEnPantalla(
+                (event.message || 'Error desconocido') +
+                ' — línea ' + event.lineno + ' de ' + (event.filename || 'este archivo')
+            );
+        });
+
+        window.addEventListener('unhandledrejection', function (event) {
+            mostrarErrorEnPantalla('Promesa rechazada: ' + (event.reason?.message || event.reason));
+        });
+
+        window.addEventListener('load', function () {
+            if (typeof window.supabase === 'undefined') {
+                mostrarErrorEnPantalla(
+                    'No se pudo cargar la conexión a la base de datos (Supabase). ' +
+                    'Revisa tu internet o si algo está bloqueando cdn.jsdelivr.net.'
+                );
+            }
+        });
+    </script>
+
+    <!-- ✅ SCRIPTS: Supabase + jsQR + app.js + perfil.js -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+    <script src="/app.js"></script>
+    <script src="/features/perfil/perfil.js"></script>
+</body>
+</html>
