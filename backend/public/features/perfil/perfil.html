@@ -1273,9 +1273,6 @@
                             📷 Escanear con cámara
                         </button>
 
-                        <!-- ============================================================ -->
-                        <!-- CAMBIO 2: Agregado canvas id="qrCanvas" dentro de qrReaderContainer -->
-                        <!-- ============================================================ -->
                         <div id="qrReaderContainer">
                             <video id="qrVideo" style="width:100%;max-width:300px;border-radius:10px;background:black;"></video>
                             <canvas id="qrCanvas" style="display:none;"></canvas>
@@ -1351,7 +1348,7 @@
     </div>
 
     <!-- ============================================================ -->
-    <!-- CAMBIO 1: BANNER DE ERRORES VISIBLES EN PANTALLA              -->
+    <!-- BANNER DE ERRORES VISIBLES EN PANTALLA                       -->
     <!-- ============================================================ -->
     <div id="errorBanner" style="
         display:none; position:fixed; top:0; left:0; right:0; z-index:99999;
@@ -1388,7 +1385,7 @@
         });
 
         window.addEventListener('load', function () {
-            if (typeof window.supabase === 'undefined' && typeof supabase === 'undefined') {
+            if (typeof window.supabase === 'undefined') {
                 mostrarErrorEnPantalla(
                     'No se pudo cargar la conexión a la base de datos (Supabase). ' +
                     'Revisa tu internet o si algo está bloqueando cdn.jsdelivr.net.'
@@ -1397,9 +1394,10 @@
         });
     </script>
 
-    <!-- ✅ SOLO SUPABASE - SIN WEB3 -->
+    <!-- ✅ SCRIPTS: Supabase + jsQR + app.js + perfil.js -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+    <script src="/app.js"></script>
     <script src="/features/perfil/perfil.js"></script>
 </body>
 </html>
