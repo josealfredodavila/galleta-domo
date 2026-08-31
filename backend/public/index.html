@@ -426,8 +426,7 @@
         });
 
         window.addEventListener('load', function () {
-            // Usar supabaseClient que app.js declara
-            if (typeof window.supabaseClient === 'undefined' && typeof supabaseClient === 'undefined') {
+            if (typeof window.supabase === 'undefined') {
                 mostrarErrorEnPantalla(
                     'No se pudo cargar la conexión a la base de datos (Supabase). ' +
                     'Revisa tu internet o si algo está bloqueando cdn.jsdelivr.net.'
@@ -438,7 +437,7 @@
 
     <script>
         // ================================================================
-        // CONFIGURACIÓN SUPABASE - app.js ya la declara como supabaseClient
+        // CONFIGURACIÓN SUPABASE - USAR LA INSTANCIA GLOBAL DE app.js
         // ================================================================
 
         let currentUser = null;
@@ -447,8 +446,8 @@
         let userHasNft = false;
         let isRegistering = false;
 
-        // Obtener referencia al cliente de Supabase (declarado en app.js)
-        const supabase = window.supabaseClient || supabaseClient;
+        // ✅ Usar la instancia global que app.js expone como window.supabase
+        const supabase = window.supabase;
 
         // ================================================================
         // TOAST
@@ -479,6 +478,12 @@
         // SESIÓN
         // ================================================================
         async function checkSession() {
+            if (!supabase) {
+                console.error('❌ supabase no está disponible');
+                mostrarErrorEnPantalla('Supabase no está disponible. Revisa la carga de app.js');
+                return;
+            }
+
             const { data: { session }, error } = await supabase.auth.getSession();
             if (error) {
                 console.error('Error checking session:', error);
@@ -792,31 +797,35 @@
 
             checkSession();
 
-            supabase.auth.onAuthStateChange((event, session) => {
-                if (event === 'SIGNED_IN' && session) {
-                    currentUser = session.user;
-                    document.getElementById('userEmail').textContent = currentUser.email || 'Usuario';
-                    document.getElementById('logoutBtn').style.display = 'inline-block';
-                    document.getElementById('registerCard').style.display = 'none';
-                    document.getElementById('loginCard').style.display = 'none';
-                    loadUserData();
-                } else if (event === 'SIGNED_OUT') {
-                    currentUser = null;
-                    userDomos = 0;
-                    userTokens = 0;
-                    userHasNft = false;
-                    document.getElementById('userEmail').textContent = 'No autenticado';
-                    document.getElementById('logoutBtn').style.display = 'none';
-                    document.getElementById('registerCard').style.display = 'block';
-                    document.getElementById('loginCard').style.display = 'none';
-                    actualizarEstado();
-                } else if (event === 'USER_UPDATED') {
-                    if (session) {
+            if (supabase) {
+                supabase.auth.onAuthStateChange((event, session) => {
+                    if (event === 'SIGNED_IN' && session) {
                         currentUser = session.user;
+                        document.getElementById('userEmail').textContent = currentUser.email || 'Usuario';
+                        document.getElementById('logoutBtn').style.display = 'inline-block';
+                        document.getElementById('registerCard').style.display = 'none';
+                        document.getElementById('loginCard').style.display = 'none';
                         loadUserData();
+                    } else if (event === 'SIGNED_OUT') {
+                        currentUser = null;
+                        userDomos = 0;
+                        userTokens = 0;
+                        userHasNft = false;
+                        document.getElementById('userEmail').textContent = 'No autenticado';
+                        document.getElementById('logoutBtn').style.display = 'none';
+                        document.getElementById('registerCard').style.display = 'block';
+                        document.getElementById('loginCard').style.display = 'none';
+                        actualizarEstado();
+                    } else if (event === 'USER_UPDATED') {
+                        if (session) {
+                            currentUser = session.user;
+                            loadUserData();
+                        }
                     }
-                }
-            });
+                });
+            } else {
+                mostrarErrorEnPantalla('⚠️ Supabase no está disponible. La app no funcionará correctamente.');
+            }
         });
 
         // ================================================================
