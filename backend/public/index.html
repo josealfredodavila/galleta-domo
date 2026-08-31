@@ -389,7 +389,7 @@
     <script src="/app.js"></script>
     
     <!-- ============================================================ -->
-    <!-- CAMBIO 1: BANNER DE ERRORES VISIBLES EN PANTALLA              -->
+    <!-- BANNER DE ERRORES VISIBLES EN PANTALLA                       -->
     <!-- ============================================================ -->
     <div id="errorBanner" style="
         display:none; position:fixed; top:0; left:0; right:0; z-index:99999;
@@ -426,7 +426,8 @@
         });
 
         window.addEventListener('load', function () {
-            if (typeof window.supabase === 'undefined') {
+            // Usar supabaseClient que app.js declara
+            if (typeof window.supabaseClient === 'undefined' && typeof supabaseClient === 'undefined') {
                 mostrarErrorEnPantalla(
                     'No se pudo cargar la conexión a la base de datos (Supabase). ' +
                     'Revisa tu internet o si algo está bloqueando cdn.jsdelivr.net.'
@@ -437,7 +438,7 @@
 
     <script>
         // ================================================================
-        // CONFIGURACIÓN SUPABASE - ELIMINADA (app.js ya la declara)
+        // CONFIGURACIÓN SUPABASE - app.js ya la declara como supabaseClient
         // ================================================================
 
         let currentUser = null;
@@ -445,6 +446,9 @@
         let userDomos = 0;
         let userHasNft = false;
         let isRegistering = false;
+
+        // Obtener referencia al cliente de Supabase (declarado en app.js)
+        const supabase = window.supabaseClient || supabaseClient;
 
         // ================================================================
         // TOAST
@@ -501,7 +505,7 @@
         }
 
         // ================================================================
-        // REGISTRO DE USUARIO - CORREGIDO
+        // REGISTRO DE USUARIO
         // ================================================================
         async function registrarUsuario() {
             const email = document.getElementById('regEmail').value.trim();
@@ -509,9 +513,7 @@
             const name = document.getElementById('regName').value.trim();
             const btn = document.querySelector('#registerCard .btn-gold');
 
-            // ============================================================
-            // CAMBIO 2: Loader inmediato en registrarUsuario()
-            // ============================================================
+            // Loader inmediato
             btn.disabled = true;
             btn.textContent = '⏳ Procesando...';
 
@@ -547,21 +549,16 @@
 
                 if (error) throw error;
 
-                // ✅ Caso 1: Sesión iniciada inmediatamente
                 if (data.session) {
                     currentUser = data.user;
                     showToast('✅ Cuenta creada. Sesión iniciada.', 'success');
                     await checkSession();
-                } 
-                // ✅ Caso 2: Requiere confirmación de email
-                else if (data.user) {
+                } else if (data.user) {
                     showToast('✅ Cuenta creada. Revisa tu correo para confirmar.', 'success');
                     document.getElementById('regEmail').value = '';
                     document.getElementById('regPassword').value = '';
                     document.getElementById('regName').value = '';
-                } 
-                // ✅ Caso 3: Respuesta inesperada
-                else {
+                } else {
                     showToast('⚠️ Cuenta creada, pero no se pudo iniciar sesión. Intenta iniciar sesión.', 'warning');
                 }
 
@@ -591,9 +588,7 @@
             const password = document.getElementById('loginPassword').value.trim();
             const btn = document.querySelector('#loginCard .btn-gold');
 
-            // ============================================================
-            // CAMBIO 3: Loader inmediato en iniciarSesion()
-            // ============================================================
+            // Loader inmediato
             btn.disabled = true;
             btn.textContent = '⏳ Entrando...';
 
