@@ -388,6 +388,53 @@
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <script src="/app.js"></script>
     
+    <!-- ============================================================ -->
+    <!-- CAMBIO 1: BANNER DE ERRORES VISIBLES EN PANTALLA              -->
+    <!-- ============================================================ -->
+    <div id="errorBanner" style="
+        display:none; position:fixed; top:0; left:0; right:0; z-index:99999;
+        background:#ff3366; color:#fff; padding:12px 16px; font-family:monospace;
+        font-size:0.75rem; word-break:break-word; box-shadow:0 4px 20px rgba(0,0,0,0.4);
+    ">
+        <strong>⚠️ Error detectado:</strong>
+        <span id="errorBannerText"></span>
+        <button onclick="document.getElementById('errorBanner').style.display='none'"
+            style="float:right; background:none; border:1px solid #fff; color:#fff; border-radius:6px; padding:2px 10px; cursor:pointer;">
+            Cerrar
+        </button>
+    </div>
+
+    <script>
+        function mostrarErrorEnPantalla(mensaje) {
+            const banner = document.getElementById('errorBanner');
+            const texto = document.getElementById('errorBannerText');
+            if (banner && texto) {
+                texto.textContent = mensaje;
+                banner.style.display = 'block';
+            }
+        }
+
+        window.addEventListener('error', function (event) {
+            mostrarErrorEnPantalla(
+                (event.message || 'Error desconocido') +
+                ' — línea ' + event.lineno + ' de ' + (event.filename || 'este archivo')
+            );
+        });
+
+        window.addEventListener('unhandledrejection', function (event) {
+            mostrarErrorEnPantalla('Promesa rechazada: ' + (event.reason?.message || event.reason));
+        });
+
+        window.addEventListener('load', function () {
+            if (typeof window.supabase === 'undefined') {
+                mostrarErrorEnPantalla(
+                    'No se pudo cargar la conexión a la base de datos (Supabase). ' +
+                    'Revisa tu internet o si algo está bloqueando cdn.jsdelivr.net.'
+                );
+            }
+        });
+    </script>
+
     <script>
         // ================================================================
         // CONFIGURACIÓN SUPABASE
@@ -466,20 +513,32 @@
             const name = document.getElementById('regName').value.trim();
             const btn = document.querySelector('#registerCard .btn-gold');
 
+            // ============================================================
+            // CAMBIO 2: Loader inmediato en registrarUsuario()
+            // ============================================================
+            btn.disabled = true;
+            btn.textContent = '⏳ Procesando...';
+
             if (!email || !password) {
                 showToast('⚠️ Correo y contraseña son obligatorios', 'error');
+                btn.disabled = false;
+                btn.textContent = '⟡ Crear cuenta';
                 return;
             }
 
             if (password.length < 6) {
                 showToast('⚠️ La contraseña debe tener al menos 6 caracteres', 'error');
+                btn.disabled = false;
+                btn.textContent = '⟡ Crear cuenta';
                 return;
             }
 
-            if (isRegistering) return;
+            if (isRegistering) {
+                btn.disabled = false;
+                btn.textContent = '⟡ Crear cuenta';
+                return;
+            }
             isRegistering = true;
-            btn.disabled = true;
-            btn.textContent = '⏳ Creando...';
 
             try {
                 const { data, error } = await supabase.auth.signUp({
@@ -536,13 +595,18 @@
             const password = document.getElementById('loginPassword').value.trim();
             const btn = document.querySelector('#loginCard .btn-gold');
 
+            // ============================================================
+            // CAMBIO 3: Loader inmediato en iniciarSesion()
+            // ============================================================
+            btn.disabled = true;
+            btn.textContent = '⏳ Entrando...';
+
             if (!email || !password) {
                 showToast('⚠️ Correo y contraseña son obligatorios', 'error');
+                btn.disabled = false;
+                btn.textContent = '◈ Iniciar sesión';
                 return;
             }
-
-            btn.disabled = true;
-            btn.textContent = '⏳ Iniciando...';
 
             try {
                 const { data, error } = await supabase.auth.signInWithPassword({
