@@ -250,6 +250,33 @@ function iniciarDetectorInactividad() {
 }
 
 // ================================================================
+// FUNCIÓN cambiarEstado() - CORREGIDA Y EXPUESTA GLOBALMENTE
+// ================================================================
+async function cambiarEstado(online) {
+    try {
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ Inicia sesión', 'error');
+            return;
+        }
+
+        await actualizarEstadoEnLinea(online);
+        
+        if (online) {
+            showToast('🟢 Te has marcado como activo', 'success');
+        } else {
+            showToast('⭕ Te has marcado como inactivo', 'warning');
+        }
+        
+        await notificarCambioEstado(online);
+        
+    } catch (error) {
+        console.error('Error cambiando estado:', error);
+        showToast('❌ Error al cambiar estado', 'error');
+    }
+}
+
+// ================================================================
 // FUNCIÓN editarPerfil() - CORREGIDA Y EXPUESTA GLOBALMENTE
 // ================================================================
 function editarPerfil() {
@@ -320,25 +347,33 @@ async function subirVideo(event) {
     }
 }
 
+// ================================================================
+// FUNCIÓN guardarPerfil() - CORREGIDA CON VALIDACIÓN Y TRY/CATCH
+// ================================================================
 async function guardarPerfil() {
-    const session = await getSession();
-    if (!session) {
-        showToast('⚠️ Inicia sesión para guardar', 'error');
-        return;
-    }
-
-    const perfil = {
-        nombre: document.getElementById('editNombre').value.trim() || 'Explorador',
-        handle: document.getElementById('editHandle').value.trim().replace('@', '') || 'explorador',
-        bio: document.getElementById('editBio').value.trim() || 'Explorando el ecosistema Sariel\'s · WEB3 · Comunidad'
-    };
-
-    if (!/^[a-zA-Z0-9_]+$/.test(perfil.handle)) {
-        showToast('❌ El handle solo puede contener letras, números y _', 'error');
-        return;
-    }
-
     try {
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ Inicia sesión para guardar', 'error');
+            return;
+        }
+
+        const nombre = document.getElementById('editNombre')?.value?.trim() || 'Explorador';
+        const handle = document.getElementById('editHandle')?.value?.trim().replace('@', '') || 'explorador';
+        const bio = document.getElementById('editBio')?.value?.trim() || 'Explorando el ecosistema Sariel\'s · WEB3 · Comunidad';
+
+        // Validación de handle
+        if (!/^[a-zA-Z0-9_]+$/.test(handle)) {
+            showToast('❌ El handle solo puede contener letras, números y _', 'error');
+            return;
+        }
+
+        const perfil = {
+            nombre: nombre,
+            handle: handle,
+            bio: bio
+        };
+
         const response = await fetch(`${API_ENDPOINTS.perfil}`, {
             method: 'PUT',
             headers: {
@@ -359,7 +394,7 @@ async function guardarPerfil() {
         
     } catch (error) {
         console.error('Error guardando perfil:', error);
-        showToast('❌ Error al guardar: ' + error.message, 'error');
+        showToast('❌ Error al guardar: ' + (error.message || 'Error interno del servidor'), 'error');
     }
 }
 
@@ -389,27 +424,73 @@ function abrirSelectorArchivo() {
     if (input) input.click();
 }
 
+// ================================================================
+// FUNCIÓN subirFoto() - CORREGIDA CON VALIDACIÓN
+// ================================================================
 async function subirFoto(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    const session = await getSession();
-    if (!session) {
-        showToast('⚠️ Inicia sesión para subir foto', 'error');
-        return;
-    }
-
-    const fileExt = file.name.split('.').pop().toLowerCase();
-    const filePath = `${session.user.id}/avatar.${fileExt}`;
-
     try {
+        const file = event?.target?.files?.[0];
+        if (!file) {
+            showToast('⚠️ No se seleccionó ningún archivo', 'warning');
+            return;
+        }
+
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ Inicia sesión para subir foto', 'error');
+            return;
+        }
+
+        // Validar tipo de archivo
+        if (!file.type.startsWith('image/')) {
+            showToast('❌ Solo se permiten imágenes', 'error');
+            return;
+        }
+
+        // Validar tamaño (5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            showToast('❌ La imagen no puede superar los 5MB', 'error');
+            return;
+        }
+
+        const fileExt = file.name.split('.').pop().toLowerCase();
+        const filePath = `${session.user.id}/avatar.${fileExt}`;
+
         showToast('⏳ Subiendo foto...', '', 5000);
 
         const { error: uploadError } = await supabaseClient.storage
             .from('sariels-avatars')
             .upload(filePath, file, { upsert: true });
 
-        if (uploadError) throw uploadError;
+        if (uploadError) {
+            // Si el bucket no existe, intentar con 'avatars'
+            if (uploadError.message.includes('bucket')) {
+                const { error: uploadError2 } = await supabaseClient.storage
+                    .from('avatars')
+                    .upload(filePath, file, { upsert: true });
+                    
+                if (uploadError2) throw uploadError2;
+                
+                const { data: urlData2 } = supabaseClient.storage
+                    .from('avatars')
+                    .getPublicUrl(filePath);
+                    
+                const publicUrl = urlData2.publicUrl;
+                
+                const { error: updateError2 } = await supabaseClient
+                    .from('usuarios')
+                    .update({ avatar_url: publicUrl })
+                    .eq('id', session.user.id);
+                    
+                if (updateError2) throw updateError2;
+                
+                showToast('✅ Foto actualizada correctamente', 'success');
+                event.target.value = '';
+                await cargarPerfil(true);
+                return;
+            }
+            throw uploadError;
+        }
 
         const { data: urlData } = supabaseClient.storage
             .from('sariels-avatars')
@@ -430,7 +511,7 @@ async function subirFoto(event) {
         
     } catch (error) {
         console.error('Error al subir foto:', error);
-        showToast('❌ Error al subir foto', 'error');
+        showToast('❌ Error al subir foto: ' + (error.message || 'Error interno del servidor'), 'error');
     }
 }
 
@@ -1342,6 +1423,10 @@ function mostrarSinESIM() {
     }
 }
 
+// ================================================================
+// FUNCIONES eSIM - CORREGIDAS CON VALIDACIÓN DE ICCID
+// ================================================================
+
 async function cargarDatosESIM(iccid) {
     if (!iccid) {
         console.warn('⚠️ No hay ICCID para cargar datos eSIM');
@@ -1432,11 +1517,20 @@ async function cargarDatosESIMLocal(iccid) {
     }
 }
 
+// ================================================================
+// sincronizarESIM() - CORREGIDA CON VALIDACIÓN DE ICCID
+// ================================================================
 async function sincronizarESIM() {
     try {
         const session = await getSession();
         if (!session) {
             showToast('⚠️ Inicia sesión para sincronizar', 'error');
+            return;
+        }
+
+        // ✅ VALIDACIÓN: Verificar si el usuario tiene ICCID
+        if (!perfilCache || !perfilCache.esim_iccid) {
+            showToast('⚠️ No tienes una eSIM activa asignada', 'warning');
             return;
         }
 
@@ -1462,6 +1556,27 @@ async function sincronizarESIM() {
     } catch (error) {
         console.error('Error sincronizando eSIM:', error);
         showToast('❌ Error al sincronizar: ' + error.message, 'error');
+    }
+}
+
+// ================================================================
+// generarQRESIM() - CORREGIDA CON VALIDACIÓN DE ICCID
+// ================================================================
+async function generarQRESIM(iccid) {
+    try {
+        const iccidParam = iccid || perfilCache?.esim_iccid;
+        
+        // ✅ VALIDACIÓN: Verificar si el usuario tiene ICCID
+        if (!iccidParam) {
+            showToast('⚠️ No tienes una eSIM activa para generar QR', 'warning');
+            return;
+        }
+        
+        const qrData = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent('LPA:1$' + iccidParam + '$Sariel\'s')}`;
+        mostrarModalQR(qrData);
+    } catch (error) {
+        console.error('Error generando QR:', error);
+        showToast('❌ Error al generar QR: ' + error.message, 'error');
     }
 }
 
@@ -1595,21 +1710,6 @@ async function desactivarESIM(iccid) {
     } catch (error) {
         console.error('Error desactivando eSIM:', error);
         showToast('❌ Error al desactivar eSIM: ' + error.message, 'error');
-    }
-}
-
-async function generarQRESIM(iccid) {
-    try {
-        const iccidParam = iccid || perfilCache?.esim_iccid;
-        if (!iccidParam) {
-            showToast('⚠️ No hay eSIM para generar QR', 'error');
-            return;
-        }
-        const qrData = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent('LPA:1$' + iccidParam + '$Sariel\'s')}`;
-        mostrarModalQR(qrData);
-    } catch (error) {
-        console.error('Error generando QR:', error);
-        showToast('❌ Error al generar QR: ' + error.message, 'error');
     }
 }
 
@@ -2825,8 +2925,9 @@ window.cargarPerfil = cargarPerfil;
 window.guardarPerfil = guardarPerfil;
 window.abrirSelectorArchivo = abrirSelectorArchivo;
 window.subirFoto = subirFoto;
-window.subirVideo = subirVideo;  // ✅ CORREGIDO: expuesta globalmente
+window.subirVideo = subirVideo;
 window.editarPerfil = editarPerfil;
+window.cambiarEstado = cambiarEstado;  // ✅ CORREGIDO
 window.compartirPerfil = compartirPerfil;
 window.conectarWallet = conectarWallet;
 window.desconectarWallet = desconectarWallet;
@@ -2866,7 +2967,6 @@ window.getPerfilActual = getPerfilActual;
 
 // Funciones de estado
 window.actualizarEstadoEnLinea = actualizarEstadoEnLinea;
-window.cambiarEstado = cambiarEstado;
 window.cargarAmigosEnLinea = cargarAmigosEnLinea;
 window.actualizarListaAmigos = actualizarListaAmigos;
 
