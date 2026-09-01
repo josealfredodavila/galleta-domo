@@ -1,12 +1,12 @@
 /* ================================================================
    MURO - SARIEL'S ECOSYSTEM
-   VERSIÓN FUNCIONAL - CONEXIÓN REAL CON SUPABASE
+   VERSIÓN CORREGIDA - SIN DUPLICACIÓN DE FUNCIONES
    ================================================================ */
 
 // ================================================================
-// CONFIGURACIÓN SUPABASE
+// CONFIGURACIÓN SUPABASE - SIN DECLARACIÓN DUPLICADA
 // ================================================================
-const supabase = window.supabase.createClient(
+const supabaseClient = window.supabaseClient || window.supabase.createClient(
     'https://zultnlogdoajehbswlih.supabase.co',
     'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
 );
@@ -22,33 +22,9 @@ let hasMorePosts = true;
 let precioActual = 4.50;
 
 // ================================================================
-// TOAST
+// NOTA: showToast() y getSession() están en el sistema global
+// (app.js o definidos globalmente). NO DUPLICAR.
 // ================================================================
-function showToast(msg, type = '') {
-    let t = document.getElementById('toast');
-    if (!t) {
-        t = document.createElement('div');
-        t.id = 'toast';
-        t.className = 'toast';
-        document.body.appendChild(t);
-    }
-    t.textContent = msg;
-    t.className = 'toast show';
-    if (type === 'error') t.classList.add('error');
-    else if (type === 'warning') t.classList.add('warning');
-    else if (type === 'success') t.classList.add('success');
-    else t.classList.remove('error', 'warning', 'success');
-    clearTimeout(t._timeout);
-    t._timeout = setTimeout(() => t.classList.remove('show'), 3500);
-}
-
-// ================================================================
-// OBTENER SESIÓN
-// ================================================================
-async function getSession() {
-    const { data: { session } } = await supabase.auth.getSession();
-    return session;
-}
 
 // ================================================================
 // CARGAR USUARIO ACTUAL
@@ -67,7 +43,7 @@ async function cargarUsuarioActual() {
         sessionUser = session.user;
 
         // Obtener datos del perfil
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('usuarios')
             .select('nombre, handle, avatar_url, tokens')
             .eq('id', session.user.id)
@@ -80,11 +56,9 @@ async function cargarUsuarioActual() {
             document.getElementById('userHandle').textContent = '@' + (data.handle || 'explorador');
             document.getElementById('userAvatar').textContent = data.avatar_url ? '◈' : '◈';
             
-            // Actualizar badge de tokens
             const tokenBadge = document.getElementById('tokenBadgeCantidad');
             if (tokenBadge) tokenBadge.textContent = data.tokens || 0;
             
-            // Tokens disponibles para venta
             const tokensDisp = document.getElementById('tokensDisponibles');
             if (tokensDisp) tokensDisp.textContent = data.tokens || 0;
         }
@@ -102,7 +76,7 @@ async function cargarUsuarioActual() {
 // ================================================================
 async function cargarPreciosMercado() {
     try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('muro_precios')
             .select('*')
             .order('ultima_actualizacion', { ascending: false })
@@ -128,20 +102,16 @@ async function cargarPreciosMercado() {
                 const diff = precioActual - (precios.precio_base || precioActual);
                 if (diff > 0) {
                     tendenciaValor.textContent = '📈 ALZA';
-                    tendenciaValor.className = 'up';
                     tendenciaValor.style.color = 'var(--success)';
                 } else if (diff < 0) {
                     tendenciaValor.textContent = '📉 BAJA';
-                    tendenciaValor.className = 'down';
                     tendenciaValor.style.color = 'var(--danger)';
                 } else {
                     tendenciaValor.textContent = '➡️ ESTABLE';
-                    tendenciaValor.className = 'stable';
                     tendenciaValor.style.color = 'var(--text-muted)';
                 }
             }
 
-            // Precio sugerido
             const precioSugerido = document.getElementById('precioSugerido');
             if (precioSugerido) precioSugerido.textContent = precioActual.toFixed(2);
             
@@ -175,7 +145,7 @@ async function cargarPublicaciones(reset = true) {
         const from = currentPage * POSTS_PER_PAGE;
         const to = from + POSTS_PER_PAGE - 1;
 
-        const { data, error, count } = await supabase
+        const { data, error, count } = await supabaseClient
             .from('muro_posts')
             .select(`
                 *,
@@ -203,7 +173,6 @@ async function cargarPublicaciones(reset = true) {
             return;
         }
 
-        // Renderizar publicaciones
         if (currentPage === 0) {
             feedContainer.innerHTML = '';
         }
@@ -216,7 +185,6 @@ async function cargarPublicaciones(reset = true) {
         currentPage++;
         hasMorePosts = data.length === POSTS_PER_PAGE;
 
-        // Cargar más al hacer scroll
         if (hasMorePosts) {
             const observer = new IntersectionObserver((entries) => {
                 if (entries[0].isIntersecting && !isLoading) {
@@ -253,10 +221,6 @@ function renderizarPost(post) {
     const likesCount = post.muro_likes?.[0]?.count || 0;
     const comentariosCount = post.muro_comentarios?.[0]?.count || 0;
     const contenidoSanitizado = sanitizarHTML(post.contenido || '');
-
-    // Verificar si el usuario actual dio like
-    let userLiked = false;
-    // Esto requiere una consulta adicional, se hará aparte
 
     let seccionVenta = '';
     if (post.cantidad_venta && post.cantidad_venta > 0 && post.precio_venta) {
@@ -320,7 +284,6 @@ function renderizarPost(post) {
         </div>
     `;
 
-    // Verificar si el usuario dio like
     if (sessionUser) {
         verificarLike(post.id).then(liked => {
             const likeBtn = div.querySelector('.like-btn');
@@ -339,12 +302,10 @@ function renderizarPost(post) {
 // ================================================================
 function sanitizarHTML(texto) {
     if (!texto) return '';
-    // Escapar caracteres HTML
     const div = document.createElement('div');
     div.textContent = texto;
     let sanitizado = div.innerHTML;
     
-    // Permitir hashtags y menciones
     sanitizado = sanitizado.replace(
         /#(\w+)/g,
         '<a href="#" class="hashtag" onclick="buscarHashtag(\'$1\');return false;">#$1</a>'
@@ -363,7 +324,7 @@ function sanitizarHTML(texto) {
 async function verificarLike(postId) {
     if (!sessionUser) return false;
     try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('muro_likes')
             .select('id')
             .eq('post_id', postId)
@@ -394,8 +355,7 @@ async function toggleLike(postId) {
         const liked = await verificarLike(postId);
 
         if (liked) {
-            // Quitar like
-            const { error } = await supabase
+            const { error } = await supabaseClient
                 .from('muro_likes')
                 .delete()
                 .eq('post_id', postId)
@@ -412,8 +372,7 @@ async function toggleLike(postId) {
                 likeBtn.innerHTML = `❤️ <span class="count">${countSpan?.textContent || 0}</span>`;
             }
         } else {
-            // Dar like
-            const { error } = await supabase
+            const { error } = await supabaseClient
                 .from('muro_likes')
                 .insert({
                     post_id: postId,
@@ -470,7 +429,7 @@ async function cargarComentarios(postId) {
     if (!lista) return;
 
     try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('muro_comentarios')
             .select(`
                 *,
@@ -531,7 +490,7 @@ async function enviarComentario(postId) {
     }
 
     try {
-        const { error } = await supabase
+        const { error } = await supabaseClient
             .from('muro_comentarios')
             .insert({
                 post_id: postId,
@@ -545,7 +504,6 @@ async function enviarComentario(postId) {
         showToast('✅ Comentario agregado', 'success');
         cargarComentarios(postId);
         
-        // Actualizar contador
         const countSpan = document.querySelector(`[data-post-id="${postId}"] .post-stats span:last-child .count`);
         if (countSpan) {
             const current = parseInt(countSpan.textContent);
@@ -570,7 +528,7 @@ async function eliminarComentario(comentarioId) {
     if (!confirm('¿Eliminar este comentario?')) return;
 
     try {
-        const { error } = await supabase
+        const { error } = await supabaseClient
             .from('muro_comentarios')
             .delete()
             .eq('id', comentarioId)
@@ -579,7 +537,6 @@ async function eliminarComentario(comentarioId) {
         if (error) throw error;
 
         showToast('🗑️ Comentario eliminado', 'success');
-        // Recargar comentarios del post padre
         const postId = document.querySelector(`[data-comentario-id="${comentarioId}"]`)?.dataset.postId;
         if (postId) cargarComentarios(postId);
     } catch (error) {
@@ -600,7 +557,7 @@ async function eliminarPublicacion(postId) {
     if (!confirm('¿Eliminar esta publicación?')) return;
 
     try {
-        const { error } = await supabase
+        const { error } = await supabaseClient
             .from('muro_posts')
             .delete()
             .eq('id', postId)
@@ -644,7 +601,7 @@ async function publicar() {
     btnPublicar.textContent = '⏳ Publicando...';
 
     try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('muro_posts')
             .insert({
                 usuario_id: sessionUser.id,
@@ -658,7 +615,6 @@ async function publicar() {
         postContent.value = '';
         showToast('✅ Publicación creada', 'success');
         
-        // Recargar feed
         document.getElementById('feedContainer').innerHTML = '';
         currentPage = 0;
         hasMorePosts = true;
@@ -688,7 +644,6 @@ function compartirPublicacion(postId) {
         navigator.clipboard.writeText(url).then(() => {
             showToast('📋 Enlace copiado al portapapeles', 'success');
         }).catch(() => {
-            // Fallback
             const textarea = document.createElement('textarea');
             textarea.value = url;
             document.body.appendChild(textarea);
@@ -713,8 +668,7 @@ async function reportarPublicacion(postId) {
     if (!motivo) return;
 
     try {
-        // Verificar si existe tabla muro_reportes
-        const { error } = await supabase
+        const { error } = await supabaseClient
             .from('muro_reportes')
             .insert({
                 post_id: postId,
@@ -751,7 +705,7 @@ async function buscarHashtag(tag) {
     }
 
     try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('muro_posts')
             .select(`
                 *,
@@ -782,7 +736,6 @@ async function buscarHashtag(tag) {
             return;
         }
 
-        // Mostrar resultados
         const header = document.createElement('div');
         header.style.cssText = 'padding:12px 0;border-bottom:1px solid var(--glass-border);margin-bottom:16px;';
         header.innerHTML = `
@@ -812,7 +765,6 @@ async function buscarHashtag(tag) {
 // FUNCIONES DE VENTA
 // ================================================================
 
-// ABRIR MODAL VENTA
 function abrirModalVenta() {
     const modal = document.getElementById('modalVender');
     if (modal) {
@@ -824,13 +776,11 @@ function abrirModalVenta() {
     }
 }
 
-// CERRAR MODAL VENTA
 function cerrarModalVenta() {
     const modal = document.getElementById('modalVender');
     if (modal) modal.classList.remove('show');
 }
 
-// PUBLICAR VENTA
 async function publicarVenta() {
     const cantidadInput = document.getElementById('inputCantidadTokens');
     const precioInput = document.getElementById('inputPrecioToken');
@@ -863,8 +813,7 @@ async function publicarVenta() {
     btn.textContent = '⏳ Publicando...';
 
     try {
-        // Verificar saldo disponible
-        const { data: userData, error: userError } = await supabase
+        const { data: userData, error: userError } = await supabaseClient
             .from('usuarios')
             .select('tokens')
             .eq('id', sessionUser.id)
@@ -878,7 +827,7 @@ async function publicarVenta() {
             return;
         }
 
-        const { error } = await supabase
+        const { error } = await supabaseClient
             .from('muro_posts')
             .insert({
                 usuario_id: sessionUser.id,
@@ -902,9 +851,7 @@ async function publicarVenta() {
     }
 }
 
-// ABRIR MODAL COMPRA
 function abrirModalCompra(postId) {
-    // Buscar el post en el DOM
     const postCard = document.querySelector(`[data-post-id="${postId}"]`);
     if (!postCard) {
         showToast('❌ Publicación no encontrada', 'error');
@@ -923,7 +870,6 @@ function abrirModalCompra(postId) {
         return;
     }
 
-    // Extraer información
     const textoVenta = ventaInfo.querySelector('div')?.textContent || '';
     const matches = textoVenta.match(/(\d+)\s*tokens.*\$\s*([\d.]+)/);
     if (!matches) {
@@ -942,18 +888,15 @@ function abrirModalCompra(postId) {
     document.getElementById('confirmTotalFinal').textContent = `${usdtTotal.toFixed(2)} USDT`;
     document.getElementById('confirmComision').textContent = `${(usdtTotal * 0.02).toFixed(2)} USDT`;
 
-    // Guardar postId para confirmación
     modal.dataset.postId = postId;
     modal.classList.add('show');
 }
 
-// CERRAR MODAL CONFIRMACIÓN
 function cerrarModalConfirmacion() {
     const modal = document.getElementById('modalConfirmarCompra');
     if (modal) modal.classList.remove('show');
 }
 
-// CONFIRMAR COMPRA
 async function confirmarCompraCrypto() {
     const modal = document.getElementById('modalConfirmarCompra');
     const postId = modal?.dataset.postId;
@@ -968,8 +911,7 @@ async function confirmarCompraCrypto() {
     }
 
     try {
-        // Obtener datos del post
-        const { data: post, error: postError } = await supabase
+        const { data: post, error: postError } = await supabaseClient
             .from('muro_posts')
             .select('id, usuario_id, cantidad_venta, precio_venta')
             .eq('id', postId)
@@ -993,8 +935,7 @@ async function confirmarCompraCrypto() {
         const montoRecibido = post.precio_venta - comision;
         const precioUsdt = post.precio_venta / 20;
 
-        // Crear registro de venta
-        const { error: insertError } = await supabase
+        const { error: insertError } = await supabaseClient
             .from('muro_ventas_tokens')
             .insert({
                 post_id: post.id,
@@ -1013,7 +954,6 @@ async function confirmarCompraCrypto() {
         showToast('✅ Orden de compra creada. Procede al pago.', 'success');
         cerrarModalConfirmacion();
 
-        // Abrir modal de pago
         const pagoModal = document.getElementById('cryptoPaymentModal');
         if (pagoModal) {
             pagoModal.classList.add('show');
@@ -1021,12 +961,10 @@ async function confirmarCompraCrypto() {
             document.getElementById('cryptoAddress').textContent = address;
             document.getElementById('cryptoMonto').textContent = precioUsdt.toFixed(2);
             document.getElementById('cryptoStatus').textContent = '⏳ Esperando confirmación de pago...';
-            // Generar QR
             const qrImg = document.getElementById('cryptoQR');
             if (qrImg) {
                 qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(address)}`;
             }
-            // Guardar referencia
             pagoModal.dataset.ventaId = post.id;
         }
 
@@ -1036,13 +974,11 @@ async function confirmarCompraCrypto() {
     }
 }
 
-// CERRAR MODAL PAGO
 function cerrarModalPago() {
     const modal = document.getElementById('cryptoPaymentModal');
     if (modal) modal.classList.remove('show');
 }
 
-// COPIAR DIRECCIÓN CRYPTO
 function copiarDireccionCrypto() {
     const addressEl = document.getElementById('cryptoAddress');
     if (!addressEl) return;
@@ -1062,7 +998,6 @@ function copiarDireccionCrypto() {
     }
 }
 
-// VERIFICAR PAGO CRYPTO
 async function verificarPagoCrypto() {
     const btn = document.getElementById('btnVerificarPago');
     const statusEl = document.getElementById('cryptoStatus');
@@ -1080,11 +1015,9 @@ async function verificarPagoCrypto() {
     statusEl.style.color = 'var(--text-secondary)';
 
     try {
-        // Simular verificación
         await new Promise(resolve => setTimeout(resolve, 2000));
 
-        // Actualizar estado de la venta
-        const { error } = await supabase
+        const { error } = await supabaseClient
             .from('muro_ventas_tokens')
             .update({ estado: 'pagado' })
             .eq('post_id', postId)
@@ -1093,8 +1026,7 @@ async function verificarPagoCrypto() {
 
         if (error) throw error;
 
-        // Marcar post como vendido
-        await supabase
+        await supabaseClient
             .from('muro_posts')
             .update({ cantidad_venta: 0 })
             .eq('id', postId);
@@ -1124,12 +1056,10 @@ async function verificarPagoCrypto() {
 // FUNCIONES DE UTILIDAD
 // ================================================================
 
-// VER TOKENS - Redirige al perfil
 function verTokens() {
     window.location.href = '/features/perfil/perfil.html';
 }
 
-// INSERTAR HASHTAG
 function insertarHashtag() {
     const input = document.getElementById('postContent');
     if (!input) return;
@@ -1142,14 +1072,12 @@ function insertarHashtag() {
     input.selectionStart = input.selectionEnd = start + hashtag.length;
 }
 
-// INSERTAR EMOJI
 function insertarEmoji() {
     const input = document.getElementById('postContent');
     if (!input) return;
     const start = input.selectionStart || 0;
     const end = input.selectionEnd || 0;
     const texto = input.value;
-    // Seleccionar un emoji aleatorio para demostración
     const emojis = ['😊', '🔥', '❤️', '💎', '✨', '🎉', '🚀', '🌟', '💪', '🤝'];
     const emoji = emojis[Math.floor(Math.random() * emojis.length)];
     input.value = texto.substring(0, start) + emoji + texto.substring(end);
@@ -1157,13 +1085,11 @@ function insertarEmoji() {
     input.selectionStart = input.selectionEnd = start + emoji.length;
 }
 
-// ABRIR SELECTOR DE IMAGEN
 function abrirSelectorImagen() {
     const input = document.getElementById('inputImagen');
     if (input) input.click();
 }
 
-// SUBIR IMAGEN
 async function subirImagenMuro(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -1173,13 +1099,11 @@ async function subirImagenMuro(event) {
         return;
     }
 
-    // Validar tipo
     if (!file.type.startsWith('image/')) {
         showToast('❌ Solo se permiten imágenes', 'error');
         return;
     }
 
-    // Validar tamaño (5MB)
     if (file.size > 5 * 1024 * 1024) {
         showToast('❌ La imagen no puede superar los 5MB', 'error');
         return;
@@ -1191,8 +1115,7 @@ async function subirImagenMuro(event) {
     try {
         showToast('⏳ Subiendo imagen...', '', 5000);
 
-        // Subir a Supabase Storage
-        const { error: uploadError } = await supabase.storage
+        const { error: uploadError } = await supabaseClient.storage
             .from('muro-imagenes')
             .upload(filePath, file, { upsert: true });
 
@@ -1204,14 +1127,13 @@ async function subirImagenMuro(event) {
             throw uploadError;
         }
 
-        const { data: urlData } = supabase.storage
+        const { data: urlData } = supabaseClient.storage
             .from('muro-imagenes')
             .getPublicUrl(filePath);
 
         const publicUrl = urlData.publicUrl;
 
-        // Crear publicación con imagen
-        const { error: insertError } = await supabase
+        const { error: insertError } = await supabaseClient
             .from('muro_posts')
             .insert({
                 usuario_id: sessionUser.id,
@@ -1238,17 +1160,15 @@ let muroChannel = null;
 
 async function suscribirseARealtime() {
     if (muroChannel) {
-        supabase.removeChannel(muroChannel);
+        supabaseClient.removeChannel(muroChannel);
     }
 
-    muroChannel = supabase
+    muroChannel = supabaseClient
         .channel('muro-realtime')
         .on('postgres_changes',
             { event: 'INSERT', schema: 'public', table: 'muro_posts' },
             (payload) => {
-                // Verificar que el post no sea del usuario actual (ya se muestra en el feed)
                 if (payload.new.usuario_id !== sessionUser?.id) {
-                    // Insertar al inicio del feed
                     const feedContainer = document.getElementById('feedContainer');
                     const emptyState = feedContainer?.querySelector('.empty-state');
                     if (emptyState) emptyState.remove();
@@ -1262,7 +1182,6 @@ async function suscribirseARealtime() {
         .on('postgres_changes',
             { event: 'INSERT', schema: 'public', table: 'muro_comentarios' },
             () => {
-                // Recargar comentarios si están visibles
                 document.querySelectorAll('.post-comentarios[style*="display: block"]').forEach(el => {
                     const postId = el.id.replace('comentarios-', '');
                     cargarComentarios(postId);
@@ -1287,7 +1206,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     await cargarPublicaciones();
     await suscribirseARealtime();
 
-    // Event listeners
     const btnPublicar = document.getElementById('btnPublicar');
     if (btnPublicar) {
         btnPublicar.addEventListener('click', publicar);
@@ -1302,7 +1220,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
 
-    // Enter para comentarios (delegado)
     document.addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
             const input = e.target;
@@ -1313,13 +1230,11 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     });
 
-    // Botón de vender en el modal
     const btnPublicarVenta = document.getElementById('btnPublicarVenta');
     if (btnPublicarVenta) {
         btnPublicarVenta.addEventListener('click', publicarVenta);
     }
 
-    // Cerrar modales al hacer clic fuera
     document.querySelectorAll('.modal-overlay').forEach(modal => {
         modal.addEventListener('click', function(e) {
             if (e.target === this) {
@@ -1350,7 +1265,6 @@ window.insertarEmoji = insertarEmoji;
 window.verTokens = verTokens;
 window.showToast = showToast;
 
-// Funciones de venta
 window.abrirModalVenta = abrirModalVenta;
 window.cerrarModalVenta = cerrarModalVenta;
 window.publicarVenta = publicarVenta;
