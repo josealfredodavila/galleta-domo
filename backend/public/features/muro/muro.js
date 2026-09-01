@@ -1,6 +1,6 @@
 /* ================================================================
    MURO - SARIEL'S ECOSYSTEM
-   VERSIÓN CORREGIDA - SIN BUCLES INFINITOS Y CON SHOWTOAST SEGURO
+   VERSIÓN CORREGIDA - SIN BUCLES INFINITOS
    ================================================================ */
 
 // ================================================================
@@ -20,38 +20,40 @@ const POSTS_PER_PAGE = 10;
 let isLoading = false;
 let hasMorePosts = true;
 let precioActual = 4.50;
-let publicando = false; // 🔒 Previene múltiples publicaciones simultáneas
+let publicando = false;
+let muroChannel = null;
+let isRealtimeProcessing = false; // 🔒 Evita bucles en Realtime
 
 // ================================================================
-// SHOWTOAST SEGURO - FUNCIONA EN CUALQUIER CONTEXTO
+// SHOWTOAST SEGURO - EVITA BUCLES
 // ================================================================
 function showToast(mensaje, tipo = 'info') {
-    // 1. Intentar usar el toast global si existe
-    if (typeof window.showToast === 'function') {
-        window.showToast(mensaje, tipo);
-        return;
+    try {
+        if (typeof window.showToast === 'function') {
+            window.showToast(mensaje, tipo);
+            return;
+        }
+
+        const toastEl = document.getElementById('toast');
+        if (toastEl) {
+            toastEl.textContent = mensaje;
+            toastEl.className = 'toast show';
+            if (tipo === 'error') toastEl.classList.add('error');
+            else if (tipo === 'warning') toastEl.classList.add('warning');
+            else if (tipo === 'success') toastEl.classList.add('success');
+            else toastEl.classList.remove('error', 'warning', 'success');
+
+            clearTimeout(toastEl._timeout);
+            toastEl._timeout = setTimeout(() => {
+                toastEl.classList.remove('show');
+            }, 3500);
+            return;
+        }
+
+        console.warn('Toast no disponible:', mensaje);
+    } catch (e) {
+        console.warn('Error en showToast:', e);
     }
-
-    // 2. Intentar usar el sistema de toast del documento
-    const toastEl = document.getElementById('toast');
-    if (toastEl) {
-        toastEl.textContent = mensaje;
-        toastEl.className = 'toast show';
-        if (tipo === 'error') toastEl.classList.add('error');
-        else if (tipo === 'warning') toastEl.classList.add('warning');
-        else if (tipo === 'success') toastEl.classList.add('success');
-        else toastEl.classList.remove('error', 'warning', 'success');
-
-        clearTimeout(toastEl._timeout);
-        toastEl._timeout = setTimeout(() => {
-            toastEl.classList.remove('show');
-        }, 3500);
-        return;
-    }
-
-    // 3. Fallback: alert estándar
-    console.warn('Toast no disponible, usando alert:', mensaje);
-    alert(mensaje);
 }
 
 // ================================================================
@@ -178,15 +180,19 @@ async function cargarPreciosMercado() {
 }
 
 // ================================================================
-// CARGAR PUBLICACIONES (CON PAGINACIÓN)
+// CARGAR PUBLICACIONES - CON CONTROL DE BUCLES
 // ================================================================
 async function cargarPublicaciones(reset = true) {
+    // ✅ Evitar cargas múltiples simultáneas
     if (isLoading) return;
+    
     if (reset) {
         currentPage = 0;
         hasMorePosts = true;
-        document.getElementById('feedContainer').innerHTML = '';
+        const feedContainer = document.getElementById('feedContainer');
+        if (feedContainer) feedContainer.innerHTML = '';
     }
+    
     if (!hasMorePosts) return;
 
     isLoading = true;
@@ -196,14 +202,14 @@ async function cargarPublicaciones(reset = true) {
         const from = currentPage * POSTS_PER_PAGE;
         const to = from + POSTS_PER_PAGE - 1;
 
-        const { data, error, count } = await supabaseClient
+        const { data, error } = await supabaseClient
             .from('muro_posts')
             .select(`
                 *,
                 usuarios:usuario_id (id, nombre, handle, avatar_url),
                 muro_likes(count),
                 muro_comentarios(count)
-            `, { count: 'exact' })
+            `)
             .order('created_at', { ascending: false })
             .range(from, to);
 
@@ -211,7 +217,7 @@ async function cargarPublicaciones(reset = true) {
 
         if (!data || data.length === 0) {
             hasMorePosts = false;
-            if (currentPage === 0) {
+            if (currentPage === 0 && feedContainer) {
                 feedContainer.innerHTML = `
                     <div class="empty-state">
                         <span class="icon">◈</span>
@@ -224,27 +230,28 @@ async function cargarPublicaciones(reset = true) {
             return;
         }
 
-        if (currentPage === 0) {
+        if (currentPage === 0 && feedContainer) {
             feedContainer.innerHTML = '';
         }
 
+        // ✅ Renderizar posts sin llamadas recursivas
         data.forEach(post => {
             const postElement = renderizarPost(post);
-            feedContainer.appendChild(postElement);
+            if (feedContainer) feedContainer.appendChild(postElement);
         });
 
         currentPage++;
         hasMorePosts = data.length === POSTS_PER_PAGE;
 
-        if (hasMorePosts) {
-            const observer = new IntersectionObserver((entries) => {
-                if (entries[0].isIntersecting && !isLoading) {
-                    cargarPublicaciones(false);
-                }
-            }, { threshold: 0.1 });
-
+        // ✅ Observer para carga infinita - sin recursión
+        if (hasMorePosts && feedContainer) {
             const lastPost = feedContainer.lastElementChild;
             if (lastPost) {
+                const observer = new IntersectionObserver((entries) => {
+                    if (entries[0].isIntersecting && !isLoading) {
+                        cargarPublicaciones(false);
+                    }
+                }, { threshold: 0.1 });
                 observer.observe(lastPost);
             }
         }
@@ -258,7 +265,7 @@ async function cargarPublicaciones(reset = true) {
 }
 
 // ================================================================
-// RENDERIZAR POST
+// RENDERIZAR POST - OPTIMIZADO SIN BUCLES
 // ================================================================
 function renderizarPost(post) {
     const div = document.createElement('div');
@@ -335,6 +342,7 @@ function renderizarPost(post) {
         </div>
     `;
 
+    // ✅ Verificar like sin recursión - solo si hay usuario
     if (sessionUser) {
         verificarLike(post.id).then(liked => {
             const likeBtn = div.querySelector('.like-btn');
@@ -370,10 +378,19 @@ function sanitizarHTML(texto) {
 }
 
 // ================================================================
-// VERIFICAR LIKE
+// VERIFICAR LIKE - CON CACHE PARA EVITAR CONSULTAS REPETIDAS
 // ================================================================
+const likeCache = new Map();
+
 async function verificarLike(postId) {
     if (!sessionUser) return false;
+    
+    // ✅ Usar cache para evitar consultas repetidas
+    const cacheKey = `${postId}_${sessionUser.id}`;
+    if (likeCache.has(cacheKey)) {
+        return likeCache.get(cacheKey);
+    }
+    
     try {
         const { data, error } = await supabaseClient
             .from('muro_likes')
@@ -383,7 +400,9 @@ async function verificarLike(postId) {
             .maybeSingle();
 
         if (error) throw error;
-        return !!data;
+        const result = !!data;
+        likeCache.set(cacheKey, result);
+        return result;
     } catch (error) {
         console.error('Error verificando like:', error);
         return false;
@@ -391,7 +410,7 @@ async function verificarLike(postId) {
 }
 
 // ================================================================
-// TOGGLE LIKE
+// TOGGLE LIKE - ACTUALIZA CACHE
 // ================================================================
 async function toggleLike(postId) {
     if (!sessionUser) {
@@ -401,6 +420,7 @@ async function toggleLike(postId) {
 
     const likeBtn = document.querySelector(`[data-post-id="${postId}"] .like-btn`);
     const countSpan = likeBtn?.querySelector('.count');
+    const cacheKey = `${postId}_${sessionUser.id}`;
 
     try {
         const liked = await verificarLike(postId);
@@ -414,6 +434,7 @@ async function toggleLike(postId) {
 
             if (error) throw error;
 
+            likeCache.set(cacheKey, false);
             if (countSpan) {
                 const current = parseInt(countSpan.textContent);
                 countSpan.textContent = Math.max(0, current - 1);
@@ -438,6 +459,7 @@ async function toggleLike(postId) {
                 throw error;
             }
 
+            likeCache.set(cacheKey, true);
             if (countSpan) {
                 const current = parseInt(countSpan.textContent);
                 countSpan.textContent = current + 1;
@@ -626,10 +648,9 @@ async function eliminarPublicacion(postId) {
 }
 
 // ================================================================
-// 🔒 PUBLICAR NUEVA PUBLICACIÓN - CORREGIDO (SIN BUCLES INFINITOS)
+// PUBLICAR NUEVA PUBLICACIÓN - CON BLOQUEO
 // ================================================================
 async function publicar() {
-    // 🔒 Evitar múltiples publicaciones simultáneas
     if (publicando) {
         showToast('⏳ Ya estás publicando, espera un momento...', 'warning');
         return;
@@ -654,13 +675,11 @@ async function publicar() {
         return;
     }
 
-    // 🔒 Bloquear para evitar doble clic
     publicando = true;
     btnPublicar.disabled = true;
     btnPublicar.textContent = '⏳ Publicando...';
 
     try {
-        // ✅ Insertar publicación en Supabase
         const { data, error } = await supabaseClient
             .from('muro_posts')
             .insert({
@@ -672,25 +691,22 @@ async function publicar() {
 
         if (error) throw error;
 
-        // ✅ Limpiar campo y mostrar éxito
         postContent.value = '';
         showToast('✅ Publicación creada', 'success');
 
-        // ✅ Recargar feed SIN recursión (reset=true)
-        // No llamamos a cargarPublicaciones() directamente con recursión
-        // Reiniciamos el estado y cargamos desde cero
-        document.getElementById('feedContainer').innerHTML = '';
+        // ✅ Recargar feed sin recursión
+        const feedContainer = document.getElementById('feedContainer');
+        if (feedContainer) {
+            feedContainer.innerHTML = '';
+        }
         currentPage = 0;
         hasMorePosts = true;
-        
-        // ✅ Cargar publicaciones nuevamente
         await cargarPublicaciones();
 
     } catch (error) {
         console.error('Error al publicar:', error);
         showToast('❌ Error al publicar: ' + error.message, 'error');
     } finally {
-        // 🔓 Liberar bloqueo y restaurar botón
         publicando = false;
         btnPublicar.disabled = false;
         btnPublicar.textContent = '⟡ Publicar';
@@ -1222,13 +1238,17 @@ async function subirImagenMuro(event) {
 }
 
 // ================================================================
-// SUSCRIBIRSE A REALTIME
+// SUSCRIBIRSE A REALTIME - CORREGIDO (SIN BUCLES)
 // ================================================================
-let muroChannel = null;
-
 async function suscribirseARealtime() {
+    // ✅ Cerrar canal anterior si existe
     if (muroChannel) {
-        supabaseClient.removeChannel(muroChannel);
+        try {
+            await supabaseClient.removeChannel(muroChannel);
+        } catch (e) {
+            console.warn('Error removiendo canal anterior:', e);
+        }
+        muroChannel = null;
     }
 
     muroChannel = supabaseClient
@@ -1236,29 +1256,49 @@ async function suscribirseARealtime() {
         .on('postgres_changes',
             { event: 'INSERT', schema: 'public', table: 'muro_posts' },
             (payload) => {
-                if (payload.new.usuario_id !== sessionUser?.id) {
-                    const feedContainer = document.getElementById('feedContainer');
-                    const emptyState = feedContainer?.querySelector('.empty-state');
-                    if (emptyState) emptyState.remove();
+                // ✅ Evitar bucles: si está procesando Realtime, ignorar
+                if (isRealtimeProcessing) return;
+                isRealtimeProcessing = true;
 
-                    const postElement = renderizarPost(payload.new);
-                    feedContainer?.insertBefore(postElement, feedContainer.firstChild);
-                    showToast('📢 Nueva publicación en el Muro', 'success');
+                try {
+                    // ✅ Solo agregar si el post no es del usuario actual
+                    if (payload.new.usuario_id !== sessionUser?.id) {
+                        const feedContainer = document.getElementById('feedContainer');
+                        if (feedContainer) {
+                            const emptyState = feedContainer.querySelector('.empty-state');
+                            if (emptyState) emptyState.remove();
+
+                            const postElement = renderizarPost(payload.new);
+                            feedContainer.insertBefore(postElement, feedContainer.firstChild);
+                            showToast('📢 Nueva publicación en el Muro', 'success');
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error en Realtime INSERT:', error);
+                } finally {
+                    isRealtimeProcessing = false;
                 }
             }
         )
         .on('postgres_changes',
             { event: 'INSERT', schema: 'public', table: 'muro_comentarios' },
             () => {
-                document.querySelectorAll('.post-comentarios[style*="display: block"]').forEach(el => {
-                    const postId = el.id.replace('comentarios-', '');
-                    cargarComentarios(postId);
-                });
+                // ✅ Solo actualizar comentarios visibles
+                try {
+                    document.querySelectorAll('.post-comentarios[style*="display: block"]').forEach(el => {
+                        const postId = el.id.replace('comentarios-', '');
+                        cargarComentarios(postId);
+                    });
+                } catch (error) {
+                    console.error('Error en Realtime comentarios:', error);
+                }
             }
         )
         .subscribe((status) => {
             if (status === 'SUBSCRIBED') {
                 console.log('✅ Muro Realtime conectado');
+            } else if (status === 'CHANNEL_ERROR') {
+                console.error('❌ Error en Realtime:', status);
             }
         });
 
@@ -1266,7 +1306,7 @@ async function suscribirseARealtime() {
 }
 
 // ================================================================
-// INICIALIZACIÓN - CORREGIDA (SIN BUCLES INFINITOS)
+// INICIALIZACIÓN - CORREGIDA
 // ================================================================
 document.addEventListener('DOMContentLoaded', async function() {
     await cargarUsuarioActual();
@@ -1274,20 +1314,20 @@ document.addEventListener('DOMContentLoaded', async function() {
     await cargarPublicaciones();
     await suscribirseARealtime();
 
-    // ✅ Event listener del botón "Publicar" - SOLO UNO
+    // ✅ Botón Publicar - con prevención de eventos duplicados
     const btnPublicar = document.getElementById('btnPublicar');
     if (btnPublicar) {
-        // Eliminar listeners previos para evitar duplicados
+        // Remover listeners anteriores clonando
         const newBtn = btnPublicar.cloneNode(true);
         btnPublicar.parentNode.replaceChild(newBtn, btnPublicar);
         
-        // Agregar el listener correcto
         newBtn.addEventListener('click', function(e) {
-            e.preventDefault(); // Prevenir cualquier comportamiento por defecto
+            e.preventDefault();
             publicar();
         });
     }
 
+    // ✅ Búsqueda de hashtags
     const searchInput = document.getElementById('searchHashtag');
     if (searchInput) {
         searchInput.addEventListener('keypress', function(e) {
@@ -1298,6 +1338,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
 
+    // ✅ Comentarios con Enter
     document.addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
             const input = e.target;
@@ -1309,6 +1350,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     });
 
+    // ✅ Modal de venta
     const btnPublicarVenta = document.getElementById('btnPublicarVenta');
     if (btnPublicarVenta) {
         btnPublicarVenta.addEventListener('click', function(e) {
@@ -1317,6 +1359,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
 
+    // ✅ Cerrar modales al hacer clic fuera
     document.querySelectorAll('.modal-overlay').forEach(modal => {
         modal.addEventListener('click', function(e) {
             if (e.target === this) {
@@ -1327,6 +1370,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     console.log('◈ Sariel\'s - Muro');
     console.log('✅ Inicializado correctamente');
+    console.log('👤 Usuario:', sessionUser?.email || 'No autenticado');
 });
 
 // ================================================================
