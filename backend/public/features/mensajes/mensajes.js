@@ -1,12 +1,12 @@
 /* ================================================================
    MENSAJES - SARIEL'S ECOSYSTEM
-   VERSIÓN FUNCIONAL - CONEXIÓN REAL CON SUPABASE
+   VERSIÓN CORREGIDA - SIN DUPLICACIÓN DE FUNCIONES
    ================================================================ */
 
 // ================================================================
-// CONFIGURACIÓN SUPABASE
+// CONFIGURACIÓN SUPABASE - SIN DECLARACIÓN DUPLICADA
 // ================================================================
-const supabase = window.supabase.createClient(
+const supabaseClient = window.supabaseClient || window.supabase.createClient(
     'https://zultnlogdoajehbswlih.supabase.co',
     'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
 );
@@ -20,33 +20,9 @@ let mediaRecorder = null;
 let audioChunks = [];
 
 // ================================================================
-// TOAST
+// NOTA: showToast(), getSession() y escapeHTML() están en el sistema global
+// (app.js o definidos globalmente). NO DUPLICAR.
 // ================================================================
-function showToast(msg, type = '', duration = 3500) {
-    let t = document.getElementById('toast');
-    if (!t) {
-        t = document.createElement('div');
-        t.id = 'toast';
-        t.className = 'toast';
-        document.body.appendChild(t);
-    }
-    t.textContent = msg;
-    t.className = 'toast show';
-    if (type === 'error') t.classList.add('error');
-    else if (type === 'warning') t.classList.add('warning');
-    else if (type === 'success') t.classList.add('success');
-    else t.classList.remove('error', 'warning', 'success');
-    clearTimeout(t._timeout);
-    t._timeout = setTimeout(() => t.classList.remove('show'), duration);
-}
-
-// ================================================================
-// OBTENER SESIÓN
-// ================================================================
-async function getSession() {
-    const { data: { session } } = await supabase.auth.getSession();
-    return session;
-}
 
 // ================================================================
 // VERIFICAR AUTENTICACIÓN
@@ -59,15 +35,6 @@ async function verificarAutenticacion() {
     }
     usuarioActual = session.user;
     return true;
-}
-
-// ================================================================
-// ESCAPE HTML
-// ================================================================
-function escapeHTML(texto) {
-    const div = document.createElement('div');
-    div.textContent = texto;
-    return div.innerHTML;
 }
 
 // ================================================================
@@ -115,7 +82,7 @@ async function buscarContactos(query) {
         const session = await getSession();
         if (!session) return;
 
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('usuarios')
             .select('id, nombre, handle, avatar_url')
             .or(`nombre.ilike.%${query}%,handle.ilike.%${query}%`)
@@ -136,7 +103,7 @@ async function buscarContactos(query) {
             return;
         }
 
-        const { data: contactosExistentes } = await supabase
+        const { data: contactosExistentes } = await supabaseClient
             .from('contactos')
             .select('contacto_id')
             .eq('usuario_id', session.user.id);
@@ -196,7 +163,7 @@ async function agregarContacto(contactoId) {
             return;
         }
 
-        const { data: existe } = await supabase
+        const { data: existe } = await supabaseClient
             .from('contactos')
             .select('id')
             .eq('usuario_id', session.user.id)
@@ -208,7 +175,7 @@ async function agregarContacto(contactoId) {
             return;
         }
 
-        const { error } = await supabase
+        const { error } = await supabaseClient
             .from('contactos')
             .insert({
                 usuario_id: session.user.id,
@@ -238,7 +205,7 @@ async function cargarConversaciones() {
     if (!await verificarAutenticacion()) return;
 
     try {
-        const { data: contactos, error } = await supabase
+        const { data: contactos, error } = await supabaseClient
             .from('contactos')
             .select('*, usuarios!contactos_contacto_id_fkey(id, nombre, handle, avatar_url)')
             .eq('usuario_id', usuarioActual.id)
@@ -262,7 +229,7 @@ async function cargarConversaciones() {
 
         const conversaciones = await Promise.all(contactos.map(async (contacto) => {
             const contactoInfo = contacto.usuarios || {};
-            const { data: ultimoMensaje } = await supabase
+            const { data: ultimoMensaje } = await supabaseClient
                 .from('mensajes_chat')
                 .select('contenido, created_at, leido, remitente_id')
                 .or(`and(remitente_id.eq.${usuarioActual.id},destinatario_id.eq.${contactoInfo.id}),and(remitente_id.eq.${contactoInfo.id},destinatario_id.eq.${usuarioActual.id})`)
@@ -270,7 +237,7 @@ async function cargarConversaciones() {
                 .limit(1)
                 .maybeSingle();
 
-            const { count: noLeidos } = await supabase
+            const { count: noLeidos } = await supabaseClient
                 .from('mensajes_chat')
                 .select('id', { count: 'exact' })
                 .eq('remitente_id', contactoInfo.id)
@@ -340,7 +307,7 @@ async function abrirConversacion(contactoId) {
     }
 
     try {
-        const { data: contacto } = await supabase
+        const { data: contacto } = await supabaseClient
             .from('usuarios')
             .select('id, nombre, handle, avatar_url')
             .eq('id', contactoId)
@@ -354,7 +321,7 @@ async function abrirConversacion(contactoId) {
         const chatAvatar = document.querySelector('.chat-avatar');
         if (chatAvatar) chatAvatar.textContent = contacto.nombre ? contacto.nombre[0].toUpperCase() : '✦';
 
-        const { data: estadoContacto } = await supabase
+        const { data: estadoContacto } = await supabaseClient
             .from('usuarios')
             .select('online, ultima_conexion')
             .eq('id', contactoId)
@@ -387,10 +354,10 @@ async function abrirConversacion(contactoId) {
         await cargarMensajes(contactoId);
 
         if (realtimeChannel) {
-            await supabase.removeChannel(realtimeChannel);
+            await supabaseClient.removeChannel(realtimeChannel);
         }
 
-        realtimeChannel = supabase
+        realtimeChannel = supabaseClient
             .channel(`chat-${contactoId}`)
             .on('postgres_changes', 
                 { event: 'INSERT', schema: 'public', table: 'mensajes_chat', filter: `remitente_id=eq.${contactoId}` },
@@ -424,7 +391,7 @@ async function cargarMensajes(contactoId) {
     const container = document.getElementById('chatMessages');
     if (!container) return;
 
-    const { data: mensajes, error } = await supabase
+    const { data: mensajes, error } = await supabaseClient
         .from('mensajes_chat')
         .select('*')
         .or(`and(remitente_id.eq.${session.user.id},destinatario_id.eq.${contactoId}),and(remitente_id.eq.${contactoId},destinatario_id.eq.${session.user.id})`)
@@ -599,7 +566,7 @@ async function enviarMensaje() {
             return;
         }
 
-        const { error } = await supabase
+        const { error } = await supabaseClient
             .from('mensajes_chat')
             .insert({
                 remitente_id: session.user.id,
@@ -628,19 +595,19 @@ async function subirArchivo(file, session) {
         const tipo = file.type.startsWith('image/') ? 'imagen' : 'voz';
         const filePath = `mensajes/${session.user.id}/${Date.now()}.${fileExt}`;
 
-        const { error: uploadError } = await supabase.storage
+        const { error: uploadError } = await supabaseClient.storage
             .from('mensajes')
             .upload(filePath, file, { upsert: true });
 
         if (uploadError) throw uploadError;
 
-        const { data: urlData } = supabase.storage
+        const { data: urlData } = supabaseClient.storage
             .from('mensajes')
             .getPublicUrl(filePath);
 
         const publicUrl = urlData.publicUrl;
 
-        const { error } = await supabase
+        const { error } = await supabaseClient
             .from('mensajes_chat')
             .insert({
                 remitente_id: session.user.id,
@@ -770,7 +737,7 @@ async function eliminarMensaje(mensajeId) {
             return;
         }
 
-        const { error } = await supabase
+        const { error } = await supabaseClient
             .from('mensajes_chat')
             .update({ eliminado: true })
             .eq('id', mensajeId)
@@ -808,7 +775,7 @@ async function editarMensaje(mensajeId) {
             return;
         }
 
-        const { error } = await supabase
+        const { error } = await supabaseClient
             .from('mensajes_chat')
             .update({
                 contenido: nuevoContenido,
@@ -848,14 +815,12 @@ async function eliminarConversacion(contactoId) {
             return;
         }
 
-        // Marcar todos los mensajes como eliminados
-        await supabase
+        await supabaseClient
             .from('mensajes_chat')
             .update({ eliminado: true })
             .or(`and(remitente_id.eq.${session.user.id},destinatario_id.eq.${contactoId}),and(remitente_id.eq.${contactoId},destinatario_id.eq.${session.user.id})`);
 
-        // Eliminar contacto
-        await supabase
+        await supabaseClient
             .from('contactos')
             .delete()
             .eq('usuario_id', session.user.id)
@@ -889,15 +854,13 @@ async function marcarMensajesLeidos(contactoId) {
         const session = await getSession();
         if (!session) return;
 
-        // Usar RPC si existe, o UPDATE directo
         try {
-            await supabase.rpc('marcar_mensajes_leidos', {
+            await supabaseClient.rpc('marcar_mensajes_leidos', {
                 p_remitente_id: contactoId,
                 p_destinatario_id: session.user.id
             });
         } catch (rpcError) {
-            // Fallback: UPDATE directo
-            await supabase
+            await supabaseClient
                 .from('mensajes_chat')
                 .update({ leido: true })
                 .eq('remitente_id', contactoId)
@@ -924,7 +887,7 @@ async function reportarMensaje(mensajeId) {
             return;
         }
 
-        const { error } = await supabase
+        const { error } = await supabaseClient
             .from('mensajes_reportes')
             .insert({
                 mensaje_id: mensajeId,
@@ -966,9 +929,8 @@ async function bloquearUsuario(usuarioId) {
             return;
         }
 
-        // Insertar bloqueo
         try {
-            await supabase
+            await supabaseClient
                 .from('bloqueos')
                 .insert({
                     usuario_id: session.user.id,
@@ -982,8 +944,7 @@ async function bloquearUsuario(usuarioId) {
             throw insertError;
         }
 
-        // Eliminar contacto
-        await supabase
+        await supabaseClient
             .from('contactos')
             .delete()
             .eq('usuario_id', session.user.id)
@@ -1028,7 +989,7 @@ async function buscarEnConversacion(query) {
         const session = await getSession();
         if (!session) return;
 
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('mensajes_chat')
             .select('*')
             .or(`and(remitente_id.eq.${session.user.id},destinatario_id.eq.${conversacionActual.id}),and(remitente_id.eq.${conversacionActual.id},destinatario_id.eq.${session.user.id})`)
@@ -1088,7 +1049,6 @@ function cerrarModalNuevoContacto() {
 document.addEventListener('DOMContentLoaded', async function() {
     await cargarConversaciones();
 
-    // Event listeners
     document.getElementById('chatInput')?.addEventListener('keydown', function(e) {
         if (e.key === 'Enter') {
             enviarMensaje();
@@ -1105,7 +1065,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         buscarContactos(e.target.value);
     });
 
-    // Cerrar modal con ESC
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
             cerrarModalNuevoContacto();
