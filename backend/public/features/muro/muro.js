@@ -1,6 +1,6 @@
 /* ================================================================
    MURO - SARIEL'S ECOSYSTEM
-   VERSIÓN CORREGIDA - CON SHOWTOAST SEGURO
+   VERSIÓN CORREGIDA - SIN BUCLES INFINITOS Y CON SHOWTOAST SEGURO
    ================================================================ */
 
 // ================================================================
@@ -20,6 +20,7 @@ const POSTS_PER_PAGE = 10;
 let isLoading = false;
 let hasMorePosts = true;
 let precioActual = 4.50;
+let publicando = false; // 🔒 Previene múltiples publicaciones simultáneas
 
 // ================================================================
 // SHOWTOAST SEGURO - FUNCIONA EN CUALQUIER CONTEXTO
@@ -625,9 +626,15 @@ async function eliminarPublicacion(postId) {
 }
 
 // ================================================================
-// PUBLICAR NUEVA PUBLICACIÓN
+// 🔒 PUBLICAR NUEVA PUBLICACIÓN - CORREGIDO (SIN BUCLES INFINITOS)
 // ================================================================
 async function publicar() {
+    // 🔒 Evitar múltiples publicaciones simultáneas
+    if (publicando) {
+        showToast('⏳ Ya estás publicando, espera un momento...', 'warning');
+        return;
+    }
+
     const postContent = document.getElementById('postContent');
     const btnPublicar = document.getElementById('btnPublicar');
     const contenido = postContent ? postContent.value.trim() : '';
@@ -647,10 +654,13 @@ async function publicar() {
         return;
     }
 
+    // 🔒 Bloquear para evitar doble clic
+    publicando = true;
     btnPublicar.disabled = true;
     btnPublicar.textContent = '⏳ Publicando...';
 
     try {
+        // ✅ Insertar publicación en Supabase
         const { data, error } = await supabaseClient
             .from('muro_posts')
             .insert({
@@ -662,18 +672,26 @@ async function publicar() {
 
         if (error) throw error;
 
+        // ✅ Limpiar campo y mostrar éxito
         postContent.value = '';
         showToast('✅ Publicación creada', 'success');
 
+        // ✅ Recargar feed SIN recursión (reset=true)
+        // No llamamos a cargarPublicaciones() directamente con recursión
+        // Reiniciamos el estado y cargamos desde cero
         document.getElementById('feedContainer').innerHTML = '';
         currentPage = 0;
         hasMorePosts = true;
-        cargarPublicaciones();
+        
+        // ✅ Cargar publicaciones nuevamente
+        await cargarPublicaciones();
 
     } catch (error) {
         console.error('Error al publicar:', error);
         showToast('❌ Error al publicar: ' + error.message, 'error');
     } finally {
+        // 🔓 Liberar bloqueo y restaurar botón
+        publicando = false;
         btnPublicar.disabled = false;
         btnPublicar.textContent = '⟡ Publicar';
     }
@@ -1248,7 +1266,7 @@ async function suscribirseARealtime() {
 }
 
 // ================================================================
-// INICIALIZACIÓN
+// INICIALIZACIÓN - CORREGIDA (SIN BUCLES INFINITOS)
 // ================================================================
 document.addEventListener('DOMContentLoaded', async function() {
     await cargarUsuarioActual();
@@ -1256,15 +1274,25 @@ document.addEventListener('DOMContentLoaded', async function() {
     await cargarPublicaciones();
     await suscribirseARealtime();
 
+    // ✅ Event listener del botón "Publicar" - SOLO UNO
     const btnPublicar = document.getElementById('btnPublicar');
     if (btnPublicar) {
-        btnPublicar.addEventListener('click', publicar);
+        // Eliminar listeners previos para evitar duplicados
+        const newBtn = btnPublicar.cloneNode(true);
+        btnPublicar.parentNode.replaceChild(newBtn, btnPublicar);
+        
+        // Agregar el listener correcto
+        newBtn.addEventListener('click', function(e) {
+            e.preventDefault(); // Prevenir cualquier comportamiento por defecto
+            publicar();
+        });
     }
 
     const searchInput = document.getElementById('searchHashtag');
     if (searchInput) {
         searchInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
+                e.preventDefault();
                 buscarHashtag();
             }
         });
@@ -1274,6 +1302,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (e.key === 'Enter') {
             const input = e.target;
             if (input.id && input.id.startsWith('input-comentario-')) {
+                e.preventDefault();
                 const postId = input.id.replace('input-comentario-', '');
                 enviarComentario(postId);
             }
@@ -1282,7 +1311,10 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     const btnPublicarVenta = document.getElementById('btnPublicarVenta');
     if (btnPublicarVenta) {
-        btnPublicarVenta.addEventListener('click', publicarVenta);
+        btnPublicarVenta.addEventListener('click', function(e) {
+            e.preventDefault();
+            publicarVenta();
+        });
     }
 
     document.querySelectorAll('.modal-overlay').forEach(modal => {
@@ -1294,6 +1326,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     });
 
     console.log('◈ Sariel\'s - Muro');
+    console.log('✅ Inicializado correctamente');
 });
 
 // ================================================================
