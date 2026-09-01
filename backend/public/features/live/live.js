@@ -1,6 +1,6 @@
 /* ================================================================
    LIVE - SARIEL'S ECOSYSTEM
-   VERSIÓN FUNCIONAL - CONEXIÓN REAL CON SUPABASE + LIVEKIT
+   VERSIÓN CORREGIDA - CONEXIÓN REAL CON SUPABASE + LIVEKIT
    ================================================================ */
 
 // ================================================================
@@ -87,14 +87,14 @@ async function getSession() {
 }
 
 // ================================================================
-// OBTENER TOKEN LIVEKIT DEL BACKEND
+// OBTENER TOKEN LIVEKIT DEL BACKEND CON ROL
 // ================================================================
-async function obtenerTokenLiveKit(roomName, participantName) {
+async function obtenerTokenLiveKit(roomName, participantName, role = 'subscriber') {
     try {
         const session = await getSession();
         if (!session) throw new Error('No autenticado');
 
-        const response = await fetch(`/api/token?room=${encodeURIComponent(roomName)}`, {
+        const response = await fetch(`/api/token?room=${encodeURIComponent(roomName)}&role=${role}`, {
             headers: {
                 'Authorization': `Bearer ${session.access_token}`
             }
@@ -114,7 +114,7 @@ async function obtenerTokenLiveKit(roomName, participantName) {
 }
 
 // ================================================================
-// 🎥 INICIAR TRANSMISIÓN
+// 🎥 INICIAR TRANSMISIÓN - CORREGIDO
 // ================================================================
 async function iniciarTransmision() {
     try {
@@ -125,85 +125,76 @@ async function iniciarTransmision() {
         }
         currentUser = session.user;
 
-        // Verificar transmisión activa
-        const { data: streamActivo, error: checkError } = await supabase
-            .from('transmisiones')
-            .select('id')
-            .eq('streamer_id', currentUser.id)
-            .eq('estado', 'activa')
-            .maybeSingle();
-
-        if (checkError) throw checkError;
-        if (streamActivo) {
-            showToast('⚠️ Ya tienes una transmisión activa', 'warning');
-            return;
-        }
-
         showToast('⏳ Iniciando transmisión...', '', 3000);
 
-        // Obtener cámara y micrófono
-        localStream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: 'user', width: 1280, height: 720 },
-            audio: true
+        const titulo = prompt('Título de tu transmisión:', 'Mi live en Sariel\'s') || 'Live en Sariel\'s';
+        const categoria = prompt('Categoría (gaming, musica, educacion, comunidad, tecnologia, general):', 'general') || 'general';
+
+        // Usar RPC segura
+        const { data, error } = await supabase.rpc('iniciar_transmision_segura', {
+            p_titulo: titulo,
+            p_categoria: categoria,
+            p_descripcion: '',
+            p_tipo_transmision: 'gratis',
+            p_precio: 0
         });
 
-        const video = document.getElementById('liveVideo');
-        if (video) {
-            video.srcObject = localStream;
-            await video.play();
-        }
+        if (error) throw error;
+        if (!data.success) throw new Error(data.error);
 
-        const titulo = prompt('Título de tu transmisión:', 'Mi live en Sariel\'s') || 'Live en Sariel\'s';
-        const categoria = prompt('Categoría:', 'Charla') || 'Charla';
+        const streamData = data;
+        currentStream = {
+            id: streamData.stream_id,
+            room_name: streamData.room_name,
+            streamer_id: currentUser.id,
+            titulo: titulo,
+            categoria: categoria,
+            estado: 'en_vivo',
+            fecha_inicio: new Date().toISOString()
+        };
 
-        const roomName = `live-${currentUser.id}-${Date.now()}`;
-
-        // Crear transmisión en Supabase
-        const { data: streamData, error: streamError } = await supabase
-            .from('transmisiones')
-            .insert({
-                streamer_id: currentUser.id,
-                titulo: titulo,
-                categoria: categoria,
-                estado: 'activa',
-                fecha_inicio: new Date().toISOString(),
-                room_name: roomName,
-                viewers_count: 0
-            })
-            .select()
-            .single();
-
-        if (streamError) throw streamError;
-
-        currentStream = streamData;
-
-        // CONEXIÓN LIVEKIT
+        // CONECTAR A LIVEKIT PRIMERO (sin capturar cámara local)
         try {
             showToast('🔗 Conectando a LiveKit...', '', 2000);
 
-            const { Room } = await import('https://cdn.jsdelivr.net/npm/livekit-client@1/dist/index.js');
+            // LiveKit ya está disponible globalmente por el script en HTML
+            const { Room } = window.livekitClient;
 
             liveKitRoom = new Room();
 
+            // Obtener token como PUBLISHER (rol para transmitir)
             const token = await obtenerTokenLiveKit(
                 currentStream.room_name,
-                currentUser.user_metadata?.nombre || currentUser.email || 'streamer'
+                currentUser.user_metadata?.nombre || currentUser.email || 'streamer',
+                'publisher'
             );
 
             await liveKitRoom.connect(LIVEKIT_CONFIG.url, token);
 
-            // Publicar video
+            // Publicar cámara y micrófono usando LiveKit (sin getUserMedia manual)
             await liveKitRoom.localParticipant.setCameraEnabled(true);
             await liveKitRoom.localParticipant.setMicrophoneEnabled(true);
 
-            // Publicar pista de video local
-            const videoTrack = localStream.getVideoTracks()[0];
-            if (videoTrack) {
-                // Ya está publicado por setCameraEnabled
+            // Obtener el stream de video para mostrarlo en el elemento <video> local
+            // LiveKit maneja la captura internamente, solo mostramos el stream local
+            const videoElement = document.getElementById('liveVideo');
+            if (videoElement) {
+                // Obtener el track de video local y mostrarlo
+                const videoTrack = liveKitRoom.localParticipant.videoTrackPublications.values().next().value;
+                if (videoTrack) {
+                    const stream = new MediaStream();
+                    const track = videoTrack.track;
+                    if (track) {
+                        stream.addTrack(track);
+                        videoElement.srcObject = stream;
+                        await videoElement.play();
+                    }
+                }
             }
 
             showToast('✅ Conectado a LiveKit', 'success');
 
+            // Escuchar participantes
             liveKitRoom.on('participantConnected', (participant) => {
                 espectadores++;
                 document.getElementById('viewersCount').textContent = `${espectadores} espectadores`;
@@ -217,6 +208,22 @@ async function iniciarTransmision() {
         } catch (e) {
             console.warn('LiveKit no disponible, modo local:', e);
             showToast('⚠️ Modo local - sin transmisión en vivo', 'warning');
+            
+            // Fallback: capturar cámara local manualmente solo para vista local
+            try {
+                const fallbackStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'user', width: 1280, height: 720 },
+                    audio: true
+                });
+                localStream = fallbackStream;
+                const video = document.getElementById('liveVideo');
+                if (video) {
+                    video.srcObject = fallbackStream;
+                    await video.play();
+                }
+            } catch (fallbackError) {
+                console.warn('No se pudo capturar cámara en modo fallback:', fallbackError);
+            }
         }
 
         isLive = true;
@@ -224,13 +231,19 @@ async function iniciarTransmision() {
 
         iniciarContadorEspectadores();
         suscribirseAlChat();
-        await notificarSeguidores();
+        await notificarSeguidoresSeguro(currentStream.id);
 
         showToast('🎥 ¡Transmisión iniciada!', 'success', 4000);
 
     } catch (error) {
         console.error('Error iniciando transmisión:', error);
         showToast('❌ Error al iniciar: ' + error.message, 'error');
+        
+        // Limpiar en caso de error
+        if (liveKitRoom) {
+            try { await liveKitRoom.disconnect(); } catch (e) {}
+            liveKitRoom = null;
+        }
         if (localStream) {
             localStream.getTracks().forEach(t => t.stop());
             localStream = null;
@@ -239,7 +252,7 @@ async function iniciarTransmision() {
 }
 
 // ================================================================
-// ✋ FINALIZAR TRANSMISIÓN
+// ✋ FINALIZAR TRANSMISIÓN - CON LIMPIEZA COMPLETA
 // ================================================================
 async function finalizarTransmision() {
     try {
@@ -252,32 +265,68 @@ async function finalizarTransmision() {
 
         showToast('⏳ Finalizando transmisión...', '', 3000);
 
-        const video = document.getElementById('liveVideo');
-        if (video && video.srcObject) {
-            video.srcObject.getTracks().forEach(track => track.stop());
-            video.srcObject = null;
-        }
-
-        if (localStream) {
-            localStream.getTracks().forEach(t => t.stop());
-            localStream = null;
-        }
-
-        const duracion = Math.floor((Date.now() - new Date(currentStream.fecha_inicio).getTime()) / 1000);
-
-        const { error } = await supabase
-            .from('transmisiones')
-            .update({
-                estado: 'finalizada',
-                fecha_fin: new Date().toISOString(),
-                viewers_count: espectadores
-            })
-            .eq('id', currentStream.id);
+        // Usar RPC segura
+        const { data, error } = await supabase.rpc('finalizar_transmision_segura', {
+            p_stream_id: currentStream.id
+        });
 
         if (error) throw error;
+        if (!data.success) throw new Error(data.error);
 
+        showToast(`✅ Transmisión finalizada - Duración: ${Math.floor(data.duracion / 60)} min`, 'success');
+
+    } catch (error) {
+        console.error('Error finalizando transmisión:', error);
+        showToast('❌ Error al finalizar: ' + error.message, 'error');
+    } finally {
+        // ============================================================
+        // LIMPIEZA COMPLETA DE RECURSOS
+        // ============================================================
+        
+        // 1. Detener y limpiar localStream
+        if (localStream) {
+            try {
+                localStream.getTracks().forEach(t => {
+                    t.stop();
+                    t.enabled = false;
+                });
+                localStream = null;
+            } catch (e) {
+                console.warn('Error limpiando localStream:', e);
+            }
+        }
+
+        // 2. Limpiar video element
+        const video = document.getElementById('liveVideo');
+        if (video) {
+            try {
+                if (video.srcObject) {
+                    if (video.srcObject.getTracks) {
+                        video.srcObject.getTracks().forEach(t => t.stop());
+                    }
+                    video.srcObject = null;
+                }
+                video.pause();
+                video.src = '';
+                video.load();
+            } catch (e) {
+                console.warn('Error limpiando video element:', e);
+            }
+        }
+
+        // 3. Desconectar LiveKit
         if (liveKitRoom) {
             try {
+                // Desconectar todos los participantes
+                if (liveKitRoom.localParticipant) {
+                    // Deshabilitar cámaras y micrófonos
+                    try {
+                        await liveKitRoom.localParticipant.setCameraEnabled(false);
+                        await liveKitRoom.localParticipant.setMicrophoneEnabled(false);
+                    } catch (e) {
+                        console.warn('Error deshabilitando dispositivos LiveKit:', e);
+                    }
+                }
                 await liveKitRoom.disconnect();
                 console.log('✅ LiveKit desconectado');
             } catch (lkError) {
@@ -286,30 +335,42 @@ async function finalizarTransmision() {
             liveKitRoom = null;
         }
 
+        // 4. Limpiar intervalos
         if (streamInterval) {
             clearInterval(streamInterval);
             streamInterval = null;
         }
 
+        // 5. Cerrar canales de Realtime de Supabase
         if (channelChat) {
-            supabase.removeChannel(channelChat);
+            try {
+                supabase.removeChannel(channelChat);
+                console.log('✅ Canal de chat cerrado');
+            } catch (e) {
+                console.warn('Error cerrando canal de chat:', e);
+            }
             channelChat = null;
         }
 
+        // 6. Resetear estado
         isLive = false;
         currentStream = null;
+        espectadores = 0;
         document.getElementById('viewersCount').textContent = '0 espectadores';
+        
+        // 7. Limpiar overlay de donaciones si existe
+        const container = document.getElementById('liveVideoContainer');
+        if (container) {
+            const overlays = container.querySelectorAll('.donacion-overlay');
+            overlays.forEach(el => el.remove());
+        }
 
-        showToast('✅ Transmisión finalizada', 'success');
-
-    } catch (error) {
-        console.error('Error finalizando transmisión:', error);
-        showToast('❌ Error al finalizar: ' + error.message, 'error');
+        console.log('🧹 Limpieza de recursos completada');
     }
 }
 
 // ================================================================
-// 📺 UNIRSE A TRANSMISIÓN
+// 📺 UNIRSE A TRANSMISIÓN - CON ROL DE SUBSCRIBER
 // ================================================================
 async function unirseATransmision(streamId) {
     try {
@@ -332,13 +393,16 @@ async function unirseATransmision(streamId) {
         currentStream = stream;
 
         try {
-            const { Room } = await import('https://cdn.jsdelivr.net/npm/livekit-client@1/dist/index.js');
+            // LiveKit ya está disponible globalmente por el script en HTML
+            const { Room } = window.livekitClient;
 
             liveKitRoom = new Room();
 
+            // Obtener token como SUBSCRIBER (rol para ver)
             const token = await obtenerTokenLiveKit(
                 stream.room_name,
-                session.user.user_metadata?.nombre || session.user.email || 'espectador'
+                session.user.user_metadata?.nombre || session.user.email || 'espectador',
+                'subscriber'
             );
 
             await liveKitRoom.connect(LIVEKIT_CONFIG.url, token);
@@ -361,7 +425,6 @@ async function unirseATransmision(streamId) {
 
         suscribirseAlChat();
 
-        // Mostrar título
         const overlay = document.querySelector('.live-overlay .text');
         if (overlay) overlay.textContent = stream.titulo || 'EN VIVO';
 
@@ -418,7 +481,6 @@ async function enviarMensaje() {
     }
 
     const moderationResult = verificarContenido(mensaje);
-
     if (moderationResult.prohibido) {
         showToast(`⚠️ ${moderationResult.razon}`, 'warning');
         input.value = '';
@@ -426,23 +488,20 @@ async function enviarMensaje() {
     }
 
     try {
-        const { error } = await supabase
-            .from('mensajes_live')
-            .insert({
-                transmision_id: currentStream.id,
-                usuario_id: session.user.id,
-                mensaje: mensaje,
-                nombre_usuario: session.user.user_metadata?.nombre || 'Explorador'
-            });
+        const { data, error } = await supabase.rpc('enviar_mensaje_seguro', {
+            p_transmision_id: currentStream.id,
+            p_mensaje: mensaje
+        });
 
         if (error) throw error;
+        if (!data.success) throw new Error(data.error);
 
         input.value = '';
         input.focus();
 
     } catch (error) {
         console.error('Error enviando mensaje:', error);
-        showToast('❌ Error al enviar mensaje', 'error');
+        showToast('❌ Error al enviar mensaje: ' + error.message, 'error');
     }
 }
 
@@ -459,7 +518,7 @@ function agregarMensajeAlChat(mensaje) {
         <div class="avatar">${avatar}</div>
         <div class="msg">
             <span class="name">${escapeHTML(mensaje.nombre_usuario || 'Explorador')}</span>
-            <span class="time">${new Date(mensaje.created_at).toLocaleTimeString()}</span>
+            <span class="time">${new Date(mensaje.creado_en || mensaje.created_at).toLocaleTimeString()}</span>
             <div class="text">${escapeHTML(mensaje.mensaje)}</div>
         </div>
     `;
@@ -531,45 +590,26 @@ async function enviarDonacion(monto) {
 
         showToast(`⏳ Procesando donación de $${monto} USD...`, '', 3000);
 
-        // Insertar donación
-        const { data, error } = await supabase
-            .from('live_donaciones')
-            .insert({
-                transmision_id: currentStream.id,
-                donante_id: session.user.id,
-                streamer_id: currentStream.streamer_id,
-                monto_usd: monto,
-                tipo_donacion: donacion.nombre,
-                efecto_mostrado: false
-            })
-            .select()
-            .single();
+        const idempotencyKey = `donacion_${session.user.id}_${currentStream.id}_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+
+        const { data, error } = await supabase.rpc('crear_donacion_segura', {
+            p_transmision_id: currentStream.id,
+            p_monto_usd: monto,
+            p_idempotency_key: idempotencyKey,
+            p_mensaje: `💎 ${donacion.nombre}`
+        });
 
         if (error) throw error;
+        if (!data.success) throw new Error(data.error);
 
         mostrarEfectoDonacion(monto, donacion, session.user);
 
         const mensajeDonacion = {
             nombre_usuario: session.user.user_metadata?.nombre || 'Explorador',
             mensaje: `🎉 ¡Donó $${monto} USD (${donacion.nombre})!`,
-            created_at: new Date().toISOString()
+            creado_en: new Date().toISOString()
         };
         agregarMensajeAlChat(mensajeDonacion);
-
-        // Actualizar estadísticas de transmisión
-        const { data: streamData, error: streamError } = await supabase
-            .from('transmisiones')
-            .select('donaciones_totales')
-            .eq('id', currentStream.id)
-            .single();
-
-        if (!streamError && streamData) {
-            const nuevasDonaciones = (streamData.donaciones_totales || 0) + monto;
-            await supabase
-                .from('transmisiones')
-                .update({ donaciones_totales: nuevasDonaciones })
-                .eq('id', currentStream.id);
-        }
 
         showToast(`🎉 ¡${donacion.nombre} recibido!`, 'success', 5000);
 
@@ -660,11 +700,16 @@ function iniciarContadorEspectadores() {
     streamInterval = setInterval(async () => {
         if (!currentStream) return;
 
-        await supabase
-            .from('transmisiones')
-            .update({ viewers_count: espectadores })
-            .eq('id', currentStream.id);
-    }, 10000);
+        // Solo actualizar si hay cambio
+        try {
+            await supabase
+                .from('transmisiones')
+                .update({ viewers_count: espectadores })
+                .eq('id', currentStream.id);
+        } catch (e) {
+            // Silenciar error
+        }
+    }, 15000);
 }
 
 // ================================================================
@@ -679,31 +724,18 @@ async function seguirStreamer(streamerId) {
             return;
         }
 
-        if (session.user.id === streamerId) {
-            showToast('⚠️ No puedes seguirte a ti mismo', 'warning');
-            return;
-        }
+        const { data, error } = await supabase.rpc('seguir_streamer_seguro', {
+            p_streamer_id: streamerId
+        });
 
-        const { error } = await supabase
-            .from('live_seguidores')
-            .insert({
-                streamer_id: streamerId,
-                seguidor_id: session.user.id
-            });
+        if (error) throw error;
+        if (!data.success) throw new Error(data.error);
 
-        if (error) {
-            if (error.code === '23505') {
-                showToast('⚠️ Ya sigues a este streamer', 'warning');
-                return;
-            }
-            throw error;
-        }
-
-        showToast('✅ Ahora sigues a este streamer', 'success');
+        showToast('✅ ' + data.message, 'success');
 
     } catch (error) {
         console.error('Error siguiendo:', error);
-        showToast('❌ Error al seguir', 'error');
+        showToast('❌ Error al seguir: ' + error.message, 'error');
     }
 }
 
@@ -724,34 +756,25 @@ async function getSeguidores(streamerId) {
 }
 
 // ================================================================
-// 🔔 NOTIFICACIONES A SEGUIDORES
+// 🔔 NOTIFICACIONES A SEGUIDORES - RPC SEGURA
 // ================================================================
 
-async function notificarSeguidores() {
+async function notificarSeguidoresSeguro(streamId) {
     try {
-        if (!currentStream || !currentUser) return;
+        if (!streamId) return;
 
-        const { data: seguidores } = await supabase
-            .from('live_seguidores')
-            .select('seguidor_id')
-            .eq('streamer_id', currentUser.id);
+        const { data, error } = await supabase.rpc('notificar_seguidores_seguro', {
+            p_stream_id: streamId
+        });
 
-        if (!seguidores || seguidores.length === 0) return;
-
-        for (const s of seguidores) {
-            await supabase
-                .from('notificaciones')
-                .insert({
-                    user_id: s.seguidor_id,
-                    tipo: 'live',
-                    mensaje: `🔴 ${currentUser.user_metadata?.nombre || 'Un streamer'} ha iniciado una transmisión: "${currentStream.titulo}"`,
-                    emisor_id: currentUser.id,
-                    leida: false,
-                    fecha: new Date().toISOString()
-                });
+        if (error) {
+            console.error('Error notificando seguidores:', error);
+            return;
         }
 
-        showToast(`🔔 Notificados ${seguidores.length} seguidores`, 'success');
+        if (data.success) {
+            console.log(`✅ Notificados ${data.notificaciones_enviadas || 0} seguidores`);
+        }
 
     } catch (error) {
         console.error('Error notificando seguidores:', error);
@@ -770,7 +793,7 @@ async function cargarTransmisionesActivas() {
                 *,
                 usuarios(id, nombre, avatar_url)
             `)
-            .eq('estado', 'activa')
+            .eq('estado', 'en_vivo')
             .order('fecha_inicio', { ascending: false });
 
         if (error) throw error;
@@ -875,17 +898,31 @@ async function capturarPantalla() {
 
 async function restaurarCamara() {
     try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: 'user', width: 1280, height: 720 },
-            audio: true
-        });
-
-        const video = document.getElementById('liveVideo');
-        if (video) {
-            video.srcObject = stream;
-            video.play();
+        if (liveKitRoom) {
+            // Si LiveKit está activo, usar su cámara
+            await liveKitRoom.localParticipant.setCameraEnabled(true);
+            const videoTrack = liveKitRoom.localParticipant.videoTrackPublications.values().next().value;
+            if (videoTrack && videoTrack.track) {
+                const stream = new MediaStream();
+                stream.addTrack(videoTrack.track);
+                const video = document.getElementById('liveVideo');
+                if (video) {
+                    video.srcObject = stream;
+                    video.play();
+                }
+            }
+        } else {
+            // Fallback a getUserMedia
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: 'user', width: 1280, height: 720 },
+                audio: true
+            });
+            const video = document.getElementById('liveVideo');
+            if (video) {
+                video.srcObject = stream;
+                video.play();
+            }
         }
-
     } catch (error) {
         console.error('Error restaurando cámara:', error);
     }
@@ -898,7 +935,6 @@ function toggleVoice() {
     if (isVoiceActive) {
         btn.textContent = '🔊';
         btn.classList.add('voice-active');
-        // Iniciar lectura de voz (simple)
         const msg = 'Bienvenidos al Live de Sariel\'s';
         const utterance = new SpeechSynthesisUtterance(msg);
         utterance.lang = 'es-ES';
