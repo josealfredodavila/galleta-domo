@@ -1,41 +1,366 @@
 /* ================================================================
-   APP.JS - VERSIÓN COMPLETA CORREGIDA
-   Con Supabase + Wallet + Autenticación + Tokens + Estado Online
+   APP.JS - VERSIÓN COMPLETA CORREGIDA (SINGLETON + RESOURCE MANAGER)
    RUTA RAILWAY: https://galleta-domo.up.railway.app
    ================================================================ */
 
 // ================================================================
-// CONFIGURACIÓN SUPABASE (CON NUEVA LLAVE)
+// 1. CONFIGURACIÓN SUPABASE
 // ================================================================
-const SUPABASE_URL = 'https://zultnlogdoajehbswlih.supabase.co';  // ✅ NUEVA URL
-const SUPABASE_ANON_KEY = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';  // ✅ NUEVA LLAVE
-
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const SUPABASE_URL = 'https://zultnlogdoajehbswlih.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
 
 // ================================================================
-// EXPONER SUPABASE GLOBALMENTE PARA index.html Y OTROS SCRIPTS
+// 2. SINGLETON DE SUPABASE CLIENT - ÚNICO EN TODA LA APP
 // ================================================================
-window.supabase = supabaseClient;
+if (typeof window._supabaseClient === 'undefined') {
+    try {
+        if (window.supabase && typeof window.supabase.createClient === 'function') {
+            window._supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+                realtime: {
+                    params: {
+                        eventsPerSecond: 10
+                    }
+                }
+            });
+        } else {
+            throw new Error('SDK de Supabase no encontrado en window.supabase');
+        }
+        console.log('✅ Supabase Client singleton inicializado');
+    } catch (error) {
+        console.error('❌ Error inicializando Supabase Client:', error);
+        window._supabaseClient = {
+            auth: {
+                getSession: async () => ({ data: { session: null }, error: null }),
+                onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+                signUp: async () => ({ data: null, error: new Error('Supabase no disponible') }),
+                signInWithPassword: async () => ({ data: null, error: new Error('Supabase no disponible') }),
+                signOut: async () => ({ error: null }),
+                resetPasswordForEmail: async () => ({ error: null }),
+                updateUser: async () => ({ error: null })
+            },
+            from: () => ({
+                select: () => ({ 
+                    eq: () => ({ single: async () => ({ data: null, error: null }), order: () => ({ data: [], error: null }) }),
+                    insert: () => ({ select: async () => ({ data: [], error: null }) }),
+                    update: () => ({ eq: async () => ({ error: null }) })
+                })
+            }),
+            rpc: async () => ({ data: null, error: null }),
+            channel: () => ({ on: () => ({ subscribe: () => ({ unsubscribe: () => {} }) }) }),
+            removeChannel: () => {}
+        };
+    }
+}
+
+// Exponer la instancia única a nivel global
+window.supabaseClient = window._supabaseClient;
+window.supabase = window._supabaseClient;
 
 // ================================================================
-// VARIABLES GLOBALES
+// 3. GESTOR GLOBAL DE RECURSOS (PREVENCIÓN DE MEMORY LEAKS)
+// ================================================================
+class ResourceManager {
+    constructor() {
+        this.channels = [];
+        this.observers = [];
+        this.intervals = [];
+        this.timeouts = [];
+        this.streams = [];
+        this._isCleaning = false;
+    }
+
+    // ✅ Registra un canal Realtime con límite de 20
+    registerChannel(channel, name = 'unnamed_channel') {
+        if (!channel) return channel;
+        
+        this.channels.push({ channel, name, timestamp: Date.now() });
+        
+        // Límite de seguridad: máximo 20 canales
+        if (this.channels.length > 20) {
+            const old = this.channels.shift();
+            try {
+                window.supabaseClient.removeChannel(old.channel);
+                console.warn(`🧹 Canal antiguo eliminado: ${old.name}`);
+            } catch (e) {
+                console.warn(`Error eliminando canal ${old.name}:`, e);
+            }
+        }
+        return channel;
+    }
+
+    // ✅ Registra un IntersectionObserver con límite de 30
+    registerObserver(observer, name = 'unnamed_observer') {
+        if (!observer || typeof observer.disconnect !== 'function') return observer;
+        
+        this.observers.push({ observer, name, timestamp: Date.now() });
+        
+        if (this.observers.length > 30) {
+            const old = this.observers.shift();
+            try {
+                old.observer.disconnect();
+                console.warn(`🧹 Observer antiguo desconectado: ${old.name}`);
+            } catch (e) {}
+        }
+        return observer;
+    }
+
+    // ✅ Registra un setInterval con límite de 15
+    registerInterval(interval, name = 'unnamed_interval') {
+        if (!interval) return interval;
+        
+        this.intervals.push({ interval, name, timestamp: Date.now() });
+        
+        if (this.intervals.length > 15) {
+            const old = this.intervals.shift();
+            clearInterval(old.interval);
+            console.warn(`🧹 Interval antiguo limpiado: ${old.name}`);
+        }
+        return interval;
+    }
+
+    // ✅ Registra un setTimeout con límite de 30
+    registerTimeout(timeout, name = 'unnamed_timeout') {
+        if (!timeout) return timeout;
+        
+        this.timeouts.push({ timeout, name, timestamp: Date.now() });
+        
+        if (this.timeouts.length > 30) {
+            const old = this.timeouts.shift();
+            clearTimeout(old.timeout);
+        }
+        return timeout;
+    }
+
+    // ✅ Registra un MediaStream con límite de 10
+    registerStream(stream, name = 'unnamed_stream') {
+        if (!stream || typeof stream.getTracks !== 'function') return stream;
+        
+        this.streams.push({ stream, name, timestamp: Date.now() });
+        
+        if (this.streams.length > 10) {
+            const old = this.streams.shift();
+            try {
+                old.stream.getTracks().forEach(t => t.stop());
+                console.warn(`🧹 Stream antiguo detenido: ${old.name}`);
+            } catch (e) {}
+        }
+        return stream;
+    }
+
+    // ✅ Limpieza completa de todos los recursos
+    cleanup() {
+        if (this._isCleaning) return;
+        this._isCleaning = true;
+        
+        console.log('🧹 Limpiando todos los recursos...');
+
+        // Limpiar canales
+        const channelsCopy = [...this.channels];
+        this.channels = [];
+        channelsCopy.forEach(({ channel, name }) => {
+            try {
+                window.supabaseClient.removeChannel(channel);
+                console.log(`🧹 Canal cerrado: ${name}`);
+            } catch (e) {
+                console.warn(`Error cerrando canal ${name}:`, e);
+            }
+        });
+
+        // Limpiar observers
+        const observersCopy = [...this.observers];
+        this.observers = [];
+        observersCopy.forEach(({ observer, name }) => {
+            try {
+                observer.disconnect();
+                console.log(`🧹 Observer desconectado: ${name}`);
+            } catch (e) {
+                console.warn(`Error desconectando observer ${name}:`, e);
+            }
+        });
+
+        // Limpiar intervals
+        const intervalsCopy = [...this.intervals];
+        this.intervals = [];
+        intervalsCopy.forEach(({ interval, name }) => {
+            try {
+                clearInterval(interval);
+                console.log(`🧹 Interval limpiado: ${name}`);
+            } catch (e) {}
+        });
+
+        // Limpiar timeouts
+        const timeoutsCopy = [...this.timeouts];
+        this.timeouts = [];
+        timeoutsCopy.forEach(({ timeout }) => {
+            try { clearTimeout(timeout); } catch (e) {}
+        });
+
+        // Limpiar streams
+        const streamsCopy = [...this.streams];
+        this.streams = [];
+        streamsCopy.forEach(({ stream, name }) => {
+            try {
+                stream.getTracks().forEach(t => t.stop());
+                console.log(`🧹 Stream detenido: ${name}`);
+            } catch (e) {}
+        });
+
+        this._isCleaning = false;
+        console.log('✅ Limpieza de recursos completada');
+    }
+
+    // ✅ Limpieza por nombre específico
+    cleanupByName(name) {
+        if (!name) return;
+        
+        this.channels = this.channels.filter(({ channel, name: n }) => {
+            if (n === name) {
+                try { window.supabaseClient.removeChannel(channel); } catch (e) {}
+                return false;
+            }
+            return true;
+        });
+
+        this.observers = this.observers.filter(({ observer, name: n }) => {
+            if (n === name) {
+                try { observer.disconnect(); } catch (e) {}
+                return false;
+            }
+            return true;
+        });
+
+        this.intervals = this.intervals.filter(({ interval, name: n }) => {
+            if (n === name) {
+                try { clearInterval(interval); } catch (e) {}
+                return false;
+            }
+            return true;
+        });
+
+        this.timeouts = this.timeouts.filter(({ timeout, name: n }) => {
+            if (n === name) {
+                try { clearTimeout(timeout); } catch (e) {}
+                return false;
+            }
+            return true;
+        });
+
+        this.streams = this.streams.filter(({ stream, name: n }) => {
+            if (n === name) {
+                try { stream.getTracks().forEach(t => t.stop()); } catch (e) {}
+                return false;
+            }
+            return true;
+        });
+    }
+}
+
+// ================================================================
+// 4. EXPONER FUNCIONES DE RESOURCE MANAGER GLOBALMENTE
+// ================================================================
+window._resourceManager = new ResourceManager();
+
+// Funciones de ayuda para registrar recursos
+window.registerSupabaseChannel = (channel, name) => window._resourceManager.registerChannel(channel, name);
+window.registerObserver = (observer, name) => window._resourceManager.registerObserver(observer, name);
+window.registerInterval = (interval, name) => window._resourceManager.registerInterval(interval, name);
+window.registerTimeout = (timeout, name) => window._resourceManager.registerTimeout(timeout, name);
+window.registerStream = (stream, name) => window._resourceManager.registerStream(stream, name);
+window.cleanupResources = () => window._resourceManager.cleanup();
+window.cleanupResourcesByName = (name) => window._resourceManager.cleanupByName(name);
+
+// ================================================================
+// 5. ESCUCHADORES GLOBALES DE LIMPIEZA
+// ================================================================
+window.addEventListener('beforeunload', () => {
+    if (window._resourceManager) {
+        window._resourceManager.cleanup();
+    }
+});
+
+window.addEventListener('pagehide', () => {
+    if (window._resourceManager) {
+        window._resourceManager.cleanup();
+    }
+});
+
+// ================================================================
+// 6. SHOWTOAST - VERSIÓN GLOBAL ÚNICA
+// ================================================================
+function showToast(msg, type = '') {
+    let t = document.getElementById('toast');
+    if (!t) {
+        t = document.createElement('div');
+        t.id = 'toast';
+        t.className = 'toast';
+        document.body.appendChild(t);
+    }
+    t.textContent = msg;
+    t.className = 'toast show';
+    if (type === 'error') t.classList.add('error');
+    else if (type === 'warning') t.classList.add('warning');
+    else if (type === 'success') t.classList.add('success');
+    else t.classList.remove('error', 'warning', 'success');
+    clearTimeout(t._timeout);
+    t._timeout = setTimeout(() => t.classList.remove('show'), 3500);
+}
+window.showToast = showToast;
+
+// ================================================================
+// 7. GETSESSION - VERSIÓN GLOBAL ÚNICA
+// ================================================================
+async function getSession() {
+    try {
+        const { data: { session } } = await window.supabaseClient.auth.getSession();
+        return session;
+    } catch (error) {
+        console.error('Error obteniendo sesión:', error);
+        return null;
+    }
+}
+window.getSession = getSession;
+
+// ================================================================
+// 8. ESCAPEHTML - VERSIÓN GLOBAL ÚNICA
+// ================================================================
+function escapeHTML(texto) {
+    if (!texto) return '';
+    const div = document.createElement('div');
+    div.textContent = texto;
+    return div.innerHTML;
+}
+window.escapeHTML = escapeHTML;
+
+// ================================================================
+// 9. VARIABLES GLOBALES
 // ================================================================
 let usuarioActual = null;
 let walletConectada = false;
 let web3 = null;
 
 // ================================================================
-// CLASE PRINCIPAL
+// 10. CLASE PRINCIPAL GALETTADOMOAPP
 // ================================================================
 class GalletaDomoApp {
     constructor() {
-        this.supabase = supabaseClient;
-        // ✅ CORREGIDO: Usar origen dinámico para Railway
+        this.supabase = window.supabaseClient;
         this.apiUrl = window.location.origin + '/api';
         this.usuario = null;
         this.wallet = null;
         this.tokens = 0;
         this.isOnline = false;
+        this._cleanupFunctions = [];
+    }
+
+    // ✅ Registrar función de limpieza
+    registerCleanup(fn, name = 'cleanup') {
+        if (typeof fn === 'function') {
+            this._cleanupFunctions.push({ fn, name });
+            if (this._cleanupFunctions.length > 20) {
+                const old = this._cleanupFunctions.shift();
+                try { old.fn(); } catch (e) {}
+            }
+        }
     }
 
     async init() {
@@ -43,20 +368,26 @@ class GalletaDomoApp {
         console.log('🌐 API:', this.apiUrl);
 
         // Verificar sesión existente
-        const { data: { session } } = await this.supabase.auth.getSession();
-        if (session) {
-            this.usuario = session.user;
-            usuarioActual = session.user;
-            await this.cargarTokens();
-            await this.actualizarOnline(true);
-            this.actualizarUIUsuario(session.user);
+        try {
+            const { data: { session } } = await this.supabase.auth.getSession();
+            if (session) {
+                this.usuario = session.user;
+                usuarioActual = session.user;
+                window.usuarioActual = session.user;
+                await this.cargarTokens();
+                await this.actualizarOnline(true);
+                this.actualizarUIUsuario(session.user);
+            }
+        } catch (err) {
+            console.error('Error al obtener la sesión inicial:', err);
         }
 
         // Escuchar cambios de autenticación
-        this.supabase.auth.onAuthStateChange(async (event, session) => {
+        const authSubscription = this.supabase.auth.onAuthStateChange(async (event, session) => {
             if (event === 'SIGNED_IN' && session) {
                 this.usuario = session.user;
                 usuarioActual = session.user;
+                window.usuarioActual = session.user;
                 await this.cargarTokens();
                 await this.actualizarOnline(true);
                 this.actualizarUIUsuario(session.user);
@@ -66,6 +397,7 @@ class GalletaDomoApp {
                 await this.actualizarOnline(false);
                 this.usuario = null;
                 usuarioActual = null;
+                window.usuarioActual = null;
                 this.tokens = 0;
                 this.actualizarUIUsuario(null);
                 showToast('🔌 Sesión cerrada');
@@ -75,6 +407,11 @@ class GalletaDomoApp {
             }
         });
 
+        // Registrar limpieza de suscripción auth
+        this.registerCleanup(() => {
+            try { authSubscription.data?.subscription?.unsubscribe(); } catch (e) {}
+        }, 'auth_subscription');
+
         // Conectar wallet si hay guardada
         const walletGuardada = localStorage.getItem('sariels_wallet');
         if (walletGuardada) {
@@ -82,21 +419,18 @@ class GalletaDomoApp {
             this.actualizarUIWallet(walletGuardada);
         }
 
-        // Detectar cierre de página para marcar offline
-        window.addEventListener('beforeunload', () => {
-            if (this.usuario) {
-                this.actualizarOnline(false);
-            }
-        });
-
         // Detectar visibilidad de página para actualizar estado
-        document.addEventListener('visibilitychange', () => {
+        const visibilityHandler = () => {
             if (document.visibilityState === 'visible' && this.usuario) {
                 this.actualizarOnline(true);
             } else if (document.visibilityState === 'hidden' && this.usuario) {
                 this.actualizarOnline(false);
             }
-        });
+        };
+        document.addEventListener('visibilitychange', visibilityHandler);
+        this.registerCleanup(() => {
+            document.removeEventListener('visibilitychange', visibilityHandler);
+        }, 'visibility_handler');
     }
 
     // ================================================================
@@ -144,7 +478,6 @@ class GalletaDomoApp {
                 return false;
             }
 
-            // Restar al emisor
             const { error: errorEmisor } = await this.supabase.rpc('decrement_tokens', {
                 p_user_id: this.usuario.id,
                 p_cantidad: cantidad
@@ -152,7 +485,6 @@ class GalletaDomoApp {
 
             if (errorEmisor) throw errorEmisor;
 
-            // Sumar al receptor
             const { error: errorReceptor } = await this.supabase.rpc('increment_tokens', {
                 p_user_id: destinoId,
                 p_cantidad: cantidad
@@ -319,6 +651,7 @@ class GalletaDomoApp {
             this.wallet = null;
             this.usuario = null;
             usuarioActual = null;
+            window.usuarioActual = null;
             this.tokens = 0;
             showToast('🔌 Sesión cerrada');
         } catch (error) {
@@ -579,8 +912,11 @@ class GalletaDomoApp {
     }
 
     suscribirseChat(transmisionId, callback) {
-        return this.supabase
-            .channel(`chat-${transmisionId}`)
+        const channelName = `chat-${transmisionId}`;
+        window._resourceManager.cleanupByName(channelName);
+
+        const channel = this.supabase
+            .channel(channelName)
             .on('postgres_changes', {
                 event: 'INSERT',
                 schema: 'public',
@@ -590,6 +926,8 @@ class GalletaDomoApp {
                 if (callback) callback(payload.new);
             })
             .subscribe();
+
+        return window.registerSupabaseChannel(channel, channelName);
     }
 
     // ================================================================
@@ -727,7 +1065,7 @@ class GalletaDomoApp {
     }
 
     // ================================================================
-    // 🎨 UI UPDATES - VERSIÓN SEGURA
+    // 🎨 UI UPDATES
     // ================================================================
 
     actualizarUIUsuario(user) {
@@ -742,7 +1080,7 @@ class GalletaDomoApp {
                 userInfo.style.display = 'flex';
                 userInfo.innerHTML = `
                     <span style="font-size:0.7rem;color:var(--gold);">
-                        ${user.user_metadata?.nombre || 'Usuario'} 
+                        ${window.escapeHTML(user.user_metadata?.nombre || 'Usuario')} 
                         <span style="font-size:0.5rem;color:var(--text-muted);">
                             (${this.tokens} Es.stoks)
                         </span>
@@ -801,36 +1139,15 @@ class GalletaDomoApp {
 }
 
 // ================================================================
-// TOAST - VERSIÓN SEGURA
-// ================================================================
-function showToast(msg, type = '') {
-    let t = document.getElementById('toast');
-    if (!t) {
-        t = document.createElement('div');
-        t.id = 'toast';
-        t.className = 'toast';
-        document.body.appendChild(t);
-    }
-    t.textContent = msg;
-    t.className = 'toast show';
-    if (type === 'error') t.classList.add('error');
-    else if (type === 'warning') t.classList.add('warning');
-    else t.classList.remove('error', 'warning');
-    clearTimeout(t._timeout);
-    t._timeout = setTimeout(() => t.classList.remove('show'), 3500);
-}
-
-// ================================================================
-// INSTANCIAR APP
+// 11. INSTANCIAR APP
 // ================================================================
 const app = new GalletaDomoApp();
 
 window.app = app;
 window.usuarioActual = usuarioActual;
-window.showToast = showToast;
 
 // ================================================================
-// INICIALIZACIÓN - UNA SOLA VEZ
+// 12. INICIALIZACIÓN - UNA SOLA VEZ
 // ================================================================
 document.addEventListener('DOMContentLoaded', function() {
     console.log('◈ Sariel\'s App - Lista');
