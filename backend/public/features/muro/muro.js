@@ -1,6 +1,6 @@
 /* ================================================================
    MURO - SARIEL'S ECOSYSTEM
-   VERSIÓN CORREGIDA - SIN DUPLICACIÓN DE FUNCIONES
+   VERSIÓN CORREGIDA - CON SHOWTOAST SEGURO
    ================================================================ */
 
 // ================================================================
@@ -22,9 +22,59 @@ let hasMorePosts = true;
 let precioActual = 4.50;
 
 // ================================================================
-// NOTA: showToast() y getSession() están en el sistema global
-// (app.js o definidos globalmente). NO DUPLICAR.
+// SHOWTOAST SEGURO - FUNCIONA EN CUALQUIER CONTEXTO
 // ================================================================
+function showToast(mensaje, tipo = 'info') {
+    // 1. Intentar usar el toast global si existe
+    if (typeof window.showToast === 'function') {
+        window.showToast(mensaje, tipo);
+        return;
+    }
+
+    // 2. Intentar usar el sistema de toast del documento
+    const toastEl = document.getElementById('toast');
+    if (toastEl) {
+        toastEl.textContent = mensaje;
+        toastEl.className = 'toast show';
+        if (tipo === 'error') toastEl.classList.add('error');
+        else if (tipo === 'warning') toastEl.classList.add('warning');
+        else if (tipo === 'success') toastEl.classList.add('success');
+        else toastEl.classList.remove('error', 'warning', 'success');
+
+        clearTimeout(toastEl._timeout);
+        toastEl._timeout = setTimeout(() => {
+            toastEl.classList.remove('show');
+        }, 3500);
+        return;
+    }
+
+    // 3. Fallback: alert estándar
+    console.warn('Toast no disponible, usando alert:', mensaje);
+    alert(mensaje);
+}
+
+// ================================================================
+// OBTENER SESIÓN
+// ================================================================
+async function getSession() {
+    try {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        return session;
+    } catch (error) {
+        console.error('Error obteniendo sesión:', error);
+        return null;
+    }
+}
+
+// ================================================================
+// ESCAPE HTML
+// ================================================================
+function escapeHTML(texto) {
+    if (!texto) return '';
+    const div = document.createElement('div');
+    div.textContent = texto;
+    return div.innerHTML;
+}
 
 // ================================================================
 // CARGAR USUARIO ACTUAL
@@ -42,7 +92,6 @@ async function cargarUsuarioActual() {
 
         sessionUser = session.user;
 
-        // Obtener datos del perfil
         const { data, error } = await supabaseClient
             .from('usuarios')
             .select('nombre, handle, avatar_url, tokens')
@@ -55,10 +104,10 @@ async function cargarUsuarioActual() {
             document.getElementById('userNombre').textContent = data.nombre || 'Explorador';
             document.getElementById('userHandle').textContent = '@' + (data.handle || 'explorador');
             document.getElementById('userAvatar').textContent = data.avatar_url ? '◈' : '◈';
-            
+
             const tokenBadge = document.getElementById('tokenBadgeCantidad');
             if (tokenBadge) tokenBadge.textContent = data.tokens || 0;
-            
+
             const tokensDisp = document.getElementById('tokensDisponibles');
             if (tokensDisp) tokensDisp.textContent = data.tokens || 0;
         }
@@ -67,6 +116,7 @@ async function cargarUsuarioActual() {
 
     } catch (error) {
         console.error('Error cargando usuario:', error);
+        showToast('❌ Error al cargar usuario', 'error');
         return null;
     }
 }
@@ -114,7 +164,7 @@ async function cargarPreciosMercado() {
 
             const precioSugerido = document.getElementById('precioSugerido');
             if (precioSugerido) precioSugerido.textContent = precioActual.toFixed(2);
-            
+
             const precioUsdt = document.getElementById('precioUsdtSugerido');
             if (precioUsdt) precioUsdt.textContent = `≈ $${(precioActual / 20).toFixed(2)} USDT`;
 
@@ -305,7 +355,7 @@ function sanitizarHTML(texto) {
     const div = document.createElement('div');
     div.textContent = texto;
     let sanitizado = div.innerHTML;
-    
+
     sanitizado = sanitizado.replace(
         /#(\w+)/g,
         '<a href="#" class="hashtag" onclick="buscarHashtag(\'$1\');return false;">#$1</a>'
@@ -314,7 +364,7 @@ function sanitizarHTML(texto) {
         /@(\w+)/g,
         '<a href="/perfil/$1" class="mencion">@$1</a>'
     );
-    
+
     return sanitizado;
 }
 
@@ -362,7 +412,7 @@ async function toggleLike(postId) {
                 .eq('usuario_id', sessionUser.id);
 
             if (error) throw error;
-            
+
             if (countSpan) {
                 const current = parseInt(countSpan.textContent);
                 countSpan.textContent = Math.max(0, current - 1);
@@ -449,7 +499,7 @@ async function cargarComentarios(postId) {
             const avatar = c.usuarios?.avatar_url ? `<img src="${c.usuarios.avatar_url}">` : '◈';
             const nombre = c.usuarios?.nombre || 'Usuario';
             const esPropietario = c.usuario_id === sessionUser?.id;
-            
+
             return `
                 <div class="comentario">
                     <div class="avatar">${avatar}</div>
@@ -503,7 +553,7 @@ async function enviarComentario(postId) {
         input.value = '';
         showToast('✅ Comentario agregado', 'success');
         cargarComentarios(postId);
-        
+
         const countSpan = document.querySelector(`[data-post-id="${postId}"] .post-stats span:last-child .count`);
         if (countSpan) {
             const current = parseInt(countSpan.textContent);
@@ -614,7 +664,7 @@ async function publicar() {
 
         postContent.value = '';
         showToast('✅ Publicación creada', 'success');
-        
+
         document.getElementById('feedContainer').innerHTML = '';
         currentPage = 0;
         hasMorePosts = true;
@@ -883,7 +933,7 @@ function abrirModalCompra(postId) {
     document.getElementById('confirmCantidad').textContent = cantidad;
     document.getElementById('confirmPrecio').textContent = `$${precioTotal.toFixed(2)} MXN`;
     document.getElementById('confirmTotal').textContent = `$${precioTotal.toFixed(2)} MXN`;
-    
+
     const usdtTotal = precioTotal / 20;
     document.getElementById('confirmTotalFinal').textContent = `${usdtTotal.toFixed(2)} USDT`;
     document.getElementById('confirmComision').textContent = `${(usdtTotal * 0.02).toFixed(2)} USDT`;
@@ -1172,7 +1222,7 @@ async function suscribirseARealtime() {
                     const feedContainer = document.getElementById('feedContainer');
                     const emptyState = feedContainer?.querySelector('.empty-state');
                     if (emptyState) emptyState.remove();
-                    
+
                     const postElement = renderizarPost(payload.new);
                     feedContainer?.insertBefore(postElement, feedContainer.firstChild);
                     showToast('📢 Nueva publicación en el Muro', 'success');
@@ -1242,6 +1292,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
         });
     });
+
+    console.log('◈ Sariel\'s - Muro');
 });
 
 // ================================================================
