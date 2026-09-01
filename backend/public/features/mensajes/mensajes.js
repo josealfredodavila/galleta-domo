@@ -1,17 +1,57 @@
 /* ================================================================
    MENSAJES - SARIEL'S ECOSYSTEM
-   VERSIÓN REFACTORIZADA - SINGLETON + RESOURCE MANAGER
+   VERSIÓN CORREGIDA - USANDO window.supabase (SINGLETON GLOBAL)
    ================================================================ */
 
 // ================================================================
-// CONFIGURACIÓN SUPABASE - SINGLETON GLOBAL
+// CONFIGURACIÓN SUPABASE - REUTILIZAR EL CLIENTE GLOBAL
 // ================================================================
-const supabaseClient = window.supabaseClient;
+// ✅ ELIMINADA LA DECLARACIÓN DUPLICADA DE supabaseClient
+// ✅ Usamos window.supabase que es creado por app.js
+const supabase = window.supabase;
 
-// Verificar que el singleton existe
-if (!supabaseClient) {
-    console.error('❌ Supabase Client no inicializado. Cargando app.js primero.');
-    window.location.reload();
+// ================================================================
+// ESCAPE HTML - PREVENCIÓN XSS
+// ================================================================
+function escapeHTML(texto) {
+    if (!texto) return '';
+    const div = document.createElement('div');
+    div.textContent = texto;
+    return div.innerHTML;
+}
+
+// ================================================================
+// TOAST NOTIFICACIONES - CON FALLBACK SEGURO
+// ================================================================
+function showToast(msg, type = '', duration = 3500) {
+    try {
+        let t = document.getElementById('toast');
+        if (!t) {
+            t = document.createElement('div');
+            t.id = 'toast';
+            t.className = 'toast';
+            document.body.appendChild(t);
+        }
+        t.textContent = msg;
+        t.className = 'toast show';
+        if (type === 'error') t.classList.add('error');
+        else if (type === 'warning') t.classList.add('warning');
+        else if (type === 'success') t.classList.add('success');
+        else t.classList.remove('error', 'warning', 'success');
+        clearTimeout(t._timeout);
+        t._timeout = setTimeout(() => t.classList.remove('show'), duration);
+    } catch (e) {
+        console.warn('Toast no disponible:', e);
+        alert(msg);
+    }
+}
+
+// ================================================================
+// OBTENER SESIÓN
+// ================================================================
+async function getSession() {
+    const { data: { session } } = await supabase.auth.getSession();
+    return session;
 }
 
 // ================================================================
@@ -26,21 +66,49 @@ let mediaRecorder = null;
 let audioChunks = [];
 
 // ================================================================
-// NOTA: showToast(), getSession(), escapeHTML(), formatearTexto() 
-// ESTÁN EN app.js - NO DUPLICAR
-// ================================================================
-
-// ================================================================
 // VERIFICAR AUTENTICACIÓN
 // ================================================================
 async function verificarAutenticacion() {
-    const session = await window.getSession();
+    const session = await getSession();
     if (!session) {
-        window.showToast('⚠️ Inicia sesión para usar mensajería', 'warning');
+        showToast('⚠️ Inicia sesión para usar mensajería', 'warning');
         return false;
     }
     usuarioActual = session.user;
     return true;
+}
+
+// ================================================================
+// FORMATEAR TEXTO (Emojis) - CON ESCAPE HTML
+// ================================================================
+function formatearTexto(texto) {
+    if (!texto) return '';
+    
+    // Primero escapar HTML para prevenir XSS
+    let textoFormateado = escapeHTML(texto);
+    
+    const emojis = {
+        ':feliz:': '😊',
+        ':risa:': '😂',
+        ':amo:': '❤️',
+        ':fuego:': '🔥',
+        ':estrella:': '⭐',
+        ':genial:': '🤩',
+        ':ok:': '👌',
+        ':visto:': '👀',
+        ':musica:': '🎵',
+        ':pizza:': '🍕',
+        ':cafe:': '☕',
+        ':helado:': '🍦',
+        ':rocket:': '🚀',
+        ':sariel:': '◈'
+    };
+    
+    for (const [key, value] of Object.entries(emojis)) {
+        textoFormateado = textoFormateado.replaceAll(key, value);
+    }
+    
+    return textoFormateado;
 }
 
 // ================================================================
@@ -53,10 +121,10 @@ async function buscarContactos(query) {
     }
 
     try {
-        const session = await window.getSession();
+        const session = await getSession();
         if (!session) return;
 
-        const { data, error } = await supabaseClient
+        const { data, error } = await supabase
             .from('usuarios')
             .select('id, nombre, handle, avatar_url')
             .or(`nombre.ilike.%${query}%,handle.ilike.%${query}%`)
@@ -77,7 +145,7 @@ async function buscarContactos(query) {
             return;
         }
 
-        const { data: contactosExistentes } = await supabaseClient
+        const { data: contactosExistentes } = await supabase
             .from('contactos')
             .select('contacto_id')
             .eq('usuario_id', session.user.id);
@@ -86,6 +154,10 @@ async function buscarContactos(query) {
 
         container.innerHTML = data.map(usuario => {
             const yaEsContacto = idsExistentes.includes(usuario.id);
+            const nombreSanitizado = escapeHTML(usuario.nombre || 'Usuario');
+            const handleSanitizado = escapeHTML(usuario.handle || 'usuario');
+            const avatarHtml = usuario.avatar_url ? `<img src="${escapeHTML(usuario.avatar_url)}" style="width:100%;height:100%;object-fit:cover;">` : (usuario.nombre ? nombreSanitizado[0].toUpperCase() : '◈');
+            
             return `
                 <div class="resultado-item" style="
                     display:flex;align-items:center;gap:10px;padding:8px 12px;
@@ -98,11 +170,11 @@ async function buscarContactos(query) {
                         display:flex;align-items:center;justify-content:center;
                         color:white;font-size:0.8rem;overflow:hidden;
                     ">
-                        ${usuario.avatar_url ? `<img src="${usuario.avatar_url}" style="width:100%;height:100%;object-fit:cover;">` : (usuario.nombre ? usuario.nombre[0].toUpperCase() : '◈')}
+                        ${avatarHtml}
                     </div>
                     <div style="flex:1;">
-                        <div style="font-weight:600;font-size:0.8rem;">${window.escapeHTML(usuario.nombre || 'Usuario')}</div>
-                        <div style="font-size:0.6rem;color:var(--text-muted);">@${window.escapeHTML(usuario.handle || 'usuario')}</div>
+                        <div style="font-weight:600;font-size:0.8rem;">${nombreSanitizado}</div>
+                        <div style="font-size:0.6rem;color:var(--text-muted);">@${handleSanitizado}</div>
                     </div>
                     ${yaEsContacto ? `
                         <span style="font-size:0.55rem;color:var(--success);background:rgba(0,214,143,0.1);padding:2px 10px;border-radius:12px;">
@@ -131,13 +203,13 @@ async function buscarContactos(query) {
 // ================================================================
 async function agregarContacto(contactoId) {
     try {
-        const session = await window.getSession();
+        const session = await getSession();
         if (!session) {
-            window.showToast('⚠️ Inicia sesión para agregar contactos', 'error');
+            showToast('⚠️ Inicia sesión para agregar contactos', 'error');
             return;
         }
 
-        const { data: existe } = await supabaseClient
+        const { data: existe } = await supabase
             .from('contactos')
             .select('id')
             .eq('usuario_id', session.user.id)
@@ -145,11 +217,11 @@ async function agregarContacto(contactoId) {
             .maybeSingle();
 
         if (existe) {
-            window.showToast('⚠️ Este usuario ya es tu contacto', 'warning');
+            showToast('⚠️ Este usuario ya es tu contacto', 'warning');
             return;
         }
 
-        const { error } = await supabaseClient
+        const { error } = await supabase
             .from('contactos')
             .insert({
                 usuario_id: session.user.id,
@@ -159,7 +231,7 @@ async function agregarContacto(contactoId) {
 
         if (error) throw error;
 
-        window.showToast('✅ Contacto agregado correctamente', 'success');
+        showToast('✅ Contacto agregado correctamente', 'success');
         
         document.getElementById('searchInputModal').value = '';
         document.getElementById('resultadosBusqueda').innerHTML = '';
@@ -168,7 +240,7 @@ async function agregarContacto(contactoId) {
 
     } catch (error) {
         console.error('Error agregando contacto:', error);
-        window.showToast('❌ Error al agregar contacto', 'error');
+        showToast('❌ Error al agregar contacto', 'error');
     }
 }
 
@@ -179,7 +251,7 @@ async function cargarConversaciones() {
     if (!await verificarAutenticacion()) return;
 
     try {
-        const { data: contactos, error } = await supabaseClient
+        const { data: contactos, error } = await supabase
             .from('contactos')
             .select('*, usuarios!contactos_contacto_id_fkey(id, nombre, handle, avatar_url)')
             .eq('usuario_id', usuarioActual.id)
@@ -203,7 +275,7 @@ async function cargarConversaciones() {
 
         const conversaciones = await Promise.all(contactos.map(async (contacto) => {
             const contactoInfo = contacto.usuarios || {};
-            const { data: ultimoMensaje } = await supabaseClient
+            const { data: ultimoMensaje } = await supabase
                 .from('mensajes_chat')
                 .select('contenido, created_at, leido, remitente_id')
                 .or(`and(remitente_id.eq.${usuarioActual.id},destinatario_id.eq.${contactoInfo.id}),and(remitente_id.eq.${contactoInfo.id},destinatario_id.eq.${usuarioActual.id})`)
@@ -211,7 +283,7 @@ async function cargarConversaciones() {
                 .limit(1)
                 .maybeSingle();
 
-            const { count: noLeidos } = await supabaseClient
+            const { count: noLeidos } = await supabase
                 .from('mensajes_chat')
                 .select('id', { count: 'exact' })
                 .eq('remitente_id', contactoInfo.id)
@@ -239,8 +311,10 @@ async function cargarConversaciones() {
         const convList = document.getElementById('conversacionesList');
         if (convList) {
             convList.innerHTML = conversaciones.map(conv => {
-                const avatar = conv.avatar_url ? `<img src="${conv.avatar_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" />` : (conv.nombre ? conv.nombre[0].toUpperCase() : '✦');
+                const avatar = conv.avatar_url ? `<img src="${escapeHTML(conv.avatar_url)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" />` : (conv.nombre ? conv.nombre[0].toUpperCase() : '✦');
                 const isActive = conversacionActual?.id === conv.id;
+                const nombreSanitizado = escapeHTML(conv.nombre);
+                const ultimoMensajeSanitizado = escapeHTML(conv.ultimoMensaje);
 
                 return `
                     <div class="conv-item ${isActive ? 'active' : ''}" 
@@ -248,8 +322,8 @@ async function cargarConversaciones() {
                          onclick="abrirConversacion('${conv.id}')">
                         <div class="conv-avatar">${avatar}</div>
                         <div class="conv-info">
-                            <div class="conv-nombre">${window.escapeHTML(conv.nombre)}</div>
-                            <div class="conv-msg">${window.escapeHTML(conv.ultimoMensaje.length > 40 ? conv.ultimoMensaje.substring(0, 40) + '...' : conv.ultimoMensaje)}</div>
+                            <div class="conv-nombre">${nombreSanitizado}</div>
+                            <div class="conv-msg">${ultimoMensajeSanitizado.length > 40 ? ultimoMensajeSanitizado.substring(0, 40) + '...' : ultimoMensajeSanitizado}</div>
                         </div>
                         <div class="conv-meta">
                             ${conv.noLeidos > 0 ? `<span class="conv-badge">${conv.noLeidos}</span>` : ''}
@@ -271,17 +345,17 @@ async function cargarConversaciones() {
 }
 
 // ================================================================
-// 💬 ABRIR CONVERSACIÓN - CON REGISTER CHANNEL (REGLA D)
+// 💬 ABRIR CONVERSACIÓN
 // ================================================================
 async function abrirConversacion(contactoId) {
-    const session = await window.getSession();
+    const session = await getSession();
     if (!session) {
-        window.showToast('⚠️ Inicia sesión para abrir conversaciones', 'error');
+        showToast('⚠️ Inicia sesión para abrir conversaciones', 'error');
         return;
     }
 
     try {
-        const { data: contacto } = await supabaseClient
+        const { data: contacto } = await supabase
             .from('usuarios')
             .select('id, nombre, handle, avatar_url')
             .eq('id', contactoId)
@@ -295,7 +369,7 @@ async function abrirConversacion(contactoId) {
         const chatAvatar = document.querySelector('.chat-avatar');
         if (chatAvatar) chatAvatar.textContent = contacto.nombre ? contacto.nombre[0].toUpperCase() : '✦';
 
-        const { data: estadoContacto } = await supabaseClient
+        const { data: estadoContacto } = await supabase
             .from('usuarios')
             .select('online, ultima_conexion')
             .eq('id', contactoId)
@@ -327,17 +401,11 @@ async function abrirConversacion(contactoId) {
         await marcarMensajesLeidos(contactoId);
         await cargarMensajes(contactoId);
 
-        // ✅ LIMPIAR CANAL ANTERIOR
         if (realtimeChannel) {
-            try {
-                await supabaseClient.removeChannel(realtimeChannel);
-            } catch (e) {
-                console.warn('Error removiendo canal anterior:', e);
-            }
-            realtimeChannel = null;
+            await supabase.removeChannel(realtimeChannel);
         }
 
-        realtimeChannel = supabaseClient
+        realtimeChannel = supabase
             .channel(`chat-${contactoId}`)
             .on('postgres_changes', 
                 { event: 'INSERT', schema: 'public', table: 'mensajes_chat', filter: `remitente_id=eq.${contactoId}` },
@@ -354,9 +422,6 @@ async function abrirConversacion(contactoId) {
             )
             .subscribe();
 
-        // ✅ REGISTRAR CANAL CON RESOURCE MANAGER
-        window.registerSupabaseChannel(realtimeChannel, `chat_${contactoId}`);
-
         cargarConversaciones();
 
     } catch (error) {
@@ -368,13 +433,13 @@ async function abrirConversacion(contactoId) {
 // 📖 CARGAR MENSAJES
 // ================================================================
 async function cargarMensajes(contactoId) {
-    const session = await window.getSession();
+    const session = await getSession();
     if (!session) return;
 
     const container = document.getElementById('chatMessages');
     if (!container) return;
 
-    const { data: mensajes, error } = await supabaseClient
+    const { data: mensajes, error } = await supabase
         .from('mensajes_chat')
         .select('*')
         .or(`and(remitente_id.eq.${session.user.id},destinatario_id.eq.${contactoId}),and(remitente_id.eq.${contactoId},destinatario_id.eq.${session.user.id})`)
@@ -404,8 +469,9 @@ async function cargarMensajes(contactoId) {
 // ================================================================
 function crearMensajeHTML(msg) {
     const esEnviado = msg.remitente_id === usuarioActual?.id;
-    const hora = new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const contenidoFormateado = window.formatearTexto ? window.formatearTexto(msg.contenido || '') : window.escapeHTML(msg.contenido || '');
+    const fecha = new Date(msg.created_at);
+    const hora = fecha.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const contenidoFormateado = formatearTexto(msg.contenido || '');
 
     if (msg.tipo === 'imagen' && msg.imagen_url) {
         return crearMensajeImagen(msg, esEnviado, hora);
@@ -444,11 +510,12 @@ function crearMensajeHTML(msg) {
 }
 
 function crearMensajeImagen(msg, esEnviado, hora) {
+    const imagenUrl = escapeHTML(msg.imagen_url);
     if (esEnviado) {
         return `
             <div class="msg-wrapper enviado">
                 <div class="burbuja" style="padding:4px;background:transparent;border-radius:12px;">
-                    <img src="${msg.imagen_url}" style="max-width:200px;border-radius:12px;border:2px solid var(--gold);" />
+                    <img src="${imagenUrl}" style="max-width:200px;border-radius:12px;border:2px solid var(--gold);" />
                 </div>
                 <div class="meta">${hora} ${msg.editado ? '✎' : ''} <span class="leido ${msg.leido ? 'leido' : 'no-leido'}">${msg.leido ? '◆◆' : '◆◇'}</span></div>
             </div>
@@ -459,7 +526,7 @@ function crearMensajeImagen(msg, esEnviado, hora) {
             <div class="fila">
                 <div class="avatar estado-conectado">◈</div>
                 <div class="burbuja" style="padding:4px;background:transparent;border-radius:12px;border:1px solid var(--glass-border);">
-                    <img src="${msg.imagen_url}" style="max-width:200px;border-radius:12px;" />
+                    <img src="${imagenUrl}" style="max-width:200px;border-radius:12px;" />
                 </div>
             </div>
             <div class="meta">${hora} ${msg.editado ? '✎' : ''}</div>
@@ -468,13 +535,14 @@ function crearMensajeImagen(msg, esEnviado, hora) {
 }
 
 function crearMensajeAudio(msg, esEnviado, hora) {
+    const audioUrl = escapeHTML(msg.imagen_url);
     if (esEnviado) {
         return `
             <div class="msg-wrapper enviado">
                 <div class="burbuja" style="display:flex;align-items:center;gap:8px;">
                     <span>🎵</span>
                     <audio controls style="max-width:150px;height:30px;">
-                        <source src="${msg.imagen_url}" type="audio/mpeg">
+                        <source src="${audioUrl}" type="audio/mpeg">
                     </audio>
                 </div>
                 <div class="meta">${hora} <span class="leido ${msg.leido ? 'leido' : 'no-leido'}">${msg.leido ? '◆◆' : '◆◇'}</span></div>
@@ -488,7 +556,7 @@ function crearMensajeAudio(msg, esEnviado, hora) {
                 <div class="burbuja" style="display:flex;align-items:center;gap:8px;">
                     <span>🎵</span>
                     <audio controls style="max-width:150px;height:30px;">
-                        <source src="${msg.imagen_url}" type="audio/mpeg">
+                        <source src="${audioUrl}" type="audio/mpeg">
                     </audio>
                 </div>
             </div>
@@ -521,18 +589,18 @@ async function enviarMensaje() {
     const chatInput = document.getElementById('chatInput');
     const contenido = chatInput.value.trim();
     if (!contenido && archivosSeleccionados.length === 0) {
-        if (!conversacionActual) window.showToast('⚠️ Selecciona una conversación', 'warning');
+        if (!conversacionActual) showToast('⚠️ Selecciona una conversación', 'warning');
         return;
     }
 
-    const session = await window.getSession();
+    const session = await getSession();
     if (!session) {
-        window.showToast('⚠️ Inicia sesión para enviar mensajes', 'error');
+        showToast('⚠️ Inicia sesión para enviar mensajes', 'error');
         return;
     }
 
     if (!conversacionActual) {
-        window.showToast('⚠️ Selecciona una conversación', 'error');
+        showToast('⚠️ Selecciona una conversación', 'error');
         return;
     }
 
@@ -547,7 +615,7 @@ async function enviarMensaje() {
             return;
         }
 
-        const { error } = await supabaseClient
+        const { error } = await supabase
             .from('mensajes_chat')
             .insert({
                 remitente_id: session.user.id,
@@ -563,7 +631,7 @@ async function enviarMensaje() {
         cargarConversaciones();
     } catch (error) {
         console.error('Error enviando mensaje:', error);
-        window.showToast('❌ Error al enviar mensaje', 'error');
+        showToast('❌ Error al enviar mensaje', 'error');
     }
 }
 
@@ -576,19 +644,19 @@ async function subirArchivo(file, session) {
         const tipo = file.type.startsWith('image/') ? 'imagen' : 'voz';
         const filePath = `mensajes/${session.user.id}/${Date.now()}.${fileExt}`;
 
-        const { error: uploadError } = await supabaseClient.storage
+        const { error: uploadError } = await supabase.storage
             .from('mensajes')
             .upload(filePath, file, { upsert: true });
 
         if (uploadError) throw uploadError;
 
-        const { data: urlData } = supabaseClient.storage
+        const { data: urlData } = supabase.storage
             .from('mensajes')
             .getPublicUrl(filePath);
 
         const publicUrl = urlData.publicUrl;
 
-        const { error } = await supabaseClient
+        const { error } = await supabase
             .from('mensajes_chat')
             .insert({
                 remitente_id: session.user.id,
@@ -600,13 +668,13 @@ async function subirArchivo(file, session) {
 
         if (error) throw error;
 
-        window.showToast('✅ Archivo enviado', 'success');
+        showToast('✅ Archivo enviado', 'success');
         await cargarMensajes(conversacionActual.id);
         cargarConversaciones();
 
     } catch (error) {
         console.error('Error subiendo archivo:', error);
-        window.showToast('❌ Error al subir archivo', 'error');
+        showToast('❌ Error al subir archivo', 'error');
     }
 }
 
@@ -639,16 +707,16 @@ function handleFileSelect(event) {
             background:rgba(212,175,55,0.1);padding:4px 12px;
             border-radius:12px;font-size:0.65rem;color:var(--text-secondary);
         `;
-        el.innerHTML = `${icon} ${file.name} (${size}KB) <span onclick="this.parentElement.remove();archivosSeleccionados=[];" style="cursor:pointer;color:var(--danger);">✕</span>`;
+        el.innerHTML = `${icon} ${escapeHTML(file.name)} (${size}KB) <span onclick="this.parentElement.remove();archivosSeleccionados=[];" style="cursor:pointer;color:var(--danger);">✕</span>`;
         preview.appendChild(el);
     }
 
     event.target.value = '';
-    window.showToast(`📎 ${files.length} archivo(s) seleccionado(s)`, 'success');
+    showToast(`📎 ${files.length} archivo(s) seleccionado(s)`, 'success');
 }
 
 // ================================================================
-// 🎙️ GRABACIÓN DE VOZ - CON REGISTER STREAM (REGLA D)
+// 🎙️ GRABACIÓN DE VOZ
 // ================================================================
 function toggleGrabacionVoz() {
     const btn = document.getElementById('btnGrabarVoz');
@@ -663,9 +731,6 @@ function toggleGrabacionVoz() {
 async function iniciarGrabacionVoz(btn) {
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        // ✅ REGISTRAR STREAM CON RESOURCE MANAGER
-        window.registerStream(stream, 'grabacion_voz');
-        
         mediaRecorder = new MediaRecorder(stream);
         audioChunks = [];
 
@@ -677,7 +742,7 @@ async function iniciarGrabacionVoz(btn) {
             const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
             const file = new File([audioBlob], `voz_${Date.now()}.webm`, { type: 'audio/webm' });
             
-            const session = await window.getSession();
+            const session = await getSession();
             if (session && conversacionActual) {
                 archivosSeleccionados = [file];
                 await enviarMensaje();
@@ -690,11 +755,11 @@ async function iniciarGrabacionVoz(btn) {
         grabacionActiva = true;
         btn.textContent = '⏹️';
         btn.style.color = 'var(--danger)';
-        window.showToast('🎙️ Grabando...', '', 2000);
+        showToast('🎙️ Grabando...', '', 2000);
 
     } catch (error) {
         console.error('Error iniciando grabación:', error);
-        window.showToast('❌ Error al acceder al micrófono', 'error');
+        showToast('❌ Error al acceder al micrófono', 'error');
     }
 }
 
@@ -704,7 +769,7 @@ function detenerGrabacionVoz(btn) {
         grabacionActiva = false;
         btn.textContent = '🎙️';
         btn.style.color = '';
-        window.showToast('✅ Grabación finalizada', 'success');
+        showToast('✅ Grabación finalizada', 'success');
     }
 }
 
@@ -715,13 +780,13 @@ async function eliminarMensaje(mensajeId) {
     if (!confirm('¿Eliminar este mensaje?')) return;
 
     try {
-        const session = await window.getSession();
+        const session = await getSession();
         if (!session) {
-            window.showToast('⚠️ Inicia sesión', 'error');
+            showToast('⚠️ Inicia sesión', 'error');
             return;
         }
 
-        const { error } = await supabaseClient
+        const { error } = await supabase
             .from('mensajes_chat')
             .update({ eliminado: true })
             .eq('id', mensajeId)
@@ -729,7 +794,7 @@ async function eliminarMensaje(mensajeId) {
 
         if (error) throw error;
 
-        window.showToast('🗑️ Mensaje eliminado');
+        showToast('🗑️ Mensaje eliminado');
         if (conversacionActual) {
             await cargarMensajes(conversacionActual.id);
         }
@@ -737,7 +802,7 @@ async function eliminarMensaje(mensajeId) {
 
     } catch (error) {
         console.error('Error eliminando mensaje:', error);
-        window.showToast('❌ Error al eliminar mensaje', 'error');
+        showToast('❌ Error al eliminar mensaje', 'error');
     }
 }
 
@@ -748,18 +813,18 @@ async function editarMensaje(mensajeId) {
     const nuevoContenido = prompt('Edita tu mensaje:');
     if (nuevoContenido === null) return;
     if (!nuevoContenido.trim()) {
-        window.showToast('⚠️ No puedes dejar vacío', 'error');
+        showToast('⚠️ No puedes dejar vacío', 'error');
         return;
     }
 
     try {
-        const session = await window.getSession();
+        const session = await getSession();
         if (!session) {
-            window.showToast('⚠️ Inicia sesión', 'error');
+            showToast('⚠️ Inicia sesión', 'error');
             return;
         }
 
-        const { error } = await supabaseClient
+        const { error } = await supabase
             .from('mensajes_chat')
             .update({
                 contenido: nuevoContenido,
@@ -770,14 +835,14 @@ async function editarMensaje(mensajeId) {
 
         if (error) throw error;
 
-        window.showToast('✅ Mensaje editado');
+        showToast('✅ Mensaje editado');
         if (conversacionActual) {
             await cargarMensajes(conversacionActual.id);
         }
 
     } catch (error) {
         console.error('Error editando mensaje:', error);
-        window.showToast('❌ Error al editar mensaje', 'error');
+        showToast('❌ Error al editar mensaje', 'error');
     }
 }
 
@@ -786,25 +851,25 @@ async function editarMensaje(mensajeId) {
 // ================================================================
 async function eliminarConversacion(contactoId) {
     if (!contactoId) {
-        window.showToast('⚠️ No hay conversación seleccionada', 'error');
+        showToast('⚠️ No hay conversación seleccionada', 'error');
         return;
     }
     
     if (!confirm('¿Eliminar toda la conversación con este contacto?')) return;
 
     try {
-        const session = await window.getSession();
+        const session = await getSession();
         if (!session) {
-            window.showToast('⚠️ Inicia sesión', 'error');
+            showToast('⚠️ Inicia sesión', 'error');
             return;
         }
 
-        await supabaseClient
+        await supabase
             .from('mensajes_chat')
             .update({ eliminado: true })
             .or(`and(remitente_id.eq.${session.user.id},destinatario_id.eq.${contactoId}),and(remitente_id.eq.${contactoId},destinatario_id.eq.${session.user.id})`);
 
-        await supabaseClient
+        await supabase
             .from('contactos')
             .delete()
             .eq('usuario_id', session.user.id)
@@ -821,12 +886,12 @@ async function eliminarConversacion(contactoId) {
             `;
         }
 
-        window.showToast('🗑️ Conversación eliminada');
+        showToast('🗑️ Conversación eliminada');
         await cargarConversaciones();
 
     } catch (error) {
         console.error('Error eliminando conversación:', error);
-        window.showToast('❌ Error al eliminar conversación', 'error');
+        showToast('❌ Error al eliminar conversación', 'error');
     }
 }
 
@@ -835,16 +900,16 @@ async function eliminarConversacion(contactoId) {
 // ================================================================
 async function marcarMensajesLeidos(contactoId) {
     try {
-        const session = await window.getSession();
+        const session = await getSession();
         if (!session) return;
 
         try {
-            await supabaseClient.rpc('marcar_mensajes_leidos', {
+            await supabase.rpc('marcar_mensajes_leidos', {
                 p_remitente_id: contactoId,
                 p_destinatario_id: session.user.id
             });
         } catch (rpcError) {
-            await supabaseClient
+            await supabase
                 .from('mensajes_chat')
                 .update({ leido: true })
                 .eq('remitente_id', contactoId)
@@ -865,13 +930,13 @@ async function reportarMensaje(mensajeId) {
     if (!motivo) return;
 
     try {
-        const session = await window.getSession();
+        const session = await getSession();
         if (!session) {
-            window.showToast('⚠️ Inicia sesión para reportar', 'error');
+            showToast('⚠️ Inicia sesión para reportar', 'error');
             return;
         }
 
-        const { error } = await supabaseClient
+        const { error } = await supabase
             .from('mensajes_reportes')
             .insert({
                 mensaje_id: mensajeId,
@@ -881,17 +946,17 @@ async function reportarMensaje(mensajeId) {
 
         if (error) {
             if (error.code === '42P01') {
-                window.showToast('⚠️ La tabla de reportes no está configurada', 'warning');
+                showToast('⚠️ La tabla de reportes no está configurada', 'warning');
                 return;
             }
             throw error;
         }
 
-        window.showToast('⚠️ Reporte enviado. Gracias por ayudar.', 'warning');
+        showToast('⚠️ Reporte enviado. Gracias por ayudar.', 'warning');
 
     } catch (error) {
         console.error('Error reportando mensaje:', error);
-        window.showToast('❌ Error al reportar', 'error');
+        showToast('❌ Error al reportar', 'error');
     }
 }
 
@@ -900,21 +965,21 @@ async function reportarMensaje(mensajeId) {
 // ================================================================
 async function bloquearUsuario(usuarioId) {
     if (!usuarioId) {
-        window.showToast('⚠️ No hay usuario seleccionado', 'error');
+        showToast('⚠️ No hay usuario seleccionado', 'error');
         return;
     }
     
     if (!confirm('¿Bloquear a este usuario? No podrán enviarte mensajes.')) return;
 
     try {
-        const session = await window.getSession();
+        const session = await getSession();
         if (!session) {
-            window.showToast('⚠️ Inicia sesión', 'error');
+            showToast('⚠️ Inicia sesión', 'error');
             return;
         }
 
         try {
-            await supabaseClient
+            await supabase
                 .from('bloqueos')
                 .insert({
                     usuario_id: session.user.id,
@@ -922,19 +987,19 @@ async function bloquearUsuario(usuarioId) {
                 });
         } catch (insertError) {
             if (insertError.code === '42P01') {
-                window.showToast('⚠️ La tabla de bloqueos no está configurada', 'warning');
+                showToast('⚠️ La tabla de bloqueos no está configurada', 'warning');
                 return;
             }
             throw insertError;
         }
 
-        await supabaseClient
+        await supabase
             .from('contactos')
             .delete()
             .eq('usuario_id', session.user.id)
             .eq('contacto_id', usuarioId);
 
-        window.showToast('🚫 Usuario bloqueado');
+        showToast('🚫 Usuario bloqueado');
 
         if (conversacionActual?.id === usuarioId) {
             conversacionActual = null;
@@ -951,7 +1016,7 @@ async function bloquearUsuario(usuarioId) {
 
     } catch (error) {
         console.error('Error bloqueando usuario:', error);
-        window.showToast('❌ Error al bloquear usuario', 'error');
+        showToast('❌ Error al bloquear usuario', 'error');
     }
 }
 
@@ -960,20 +1025,20 @@ async function bloquearUsuario(usuarioId) {
 // ================================================================
 async function buscarEnConversacion(query) {
     if (!query || !query.trim()) {
-        window.showToast('⚠️ Escribe algo para buscar', 'warning');
+        showToast('⚠️ Escribe algo para buscar', 'warning');
         return;
     }
 
     if (!conversacionActual) {
-        window.showToast('⚠️ Selecciona una conversación', 'error');
+        showToast('⚠️ Selecciona una conversación', 'error');
         return;
     }
 
     try {
-        const session = await window.getSession();
+        const session = await getSession();
         if (!session) return;
 
-        const { data, error } = await supabaseClient
+        const { data, error } = await supabase
             .from('mensajes_chat')
             .select('*')
             .or(`and(remitente_id.eq.${session.user.id},destinatario_id.eq.${conversacionActual.id}),and(remitente_id.eq.${conversacionActual.id},destinatario_id.eq.${session.user.id})`)
@@ -988,7 +1053,7 @@ async function buscarEnConversacion(query) {
                 <div class="empty-chat">
                     <span class="icon">◈</span>
                     <h3>No se encontraron resultados</h3>
-                    <p>No hay mensajes que coincidan con "${window.escapeHTML(query)}"</p>
+                    <p>No hay mensajes que coincidan con "${escapeHTML(query)}"</p>
                     <button onclick="cargarMensajes('${conversacionActual.id}')" style="margin-top:12px;padding:8px 20px;background:linear-gradient(135deg,var(--gold),var(--gold-dark));border:none;border-radius:30px;color:var(--space);font-weight:600;cursor:pointer;">
                         Volver
                     </button>
@@ -999,11 +1064,11 @@ async function buscarEnConversacion(query) {
 
         container.innerHTML = data.map(msg => crearMensajeHTML(msg)).join('');
         container.scrollTop = container.scrollHeight;
-        window.showToast(`🔍 Encontrados ${data.length} mensajes`, 'success');
+        showToast(`🔍 Encontrados ${data.length} mensajes`, 'success');
 
     } catch (error) {
         console.error('Error buscando:', error);
-        window.showToast('❌ Error al buscar', 'error');
+        showToast('❌ Error al buscar', 'error');
     }
 }
 
@@ -1026,6 +1091,26 @@ function nuevaConversacion() {
 function cerrarModalNuevoContacto() {
     document.getElementById('modalNuevoContacto').classList.remove('show');
 }
+
+// ================================================================
+// LIMPIEZA DE RECURSOS
+// ================================================================
+function limpiarRecursosMensajes() {
+    if (realtimeChannel) {
+        try { supabase.removeChannel(realtimeChannel); } catch(e) {}
+        realtimeChannel = null;
+    }
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+        try { mediaRecorder.stop(); } catch(e) {}
+    }
+    if (audioChunks.length > 0) {
+        audioChunks = [];
+    }
+    archivosSeleccionados = [];
+    grabacionActiva = false;
+}
+
+window.addEventListener('beforeunload', limpiarRecursosMensajes);
 
 // ================================================================
 // 🔄 INICIALIZACIÓN
@@ -1077,3 +1162,5 @@ window.buscarContactos = buscarContactos;
 window.seleccionarArchivo = seleccionarArchivo;
 window.handleFileSelect = handleFileSelect;
 window.toggleGrabacionVoz = toggleGrabacionVoz;
+window.showToast = showToast;
+window.limpiarRecursosMensajes = limpiarRecursosMensajes;
