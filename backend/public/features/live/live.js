@@ -1,18 +1,14 @@
 /* ================================================================
    LIVE - SARIEL'S ECOSYSTEM
-   VERSIÓN REFACTORIZADA - SINGLETON + RESOURCE MANAGER
+   VERSIÓN CORREGIDA - USANDO window.supabase (SINGLETON GLOBAL)
    ================================================================ */
 
 // ================================================================
-// CONFIGURACIÓN SUPABASE - SINGLETON GLOBAL
+// CONFIGURACIÓN SUPABASE - REUTILIZAR EL CLIENTE GLOBAL
 // ================================================================
-const supabaseClient = window.supabaseClient;
-
-// Verificar que el singleton existe
-if (!supabaseClient) {
-    console.error('❌ Supabase Client no inicializado. Cargando app.js primero.');
-    window.location.reload();
-}
+// ✅ ELIMINADA LA DECLARACIÓN DUPLICADA DE supabaseClient
+// ✅ Usamos window.supabase que es creado por app.js
+const supabase = window.supabase;
 
 // ================================================================
 // CONFIGURACIÓN LIVEKIT - SIN SECRETOS
@@ -47,8 +43,48 @@ const PALABRAS_PROHIBIDAS = [
 ];
 
 // ================================================================
-// NOTA: showToast(), getSession(), escapeHTML() ESTÁN EN app.js
+// ESCAPE HTML - PREVENCIÓN XSS
 // ================================================================
+function escapeHTML(texto) {
+    if (!texto) return '';
+    const div = document.createElement('div');
+    div.textContent = texto;
+    return div.innerHTML;
+}
+
+// ================================================================
+// TOAST NOTIFICACIONES
+// ================================================================
+function showToast(msg, type = '', duration = 3500) {
+    try {
+        let t = document.getElementById('toast');
+        if (!t) {
+            t = document.createElement('div');
+            t.id = 'toast';
+            t.className = 'toast';
+            document.body.appendChild(t);
+        }
+        t.textContent = msg;
+        t.className = 'toast show';
+        if (type === 'error') t.classList.add('error');
+        else if (type === 'warning') t.classList.add('warning');
+        else if (type === 'success') t.classList.add('success');
+        else t.classList.remove('error', 'warning', 'success');
+        clearTimeout(t._timeout);
+        t._timeout = setTimeout(() => t.classList.remove('show'), duration);
+    } catch (e) {
+        console.warn('Toast no disponible:', e);
+        alert(msg);
+    }
+}
+
+// ================================================================
+// OBTENER SESIÓN
+// ================================================================
+async function getSession() {
+    const { data: { session } } = await supabase.auth.getSession();
+    return session;
+}
 
 // ================================================================
 // ESTADO GLOBAL
@@ -63,14 +99,13 @@ let streamInterval = null;
 let channelChat = null;
 let espectadores = 0;
 let localStream = null;
-let transmisionesInterval = null;
 
 // ================================================================
 // OBTENER TOKEN LIVEKIT DEL BACKEND CON ROL
 // ================================================================
 async function obtenerTokenLiveKit(roomName, participantName, role = 'subscriber') {
     try {
-        const session = await window.getSession();
+        const session = await getSession();
         if (!session) throw new Error('No autenticado');
 
         const response = await fetch(`/api/token?room=${encodeURIComponent(roomName)}&role=${role}`, {
@@ -97,20 +132,20 @@ async function obtenerTokenLiveKit(roomName, participantName, role = 'subscriber
 // ================================================================
 async function iniciarTransmision() {
     try {
-        const session = await window.getSession();
+        const session = await getSession();
         if (!session) {
-            window.showToast('⚠️ Inicia sesión para transmitir', 'error');
+            showToast('⚠️ Inicia sesión para transmitir', 'error');
             return;
         }
         currentUser = session.user;
 
-        window.showToast('⏳ Iniciando transmisión...', '', 3000);
+        showToast('⏳ Iniciando transmisión...', '', 3000);
 
         const titulo = prompt('Título de tu transmisión:', 'Mi live en Sariel\'s') || 'Live en Sariel\'s';
         const categoria = prompt('Categoría (gaming, musica, educacion, comunidad, tecnologia, general):', 'general') || 'general';
 
         // Usar RPC segura del backend
-        const { data, error } = await supabaseClient.rpc('iniciar_transmision_segura', {
+        const { data, error } = await supabase.rpc('iniciar_transmision_segura', {
             p_titulo: titulo,
             p_categoria: categoria,
             p_descripcion: '',
@@ -134,7 +169,7 @@ async function iniciarTransmision() {
 
         // CONECTAR A LIVEKIT PRIMERO
         try {
-            window.showToast('🔗 Conectando a LiveKit...', '', 2000);
+            showToast('🔗 Conectando a LiveKit...', '', 2000);
 
             const { Room } = window.livekitClient;
             liveKitRoom = new Room();
@@ -164,12 +199,12 @@ async function iniciarTransmision() {
                         await videoElement.play();
                     } catch (playError) {
                         console.warn('Autoplay bloqueado por el navegador:', playError);
-                        window.showToast('⚠️ Presiona play para ver tu transmisión', 'warning', 3000);
+                        showToast('⚠️ Presiona play para ver tu transmisión', 'warning', 3000);
                     }
                 }
             }
 
-            window.showToast('✅ Conectado a LiveKit', 'success');
+            showToast('✅ Conectado a LiveKit', 'success');
 
             // Escuchar participantes
             liveKitRoom.on('participantConnected', (participant) => {
@@ -184,7 +219,7 @@ async function iniciarTransmision() {
 
         } catch (e) {
             console.warn('LiveKit no disponible, modo local:', e);
-            window.showToast('⚠️ Modo local - sin transmisión en vivo', 'warning');
+            showToast('⚠️ Modo local - sin transmisión en vivo', 'warning');
             
             // FALLBACK: capturar cámara local manualmente
             try {
@@ -193,9 +228,6 @@ async function iniciarTransmision() {
                     audio: true
                 });
                 localStream = fallbackStream;
-                // ✅ REGISTRAR STREAM CON RESOURCE MANAGER
-                window.registerStream(localStream, 'live_fallback');
-                
                 const video = document.getElementById('liveVideo');
                 if (video) {
                     video.srcObject = fallbackStream;
@@ -207,7 +239,7 @@ async function iniciarTransmision() {
                 }
             } catch (fallbackError) {
                 console.warn('No se pudo capturar cámara en modo fallback:', fallbackError);
-                window.showToast('⚠️ No se pudo acceder a la cámara. Verifica los permisos.', 'error');
+                showToast('⚠️ No se pudo acceder a la cámara. Verifica los permisos.', 'error');
             }
         }
 
@@ -218,11 +250,11 @@ async function iniciarTransmision() {
         suscribirseAlChat();
         await notificarSeguidoresSeguro(currentStream.id);
 
-        window.showToast('🎥 ¡Transmisión iniciada!', 'success', 4000);
+        showToast('🎥 ¡Transmisión iniciada!', 'success', 4000);
 
     } catch (error) {
         console.error('Error iniciando transmisión:', error);
-        window.showToast('❌ Error al iniciar: ' + error.message, 'error');
+        showToast('❌ Error al iniciar: ' + error.message, 'error');
         
         // Limpiar en caso de error
         if (liveKitRoom) {
@@ -237,34 +269,34 @@ async function iniciarTransmision() {
 }
 
 // ================================================================
-// ✋ FINALIZAR TRANSMISIÓN - CON LIMPIEZA DE RECURSOS
+// ✋ FINALIZAR TRANSMISIÓN - CON LIMPIEZA COMPLETA
 // ================================================================
 async function finalizarTransmision() {
     try {
         if (!currentStream) {
-            window.showToast('⚠️ No hay transmisión activa', 'error');
+            showToast('⚠️ No hay transmisión activa', 'error');
             return;
         }
 
         if (!confirm('¿Seguro que quieres finalizar la transmisión?')) return;
 
-        window.showToast('⏳ Finalizando transmisión...', '', 3000);
+        showToast('⏳ Finalizando transmisión...', '', 3000);
 
         // Usar RPC segura
-        const { data, error } = await supabaseClient.rpc('finalizar_transmision_segura', {
+        const { data, error } = await supabase.rpc('finalizar_transmision_segura', {
             p_stream_id: currentStream.id
         });
 
         if (error) throw error;
         if (!data.success) throw new Error(data.error);
 
-        window.showToast(`✅ Transmisión finalizada - Duración: ${Math.floor(data.duracion / 60)} min`, 'success');
+        showToast(`✅ Transmisión finalizada - Duración: ${Math.floor(data.duracion / 60)} min`, 'success');
 
     } catch (error) {
         console.error('Error finalizando transmisión:', error);
-        window.showToast('❌ Error al finalizar: ' + error.message, 'error');
+        showToast('❌ Error al finalizar: ' + error.message, 'error');
     } finally {
-        // ✅ LIMPIEZA COMPLETA DE RECURSOS
+        // LIMPIEZA COMPLETA DE RECURSOS
         if (localStream) {
             try {
                 localStream.getTracks().forEach(t => {
@@ -312,16 +344,14 @@ async function finalizarTransmision() {
             liveKitRoom = null;
         }
 
-        // ✅ LIMPIAR INTERVALOS
         if (streamInterval) {
             clearInterval(streamInterval);
             streamInterval = null;
         }
 
-        // ✅ LIMPIAR CANAL DE CHAT
         if (channelChat) {
             try {
-                supabaseClient.removeChannel(channelChat);
+                supabase.removeChannel(channelChat);
                 console.log('✅ Canal de chat cerrado');
             } catch (e) {
                 console.warn('Error cerrando canal de chat:', e);
@@ -349,15 +379,15 @@ async function finalizarTransmision() {
 // ================================================================
 async function unirseATransmision(streamId) {
     try {
-        const session = await window.getSession();
+        const session = await getSession();
         if (!session) {
-            window.showToast('⚠️ Inicia sesión para ver transmisiones', 'error');
+            showToast('⚠️ Inicia sesión para ver transmisiones', 'error');
             return;
         }
 
-        window.showToast('⏳ Uniéndose a la transmisión...', '', 2000);
+        showToast('⏳ Uniéndose a la transmisión...', '', 2000);
 
-        const { data: stream, error } = await supabaseClient
+        const { data: stream, error } = await supabase
             .from('transmisiones')
             .select('*, usuarios(id, nombre, avatar_url)')
             .eq('id', streamId)
@@ -396,11 +426,11 @@ async function unirseATransmision(streamId) {
                 }
             });
 
-            window.showToast('📺 Conectado a la transmisión', 'success');
+            showToast('📺 Conectado a la transmisión', 'success');
 
         } catch (e) {
             console.warn('LiveKit no disponible, modo solo chat:', e);
-            window.showToast('⚠️ Modo solo chat - sin video', 'warning');
+            showToast('⚠️ Modo solo chat - sin video', 'warning');
         }
 
         suscribirseAlChat();
@@ -408,32 +438,26 @@ async function unirseATransmision(streamId) {
         const overlay = document.querySelector('.live-overlay .text');
         if (overlay) overlay.textContent = stream.titulo || 'EN VIVO';
 
-        window.showToast(`📺 Viendo: ${stream.titulo || 'Live'}`, 'success');
+        showToast(`📺 Viendo: ${stream.titulo || 'Live'}`, 'success');
 
     } catch (error) {
         console.error('Error uniéndose:', error);
-        window.showToast('❌ Error al unirse', 'error');
+        showToast('❌ Error al unirse', 'error');
     }
 }
 
 // ================================================================
-// 💬 CHAT - CON REGISTER CHANNEL (REGLA D)
+// 💬 CHAT
 // ================================================================
 
 function suscribirseAlChat() {
     if (!currentStream) return;
 
-    // ✅ LIMPIAR CANAL ANTERIOR
     if (channelChat) {
-        try {
-            supabaseClient.removeChannel(channelChat);
-        } catch (e) {
-            console.warn('Error removiendo canal chat anterior:', e);
-        }
-        channelChat = null;
+        supabase.removeChannel(channelChat);
     }
 
-    channelChat = supabaseClient
+    channelChat = supabase
         .channel(`live-${currentStream.id}`)
         .on('postgres_changes', {
             event: 'INSERT',
@@ -444,9 +468,6 @@ function suscribirseAlChat() {
             agregarMensajeAlChat(payload.new);
         })
         .subscribe();
-
-    // ✅ REGISTRAR CANAL CON RESOURCE MANAGER
-    window.registerSupabaseChannel(channelChat, `live_chat_${currentStream.id}`);
 }
 
 async function enviarMensaje() {
@@ -454,30 +475,30 @@ async function enviarMensaje() {
     const mensaje = input.value.trim();
 
     if (!mensaje) {
-        window.showToast('⚠️ Escribe un mensaje', 'warning');
+        showToast('⚠️ Escribe un mensaje', 'warning');
         return;
     }
 
-    const session = await window.getSession();
+    const session = await getSession();
     if (!session) {
-        window.showToast('⚠️ Inicia sesión para chatear', 'error');
+        showToast('⚠️ Inicia sesión para chatear', 'error');
         return;
     }
 
     if (!currentStream) {
-        window.showToast('⚠️ No hay transmisión activa', 'error');
+        showToast('⚠️ No hay transmisión activa', 'error');
         return;
     }
 
     const moderationResult = verificarContenido(mensaje);
     if (moderationResult.prohibido) {
-        window.showToast(`⚠️ ${moderationResult.razon}`, 'warning');
+        showToast(`⚠️ ${moderationResult.razon}`, 'warning');
         input.value = '';
         return;
     }
 
     try {
-        const { data, error } = await supabaseClient.rpc('enviar_mensaje_seguro', {
+        const { data, error } = await supabase.rpc('enviar_mensaje_seguro', {
             p_transmision_id: currentStream.id,
             p_mensaje: mensaje
         });
@@ -490,7 +511,7 @@ async function enviarMensaje() {
 
     } catch (error) {
         console.error('Error enviando mensaje:', error);
-        window.showToast('❌ Error al enviar mensaje: ' + error.message, 'error');
+        showToast('❌ Error al enviar mensaje: ' + error.message, 'error');
     }
 }
 
@@ -506,9 +527,9 @@ function agregarMensajeAlChat(mensaje) {
     div.innerHTML = `
         <div class="avatar">${avatar}</div>
         <div class="msg">
-            <span class="name">${window.escapeHTML(mensaje.nombre_usuario || 'Explorador')}</span>
+            <span class="name">${escapeHTML(mensaje.nombre_usuario || 'Explorador')}</span>
             <span class="time">${new Date(mensaje.creado_en || mensaje.created_at).toLocaleTimeString()}</span>
-            <div class="text">${window.escapeHTML(mensaje.mensaje)}</div>
+            <div class="text">${escapeHTML(mensaje.mensaje)}</div>
         </div>
     `;
 
@@ -554,28 +575,28 @@ function verificarContenido(texto) {
 
 async function enviarDonacion(monto) {
     try {
-        const session = await window.getSession();
+        const session = await getSession();
         if (!session) {
-            window.showToast('⚠️ Inicia sesión para donar', 'error');
+            showToast('⚠️ Inicia sesión para donar', 'error');
             return;
         }
 
         if (!currentStream) {
-            window.showToast('⚠️ No hay transmisión activa', 'error');
+            showToast('⚠️ No hay transmisión activa', 'error');
             return;
         }
 
         const donacion = DONACIONES[monto];
         if (!donacion) {
-            window.showToast('⚠️ Monto no válido', 'error');
+            showToast('⚠️ Monto no válido', 'error');
             return;
         }
 
-        window.showToast(`⏳ Procesando donación de $${monto} USD...`, '', 3000);
+        showToast(`⏳ Procesando donación de $${monto} USD...`, '', 3000);
 
         const idempotencyKey = `donacion_${session.user.id}_${currentStream.id}_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
 
-        const { data, error } = await supabaseClient.rpc('crear_donacion_segura', {
+        const { data, error } = await supabase.rpc('crear_donacion_segura', {
             p_transmision_id: currentStream.id,
             p_monto_usd: monto,
             p_idempotency_key: idempotencyKey,
@@ -594,11 +615,11 @@ async function enviarDonacion(monto) {
         };
         agregarMensajeAlChat(mensajeDonacion);
 
-        window.showToast(`🎉 ¡${donacion.nombre} recibido!`, 'success', 5000);
+        showToast(`🎉 ¡${donacion.nombre} recibido!`, 'success', 5000);
 
     } catch (error) {
         console.error('Error en donación:', error);
-        window.showToast('❌ Error al procesar donación: ' + error.message, 'error');
+        showToast('❌ Error al procesar donación: ' + error.message, 'error');
     }
 }
 
@@ -614,7 +635,7 @@ function mostrarEfectoDonacion(monto, donacion, usuario) {
     overlay.className = 'donacion-overlay';
     overlay.style.animation = `fadeInOut ${donacion.duracion}ms ease forwards`;
 
-    const nombre = usuario.user_metadata?.nombre || 'Alguien';
+    const nombre = escapeHTML(usuario.user_metadata?.nombre || 'Alguien');
 
     let contenido = '';
     switch (donacion.efecto) {
@@ -622,7 +643,7 @@ function mostrarEfectoDonacion(monto, donacion, usuario) {
             contenido = `
                 <div style="background:linear-gradient(135deg,#E8E8E8,#C0C0C0);border-radius:8px;padding:30px;font-size:4rem;box-shadow:0 0 50px rgba(192,192,192,0.5);animation:cuboGirar 3s ease;text-align:center;">
                     <div>🥈</div>
-                    <div style="font-size:1rem;color:#C0C0C0;margin-top:10px;">${window.escapeHTML(nombre)} donó $${monto}</div>
+                    <div style="font-size:1rem;color:#C0C0C0;margin-top:10px;">${nombre} donó $${monto}</div>
                     <div style="font-size:0.7rem;color:#C0C0C0;">Cubo de Plata</div>
                 </div>
             `;
@@ -631,7 +652,7 @@ function mostrarEfectoDonacion(monto, donacion, usuario) {
             contenido = `
                 <div style="background:linear-gradient(135deg,#D4A574,#CD7F32);border-radius:8px;padding:30px;font-size:5rem;box-shadow:0 0 60px rgba(205,127,50,0.6);animation:cuboGirar 4s ease;text-align:center;">
                     <div>🥉</div>
-                    <div style="font-size:1.2rem;color:#CD7F32;margin-top:10px;">${window.escapeHTML(nombre)} donó $${monto}</div>
+                    <div style="font-size:1.2rem;color:#CD7F32;margin-top:10px;">${nombre} donó $${monto}</div>
                     <div style="font-size:0.8rem;color:#CD7F32;">Cubo de Bronce</div>
                 </div>
             `;
@@ -640,7 +661,7 @@ function mostrarEfectoDonacion(monto, donacion, usuario) {
             contenido = `
                 <div style="background:linear-gradient(135deg,#F0D060,#D4AF37);border-radius:8px;padding:30px;font-size:6rem;box-shadow:0 0 80px rgba(212,175,55,0.7);animation:cuboGirar 5s ease;text-align:center;">
                     <div>🥇</div>
-                    <div style="font-size:1.5rem;color:#D4AF37;margin-top:10px;text-shadow:0 0 20px rgba(212,175,55,0.5);">${window.escapeHTML(nombre)} donó $${monto}</div>
+                    <div style="font-size:1.5rem;color:#D4AF37;margin-top:10px;text-shadow:0 0 20px rgba(212,175,55,0.5);">${nombre} donó $${monto}</div>
                     <div style="font-size:1rem;color:#D4AF37;">Cubo de Oro</div>
                 </div>
             `;
@@ -649,7 +670,7 @@ function mostrarEfectoDonacion(monto, donacion, usuario) {
             contenido = `
                 <div style="animation:coheteGirar 4s ease;text-align:center;">
                     <div style="font-size:8rem;animation:coheteVuelo 3s ease;">🚀</div>
-                    <div style="font-size:1.5rem;color:#CD7F32;margin-top:10px;text-shadow:0 0 40px rgba(205,127,50,0.8);">${window.escapeHTML(nombre)} donó $${monto}</div>
+                    <div style="font-size:1.5rem;color:#CD7F32;margin-top:10px;text-shadow:0 0 40px rgba(205,127,50,0.8);">${nombre} donó $${monto}</div>
                     <div style="font-size:1rem;color:#CD7F32;">🚀 Cohete Bronce</div>
                 </div>
             `;
@@ -658,7 +679,7 @@ function mostrarEfectoDonacion(monto, donacion, usuario) {
             contenido = `
                 <div style="animation:coheteGirar 6s ease;text-align:center;">
                     <div style="font-size:10rem;animation:coheteVuelo 4s ease;filter:drop-shadow(0 0 50px rgba(80,200,120,0.8));">🚀</div>
-                    <div style="font-size:2rem;color:#50C878;margin-top:10px;text-shadow:0 0 60px rgba(80,200,120,0.9);">${window.escapeHTML(nombre)} donó $${monto}</div>
+                    <div style="font-size:2rem;color:#50C878;margin-top:10px;text-shadow:0 0 60px rgba(80,200,120,0.9);">${nombre} donó $${monto}</div>
                     <div style="font-size:1.2rem;color:#50C878;">💚 Cohete Esmeralda</div>
                 </div>
             `;
@@ -674,20 +695,17 @@ function mostrarEfectoDonacion(monto, donacion, usuario) {
 }
 
 // ================================================================
-// 🔄 CONTADOR DE ESPECTADORES - CON REGISTER INTERVAL (REGLA D)
+// 🔄 CONTADOR DE ESPECTADORES
 // ================================================================
 
 function iniciarContadorEspectadores() {
-    if (streamInterval) {
-        clearInterval(streamInterval);
-        streamInterval = null;
-    }
+    if (streamInterval) clearInterval(streamInterval);
 
     streamInterval = setInterval(async () => {
         if (!currentStream) return;
 
         try {
-            await supabaseClient
+            await supabase
                 .from('transmisiones')
                 .update({ viewers_count: espectadores })
                 .eq('id', currentStream.id);
@@ -695,9 +713,6 @@ function iniciarContadorEspectadores() {
             // Silenciar error
         }
     }, 15000);
-
-    // ✅ REGISTRAR INTERVAL CON RESOURCE MANAGER
-    window.registerInterval(streamInterval, 'live_espectadores');
 }
 
 // ================================================================
@@ -706,30 +721,30 @@ function iniciarContadorEspectadores() {
 
 async function seguirStreamer(streamerId) {
     try {
-        const session = await window.getSession();
+        const session = await getSession();
         if (!session) {
-            window.showToast('⚠️ Inicia sesión para seguir', 'error');
+            showToast('⚠️ Inicia sesión para seguir', 'error');
             return;
         }
 
-        const { data, error } = await supabaseClient.rpc('seguir_streamer_seguro', {
+        const { data, error } = await supabase.rpc('seguir_streamer_seguro', {
             p_streamer_id: streamerId
         });
 
         if (error) throw error;
         if (!data.success) throw new Error(data.error);
 
-        window.showToast('✅ ' + data.message, 'success');
+        showToast('✅ ' + data.message, 'success');
 
     } catch (error) {
         console.error('Error siguiendo:', error);
-        window.showToast('❌ Error al seguir: ' + error.message, 'error');
+        showToast('❌ Error al seguir: ' + error.message, 'error');
     }
 }
 
 async function getSeguidores(streamerId) {
     try {
-        const { data, error } = await supabaseClient
+        const { data, error } = await supabase
             .from('live_seguidores')
             .select('seguidor_id', { count: 'exact' })
             .eq('streamer_id', streamerId);
@@ -751,7 +766,7 @@ async function notificarSeguidoresSeguro(streamId) {
     try {
         if (!streamId) return;
 
-        const { data, error } = await supabaseClient.rpc('notificar_seguidores_seguro', {
+        const { data, error } = await supabase.rpc('notificar_seguidores_seguro', {
             p_stream_id: streamId
         });
 
@@ -770,12 +785,12 @@ async function notificarSeguidoresSeguro(streamId) {
 }
 
 // ================================================================
-// 📋 LISTA DE TRANSMISIONES ACTIVAS - CON REGISTER INTERVAL
+// 📋 LISTA DE TRANSMISIONES ACTIVAS
 // ================================================================
 
 async function cargarTransmisionesActivas() {
     try {
-        const { data, error } = await supabaseClient
+        const { data, error } = await supabase
             .from('transmisiones')
             .select(`
                 *,
@@ -814,12 +829,12 @@ function renderizarTransmisiones(streams) {
                 <span style="font-size:2rem;">◉</span>
                 <span class="live-badge">🔴 EN VIVO</span>
             </div>
-            <div class="stream-name">${window.escapeHTML(stream.titulo || 'Live')}</div>
+            <div class="stream-name">${escapeHTML(stream.titulo || 'Live')}</div>
             <div class="stream-host">
-                ${window.escapeHTML(stream.usuarios?.nombre || 'Streamer')} · ${stream.viewers_count || 0} espectadores
+                ${escapeHTML(stream.usuarios?.nombre || 'Streamer')} · ${stream.viewers_count || 0} espectadores
             </div>
             <div style="font-size:0.55rem;color:var(--text-muted);margin-top:4px;">
-                ${window.escapeHTML(stream.categoria || 'General')} · ${new Date(stream.fecha_inicio).toLocaleTimeString()}
+                ${escapeHTML(stream.categoria || 'General')} · ${new Date(stream.fecha_inicio).toLocaleTimeString()}
             </div>
         </div>
     `).join('');
@@ -841,7 +856,7 @@ function togglePlay() {
                 document.getElementById('playBtn').textContent = '⏸';
             }).catch(error => {
                 console.warn('Autoplay o reproducción pausada/bloqueada:', error);
-                window.showToast('⚠️ Presiona play manualmente', 'warning', 2000);
+                showToast('⚠️ Presiona play manualmente', 'warning', 2000);
             });
         }
     } else {
@@ -870,7 +885,7 @@ function toggleMute() {
 async function capturarPantalla() {
     // ✅ VERIFICAR SOPORTE DE getDisplayMedia
     if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
-        window.showToast('⚠️ Tu navegador no soporta compartir pantalla', 'error');
+        showToast('⚠️ Tu navegador no soporta compartir pantalla', 'error');
         return;
     }
 
@@ -879,9 +894,6 @@ async function capturarPantalla() {
             video: true,
             audio: true
         });
-
-        // ✅ REGISTRAR STREAM CON RESOURCE MANAGER
-        window.registerStream(screenStream, 'screen_share');
 
         const video = document.getElementById('liveVideo');
         if (video) {
@@ -894,7 +906,7 @@ async function capturarPantalla() {
             }
         }
 
-        window.showToast('🖥️ Compartiendo pantalla', 'success');
+        showToast('🖥️ Compartiendo pantalla', 'success');
 
         screenStream.getVideoTracks()[0].onended = () => {
             restaurarCamara();
@@ -903,11 +915,11 @@ async function capturarPantalla() {
     } catch (error) {
         console.error('Error capturando pantalla:', error);
         if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
-            window.showToast('⚠️ Permiso denegado para compartir pantalla', 'warning');
+            showToast('⚠️ Permiso denegado para compartir pantalla', 'warning');
         } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
-            window.showToast('⚠️ No se encontró ninguna pantalla para compartir', 'warning');
+            showToast('⚠️ No se encontró ninguna pantalla para compartir', 'warning');
         } else {
-            window.showToast('❌ Error al compartir pantalla: ' + error.message, 'error');
+            showToast('❌ Error al compartir pantalla: ' + error.message, 'error');
         }
     }
 }
@@ -935,9 +947,6 @@ async function restaurarCamara() {
                 video: { facingMode: 'user', width: 1280, height: 720 },
                 audio: true
             });
-            // ✅ REGISTRAR STREAM CON RESOURCE MANAGER
-            window.registerStream(stream, 'camara_restaurada');
-            
             const video = document.getElementById('liveVideo');
             if (video) {
                 video.srcObject = stream;
@@ -950,7 +959,7 @@ async function restaurarCamara() {
         }
     } catch (error) {
         console.error('Error restaurando cámara:', error);
-        window.showToast('⚠️ No se pudo restaurar la cámara', 'error');
+        showToast('⚠️ No se pudo restaurar la cámara', 'error');
     }
 }
 
@@ -975,7 +984,7 @@ function toggleVoice() {
 
 function verTodasLasTransmisiones() {
     cargarTransmisionesActivas();
-    window.showToast('📺 Cargando transmisiones activas...', '', 2000);
+    showToast('📺 Cargando transmisiones activas...', '', 2000);
 }
 
 // ================================================================
@@ -984,13 +993,13 @@ function verTodasLasTransmisiones() {
 
 async function cargarEstadisticas() {
     try {
-        const session = await window.getSession();
+        const session = await getSession();
         if (!session) {
-            window.showToast('⚠️ Inicia sesión para ver estadísticas', 'error');
+            showToast('⚠️ Inicia sesión para ver estadísticas', 'error');
             return;
         }
 
-        const { data, error } = await supabaseClient
+        const { data, error } = await supabase
             .from('transmisiones')
             .select('*')
             .eq('streamer_id', session.user.id)
@@ -999,7 +1008,7 @@ async function cargarEstadisticas() {
         if (error) throw error;
 
         if (!data || data.length === 0) {
-            window.showToast('📊 Sin estadísticas aún', 'warning');
+            showToast('📊 Sin estadísticas aún', 'warning');
             return;
         }
 
@@ -1014,7 +1023,7 @@ async function cargarEstadisticas() {
         const totalEspectadores = data.reduce((acc, s) => acc + (s.viewers_count || 0), 0);
         const totalDonaciones = data.reduce((acc, s) => acc + (s.donaciones_totales || 0), 0);
 
-        window.showToast(`
+        showToast(`
             📊 Estadísticas:
             Transmisiones: ${totalStreams}
             Horas: ${totalHoras.toFixed(1)}h
@@ -1024,30 +1033,56 @@ async function cargarEstadisticas() {
 
     } catch (error) {
         console.error('Error cargando estadísticas:', error);
-        window.showToast('❌ Error cargando estadísticas', 'error');
+        showToast('❌ Error cargando estadísticas', 'error');
     }
 }
 
 // ================================================================
-// 🚀 INICIALIZACIÓN - CON REGISTER INTERVAL
+// LIMPIEZA DE RECURSOS
 // ================================================================
+function limpiarRecursosLive() {
+    if (streamInterval) clearInterval(streamInterval);
+    if (channelChat) {
+        try { supabase.removeChannel(channelChat); } catch(e) {}
+        channelChat = null;
+    }
+    if (liveKitRoom) {
+        try { liveKitRoom.disconnect(); } catch(e) {}
+        liveKitRoom = null;
+    }
+    if (localStream) {
+        try { localStream.getTracks().forEach(t => t.stop()); } catch(e) {}
+        localStream = null;
+    }
+    const video = document.getElementById('liveVideo');
+    if (video) {
+        try {
+            if (video.srcObject) {
+                video.srcObject.getTracks().forEach(t => t.stop());
+                video.srcObject = null;
+            }
+            video.pause();
+            video.src = '';
+            video.load();
+        } catch(e) {}
+    }
+}
 
+window.addEventListener('beforeunload', limpiarRecursosLive);
+
+// ================================================================
+// 🚀 INICIALIZACIÓN
+// ================================================================
 document.addEventListener('DOMContentLoaded', async function() {
-    const session = await window.getSession();
+    const session = await getSession();
     if (session) {
         currentUser = session.user;
     } else {
-        window.showToast('⚠️ Inicia sesión para transmitir y chatear', 'warning');
+        showToast('⚠️ Inicia sesión para transmitir y chatear', 'warning');
     }
 
-    await cargarTransmisionesActivas();
-    
-    // ✅ REGISTRAR INTERVAL CON RESOURCE MANAGER
-    if (transmisionesInterval) {
-        clearInterval(transmisionesInterval);
-    }
-    transmisionesInterval = setInterval(cargarTransmisionesActivas, 30000);
-    window.registerInterval(transmisionesInterval, 'live_transmisiones');
+    cargarTransmisionesActivas();
+    setInterval(cargarTransmisionesActivas, 30000);
 
     const chatInput = document.getElementById('chatInput');
     if (chatInput) {
@@ -1065,7 +1100,6 @@ document.addEventListener('DOMContentLoaded', async function() {
 // ================================================================
 // 📤 EXPOSICIÓN DE FUNCIONES GLOBALES
 // ================================================================
-
 window.iniciarTransmision = iniciarTransmision;
 window.finalizarTransmision = finalizarTransmision;
 window.verTodasLasTransmisiones = verTodasLasTransmisiones;
@@ -1079,3 +1113,5 @@ window.toggleVoice = toggleVoice;
 window.seguirStreamer = seguirStreamer;
 window.getSeguidores = getSeguidores;
 window.cargarEstadisticas = cargarEstadisticas;
+window.showToast = showToast;
+window.limpiarRecursosLive = limpiarRecursosLive;
