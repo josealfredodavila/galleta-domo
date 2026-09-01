@@ -1,15 +1,18 @@
 /* ================================================================
    CONTACTOS - SARIEL'S ECOSYSTEM
-   VERSIÓN CORREGIDA - SIN DUPLICACIÓN DE FUNCIONES
+   VERSIÓN REFACTORIZADA - SINGLETON + RESOURCE MANAGER
    ================================================================ */
 
 // ================================================================
-// CONFIGURACIÓN SUPABASE - SIN DECLARACIÓN DUPLICADA
+// CONFIGURACIÓN SUPABASE - SINGLETON GLOBAL
 // ================================================================
-const supabaseClient = window.supabaseClient || window.supabase.createClient(
-    'https://zultnlogdoajehbswlih.supabase.co',
-    'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
-);
+const supabaseClient = window.supabaseClient;
+
+// Verificar que el singleton existe
+if (!supabaseClient) {
+    console.error('❌ Supabase Client no inicializado. Cargando app.js primero.');
+    window.location.reload();
+}
 
 // ================================================================
 // VARIABLES GLOBALES
@@ -22,17 +25,16 @@ let canalContactos = null;
 let modoOscuro = true;
 
 // ================================================================
-// NOTA: showToast(), getSession() y escapeHTML() están en el sistema global
-// (app.js o definidos globalmente). NO DUPLICAR.
+// NOTA: showToast(), getSession(), escapeHTML() ESTÁN EN app.js
 // ================================================================
 
 // ================================================================
 // VERIFICAR AUTENTICACIÓN
 // ================================================================
 async function verificarAutenticacion() {
-    const session = await getSession();
+    const session = await window.getSession();
     if (!session) {
-        showToast('⚠️ Inicia sesión para ver contactos', 'warning');
+        window.showToast('⚠️ Inicia sesión para ver contactos', 'warning');
         return false;
     }
     usuarioActual = session.user;
@@ -44,7 +46,7 @@ async function verificarAutenticacion() {
 // ================================================================
 async function actualizarOnline(online) {
     try {
-        const session = await getSession();
+        const session = await window.getSession();
         if (!session) return;
 
         const { error } = await supabaseClient
@@ -149,11 +151,17 @@ function mostrarSinContactos() {
 }
 
 // ================================================================
-// INICIAR ESCUCHA DE CONTACTOS (REALTIME)
+// 🔥 INICIAR ESCUCHA DE CONTACTOS (REALTIME) - CON REGISTER CHANNEL (REGLA D)
 // ================================================================
 function iniciarEscuchaContactos() {
+    // ✅ LIMPIAR CANAL ANTERIOR
     if (canalContactos) {
-        supabaseClient.removeChannel(canalContactos);
+        try {
+            supabaseClient.removeChannel(canalContactos);
+        } catch (e) {
+            console.warn('Error removiendo canal contactos:', e);
+        }
+        canalContactos = null;
     }
 
     canalContactos = supabaseClient
@@ -181,6 +189,9 @@ function iniciarEscuchaContactos() {
             }
         })
         .subscribe();
+
+    // ✅ REGISTRAR CANAL CON RESOURCE MANAGER
+    window.registerSupabaseChannel(canalContactos, 'contactos_realtime');
 }
 
 // ================================================================
@@ -214,7 +225,7 @@ function formatearTiempo(fecha) {
 }
 
 // ================================================================
-// RENDERIZAR CONTACTOS
+// RENDERIZAR CONTACTOS - CON ESCAPE HTML
 // ================================================================
 function renderizarContactos(lista) {
     const contactosListEl = document.getElementById('contactosList');
@@ -230,13 +241,15 @@ function renderizarContactos(lista) {
         const esFavorito = contacto.esFavorito || false;
         const inicial = contacto.nombre ? contacto.nombre[0].toUpperCase() : '✦';
         const estadoTexto = esOnline ? '◉ En línea' : `◈ ${formatearTiempo(contacto.ultima_conexion)}`;
-        const nombreSanitizado = escapeHTML(contacto.nombre || 'Usuario');
-        const handleSanitizado = escapeHTML(contacto.handle || 'usuario');
+        const nombreSanitizado = window.escapeHTML(contacto.nombre || 'Usuario');
+        const handleSanitizado = window.escapeHTML(contacto.handle || 'usuario');
+        const idSanitizado = window.escapeHTML(contacto._id);
+        const avatarSanitizado = contacto.avatar_url ? window.escapeHTML(contacto.avatar_url) : '';
 
         return `
-            <div class="contacto-card" data-id="${escapeHTML(contacto._id)}">
+            <div class="contacto-card" data-id="${idSanitizado}">
                 <div class="contacto-avatar ${esOnline ? 'online' : 'offline'} ${esFavorito ? 'favorito' : ''}">
-                    ${contacto.avatar_url ? `<img src="${escapeHTML(contacto.avatar_url)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">` : inicial}
+                    ${avatarSanitizado ? `<img src="${avatarSanitizado}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">` : inicial}
                     ${esOnline ? '<span class="online-dot"></span>' : ''}
                     ${esFavorito ? '<span class="favorito-badge">◆</span>' : ''}
                 </div>
@@ -253,10 +266,10 @@ function renderizarContactos(lista) {
                     </div>
                 </div>
                 <div class="contacto-actions">
-                    <button class="mensaje" onclick="irAMensajes('${escapeHTML(contacto._id)}')" title="Enviar mensaje">◈</button>
-                    <button class="favorito ${esFavorito ? 'active' : ''}" onclick="toggleFavorito('${escapeHTML(contacto._id)}')" title="Favorito">◆</button>
-                    <button class="bloquear" onclick="bloquearContacto('${escapeHTML(contacto._id)}')" title="Bloquear">🚫</button>
-                    <button class="eliminar" onclick="eliminarContacto('${escapeHTML(contacto._id)}')" title="Eliminar">✕</button>
+                    <button class="mensaje" onclick="irAMensajes('${idSanitizado}')" title="Enviar mensaje">◈</button>
+                    <button class="favorito ${esFavorito ? 'active' : ''}" onclick="toggleFavorito('${idSanitizado}')" title="Favorito">◆</button>
+                    <button class="bloquear" onclick="bloquearContacto('${idSanitizado}')" title="Bloquear">🚫</button>
+                    <button class="eliminar" onclick="eliminarContacto('${idSanitizado}')" title="Eliminar">✕</button>
                 </div>
             </div>
         `;
@@ -300,7 +313,7 @@ async function buscarUsuarios(query) {
     }
 
     try {
-        const session = await getSession();
+        const session = await window.getSession();
         if (!session) return;
 
         const { data, error } = await supabaseClient
@@ -334,8 +347,10 @@ async function buscarUsuarios(query) {
         container.innerHTML = data.map(usuario => {
             const yaEsContacto = idsExistentes.includes(usuario.id);
             const estaOnline = usuario.online || false;
-            const nombreSanitizado = escapeHTML(usuario.nombre || 'Usuario');
-            const handleSanitizado = escapeHTML(usuario.handle || 'usuario');
+            const nombreSanitizado = window.escapeHTML(usuario.nombre || 'Usuario');
+            const handleSanitizado = window.escapeHTML(usuario.handle || 'usuario');
+            const avatarSanitizado = usuario.avatar_url ? window.escapeHTML(usuario.avatar_url) : '';
+            const idSanitizado = window.escapeHTML(usuario.id);
 
             return `
                 <div class="resultado-item" style="
@@ -351,7 +366,7 @@ async function buscarUsuarios(query) {
                         border:2px solid ${estaOnline ? 'var(--success)' : 'var(--text-muted)'};
                         position:relative;
                     ">
-                        ${usuario.avatar_url ? `<img src="${escapeHTML(usuario.avatar_url)}" style="width:100%;height:100%;object-fit:cover;">` : (usuario.nombre ? nombreSanitizado[0].toUpperCase() : '◈')}
+                        ${avatarSanitizado ? `<img src="${avatarSanitizado}" style="width:100%;height:100%;object-fit:cover;">` : (usuario.nombre ? nombreSanitizado[0].toUpperCase() : '◈')}
                     </div>
                     <div style="flex:1;">
                         <div style="font-weight:600;font-size:0.8rem;">${nombreSanitizado}</div>
@@ -362,7 +377,7 @@ async function buscarUsuarios(query) {
                             ✓ Contacto
                         </span>
                     ` : `
-                        <button onclick="agregarContacto('${escapeHTML(usuario.id)}')" style="
+                        <button onclick="agregarContacto('${idSanitizado}')" style="
                             background:linear-gradient(135deg,var(--gold),var(--gold-dark));
                             color:var(--space);border:none;padding:4px 12px;border-radius:12px;
                             font-size:0.6rem;font-weight:600;cursor:pointer;
@@ -384,9 +399,9 @@ async function buscarUsuarios(query) {
 // ================================================================
 async function agregarContacto(contactoId) {
     try {
-        const session = await getSession();
+        const session = await window.getSession();
         if (!session) {
-            showToast('⚠️ Inicia sesión para agregar contactos', 'error');
+            window.showToast('⚠️ Inicia sesión para agregar contactos', 'error');
             return;
         }
 
@@ -398,7 +413,7 @@ async function agregarContacto(contactoId) {
             .maybeSingle();
 
         if (existe) {
-            showToast('⚠️ Este usuario ya es tu contacto', 'warning');
+            window.showToast('⚠️ Este usuario ya es tu contacto', 'warning');
             return;
         }
 
@@ -413,7 +428,7 @@ async function agregarContacto(contactoId) {
 
         if (error) throw error;
 
-        showToast('✅ Contacto agregado correctamente', 'success');
+        window.showToast('✅ Contacto agregado correctamente', 'success');
         
         document.getElementById('searchInputModal').value = '';
         document.getElementById('resultadosBusqueda').innerHTML = '';
@@ -422,7 +437,7 @@ async function agregarContacto(contactoId) {
 
     } catch (error) {
         console.error('Error agregando contacto:', error);
-        showToast('❌ Error al agregar contacto', 'error');
+        window.showToast('❌ Error al agregar contacto', 'error');
     }
 }
 
@@ -433,9 +448,9 @@ async function bloquearContacto(contactoId) {
     if (!confirm('¿Bloquear a este usuario? No podrán enviarte mensajes ni ver tu perfil.')) return;
 
     try {
-        const session = await getSession();
+        const session = await window.getSession();
         if (!session) {
-            showToast('⚠️ Inicia sesión', 'error');
+            window.showToast('⚠️ Inicia sesión', 'error');
             return;
         }
 
@@ -449,14 +464,14 @@ async function bloquearContacto(contactoId) {
 
             if (error) {
                 if (error.code === '42P01') {
-                    showToast('⚠️ La tabla de bloqueos no está configurada', 'warning');
+                    window.showToast('⚠️ La tabla de bloqueos no está configurada', 'warning');
                     return;
                 }
                 throw error;
             }
         } catch (insertError) {
             console.error('Error insertando bloqueo:', insertError);
-            showToast('❌ Error al bloquear usuario', 'error');
+            window.showToast('❌ Error al bloquear usuario', 'error');
             return;
         }
 
@@ -469,11 +484,11 @@ async function bloquearContacto(contactoId) {
         contactos = contactos.filter(c => c._id !== contactoId);
         actualizarContadores();
         aplicarFiltros();
-        showToast('🚫 Usuario bloqueado', 'warning');
+        window.showToast('🚫 Usuario bloqueado', 'warning');
 
     } catch (error) {
         console.error('Error bloqueando usuario:', error);
-        showToast('❌ Error al bloquear usuario', 'error');
+        window.showToast('❌ Error al bloquear usuario', 'error');
     }
 }
 
@@ -482,9 +497,9 @@ async function bloquearContacto(contactoId) {
 // ================================================================
 async function desbloquearUsuario(contactoId) {
     try {
-        const session = await getSession();
+        const session = await window.getSession();
         if (!session) {
-            showToast('⚠️ Inicia sesión', 'error');
+            window.showToast('⚠️ Inicia sesión', 'error');
             return;
         }
 
@@ -496,18 +511,18 @@ async function desbloquearUsuario(contactoId) {
 
         if (error) {
             if (error.code === '42P01') {
-                showToast('⚠️ La tabla de bloqueos no está configurada', 'warning');
+                window.showToast('⚠️ La tabla de bloqueos no está configurada', 'warning');
                 return;
             }
             throw error;
         }
 
-        showToast('✅ Usuario desbloqueado', 'success');
+        window.showToast('✅ Usuario desbloqueado', 'success');
         await cargarContactos();
 
     } catch (error) {
         console.error('Error desbloqueando usuario:', error);
-        showToast('❌ Error al desbloquear', 'error');
+        window.showToast('❌ Error al desbloquear', 'error');
     }
 }
 
@@ -522,9 +537,9 @@ function irAMensajes(contactoId) {
 // ◆ TOGGLE FAVORITO
 // ================================================================
 async function toggleFavorito(contactoId) {
-    const session = await getSession();
+    const session = await window.getSession();
     if (!session) {
-        showToast('⚠️ Inicia sesión para marcar favoritos', 'error');
+        window.showToast('⚠️ Inicia sesión para marcar favoritos', 'error');
         return;
     }
 
@@ -544,11 +559,11 @@ async function toggleFavorito(contactoId) {
 
         contacto.esFavorito = nuevoEstado;
         aplicarFiltros();
-        showToast(nuevoEstado ? '◆ Agregado a favoritos' : '◆ Favorito eliminado');
+        window.showToast(nuevoEstado ? '◆ Agregado a favoritos' : '◆ Favorito eliminado');
 
     } catch (error) {
         console.error('Error actualizando favorito:', error);
-        showToast('❌ Error al actualizar favorito', 'error');
+        window.showToast('❌ Error al actualizar favorito', 'error');
     }
 }
 
@@ -558,9 +573,9 @@ async function toggleFavorito(contactoId) {
 async function eliminarContacto(contactoId) {
     if (!confirm('¿Estás seguro de eliminar este contacto?')) return;
 
-    const session = await getSession();
+    const session = await window.getSession();
     if (!session) {
-        showToast('⚠️ Inicia sesión para eliminar contactos', 'error');
+        window.showToast('⚠️ Inicia sesión para eliminar contactos', 'error');
         return;
     }
 
@@ -576,11 +591,11 @@ async function eliminarContacto(contactoId) {
         contactos = contactos.filter(c => c._id !== contactoId);
         actualizarContadores();
         aplicarFiltros();
-        showToast('✅ Contacto eliminado');
+        window.showToast('✅ Contacto eliminado');
 
     } catch (error) {
         console.error('Error eliminando contacto:', error);
-        showToast('❌ Error al eliminar contacto', 'error');
+        window.showToast('❌ Error al eliminar contacto', 'error');
     }
 }
 
@@ -589,9 +604,9 @@ async function eliminarContacto(contactoId) {
 // ================================================================
 async function invitarContacto() {
     try {
-        const session = await getSession();
+        const session = await window.getSession();
         if (!session) {
-            showToast('⚠️ Inicia sesión para invitar', 'error');
+            window.showToast('⚠️ Inicia sesión para invitar', 'error');
             return;
         }
 
@@ -610,7 +625,7 @@ async function invitarContacto() {
 
             if (error) {
                 if (error.code === '42P01') {
-                    showToast('⚠️ La tabla de invitaciones no está configurada', 'warning');
+                    window.showToast('⚠️ La tabla de invitaciones no está configurada', 'warning');
                     return;
                 }
                 throw error;
@@ -623,16 +638,16 @@ async function invitarContacto() {
                 modal.style.display = 'flex';
             }
 
-            showToast('✅ Código de invitación generado', 'success');
+            window.showToast('✅ Código de invitación generado', 'success');
 
         } catch (insertError) {
             console.error('Error generando invitación:', insertError);
-            showToast('❌ Error al generar invitación', 'error');
+            window.showToast('❌ Error al generar invitación', 'error');
         }
 
     } catch (error) {
         console.error('Error generando invitación:', error);
-        showToast('❌ Error al generar invitación', 'error');
+        window.showToast('❌ Error al generar invitación', 'error');
     }
 }
 
@@ -646,7 +661,7 @@ async function copiarCodigoInvitacion() {
     
     try {
         await navigator.clipboard.writeText(`◈ Únete a Sariel's con mi código: ${codigo}`);
-        showToast('📋 Código copiado', 'success');
+        window.showToast('📋 Código copiado', 'success');
     } catch {
         prompt('Copia este código:', codigo);
     }
@@ -776,4 +791,3 @@ window.cerrarModalBuscar = cerrarModalBuscar;
 window.verPerfilContacto = verPerfilContacto;
 window.ordenarContactos = ordenarContactos;
 window.actualizarOnline = actualizarOnline;
-window.showToast = showToast;
