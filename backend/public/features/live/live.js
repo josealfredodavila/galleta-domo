@@ -114,7 +114,7 @@ async function obtenerTokenLiveKit(roomName, participantName, role = 'subscriber
 }
 
 // ================================================================
-// 🎥 INICIAR TRANSMISIÓN
+// 🎥 INICIAR TRANSMISIÓN - CORREGIDO CON MANEJO DE PLAY() SEGURO
 // ================================================================
 async function iniciarTransmision() {
     try {
@@ -130,6 +130,7 @@ async function iniciarTransmision() {
         const titulo = prompt('Título de tu transmisión:', 'Mi live en Sariel\'s') || 'Live en Sariel\'s';
         const categoria = prompt('Categoría (gaming, musica, educacion, comunidad, tecnologia, general):', 'general') || 'general';
 
+        // Usar RPC segura del backend
         const { data, error } = await supabaseClient.rpc('iniciar_transmision_segura', {
             p_titulo: titulo,
             p_categoria: categoria,
@@ -152,6 +153,7 @@ async function iniciarTransmision() {
             fecha_inicio: new Date().toISOString()
         };
 
+        // CONECTAR A LIVEKIT PRIMERO
         try {
             showToast('🔗 Conectando a LiveKit...', '', 2000);
 
@@ -165,25 +167,33 @@ async function iniciarTransmision() {
             );
 
             await liveKitRoom.connect(LIVEKIT_CONFIG.url, token);
+
+            // Publicar cámara y micrófono con LiveKit
             await liveKitRoom.localParticipant.setCameraEnabled(true);
             await liveKitRoom.localParticipant.setMicrophoneEnabled(true);
 
+            // Mostrar el video local en el elemento <video>
             const videoElement = document.getElementById('liveVideo');
             if (videoElement) {
                 const videoTrack = liveKitRoom.localParticipant.videoTrackPublications.values().next().value;
-                if (videoTrack) {
+                if (videoTrack && videoTrack.track) {
                     const stream = new MediaStream();
-                    const track = videoTrack.track;
-                    if (track) {
-                        stream.addTrack(track);
-                        videoElement.srcObject = stream;
+                    stream.addTrack(videoTrack.track);
+                    videoElement.srcObject = stream;
+                    // ✅ MANEJO SEGURO DE PLAY()
+                    try {
                         await videoElement.play();
+                    } catch (playError) {
+                        console.warn('Autoplay bloqueado por el navegador:', playError);
+                        // Mostrar mensaje amigable pero no bloquear
+                        showToast('⚠️ Presiona play para ver tu transmisión', 'warning', 3000);
                     }
                 }
             }
 
             showToast('✅ Conectado a LiveKit', 'success');
 
+            // Escuchar participantes
             liveKitRoom.on('participantConnected', (participant) => {
                 espectadores++;
                 document.getElementById('viewersCount').textContent = `${espectadores} espectadores`;
@@ -198,6 +208,7 @@ async function iniciarTransmision() {
             console.warn('LiveKit no disponible, modo local:', e);
             showToast('⚠️ Modo local - sin transmisión en vivo', 'warning');
             
+            // FALLBACK: capturar cámara local manualmente
             try {
                 const fallbackStream = await navigator.mediaDevices.getUserMedia({
                     video: { facingMode: 'user', width: 1280, height: 720 },
@@ -207,10 +218,15 @@ async function iniciarTransmision() {
                 const video = document.getElementById('liveVideo');
                 if (video) {
                     video.srcObject = fallbackStream;
-                    await video.play();
+                    try {
+                        await video.play();
+                    } catch (playError) {
+                        console.warn('Autoplay bloqueado en fallback:', playError);
+                    }
                 }
             } catch (fallbackError) {
                 console.warn('No se pudo capturar cámara en modo fallback:', fallbackError);
+                showToast('⚠️ No se pudo acceder a la cámara. Verifica los permisos.', 'error');
             }
         }
 
@@ -227,6 +243,7 @@ async function iniciarTransmision() {
         console.error('Error iniciando transmisión:', error);
         showToast('❌ Error al iniciar: ' + error.message, 'error');
         
+        // Limpiar en caso de error
         if (liveKitRoom) {
             try { await liveKitRoom.disconnect(); } catch (e) {}
             liveKitRoom = null;
@@ -252,6 +269,7 @@ async function finalizarTransmision() {
 
         showToast('⏳ Finalizando transmisión...', '', 3000);
 
+        // Usar RPC segura
         const { data, error } = await supabaseClient.rpc('finalizar_transmision_segura', {
             p_stream_id: currentStream.id
         });
@@ -265,7 +283,7 @@ async function finalizarTransmision() {
         console.error('Error finalizando transmisión:', error);
         showToast('❌ Error al finalizar: ' + error.message, 'error');
     } finally {
-        // Limpiar localStream
+        // LIMPIEZA COMPLETA DE RECURSOS
         if (localStream) {
             try {
                 localStream.getTracks().forEach(t => {
@@ -278,7 +296,6 @@ async function finalizarTransmision() {
             }
         }
 
-        // Limpiar video element
         const video = document.getElementById('liveVideo');
         if (video) {
             try {
@@ -296,7 +313,6 @@ async function finalizarTransmision() {
             }
         }
 
-        // Desconectar LiveKit
         if (liveKitRoom) {
             try {
                 if (liveKitRoom.localParticipant) {
@@ -315,13 +331,11 @@ async function finalizarTransmision() {
             liveKitRoom = null;
         }
 
-        // Limpiar intervalos
         if (streamInterval) {
             clearInterval(streamInterval);
             streamInterval = null;
         }
 
-        // Cerrar canales de Realtime
         if (channelChat) {
             try {
                 supabaseClient.removeChannel(channelChat);
@@ -348,7 +362,7 @@ async function finalizarTransmision() {
 }
 
 // ================================================================
-// 📺 UNIRSE A TRANSMISIÓN
+// 📺 UNIRSE A TRANSMISIÓN - CORREGIDO CON MANEJO DE PLAY() SEGURO
 // ================================================================
 async function unirseATransmision(streamId) {
     try {
@@ -387,6 +401,14 @@ async function unirseATransmision(streamId) {
                     const video = document.getElementById('liveVideo');
                     if (video) {
                         track.attach(video);
+                        // ✅ MANEJO SEGURO DE PLAY()
+                        try {
+                            video.play().catch(e => {
+                                console.warn('Autoplay bloqueado en suscripción:', e);
+                            });
+                        } catch (e) {
+                            console.warn('Error en play():', e);
+                        }
                     }
                 }
             });
@@ -730,7 +752,7 @@ async function getSeguidores(streamerId) {
 }
 
 // ================================================================
-// 🔔 NOTIFICACIONES A SEGUIDORES
+// 🔔 NOTIFICACIONES A SEGUIDORES - RPC SEGURA
 // ================================================================
 
 async function notificarSeguidoresSeguro(streamId) {
@@ -812,7 +834,7 @@ function renderizarTransmisiones(streams) {
 }
 
 // ================================================================
-// 🎮 CONTROLES
+// 🎮 CONTROLES - CON MANEJO SEGURO DE PLAY()
 // ================================================================
 
 function togglePlay() {
@@ -820,8 +842,16 @@ function togglePlay() {
     if (!video) return;
 
     if (video.paused) {
-        video.play();
-        document.getElementById('playBtn').textContent = '⏸';
+        // ✅ MANEJO SEGURO DE PLAY()
+        const playPromise = video.play();
+        if (playPromise !== undefined) {
+            playPromise.then(() => {
+                document.getElementById('playBtn').textContent = '⏸';
+            }).catch(error => {
+                console.warn('Autoplay o reproducción pausada/bloqueada:', error);
+                showToast('⚠️ Presiona play manualmente', 'warning', 2000);
+            });
+        }
     } else {
         video.pause();
         document.getElementById('playBtn').textContent = '▶';
@@ -846,6 +876,12 @@ function toggleMute() {
 }
 
 async function capturarPantalla() {
+    // ✅ VERIFICAR SOPORTE DE getDisplayMedia
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+        showToast('⚠️ Tu navegador no soporta compartir pantalla', 'error');
+        return;
+    }
+
     try {
         const screenStream = await navigator.mediaDevices.getDisplayMedia({
             video: true,
@@ -855,7 +891,12 @@ async function capturarPantalla() {
         const video = document.getElementById('liveVideo');
         if (video) {
             video.srcObject = screenStream;
-            video.play();
+            try {
+                await video.play();
+                document.getElementById('playBtn').textContent = '⏸';
+            } catch (playError) {
+                console.warn('Autoplay bloqueado en compartir pantalla:', playError);
+            }
         }
 
         showToast('🖥️ Compartiendo pantalla', 'success');
@@ -866,7 +907,13 @@ async function capturarPantalla() {
 
     } catch (error) {
         console.error('Error capturando pantalla:', error);
-        showToast('❌ Error al compartir pantalla', 'error');
+        if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+            showToast('⚠️ Permiso denegado para compartir pantalla', 'warning');
+        } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
+            showToast('⚠️ No se encontró ninguna pantalla para compartir', 'warning');
+        } else {
+            showToast('❌ Error al compartir pantalla: ' + error.message, 'error');
+        }
     }
 }
 
@@ -881,7 +928,11 @@ async function restaurarCamara() {
                 const video = document.getElementById('liveVideo');
                 if (video) {
                     video.srcObject = stream;
-                    video.play();
+                    try {
+                        await video.play();
+                    } catch (playError) {
+                        console.warn('Autoplay bloqueado al restaurar cámara:', playError);
+                    }
                 }
             }
         } else {
@@ -892,11 +943,16 @@ async function restaurarCamara() {
             const video = document.getElementById('liveVideo');
             if (video) {
                 video.srcObject = stream;
-                video.play();
+                try {
+                    await video.play();
+                } catch (playError) {
+                    console.warn('Autoplay bloqueado al restaurar cámara:', playError);
+                }
             }
         }
     } catch (error) {
         console.error('Error restaurando cámara:', error);
+        showToast('⚠️ No se pudo restaurar la cámara', 'error');
     }
 }
 
