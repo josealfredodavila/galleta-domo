@@ -1,18 +1,14 @@
 /* ================================================================
    MURO - SARIEL'S ECOSYSTEM
-   VERSIÓN REFACTORIZADA - SINGLETON + RESOURCE MANAGER
+   VERSIÓN CORREGIDA - USANDO window.supabase (SINGLETON GLOBAL)
    ================================================================ */
 
 // ================================================================
-// CONFIGURACIÓN SUPABASE - SINGLETON GLOBAL
+// CONFIGURACIÓN SUPABASE - REUTILIZAR EL CLIENTE GLOBAL
 // ================================================================
-const supabaseClient = window.supabaseClient;
-
-// Verificar que el singleton existe
-if (!supabaseClient) {
-    console.error('❌ Supabase Client no inicializado. Cargando app.js primero.');
-    window.location.reload();
-}
+// ✅ ELIMINADA LA DECLARACIÓN DUPLICADA DE supabaseClient
+// ✅ Usamos window.supabase que es creado por app.js
+const supabase = window.supabase;
 
 // ================================================================
 // VARIABLES GLOBALES
@@ -28,21 +24,66 @@ let muroChannel = null;
 let isRealtimeProcessing = false;
 
 // ================================================================
-// 🔥 SINGLETON DE INTERSECTION OBSERVER - REGLA C
+// ESCAPE HTML - PREVENCIÓN XSS
 // ================================================================
-let feedObserver = null;
-let lastObservedElement = null;
+function escapeHTML(texto) {
+    if (!texto) return '';
+    const div = document.createElement('div');
+    div.textContent = texto;
+    return div.innerHTML;
+}
 
 // ================================================================
-// NOTA: showToast(), getSession(), escapeHTML() ESTÁN EN app.js
+// SHOWTOAST SEGURO - EVITA BUCLES
 // ================================================================
+function showToast(mensaje, tipo = 'info') {
+    try {
+        if (typeof window.showToast === 'function') {
+            window.showToast(mensaje, tipo);
+            return;
+        }
+
+        const toastEl = document.getElementById('toast');
+        if (toastEl) {
+            toastEl.textContent = mensaje;
+            toastEl.className = 'toast show';
+            if (tipo === 'error') toastEl.classList.add('error');
+            else if (tipo === 'warning') toastEl.classList.add('warning');
+            else if (tipo === 'success') toastEl.classList.add('success');
+            else toastEl.classList.remove('error', 'warning', 'success');
+
+            clearTimeout(toastEl._timeout);
+            toastEl._timeout = setTimeout(() => {
+                toastEl.classList.remove('show');
+            }, 3500);
+            return;
+        }
+
+        console.warn('Toast no disponible:', mensaje);
+    } catch (e) {
+        console.warn('Error en showToast:', e);
+    }
+}
+
+// ================================================================
+// OBTENER SESIÓN
+// ================================================================
+async function getSession() {
+    try {
+        const { data: { session } } = await supabase.auth.getSession();
+        return session;
+    } catch (error) {
+        console.error('Error obteniendo sesión:', error);
+        return null;
+    }
+}
 
 // ================================================================
 // CARGAR USUARIO ACTUAL
 // ================================================================
 async function cargarUsuarioActual() {
     try {
-        const session = await window.getSession();
+        const session = await getSession();
         if (!session) {
             sessionUser = null;
             document.getElementById('userNombre').textContent = 'Explorador';
@@ -53,7 +94,7 @@ async function cargarUsuarioActual() {
 
         sessionUser = session.user;
 
-        const { data, error } = await supabaseClient
+        const { data, error } = await supabase
             .from('usuarios')
             .select('nombre, handle, avatar_url, tokens')
             .eq('id', session.user.id)
@@ -77,7 +118,7 @@ async function cargarUsuarioActual() {
 
     } catch (error) {
         console.error('Error cargando usuario:', error);
-        window.showToast('❌ Error al cargar usuario', 'error');
+        showToast('❌ Error al cargar usuario', 'error');
         return null;
     }
 }
@@ -87,7 +128,7 @@ async function cargarUsuarioActual() {
 // ================================================================
 async function cargarPreciosMercado() {
     try {
-        const { data, error } = await supabaseClient
+        const { data, error } = await supabase
             .from('muro_precios')
             .select('*')
             .order('ultima_actualizacion', { ascending: false })
@@ -138,60 +179,7 @@ async function cargarPreciosMercado() {
 }
 
 // ================================================================
-// 🔥 SETUP OBSERVER - SINGLETON CON LIMPIEZA (REGLAS B y C)
-// ================================================================
-function setupFeedObserver() {
-    // ✅ LIMPIAR OBSERVER ANTERIOR
-    if (feedObserver) {
-        try {
-            feedObserver.disconnect();
-        } catch (e) {
-            console.warn('Error desconectando observer:', e);
-        }
-        feedObserver = null;
-        lastObservedElement = null;
-    }
-
-    // ✅ CREAR NUEVO OBSERVER
-    feedObserver = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting && !isLoading && hasMorePosts) {
-                // ✅ DESCONECTAR TEMPORALMENTE PARA EVITAR BUCLES
-                feedObserver.disconnect();
-                
-                // ✅ CARGAR MÁS POSTS
-                cargarPublicaciones(false).finally(() => {
-                    // ✅ RECONECTAR DESPUÉS DE CARGAR
-                    if (hasMorePosts) {
-                        setTimeout(() => {
-                            const lastPost = document.querySelector('.post-card:last-child');
-                            if (lastPost && feedObserver) {
-                                feedObserver.observe(lastPost);
-                                lastObservedElement = lastPost;
-                            }
-                        }, 300);
-                    }
-                });
-            }
-        });
-    }, {
-        threshold: 0.1,
-        rootMargin: '0px 0px 100px 0px'
-    });
-
-    // ✅ REGISTRAR OBSERVER CON RESOURCE MANAGER
-    window.registerObserver(feedObserver, 'feed_observer');
-
-    // ✅ OBSERVAR ÚLTIMO ELEMENTO
-    const lastPost = document.querySelector('.post-card:last-child');
-    if (lastPost) {
-        feedObserver.observe(lastPost);
-        lastObservedElement = lastPost;
-    }
-}
-
-// ================================================================
-// CARGAR PUBLICACIONES - CON OBSERVER SINGLETON
+// CARGAR PUBLICACIONES - CON CONTROL DE BUCLES
 // ================================================================
 async function cargarPublicaciones(reset = true) {
     // ✅ Evitar cargas múltiples simultáneas
@@ -202,14 +190,6 @@ async function cargarPublicaciones(reset = true) {
         hasMorePosts = true;
         const feedContainer = document.getElementById('feedContainer');
         if (feedContainer) feedContainer.innerHTML = '';
-        // ✅ Limpiar observer al resetear
-        if (feedObserver) {
-            try {
-                feedObserver.disconnect();
-                feedObserver = null;
-                lastObservedElement = null;
-            } catch (e) {}
-        }
     }
     
     if (!hasMorePosts) return;
@@ -221,7 +201,7 @@ async function cargarPublicaciones(reset = true) {
         const from = currentPage * POSTS_PER_PAGE;
         const to = from + POSTS_PER_PAGE - 1;
 
-        const { data, error } = await supabaseClient
+        const { data, error } = await supabase
             .from('muro_posts')
             .select(`
                 *,
@@ -253,7 +233,7 @@ async function cargarPublicaciones(reset = true) {
             feedContainer.innerHTML = '';
         }
 
-        // ✅ Renderizar posts
+        // ✅ Renderizar posts sin llamadas recursivas
         data.forEach(post => {
             const postElement = renderizarPost(post);
             if (feedContainer) feedContainer.appendChild(postElement);
@@ -262,14 +242,22 @@ async function cargarPublicaciones(reset = true) {
         currentPage++;
         hasMorePosts = data.length === POSTS_PER_PAGE;
 
-        // ✅ Usar observer singleton
+        // ✅ Observer para carga infinita - sin recursión
         if (hasMorePosts && feedContainer) {
-            setupFeedObserver();
+            const lastPost = feedContainer.lastElementChild;
+            if (lastPost) {
+                const observer = new IntersectionObserver((entries) => {
+                    if (entries[0].isIntersecting && !isLoading) {
+                        cargarPublicaciones(false);
+                    }
+                }, { threshold: 0.1 });
+                observer.observe(lastPost);
+            }
         }
 
     } catch (error) {
         console.error('Error cargando publicaciones:', error);
-        window.showToast('❌ Error al cargar publicaciones', 'error');
+        showToast('❌ Error al cargar publicaciones', 'error');
     } finally {
         isLoading = false;
     }
@@ -284,9 +272,9 @@ function renderizarPost(post) {
     div.dataset.postId = post.id;
 
     const usuario = post.usuarios || {};
-    const avatar = usuario.avatar_url ? `<img src="${usuario.avatar_url}">` : '◈';
-    const nombre = window.escapeHTML(usuario.nombre || 'Explorador');
-    const handle = window.escapeHTML(usuario.handle || 'explorador');
+    const avatar = usuario.avatar_url ? `<img src="${escapeHTML(usuario.avatar_url)}">` : '◈';
+    const nombre = escapeHTML(usuario.nombre || 'Explorador');
+    const handle = escapeHTML(usuario.handle || 'explorador');
     const likesCount = post.muro_likes?.[0]?.count || 0;
     const comentariosCount = post.muro_comentarios?.[0]?.count || 0;
     const contenidoSanitizado = sanitizarHTML(post.contenido || '');
@@ -331,7 +319,7 @@ function renderizarPost(post) {
             </div>
         </div>
         <div class="post-content">${contenidoSanitizado}</div>
-        ${post.imagen_url ? `<img src="${post.imagen_url}" style="width:100%; border-radius:12px; margin-top:12px;" />` : ''}
+        ${post.imagen_url ? `<img src="${escapeHTML(post.imagen_url)}" style="width:100%; border-radius:12px; margin-top:12px;" />` : ''}
         ${seccionVenta}
         <div class="post-stats">
             <span class="like-btn" onclick="toggleLike('${post.id}')" data-liked="false">
@@ -353,7 +341,7 @@ function renderizarPost(post) {
         </div>
     `;
 
-    // ✅ Verificar like sin recursión
+    // ✅ Verificar like sin recursión - solo si hay usuario
     if (sessionUser) {
         verificarLike(post.id).then(liked => {
             const likeBtn = div.querySelector('.like-btn');
@@ -368,13 +356,12 @@ function renderizarPost(post) {
 }
 
 // ================================================================
-// SANITIZAR HTML - Usa window.escapeHTML
+// SANITIZAR HTML
 // ================================================================
 function sanitizarHTML(texto) {
     if (!texto) return '';
-    const div = document.createElement('div');
-    div.textContent = texto;
-    let sanitizado = div.innerHTML;
+    // Primero escapar HTML para prevenir XSS
+    let sanitizado = escapeHTML(texto);
 
     sanitizado = sanitizado.replace(
         /#(\w+)/g,
@@ -389,20 +376,21 @@ function sanitizarHTML(texto) {
 }
 
 // ================================================================
-// VERIFICAR LIKE - CON CACHE
+// VERIFICAR LIKE - CON CACHE PARA EVITAR CONSULTAS REPETIDAS
 // ================================================================
 const likeCache = new Map();
 
 async function verificarLike(postId) {
     if (!sessionUser) return false;
     
+    // ✅ Usar cache para evitar consultas repetidas
     const cacheKey = `${postId}_${sessionUser.id}`;
     if (likeCache.has(cacheKey)) {
         return likeCache.get(cacheKey);
     }
     
     try {
-        const { data, error } = await supabaseClient
+        const { data, error } = await supabase
             .from('muro_likes')
             .select('id')
             .eq('post_id', postId)
@@ -420,11 +408,11 @@ async function verificarLike(postId) {
 }
 
 // ================================================================
-// TOGGLE LIKE
+// TOGGLE LIKE - ACTUALIZA CACHE
 // ================================================================
 async function toggleLike(postId) {
     if (!sessionUser) {
-        window.showToast('⚠️ Inicia sesión para dar like', 'error');
+        showToast('⚠️ Inicia sesión para dar like', 'error');
         return;
     }
 
@@ -436,7 +424,7 @@ async function toggleLike(postId) {
         const liked = await verificarLike(postId);
 
         if (liked) {
-            const { error } = await supabaseClient
+            const { error } = await supabase
                 .from('muro_likes')
                 .delete()
                 .eq('post_id', postId)
@@ -454,7 +442,7 @@ async function toggleLike(postId) {
                 likeBtn.innerHTML = `❤️ <span class="count">${countSpan?.textContent || 0}</span>`;
             }
         } else {
-            const { error } = await supabaseClient
+            const { error } = await supabase
                 .from('muro_likes')
                 .insert({
                     post_id: postId,
@@ -463,7 +451,7 @@ async function toggleLike(postId) {
 
             if (error) {
                 if (error.code === '23505') {
-                    window.showToast('⚠️ Ya diste like a este post', 'warning');
+                    showToast('⚠️ Ya diste like a este post', 'warning');
                     return;
                 }
                 throw error;
@@ -481,7 +469,7 @@ async function toggleLike(postId) {
         }
     } catch (error) {
         console.error('Error toggling like:', error);
-        window.showToast('❌ Error al procesar like', 'error');
+        showToast('❌ Error al procesar like', 'error');
     }
 }
 
@@ -512,7 +500,7 @@ async function cargarComentarios(postId) {
     if (!lista) return;
 
     try {
-        const { data, error } = await supabaseClient
+        const { data, error } = await supabase
             .from('muro_comentarios')
             .select(`
                 *,
@@ -529,8 +517,8 @@ async function cargarComentarios(postId) {
         }
 
         lista.innerHTML = data.map(c => {
-            const avatar = c.usuarios?.avatar_url ? `<img src="${c.usuarios.avatar_url}">` : '◈';
-            const nombre = window.escapeHTML(c.usuarios?.nombre || 'Usuario');
+            const avatar = c.usuarios?.avatar_url ? `<img src="${escapeHTML(c.usuarios.avatar_url)}">` : '◈';
+            const nombre = escapeHTML(c.usuarios?.nombre || 'Usuario');
             const esPropietario = c.usuario_id === sessionUser?.id;
 
             return `
@@ -559,21 +547,21 @@ async function enviarComentario(postId) {
     if (!input) return;
     const texto = input.value.trim();
     if (!texto) {
-        window.showToast('⚠️ Escribe un comentario', 'error');
+        showToast('⚠️ Escribe un comentario', 'error');
         return;
     }
     if (texto.length > 2000) {
-        window.showToast('⚠️ El comentario es demasiado largo (máx 2000 caracteres)', 'error');
+        showToast('⚠️ El comentario es demasiado largo (máx 2000 caracteres)', 'error');
         return;
     }
 
     if (!sessionUser) {
-        window.showToast('⚠️ Inicia sesión para comentar', 'error');
+        showToast('⚠️ Inicia sesión para comentar', 'error');
         return;
     }
 
     try {
-        const { error } = await supabaseClient
+        const { error } = await supabase
             .from('muro_comentarios')
             .insert({
                 post_id: postId,
@@ -584,7 +572,7 @@ async function enviarComentario(postId) {
         if (error) throw error;
 
         input.value = '';
-        window.showToast('✅ Comentario agregado', 'success');
+        showToast('✅ Comentario agregado', 'success');
         cargarComentarios(postId);
 
         const countSpan = document.querySelector(`[data-post-id="${postId}"] .post-stats span:last-child .count`);
@@ -595,7 +583,7 @@ async function enviarComentario(postId) {
 
     } catch (error) {
         console.error('Error enviando comentario:', error);
-        window.showToast('❌ Error al comentar', 'error');
+        showToast('❌ Error al comentar', 'error');
     }
 }
 
@@ -604,14 +592,14 @@ async function enviarComentario(postId) {
 // ================================================================
 async function eliminarComentario(comentarioId) {
     if (!sessionUser) {
-        window.showToast('⚠️ Inicia sesión', 'error');
+        showToast('⚠️ Inicia sesión', 'error');
         return;
     }
 
     if (!confirm('¿Eliminar este comentario?')) return;
 
     try {
-        const { error } = await supabaseClient
+        const { error } = await supabase
             .from('muro_comentarios')
             .delete()
             .eq('id', comentarioId)
@@ -619,12 +607,12 @@ async function eliminarComentario(comentarioId) {
 
         if (error) throw error;
 
-        window.showToast('🗑️ Comentario eliminado', 'success');
+        showToast('🗑️ Comentario eliminado', 'success');
         const postId = document.querySelector(`[data-comentario-id="${comentarioId}"]`)?.dataset.postId;
         if (postId) cargarComentarios(postId);
     } catch (error) {
         console.error('Error eliminando comentario:', error);
-        window.showToast('❌ Error al eliminar comentario', 'error');
+        showToast('❌ Error al eliminar comentario', 'error');
     }
 }
 
@@ -633,14 +621,14 @@ async function eliminarComentario(comentarioId) {
 // ================================================================
 async function eliminarPublicacion(postId) {
     if (!sessionUser) {
-        window.showToast('⚠️ Inicia sesión', 'error');
+        showToast('⚠️ Inicia sesión', 'error');
         return;
     }
 
     if (!confirm('¿Eliminar esta publicación?')) return;
 
     try {
-        const { error } = await supabaseClient
+        const { error } = await supabase
             .from('muro_posts')
             .delete()
             .eq('id', postId)
@@ -648,21 +636,22 @@ async function eliminarPublicacion(postId) {
 
         if (error) throw error;
 
-        window.showToast('🗑️ Publicación eliminada', 'success');
+        showToast('🗑️ Publicación eliminada', 'success');
         const postCard = document.querySelector(`[data-post-id="${postId}"]`);
         if (postCard) postCard.remove();
     } catch (error) {
         console.error('Error eliminando publicación:', error);
-        window.showToast('❌ Error al eliminar publicación', 'error');
+        showToast('❌ Error al eliminar publicación', 'error');
     }
 }
 
 // ================================================================
-// PUBLICAR NUEVA PUBLICACIÓN
+// PUBLICAR NUEVA PUBLICACIÓN - CON BLOQUEO Y PREVENCIÓN DE BUCLES
 // ================================================================
 async function publicar() {
+    // 🔒 Evitar múltiples publicaciones simultáneas
     if (publicando) {
-        window.showToast('⏳ Ya estás publicando, espera un momento...', 'warning');
+        showToast('⏳ Ya estás publicando, espera un momento...', 'warning');
         return;
     }
 
@@ -671,26 +660,28 @@ async function publicar() {
     const contenido = postContent ? postContent.value.trim() : '';
 
     if (!contenido) {
-        window.showToast('⚠️ Escribe algo para publicar', 'error');
+        showToast('⚠️ Escribe algo para publicar', 'error');
         return;
     }
 
     if (contenido.length > 5000) {
-        window.showToast('⚠️ El texto es demasiado largo (máx 5000 caracteres)', 'error');
+        showToast('⚠️ El texto es demasiado largo (máx 5000 caracteres)', 'error');
         return;
     }
 
     if (!sessionUser) {
-        window.showToast('⚠️ Inicia sesión para publicar', 'error');
+        showToast('⚠️ Inicia sesión para publicar', 'error');
         return;
     }
 
+    // 🔒 Bloquear para evitar doble clic
     publicando = true;
     btnPublicar.disabled = true;
     btnPublicar.textContent = '⏳ Publicando...';
 
     try {
-        const { data, error } = await supabaseClient
+        // ✅ Insertar publicación en Supabase
+        const { data, error } = await supabase
             .from('muro_posts')
             .insert({
                 usuario_id: sessionUser.id,
@@ -701,21 +692,23 @@ async function publicar() {
 
         if (error) throw error;
 
+        // ✅ Limpiar campo y mostrar éxito
         postContent.value = '';
-        window.showToast('✅ Publicación creada', 'success');
+        showToast('✅ Publicación creada', 'success');
 
-        const feedContainer = document.getElementById('feedContainer');
-        if (feedContainer) {
-            feedContainer.innerHTML = '';
-        }
+        // ✅ Recargar feed SIN recursión (reset=true)
+        document.getElementById('feedContainer').innerHTML = '';
         currentPage = 0;
         hasMorePosts = true;
+        
+        // ✅ Cargar publicaciones nuevamente
         await cargarPublicaciones();
 
     } catch (error) {
         console.error('Error al publicar:', error);
-        window.showToast('❌ Error al publicar: ' + error.message, 'error');
+        showToast('❌ Error al publicar: ' + error.message, 'error');
     } finally {
+        // 🔓 Liberar bloqueo y restaurar botón
         publicando = false;
         btnPublicar.disabled = false;
         btnPublicar.textContent = '⟡ Publicar';
@@ -735,7 +728,7 @@ function compartirPublicacion(postId) {
         }).catch(() => {});
     } else {
         navigator.clipboard.writeText(url).then(() => {
-            window.showToast('📋 Enlace copiado al portapapeles', 'success');
+            showToast('📋 Enlace copiado al portapapeles', 'success');
         }).catch(() => {
             const textarea = document.createElement('textarea');
             textarea.value = url;
@@ -743,7 +736,7 @@ function compartirPublicacion(postId) {
             textarea.select();
             document.execCommand('copy');
             document.body.removeChild(textarea);
-            window.showToast('📋 Enlace copiado al portapapeles', 'success');
+            showToast('📋 Enlace copiado al portapapeles', 'success');
         });
     }
 }
@@ -753,7 +746,7 @@ function compartirPublicacion(postId) {
 // ================================================================
 async function reportarPublicacion(postId) {
     if (!sessionUser) {
-        window.showToast('⚠️ Inicia sesión para reportar', 'error');
+        showToast('⚠️ Inicia sesión para reportar', 'error');
         return;
     }
 
@@ -761,7 +754,7 @@ async function reportarPublicacion(postId) {
     if (!motivo) return;
 
     try {
-        const { error } = await supabaseClient
+        const { error } = await supabase
             .from('muro_reportes')
             .insert({
                 post_id: postId,
@@ -771,16 +764,16 @@ async function reportarPublicacion(postId) {
 
         if (error) {
             if (error.code === '42P01') {
-                window.showToast('⚠️ La tabla de reportes no está configurada. Contacta al administrador.', 'warning');
+                showToast('⚠️ La tabla de reportes no está configurada. Contacta al administrador.', 'warning');
                 return;
             }
             throw error;
         }
 
-        window.showToast('🚩 Reporte enviado', 'success');
+        showToast('🚩 Reporte enviado', 'success');
     } catch (error) {
         console.error('Error reportando:', error);
-        window.showToast('❌ Error al reportar', 'error');
+        showToast('❌ Error al reportar', 'error');
     }
 }
 
@@ -793,12 +786,12 @@ async function buscarHashtag(tag) {
         if (input) tag = input.value.trim().replace('#', '');
     }
     if (!tag) {
-        window.showToast('⚠️ Escribe un hashtag para buscar', 'warning');
+        showToast('⚠️ Escribe un hashtag para buscar', 'warning');
         return;
     }
 
     try {
-        const { data, error } = await supabaseClient
+        const { data, error } = await supabase
             .from('muro_posts')
             .select(`
                 *,
@@ -846,11 +839,11 @@ async function buscarHashtag(tag) {
             feedContainer.appendChild(postElement);
         });
 
-        window.showToast(`🔍 Encontradas ${data.length} publicaciones con #${tag}`, 'success');
+        showToast(`🔍 Encontradas ${data.length} publicaciones con #${tag}`, 'success');
 
     } catch (error) {
         console.error('Error buscando hashtag:', error);
-        window.showToast('❌ Error al buscar hashtag', 'error');
+        showToast('❌ Error al buscar hashtag', 'error');
     }
 }
 
@@ -883,22 +876,22 @@ async function publicarVenta() {
     const precio = parseFloat(precioInput?.value);
 
     if (!cantidad || cantidad <= 0) {
-        window.showToast('⚠️ Ingresa una cantidad válida', 'error');
+        showToast('⚠️ Ingresa una cantidad válida', 'error');
         cantidadInput?.focus();
         return;
     }
     if (cantidad > 100) {
-        window.showToast('⚠️ Máximo 100 tokens por venta', 'error');
+        showToast('⚠️ Máximo 100 tokens por venta', 'error');
         return;
     }
     if (!precio || precio <= 0) {
-        window.showToast('⚠️ Ingresa un precio válido', 'error');
+        showToast('⚠️ Ingresa un precio válido', 'error');
         precioInput?.focus();
         return;
     }
 
     if (!sessionUser) {
-        window.showToast('⚠️ Inicia sesión para publicar venta', 'error');
+        showToast('⚠️ Inicia sesión para publicar venta', 'error');
         return;
     }
 
@@ -906,7 +899,7 @@ async function publicarVenta() {
     btn.textContent = '⏳ Publicando...';
 
     try {
-        const { data: userData, error: userError } = await supabaseClient
+        const { data: userData, error: userError } = await supabase
             .from('usuarios')
             .select('tokens')
             .eq('id', sessionUser.id)
@@ -914,13 +907,13 @@ async function publicarVenta() {
 
         if (userError) throw userError;
         if (userData.tokens < cantidad) {
-            window.showToast(`⚠️ No tienes suficientes tokens. Disponibles: ${userData.tokens}`, 'error');
+            showToast(`⚠️ No tienes suficientes tokens. Disponibles: ${userData.tokens}`, 'error');
             btn.disabled = false;
             btn.textContent = '◆ Publicar venta';
             return;
         }
 
-        const { error } = await supabaseClient
+        const { error } = await supabase
             .from('muro_posts')
             .insert({
                 usuario_id: sessionUser.id,
@@ -931,13 +924,13 @@ async function publicarVenta() {
 
         if (error) throw error;
 
-        window.showToast('✅ Venta publicada correctamente', 'success');
+        showToast('✅ Venta publicada correctamente', 'success');
         cerrarModalVenta();
         cargarPublicaciones();
 
     } catch (error) {
         console.error('Error publicando venta:', error);
-        window.showToast('❌ Error al publicar venta: ' + error.message, 'error');
+        showToast('❌ Error al publicar venta: ' + error.message, 'error');
     } finally {
         btn.disabled = false;
         btn.textContent = '◆ Publicar venta';
@@ -947,26 +940,26 @@ async function publicarVenta() {
 function abrirModalCompra(postId) {
     const postCard = document.querySelector(`[data-post-id="${postId}"]`);
     if (!postCard) {
-        window.showToast('❌ Publicación no encontrada', 'error');
+        showToast('❌ Publicación no encontrada', 'error');
         return;
     }
 
     const ventaInfo = postCard.querySelector('.post-venta');
     if (!ventaInfo) {
-        window.showToast('❌ Esta publicación no tiene tokens en venta', 'error');
+        showToast('❌ Esta publicación no tiene tokens en venta', 'error');
         return;
     }
 
     const modal = document.getElementById('modalConfirmarCompra');
     if (!modal) {
-        window.showToast('❌ Modal no encontrado', 'error');
+        showToast('❌ Modal no encontrado', 'error');
         return;
     }
 
     const textoVenta = ventaInfo.querySelector('div')?.textContent || '';
     const matches = textoVenta.match(/(\d+)\s*tokens.*\$\s*([\d.]+)/);
     if (!matches) {
-        window.showToast('❌ No se pudo leer la información de venta', 'error');
+        showToast('❌ No se pudo leer la información de venta', 'error');
         return;
     }
 
@@ -994,17 +987,17 @@ async function confirmarCompraCrypto() {
     const modal = document.getElementById('modalConfirmarCompra');
     const postId = modal?.dataset.postId;
     if (!postId) {
-        window.showToast('❌ No hay publicación seleccionada', 'error');
+        showToast('❌ No hay publicación seleccionada', 'error');
         return;
     }
 
     if (!sessionUser) {
-        window.showToast('⚠️ Inicia sesión para comprar', 'error');
+        showToast('⚠️ Inicia sesión para comprar', 'error');
         return;
     }
 
     try {
-        const { data: post, error: postError } = await supabaseClient
+        const { data: post, error: postError } = await supabase
             .from('muro_posts')
             .select('id, usuario_id, cantidad_venta, precio_venta')
             .eq('id', postId)
@@ -1012,15 +1005,15 @@ async function confirmarCompraCrypto() {
 
         if (postError) throw postError;
         if (!post) {
-            window.showToast('❌ Publicación no encontrada', 'error');
+            showToast('❌ Publicación no encontrada', 'error');
             return;
         }
         if (post.usuario_id === sessionUser.id) {
-            window.showToast('⚠️ No puedes comprar tus propios tokens', 'error');
+            showToast('⚠️ No puedes comprar tus propios tokens', 'error');
             return;
         }
         if (post.cantidad_venta <= 0) {
-            window.showToast('⚠️ Estos tokens ya fueron vendidos', 'error');
+            showToast('⚠️ Estos tokens ya fueron vendidos', 'error');
             return;
         }
 
@@ -1028,7 +1021,7 @@ async function confirmarCompraCrypto() {
         const montoRecibido = post.precio_venta - comision;
         const precioUsdt = post.precio_venta / 20;
 
-        const { error: insertError } = await supabaseClient
+        const { error: insertError } = await supabase
             .from('muro_ventas_tokens')
             .insert({
                 post_id: post.id,
@@ -1044,7 +1037,7 @@ async function confirmarCompraCrypto() {
 
         if (insertError) throw insertError;
 
-        window.showToast('✅ Orden de compra creada. Procede al pago.', 'success');
+        showToast('✅ Orden de compra creada. Procede al pago.', 'success');
         cerrarModalConfirmacion();
 
         const pagoModal = document.getElementById('cryptoPaymentModal');
@@ -1063,7 +1056,7 @@ async function confirmarCompraCrypto() {
 
     } catch (error) {
         console.error('Error confirmando compra:', error);
-        window.showToast('❌ Error al confirmar compra: ' + error.message, 'error');
+        showToast('❌ Error al confirmar compra: ' + error.message, 'error');
     }
 }
 
@@ -1078,7 +1071,7 @@ function copiarDireccionCrypto() {
     const address = addressEl.textContent;
     if (address && address !== 'Cargando...') {
         navigator.clipboard.writeText(address).then(() => {
-            window.showToast('📋 Dirección copiada', 'success');
+            showToast('📋 Dirección copiada', 'success');
         }).catch(() => {
             const textarea = document.createElement('textarea');
             textarea.value = address;
@@ -1086,7 +1079,7 @@ function copiarDireccionCrypto() {
             textarea.select();
             document.execCommand('copy');
             document.body.removeChild(textarea);
-            window.showToast('📋 Dirección copiada', 'success');
+            showToast('📋 Dirección copiada', 'success');
         });
     }
 }
@@ -1098,7 +1091,7 @@ async function verificarPagoCrypto() {
     const postId = modal?.dataset.ventaId;
 
     if (!postId) {
-        window.showToast('❌ No hay venta para verificar', 'error');
+        showToast('❌ No hay venta para verificar', 'error');
         return;
     }
 
@@ -1110,7 +1103,7 @@ async function verificarPagoCrypto() {
     try {
         await new Promise(resolve => setTimeout(resolve, 2000));
 
-        const { error } = await supabaseClient
+        const { error } = await supabase
             .from('muro_ventas_tokens')
             .update({ estado: 'pagado' })
             .eq('post_id', postId)
@@ -1119,14 +1112,14 @@ async function verificarPagoCrypto() {
 
         if (error) throw error;
 
-        await supabaseClient
+        await supabase
             .from('muro_posts')
             .update({ cantidad_venta: 0 })
             .eq('id', postId);
 
         statusEl.textContent = '✅ ¡Pago verificado! Tokens transferidos.';
         statusEl.style.color = 'var(--success)';
-        window.showToast('✅ ¡Compra completada exitosamente!', 'success');
+        showToast('✅ ¡Compra completada exitosamente!', 'success');
 
         setTimeout(() => {
             cerrarModalPago();
@@ -1138,7 +1131,7 @@ async function verificarPagoCrypto() {
         console.error('Error verificando pago:', error);
         statusEl.textContent = '❌ Error al verificar pago';
         statusEl.style.color = 'var(--danger)';
-        window.showToast('❌ Error al verificar pago', 'error');
+        showToast('❌ Error al verificar pago', 'error');
     } finally {
         btn.disabled = false;
         btn.textContent = '✅ Verificar Pago';
@@ -1188,17 +1181,17 @@ async function subirImagenMuro(event) {
     if (!file) return;
 
     if (!sessionUser) {
-        window.showToast('⚠️ Inicia sesión para subir imagen', 'error');
+        showToast('⚠️ Inicia sesión para subir imagen', 'error');
         return;
     }
 
     if (!file.type.startsWith('image/')) {
-        window.showToast('❌ Solo se permiten imágenes', 'error');
+        showToast('❌ Solo se permiten imágenes', 'error');
         return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-        window.showToast('❌ La imagen no puede superar los 5MB', 'error');
+        showToast('❌ La imagen no puede superar los 5MB', 'error');
         return;
     }
 
@@ -1206,27 +1199,27 @@ async function subirImagenMuro(event) {
     const filePath = `${sessionUser.id}/${Date.now()}.${fileExt}`;
 
     try {
-        window.showToast('⏳ Subiendo imagen...', '', 5000);
+        showToast('⏳ Subiendo imagen...', '', 5000);
 
-        const { error: uploadError } = await supabaseClient.storage
+        const { error: uploadError } = await supabase.storage
             .from('muro-imagenes')
             .upload(filePath, file, { upsert: true });
 
         if (uploadError) {
             if (uploadError.message.includes('bucket')) {
-                window.showToast('⚠️ El almacenamiento no está configurado. La imagen no se pudo subir.', 'warning');
+                showToast('⚠️ El almacenamiento no está configurado. La imagen no se pudo subir.', 'warning');
                 return;
             }
             throw uploadError;
         }
 
-        const { data: urlData } = supabaseClient.storage
+        const { data: urlData } = supabase.storage
             .from('muro-imagenes')
             .getPublicUrl(filePath);
 
         const publicUrl = urlData.publicUrl;
 
-        const { error: insertError } = await supabaseClient
+        const { error: insertError } = await supabase
             .from('muro_posts')
             .insert({
                 usuario_id: sessionUser.id,
@@ -1236,39 +1229,41 @@ async function subirImagenMuro(event) {
 
         if (insertError) throw insertError;
 
-        window.showToast('✅ Imagen subida correctamente', 'success');
+        showToast('✅ Imagen subida correctamente', 'success');
         event.target.value = '';
         cargarPublicaciones();
 
     } catch (error) {
         console.error('Error subiendo imagen:', error);
-        window.showToast('❌ Error al subir imagen: ' + error.message, 'error');
+        showToast('❌ Error al subir imagen: ' + error.message, 'error');
     }
 }
 
 // ================================================================
-// 🔥 SUSCRIBIRSE A REALTIME - CON REGISTER CHANNEL (REGLA D)
+// SUSCRIBIRSE A REALTIME - CORREGIDO (SIN BUCLES)
 // ================================================================
 async function suscribirseARealtime() {
-    // ✅ Cerrar canal anterior
+    // ✅ Cerrar canal anterior si existe
     if (muroChannel) {
         try {
-            await supabaseClient.removeChannel(muroChannel);
+            await supabase.removeChannel(muroChannel);
         } catch (e) {
             console.warn('Error removiendo canal anterior:', e);
         }
         muroChannel = null;
     }
 
-    muroChannel = supabaseClient
+    muroChannel = supabase
         .channel('muro-realtime')
         .on('postgres_changes',
             { event: 'INSERT', schema: 'public', table: 'muro_posts' },
             (payload) => {
+                // ✅ Evitar bucles: si está procesando Realtime, ignorar
                 if (isRealtimeProcessing) return;
                 isRealtimeProcessing = true;
 
                 try {
+                    // ✅ Solo agregar si el post no es del usuario actual
                     if (payload.new.usuario_id !== sessionUser?.id) {
                         const feedContainer = document.getElementById('feedContainer');
                         if (feedContainer) {
@@ -1277,7 +1272,7 @@ async function suscribirseARealtime() {
 
                             const postElement = renderizarPost(payload.new);
                             feedContainer.insertBefore(postElement, feedContainer.firstChild);
-                            window.showToast('📢 Nueva publicación en el Muro', 'success');
+                            showToast('📢 Nueva publicación en el Muro', 'success');
                         }
                     }
                 } catch (error) {
@@ -1290,6 +1285,7 @@ async function suscribirseARealtime() {
         .on('postgres_changes',
             { event: 'INSERT', schema: 'public', table: 'muro_comentarios' },
             () => {
+                // ✅ Solo actualizar comentarios visibles
                 try {
                     document.querySelectorAll('.post-comentarios[style*="display: block"]').forEach(el => {
                         const postId = el.id.replace('comentarios-', '');
@@ -1308,34 +1304,42 @@ async function suscribirseARealtime() {
             }
         });
 
-    // ✅ REGISTRAR CANAL CON RESOURCE MANAGER
-    window.registerSupabaseChannel(muroChannel, 'muro_realtime');
     return muroChannel;
 }
 
 // ================================================================
-// INICIALIZACIÓN - CORREGIDA
+// INICIALIZACIÓN - CORREGIDA (SIN BUCLES INFINITOS)
 // ================================================================
+function limpiarRecursosMuro() {
+    if (muroChannel) {
+        try { supabase.removeChannel(muroChannel); } catch(e) {}
+        muroChannel = null;
+    }
+    likeCache.clear();
+}
+
+window.addEventListener('beforeunload', limpiarRecursosMuro);
+
 document.addEventListener('DOMContentLoaded', async function() {
     await cargarUsuarioActual();
     await cargarPreciosMercado();
     await cargarPublicaciones();
     await suscribirseARealtime();
 
-    // ✅ Botón Publicar - con prevención de eventos duplicados
+    // ✅ Event listener del botón "Publicar" - SOLO UNO
     const btnPublicar = document.getElementById('btnPublicar');
     if (btnPublicar) {
-        // Remover listeners anteriores clonando
+        // Eliminar listeners previos para evitar duplicados
         const newBtn = btnPublicar.cloneNode(true);
         btnPublicar.parentNode.replaceChild(newBtn, btnPublicar);
         
+        // Agregar el listener correcto
         newBtn.addEventListener('click', function(e) {
-            e.preventDefault();
+            e.preventDefault(); // Prevenir cualquier comportamiento por defecto
             publicar();
         });
     }
 
-    // ✅ Búsqueda de hashtags
     const searchInput = document.getElementById('searchHashtag');
     if (searchInput) {
         searchInput.addEventListener('keypress', function(e) {
@@ -1346,7 +1350,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
 
-    // ✅ Comentarios con Enter
     document.addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
             const input = e.target;
@@ -1358,7 +1361,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     });
 
-    // ✅ Modal de venta
     const btnPublicarVenta = document.getElementById('btnPublicarVenta');
     if (btnPublicarVenta) {
         btnPublicarVenta.addEventListener('click', function(e) {
@@ -1367,7 +1369,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
 
-    // ✅ Cerrar modales al hacer clic fuera
     document.querySelectorAll('.modal-overlay').forEach(modal => {
         modal.addEventListener('click', function(e) {
             if (e.target === this) {
@@ -1400,6 +1401,7 @@ window.abrirSelectorImagen = abrirSelectorImagen;
 window.insertarHashtag = insertarHashtag;
 window.insertarEmoji = insertarEmoji;
 window.verTokens = verTokens;
+window.showToast = showToast;
 
 window.abrirModalVenta = abrirModalVenta;
 window.cerrarModalVenta = cerrarModalVenta;
@@ -1410,3 +1412,4 @@ window.confirmarCompraCrypto = confirmarCompraCrypto;
 window.cerrarModalPago = cerrarModalPago;
 window.copiarDireccionCrypto = copiarDireccionCrypto;
 window.verificarPagoCrypto = verificarPagoCrypto;
+window.limpiarRecursosMuro = limpiarRecursosMuro;
