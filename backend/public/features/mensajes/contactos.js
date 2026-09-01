@@ -1,12 +1,12 @@
 /* ================================================================
    CONTACTOS - SARIEL'S ECOSYSTEM
-   VERSIÓN FUNCIONAL - CONEXIÓN REAL CON SUPABASE
+   VERSIÓN CORREGIDA - SIN DUPLICACIÓN DE FUNCIONES
    ================================================================ */
 
 // ================================================================
-// CONFIGURACIÓN SUPABASE
+// CONFIGURACIÓN SUPABASE - SIN DECLARACIÓN DUPLICADA
 // ================================================================
-const supabase = window.supabase.createClient(
+const supabaseClient = window.supabaseClient || window.supabase.createClient(
     'https://zultnlogdoajehbswlih.supabase.co',
     'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
 );
@@ -22,33 +22,9 @@ let canalContactos = null;
 let modoOscuro = true;
 
 // ================================================================
-// TOAST
+// NOTA: showToast(), getSession() y escapeHTML() están en el sistema global
+// (app.js o definidos globalmente). NO DUPLICAR.
 // ================================================================
-function showToast(msg, type = '', duration = 3500) {
-    let t = document.getElementById('toast');
-    if (!t) {
-        t = document.createElement('div');
-        t.id = 'toast';
-        t.className = 'toast';
-        document.body.appendChild(t);
-    }
-    t.textContent = msg;
-    t.className = 'toast show';
-    if (type === 'error') t.classList.add('error');
-    else if (type === 'warning') t.classList.add('warning');
-    else if (type === 'success') t.classList.add('success');
-    else t.classList.remove('error', 'warning', 'success');
-    clearTimeout(t._timeout);
-    t._timeout = setTimeout(() => t.classList.remove('show'), duration);
-}
-
-// ================================================================
-// OBTENER SESIÓN
-// ================================================================
-async function getSession() {
-    const { data: { session } } = await supabase.auth.getSession();
-    return session;
-}
 
 // ================================================================
 // VERIFICAR AUTENTICACIÓN
@@ -64,16 +40,6 @@ async function verificarAutenticacion() {
 }
 
 // ================================================================
-// ESCAPE HTML (XSS)
-// ================================================================
-function escapeHTML(texto) {
-    if (!texto) return '';
-    const div = document.createElement('div');
-    div.textContent = texto;
-    return div.innerHTML;
-}
-
-// ================================================================
 // ACTUALIZAR ESTADO ONLINE
 // ================================================================
 async function actualizarOnline(online) {
@@ -81,8 +47,7 @@ async function actualizarOnline(online) {
         const session = await getSession();
         if (!session) return;
 
-        // Usar UPDATE directo en lugar de RPC no verificada
-        const { error } = await supabase
+        const { error } = await supabaseClient
             .from('usuarios')
             .update({
                 online: online,
@@ -110,8 +75,7 @@ async function cargarContactos() {
             return;
         }
 
-        // Obtener contactos con información de usuario
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('contactos')
             .select(`
                 id,
@@ -189,10 +153,10 @@ function mostrarSinContactos() {
 // ================================================================
 function iniciarEscuchaContactos() {
     if (canalContactos) {
-        supabase.removeChannel(canalContactos);
+        supabaseClient.removeChannel(canalContactos);
     }
 
-    canalContactos = supabase
+    canalContactos = supabaseClient
         .channel('contactos-realtime')
         .on('postgres_changes', {
             event: '*',
@@ -339,7 +303,7 @@ async function buscarUsuarios(query) {
         const session = await getSession();
         if (!session) return;
 
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('usuarios')
             .select('id, nombre, handle, avatar_url, online')
             .or(`nombre.ilike.%${query}%,handle.ilike.%${query}%`)
@@ -360,7 +324,7 @@ async function buscarUsuarios(query) {
             return;
         }
 
-        const { data: contactosExistentes } = await supabase
+        const { data: contactosExistentes } = await supabaseClient
             .from('contactos')
             .select('contacto_id')
             .eq('usuario_id', session.user.id);
@@ -426,8 +390,7 @@ async function agregarContacto(contactoId) {
             return;
         }
 
-        // Verificar si ya existe
-        const { data: existe } = await supabase
+        const { data: existe } = await supabaseClient
             .from('contactos')
             .select('id')
             .eq('usuario_id', session.user.id)
@@ -439,7 +402,7 @@ async function agregarContacto(contactoId) {
             return;
         }
 
-        const { error } = await supabase
+        const { error } = await supabaseClient
             .from('contactos')
             .insert({
                 usuario_id: session.user.id,
@@ -464,13 +427,6 @@ async function agregarContacto(contactoId) {
 }
 
 // ================================================================
-// ➕ AGREGAR CONTACTO DESDE BÚSQUEDA (alias)
-// ================================================================
-async function agregarContactoDesdeBusqueda(contactoId) {
-    await agregarContacto(contactoId);
-}
-
-// ================================================================
 // 🚫 BLOQUEAR CONTACTO
 // ================================================================
 async function bloquearContacto(contactoId) {
@@ -483,9 +439,8 @@ async function bloquearContacto(contactoId) {
             return;
         }
 
-        // Verificar si existe tabla bloqueos
         try {
-            const { error } = await supabase
+            const { error } = await supabaseClient
                 .from('bloqueos')
                 .insert({
                     usuario_id: session.user.id,
@@ -505,8 +460,7 @@ async function bloquearContacto(contactoId) {
             return;
         }
 
-        // Eliminar de contactos
-        await supabase
+        await supabaseClient
             .from('contactos')
             .delete()
             .eq('usuario_id', session.user.id)
@@ -534,7 +488,7 @@ async function desbloquearUsuario(contactoId) {
             return;
         }
 
-        const { error } = await supabase
+        const { error } = await supabaseClient
             .from('bloqueos')
             .delete()
             .eq('usuario_id', session.user.id)
@@ -580,7 +534,7 @@ async function toggleFavorito(contactoId) {
 
         const nuevoEstado = !contacto.esFavorito;
 
-        const { error } = await supabase
+        const { error } = await supabaseClient
             .from('contactos')
             .update({ es_favorito: nuevoEstado })
             .eq('usuario_id', session.user.id)
@@ -611,7 +565,7 @@ async function eliminarContacto(contactoId) {
     }
 
     try {
-        const { error } = await supabase
+        const { error } = await supabaseClient
             .from('contactos')
             .delete()
             .eq('usuario_id', session.user.id)
@@ -643,9 +597,8 @@ async function invitarContacto() {
 
         const codigo = 'SAR-' + Math.random().toString(36).substring(2, 8).toUpperCase();
 
-        // Verificar si tabla invitaciones existe
         try {
-            const { data, error } = await supabase
+            const { data, error } = await supabaseClient
                 .from('invitaciones')
                 .insert({
                     usuario_id: session.user.id,
@@ -766,7 +719,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         mostrarSinContactos();
     }
 
-    // Event listeners
     const searchModal = document.getElementById('searchInputModal');
     if (searchModal) {
         let timeout;
@@ -790,7 +742,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
 
-    // Cerrar modales con ESC
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
             document.querySelectorAll('.modal-overlay.show').forEach(modal => {
@@ -816,7 +767,6 @@ window.eliminarContacto = eliminarContacto;
 window.abrirAgregarContacto = abrirAgregarContacto;
 window.buscarUsuarios = buscarUsuarios;
 window.agregarContacto = agregarContacto;
-window.agregarContactoDesdeBusqueda = agregarContactoDesdeBusqueda;
 window.bloquearContacto = bloquearContacto;
 window.desbloquearUsuario = desbloquearUsuario;
 window.invitarContacto = invitarContacto;
