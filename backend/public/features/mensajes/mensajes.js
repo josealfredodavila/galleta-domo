@@ -1,16 +1,22 @@
 /* ================================================================
    MENSAJES - SARIEL'S ECOSYSTEM
-   VERSIÓN CORREGIDA - SIN DUPLICACIÓN DE FUNCIONES
+   VERSIÓN REFACTORIZADA - SINGLETON + RESOURCE MANAGER
    ================================================================ */
 
 // ================================================================
-// CONFIGURACIÓN SUPABASE - SIN DECLARACIÓN DUPLICADA
+// CONFIGURACIÓN SUPABASE - SINGLETON GLOBAL
 // ================================================================
-const supabaseClient = window.supabaseClient || window.supabase.createClient(
-    'https://zultnlogdoajehbswlih.supabase.co',
-    'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
-);
+const supabaseClient = window.supabaseClient;
 
+// Verificar que el singleton existe
+if (!supabaseClient) {
+    console.error('❌ Supabase Client no inicializado. Cargando app.js primero.');
+    window.location.reload();
+}
+
+// ================================================================
+// VARIABLES GLOBALES
+// ================================================================
 let usuarioActual = null;
 let conversacionActual = null;
 let realtimeChannel = null;
@@ -20,53 +26,21 @@ let mediaRecorder = null;
 let audioChunks = [];
 
 // ================================================================
-// NOTA: showToast(), getSession() y escapeHTML() están en el sistema global
-// (app.js o definidos globalmente). NO DUPLICAR.
+// NOTA: showToast(), getSession(), escapeHTML(), formatearTexto() 
+// ESTÁN EN app.js - NO DUPLICAR
 // ================================================================
 
 // ================================================================
 // VERIFICAR AUTENTICACIÓN
 // ================================================================
 async function verificarAutenticacion() {
-    const session = await getSession();
+    const session = await window.getSession();
     if (!session) {
-        showToast('⚠️ Inicia sesión para usar mensajería', 'warning');
+        window.showToast('⚠️ Inicia sesión para usar mensajería', 'warning');
         return false;
     }
     usuarioActual = session.user;
     return true;
-}
-
-// ================================================================
-// FORMATEAR TEXTO (Emojis)
-// ================================================================
-function formatearTexto(texto) {
-    if (!texto) return '';
-    
-    let textoFormateado = escapeHTML(texto);
-    
-    const emojis = {
-        ':feliz:': '😊',
-        ':risa:': '😂',
-        ':amo:': '❤️',
-        ':fuego:': '🔥',
-        ':estrella:': '⭐',
-        ':genial:': '🤩',
-        ':ok:': '👌',
-        ':visto:': '👀',
-        ':musica:': '🎵',
-        ':pizza:': '🍕',
-        ':cafe:': '☕',
-        ':helado:': '🍦',
-        ':rocket:': '🚀',
-        ':sariel:': '◈'
-    };
-    
-    for (const [key, value] of Object.entries(emojis)) {
-        textoFormateado = textoFormateado.replaceAll(key, value);
-    }
-    
-    return textoFormateado;
 }
 
 // ================================================================
@@ -79,7 +53,7 @@ async function buscarContactos(query) {
     }
 
     try {
-        const session = await getSession();
+        const session = await window.getSession();
         if (!session) return;
 
         const { data, error } = await supabaseClient
@@ -127,8 +101,8 @@ async function buscarContactos(query) {
                         ${usuario.avatar_url ? `<img src="${usuario.avatar_url}" style="width:100%;height:100%;object-fit:cover;">` : (usuario.nombre ? usuario.nombre[0].toUpperCase() : '◈')}
                     </div>
                     <div style="flex:1;">
-                        <div style="font-weight:600;font-size:0.8rem;">${escapeHTML(usuario.nombre || 'Usuario')}</div>
-                        <div style="font-size:0.6rem;color:var(--text-muted);">@${escapeHTML(usuario.handle || 'usuario')}</div>
+                        <div style="font-weight:600;font-size:0.8rem;">${window.escapeHTML(usuario.nombre || 'Usuario')}</div>
+                        <div style="font-size:0.6rem;color:var(--text-muted);">@${window.escapeHTML(usuario.handle || 'usuario')}</div>
                     </div>
                     ${yaEsContacto ? `
                         <span style="font-size:0.55rem;color:var(--success);background:rgba(0,214,143,0.1);padding:2px 10px;border-radius:12px;">
@@ -157,9 +131,9 @@ async function buscarContactos(query) {
 // ================================================================
 async function agregarContacto(contactoId) {
     try {
-        const session = await getSession();
+        const session = await window.getSession();
         if (!session) {
-            showToast('⚠️ Inicia sesión para agregar contactos', 'error');
+            window.showToast('⚠️ Inicia sesión para agregar contactos', 'error');
             return;
         }
 
@@ -171,7 +145,7 @@ async function agregarContacto(contactoId) {
             .maybeSingle();
 
         if (existe) {
-            showToast('⚠️ Este usuario ya es tu contacto', 'warning');
+            window.showToast('⚠️ Este usuario ya es tu contacto', 'warning');
             return;
         }
 
@@ -185,7 +159,7 @@ async function agregarContacto(contactoId) {
 
         if (error) throw error;
 
-        showToast('✅ Contacto agregado correctamente', 'success');
+        window.showToast('✅ Contacto agregado correctamente', 'success');
         
         document.getElementById('searchInputModal').value = '';
         document.getElementById('resultadosBusqueda').innerHTML = '';
@@ -194,7 +168,7 @@ async function agregarContacto(contactoId) {
 
     } catch (error) {
         console.error('Error agregando contacto:', error);
-        showToast('❌ Error al agregar contacto', 'error');
+        window.showToast('❌ Error al agregar contacto', 'error');
     }
 }
 
@@ -274,8 +248,8 @@ async function cargarConversaciones() {
                          onclick="abrirConversacion('${conv.id}')">
                         <div class="conv-avatar">${avatar}</div>
                         <div class="conv-info">
-                            <div class="conv-nombre">${escapeHTML(conv.nombre)}</div>
-                            <div class="conv-msg">${conv.ultimoMensaje.length > 40 ? conv.ultimoMensaje.substring(0, 40) + '...' : conv.ultimoMensaje}</div>
+                            <div class="conv-nombre">${window.escapeHTML(conv.nombre)}</div>
+                            <div class="conv-msg">${window.escapeHTML(conv.ultimoMensaje.length > 40 ? conv.ultimoMensaje.substring(0, 40) + '...' : conv.ultimoMensaje)}</div>
                         </div>
                         <div class="conv-meta">
                             ${conv.noLeidos > 0 ? `<span class="conv-badge">${conv.noLeidos}</span>` : ''}
@@ -297,12 +271,12 @@ async function cargarConversaciones() {
 }
 
 // ================================================================
-// 💬 ABRIR CONVERSACIÓN
+// 💬 ABRIR CONVERSACIÓN - CON REGISTER CHANNEL (REGLA D)
 // ================================================================
 async function abrirConversacion(contactoId) {
-    const session = await getSession();
+    const session = await window.getSession();
     if (!session) {
-        showToast('⚠️ Inicia sesión para abrir conversaciones', 'error');
+        window.showToast('⚠️ Inicia sesión para abrir conversaciones', 'error');
         return;
     }
 
@@ -353,8 +327,14 @@ async function abrirConversacion(contactoId) {
         await marcarMensajesLeidos(contactoId);
         await cargarMensajes(contactoId);
 
+        // ✅ LIMPIAR CANAL ANTERIOR
         if (realtimeChannel) {
-            await supabaseClient.removeChannel(realtimeChannel);
+            try {
+                await supabaseClient.removeChannel(realtimeChannel);
+            } catch (e) {
+                console.warn('Error removiendo canal anterior:', e);
+            }
+            realtimeChannel = null;
         }
 
         realtimeChannel = supabaseClient
@@ -374,6 +354,9 @@ async function abrirConversacion(contactoId) {
             )
             .subscribe();
 
+        // ✅ REGISTRAR CANAL CON RESOURCE MANAGER
+        window.registerSupabaseChannel(realtimeChannel, `chat_${contactoId}`);
+
         cargarConversaciones();
 
     } catch (error) {
@@ -385,7 +368,7 @@ async function abrirConversacion(contactoId) {
 // 📖 CARGAR MENSAJES
 // ================================================================
 async function cargarMensajes(contactoId) {
-    const session = await getSession();
+    const session = await window.getSession();
     if (!session) return;
 
     const container = document.getElementById('chatMessages');
@@ -421,10 +404,8 @@ async function cargarMensajes(contactoId) {
 // ================================================================
 function crearMensajeHTML(msg) {
     const esEnviado = msg.remitente_id === usuarioActual?.id;
-    const tipo = esEnviado ? 'enviado' : 'recibido';
-    const fecha = new Date(msg.created_at);
-    const hora = fecha.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const contenidoFormateado = formatearTexto(msg.contenido || '');
+    const hora = new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const contenidoFormateado = window.formatearTexto ? window.formatearTexto(msg.contenido || '') : window.escapeHTML(msg.contenido || '');
 
     if (msg.tipo === 'imagen' && msg.imagen_url) {
         return crearMensajeImagen(msg, esEnviado, hora);
@@ -540,18 +521,18 @@ async function enviarMensaje() {
     const chatInput = document.getElementById('chatInput');
     const contenido = chatInput.value.trim();
     if (!contenido && archivosSeleccionados.length === 0) {
-        if (!conversacionActual) showToast('⚠️ Selecciona una conversación', 'warning');
+        if (!conversacionActual) window.showToast('⚠️ Selecciona una conversación', 'warning');
         return;
     }
 
-    const session = await getSession();
+    const session = await window.getSession();
     if (!session) {
-        showToast('⚠️ Inicia sesión para enviar mensajes', 'error');
+        window.showToast('⚠️ Inicia sesión para enviar mensajes', 'error');
         return;
     }
 
     if (!conversacionActual) {
-        showToast('⚠️ Selecciona una conversación', 'error');
+        window.showToast('⚠️ Selecciona una conversación', 'error');
         return;
     }
 
@@ -582,7 +563,7 @@ async function enviarMensaje() {
         cargarConversaciones();
     } catch (error) {
         console.error('Error enviando mensaje:', error);
-        showToast('❌ Error al enviar mensaje', 'error');
+        window.showToast('❌ Error al enviar mensaje', 'error');
     }
 }
 
@@ -619,13 +600,13 @@ async function subirArchivo(file, session) {
 
         if (error) throw error;
 
-        showToast('✅ Archivo enviado', 'success');
+        window.showToast('✅ Archivo enviado', 'success');
         await cargarMensajes(conversacionActual.id);
         cargarConversaciones();
 
     } catch (error) {
         console.error('Error subiendo archivo:', error);
-        showToast('❌ Error al subir archivo', 'error');
+        window.showToast('❌ Error al subir archivo', 'error');
     }
 }
 
@@ -663,11 +644,11 @@ function handleFileSelect(event) {
     }
 
     event.target.value = '';
-    showToast(`📎 ${files.length} archivo(s) seleccionado(s)`, 'success');
+    window.showToast(`📎 ${files.length} archivo(s) seleccionado(s)`, 'success');
 }
 
 // ================================================================
-// 🎙️ GRABACIÓN DE VOZ
+// 🎙️ GRABACIÓN DE VOZ - CON REGISTER STREAM (REGLA D)
 // ================================================================
 function toggleGrabacionVoz() {
     const btn = document.getElementById('btnGrabarVoz');
@@ -682,6 +663,9 @@ function toggleGrabacionVoz() {
 async function iniciarGrabacionVoz(btn) {
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        // ✅ REGISTRAR STREAM CON RESOURCE MANAGER
+        window.registerStream(stream, 'grabacion_voz');
+        
         mediaRecorder = new MediaRecorder(stream);
         audioChunks = [];
 
@@ -693,7 +677,7 @@ async function iniciarGrabacionVoz(btn) {
             const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
             const file = new File([audioBlob], `voz_${Date.now()}.webm`, { type: 'audio/webm' });
             
-            const session = await getSession();
+            const session = await window.getSession();
             if (session && conversacionActual) {
                 archivosSeleccionados = [file];
                 await enviarMensaje();
@@ -706,11 +690,11 @@ async function iniciarGrabacionVoz(btn) {
         grabacionActiva = true;
         btn.textContent = '⏹️';
         btn.style.color = 'var(--danger)';
-        showToast('🎙️ Grabando...', '', 2000);
+        window.showToast('🎙️ Grabando...', '', 2000);
 
     } catch (error) {
         console.error('Error iniciando grabación:', error);
-        showToast('❌ Error al acceder al micrófono', 'error');
+        window.showToast('❌ Error al acceder al micrófono', 'error');
     }
 }
 
@@ -720,7 +704,7 @@ function detenerGrabacionVoz(btn) {
         grabacionActiva = false;
         btn.textContent = '🎙️';
         btn.style.color = '';
-        showToast('✅ Grabación finalizada', 'success');
+        window.showToast('✅ Grabación finalizada', 'success');
     }
 }
 
@@ -731,9 +715,9 @@ async function eliminarMensaje(mensajeId) {
     if (!confirm('¿Eliminar este mensaje?')) return;
 
     try {
-        const session = await getSession();
+        const session = await window.getSession();
         if (!session) {
-            showToast('⚠️ Inicia sesión', 'error');
+            window.showToast('⚠️ Inicia sesión', 'error');
             return;
         }
 
@@ -745,7 +729,7 @@ async function eliminarMensaje(mensajeId) {
 
         if (error) throw error;
 
-        showToast('🗑️ Mensaje eliminado');
+        window.showToast('🗑️ Mensaje eliminado');
         if (conversacionActual) {
             await cargarMensajes(conversacionActual.id);
         }
@@ -753,7 +737,7 @@ async function eliminarMensaje(mensajeId) {
 
     } catch (error) {
         console.error('Error eliminando mensaje:', error);
-        showToast('❌ Error al eliminar mensaje', 'error');
+        window.showToast('❌ Error al eliminar mensaje', 'error');
     }
 }
 
@@ -764,14 +748,14 @@ async function editarMensaje(mensajeId) {
     const nuevoContenido = prompt('Edita tu mensaje:');
     if (nuevoContenido === null) return;
     if (!nuevoContenido.trim()) {
-        showToast('⚠️ No puedes dejar vacío', 'error');
+        window.showToast('⚠️ No puedes dejar vacío', 'error');
         return;
     }
 
     try {
-        const session = await getSession();
+        const session = await window.getSession();
         if (!session) {
-            showToast('⚠️ Inicia sesión', 'error');
+            window.showToast('⚠️ Inicia sesión', 'error');
             return;
         }
 
@@ -786,14 +770,14 @@ async function editarMensaje(mensajeId) {
 
         if (error) throw error;
 
-        showToast('✅ Mensaje editado');
+        window.showToast('✅ Mensaje editado');
         if (conversacionActual) {
             await cargarMensajes(conversacionActual.id);
         }
 
     } catch (error) {
         console.error('Error editando mensaje:', error);
-        showToast('❌ Error al editar mensaje', 'error');
+        window.showToast('❌ Error al editar mensaje', 'error');
     }
 }
 
@@ -802,16 +786,16 @@ async function editarMensaje(mensajeId) {
 // ================================================================
 async function eliminarConversacion(contactoId) {
     if (!contactoId) {
-        showToast('⚠️ No hay conversación seleccionada', 'error');
+        window.showToast('⚠️ No hay conversación seleccionada', 'error');
         return;
     }
     
     if (!confirm('¿Eliminar toda la conversación con este contacto?')) return;
 
     try {
-        const session = await getSession();
+        const session = await window.getSession();
         if (!session) {
-            showToast('⚠️ Inicia sesión', 'error');
+            window.showToast('⚠️ Inicia sesión', 'error');
             return;
         }
 
@@ -837,12 +821,12 @@ async function eliminarConversacion(contactoId) {
             `;
         }
 
-        showToast('🗑️ Conversación eliminada');
+        window.showToast('🗑️ Conversación eliminada');
         await cargarConversaciones();
 
     } catch (error) {
         console.error('Error eliminando conversación:', error);
-        showToast('❌ Error al eliminar conversación', 'error');
+        window.showToast('❌ Error al eliminar conversación', 'error');
     }
 }
 
@@ -851,7 +835,7 @@ async function eliminarConversacion(contactoId) {
 // ================================================================
 async function marcarMensajesLeidos(contactoId) {
     try {
-        const session = await getSession();
+        const session = await window.getSession();
         if (!session) return;
 
         try {
@@ -881,9 +865,9 @@ async function reportarMensaje(mensajeId) {
     if (!motivo) return;
 
     try {
-        const session = await getSession();
+        const session = await window.getSession();
         if (!session) {
-            showToast('⚠️ Inicia sesión para reportar', 'error');
+            window.showToast('⚠️ Inicia sesión para reportar', 'error');
             return;
         }
 
@@ -897,17 +881,17 @@ async function reportarMensaje(mensajeId) {
 
         if (error) {
             if (error.code === '42P01') {
-                showToast('⚠️ La tabla de reportes no está configurada', 'warning');
+                window.showToast('⚠️ La tabla de reportes no está configurada', 'warning');
                 return;
             }
             throw error;
         }
 
-        showToast('⚠️ Reporte enviado. Gracias por ayudar.', 'warning');
+        window.showToast('⚠️ Reporte enviado. Gracias por ayudar.', 'warning');
 
     } catch (error) {
         console.error('Error reportando mensaje:', error);
-        showToast('❌ Error al reportar', 'error');
+        window.showToast('❌ Error al reportar', 'error');
     }
 }
 
@@ -916,16 +900,16 @@ async function reportarMensaje(mensajeId) {
 // ================================================================
 async function bloquearUsuario(usuarioId) {
     if (!usuarioId) {
-        showToast('⚠️ No hay usuario seleccionado', 'error');
+        window.showToast('⚠️ No hay usuario seleccionado', 'error');
         return;
     }
     
     if (!confirm('¿Bloquear a este usuario? No podrán enviarte mensajes.')) return;
 
     try {
-        const session = await getSession();
+        const session = await window.getSession();
         if (!session) {
-            showToast('⚠️ Inicia sesión', 'error');
+            window.showToast('⚠️ Inicia sesión', 'error');
             return;
         }
 
@@ -938,7 +922,7 @@ async function bloquearUsuario(usuarioId) {
                 });
         } catch (insertError) {
             if (insertError.code === '42P01') {
-                showToast('⚠️ La tabla de bloqueos no está configurada', 'warning');
+                window.showToast('⚠️ La tabla de bloqueos no está configurada', 'warning');
                 return;
             }
             throw insertError;
@@ -950,7 +934,7 @@ async function bloquearUsuario(usuarioId) {
             .eq('usuario_id', session.user.id)
             .eq('contacto_id', usuarioId);
 
-        showToast('🚫 Usuario bloqueado');
+        window.showToast('🚫 Usuario bloqueado');
 
         if (conversacionActual?.id === usuarioId) {
             conversacionActual = null;
@@ -967,7 +951,7 @@ async function bloquearUsuario(usuarioId) {
 
     } catch (error) {
         console.error('Error bloqueando usuario:', error);
-        showToast('❌ Error al bloquear usuario', 'error');
+        window.showToast('❌ Error al bloquear usuario', 'error');
     }
 }
 
@@ -976,17 +960,17 @@ async function bloquearUsuario(usuarioId) {
 // ================================================================
 async function buscarEnConversacion(query) {
     if (!query || !query.trim()) {
-        showToast('⚠️ Escribe algo para buscar', 'warning');
+        window.showToast('⚠️ Escribe algo para buscar', 'warning');
         return;
     }
 
     if (!conversacionActual) {
-        showToast('⚠️ Selecciona una conversación', 'error');
+        window.showToast('⚠️ Selecciona una conversación', 'error');
         return;
     }
 
     try {
-        const session = await getSession();
+        const session = await window.getSession();
         if (!session) return;
 
         const { data, error } = await supabaseClient
@@ -1004,7 +988,7 @@ async function buscarEnConversacion(query) {
                 <div class="empty-chat">
                     <span class="icon">◈</span>
                     <h3>No se encontraron resultados</h3>
-                    <p>No hay mensajes que coincidan con "${escapeHTML(query)}"</p>
+                    <p>No hay mensajes que coincidan con "${window.escapeHTML(query)}"</p>
                     <button onclick="cargarMensajes('${conversacionActual.id}')" style="margin-top:12px;padding:8px 20px;background:linear-gradient(135deg,var(--gold),var(--gold-dark));border:none;border-radius:30px;color:var(--space);font-weight:600;cursor:pointer;">
                         Volver
                     </button>
@@ -1015,11 +999,11 @@ async function buscarEnConversacion(query) {
 
         container.innerHTML = data.map(msg => crearMensajeHTML(msg)).join('');
         container.scrollTop = container.scrollHeight;
-        showToast(`🔍 Encontrados ${data.length} mensajes`, 'success');
+        window.showToast(`🔍 Encontrados ${data.length} mensajes`, 'success');
 
     } catch (error) {
         console.error('Error buscando:', error);
-        showToast('❌ Error al buscar', 'error');
+        window.showToast('❌ Error al buscar', 'error');
     }
 }
 
@@ -1093,4 +1077,3 @@ window.buscarContactos = buscarContactos;
 window.seleccionarArchivo = seleccionarArchivo;
 window.handleFileSelect = handleFileSelect;
 window.toggleGrabacionVoz = toggleGrabacionVoz;
-window.showToast = showToast;
