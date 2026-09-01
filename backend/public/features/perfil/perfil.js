@@ -4,14 +4,12 @@
    ================================================================ */
 
 // ================================================================
-// CONFIGURACIÓN SUPABASE - VERSIÓN SEGURA (funciona en ambos escenarios)
+// CONFIGURACIÓN SUPABASE - VERSIÓN SIMPLE ORIGINAL
 // ================================================================
-const supabase = (typeof window.supabase.createClient === 'function')
-    ? window.supabase.createClient(
-        'https://zultnlogdoajehbswlih.supabase.co',
-        'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
-      )
-    : window.supabase;
+const supabase = window.supabase.createClient(
+    'https://zultnlogdoajehbswlih.supabase.co',
+    'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
+);
 
 // ================================================================
 // CONFIGURACIÓN DE ENTORNO
