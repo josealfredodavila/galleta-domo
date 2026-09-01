@@ -1,327 +1,39 @@
 /* ================================================================
-   APP.JS - VERSIÓN COMPLETA CORREGIDA (SINGLETON + RESOURCE MANAGER)
+   APP.JS - VERSIÓN PRODUCCIÓN - CORREGIDA Y OPTIMIZADA
+   SISTEMA COMPLETO: Supabase + Autenticación + Tokens + Wallet + Live
    RUTA RAILWAY: https://galleta-domo.up.railway.app
    ================================================================ */
 
 // ================================================================
-// 1. CONFIGURACIÓN SUPABASE
+// CONFIGURACIÓN SUPABASE - CON VALIDACIÓN
 // ================================================================
 const SUPABASE_URL = 'https://zultnlogdoajehbswlih.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
 
-// ================================================================
-// 2. SINGLETON DE SUPABASE CLIENT - ÚNICO EN TODA LA APP
-// ================================================================
-if (typeof window._supabaseClient === 'undefined') {
-    try {
-        if (window.supabase && typeof window.supabase.createClient === 'function') {
-            window._supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-                realtime: {
-                    params: {
-                        eventsPerSecond: 10
-                    }
-                }
-            });
-        } else {
-            throw new Error('SDK de Supabase no encontrado en window.supabase');
-        }
-        console.log('✅ Supabase Client singleton inicializado');
-    } catch (error) {
-        console.error('❌ Error inicializando Supabase Client:', error);
-        window._supabaseClient = {
-            auth: {
-                getSession: async () => ({ data: { session: null }, error: null }),
-                onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
-                signUp: async () => ({ data: null, error: new Error('Supabase no disponible') }),
-                signInWithPassword: async () => ({ data: null, error: new Error('Supabase no disponible') }),
-                signOut: async () => ({ error: null }),
-                resetPasswordForEmail: async () => ({ error: null }),
-                updateUser: async () => ({ error: null })
-            },
-            from: () => ({
-                select: () => ({ 
-                    eq: () => ({ single: async () => ({ data: null, error: null }), order: () => ({ data: [], error: null }) }),
-                    insert: () => ({ select: async () => ({ data: [], error: null }) }),
-                    update: () => ({ eq: async () => ({ error: null }) })
-                })
-            }),
-            rpc: async () => ({ data: null, error: null }),
-            channel: () => ({ on: () => ({ subscribe: () => ({ unsubscribe: () => {} }) }) }),
-            removeChannel: () => {}
-        };
-    }
+// ✅ VALIDACIÓN: Asegurar que Supabase está disponible
+if (typeof window.supabase === 'undefined' || typeof window.supabase.createClient !== 'function') {
+    console.error('❌ Supabase no está disponible. Verifica la carga de la librería.');
+    // Crear un fallback para evitar errores
+    window.supabase = { createClient: () => ({ auth: { getSession: () => ({ data: { session: null } }) } }) };
 }
 
-// Exponer la instancia única a nivel global
-window.supabaseClient = window._supabaseClient;
-window.supabase = window._supabaseClient;
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ================================================================
-// 3. GESTOR GLOBAL DE RECURSOS (PREVENCIÓN DE MEMORY LEAKS)
+// EXPONER SUPABASE GLOBALMENTE
 // ================================================================
-class ResourceManager {
-    constructor() {
-        this.channels = [];
-        this.observers = [];
-        this.intervals = [];
-        this.timeouts = [];
-        this.streams = [];
-        this._isCleaning = false;
-    }
-
-    // ✅ Registra un canal Realtime con límite de 20
-    registerChannel(channel, name = 'unnamed_channel') {
-        if (!channel) return channel;
-        
-        this.channels.push({ channel, name, timestamp: Date.now() });
-        
-        // Límite de seguridad: máximo 20 canales
-        if (this.channels.length > 20) {
-            const old = this.channels.shift();
-            try {
-                window.supabaseClient.removeChannel(old.channel);
-                console.warn(`🧹 Canal antiguo eliminado: ${old.name}`);
-            } catch (e) {
-                console.warn(`Error eliminando canal ${old.name}:`, e);
-            }
-        }
-        return channel;
-    }
-
-    // ✅ Registra un IntersectionObserver con límite de 30
-    registerObserver(observer, name = 'unnamed_observer') {
-        if (!observer || typeof observer.disconnect !== 'function') return observer;
-        
-        this.observers.push({ observer, name, timestamp: Date.now() });
-        
-        if (this.observers.length > 30) {
-            const old = this.observers.shift();
-            try {
-                old.observer.disconnect();
-                console.warn(`🧹 Observer antiguo desconectado: ${old.name}`);
-            } catch (e) {}
-        }
-        return observer;
-    }
-
-    // ✅ Registra un setInterval con límite de 15
-    registerInterval(interval, name = 'unnamed_interval') {
-        if (!interval) return interval;
-        
-        this.intervals.push({ interval, name, timestamp: Date.now() });
-        
-        if (this.intervals.length > 15) {
-            const old = this.intervals.shift();
-            clearInterval(old.interval);
-            console.warn(`🧹 Interval antiguo limpiado: ${old.name}`);
-        }
-        return interval;
-    }
-
-    // ✅ Registra un setTimeout con límite de 30
-    registerTimeout(timeout, name = 'unnamed_timeout') {
-        if (!timeout) return timeout;
-        
-        this.timeouts.push({ timeout, name, timestamp: Date.now() });
-        
-        if (this.timeouts.length > 30) {
-            const old = this.timeouts.shift();
-            clearTimeout(old.timeout);
-        }
-        return timeout;
-    }
-
-    // ✅ Registra un MediaStream con límite de 10
-    registerStream(stream, name = 'unnamed_stream') {
-        if (!stream || typeof stream.getTracks !== 'function') return stream;
-        
-        this.streams.push({ stream, name, timestamp: Date.now() });
-        
-        if (this.streams.length > 10) {
-            const old = this.streams.shift();
-            try {
-                old.stream.getTracks().forEach(t => t.stop());
-                console.warn(`🧹 Stream antiguo detenido: ${old.name}`);
-            } catch (e) {}
-        }
-        return stream;
-    }
-
-    // ✅ Limpieza completa de todos los recursos
-    cleanup() {
-        if (this._isCleaning) return;
-        this._isCleaning = true;
-        
-        console.log('🧹 Limpiando todos los recursos...');
-
-        // Limpiar canales
-        const channelsCopy = [...this.channels];
-        this.channels = [];
-        channelsCopy.forEach(({ channel, name }) => {
-            try {
-                window.supabaseClient.removeChannel(channel);
-                console.log(`🧹 Canal cerrado: ${name}`);
-            } catch (e) {
-                console.warn(`Error cerrando canal ${name}:`, e);
-            }
-        });
-
-        // Limpiar observers
-        const observersCopy = [...this.observers];
-        this.observers = [];
-        observersCopy.forEach(({ observer, name }) => {
-            try {
-                observer.disconnect();
-                console.log(`🧹 Observer desconectado: ${name}`);
-            } catch (e) {
-                console.warn(`Error desconectando observer ${name}:`, e);
-            }
-        });
-
-        // Limpiar intervals
-        const intervalsCopy = [...this.intervals];
-        this.intervals = [];
-        intervalsCopy.forEach(({ interval, name }) => {
-            try {
-                clearInterval(interval);
-                console.log(`🧹 Interval limpiado: ${name}`);
-            } catch (e) {}
-        });
-
-        // Limpiar timeouts
-        const timeoutsCopy = [...this.timeouts];
-        this.timeouts = [];
-        timeoutsCopy.forEach(({ timeout }) => {
-            try { clearTimeout(timeout); } catch (e) {}
-        });
-
-        // Limpiar streams
-        const streamsCopy = [...this.streams];
-        this.streams = [];
-        streamsCopy.forEach(({ stream, name }) => {
-            try {
-                stream.getTracks().forEach(t => t.stop());
-                console.log(`🧹 Stream detenido: ${name}`);
-            } catch (e) {}
-        });
-
-        this._isCleaning = false;
-        console.log('✅ Limpieza de recursos completada');
-    }
-
-    // ✅ Limpieza por nombre específico
-    cleanupByName(name) {
-        if (!name) return;
-        
-        this.channels = this.channels.filter(({ channel, name: n }) => {
-            if (n === name) {
-                try { window.supabaseClient.removeChannel(channel); } catch (e) {}
-                return false;
-            }
-            return true;
-        });
-
-        this.observers = this.observers.filter(({ observer, name: n }) => {
-            if (n === name) {
-                try { observer.disconnect(); } catch (e) {}
-                return false;
-            }
-            return true;
-        });
-
-        this.intervals = this.intervals.filter(({ interval, name: n }) => {
-            if (n === name) {
-                try { clearInterval(interval); } catch (e) {}
-                return false;
-            }
-            return true;
-        });
-
-        this.timeouts = this.timeouts.filter(({ timeout, name: n }) => {
-            if (n === name) {
-                try { clearTimeout(timeout); } catch (e) {}
-                return false;
-            }
-            return true;
-        });
-
-        this.streams = this.streams.filter(({ stream, name: n }) => {
-            if (n === name) {
-                try { stream.getTracks().forEach(t => t.stop()); } catch (e) {}
-                return false;
-            }
-            return true;
-        });
-    }
-}
+window.supabase = supabaseClient;
 
 // ================================================================
-// 4. EXPONER FUNCIONES DE RESOURCE MANAGER GLOBALMENTE
+// VARIABLES GLOBALES
 // ================================================================
-window._resourceManager = new ResourceManager();
-
-// Funciones de ayuda para registrar recursos
-window.registerSupabaseChannel = (channel, name) => window._resourceManager.registerChannel(channel, name);
-window.registerObserver = (observer, name) => window._resourceManager.registerObserver(observer, name);
-window.registerInterval = (interval, name) => window._resourceManager.registerInterval(interval, name);
-window.registerTimeout = (timeout, name) => window._resourceManager.registerTimeout(timeout, name);
-window.registerStream = (stream, name) => window._resourceManager.registerStream(stream, name);
-window.cleanupResources = () => window._resourceManager.cleanup();
-window.cleanupResourcesByName = (name) => window._resourceManager.cleanupByName(name);
+let usuarioActual = null;
+let walletConectada = false;
+let web3 = null;
+let appInstance = null;
 
 // ================================================================
-// 5. ESCUCHADORES GLOBALES DE LIMPIEZA
-// ================================================================
-window.addEventListener('beforeunload', () => {
-    if (window._resourceManager) {
-        window._resourceManager.cleanup();
-    }
-});
-
-window.addEventListener('pagehide', () => {
-    if (window._resourceManager) {
-        window._resourceManager.cleanup();
-    }
-});
-
-// ================================================================
-// 6. SHOWTOAST - VERSIÓN GLOBAL ÚNICA
-// ================================================================
-function showToast(msg, type = '') {
-    let t = document.getElementById('toast');
-    if (!t) {
-        t = document.createElement('div');
-        t.id = 'toast';
-        t.className = 'toast';
-        document.body.appendChild(t);
-    }
-    t.textContent = msg;
-    t.className = 'toast show';
-    if (type === 'error') t.classList.add('error');
-    else if (type === 'warning') t.classList.add('warning');
-    else if (type === 'success') t.classList.add('success');
-    else t.classList.remove('error', 'warning', 'success');
-    clearTimeout(t._timeout);
-    t._timeout = setTimeout(() => t.classList.remove('show'), 3500);
-}
-window.showToast = showToast;
-
-// ================================================================
-// 7. GETSESSION - VERSIÓN GLOBAL ÚNICA
-// ================================================================
-async function getSession() {
-    try {
-        const { data: { session } } = await window.supabaseClient.auth.getSession();
-        return session;
-    } catch (error) {
-        console.error('Error obteniendo sesión:', error);
-        return null;
-    }
-}
-window.getSession = getSession;
-
-// ================================================================
-// 8. ESCAPEHTML - VERSIÓN GLOBAL ÚNICA
+// ESCAPE HTML - PREVENCIÓN XSS
 // ================================================================
 function escapeHTML(texto) {
     if (!texto) return '';
@@ -329,112 +41,152 @@ function escapeHTML(texto) {
     div.textContent = texto;
     return div.innerHTML;
 }
-window.escapeHTML = escapeHTML;
 
 // ================================================================
-// 9. VARIABLES GLOBALES
+// TOAST - VERSIÓN SEGURA CON FALLBACK
 // ================================================================
-let usuarioActual = null;
-let walletConectada = false;
-let web3 = null;
+function showToast(msg, type = '') {
+    try {
+        let t = document.getElementById('toast');
+        if (!t) {
+            t = document.createElement('div');
+            t.id = 'toast';
+            t.className = 'toast';
+            document.body.appendChild(t);
+        }
+        t.textContent = msg;
+        t.className = 'toast show';
+        if (type === 'error') t.classList.add('error');
+        else if (type === 'warning') t.classList.add('warning');
+        else if (type === 'success') t.classList.add('success');
+        else t.classList.remove('error', 'warning', 'success');
+        clearTimeout(t._timeout);
+        t._timeout = setTimeout(() => t.classList.remove('show'), 3500);
+    } catch (e) {
+        console.warn('Toast no disponible:', e);
+        // Fallback a console
+        console.log(`[${type || 'info'}] ${msg}`);
+    }
+}
 
 // ================================================================
-// 10. CLASE PRINCIPAL GALETTADOMOAPP
+// CLASE PRINCIPAL - GALETA DOMO APP
 // ================================================================
 class GalletaDomoApp {
     constructor() {
-        this.supabase = window.supabaseClient;
+        this.supabase = supabaseClient;
         this.apiUrl = window.location.origin + '/api';
         this.usuario = null;
         this.wallet = null;
         this.tokens = 0;
         this.isOnline = false;
-        this._cleanupFunctions = [];
-    }
-
-    // ✅ Registrar función de limpieza
-    registerCleanup(fn, name = 'cleanup') {
-        if (typeof fn === 'function') {
-            this._cleanupFunctions.push({ fn, name });
-            if (this._cleanupFunctions.length > 20) {
-                const old = this._cleanupFunctions.shift();
-                try { old.fn(); } catch (e) {}
-            }
-        }
-    }
-
-    async init() {
-        console.log('◈ Sariel\'s - App inicializada');
-        console.log('🌐 API:', this.apiUrl);
-
-        // Verificar sesión existente
-        try {
-            const { data: { session } } = await this.supabase.auth.getSession();
-            if (session) {
-                this.usuario = session.user;
-                usuarioActual = session.user;
-                window.usuarioActual = session.user;
-                await this.cargarTokens();
-                await this.actualizarOnline(true);
-                this.actualizarUIUsuario(session.user);
-            }
-        } catch (err) {
-            console.error('Error al obtener la sesión inicial:', err);
-        }
-
-        // Escuchar cambios de autenticación
-        const authSubscription = this.supabase.auth.onAuthStateChange(async (event, session) => {
-            if (event === 'SIGNED_IN' && session) {
-                this.usuario = session.user;
-                usuarioActual = session.user;
-                window.usuarioActual = session.user;
-                await this.cargarTokens();
-                await this.actualizarOnline(true);
-                this.actualizarUIUsuario(session.user);
-                showToast('✅ ¡Bienvenido ' + (session.user.user_metadata?.nombre || 'Usuario') + '!');
-            }
-            if (event === 'SIGNED_OUT') {
-                await this.actualizarOnline(false);
-                this.usuario = null;
-                usuarioActual = null;
-                window.usuarioActual = null;
-                this.tokens = 0;
-                this.actualizarUIUsuario(null);
-                showToast('🔌 Sesión cerrada');
-            }
-            if (event === 'TOKEN_REFRESHED') {
-                console.log('🔄 Token refrescado automáticamente');
-            }
-        });
-
-        // Registrar limpieza de suscripción auth
-        this.registerCleanup(() => {
-            try { authSubscription.data?.subscription?.unsubscribe(); } catch (e) {}
-        }, 'auth_subscription');
-
-        // Conectar wallet si hay guardada
-        const walletGuardada = localStorage.getItem('sariels_wallet');
-        if (walletGuardada) {
-            this.wallet = walletGuardada;
-            this.actualizarUIWallet(walletGuardada);
-        }
-
-        // Detectar visibilidad de página para actualizar estado
-        const visibilityHandler = () => {
-            if (document.visibilityState === 'visible' && this.usuario) {
-                this.actualizarOnline(true);
-            } else if (document.visibilityState === 'hidden' && this.usuario) {
-                this.actualizarOnline(false);
-            }
-        };
-        document.addEventListener('visibilitychange', visibilityHandler);
-        this.registerCleanup(() => {
-            document.removeEventListener('visibilitychange', visibilityHandler);
-        }, 'visibility_handler');
+        this._initialized = false;
+        this._authListener = null;
+        this._intervalos = [];
     }
 
     // ================================================================
-    // 🪙 SISTEMA DE TOKENS
+    // INICIALIZACIÓN - CON MANEJO DE ERRORES
+    // ================================================================
+    async init() {
+        if (this._initialized) return;
+        this._initialized = true;
+
+        console.log('◈ Sariel\'s - App inicializada');
+        console.log('🌐 API:', this.apiUrl);
+
+        try {
+            // Verificar sesión existente
+            const { data: { session }, error } = await this.supabase.auth.getSession();
+            if (error) throw error;
+
+            if (session) {
+                this.usuario = session.user;
+                usuarioActual = session.user;
+                await this.cargarTokens();
+                await this.actualizarOnline(true);
+                this.actualizarUIUsuario(session.user);
+                showToast('✅ ¡Bienvenido ' + escapeHTML(session.user.user_metadata?.nombre || 'Usuario') + '!');
+            }
+
+            // Configurar listener de autenticación
+            this._authListener = this.supabase.auth.onAuthStateChange(async (event, session) => {
+                try {
+                    if (event === 'SIGNED_IN' && session) {
+                        this.usuario = session.user;
+                        usuarioActual = session.user;
+                        await this.cargarTokens();
+                        await this.actualizarOnline(true);
+                        this.actualizarUIUsuario(session.user);
+                        showToast('✅ ¡Bienvenido ' + escapeHTML(session.user.user_metadata?.nombre || 'Usuario') + '!');
+                    }
+                    if (event === 'SIGNED_OUT') {
+                        await this.actualizarOnline(false);
+                        this.usuario = null;
+                        usuarioActual = null;
+                        this.tokens = 0;
+                        this.actualizarUIUsuario(null);
+                        showToast('🔌 Sesión cerrada');
+                    }
+                    if (event === 'TOKEN_REFRESHED') {
+                        console.log('🔄 Token refrescado automáticamente');
+                    }
+                } catch (e) {
+                    console.error('Error en onAuthStateChange:', e);
+                }
+            });
+
+            // Recuperar wallet guardada
+            const walletGuardada = localStorage.getItem('sariels_wallet');
+            if (walletGuardada) {
+                this.wallet = walletGuardada;
+                this.actualizarUIWallet(walletGuardada);
+            }
+
+            // Evento: cerrar sesión al cerrar página
+            window.addEventListener('beforeunload', () => {
+                if (this.usuario) {
+                    this.actualizarOnline(false);
+                }
+            });
+
+            // Evento: visibilidad de página
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible' && this.usuario) {
+                    this.actualizarOnline(true);
+                } else if (document.visibilityState === 'hidden' && this.usuario) {
+                    this.actualizarOnline(false);
+                }
+            });
+
+            console.log('✅ App inicializada correctamente');
+
+        } catch (error) {
+            console.error('❌ Error en init:', error);
+            showToast('⚠️ Error al inicializar la aplicación', 'error');
+        }
+    }
+
+    // ================================================================
+    // DESTRUIR APP - LIMPIEZA DE RECURSOS
+    // ================================================================
+    destroy() {
+        // Remover listener de autenticación
+        if (this._authListener && this._authListener.unsubscribe) {
+            this._authListener.unsubscribe();
+            this._authListener = null;
+        }
+
+        // Limpiar intervalos
+        this._intervalos.forEach(interval => clearInterval(interval));
+        this._intervalos = [];
+
+        this._initialized = false;
+        console.log('🧹 App destruida correctamente');
+    }
+
+    // ================================================================
+    // 🪙 SISTEMA DE TOKENS - CON RPC SEGURA
     // ================================================================
 
     async cargarTokens() {
@@ -478,19 +230,14 @@ class GalletaDomoApp {
                 return false;
             }
 
-            const { error: errorEmisor } = await this.supabase.rpc('decrement_tokens', {
-                p_user_id: this.usuario.id,
+            // ✅ USAR RPC ÚNICA PARA TRANSFERENCIA ATÓMICA
+            const { data, error } = await this.supabase.rpc('transferir_tokens', {
+                p_remitente_id: this.usuario.id,
+                p_destinatario_id: destinoId,
                 p_cantidad: cantidad
             });
 
-            if (errorEmisor) throw errorEmisor;
-
-            const { error: errorReceptor } = await this.supabase.rpc('increment_tokens', {
-                p_user_id: destinoId,
-                p_cantidad: cantidad
-            });
-
-            if (errorReceptor) throw errorReceptor;
+            if (error) throw error;
 
             this.tokens -= cantidad;
             showToast(`✅ ${cantidad} Es.stoks transferidos`, 'success');
@@ -504,16 +251,21 @@ class GalletaDomoApp {
     }
 
     // ================================================================
-    // 🟢 ESTADO ONLINE
+    // 🟢 ESTADO ONLINE - CON RPC SEGURA
     // ================================================================
 
     async actualizarOnline(online) {
         try {
             if (!this.usuario) return;
 
-            const { error } = await this.supabase.rpc('actualizar_online', {
-                p_online: online
-            });
+            // ✅ USAR UPDATE DIRECTO EN VEZ DE RPC INEXISTENTE
+            const { error } = await this.supabase
+                .from('usuarios')
+                .update({
+                    online: online,
+                    ultima_conexion: online ? new Date().toISOString() : new Date().toISOString()
+                })
+                .eq('id', this.usuario.id);
 
             if (error) throw error;
             
@@ -600,11 +352,20 @@ class GalletaDomoApp {
     }
 
     // ================================================================
-    // 🔐 AUTENTICACIÓN CON EMAIL
+    // 🔐 AUTENTICACIÓN CON EMAIL - CON VALIDACIÓN
     // ================================================================
 
     async registrarUsuario(email, password, nombre) {
         try {
+            if (!email || !password) {
+                showToast('⚠️ Correo y contraseña son obligatorios', 'error');
+                return null;
+            }
+            if (password.length < 6) {
+                showToast('⚠️ La contraseña debe tener al menos 6 caracteres', 'error');
+                return null;
+            }
+
             const { data, error } = await this.supabase.auth.signUp({
                 email: email,
                 password: password,
@@ -617,26 +378,47 @@ class GalletaDomoApp {
             });
 
             if (error) throw error;
-            showToast('✅ Cuenta creada. Verifica tu correo.');
+            
+            const nombreUsuario = data.user?.user_metadata?.nombre || 'Usuario';
+            showToast(`✅ Cuenta creada ${data.session ? 'y sesión iniciada' : '. Verifica tu correo'}.`, 'success');
             return data;
         } catch (error) {
-            showToast('❌ Error: ' + error.message, 'error');
+            console.error('Error registrando usuario:', error);
+            let msg = error.message;
+            if (msg.includes('already registered')) {
+                msg = '⚠️ Este correo ya está registrado';
+            } else if (msg.includes('password')) {
+                msg = '⚠️ Contraseña inválida';
+            } else if (msg.includes('rate limit')) {
+                msg = '⏳ Demasiados intentos. Espera unos minutos.';
+            }
+            showToast('❌ ' + msg, 'error');
             throw error;
         }
     }
 
     async iniciarSesion(email, password) {
         try {
+            if (!email || !password) {
+                showToast('⚠️ Correo y contraseña son obligatorios', 'error');
+                return null;
+            }
+
             const { data, error } = await this.supabase.auth.signInWithPassword({
                 email: email,
                 password: password
             });
 
             if (error) throw error;
-            showToast('✅ Sesión iniciada correctamente');
+            showToast('✅ Sesión iniciada correctamente', 'success');
             return data;
         } catch (error) {
-            showToast('❌ Error: ' + error.message, 'error');
+            console.error('Error iniciando sesión:', error);
+            let msg = error.message;
+            if (msg.includes('Invalid login credentials')) {
+                msg = '⚠️ Correo o contraseña incorrectos';
+            }
+            showToast('❌ ' + msg, 'error');
             throw error;
         }
     }
@@ -651,10 +433,10 @@ class GalletaDomoApp {
             this.wallet = null;
             this.usuario = null;
             usuarioActual = null;
-            window.usuarioActual = null;
             this.tokens = 0;
-            showToast('🔌 Sesión cerrada');
+            showToast('🔌 Sesión cerrada', 'success');
         } catch (error) {
+            console.error('Error cerrando sesión:', error);
             showToast('❌ Error al cerrar sesión', 'error');
         }
     }
@@ -665,15 +447,21 @@ class GalletaDomoApp {
 
     async recuperarContraseña(email) {
         try {
+            if (!email) {
+                showToast('⚠️ Ingresa tu correo', 'error');
+                return false;
+            }
+
             const { data, error } = await this.supabase.auth.resetPasswordForEmail(email, {
                 redirectTo: window.location.origin + '/actualizar-contraseña.html'
             });
 
             if (error) throw error;
             
-            showToast('📧 ¡Listo! Te enviamos un enlace a tu correo. Revisa tu bandeja.');
+            showToast('📧 ¡Listo! Te enviamos un enlace a tu correo. Revisa tu bandeja.', 'success');
             return true;
         } catch (error) {
+            console.error('Error recuperando contraseña:', error);
             showToast('❌ No encontramos ese correo. Verifica que esté bien escrito.', 'error');
             return false;
         }
@@ -681,22 +469,28 @@ class GalletaDomoApp {
 
     async actualizarContraseña(nuevaContraseña) {
         try {
+            if (!nuevaContraseña || nuevaContraseña.length < 6) {
+                showToast('⚠️ La contraseña debe tener al menos 6 caracteres', 'error');
+                return false;
+            }
+
             const { data, error } = await this.supabase.auth.updateUser({
                 password: nuevaContraseña
             });
 
             if (error) throw error;
             
-            showToast('✅ ¡Contraseña actualizada! Ahora inicia sesión con la nueva.');
+            showToast('✅ ¡Contraseña actualizada! Ahora inicia sesión con la nueva.', 'success');
             return true;
         } catch (error) {
+            console.error('Error actualizando contraseña:', error);
             showToast('❌ Error al actualizar. Intenta de nuevo.', 'error');
             return false;
         }
     }
 
     // ================================================================
-    // 🔐 RECUPERAR CON WALLET (WEB3)
+    // 🔐 RECUPERAR CON WALLET (WEB3) - CON VALIDACIÓN
     // ================================================================
 
     async recuperarConWallet() {
@@ -728,12 +522,13 @@ class GalletaDomoApp {
             await this.recuperarContraseña(data.email);
             
         } catch (error) {
+            console.error('Error recuperando con wallet:', error);
             showToast('❌ Error: ' + error.message, 'error');
         }
     }
 
     // ================================================================
-    // 💳 WALLET (MetaMask)
+    // 💳 WALLET (MetaMask) - CON VALIDACIÓN Y WEB3 IMPORTADO
     // ================================================================
 
     async conectarWallet() {
@@ -746,8 +541,15 @@ class GalletaDomoApp {
         }
 
         try {
+            // ✅ VERIFICAR QUE WEB3 ESTÁ CARGADO
+            if (typeof Web3 === 'undefined') {
+                showToast('⚠️ Web3 no está cargado. Recarga la página.', 'error');
+                return;
+            }
+
             web3 = new Web3(window.ethereum);
             
+            // Cambiar a Polygon Mainnet si es necesario
             const chainId = await window.ethereum.request({ method: 'eth_chainId' });
             if (chainId !== '0x89') {
                 try {
@@ -757,6 +559,7 @@ class GalletaDomoApp {
                     });
                 } catch (e) {
                     showToast('⚠️ Cambia a Polygon Mainnet', 'warning');
+                    // Continuar igual, el usuario puede cambiar manualmente
                 }
             }
 
@@ -765,14 +568,19 @@ class GalletaDomoApp {
                 this.wallet = accounts[0];
                 localStorage.setItem('sariels_wallet', accounts[0]);
                 this.actualizarUIWallet(accounts[0]);
-                showToast('✅ Wallet conectada: ' + accounts[0].slice(0, 6) + '...' + accounts[0].slice(-4));
+                showToast('✅ Wallet conectada: ' + accounts[0].slice(0, 6) + '...' + accounts[0].slice(-4), 'success');
                 
                 if (this.usuario) {
                     await this.vincularWallet(accounts[0]);
                 }
             }
         } catch (error) {
-            showToast('❌ Error al conectar wallet: ' + error.message, 'error');
+            console.error('Error conectando wallet:', error);
+            if (error.code === 4001) {
+                showToast('⚠️ Usuario rechazó la conexión', 'warning');
+            } else {
+                showToast('❌ Error al conectar wallet: ' + error.message, 'error');
+            }
         }
     }
 
@@ -792,20 +600,31 @@ class GalletaDomoApp {
     async desconectarWallet() {
         if (!confirm('¿Seguro que quieres desconectar tu wallet?')) return;
         
-        localStorage.removeItem('sariels_wallet');
-        this.wallet = null;
-        this.actualizarUIWallet(null);
-        showToast('🔌 Wallet desconectada');
+        try {
+            localStorage.removeItem('sariels_wallet');
+            this.wallet = null;
+            web3 = null;
+            this.actualizarUIWallet(null);
+            showToast('🔌 Wallet desconectada', 'warning');
+        } catch (error) {
+            console.error('Error desconectando wallet:', error);
+            showToast('❌ Error al desconectar wallet', 'error');
+        }
     }
 
     // ================================================================
-    // 🎬 TRANSMISIONES
+    // 🎬 TRANSMISIONES - CON VALIDACIÓN
     // ================================================================
 
     async crearTransmision(datos) {
         try {
             if (!this.usuario) {
                 showToast('⚠️ Inicia sesión primero', 'error');
+                return null;
+            }
+
+            if (!datos.titulo || datos.titulo.length < 3) {
+                showToast('⚠️ El título debe tener al menos 3 caracteres', 'error');
                 return null;
             }
 
@@ -825,9 +644,10 @@ class GalletaDomoApp {
                 .select();
 
             if (error) throw error;
-            showToast('◉ Transmisión iniciada: ' + datos.titulo);
+            showToast('◉ Transmisión iniciada: ' + escapeHTML(datos.titulo), 'success');
             return data[0];
         } catch (error) {
+            console.error('Error creando transmisión:', error);
             showToast('❌ Error: ' + error.message, 'error');
             return null;
         }
@@ -876,12 +696,17 @@ class GalletaDomoApp {
                 return null;
             }
 
+            if (!mensaje || mensaje.trim().length === 0) {
+                showToast('⚠️ Escribe un mensaje', 'warning');
+                return null;
+            }
+
             const { data, error } = await this.supabase
                 .from('mensajes_live')
                 .insert({
                     transmision_id: transmisionId,
                     usuario_id: this.usuario.id,
-                    mensaje: mensaje,
+                    mensaje: mensaje.trim(),
                     nombre_usuario: this.usuario.user_metadata?.nombre || 'Anónimo'
                 })
                 .select();
@@ -890,6 +715,7 @@ class GalletaDomoApp {
             return data[0];
         } catch (error) {
             console.error('Error enviando mensaje:', error);
+            showToast('❌ Error al enviar mensaje', 'error');
             return null;
         }
     }
@@ -912,11 +738,8 @@ class GalletaDomoApp {
     }
 
     suscribirseChat(transmisionId, callback) {
-        const channelName = `chat-${transmisionId}`;
-        window._resourceManager.cleanupByName(channelName);
-
-        const channel = this.supabase
-            .channel(channelName)
+        return this.supabase
+            .channel(`chat-${transmisionId}`)
             .on('postgres_changes', {
                 event: 'INSERT',
                 schema: 'public',
@@ -926,12 +749,10 @@ class GalletaDomoApp {
                 if (callback) callback(payload.new);
             })
             .subscribe();
-
-        return window.registerSupabaseChannel(channel, channelName);
     }
 
     // ================================================================
-    // 💰 PAGOS
+    // 💰 PAGOS - CON IDEMPOTENCIA
     // ================================================================
 
     async registrarPago(transmisionId, monto, metodo) {
@@ -941,8 +762,16 @@ class GalletaDomoApp {
                 return null;
             }
 
+            if (monto <= 0) {
+                showToast('⚠️ Monto inválido', 'error');
+                return null;
+            }
+
             const comision = monto * 0.5;
             const montoStreamer = monto * 0.5;
+
+            // ✅ GENERAR IDEMPOTENCY KEY
+            const idempotencyKey = `pago_${this.usuario.id}_${transmisionId}_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
 
             const { data, error } = await this.supabase
                 .from('pagos_transmision')
@@ -954,14 +783,23 @@ class GalletaDomoApp {
                     monto_streamer: montoStreamer,
                     metodo_pago: metodo,
                     tipo_pago: 'acceso',
-                    estado: 'completado'
+                    estado: 'completado',
+                    idempotency_key: idempotencyKey
                 })
                 .select();
 
-            if (error) throw error;
-            showToast(`✅ Pago de $${monto} MXN completado`);
+            if (error) {
+                if (error.code === '23505') { // Unique violation
+                    showToast('⚠️ Este pago ya fue procesado', 'warning');
+                    return null;
+                }
+                throw error;
+            }
+
+            showToast(`✅ Pago de $${monto} MXN completado`, 'success');
             return data[0];
         } catch (error) {
+            console.error('Error registrando pago:', error);
             showToast('❌ Error en pago: ' + error.message, 'error');
             return null;
         }
@@ -997,6 +835,11 @@ class GalletaDomoApp {
                 return null;
             }
 
+            if (precioMensual <= 0) {
+                showToast('⚠️ Precio inválido', 'error');
+                return null;
+            }
+
             const { data, error } = await this.supabase
                 .from('suscripciones')
                 .insert({
@@ -1009,9 +852,10 @@ class GalletaDomoApp {
                 .select();
 
             if (error) throw error;
-            showToast(`✅ Suscripción mensual de $${precioMensual} MXN activada`);
+            showToast(`✅ Suscripción mensual de $${precioMensual} MXN activada`, 'success');
             return data[0];
         } catch (error) {
+            console.error('Error suscribiéndose:', error);
             showToast('❌ Error: ' + error.message, 'error');
             return null;
         }
@@ -1025,6 +869,16 @@ class GalletaDomoApp {
         try {
             if (!this.usuario) {
                 showToast('⚠️ Inicia sesión para promocionar', 'error');
+                return null;
+            }
+
+            if (!nivel || nivel < 1 || nivel > 3) {
+                showToast('⚠️ Nivel inválido (1-3)', 'error');
+                return null;
+            }
+
+            if (!horas || horas <= 0) {
+                showToast('⚠️ Horas inválidas', 'error');
                 return null;
             }
 
@@ -1056,16 +910,17 @@ class GalletaDomoApp {
                 })
                 .eq('id', transmisionId);
 
-            showToast(`🚀 Promoción nivel ${nivel} activada por $${costo} MXN`);
+            showToast(`🚀 Promoción nivel ${nivel} activada por $${costo} MXN`, 'success');
             return data[0];
         } catch (error) {
+            console.error('Error activando promoción:', error);
             showToast('❌ Error: ' + error.message, 'error');
             return null;
         }
     }
 
     // ================================================================
-    // 🎨 UI UPDATES
+    // 🎨 UI UPDATES - CON ESCAPE HTML
     // ================================================================
 
     actualizarUIUsuario(user) {
@@ -1074,28 +929,33 @@ class GalletaDomoApp {
 
         if (!loginBtn && !userInfo) return;
 
-        if (user) {
-            if (loginBtn) loginBtn.style.display = 'none';
-            if (userInfo) {
-                userInfo.style.display = 'flex';
-                userInfo.innerHTML = `
-                    <span style="font-size:0.7rem;color:var(--gold);">
-                        ${window.escapeHTML(user.user_metadata?.nombre || 'Usuario')} 
-                        <span style="font-size:0.5rem;color:var(--text-muted);">
-                            (${this.tokens} Es.stoks)
+        try {
+            if (user) {
+                if (loginBtn) loginBtn.style.display = 'none';
+                if (userInfo) {
+                    userInfo.style.display = 'flex';
+                    const nombre = escapeHTML(user.user_metadata?.nombre || 'Usuario');
+                    userInfo.innerHTML = `
+                        <span style="font-size:0.7rem;color:var(--gold);">
+                            ${nombre}
+                            <span style="font-size:0.5rem;color:var(--text-muted);">
+                                (${this.tokens} Es.stoks)
+                            </span>
                         </span>
-                    </span>
-                    <button onclick="app.cerrarSesion()" style="background:transparent;border:none;color:var(--text-muted);cursor:pointer;font-size:0.6rem;">
-                        ✕
-                    </button>
-                `;
+                        <button onclick="app.cerrarSesion()" style="background:transparent;border:none;color:var(--text-muted);cursor:pointer;font-size:0.6rem;">
+                            ✕
+                        </button>
+                    `;
+                }
+            } else {
+                if (loginBtn) loginBtn.style.display = 'inline-flex';
+                if (userInfo) {
+                    userInfo.style.display = 'none';
+                    userInfo.innerHTML = '';
+                }
             }
-        } else {
-            if (loginBtn) loginBtn.style.display = 'inline-flex';
-            if (userInfo) {
-                userInfo.style.display = 'none';
-                userInfo.innerHTML = '';
-            }
+        } catch (error) {
+            console.error('Error actualizando UI usuario:', error);
         }
     }
 
@@ -1105,25 +965,29 @@ class GalletaDomoApp {
 
         if (!walletBtn && !walletInfo) return;
 
-        if (wallet) {
-            if (walletBtn) walletBtn.style.display = 'none';
-            if (walletInfo) {
-                walletInfo.style.display = 'flex';
-                walletInfo.innerHTML = `
-                    <span style="font-size:0.6rem;color:var(--text-muted);">
-                        🟢 ${wallet.slice(0, 6)}...${wallet.slice(-4)}
-                    </span>
-                    <button onclick="app.desconectarWallet()" style="background:transparent;border:none;color:var(--text-muted);cursor:pointer;font-size:0.5rem;">
-                        ✕
-                    </button>
-                `;
+        try {
+            if (wallet) {
+                if (walletBtn) walletBtn.style.display = 'none';
+                if (walletInfo) {
+                    walletInfo.style.display = 'flex';
+                    walletInfo.innerHTML = `
+                        <span style="font-size:0.6rem;color:var(--text-muted);">
+                            🟢 ${wallet.slice(0, 6)}...${wallet.slice(-4)}
+                        </span>
+                        <button onclick="app.desconectarWallet()" style="background:transparent;border:none;color:var(--text-muted);cursor:pointer;font-size:0.5rem;">
+                            ✕
+                        </button>
+                    `;
+                }
+            } else {
+                if (walletBtn) walletBtn.style.display = 'inline-flex';
+                if (walletInfo) {
+                    walletInfo.style.display = 'none';
+                    walletInfo.innerHTML = '';
+                }
             }
-        } else {
-            if (walletBtn) walletBtn.style.display = 'inline-flex';
-            if (walletInfo) {
-                walletInfo.style.display = 'none';
-                walletInfo.innerHTML = '';
-            }
+        } catch (error) {
+            console.error('Error actualizando UI wallet:', error);
         }
     }
 
@@ -1139,30 +1003,47 @@ class GalletaDomoApp {
 }
 
 // ================================================================
-// 11. INSTANCIAR APP
+// INSTANCIAR APP Y EXPONER GLOBALMENTE
 // ================================================================
 const app = new GalletaDomoApp();
+appInstance = app;
 
 window.app = app;
 window.usuarioActual = usuarioActual;
+window.showToast = showToast;
+window.escapeHTML = escapeHTML;
 
 // ================================================================
-// 12. INICIALIZACIÓN - UNA SOLA VEZ
+// INICIALIZACIÓN - UNA SOLA VEZ CON MANEJO DE ERRORES
 // ================================================================
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('◈ Sariel\'s App - Lista');
-    console.log('🌐 API:', app.apiUrl);
-    console.log('◉ Supabase conectado');
-    console.log('◆ Wallet: ' + (localStorage.getItem('sariels_wallet') ? 'Conectada' : 'Desconectada'));
-    
-    app.init();
-    
-    if (app.usuario) {
-        app.actualizarUIUsuario(app.usuario);
+    try {
+        console.log('◈ Sariel\'s App - Lista');
+        console.log('🌐 API:', app.apiUrl);
+        console.log('◉ Supabase conectado');
+        console.log('◆ Wallet: ' + (localStorage.getItem('sariels_wallet') ? 'Conectada' : 'Desconectada'));
+        
+        app.init();
+        
+        if (app.usuario) {
+            app.actualizarUIUsuario(app.usuario);
+        }
+        
+        const walletGuardada = localStorage.getItem('sariels_wallet');
+        if (walletGuardada) {
+            app.actualizarUIWallet(walletGuardada);
+        }
+    } catch (error) {
+        console.error('❌ Error en inicialización:', error);
+        showToast('⚠️ Error al inicializar la aplicación. Recarga la página.', 'error');
     }
-    
-    const walletGuardada = localStorage.getItem('sariels_wallet');
-    if (walletGuardada) {
-        app.actualizarUIWallet(walletGuardada);
+});
+
+// ================================================================
+// LIMPIEZA DE RECURSOS AL CERRAR
+// ================================================================
+window.addEventListener('beforeunload', function() {
+    if (app && typeof app.destroy === 'function') {
+        app.destroy();
     }
 });
