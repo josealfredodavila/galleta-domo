@@ -1,10 +1,10 @@
 /* ================================================================
    PERFIL.JS - SARIEL'S ECOSYSTEM
-   VERSIÓN FUNCIONAL - INTEGRACIÓN COMPLETA CON SERVER.JS + SUPABASE + TELNYX
+   VERSIÓN PRODUCCIÓN - OPTIMIZADA Y SEGURA
    ================================================================ */
 
 // ================================================================
-// CONFIGURACIÓN SUPABASE - SIN DECLARACIÓN DUPLICADA
+// CONFIGURACIÓN SUPABASE
 // ================================================================
 const supabaseClient = window.supabaseClient || window.supabase.createClient(
     'https://zultnlogdoajehbswlih.supabase.co',
@@ -43,32 +43,77 @@ const API_ENDPOINTS = {
 };
 
 // ================================================================
-// TOAST NOTIFICACIONES
+// CONSTANTES
+// ================================================================
+const CACHE_DURATION = 30000;
+const MAX_INACTIVIDAD = 300000;
+const POSTS_PER_PAGE = 10;
+
+// ================================================================
+// ESTADO GLOBAL
+// ================================================================
+let perfilCache = null;
+let ultimaActualizacion = 0;
+let tiempoInactividad = 0;
+let canalAmigos = null;
+let qrScannerInterval = null;
+let scannerActive = false;
+let qrHistorial = [];
+let qrScanningLock = false;
+let streamInterval = null;
+let estadoConexion = {
+    tipo: 'wifi',
+    activa: true,
+    velocidad: '0 Mbps',
+    señal: 100,
+    operador: 'Sariel\'s Net',
+    datos_usados: 0,
+    datos_limite: 0,
+    datos_restantes: 0
+};
+
+// ================================================================
+// TOAST NOTIFICACIONES - CON FALLBACK SEGURO
 // ================================================================
 function showToast(msg, type = '', duration = 3500) {
-    let t = document.getElementById('toast');
-    if (!t) {
-        t = document.createElement('div');
-        t.id = 'toast';
-        t.className = 'toast';
-        document.body.appendChild(t);
+    try {
+        let t = document.getElementById('toast');
+        if (!t) {
+            t = document.createElement('div');
+            t.id = 'toast';
+            t.className = 'toast';
+            document.body.appendChild(t);
+        }
+        t.textContent = msg;
+        t.className = 'toast show';
+        t.style.animation = 'none';
+        t.offsetHeight;
+        t.style.animation = 'slideInRight 0.3s ease-out';
+        
+        if (type === 'error') t.classList.add('error');
+        else if (type === 'warning') t.classList.add('warning');
+        else if (type === 'success') t.classList.add('success');
+        else t.classList.remove('error', 'warning', 'success');
+        
+        clearTimeout(t._timeout);
+        t._timeout = setTimeout(() => {
+            t.style.animation = 'slideOutRight 0.3s ease-in';
+            setTimeout(() => t.classList.remove('show'), 300);
+        }, duration);
+    } catch (e) {
+        console.warn('Toast no disponible:', e);
+        alert(msg);
     }
-    t.textContent = msg;
-    t.className = 'toast show';
-    t.style.animation = 'none';
-    t.offsetHeight;
-    t.style.animation = 'slideInRight 0.3s ease-out';
-    
-    if (type === 'error') t.classList.add('error');
-    else if (type === 'warning') t.classList.add('warning');
-    else if (type === 'success') t.classList.add('success');
-    else t.classList.remove('error', 'warning', 'success');
-    
-    clearTimeout(t._timeout);
-    t._timeout = setTimeout(() => {
-        t.style.animation = 'slideOutRight 0.3s ease-in';
-        setTimeout(() => t.classList.remove('show'), 300);
-    }, duration);
+}
+
+// ================================================================
+// FUNCIÓN ESCAPE HTML - PREVENCIÓN XSS
+// ================================================================
+function escapeHTML(texto) {
+    if (!texto) return '';
+    const div = document.createElement('div');
+    div.textContent = texto;
+    return div.innerHTML;
 }
 
 // ================================================================
@@ -92,11 +137,14 @@ async function getSession() {
 }
 
 // ================================================================
-// FORMATEO DE TEXTO
+// FORMATEO DE TEXTO - CON ESCAPE HTML
 // ================================================================
 function formatearTexto(texto) {
     if (!texto) return '';
-    return texto
+    // Primero escapar HTML para prevenir XSS
+    let sanitizado = escapeHTML(texto);
+    // Luego aplicar formato
+    return sanitizado
         .replace(/#(\w+)/g, '<a href="/features/muro/muro.html?tag=$1" class="hashtag" style="color:var(--gold);text-decoration:none;font-weight:600;">#$1</a>')
         .replace(/@(\w+)/g, '<a href="/perfil/$1" class="mencion" style="color:var(--cyan);text-decoration:none;font-weight:600;">@$1</a>')
         .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
@@ -106,12 +154,8 @@ function formatearTexto(texto) {
 }
 
 // ================================================================
-// CARGA DE PERFIL - RPC obtener_mi_perfil
+// CARGA DE PERFIL - CON CACHÉ Y CONTROL DE ERRORES
 // ================================================================
-let perfilCache = null;
-let ultimaActualizacion = 0;
-const CACHE_DURATION = 30000;
-
 async function cargarPerfil(forzarActualizacion = false) {
     try {
         const session = await getSession();
@@ -176,12 +220,20 @@ async function cargarPerfil(forzarActualizacion = false) {
 }
 
 // ================================================================
-// ESTADO ACTIVO/INACTIVO
+// ESTADO ACTIVO/INACTIVO - CON CONTROL DE RACE CONDITIONS
 // ================================================================
+let estadoEnLineaLock = false;
+
 async function actualizarEstadoEnLinea(online) {
+    if (estadoEnLineaLock) return;
+    estadoEnLineaLock = true;
+    
     try {
         const session = await getSession();
-        if (!session) return;
+        if (!session) {
+            estadoEnLineaLock = false;
+            return;
+        }
 
         const response = await fetch(`${API_ENDPOINTS.estado}/online`, {
             method: 'POST',
@@ -201,9 +253,11 @@ async function actualizarEstadoEnLinea(online) {
         }
         
         actualizarUIEstado(online);
+        estadoEnLineaLock = false;
         return true;
     } catch (error) {
         console.error('Error actualizando estado en línea:', error);
+        estadoEnLineaLock = false;
         return false;
     }
 }
@@ -223,10 +277,16 @@ function actualizarUIEstado(online) {
     }
 }
 
-let tiempoInactividad = 0;
-let maxInactividad = 300000;
+// ================================================================
+// DETECTOR DE INACTIVIDAD - OPTIMIZADO
+// ================================================================
+let detectorInactividadInterval = null;
 
 function iniciarDetectorInactividad() {
+    if (detectorInactividadInterval) {
+        clearInterval(detectorInactividadInterval);
+    }
+
     const resetInactividad = () => {
         tiempoInactividad = 0;
         if (perfilCache && !perfilCache.online) {
@@ -236,13 +296,14 @@ function iniciarDetectorInactividad() {
 
     const eventos = ['mousemove', 'mousedown', 'click', 'scroll', 'keydown', 'touchstart', 'touchmove'];
     eventos.forEach(evento => {
+        document.removeEventListener(evento, resetInactividad);
         document.addEventListener(evento, resetInactividad);
     });
 
-    setInterval(async () => {
+    detectorInactividadInterval = setInterval(async () => {
         tiempoInactividad += 30000;
         
-        if (tiempoInactividad >= maxInactividad && perfilCache && perfilCache.online) {
+        if (tiempoInactividad >= MAX_INACTIVIDAD && perfilCache && perfilCache.online) {
             await actualizarEstadoEnLinea(false);
             showToast('⭕ Marcado como inactivo por inactividad', 'warning');
         }
@@ -250,7 +311,7 @@ function iniciarDetectorInactividad() {
 }
 
 // ================================================================
-// FUNCIÓN cambiarEstado() - CORREGIDA Y EXPUESTA GLOBALMENTE
+// FUNCIÓN cambiarEstado() - EXPUESTA GLOBALMENTE
 // ================================================================
 async function cambiarEstado(online) {
     try {
@@ -277,7 +338,7 @@ async function cambiarEstado(online) {
 }
 
 // ================================================================
-// FUNCIÓN editarPerfil() - CORREGIDA Y EXPUESTA GLOBALMENTE
+// FUNCIÓN editarPerfil() - EXPUESTA GLOBALMENTE
 // ================================================================
 function editarPerfil() {
     cambiarTab('config');
@@ -291,30 +352,30 @@ function editarPerfil() {
 }
 
 // ================================================================
-// FUNCIÓN subirVideo() - CORREGIDA Y EXPUESTA GLOBALMENTE
+// FUNCIÓN subirVideo() - CON VALIDACIÓN Y CONTROL DE ERRORES
 // ================================================================
 async function subirVideo(event) {
     try {
         const file = event?.target?.files?.[0];
         if (!file) {
             showToast('⚠️ No se seleccionó ningún archivo', 'warning');
-            return;
+            return null;
         }
 
         const session = await getSession();
         if (!session) {
             showToast('⚠️ Inicia sesión para subir videos', 'error');
-            return;
+            return null;
         }
 
         if (!file.type.startsWith('video/')) {
             showToast('❌ Formato no válido. Solo se permiten videos.', 'error');
-            return;
+            return null;
         }
 
         if (file.size > 50 * 1024 * 1024) {
             showToast('❌ El video excede 50MB', 'error');
-            return;
+            return null;
         }
 
         showToast('⏳ Subiendo video... 0%', '', 10000);
@@ -348,7 +409,7 @@ async function subirVideo(event) {
 }
 
 // ================================================================
-// FUNCIÓN guardarPerfil() - CORREGIDA CON VALIDACIÓN Y TRY/CATCH
+// FUNCIÓN guardarPerfil() - CON VALIDACIÓN ROBUSTA
 // ================================================================
 async function guardarPerfil() {
     try {
@@ -362,9 +423,13 @@ async function guardarPerfil() {
         const handle = document.getElementById('editHandle')?.value?.trim().replace('@', '') || 'explorador';
         const bio = document.getElementById('editBio')?.value?.trim() || 'Explorando el ecosistema Sariel\'s · WEB3 · Comunidad';
 
-        // Validación de handle
         if (!/^[a-zA-Z0-9_]+$/.test(handle)) {
             showToast('❌ El handle solo puede contener letras, números y _', 'error');
+            return;
+        }
+
+        if (handle.length < 3 || handle.length > 30) {
+            showToast('❌ El handle debe tener entre 3 y 30 caracteres', 'error');
             return;
         }
 
@@ -398,6 +463,9 @@ async function guardarPerfil() {
     }
 }
 
+// ================================================================
+// FUNCIÓN compartirPerfil()
+// ================================================================
 function compartirPerfil() {
     const nombre = document.getElementById('perfilNombre')?.textContent.split(' ')[0] || 'Explorador';
     const handle = document.getElementById('perfilHandle')?.textContent.replace('@', '') || 'explorador';
@@ -415,17 +483,23 @@ function compartirPerfil() {
     }
 }
 
+// ================================================================
+// FUNCIÓN irAMuro()
+// ================================================================
 function irAMuro() {
     window.location.href = '/features/muro/muro.html';
 }
 
+// ================================================================
+// FUNCIÓN abrirSelectorArchivo()
+// ================================================================
 function abrirSelectorArchivo() {
     const input = document.getElementById('fileInput');
     if (input) input.click();
 }
 
 // ================================================================
-// FUNCIÓN subirFoto() - CORREGIDA CON VALIDACIÓN
+// FUNCIÓN subirFoto() - CON VALIDACIÓN Y FALLBACK
 // ================================================================
 async function subirFoto(event) {
     try {
@@ -441,13 +515,11 @@ async function subirFoto(event) {
             return;
         }
 
-        // Validar tipo de archivo
         if (!file.type.startsWith('image/')) {
             showToast('❌ Solo se permiten imágenes', 'error');
             return;
         }
 
-        // Validar tamaño (5MB)
         if (file.size > 5 * 1024 * 1024) {
             showToast('❌ La imagen no puede superar los 5MB', 'error');
             return;
@@ -463,7 +535,6 @@ async function subirFoto(event) {
             .upload(filePath, file, { upsert: true });
 
         if (uploadError) {
-            // Si el bucket no existe, intentar con 'avatars'
             if (uploadError.message.includes('bucket')) {
                 const { error: uploadError2 } = await supabaseClient.storage
                     .from('avatars')
@@ -516,7 +587,7 @@ async function subirFoto(event) {
 }
 
 // ================================================================
-// GENERAR QR PERFIL
+// FUNCIÓN generarQRPerfil()
 // ================================================================
 async function generarQRPerfil() {
     try {
@@ -543,7 +614,7 @@ async function generarQRPerfil() {
             <div style="background: var(--bg-card); border-radius: 20px; padding: 30px; text-align: center; animation: scaleIn 0.3s ease-out;">
                 <h3 style="color: var(--gold); margin-bottom: 20px;">📱 Escanea mi perfil</h3>
                 <img src="${qrUrl}" alt="QR Code" style="border-radius: 10px; max-width: 200px;">
-                <p style="color: var(--text-muted); margin-top: 15px; font-size: 12px;">${url}</p>
+                <p style="color: var(--text-muted); margin-top: 15px; font-size: 12px;">${escapeHTML(url)}</p>
                 <button onclick="this.parentElement.parentElement.remove()"
                         style="margin-top: 20px; background: var(--gold); border: none; color: #fff; padding: 10px 30px; border-radius: 10px; cursor: pointer;">
                     Cerrar
@@ -559,7 +630,7 @@ async function generarQRPerfil() {
 }
 
 // ================================================================
-// ACTUALIZAR UI PRINCIPAL
+// ACTUALIZAR UI PRINCIPAL - CON SANITIZACIÓN DE SALIDA
 // ================================================================
 function actualizarUI(data) {
     try {
@@ -570,8 +641,9 @@ function actualizarUI(data) {
         const walletDisplay = document.getElementById('walletDisplay');
 
         if (nombreEl) {
+            const nombre = escapeHTML(data.nombre || 'Explorador');
             const verificado = data.verificado ? '<span class="verified">✦ VERIFICADO</span>' : '';
-            nombreEl.innerHTML = `${data.nombre || 'Explorador'} ${verificado}`;
+            nombreEl.innerHTML = `${nombre} ${verificado}`;
         }
         
         if (handleEl) handleEl.textContent = '@' + (data.handle || 'explorador');
@@ -673,7 +745,6 @@ function actualizarUI(data) {
         
     } catch (error) {
         console.error('Error en actualizarUI:', error);
-        // No mostrar toast aquí para evitar bucles
     }
 }
 
@@ -696,8 +767,6 @@ function animarContador(elemento, inicio, fin) {
 // ================================================================
 // AMIGOS EN TIEMPO REAL
 // ================================================================
-let canalAmigos = null;
-
 function iniciarEscuchaAmigos() {
     if (canalAmigos) {
         supabaseClient.removeChannel(canalAmigos);
@@ -800,14 +869,18 @@ function actualizarUIAmigos(todosAmigos = [], enLinea = []) {
 
     container.innerHTML = ordenados.map(amigo => {
         const estaEnLinea = enLineaIds.includes(amigo.id);
+        const nombreSanitizado = escapeHTML(amigo.nombre || amigo.handle || 'Usuario');
+        const handleSanitizado = escapeHTML(amigo.handle || 'usuario');
+        const avatarHtml = amigo.avatar_url ? `<img src="${amigo.avatar_url}">` : '◈';
+        
         return `
-            <div class="amigo-item ${estaEnLinea ? 'online' : ''}" onclick="window.location.href='/perfil/${amigo.handle}'">
+            <div class="amigo-item ${estaEnLinea ? 'online' : ''}" onclick="window.location.href='/perfil/${handleSanitizado}'">
                 <div class="avatar-mini">
-                    ${amigo.avatar_url ? `<img src="${amigo.avatar_url}">` : '◈'}
+                    ${avatarHtml}
                 </div>
                 <div class="info">
                     <div class="nombre" style="color:${estaEnLinea ? 'var(--text-primary)' : 'var(--text-muted)'}">
-                        ${amigo.nombre || amigo.handle}
+                        ${nombreSanitizado}
                     </div>
                     <div class="estado" style="color:${estaEnLinea ? 'var(--success)' : 'var(--text-muted)'}">
                         ${estaEnLinea ? '🟢 Activo ahora' : '⭕ Desconectado'}
@@ -825,16 +898,20 @@ async function actualizarListaAmigos() {
 }
 
 // ================================================================
-// SISTEMA DE AMISTADES - COMPLETO CON RPCs
+// SISTEMA DE AMISTADES - CON PREVENCIÓN DE RACE CONDITIONS
 // ================================================================
+let notificandoCambioEstado = false;
 
-// ================================================================
-// CORRECCIÓN: notificarCambioEstado() - estado 'aceptado' → 'activo'
-// ================================================================
 async function notificarCambioEstado(online) {
+    if (notificandoCambioEstado) return;
+    notificandoCambioEstado = true;
+    
     try {
         const session = await getSession();
-        if (!session) return;
+        if (!session) {
+            notificandoCambioEstado = false;
+            return;
+        }
 
         const { data: contactos, error } = await supabaseClient
             .from('contactos')
@@ -842,7 +919,10 @@ async function notificarCambioEstado(online) {
             .eq('usuario_id', session.user.id)
             .eq('estado', 'activo');
 
-        if (error || !contactos) return;
+        if (error || !contactos) {
+            notificandoCambioEstado = false;
+            return;
+        }
 
         for (const contacto of contactos) {
             await supabaseClient
@@ -856,15 +936,13 @@ async function notificarCambioEstado(online) {
                     fecha: new Date().toISOString()
                 });
         }
-
+        notificandoCambioEstado = false;
     } catch (error) {
         console.error('Error notificando cambio de estado:', error);
+        notificandoCambioEstado = false;
     }
 }
 
-// ================================================================
-// OBTENER SOLICITUDES PENDIENTES
-// ================================================================
 async function obtenerSolicitudesPendientes() {
     try {
         const session = await getSession();
@@ -886,10 +964,14 @@ async function obtenerSolicitudesPendientes() {
     }
 }
 
-// ================================================================
-// ACEPTAR SOLICITUD DE AMISTAD
-// ================================================================
+let aceptandoSolicitud = false;
+
 async function aceptarSolicitudAmistad(solicitanteId) {
+    if (aceptandoSolicitud) {
+        showToast('⏳ Procesando solicitud...', 'warning');
+        return false;
+    }
+    
     try {
         const session = await getSession();
         if (!session) {
@@ -902,6 +984,7 @@ async function aceptarSolicitudAmistad(solicitanteId) {
             return false;
         }
 
+        aceptandoSolicitud = true;
         showToast('⏳ Aceptando solicitud...', '', 3000);
 
         const { data, error } = await supabaseClient.rpc('aceptar_solicitud_amistad', {
@@ -916,19 +999,25 @@ async function aceptarSolicitudAmistad(solicitanteId) {
         await cargarAmigosEnLinea();
         await cargarPerfil(true);
         
+        aceptandoSolicitud = false;
         return true;
 
     } catch (error) {
         console.error('Error aceptando solicitud:', error);
         showToast('❌ Error al aceptar solicitud: ' + error.message, 'error');
+        aceptandoSolicitud = false;
         return false;
     }
 }
 
-// ================================================================
-// RECHAZAR SOLICITUD DE AMISTAD
-// ================================================================
+let rechazandoSolicitud = false;
+
 async function rechazarSolicitudAmistad(solicitanteId) {
+    if (rechazandoSolicitud) {
+        showToast('⏳ Procesando solicitud...', 'warning');
+        return false;
+    }
+    
     try {
         const session = await getSession();
         if (!session) {
@@ -945,6 +1034,7 @@ async function rechazarSolicitudAmistad(solicitanteId) {
             return false;
         }
 
+        rechazandoSolicitud = true;
         showToast('⏳ Rechazando solicitud...', '', 3000);
 
         const { data, error } = await supabaseClient.rpc('rechazar_solicitud_amistad', {
@@ -957,18 +1047,17 @@ async function rechazarSolicitudAmistad(solicitanteId) {
         
         await cargarSolicitudesPendientes();
         
+        rechazandoSolicitud = false;
         return true;
 
     } catch (error) {
         console.error('Error rechazando solicitud:', error);
         showToast('❌ Error al rechazar solicitud: ' + error.message, 'error');
+        rechazandoSolicitud = false;
         return false;
     }
 }
 
-// ================================================================
-// CARGAR Y MOSTRAR SOLICITUDES PENDIENTES EN UI
-// ================================================================
 async function cargarSolicitudesPendientes() {
     try {
         const solicitudes = await obtenerSolicitudesPendientes();
@@ -1024,77 +1113,83 @@ function renderSolicitudes(solicitudes) {
         `;
     }
 
-    return solicitudes.map(solicitud => `
-        <div style="
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 12px;
-            margin-bottom: 6px;
-            background: rgba(212,175,55,0.05);
-            border-radius: 10px;
-            border: 1px solid rgba(212,175,55,0.1);
-            animation: fadeIn 0.3s ease-out;
-        ">
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <div style="
-                    width: 32px;
-                    height: 32px;
-                    border-radius: 50%;
-                    background: var(--bg-dark);
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    font-size: 0.8rem;
-                    overflow: hidden;
-                ">
-                    ${solicitud.avatar_url ? `<img src="${solicitud.avatar_url}" style="width:100%;height:100%;object-fit:cover;">` : '◈'}
+    return solicitudes.map(solicitud => {
+        const nombreSanitizado = escapeHTML(solicitud.nombre || solicitud.handle || 'Usuario');
+        const handleSanitizado = escapeHTML(solicitud.handle || 'usuario');
+        const avatarHtml = solicitud.avatar_url ? `<img src="${solicitud.avatar_url}" style="width:100%;height:100%;object-fit:cover;">` : '◈';
+        
+        return `
+            <div style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 8px 12px;
+                margin-bottom: 6px;
+                background: rgba(212,175,55,0.05);
+                border-radius: 10px;
+                border: 1px solid rgba(212,175,55,0.1);
+                animation: fadeIn 0.3s ease-out;
+            ">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="
+                        width: 32px;
+                        height: 32px;
+                        border-radius: 50%;
+                        background: var(--bg-dark);
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 0.8rem;
+                        overflow: hidden;
+                    ">
+                        ${avatarHtml}
+                    </div>
+                    <div>
+                        <div style="font-weight:600; font-size:0.8rem; color:var(--text-primary);">
+                            ${nombreSanitizado}
+                        </div>
+                        <div style="font-size:0.6rem; color:var(--text-muted);">
+                            @${handleSanitizado} · ${haceTiempo(solicitud.fecha_solicitud)}
+                        </div>
+                    </div>
                 </div>
-                <div>
-                    <div style="font-weight:600; font-size:0.8rem; color:var(--text-primary);">
-                        ${solicitud.nombre || solicitud.handle}
-                    </div>
-                    <div style="font-size:0.6rem; color:var(--text-muted);">
-                        @${solicitud.handle} · ${haceTiempo(solicitud.fecha_solicitud)}
-                    </div>
+                <div style="display: flex; gap: 5px;">
+                    <button onclick="aceptarSolicitudAmistad('${solicitud.solicitante_id}')" 
+                            style="
+                                background: linear-gradient(135deg, #2ecc71, #27ae60);
+                                border: none;
+                                color: #fff;
+                                padding: 4px 12px;
+                                border-radius: 6px;
+                                font-size: 0.6rem;
+                                font-weight: 600;
+                                cursor: pointer;
+                                transition: all 0.2s ease;
+                            "
+                            onmouseover="this.style.transform='scale(1.05)'"
+                            onmouseout="this.style.transform='scale(1)'">
+                        ✅ Aceptar
+                    </button>
+                    <button onclick="rechazarSolicitudAmistad('${solicitud.solicitante_id}')" 
+                            style="
+                                background: transparent;
+                                border: 1px solid #ff6b6b;
+                                color: #ff6b6b;
+                                padding: 4px 12px;
+                                border-radius: 6px;
+                                font-size: 0.6rem;
+                                font-weight: 600;
+                                cursor: pointer;
+                                transition: all 0.2s ease;
+                            "
+                            onmouseover="this.style.background='rgba(255,107,107,0.1)'; this.style.transform='scale(1.05)'"
+                            onmouseout="this.style.background='transparent'; this.style.transform='scale(1)'">
+                        ✕ Rechazar
+                    </button>
                 </div>
             </div>
-            <div style="display: flex; gap: 5px;">
-                <button onclick="aceptarSolicitudAmistad('${solicitud.solicitante_id}')" 
-                        style="
-                            background: linear-gradient(135deg, #2ecc71, #27ae60);
-                            border: none;
-                            color: #fff;
-                            padding: 4px 12px;
-                            border-radius: 6px;
-                            font-size: 0.6rem;
-                            font-weight: 600;
-                            cursor: pointer;
-                            transition: all 0.2s ease;
-                        "
-                        onmouseover="this.style.transform='scale(1.05)'"
-                        onmouseout="this.style.transform='scale(1)'">
-                    ✅ Aceptar
-                </button>
-                <button onclick="rechazarSolicitudAmistad('${solicitud.solicitante_id}')" 
-                        style="
-                            background: transparent;
-                            border: 1px solid #ff6b6b;
-                            color: #ff6b6b;
-                            padding: 4px 12px;
-                            border-radius: 6px;
-                            font-size: 0.6rem;
-                            font-weight: 600;
-                            cursor: pointer;
-                            transition: all 0.2s ease;
-                        "
-                        onmouseover="this.style.background='rgba(255,107,107,0.1)'; this.style.transform='scale(1.05)'"
-                        onmouseout="this.style.background='transparent'; this.style.transform='scale(1)'">
-                    ✕ Rechazar
-                </button>
-            </div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 function haceTiempo(fecha) {
@@ -1111,19 +1206,8 @@ function haceTiempo(fecha) {
 }
 
 // ================================================================
-// GESTIÓN DE CONEXIÓN (WiFi / Datos Móviles)
+// GESTIÓN DE CONEXIÓN - OPTIMIZADA
 // ================================================================
-let estadoConexion = {
-    tipo: 'wifi',
-    activa: true,
-    velocidad: '0 Mbps',
-    señal: 100,
-    operador: 'Sariel\'s Net',
-    datos_usados: 0,
-    datos_limite: 0,
-    datos_restantes: 0
-};
-
 async function cargarEstadoConexion() {
     try {
         const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
@@ -1242,7 +1326,7 @@ function getPerfilActual() {
 }
 
 // ================================================================
-// CORRECCIÓN 1: guardarEstadoConexion() - conexion_senal (sin ñ)
+// GUARDAR ESTADO CONEXIÓN - CORREGIDO (conexion_senal sin ñ)
 // ================================================================
 async function guardarEstadoConexion(estado) {
     try {
@@ -1423,10 +1507,6 @@ function mostrarSinESIM() {
     }
 }
 
-// ================================================================
-// FUNCIONES eSIM - CORREGIDAS CON VALIDACIÓN DE ICCID
-// ================================================================
-
 async function cargarDatosESIM(iccid) {
     if (!iccid) {
         console.warn('⚠️ No hay ICCID para cargar datos eSIM');
@@ -1517,9 +1597,6 @@ async function cargarDatosESIMLocal(iccid) {
     }
 }
 
-// ================================================================
-// sincronizarESIM() - CORREGIDA CON VALIDACIÓN DE ICCID
-// ================================================================
 async function sincronizarESIM() {
     try {
         const session = await getSession();
@@ -1528,7 +1605,6 @@ async function sincronizarESIM() {
             return;
         }
 
-        // ✅ VALIDACIÓN: Verificar si el usuario tiene ICCID
         if (!perfilCache || !perfilCache.esim_iccid) {
             showToast('⚠️ No tienes una eSIM activa asignada', 'warning');
             return;
@@ -1559,14 +1635,10 @@ async function sincronizarESIM() {
     }
 }
 
-// ================================================================
-// generarQRESIM() - CORREGIDA CON VALIDACIÓN DE ICCID
-// ================================================================
 async function generarQRESIM(iccid) {
     try {
         const iccidParam = iccid || perfilCache?.esim_iccid;
         
-        // ✅ VALIDACIÓN: Verificar si el usuario tiene ICCID
         if (!iccidParam) {
             showToast('⚠️ No tienes una eSIM activa para generar QR', 'warning');
             return;
@@ -1580,381 +1652,337 @@ async function generarQRESIM(iccid) {
     }
 }
 
-async function comprarESIM(planId) {
+// ================================================================
+// FUNCIONES DE COMPRA - CON PREVENCIÓN DE DOBLE CLICK
+// ================================================================
+let comprandoDomo = false;
+
+async function comprarDomo(cantidad = 1) {
+    if (comprandoDomo) {
+        showToast('⏳ Ya hay una compra en proceso...', 'warning');
+        return;
+    }
+    
     try {
         const session = await getSession();
         if (!session) {
-            showToast('⚠️ Inicia sesión para comprar eSIM', 'error');
+            showToast('⚠️ Inicia sesión para comprar domos', 'error');
             return;
         }
 
-        const { data: plan, error } = await supabaseClient
-            .from('planes_esim')
-            .select('*')
-            .eq('id', planId)
-            .single();
-
-        if (error) throw error;
-
-        showToast('⏳ Creando orden de compra...', '', 5000);
-
-        const response = await fetch(`${API_ENDPOINTS.pagos}/crear`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${session.access_token}`
-            },
-            body: JSON.stringify({
-                transmisionId: null,
-                tipo: 'esim',
-                planId: plan.id,
-                idempotency_key: `esim_${session.user.id}_${planId}_${Date.now()}`
-            })
-        });
-
-        const result = await response.json();
-
-        if (!result.success) {
-            throw new Error(result.error || 'Error al crear la orden');
-        }
-
-        if (result.data && result.data.payment_url) {
-            mostrarModalPagoReal(result.data.payment_url, result.data.id, plan);
-        } else {
-            const qrData = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent('Orden: ' + result.data.id)}`;
-            mostrarModalPagoSimulado(qrData, result.data.id, plan);
-        }
-
-    } catch (error) {
-        console.error('Error comprando eSIM:', error);
-        showToast('❌ Error al comprar eSIM: ' + error.message, 'error');
-    }
-}
-
-async function activarESIM(iccid) {
-    try {
-        const session = await getSession();
-        if (!session) {
-            showToast('⚠️ Inicia sesión', 'error');
+        cantidad = Math.max(1, Math.floor(cantidad));
+        if (cantidad > 10) {
+            showToast('⚠️ Máximo 10 domos por transacción', 'warning');
             return;
         }
 
-        const iccidParam = iccid || perfilCache?.esim_iccid;
-        if (!iccidParam) {
-            showToast('⚠️ No hay eSIM para activar', 'error');
-            return;
-        }
+        comprandoDomo = true;
+        showToast('⏳ Procesando compra de ' + cantidad + ' domo(s)...', '', 5000);
 
-        showToast('⏳ Activando eSIM...', '', 5000);
+        const { data, error } = await supabaseClient.rpc('comprar_domo', { p_cantidad: cantidad });
 
-        const response = await fetch(`${API_ENDPOINTS.esim}/activar`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${session.access_token}`
-            },
-            body: JSON.stringify({ iccid: iccidParam })
-        });
-
-        const result = await response.json();
-
-        if (!result.success) {
-            throw new Error(result.error || 'Error al activar eSIM');
-        }
-
-        showToast('✅ eSIM activada correctamente', 'success');
-        await cargarPerfil(true);
-
-    } catch (error) {
-        console.error('Error activando eSIM:', error);
-        showToast('❌ Error al activar eSIM: ' + error.message, 'error');
-    }
-}
-
-async function desactivarESIM(iccid) {
-    try {
-        const session = await getSession();
-        if (!session) {
-            showToast('⚠️ Inicia sesión', 'error');
-            return;
-        }
-
-        const iccidParam = iccid || perfilCache?.esim_iccid;
-        if (!iccidParam) {
-            showToast('⚠️ No hay eSIM para desactivar', 'error');
-            return;
-        }
-
-        if (!confirm('¿Seguro que quieres desactivar tu eSIM?')) return;
-
-        showToast('⏳ Desactivando eSIM...', '', 5000);
-
-        const response = await fetch(`${API_ENDPOINTS.esim}/desactivar`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${session.access_token}`
-            },
-            body: JSON.stringify({ iccid: iccidParam })
-        });
-
-        const result = await response.json();
-
-        if (!result.success) {
-            throw new Error(result.error || 'Error al desactivar eSIM');
-        }
-
-        showToast('🔌 eSIM desactivada', 'warning');
-        await cargarPerfil(true);
-
-    } catch (error) {
-        console.error('Error desactivando eSIM:', error);
-        showToast('❌ Error al desactivar eSIM: ' + error.message, 'error');
-    }
-}
-
-async function obtenerEstadoESIM() {
-    try {
-        const session = await getSession();
-        if (!session) return null;
-
-        const response = await fetch(`${API_ENDPOINTS.esim}/status`, {
-            headers: {
-                'Authorization': `Bearer ${session.access_token}`
+        if (error) {
+            if (error.message.includes('insufficient')) {
+                showToast('❌ Fondos insuficientes para comprar domos', 'error');
+            } else {
+                throw error;
             }
-        });
+            comprandoDomo = false;
+            return;
+        }
 
-        const result = await response.json();
-        return result.success ? result.data : null;
+        showToast(`🎉 ¡${cantidad} Domo(s) comprado(s) exitosamente!`, 'success', 5000);
+        await cargarPerfil(true);
+        mostrarCelebracion();
+        comprandoDomo = false;
 
     } catch (error) {
-        console.error('Error obteniendo estado:', error);
-        return null;
+        console.error('Error al comprar domo:', error);
+        showToast('❌ Error en la compra: ' + error.message, 'error');
+        comprandoDomo = false;
     }
 }
 
-async function obtenerPlanesESIM() {
+// ================================================================
+// FUNCIONES DE NFT - CON PREVENCIÓN DE DOBLE CLICK
+// ================================================================
+let canjeandoNFT = false;
+
+async function canjearNFT() {
+    if (canjeandoNFT) {
+        showToast('⏳ Procesando canje...', 'warning');
+        return;
+    }
+    
     try {
-        const { data, error } = await supabaseClient
-            .from('planes_esim')
-            .select('*')
-            .eq('activo', true)
-            .order('precio_mxn', { ascending: true });
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ Inicia sesión para canjear tu NFT', 'error');
+            return;
+        }
 
-        if (error) throw error;
-        return data || [];
+        canjeandoNFT = true;
+        showToast('⏳ Verificando tokens para canje...', '', 4000);
+
+        const { data, error } = await supabaseClient.rpc('canjear_nft');
+
+        if (error) {
+            if (error.message.includes('insufficient tokens')) {
+                showToast('❌ Necesitas exactamente 12 Es.stoks para canjear', 'error');
+            } else if (error.message.includes('already redeemed')) {
+                showToast('⚠️ Ya has canjeado tu NFT', 'warning');
+            } else {
+                throw error;
+            }
+            canjeandoNFT = false;
+            return;
+        }
+
+        showToast('🎁 ¡NFT Canjeado Exitosamente! Tienes 30 días para reclamar.', 'success', 8000);
+        await cargarPerfil(true);
+        mostrarModalNFT(data);
+        canjeandoNFT = false;
 
     } catch (error) {
-        console.error('Error obteniendo planes:', error);
-        return [];
+        console.error('Error al canjear NFT:', error);
+        showToast('❌ Error al canjear NFT: ' + error.message, 'error');
+        canjeandoNFT = false;
     }
 }
 
 // ================================================================
-// MODALES DE PAGO
+// EFECTO CONFETI Y MODALES
 // ================================================================
-
-function mostrarModalPagoReal(paymentUrl, ordenId, plan) {
-    const modal = document.createElement('div');
-    modal.id = 'pagoModal';
-    modal.style.cssText = `
-        position: fixed;
-        top: 0; left: 0; right: 0; bottom: 0;
-        background: rgba(0,0,0,0.85);
-        backdrop-filter: blur(10px);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        z-index: 9999;
-        animation: fadeIn 0.3s ease-out;
-    `;
-    modal.innerHTML = `
-        <div style="
-            background: linear-gradient(135deg, var(--bg-card), var(--bg-dark));
-            border: 2px solid var(--gold);
-            border-radius: 20px;
-            padding: 30px;
-            max-width: 450px;
-            width: 90%;
-            text-align: center;
-            animation: scaleIn 0.3s ease-out;
-        ">
-            <h2 style="color: var(--gold); margin-bottom: 10px;">📱 Compra eSIM</h2>
-            <p style="color: var(--text-secondary); margin-bottom: 20px;">
-                ${plan.nombre} - ${plan.datos_gb} GB por ${plan.duracion_dias} días
-            </p>
-            <p style="color: var(--gold); font-size: 1.2rem; font-weight: bold;">
-                $${plan.precio_usdt} USDT
-            </p>
-            <p style="color: var(--text-muted); font-size: 0.8rem; margin: 10px 0;">
-                💳 Paga con NOWPayments (USDT en TRC-20)
-            </p>
-            <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin: 15px 0;">
-                <a href="${paymentUrl}" target="_blank" 
-                   style="background: linear-gradient(135deg, var(--gold), #f7971e); border: none; color: #fff; padding: 12px 30px; border-radius: 10px; font-weight: 600; cursor: pointer; text-decoration: none;">
-                    💳 Ir a pagar
-                </a>
-                <button onclick="verificarPago('${ordenId}')"
-                        style="background: var(--bg-card); border: 1px solid var(--cyan); color: var(--cyan); padding: 12px 30px; border-radius: 10px; font-weight: 600; cursor: pointer;">
-                    ✅ Verificar pago
-                </button>
-                <button onclick="this.parentElement.parentElement.parentElement.remove()"
-                        style="background: transparent; border: 1px solid var(--text-muted); color: var(--text-muted); padding: 12px 30px; border-radius: 10px; cursor: pointer;">
-                    Cerrar
-                </button>
-            </div>
-            <div id="pagoStatus" style="margin-top: 10px; font-size: 0.8rem; color: var(--text-secondary);"></div>
-            <p style="color: var(--text-muted); font-size: 0.6rem; margin-top: 10px;">
-                ⏳ El pago se confirmará automáticamente vía webhook
-            </p>
-        </div>
-    `;
-    document.body.appendChild(modal);
+function crearConfeti() {
+    const colores = ['#ff6b6b', '#feca57', '#48dbfb', '#ff9ff3', '#54a0ff', '#5f27cd'];
+    for (let i = 0; i < 50; i++) {
+        setTimeout(() => {
+            const confeti = document.createElement('div');
+            confeti.style.cssText = `
+                position: fixed;
+                width: 10px;
+                height: 10px;
+                background: ${colores[Math.floor(Math.random() * colores.length)]};
+                left: ${Math.random() * 100}vw;
+                top: -10px;
+                border-radius: ${Math.random() > 0.5 ? '50%' : '2px'};
+                animation: confetiFall ${2 + Math.random() * 3}s linear forwards;
+                transform: rotate(${Math.random() * 360}deg);
+                z-index: 9998;
+                pointer-events: none;
+            `;
+            document.body.appendChild(confeti);
+            setTimeout(() => confeti.remove(), 5000);
+        }, i * 50);
+    }
 }
 
-function mostrarModalPagoSimulado(qrData, ordenId, plan) {
+function mostrarCelebracion() {
+    crearConfeti();
+    showToast('🎉 ¡Transacción exitosa!', 'success');
+}
+
+function compartirLogro() {
+    const texto = '🎁 ¡Acabo de canjear mi NFT en Sariel\'s! Únete al ecosistema. #Sariels #WEB3 #NFT';
+    if (navigator.share) {
+        navigator.share({ title: 'Mi logro en Sariel\'s', text: texto });
+    } else {
+        navigator.clipboard.writeText(texto).then(() => {
+            showToast('📋 Copiado al portapapeles', 'success');
+        });
+    }
+}
+
+function mostrarModalNFT(data) {
     const modal = document.createElement('div');
-    modal.id = 'pagoModal';
+    modal.id = 'nftModal';
     modal.style.cssText = `
         position: fixed;
         top: 0; left: 0; right: 0; bottom: 0;
-        background: rgba(0,0,0,0.85);
+        background: rgba(0,0,0,0.8);
         backdrop-filter: blur(10px);
         display: flex;
         justify-content: center;
         align-items: center;
         z-index: 9999;
-        animation: fadeIn 0.3s ease-out;
+        animation: fadeIn 0.5s ease-out;
     `;
+    
     modal.innerHTML = `
-        <div style="
-            background: linear-gradient(135deg, var(--bg-card), var(--bg-dark));
-            border: 2px solid var(--gold);
-            border-radius: 20px;
-            padding: 30px;
-            max-width: 450px;
-            width: 90%;
-            text-align: center;
-            animation: scaleIn 0.3s ease-out;
-        ">
-            <h2 style="color: var(--gold); margin-bottom: 10px;">📱 Compra eSIM</h2>
-            <p style="color: var(--text-secondary); margin-bottom: 20px;">
-                ${plan.nombre} - ${plan.datos_gb} GB por ${plan.duracion_dias} días
-            </p>
-            <div style="background: white; border-radius: 10px; padding: 15px; margin: 10px 0;">
-                <img src="${qrData}" alt="QR de pago" style="max-width: 200px; width: 100%;">
+        <div style="background: linear-gradient(135deg, var(--bg-card), var(--bg-dark)); border: 2px solid var(--gold); border-radius: 20px; padding: 40px; max-width: 500px; width: 90%; text-align: center; animation: scaleIn 0.5s ease-out;">
+            <div style="font-size: 80px; margin-bottom: 20px;">🎁</div>
+            <h2 style="color: var(--gold); font-size: 28px; margin-bottom: 10px;">¡NFT Canjeado!</h2>
+            <p style="color: var(--text-primary); margin-bottom: 20px; font-size: 18px;">Tu Domo físico te espera</p>
+            <div style="background: var(--bg-dark); border-radius: 10px; padding: 15px; margin-bottom: 20px;">
+                <p style="color: var(--text-muted); font-size: 14px;">⏳ Vigencia: 30 días para reclamar</p>
+                <p style="color: var(--cyan); font-size: 12px; margin-top: 5px;">ID: ${data?.nft_id || 'NFT-' + Date.now().toString().slice(-6)}</p>
             </div>
-            <p style="color: var(--gold); font-size: 1.2rem; font-weight: bold;">
-                $${plan.precio_usdt} USDT
-            </p>
-            <p style="color: var(--text-muted); font-size: 0.7rem; margin: 10px 0;">
-                ⏳ Escanea el QR para pagar. Se activará automáticamente.
-            </p>
             <div style="display: flex; gap: 10px; justify-content: center;">
-                <button onclick="verificarPago('${ordenId}')"
-                        style="background: linear-gradient(135deg, var(--gold), #f7971e); border: none; color: #fff; padding: 10px 30px; border-radius: 10px; font-weight: 600; cursor: pointer;">
-                    ✅ Verificar pago
+                <button onclick="this.parentElement.parentElement.parentElement.remove()" 
+                        style="background: linear-gradient(135deg, var(--gold), #f7971e); border: none; color: #fff; padding: 12px 30px; border-radius: 10px; font-weight: 600; cursor: pointer;">
+                    ✅ Entendido
                 </button>
-                <button onclick="this.parentElement.parentElement.parentElement.remove()"
-                        style="background: transparent; border: 1px solid var(--text-muted); color: var(--text-muted); padding: 10px 30px; border-radius: 10px; cursor: pointer;">
-                    Cerrar
+                <button onclick="compartirLogro()"
+                        style="background: transparent; border: 2px solid var(--cyan); color: var(--cyan); padding: 12px 30px; border-radius: 10px; font-weight: 600; cursor: pointer;">
+                    📤 Compartir
                 </button>
             </div>
-            <div id="pagoStatus" style="margin-top: 10px; font-size: 0.8rem; color: var(--text-secondary);"></div>
         </div>
     `;
+    
     document.body.appendChild(modal);
+    crearConfeti();
 }
 
-function mostrarModalQR(qrData) {
-    const modal = document.createElement('div');
-    modal.style.cssText = `
-        position: fixed;
-        top: 0; left: 0; right: 0; bottom: 0;
-        background: rgba(0,0,0,0.85);
-        backdrop-filter: blur(10px);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        z-index: 9999;
-        animation: fadeIn 0.3s ease-out;
-    `;
-    modal.innerHTML = `
-        <div style="background: linear-gradient(135deg, var(--bg-card), var(--bg-dark)); border: 2px solid var(--gold); border-radius: 20px; padding: 30px; max-width: 400px; width: 90%; text-align: center; animation: scaleIn 0.3s ease-out;">
-            <h2 style="color: var(--gold); margin-bottom: 10px;">📱 Activa tu eSIM</h2>
-            <p style="color: var(--text-secondary); margin-bottom: 20px;">Escanea con la cámara de tu móvil</p>
-            <div style="background: white; border-radius: 10px; padding: 15px; margin: 10px 0;">
-                <img src="${qrData}" alt="QR de activación" style="max-width: 200px; width: 100%;">
-            </div>
-            <p style="color: var(--text-muted); font-size: 0.7rem;">📲 Ve a Ajustes > Datos Móviles > Añadir eSIM</p>
-            <button onclick="this.parentElement.parentElement.remove()"
-                    style="margin-top: 15px; background: var(--gold); border: none; color: #fff; padding: 10px 30px; border-radius: 10px; cursor: pointer;">
-                Listo
-            </button>
-        </div>
-    `;
-    document.body.appendChild(modal);
-}
-
-async function verificarPago(ordenId) {
-    const statusEl = document.getElementById('pagoStatus');
-    if (!statusEl) return;
-
-    statusEl.textContent = '⏳ Verificando pago...';
-
+// ================================================================
+// CERRAR SESIÓN
+// ================================================================
+async function cerrarSesion() {
+    if (!confirm('¿Seguro que quieres cerrar sesión?')) return;
+    
     try {
-        const session = await getSession();
-        if (!session) {
-            statusEl.textContent = '❌ Inicia sesión nuevamente';
-            return;
-        }
-
-        const response = await fetch(`${API_ENDPOINTS.pagos}/estado/${ordenId}`, {
-            headers: {
-                'Authorization': `Bearer ${session.access_token}`
-            }
-        });
-
-        const result = await response.json();
-
-        if (!result.success) {
-            throw new Error(result.error || 'Error al verificar pago');
-        }
-
-        const orden = result.data;
-
-        if (orden.estado === 'completado' || orden.estado === 'finished' || orden.estado === 'confirmed') {
-            statusEl.textContent = '✅ ¡Pago confirmado! Activando eSIM...';
-            showToast('🎉 ¡eSIM activada exitosamente!', 'success');
-            
-            await cargarPerfil(true);
-            
-            setTimeout(() => {
-                document.getElementById('pagoModal')?.remove();
-            }, 2000);
-            
-        } else if (orden.estado === 'pendiente') {
-            statusEl.textContent = '⏳ Aún no se confirma el pago. Espera unos minutos.';
-            setTimeout(() => verificarPago(ordenId), 10000);
-        } else {
-            statusEl.textContent = `❌ Estado: ${orden.estado}`;
-        }
-
+        await actualizarEstadoEnLinea(false);
+        await supabaseClient.auth.signOut();
+        window.location.href = '/';
+        showToast('🔌 Sesión cerrada', 'success');
     } catch (error) {
-        console.error('Error verificando pago:', error);
-        statusEl.textContent = '❌ Error al verificar: ' + error.message, 'error';
+        console.error('Error cerrando sesión:', error);
+        showToast('❌ Error al cerrar sesión', 'error');
     }
 }
 
 // ================================================================
-// ESCANEO QR
+// NOTIFICACIONES EN TIEMPO REAL
 // ================================================================
+function iniciarNotificacionesRealtime() {
+    const channel = supabaseClient
+        .channel('notificaciones')
+        .on('postgres_changes', {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'notificaciones'
+        }, (payload) => {
+            const notificacion = payload.new;
+            if (notificacion.user_id === perfilCache?.id) {
+                showToast(`🔔 ${notificacion.mensaje}`, 'warning', 4000);
+                
+                try {
+                    const audio = new Audio('/sound/notification.mp3');
+                    audio.play().catch(() => {});
+                } catch (e) {}
+            }
+        })
+        .subscribe();
 
-let qrScannerInterval = null;
-let scannerActive = false;
-let qrHistorial = [];
-let qrScanningLock = false;
+    return channel;
+}
 
+// ================================================================
+// FUNCIONES DE WALLET
+// ================================================================
+async function conectarWallet() {
+    if (typeof window.ethereum === 'undefined') {
+        showToast('⚠️ Instala MetaMask para conectar tu wallet', 'error');
+        return;
+    }
+
+    try {
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ Inicia sesión para vincular wallet', 'error');
+            return;
+        }
+
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        const cuenta = accounts[0];
+
+        const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+        
+        if (chainId !== ENV.networkChainId) {
+            try {
+                await window.ethereum.request({
+                    method: 'wallet_switchEthereumChain',
+                    params: [{ chainId: ENV.networkChainId }]
+                });
+            } catch (switchError) {
+                if (switchError.code === 4902) {
+                    await window.ethereum.request({
+                        method: 'wallet_addEthereumChain',
+                        params: [{
+                            chainId: ENV.networkChainId,
+                            chainName: ENV.networkName,
+                            nativeCurrency: { name: ENV.networkCurrency, symbol: ENV.networkCurrency, decimals: 18 },
+                            rpcUrls: [ENV.networkRPC],
+                            blockExplorerUrls: [ENV.networkExplorer]
+                        }]
+                    });
+                } else {
+                    throw switchError;
+                }
+            }
+        }
+
+        const { error } = await supabaseClient.rpc('vincular_wallet', { 
+            p_wallet_address: cuenta,
+            p_chain_id: chainId,
+            p_network_name: ENV.networkName
+        });
+        if (error) throw error;
+
+        const walletDisplay = document.getElementById('walletDisplay');
+        const btnConectar = document.getElementById('btnConectarWallet');
+        const btnDesconectar = document.getElementById('btnDesconectarWallet');
+
+        if (walletDisplay) {
+            walletDisplay.textContent = cuenta.slice(0, 6) + '...' + cuenta.slice(-4);
+            walletDisplay.style.color = 'var(--success)';
+        }
+        if (btnConectar) btnConectar.style.display = 'none';
+        if (btnDesconectar) btnDesconectar.style.display = 'inline-flex';
+
+        showToast(`✅ Wallet conectada a ${ENV.networkName}`, 'success');
+        await cargarPerfil(true);
+        
+    } catch (error) {
+        console.error('Error conectando wallet:', error);
+        showToast('❌ Error al conectar wallet: ' + error.message, 'error');
+    }
+}
+
+async function desconectarWallet() {
+    try {
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ Inicia sesión', 'error');
+            return;
+        }
+
+        const { error } = await supabaseClient.rpc('desvincular_wallet');
+        if (error) console.warn('RPC desvincular_wallet no encontrada:', error);
+
+        const walletDisplay = document.getElementById('walletDisplay');
+        const btnConectar = document.getElementById('btnConectarWallet');
+        const btnDesconectar = document.getElementById('btnDesconectarWallet');
+
+        if (walletDisplay) {
+            walletDisplay.textContent = '⚠️ No conectada';
+            walletDisplay.style.color = 'var(--text-muted)';
+        }
+        if (btnConectar) btnConectar.style.display = 'inline-flex';
+        if (btnDesconectar) btnDesconectar.style.display = 'none';
+
+        showToast('🔌 Wallet desconectada', 'warning');
+        await cargarPerfil(true);
+        
+    } catch (error) {
+        console.error('Error desconectando wallet:', error);
+        showToast('❌ Error al desconectar wallet', 'error');
+    }
+}
+
+// ================================================================
+// FUNCIONES DE QR - CON MEMORY LEAK PREVENTION
+// ================================================================
 async function abrirCamaraQR() {
     try {
         const container = document.getElementById('qrReaderContainer');
@@ -2188,598 +2216,7 @@ function actualizarUIHistorialQR(historial = []) {
 }
 
 // ================================================================
-// WALLET
-// ================================================================
-
-// ================================================================
-// CORRECCIÓN 2: conectarWallet() - Ahora envía p_chain_id y p_network_name
-// ================================================================
-async function conectarWallet() {
-    if (typeof window.ethereum === 'undefined') {
-        showToast('⚠️ Instala MetaMask para conectar tu wallet', 'error');
-        return;
-    }
-
-    try {
-        const session = await getSession();
-        if (!session) {
-            showToast('⚠️ Inicia sesión para vincular wallet', 'error');
-            return;
-        }
-
-        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-        const cuenta = accounts[0];
-
-        const chainId = await window.ethereum.request({ method: 'eth_chainId' });
-        
-        if (chainId !== ENV.networkChainId) {
-            try {
-                await window.ethereum.request({
-                    method: 'wallet_switchEthereumChain',
-                    params: [{ chainId: ENV.networkChainId }]
-                });
-            } catch (switchError) {
-                if (switchError.code === 4902) {
-                    await window.ethereum.request({
-                        method: 'wallet_addEthereumChain',
-                        params: [{
-                            chainId: ENV.networkChainId,
-                            chainName: ENV.networkName,
-                            nativeCurrency: { name: ENV.networkCurrency, symbol: ENV.networkCurrency, decimals: 18 },
-                            rpcUrls: [ENV.networkRPC],
-                            blockExplorerUrls: [ENV.networkExplorer]
-                        }]
-                    });
-                } else {
-                    throw switchError;
-                }
-            }
-        }
-
-        const { error } = await supabaseClient.rpc('vincular_wallet', { 
-            p_wallet_address: cuenta,
-            p_chain_id: chainId,
-            p_network_name: ENV.networkName
-        });
-        if (error) throw error;
-
-        const walletDisplay = document.getElementById('walletDisplay');
-        const btnConectar = document.getElementById('btnConectarWallet');
-        const btnDesconectar = document.getElementById('btnDesconectarWallet');
-
-        if (walletDisplay) {
-            walletDisplay.textContent = cuenta.slice(0, 6) + '...' + cuenta.slice(-4);
-            walletDisplay.style.color = 'var(--success)';
-        }
-        if (btnConectar) btnConectar.style.display = 'none';
-        if (btnDesconectar) btnDesconectar.style.display = 'inline-flex';
-
-        showToast(`✅ Wallet conectada a ${ENV.networkName}`, 'success');
-        await cargarPerfil(true);
-        
-    } catch (error) {
-        console.error('Error conectando wallet:', error);
-        showToast('❌ Error al conectar wallet: ' + error.message, 'error');
-    }
-}
-
-async function desconectarWallet() {
-    try {
-        const session = await getSession();
-        if (!session) {
-            showToast('⚠️ Inicia sesión', 'error');
-            return;
-        }
-
-        const { error } = await supabaseClient.rpc('desvincular_wallet');
-        if (error) console.warn('RPC desvincular_wallet no encontrada:', error);
-
-        const walletDisplay = document.getElementById('walletDisplay');
-        const btnConectar = document.getElementById('btnConectarWallet');
-        const btnDesconectar = document.getElementById('btnDesconectarWallet');
-
-        if (walletDisplay) {
-            walletDisplay.textContent = '⚠️ No conectada';
-            walletDisplay.style.color = 'var(--text-muted)';
-        }
-        if (btnConectar) btnConectar.style.display = 'inline-flex';
-        if (btnDesconectar) btnDesconectar.style.display = 'none';
-
-        showToast('🔌 Wallet desconectada', 'warning');
-        await cargarPerfil(true);
-        
-    } catch (error) {
-        console.error('Error desconectando wallet:', error);
-        showToast('❌ Error al desconectar wallet', 'error');
-    }
-}
-
-// ================================================================
-// COMPRAR DOMO
-// ================================================================
-async function comprarDomo(cantidad = 1) {
-    try {
-        const session = await getSession();
-        if (!session) {
-            showToast('⚠️ Inicia sesión para comprar domos', 'error');
-            return;
-        }
-
-        cantidad = Math.max(1, Math.floor(cantidad));
-        if (cantidad > 10) {
-            showToast('⚠️ Máximo 10 domos por transacción', 'warning');
-            return;
-        }
-
-        showToast('⏳ Procesando compra de ' + cantidad + ' domo(s)...', '', 5000);
-
-        const { data, error } = await supabaseClient.rpc('comprar_domo', { p_cantidad: cantidad });
-
-        if (error) {
-            if (error.message.includes('insufficient')) {
-                showToast('❌ Fondos insuficientes para comprar domos', 'error');
-            } else {
-                throw error;
-            }
-            return;
-        }
-
-        showToast(`🎉 ¡${cantidad} Domo(s) comprado(s) exitosamente!`, 'success', 5000);
-        await cargarPerfil(true);
-        mostrarCelebracion();
-
-    } catch (error) {
-        console.error('Error al comprar domo:', error);
-        showToast('❌ Error en la compra: ' + error.message, 'error');
-    }
-}
-
-// ================================================================
-// COMPRAR CON CRIPTO
-// ================================================================
-async function comprarConCripto() {
-    const session = await getSession();
-    if (!session) {
-        showToast('⚠️ Inicia sesión para comprar', 'error');
-        return;
-    }
-
-    const qty = parseInt(document.getElementById('cryptoQuantity').textContent);
-    if (qty < 1 || qty > 10) {
-        showToast('⚠️ Cantidad inválida (1-10)', 'warning');
-        return;
-    }
-
-    const precioUnitario = 4.50;
-    const total = qty * precioUnitario;
-    const comision = total * 0.02;
-    const totalConComision = total + comision;
-
-    const modal = document.getElementById('cryptoPaymentModal');
-    const qrImg = document.getElementById('cryptoQR');
-    const addressEl = document.getElementById('cryptoAddress');
-    const montoEl = document.getElementById('cryptoMonto');
-    const monedaEl = document.getElementById('cryptoMoneda');
-    const statusEl = document.getElementById('cryptoStatus');
-
-    modal.classList.add('active');
-
-    const response = await fetch(`${API_ENDPOINTS.pagos}/crear`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.access_token}`
-        },
-        body: JSON.stringify({
-            transmisionId: null,
-            tipo: 'domo',
-            cantidad: qty,
-            idempotency_key: `domo_${session.user.id}_${qty}_${Date.now()}`
-        })
-    });
-
-    const result = await response.json();
-
-    if (!result.success) {
-        showToast('❌ Error al crear pago: ' + (result.error || 'Error desconocido'), 'error');
-        modal.classList.remove('active');
-        return;
-    }
-
-    const pagoData = result.data;
-    montoEl.textContent = totalConComision.toFixed(2);
-    monedaEl.textContent = 'USDT';
-    addressEl.textContent = pagoData.payment_address || '0x...';
-    statusEl.textContent = '⏳ Esperando confirmación de pago...';
-
-    if (pagoData.payment_url) {
-        qrImg.src = pagoData.payment_url;
-    } else {
-        qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent('Orden: ' + pagoData.id)}`;
-    }
-
-    window._ordenPagoId = pagoData.id;
-
-    showToast('💳 QR generado. Escanea para pagar.', 'success');
-}
-
-async function verificarPagoCrypto() {
-    const statusEl = document.getElementById('cryptoStatus');
-    const ordenId = window._ordenPagoId;
-
-    if (!ordenId) {
-        statusEl.textContent = '❌ No hay orden para verificar';
-        return;
-    }
-
-    statusEl.textContent = '⏳ Verificando pago...';
-
-    try {
-        const session = await getSession();
-        if (!session) {
-            statusEl.textContent = '❌ Inicia sesión nuevamente';
-            return;
-        }
-
-        const response = await fetch(`${API_ENDPOINTS.pagos}/estado/${ordenId}`, {
-            headers: {
-                'Authorization': `Bearer ${session.access_token}`
-            }
-        });
-
-        const result = await response.json();
-
-        if (!result.success) {
-            throw new Error(result.error || 'Error al verificar pago');
-        }
-
-        const orden = result.data;
-
-        if (orden.estado === 'completado' || orden.estado === 'finished' || orden.estado === 'confirmed') {
-            statusEl.textContent = '✅ ¡Pago confirmado! Procesando compra...';
-            showToast('🎉 ¡Compra exitosa!', 'success');
-            
-            await cargarPerfil(true);
-            setTimeout(() => cerrarModalPago(), 2000);
-        } else if (orden.estado === 'pendiente') {
-            statusEl.textContent = '⏳ Aún no se confirma el pago. Espera unos minutos.';
-            setTimeout(() => verificarPagoCrypto(), 10000);
-        } else {
-            statusEl.textContent = `❌ Estado: ${orden.estado}`;
-        }
-
-    } catch (error) {
-        console.error('Error verificando pago:', error);
-        statusEl.textContent = '❌ Error al verificar: ' + error.message, 'error';
-    }
-}
-
-function copiarDireccion() {
-    const addressEl = document.getElementById('cryptoAddress');
-    const address = addressEl.textContent;
-
-    if (address && address !== 'Cargando dirección...') {
-        navigator.clipboard.writeText(address).then(() => {
-            showToast('📋 Dirección copiada al portapapeles', 'success');
-        }).catch(() => {
-            const textArea = document.createElement('textarea');
-            textArea.value = address;
-            document.body.appendChild(textArea);
-            textArea.select();
-            document.execCommand('copy');
-            textArea.remove();
-            showToast('📋 Dirección copiada al portapapeles', 'success');
-        });
-    }
-}
-
-function cerrarModalPago() {
-    const modal = document.getElementById('cryptoPaymentModal');
-    modal.classList.remove('active');
-    window._ordenPagoId = null;
-}
-
-// ================================================================
-// CANJEAR NFT
-// ================================================================
-async function canjearNFT() {
-    try {
-        const session = await getSession();
-        if (!session) {
-            showToast('⚠️ Inicia sesión para canjear tu NFT', 'error');
-            return;
-        }
-
-        showToast('⏳ Verificando tokens para canje...', '', 4000);
-
-        const { data, error } = await supabaseClient.rpc('canjear_nft');
-
-        if (error) {
-            if (error.message.includes('insufficient tokens')) {
-                showToast('❌ Necesitas exactamente 12 Es.stoks para canjear', 'error');
-            } else if (error.message.includes('already redeemed')) {
-                showToast('⚠️ Ya has canjeado tu NFT', 'warning');
-            } else {
-                throw error;
-            }
-            return;
-        }
-
-        showToast('🎁 ¡NFT Canjeado Exitosamente! Tienes 30 días para reclamar.', 'success', 8000);
-        await cargarPerfil(true);
-        mostrarModalNFT(data);
-
-    } catch (error) {
-        console.error('Error al canjear NFT:', error);
-        showToast('❌ Error al canjear NFT: ' + error.message, 'error');
-    }
-}
-
-// ================================================================
-// EFECTO CONFETI Y MODALES
-// ================================================================
-function crearConfeti() {
-    const colores = ['#ff6b6b', '#feca57', '#48dbfb', '#ff9ff3', '#54a0ff', '#5f27cd'];
-    for (let i = 0; i < 50; i++) {
-        setTimeout(() => {
-            const confeti = document.createElement('div');
-            confeti.style.cssText = `
-                position: fixed;
-                width: 10px;
-                height: 10px;
-                background: ${colores[Math.floor(Math.random() * colores.length)]};
-                left: ${Math.random() * 100}vw;
-                top: -10px;
-                border-radius: ${Math.random() > 0.5 ? '50%' : '2px'};
-                animation: confetiFall ${2 + Math.random() * 3}s linear forwards;
-                transform: rotate(${Math.random() * 360}deg);
-                z-index: 9998;
-                pointer-events: none;
-            `;
-            document.body.appendChild(confeti);
-            setTimeout(() => confeti.remove(), 5000);
-        }, i * 50);
-    }
-}
-
-function mostrarCelebracion() {
-    crearConfeti();
-    showToast('🎉 ¡Transacción exitosa!', 'success');
-}
-
-function compartirLogro() {
-    const texto = '🎁 ¡Acabo de canjear mi NFT en Sariel\'s! Únete al ecosistema. #Sariels #WEB3 #NFT';
-    if (navigator.share) {
-        navigator.share({ title: 'Mi logro en Sariel\'s', text: texto });
-    } else {
-        navigator.clipboard.writeText(texto).then(() => {
-            showToast('📋 Copiado al portapapeles', 'success');
-        });
-    }
-}
-
-function mostrarModalNFT(data) {
-    const modal = document.createElement('div');
-    modal.id = 'nftModal';
-    modal.style.cssText = `
-        position: fixed;
-        top: 0; left: 0; right: 0; bottom: 0;
-        background: rgba(0,0,0,0.8);
-        backdrop-filter: blur(10px);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        z-index: 9999;
-        animation: fadeIn 0.5s ease-out;
-    `;
-    
-    modal.innerHTML = `
-        <div style="background: linear-gradient(135deg, var(--bg-card), var(--bg-dark)); border: 2px solid var(--gold); border-radius: 20px; padding: 40px; max-width: 500px; width: 90%; text-align: center; animation: scaleIn 0.5s ease-out;">
-            <div style="font-size: 80px; margin-bottom: 20px;">🎁</div>
-            <h2 style="color: var(--gold); font-size: 28px; margin-bottom: 10px;">¡NFT Canjeado!</h2>
-            <p style="color: var(--text-primary); margin-bottom: 20px; font-size: 18px;">Tu Domo físico te espera</p>
-            <div style="background: var(--bg-dark); border-radius: 10px; padding: 15px; margin-bottom: 20px;">
-                <p style="color: var(--text-muted); font-size: 14px;">⏳ Vigencia: 30 días para reclamar</p>
-                <p style="color: var(--cyan); font-size: 12px; margin-top: 5px;">ID: ${data?.nft_id || 'NFT-' + Date.now().toString().slice(-6)}</p>
-            </div>
-            <div style="display: flex; gap: 10px; justify-content: center;">
-                <button onclick="this.parentElement.parentElement.parentElement.remove()" 
-                        style="background: linear-gradient(135deg, var(--gold), #f7971e); border: none; color: #fff; padding: 12px 30px; border-radius: 10px; font-weight: 600; cursor: pointer;">
-                    ✅ Entendido
-                </button>
-                <button onclick="compartirLogro()"
-                        style="background: transparent; border: 2px solid var(--cyan); color: var(--cyan); padding: 12px 30px; border-radius: 10px; font-weight: 600; cursor: pointer;">
-                    📤 Compartir
-                </button>
-            </div>
-        </div>
-    `;
-    
-    document.body.appendChild(modal);
-    crearConfeti();
-}
-
-// ================================================================
-// CERRAR SESIÓN
-// ================================================================
-async function cerrarSesion() {
-    if (!confirm('¿Seguro que quieres cerrar sesión?')) return;
-    
-    try {
-        await actualizarEstadoEnLinea(false);
-        await supabaseClient.auth.signOut();
-        window.location.href = '/';
-        showToast('🔌 Sesión cerrada', 'success');
-    } catch (error) {
-        console.error('Error cerrando sesión:', error);
-        showToast('❌ Error al cerrar sesión', 'error');
-    }
-}
-
-// ================================================================
-// NOTIFICACIONES EN TIEMPO REAL
-// ================================================================
-function iniciarNotificacionesRealtime() {
-    const channel = supabaseClient
-        .channel('notificaciones')
-        .on('postgres_changes', {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'notificaciones'
-        }, (payload) => {
-            const notificacion = payload.new;
-            if (notificacion.user_id === perfilCache?.id) {
-                showToast(`🔔 ${notificacion.mensaje}`, 'warning', 4000);
-                
-                try {
-                    const audio = new Audio('/sound/notification.mp3');
-                    audio.play().catch(() => {});
-                } catch (e) {}
-            }
-        })
-        .subscribe();
-
-    return channel;
-}
-
-// ================================================================
-// INICIALIZACIÓN
-// ================================================================
-document.addEventListener('DOMContentLoaded', async function() {
-    if (typeof jsQR === 'undefined') {
-        const script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js';
-        document.head.appendChild(script);
-        await new Promise(resolve => script.onload = resolve);
-    }
-    
-    await cargarPerfil();
-    
-    const stats = await obtenerEstadisticas();
-    if (stats) {
-        const nivel = calcularNivel(stats.tokens_actuales || 0);
-        const nivelEl = document.getElementById('nivelUsuario');
-        if (nivelEl) {
-            nivelEl.textContent = `${nivel.emoji} ${nivel.nombre}`;
-        }
-    }
-    
-    iniciarNotificacionesRealtime();
-    iniciarEscuchaConexion();
-    iniciarEscuchaAmigos();
-    iniciarDetectorInactividad();
-    await cargarHistorialQR();
-    await cargarSolicitudesPendientes();
-
-    if (perfilCache?.esim_iccid) {
-        setInterval(() => {
-            cargarDatosESIM(perfilCache.esim_iccid);
-        }, 30000);
-    }
-
-    setInterval(() => {
-        cargarEstadoConexion();
-    }, 10000);
-
-    setInterval(() => {
-        cargarAmigosEnLinea();
-    }, 15000);
-
-    // Controles de cantidad crypto
-    const cryptoQty = document.getElementById('cryptoQuantity');
-    if (cryptoQty) {
-        document.getElementById('cryptoDecreaseQty').addEventListener('click', () => {
-            let val = parseInt(cryptoQty.textContent);
-            if (val > 1) {
-                cryptoQty.textContent = val - 1;
-                actualizarCryptoTotal();
-            }
-        });
-        document.getElementById('cryptoIncreaseQty').addEventListener('click', () => {
-            let val = parseInt(cryptoQty.textContent);
-            if (val < 10) {
-                cryptoQty.textContent = val + 1;
-                actualizarCryptoTotal();
-            }
-        });
-    }
-
-    function actualizarCryptoTotal() {
-        const qty = parseInt(cryptoQty?.textContent || 1);
-        const total = qty * 4.50;
-        const comision = total * 0.02;
-        const totalConComision = total + comision;
-        const totalEl = document.getElementById('cryptoTotal');
-        if (totalEl) {
-            totalEl.textContent = `$${totalConComision.toFixed(2)} USDT`;
-        }
-    }
-    actualizarCryptoTotal();
-});
-
-// ================================================================
-// ESTILOS CSS INYECTADOS
-// ================================================================
-const estilosAnimacion = document.createElement('style');
-estilosAnimacion.textContent = `
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-    @keyframes scaleIn {
-        from { transform: scale(0.8); opacity: 0; }
-        to { transform: scale(1); opacity: 1; }
-    }
-    @keyframes slideInRight {
-        from { transform: translateX(100px); opacity: 0; }
-        to { transform: translateX(0); opacity: 1; }
-    }
-    @keyframes slideOutRight {
-        from { transform: translateX(0); opacity: 1; }
-        to { transform: translateX(100px); opacity: 0; }
-    }
-    @keyframes confetiFall {
-        from { transform: translateY(0) rotate(0deg); opacity: 1; }
-        to { transform: translateY(100vh) rotate(720deg); opacity: 0; }
-    }
-    .toast {
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        padding: 15px 25px;
-        border-radius: 12px;
-        background: var(--bg-card);
-        color: var(--text-primary);
-        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-        border: 1px solid var(--border-color);
-        z-index: 9999;
-        transform: translateX(100px);
-        opacity: 0;
-        transition: all 0.3s ease;
-        max-width: 400px;
-        backdrop-filter: blur(10px);
-    }
-    .toast.show {
-        transform: translateX(0);
-        opacity: 1;
-    }
-    .toast.error {
-        border-color: #ff6b6b;
-        background: rgba(255, 107, 107, 0.1);
-    }
-    .toast.warning {
-        border-color: #feca57;
-        background: rgba(254, 202, 87, 0.1);
-    }
-    .toast.success {
-        border-color: #2ecc71;
-        background: rgba(46, 204, 113, 0.1);
-    }
-`;
-document.head.appendChild(estilosAnimacion);
-
-// ================================================================
-// NIVEL Y ESTADÍSTICAS
+// FUNCIONES DE ESTADÍSTICAS
 // ================================================================
 function calcularNivel(tokens) {
     const niveles = [
@@ -2918,7 +2355,179 @@ async function agregarAmigo(amigoId) {
 }
 
 // ================================================================
-// EXPOSICIÓN DE FUNCIONES GLOBALES - ¡TODAS LAS FUNCIONES EXPUESTAS!
+// INICIALIZACIÓN PRINCIPAL - OPTIMIZADA
+// ================================================================
+document.addEventListener('DOMContentLoaded', async function() {
+    // Cargar jsQR si no está disponible
+    if (typeof jsQR === 'undefined') {
+        try {
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js';
+            document.head.appendChild(script);
+            await new Promise((resolve, reject) => {
+                script.onload = resolve;
+                script.onerror = reject;
+            });
+        } catch (e) {
+            console.warn('jsQR no pudo cargarse:', e);
+        }
+    }
+    
+    try {
+        await cargarPerfil();
+        
+        const stats = await obtenerEstadisticas();
+        if (stats) {
+            const nivel = calcularNivel(stats.tokens_actuales || 0);
+            const nivelEl = document.getElementById('nivelUsuario');
+            if (nivelEl) {
+                nivelEl.textContent = `${nivel.emoji} ${nivel.nombre}`;
+            }
+        }
+        
+        iniciarNotificacionesRealtime();
+        iniciarEscuchaConexion();
+        iniciarEscuchaAmigos();
+        iniciarDetectorInactividad();
+        await cargarHistorialQR();
+        await cargarSolicitudesPendientes();
+
+        // Intervalos optimizados
+        let esimInterval = null;
+        if (perfilCache?.esim_iccid) {
+            esimInterval = setInterval(() => {
+                cargarDatosESIM(perfilCache.esim_iccid);
+            }, 60000); // Reducido de 30s a 60s
+        }
+
+        // Guardar referencia para limpiar
+        window._perfilIntervals = {
+            esim: esimInterval,
+            conexion: setInterval(cargarEstadoConexion, 30000),
+            amigos: setInterval(cargarAmigosEnLinea, 30000)
+        };
+
+        // Configurar crypto controls
+        const cryptoQty = document.getElementById('cryptoQuantity');
+        if (cryptoQty) {
+            document.getElementById('cryptoDecreaseQty')?.addEventListener('click', () => {
+                let val = parseInt(cryptoQty.textContent);
+                if (val > 1) {
+                    cryptoQty.textContent = val - 1;
+                    actualizarCryptoTotal();
+                }
+            });
+            document.getElementById('cryptoIncreaseQty')?.addEventListener('click', () => {
+                let val = parseInt(cryptoQty.textContent);
+                if (val < 10) {
+                    cryptoQty.textContent = val + 1;
+                    actualizarCryptoTotal();
+                }
+            });
+        }
+
+        function actualizarCryptoTotal() {
+            const qty = parseInt(cryptoQty?.textContent || 1);
+            const total = qty * 4.50;
+            const comision = total * 0.02;
+            const totalConComision = total + comision;
+            const totalEl = document.getElementById('cryptoTotal');
+            if (totalEl) {
+                totalEl.textContent = `$${totalConComision.toFixed(2)} USDT`;
+            }
+        }
+        actualizarCryptoTotal();
+        
+    } catch (error) {
+        console.error('Error en inicialización:', error);
+        showToast('⚠️ Error al inicializar perfil', 'error');
+    }
+});
+
+// ================================================================
+// LIMPIEZA DE RECURSOS (para Single Page Apps)
+// ================================================================
+function limpiarRecursos() {
+    if (window._perfilIntervals) {
+        if (window._perfilIntervals.esim) clearInterval(window._perfilIntervals.esim);
+        if (window._perfilIntervals.conexion) clearInterval(window._perfilIntervals.conexion);
+        if (window._perfilIntervals.amigos) clearInterval(window._perfilIntervals.amigos);
+    }
+    if (detectorInactividadInterval) clearInterval(detectorInactividadInterval);
+    if (qrScannerInterval) clearInterval(qrScannerInterval);
+    if (canalAmigos) {
+        try { supabaseClient.removeChannel(canalAmigos); } catch(e) {}
+        canalAmigos = null;
+    }
+    cerrarCamaraQR();
+}
+
+// Registrar limpieza al descargar la página
+window.addEventListener('beforeunload', limpiarRecursos);
+
+// ================================================================
+// ESTILOS CSS INYECTADOS
+// ================================================================
+const estilosAnimacion = document.createElement('style');
+estilosAnimacion.textContent = `
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes scaleIn {
+        from { transform: scale(0.8); opacity: 0; }
+        to { transform: scale(1); opacity: 1; }
+    }
+    @keyframes slideInRight {
+        from { transform: translateX(100px); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+    @keyframes slideOutRight {
+        from { transform: translateX(0); opacity: 1; }
+        to { transform: translateX(100px); opacity: 0; }
+    }
+    @keyframes confetiFall {
+        from { transform: translateY(0) rotate(0deg); opacity: 1; }
+        to { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+    }
+    .toast {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        padding: 15px 25px;
+        border-radius: 12px;
+        background: var(--bg-card);
+        color: var(--text-primary);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        border: 1px solid var(--border-color);
+        z-index: 9999;
+        transform: translateX(100px);
+        opacity: 0;
+        transition: all 0.3s ease;
+        max-width: 400px;
+        backdrop-filter: blur(10px);
+    }
+    .toast.show {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    .toast.error {
+        border-color: #ff6b6b;
+        background: rgba(255, 107, 107, 0.1);
+    }
+    .toast.warning {
+        border-color: #feca57;
+        background: rgba(254, 202, 87, 0.1);
+    }
+    .toast.success {
+        border-color: #2ecc71;
+        background: rgba(46, 204, 113, 0.1);
+    }
+`;
+document.head.appendChild(estilosAnimacion);
+
+// ================================================================
+// EXPOSICIÓN DE FUNCIONES GLOBALES - COMPATIBILIDAD CON HTML
 // ================================================================
 window.cambiarTab = cambiarTab;
 window.cargarPerfil = cargarPerfil;
@@ -2927,7 +2536,7 @@ window.abrirSelectorArchivo = abrirSelectorArchivo;
 window.subirFoto = subirFoto;
 window.subirVideo = subirVideo;
 window.editarPerfil = editarPerfil;
-window.cambiarEstado = cambiarEstado;  // ✅ CORREGIDO
+window.cambiarEstado = cambiarEstado;
 window.compartirPerfil = compartirPerfil;
 window.conectarWallet = conectarWallet;
 window.desconectarWallet = desconectarWallet;
@@ -2943,7 +2552,7 @@ window.generarQRPerfil = generarQRPerfil;
 window.calcularNivel = calcularNivel;
 window.compartirLogro = compartirLogro;
 
-// Funciones de eSIM
+// eSIM
 window.comprarESIM = comprarESIM;
 window.cargarDatosESIM = cargarDatosESIM;
 window.activarESIM = activarESIM;
@@ -2954,23 +2563,23 @@ window.obtenerPlanesESIM = obtenerPlanesESIM;
 window.verificarPago = verificarPago;
 window.sincronizarESIM = sincronizarESIM;
 
-// Funciones de crypto
+// Crypto
 window.comprarConCripto = comprarConCripto;
 window.verificarPagoCrypto = verificarPagoCrypto;
 window.copiarDireccion = copiarDireccion;
 window.cerrarModalPago = cerrarModalPago;
 
-// Funciones de conexión
+// Conexión
 window.cambiarConexion = cambiarConexion;
 window.cargarEstadoConexion = cargarEstadoConexion;
 window.getPerfilActual = getPerfilActual;
 
-// Funciones de estado
+// Estado
 window.actualizarEstadoEnLinea = actualizarEstadoEnLinea;
 window.cargarAmigosEnLinea = cargarAmigosEnLinea;
 window.actualizarListaAmigos = actualizarListaAmigos;
 
-// Funciones QR
+// QR
 window.escanearQR = escanearQR;
 window.abrirCamaraQR = abrirCamaraQR;
 window.cerrarCamaraQR = cerrarCamaraQR;
@@ -2978,9 +2587,12 @@ window.cargarHistorialQR = cargarHistorialQR;
 window.actualizarUIHistorialQR = actualizarUIHistorialQR;
 window.procesarQR = procesarQR;
 
-// Funciones del sistema de amistades
+// Amistades
 window.obtenerSolicitudesPendientes = obtenerSolicitudesPendientes;
 window.aceptarSolicitudAmistad = aceptarSolicitudAmistad;
 window.rechazarSolicitudAmistad = rechazarSolicitudAmistad;
 window.cargarSolicitudesPendientes = cargarSolicitudesPendientes;
 window.actualizarUISolicitudes = actualizarUISolicitudes;
+
+// Utilidades de limpieza
+window.limpiarRecursos = limpiarRecursos;
