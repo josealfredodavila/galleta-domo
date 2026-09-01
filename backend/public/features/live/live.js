@@ -4,9 +4,9 @@
    ================================================================ */
 
 // ================================================================
-// CONFIGURACIÓN SUPABASE
+// CONFIGURACIÓN SUPABASE - SIN DECLARACIÓN DUPLICADA
 // ================================================================
-const supabase = window.supabase.createClient(
+const supabaseClient = window.supabaseClient || window.supabase.createClient(
     'https://zultnlogdoajehbswlih.supabase.co',
     'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
 );
@@ -82,7 +82,7 @@ function showToast(msg, type = '', duration = 3500) {
 // OBTENER SESIÓN
 // ================================================================
 async function getSession() {
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { session } } = await supabaseClient.auth.getSession();
     return session;
 }
 
@@ -114,7 +114,7 @@ async function obtenerTokenLiveKit(roomName, participantName, role = 'subscriber
 }
 
 // ================================================================
-// 🎥 INICIAR TRANSMISIÓN - CORREGIDO
+// 🎥 INICIAR TRANSMISIÓN
 // ================================================================
 async function iniciarTransmision() {
     try {
@@ -130,8 +130,7 @@ async function iniciarTransmision() {
         const titulo = prompt('Título de tu transmisión:', 'Mi live en Sariel\'s') || 'Live en Sariel\'s';
         const categoria = prompt('Categoría (gaming, musica, educacion, comunidad, tecnologia, general):', 'general') || 'general';
 
-        // Usar RPC segura
-        const { data, error } = await supabase.rpc('iniciar_transmision_segura', {
+        const { data, error } = await supabaseClient.rpc('iniciar_transmision_segura', {
             p_titulo: titulo,
             p_categoria: categoria,
             p_descripcion: '',
@@ -153,16 +152,12 @@ async function iniciarTransmision() {
             fecha_inicio: new Date().toISOString()
         };
 
-        // CONECTAR A LIVEKIT PRIMERO (sin capturar cámara local)
         try {
             showToast('🔗 Conectando a LiveKit...', '', 2000);
 
-            // LiveKit ya está disponible globalmente por el script en HTML
             const { Room } = window.livekitClient;
-
             liveKitRoom = new Room();
 
-            // Obtener token como PUBLISHER (rol para transmitir)
             const token = await obtenerTokenLiveKit(
                 currentStream.room_name,
                 currentUser.user_metadata?.nombre || currentUser.email || 'streamer',
@@ -170,16 +165,11 @@ async function iniciarTransmision() {
             );
 
             await liveKitRoom.connect(LIVEKIT_CONFIG.url, token);
-
-            // Publicar cámara y micrófono usando LiveKit (sin getUserMedia manual)
             await liveKitRoom.localParticipant.setCameraEnabled(true);
             await liveKitRoom.localParticipant.setMicrophoneEnabled(true);
 
-            // Obtener el stream de video para mostrarlo en el elemento <video> local
-            // LiveKit maneja la captura internamente, solo mostramos el stream local
             const videoElement = document.getElementById('liveVideo');
             if (videoElement) {
-                // Obtener el track de video local y mostrarlo
                 const videoTrack = liveKitRoom.localParticipant.videoTrackPublications.values().next().value;
                 if (videoTrack) {
                     const stream = new MediaStream();
@@ -194,7 +184,6 @@ async function iniciarTransmision() {
 
             showToast('✅ Conectado a LiveKit', 'success');
 
-            // Escuchar participantes
             liveKitRoom.on('participantConnected', (participant) => {
                 espectadores++;
                 document.getElementById('viewersCount').textContent = `${espectadores} espectadores`;
@@ -209,7 +198,6 @@ async function iniciarTransmision() {
             console.warn('LiveKit no disponible, modo local:', e);
             showToast('⚠️ Modo local - sin transmisión en vivo', 'warning');
             
-            // Fallback: capturar cámara local manualmente solo para vista local
             try {
                 const fallbackStream = await navigator.mediaDevices.getUserMedia({
                     video: { facingMode: 'user', width: 1280, height: 720 },
@@ -239,7 +227,6 @@ async function iniciarTransmision() {
         console.error('Error iniciando transmisión:', error);
         showToast('❌ Error al iniciar: ' + error.message, 'error');
         
-        // Limpiar en caso de error
         if (liveKitRoom) {
             try { await liveKitRoom.disconnect(); } catch (e) {}
             liveKitRoom = null;
@@ -252,7 +239,7 @@ async function iniciarTransmision() {
 }
 
 // ================================================================
-// ✋ FINALIZAR TRANSMISIÓN - CON LIMPIEZA COMPLETA
+// ✋ FINALIZAR TRANSMISIÓN
 // ================================================================
 async function finalizarTransmision() {
     try {
@@ -265,8 +252,7 @@ async function finalizarTransmision() {
 
         showToast('⏳ Finalizando transmisión...', '', 3000);
 
-        // Usar RPC segura
-        const { data, error } = await supabase.rpc('finalizar_transmision_segura', {
+        const { data, error } = await supabaseClient.rpc('finalizar_transmision_segura', {
             p_stream_id: currentStream.id
         });
 
@@ -279,11 +265,7 @@ async function finalizarTransmision() {
         console.error('Error finalizando transmisión:', error);
         showToast('❌ Error al finalizar: ' + error.message, 'error');
     } finally {
-        // ============================================================
-        // LIMPIEZA COMPLETA DE RECURSOS
-        // ============================================================
-        
-        // 1. Detener y limpiar localStream
+        // Limpiar localStream
         if (localStream) {
             try {
                 localStream.getTracks().forEach(t => {
@@ -296,7 +278,7 @@ async function finalizarTransmision() {
             }
         }
 
-        // 2. Limpiar video element
+        // Limpiar video element
         const video = document.getElementById('liveVideo');
         if (video) {
             try {
@@ -314,12 +296,10 @@ async function finalizarTransmision() {
             }
         }
 
-        // 3. Desconectar LiveKit
+        // Desconectar LiveKit
         if (liveKitRoom) {
             try {
-                // Desconectar todos los participantes
                 if (liveKitRoom.localParticipant) {
-                    // Deshabilitar cámaras y micrófonos
                     try {
                         await liveKitRoom.localParticipant.setCameraEnabled(false);
                         await liveKitRoom.localParticipant.setMicrophoneEnabled(false);
@@ -335,16 +315,16 @@ async function finalizarTransmision() {
             liveKitRoom = null;
         }
 
-        // 4. Limpiar intervalos
+        // Limpiar intervalos
         if (streamInterval) {
             clearInterval(streamInterval);
             streamInterval = null;
         }
 
-        // 5. Cerrar canales de Realtime de Supabase
+        // Cerrar canales de Realtime
         if (channelChat) {
             try {
-                supabase.removeChannel(channelChat);
+                supabaseClient.removeChannel(channelChat);
                 console.log('✅ Canal de chat cerrado');
             } catch (e) {
                 console.warn('Error cerrando canal de chat:', e);
@@ -352,13 +332,11 @@ async function finalizarTransmision() {
             channelChat = null;
         }
 
-        // 6. Resetear estado
         isLive = false;
         currentStream = null;
         espectadores = 0;
         document.getElementById('viewersCount').textContent = '0 espectadores';
-        
-        // 7. Limpiar overlay de donaciones si existe
+
         const container = document.getElementById('liveVideoContainer');
         if (container) {
             const overlays = container.querySelectorAll('.donacion-overlay');
@@ -370,7 +348,7 @@ async function finalizarTransmision() {
 }
 
 // ================================================================
-// 📺 UNIRSE A TRANSMISIÓN - CON ROL DE SUBSCRIBER
+// 📺 UNIRSE A TRANSMISIÓN
 // ================================================================
 async function unirseATransmision(streamId) {
     try {
@@ -382,7 +360,7 @@ async function unirseATransmision(streamId) {
 
         showToast('⏳ Uniéndose a la transmisión...', '', 2000);
 
-        const { data: stream, error } = await supabase
+        const { data: stream, error } = await supabaseClient
             .from('transmisiones')
             .select('*, usuarios(id, nombre, avatar_url)')
             .eq('id', streamId)
@@ -393,12 +371,9 @@ async function unirseATransmision(streamId) {
         currentStream = stream;
 
         try {
-            // LiveKit ya está disponible globalmente por el script en HTML
             const { Room } = window.livekitClient;
-
             liveKitRoom = new Room();
 
-            // Obtener token como SUBSCRIBER (rol para ver)
             const token = await obtenerTokenLiveKit(
                 stream.room_name,
                 session.user.user_metadata?.nombre || session.user.email || 'espectador',
@@ -444,10 +419,10 @@ function suscribirseAlChat() {
     if (!currentStream) return;
 
     if (channelChat) {
-        supabase.removeChannel(channelChat);
+        supabaseClient.removeChannel(channelChat);
     }
 
-    channelChat = supabase
+    channelChat = supabaseClient
         .channel(`live-${currentStream.id}`)
         .on('postgres_changes', {
             event: 'INSERT',
@@ -488,7 +463,7 @@ async function enviarMensaje() {
     }
 
     try {
-        const { data, error } = await supabase.rpc('enviar_mensaje_seguro', {
+        const { data, error } = await supabaseClient.rpc('enviar_mensaje_seguro', {
             p_transmision_id: currentStream.id,
             p_mensaje: mensaje
         });
@@ -592,7 +567,7 @@ async function enviarDonacion(monto) {
 
         const idempotencyKey = `donacion_${session.user.id}_${currentStream.id}_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
 
-        const { data, error } = await supabase.rpc('crear_donacion_segura', {
+        const { data, error } = await supabaseClient.rpc('crear_donacion_segura', {
             p_transmision_id: currentStream.id,
             p_monto_usd: monto,
             p_idempotency_key: idempotencyKey,
@@ -700,9 +675,8 @@ function iniciarContadorEspectadores() {
     streamInterval = setInterval(async () => {
         if (!currentStream) return;
 
-        // Solo actualizar si hay cambio
         try {
-            await supabase
+            await supabaseClient
                 .from('transmisiones')
                 .update({ viewers_count: espectadores })
                 .eq('id', currentStream.id);
@@ -724,7 +698,7 @@ async function seguirStreamer(streamerId) {
             return;
         }
 
-        const { data, error } = await supabase.rpc('seguir_streamer_seguro', {
+        const { data, error } = await supabaseClient.rpc('seguir_streamer_seguro', {
             p_streamer_id: streamerId
         });
 
@@ -741,7 +715,7 @@ async function seguirStreamer(streamerId) {
 
 async function getSeguidores(streamerId) {
     try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('live_seguidores')
             .select('seguidor_id', { count: 'exact' })
             .eq('streamer_id', streamerId);
@@ -756,14 +730,14 @@ async function getSeguidores(streamerId) {
 }
 
 // ================================================================
-// 🔔 NOTIFICACIONES A SEGUIDORES - RPC SEGURA
+// 🔔 NOTIFICACIONES A SEGUIDORES
 // ================================================================
 
 async function notificarSeguidoresSeguro(streamId) {
     try {
         if (!streamId) return;
 
-        const { data, error } = await supabase.rpc('notificar_seguidores_seguro', {
+        const { data, error } = await supabaseClient.rpc('notificar_seguidores_seguro', {
             p_stream_id: streamId
         });
 
@@ -787,7 +761,7 @@ async function notificarSeguidoresSeguro(streamId) {
 
 async function cargarTransmisionesActivas() {
     try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('transmisiones')
             .select(`
                 *,
@@ -899,7 +873,6 @@ async function capturarPantalla() {
 async function restaurarCamara() {
     try {
         if (liveKitRoom) {
-            // Si LiveKit está activo, usar su cámara
             await liveKitRoom.localParticipant.setCameraEnabled(true);
             const videoTrack = liveKitRoom.localParticipant.videoTrackPublications.values().next().value;
             if (videoTrack && videoTrack.track) {
@@ -912,7 +885,6 @@ async function restaurarCamara() {
                 }
             }
         } else {
-            // Fallback a getUserMedia
             const stream = await navigator.mediaDevices.getUserMedia({
                 video: { facingMode: 'user', width: 1280, height: 720 },
                 audio: true
@@ -964,7 +936,7 @@ async function cargarEstadisticas() {
             return;
         }
 
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('transmisiones')
             .select('*')
             .eq('streamer_id', session.user.id)
