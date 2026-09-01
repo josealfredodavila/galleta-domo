@@ -1,6 +1,6 @@
 /* ================================================================
    PERFIL.JS - SARIEL'S ECOSYSTEM
-   VERSIÓN REFACTORIZADA - SINGLETON + RESOURCE MANAGER
+   VERSIÓN COMPLETA CON INTEGRACIÓN eSIM + PLACEHOLDERS
    ================================================================ */
 
 // ================================================================
@@ -11,7 +11,6 @@ const supabaseClient = window.supabaseClient;
 // Verificar que el singleton existe
 if (!supabaseClient) {
     console.error('❌ Supabase Client no inicializado. Cargando app.js primero.');
-    // Fallback seguro
     window.location.reload();
 }
 
@@ -226,7 +225,6 @@ function actualizarUIEstado(online) {
 let detectorInactividadInterval = null;
 
 function iniciarDetectorInactividad() {
-    // ✅ Limpiar intervalo anterior
     if (detectorInactividadInterval) {
         clearInterval(detectorInactividadInterval);
         detectorInactividadInterval = null;
@@ -245,7 +243,6 @@ function iniciarDetectorInactividad() {
         document.addEventListener(evento, resetInactividad);
     });
 
-    // ✅ REGISTRAR INTERVAL CON RESOURCE MANAGER
     detectorInactividadInterval = setInterval(async () => {
         tiempoInactividad += 30000;
         
@@ -716,7 +713,6 @@ function animarContador(elemento, inicio, fin) {
 // AMIGOS EN TIEMPO REAL - CON REGISTER CHANNEL
 // ================================================================
 function iniciarEscuchaAmigos() {
-    // ✅ Limpiar canal anterior
     if (canalAmigos) {
         try {
             supabaseClient.removeChannel(canalAmigos);
@@ -741,7 +737,6 @@ function iniciarEscuchaAmigos() {
         })
         .subscribe();
 
-    // ✅ REGISTRAR CANAL CON RESOURCE MANAGER
     window.registerSupabaseChannel(canalAmigos, 'amigos_online');
     return canalAmigos;
 }
@@ -1374,9 +1369,24 @@ function iniciarEscuchaConexion() {
 }
 
 // ================================================================
-// eSIM - TELNYX FUNCTIONS
+// ================================================================
+// 🚀 eSIM - TELNYX INTEGRATION (FRONTEND + BACKEND)
+// ================================================================
 // ================================================================
 
+// ================================================================
+// PLANES DISPONIBLES
+// ================================================================
+const PLANES_ESIM = [
+    { id: 'basic', nombre: 'Básico', gb: 1, precio: 9.99, moneda: 'USD', duracion: '7 días' },
+    { id: 'standard', nombre: 'Estándar', gb: 3, precio: 19.99, moneda: 'USD', duracion: '15 días' },
+    { id: 'premium', nombre: 'Premium', gb: 10, precio: 49.99, moneda: 'USD', duracion: '30 días' },
+    { id: 'unlimited', nombre: 'Ilimitado', gb: 999, precio: 99.99, moneda: 'USD', duracion: '30 días' }
+];
+
+// ================================================================
+// ACTUALIZAR UI eSIM
+// ================================================================
 function actualizarUIESIM(data) {
     try {
         const esimStatus = document.getElementById('esimStatus');
@@ -1463,6 +1473,9 @@ function mostrarSinESIM() {
     }
 }
 
+// ================================================================
+// 📊 OBTENER DATOS eSIM DESDE TELNYX (via backend)
+// ================================================================
 async function cargarDatosESIM(iccid) {
     if (!iccid) {
         console.warn('⚠️ No hay ICCID para cargar datos eSIM');
@@ -1553,6 +1566,9 @@ async function cargarDatosESIMLocal(iccid) {
     }
 }
 
+// ================================================================
+// 🔄 SINCRONIZAR eSIM CON TELNYX
+// ================================================================
 async function sincronizarESIM() {
     try {
         const session = await window.getSession();
@@ -1591,6 +1607,440 @@ async function sincronizarESIM() {
     }
 }
 
+// ================================================================
+// 🛒 COMPRAR eSIM - TELNYX
+// ================================================================
+async function comprarESIM() {
+    try {
+        const session = await window.getSession();
+        if (!session) {
+            window.showToast('⚠️ Inicia sesión para comprar eSIM', 'error');
+            return;
+        }
+
+        // Mostrar modal de selección de plan
+        const modal = document.createElement('div');
+        modal.id = 'modalComprarESIM';
+        modal.style.cssText = `
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(10px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            animation: fadeIn 0.3s ease-out;
+        `;
+        modal.innerHTML = `
+            <div style="background: var(--bg-card); border-radius: 20px; padding: 30px; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto;">
+                <h3 style="color: var(--gold); margin-bottom: 20px;">📱 Comprar eSIM</h3>
+                <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 20px;">
+                    Selecciona un plan de datos para tu eSIM. La activación es instantánea.
+                </p>
+                <div id="planesESIM">
+                    ${PLANES_ESIM.map(plan => `
+                        <div style="
+                            padding: 15px;
+                            margin-bottom: 10px;
+                            background: rgba(212,175,55,0.05);
+                            border-radius: 12px;
+                            border: 1px solid rgba(212,175,55,0.1);
+                            cursor: pointer;
+                            transition: all 0.2s ease;
+                        " onclick="seleccionarPlanESIM('${plan.id}')" 
+                           onmouseover="this.style.borderColor='var(--gold)'" 
+                           onmouseout="this.style.borderColor='rgba(212,175,55,0.1)'">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <div style="font-weight: 600; color: var(--text-primary);">${plan.nombre}</div>
+                                    <div style="font-size: 0.7rem; color: var(--text-muted);">
+                                        ${plan.gb} GB · ${plan.duracion}
+                                    </div>
+                                </div>
+                                <div style="text-align: right;">
+                                    <div style="color: var(--gold); font-weight: 600;">$${plan.precio} ${plan.moneda}</div>
+                                    <button style="
+                                        background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+                                        border: none;
+                                        color: var(--space);
+                                        padding: 4px 12px;
+                                        border-radius: 8px;
+                                        font-size: 0.6rem;
+                                        font-weight: 600;
+                                        cursor: pointer;
+                                        margin-top: 4px;
+                                    " onclick="event.stopPropagation();seleccionarPlanESIM('${plan.id}')">
+                                        Seleccionar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+                <button onclick="cerrarModalESIM()" style="
+                    margin-top: 20px;
+                    background: transparent;
+                    border: 1px solid var(--text-muted);
+                    color: var(--text-muted);
+                    padding: 10px 30px;
+                    border-radius: 10px;
+                    cursor: pointer;
+                    width: 100%;
+                ">
+                    Cancelar
+                </button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+
+    } catch (error) {
+        console.error('Error abriendo modal eSIM:', error);
+        window.showToast('❌ Error: ' + error.message, 'error');
+    }
+}
+
+// ================================================================
+// 📋 SELECCIONAR PLAN eSIM
+// ================================================================
+async function seleccionarPlanESIM(planId) {
+    try {
+        const session = await window.getSession();
+        if (!session) {
+            window.showToast('⚠️ Inicia sesión para comprar', 'error');
+            return;
+        }
+
+        const plan = PLANES_ESIM.find(p => p.id === planId);
+        if (!plan) {
+            window.showToast('❌ Plan no válido', 'error');
+            return;
+        }
+
+        // Confirmar compra
+        if (!confirm(`¿Comprar plan ${plan.nombre} (${plan.gb} GB) por $${plan.precio} ${plan.moneda}?`)) {
+            return;
+        }
+
+        window.showToast('⏳ Procesando compra de eSIM...', '', 5000);
+
+        const response = await fetch(`${API_ENDPOINTS.esim}/comprar`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.access_token}`
+            },
+            body: JSON.stringify({
+                plan_id: plan.id,
+                cantidad_gb: plan.gb,
+                precio: plan.precio
+            })
+        });
+
+        const result = await response.json();
+
+        if (!result.success) {
+            throw new Error(result.error || 'Error al comprar eSIM');
+        }
+
+        window.showToast('✅ eSIM comprada exitosamente. Revisa tu correo para activar.', 'success', 6000);
+        
+        cerrarModalESIM();
+        await cargarPerfil(true);
+
+        // Mostrar QR de activación si existe
+        if (result.data && result.data.qr_code) {
+            mostrarQRESIM(result.data.qr_code);
+        }
+
+    } catch (error) {
+        console.error('Error comprando eSIM:', error);
+        window.showToast('❌ Error al comprar eSIM: ' + error.message, 'error');
+    }
+}
+
+// ================================================================
+// 📱 MOSTRAR QR DE ACTIVACIÓN eSIM
+// ================================================================
+function mostrarQRESIM(qrData) {
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.8);
+        backdrop-filter: blur(10px);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 10000;
+        animation: fadeIn 0.3s ease-out;
+    `;
+    modal.innerHTML = `
+        <div style="background: var(--bg-card); border-radius: 20px; padding: 30px; max-width: 400px; width: 90%; text-align: center;">
+            <h3 style="color: var(--gold); margin-bottom: 15px;">📱 Activa tu eSIM</h3>
+            <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 20px;">
+                Escanea este QR con la cámara de tu dispositivo para activar la eSIM.
+            </p>
+            <div style="background: white; padding: 20px; border-radius: 12px; display: inline-block;">
+                <img src="${qrData}" alt="eSIM QR" style="max-width: 200px; border-radius: 8px;">
+            </div>
+            <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: center;">
+                <button onclick="this.parentElement.parentElement.parentElement.remove()" style="
+                    background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+                    border: none;
+                    color: var(--space);
+                    padding: 10px 30px;
+                    border-radius: 10px;
+                    font-weight: 600;
+                    cursor: pointer;
+                ">
+                    ✅ Entendido
+                </button>
+                <button onclick="this.parentElement.parentElement.parentElement.remove()" style="
+                    background: transparent;
+                    border: 1px solid var(--text-muted);
+                    color: var(--text-muted);
+                    padding: 10px 30px;
+                    border-radius: 10px;
+                    cursor: pointer;
+                ">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+// ================================================================
+// 🚫 CERRAR MODAL eSIM
+// ================================================================
+function cerrarModalESIM() {
+    const modal = document.getElementById('modalComprarESIM');
+    if (modal) modal.remove();
+}
+
+// ================================================================
+// 🔄 ACTIVAR eSIM (via backend)
+// ================================================================
+async function activarESIM() {
+    try {
+        const session = await window.getSession();
+        if (!session) {
+            window.showToast('⚠️ Inicia sesión para activar eSIM', 'error');
+            return;
+        }
+
+        if (!perfilCache || !perfilCache.esim_iccid) {
+            window.showToast('⚠️ No tienes una eSIM asignada', 'warning');
+            return;
+        }
+
+        window.showToast('⏳ Activando eSIM...', '', 5000);
+
+        const response = await fetch(`${API_ENDPOINTS.esim}/activar`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.access_token}`
+            },
+            body: JSON.stringify({
+                iccid: perfilCache.esim_iccid
+            })
+        });
+
+        const result = await response.json();
+
+        if (!result.success) {
+            throw new Error(result.error || 'Error al activar eSIM');
+        }
+
+        window.showToast('✅ eSIM activada correctamente', 'success');
+        await cargarPerfil(true);
+
+    } catch (error) {
+        console.error('Error activando eSIM:', error);
+        window.showToast('❌ Error al activar eSIM: ' + error.message, 'error');
+    }
+}
+
+// ================================================================
+// 🚫 DESACTIVAR eSIM (via backend)
+// ================================================================
+async function desactivarESIM() {
+    try {
+        const session = await window.getSession();
+        if (!session) {
+            window.showToast('⚠️ Inicia sesión para desactivar eSIM', 'error');
+            return;
+        }
+
+        if (!perfilCache || !perfilCache.esim_iccid) {
+            window.showToast('⚠️ No tienes una eSIM activa', 'warning');
+            return;
+        }
+
+        if (!confirm('¿Desactivar tu eSIM? Perderás conectividad de datos.')) {
+            return;
+        }
+
+        window.showToast('⏳ Desactivando eSIM...', '', 5000);
+
+        const response = await fetch(`${API_ENDPOINTS.esim}/desactivar`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.access_token}`
+            },
+            body: JSON.stringify({
+                iccid: perfilCache.esim_iccid
+            })
+        });
+
+        const result = await response.json();
+
+        if (!result.success) {
+            throw new Error(result.error || 'Error al desactivar eSIM');
+        }
+
+        window.showToast('🔌 eSIM desactivada', 'warning');
+        await cargarPerfil(true);
+
+    } catch (error) {
+        console.error('Error desactivando eSIM:', error);
+        window.showToast('❌ Error al desactivar eSIM: ' + error.message, 'error');
+    }
+}
+
+// ================================================================
+// 📊 OBTENER ESTADO eSIM (via backend)
+// ================================================================
+async function obtenerEstadoESIM() {
+    try {
+        const session = await window.getSession();
+        if (!session) {
+            window.showToast('⚠️ Inicia sesión para ver estado', 'error');
+            return;
+        }
+
+        if (!perfilCache || !perfilCache.esim_iccid) {
+            window.showToast('⚠️ No tienes una eSIM asignada', 'warning');
+            return;
+        }
+
+        const response = await fetch(`${API_ENDPOINTS.esim}/estado`, {
+            headers: {
+                'Authorization': `Bearer ${session.access_token}`
+            }
+        });
+
+        const result = await response.json();
+
+        if (!result.success) {
+            throw new Error(result.error || 'Error al obtener estado');
+        }
+
+        window.showToast(`📊 eSIM: ${result.data.status} · ${result.data.data_used_gb} GB usado`, 'success', 5000);
+
+        return result.data;
+
+    } catch (error) {
+        console.error('Error obteniendo estado eSIM:', error);
+        window.showToast('❌ Error al obtener estado: ' + error.message, 'error');
+        return null;
+    }
+}
+
+// ================================================================
+// 📋 OBTENER PLANES eSIM (via backend)
+// ================================================================
+async function obtenerPlanesESIM() {
+    try {
+        const session = await window.getSession();
+        if (!session) {
+            window.showToast('⚠️ Inicia sesión para ver planes', 'error');
+            return;
+        }
+
+        const response = await fetch(`${API_ENDPOINTS.esim}/planes`, {
+            headers: {
+                'Authorization': `Bearer ${session.access_token}`
+            }
+        });
+
+        const result = await response.json();
+
+        if (!result.success) {
+            throw new Error(result.error || 'Error al obtener planes');
+        }
+
+        // Mostrar planes en un modal
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(10px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            animation: fadeIn 0.3s ease-out;
+        `;
+        modal.innerHTML = `
+            <div style="background: var(--bg-card); border-radius: 20px; padding: 30px; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto;">
+                <h3 style="color: var(--gold); margin-bottom: 20px;">📋 Planes eSIM</h3>
+                ${result.data.map(plan => `
+                    <div style="
+                        padding: 12px 15px;
+                        margin-bottom: 8px;
+                        background: rgba(212,175,55,0.05);
+                        border-radius: 10px;
+                        border: 1px solid rgba(212,175,55,0.1);
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                    ">
+                        <div>
+                            <div style="font-weight: 600;">${plan.nombre}</div>
+                            <div style="font-size: 0.7rem; color: var(--text-muted);">
+                                ${plan.gb} GB · ${plan.duracion}
+                            </div>
+                        </div>
+                        <div style="color: var(--gold); font-weight: 600;">
+                            $${plan.precio} ${plan.moneda}
+                        </div>
+                    </div>
+                `).join('')}
+                <button onclick="this.parentElement.parentElement.remove()" style="
+                    margin-top: 20px;
+                    background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+                    border: none;
+                    color: var(--space);
+                    padding: 10px 30px;
+                    border-radius: 10px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    width: 100%;
+                ">
+                    Cerrar
+                </button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+
+        return result.data;
+
+    } catch (error) {
+        console.error('Error obteniendo planes eSIM:', error);
+        window.showToast('❌ Error al obtener planes: ' + error.message, 'error');
+        return null;
+    }
+}
+
+// ================================================================
+// 📱 GENERAR QR eSIM
+// ================================================================
 async function generarQRESIM(iccid) {
     try {
         const iccidParam = iccid || perfilCache?.esim_iccid;
@@ -1600,17 +2050,156 @@ async function generarQRESIM(iccid) {
             return;
         }
         
-        const qrData = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent('LPA:1$' + iccidParam + '$Sariel\'s')}`;
-        mostrarModalQR(qrData);
+        const response = await fetch(`${API_ENDPOINTS.esim}/qr`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                iccid: iccidParam
+            })
+        });
+
+        const result = await response.json();
+
+        if (!result.success) {
+            throw new Error(result.error || 'Error al generar QR');
+        }
+
+        mostrarQRESIM(result.data.qr_code);
+
     } catch (error) {
-        console.error('Error generando QR:', error);
+        console.error('Error generando QR eSIM:', error);
         window.showToast('❌ Error al generar QR: ' + error.message, 'error');
     }
 }
 
 // ================================================================
-// FUNCIONES DE COMPRA - CON PREVENCIÓN DE DOBLE CLICK
+// ✅ VERIFICAR PAGO eSIM (via webhook)
 // ================================================================
+async function verificarPago(ordenId) {
+    try {
+        const session = await window.getSession();
+        if (!session) {
+            window.showToast('⚠️ Inicia sesión para verificar pago', 'error');
+            return;
+        }
+
+        if (!ordenId) {
+            window.showToast('⚠️ ID de orden no proporcionado', 'error');
+            return;
+        }
+
+        window.showToast('⏳ Verificando pago...', '', 5000);
+
+        const response = await fetch(`${API_ENDPOINTS.pagos}/verificar/${ordenId}`, {
+            headers: {
+                'Authorization': `Bearer ${session.access_token}`
+            }
+        });
+
+        const result = await response.json();
+
+        if (!result.success) {
+            throw new Error(result.error || 'Error al verificar pago');
+        }
+
+        if (result.data.pagado) {
+            window.showToast('✅ Pago verificado. eSIM activada.', 'success');
+            await cargarPerfil(true);
+        } else {
+            window.showToast('⏳ Pago pendiente. Espera confirmación.', 'warning');
+        }
+
+        return result.data;
+
+    } catch (error) {
+        console.error('Error verificando pago:', error);
+        window.showToast('❌ Error al verificar pago: ' + error.message, 'error');
+        return null;
+    }
+}
+
+// ================================================================
+// ================================================================
+// 💳 CRYPTO - FUNCIONES
+// ================================================================
+// ================================================================
+
+// ================================================================
+// COMPRAR CON CRIPTO (placeholder)
+// ================================================================
+async function comprarConCripto() {
+    try {
+        const session = await window.getSession();
+        if (!session) {
+            window.showToast('⚠️ Inicia sesión para comprar', 'error');
+            return;
+        }
+
+        window.showToast('⏳ Generando orden de pago...', '', 3000);
+
+        const response = await fetch(`${API_ENDPOINTS.pagos}/cripto/crear`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.access_token}`
+            },
+            body: JSON.stringify({
+                monto: 50,
+                moneda: 'USDT',
+                concepto: 'Compra de tokens'
+            })
+        });
+
+        const result = await response.json();
+
+        if (!result.success) {
+            throw new Error(result.error || 'Error al crear orden');
+        }
+
+        // Mostrar modal de pago
+        const modal = document.getElementById('cryptoPaymentModal');
+        if (modal) {
+            modal.classList.add('show');
+            document.getElementById('cryptoAddress').textContent = result.data.direccion;
+            document.getElementById('cryptoMonto').textContent = result.data.monto;
+            document.getElementById('cryptoStatus').textContent = '⏳ Esperando pago...';
+            const qrImg = document.getElementById('cryptoQR');
+            if (qrImg) {
+                qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(result.data.direccion)}`;
+            }
+            document.getElementById('cryptoPaymentModal').dataset.ordenId = result.data.orden_id;
+        }
+
+    } catch (error) {
+        console.error('Error comprando con cripto:', error);
+        window.showToast('❌ Error: ' + error.message, 'error');
+    }
+}
+
+// ================================================================
+// COPIAR DIRECCIÓN CRYPTO
+// ================================================================
+function copiarDireccion() {
+    const addressEl = document.getElementById('cryptoAddress');
+    if (!addressEl) return;
+    const address = addressEl.textContent;
+    if (address && address !== 'Cargando...') {
+        navigator.clipboard.writeText(address).then(() => {
+            window.showToast('📋 Dirección copiada', 'success');
+        }).catch(() => {
+            prompt('Copia esta dirección:', address);
+        });
+    }
+}
+
+// ================================================================
+// ================================================================
+// 💰 NFT Y DOMOS
+// ================================================================
+// ================================================================
+
 let comprandoDomo = false;
 
 async function comprarDomo(cantidad = 1) {
@@ -1659,9 +2248,6 @@ async function comprarDomo(cantidad = 1) {
     }
 }
 
-// ================================================================
-// FUNCIONES DE NFT - CON PREVENCIÓN DE DOBLE CLICK
-// ================================================================
 let canjeandoNFT = false;
 
 async function canjearNFT() {
@@ -1830,7 +2416,6 @@ function iniciarNotificacionesRealtime() {
         })
         .subscribe();
 
-    // ✅ REGISTRAR CANAL CON RESOURCE MANAGER
     window.registerSupabaseChannel(channel, 'notificaciones');
     return channel;
 }
@@ -2008,7 +2593,6 @@ async function abrirCamaraQR() {
             clearInterval(qrScannerInterval);
         }
         qrScannerInterval = setInterval(leerQR, 500);
-        // ✅ REGISTRAR INTERVAL CON RESOURCE MANAGER
         window.registerInterval(qrScannerInterval, 'qr_scanner');
 
         window.showToast('📷 Apunta la cámara al QR', 'warning');
@@ -2318,17 +2902,13 @@ async function agregarAmigo(amigoId) {
 // LIMPIEZA DE RECURSOS - DELEGADA AL RESOURCE MANAGER
 // ================================================================
 function limpiarRecursos() {
-    // Los recursos ahora son gestionados por el ResourceManager global
-    // Los intervalos y canales se registran con window.registerInterval y window.registerSupabaseChannel
-    // Esta función se mantiene por compatibilidad pero no es necesaria
     console.log('🧹 Limpieza de recursos delegada al ResourceManager');
 }
 
 // ================================================================
-// INICIALIZACIÓN PRINCIPAL - OPTIMIZADA
+// INICIALIZACIÓN PRINCIPAL
 // ================================================================
 document.addEventListener('DOMContentLoaded', async function() {
-    // Cargar jsQR si no está disponible
     if (typeof jsQR === 'undefined') {
         try {
             const script = document.createElement('script');
@@ -2362,7 +2942,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         await cargarHistorialQR();
         await cargarSolicitudesPendientes();
 
-        // Intervalos optimizados - REGISTRADOS CON RESOURCE MANAGER
         let esimInterval = null;
         if (perfilCache?.esim_iccid) {
             esimInterval = setInterval(() => {
@@ -2377,14 +2956,12 @@ document.addEventListener('DOMContentLoaded', async function() {
         const amigosInterval = setInterval(cargarAmigosEnLinea, 30000);
         window.registerInterval(amigosInterval, 'amigos_update');
 
-        // Guardar referencias para compatibilidad
         window._perfilIntervals = {
             esim: esimInterval,
             conexion: conexionInterval,
             amigos: amigosInterval
         };
 
-        // Configurar crypto controls
         const cryptoQty = document.getElementById('cryptoQuantity');
         if (cryptoQty) {
             document.getElementById('cryptoDecreaseQty')?.addEventListener('click', () => {
@@ -2422,7 +2999,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 });
 
 // ================================================================
-// EXPOSICIÓN DE FUNCIONES GLOBALES - COMPATIBILIDAD CON HTML
+// EXPOSICIÓN DE FUNCIONES GLOBALES
 // ================================================================
 window.cambiarTab = cambiarTab;
 window.cargarPerfil = cargarPerfil;
@@ -2447,7 +3024,7 @@ window.calcularNivel = calcularNivel;
 window.compartirLogro = compartirLogro;
 window.limpiarRecursos = limpiarRecursos;
 
-// eSIM
+// ✅ eSIM - TODAS LAS FUNCIONES EXPUESTAS
 window.comprarESIM = comprarESIM;
 window.cargarDatosESIM = cargarDatosESIM;
 window.activarESIM = activarESIM;
@@ -2457,10 +3034,11 @@ window.obtenerEstadoESIM = obtenerEstadoESIM;
 window.obtenerPlanesESIM = obtenerPlanesESIM;
 window.verificarPago = verificarPago;
 window.sincronizarESIM = sincronizarESIM;
+window.cerrarModalESIM = cerrarModalESIM;
+window.seleccionarPlanESIM = seleccionarPlanESIM;
 
-// Crypto
+// ✅ Crypto
 window.comprarConCripto = comprarConCripto;
-window.verificarPagoCrypto = verificarPagoCrypto;
 window.copiarDireccion = copiarDireccion;
 window.cerrarModalPago = cerrarModalPago;
 
