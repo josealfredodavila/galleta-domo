@@ -263,6 +263,63 @@ function editarPerfil() {
     }, 300);
 }
 
+// ================================================================
+// FUNCIÓN subirVideo() - CORREGIDA Y EXPUESTA GLOBALMENTE
+// ================================================================
+async function subirVideo(event) {
+    try {
+        const file = event?.target?.files?.[0];
+        if (!file) {
+            showToast('⚠️ No se seleccionó ningún archivo', 'warning');
+            return;
+        }
+
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ Inicia sesión para subir videos', 'error');
+            return;
+        }
+
+        if (!file.type.startsWith('video/')) {
+            showToast('❌ Formato no válido. Solo se permiten videos.', 'error');
+            return;
+        }
+
+        if (file.size > 50 * 1024 * 1024) {
+            showToast('❌ El video excede 50MB', 'error');
+            return;
+        }
+
+        showToast('⏳ Subiendo video... 0%', '', 10000);
+        
+        const fileExt = file.name.split('.').pop();
+        const filePath = `${session.user.id}/video_${Date.now()}.${fileExt}`;
+
+        const { error: uploadError } = await supabaseClient.storage
+            .from('posts')
+            .upload(filePath, file, {
+                onProgress: (progress) => {
+                    const percent = Math.round((progress.loaded / progress.total) * 100);
+                    showToast(`⏳ Subiendo video... ${percent}%`, '', 10000);
+                }
+            });
+
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = supabaseClient.storage
+            .from('posts')
+            .getPublicUrl(filePath);
+
+        showToast('✅ Video subido con éxito', 'success');
+        return urlData.publicUrl;
+        
+    } catch (error) {
+        console.error('Error al subir video:', error);
+        showToast('❌ Error al subir el video: ' + error.message, 'error');
+        return null;
+    }
+}
+
 async function guardarPerfil() {
     const session = await getSession();
     if (!session) {
@@ -424,113 +481,119 @@ async function generarQRPerfil() {
 // ACTUALIZAR UI PRINCIPAL
 // ================================================================
 function actualizarUI(data) {
-    const nombreEl = document.getElementById('perfilNombre');
-    const handleEl = document.getElementById('perfilHandle');
-    const bioEl = document.getElementById('perfilBio');
-    const avatarEl = document.getElementById('perfilAvatar');
-    const walletDisplay = document.getElementById('walletDisplay');
+    try {
+        const nombreEl = document.getElementById('perfilNombre');
+        const handleEl = document.getElementById('perfilHandle');
+        const bioEl = document.getElementById('perfilBio');
+        const avatarEl = document.getElementById('perfilAvatar');
+        const walletDisplay = document.getElementById('walletDisplay');
 
-    if (nombreEl) {
-        const verificado = data.verificado ? '<span class="verified">✦ VERIFICADO</span>' : '';
-        nombreEl.innerHTML = `${data.nombre || 'Explorador'} ${verificado}`;
-    }
-    
-    if (handleEl) handleEl.textContent = '@' + (data.handle || 'explorador');
-    if (bioEl) bioEl.innerHTML = formatearTexto(data.bio || 'Explorando el ecosistema Sariel\'s · WEB3 · Comunidad');
-
-    if (avatarEl) {
-        if (data.avatar_url) {
-            avatarEl.innerHTML = `
-                <img src="${data.avatar_url}" alt="Avatar" style="animation: fadeIn 0.5s ease-out;" 
-                     onerror="this.style.display='none';this.parentElement.innerHTML='◈<span class=\\'edit-badge\\' onclick=\\'abrirSelectorArchivo()\\' title=\\'Cambiar avatar\\'>✎</span>'"/>
-                <span class="edit-badge" onclick="abrirSelectorArchivo()" title="Cambiar avatar">✎</span>
-            `;
-        } else {
-            avatarEl.innerHTML = `◈<span class="edit-badge" onclick="abrirSelectorArchivo()" title="Cambiar avatar">✎</span>`;
+        if (nombreEl) {
+            const verificado = data.verificado ? '<span class="verified">✦ VERIFICADO</span>' : '';
+            nombreEl.innerHTML = `${data.nombre || 'Explorador'} ${verificado}`;
         }
-    }
+        
+        if (handleEl) handleEl.textContent = '@' + (data.handle || 'explorador');
+        if (bioEl) bioEl.innerHTML = formatearTexto(data.bio || 'Explorando el ecosistema Sariel\'s · WEB3 · Comunidad');
 
-    if (walletDisplay && data.wallet_address) {
-        walletDisplay.textContent = data.wallet_address.slice(0, 6) + '...' + data.wallet_address.slice(-4);
-        walletDisplay.style.color = 'var(--success)';
-        document.getElementById('btnConectarWallet').style.display = 'none';
-        document.getElementById('btnDesconectarWallet').style.display = 'inline-flex';
-    } else if (walletDisplay) {
-        walletDisplay.textContent = '⚠️ No conectada';
-        walletDisplay.style.color = 'var(--text-muted)';
-        document.getElementById('btnConectarWallet').style.display = 'inline-flex';
-        document.getElementById('btnDesconectarWallet').style.display = 'none';
-    }
-
-    const stats = [
-        { id: 'statTokens', value: data.tokens || 0 },
-        { id: 'statNFTS', value: data.nfts || 0 },
-        { id: 'statSeguidores', value: data.seguidores || 0 },
-        { id: 'statSiguiendo', value: data.siguiendo || 0 }
-    ];
-
-    stats.forEach(stat => {
-        const el = document.getElementById(stat.id);
-        if (el && el.textContent !== String(stat.value)) {
-            animarContador(el, parseInt(el.textContent) || 0, stat.value);
+        if (avatarEl) {
+            if (data.avatar_url) {
+                avatarEl.innerHTML = `
+                    <img src="${data.avatar_url}" alt="Avatar" style="animation: fadeIn 0.5s ease-out;" 
+                         onerror="this.style.display='none';this.parentElement.innerHTML='◈<span class=\\'edit-badge\\' onclick=\\'abrirSelectorArchivo()\\' title=\\'Cambiar avatar\\'>✎</span>'"/>
+                    <span class="edit-badge" onclick="abrirSelectorArchivo()" title="Cambiar avatar">✎</span>
+                `;
+            } else {
+                avatarEl.innerHTML = `◈<span class="edit-badge" onclick="abrirSelectorArchivo()" title="Cambiar avatar">✎</span>`;
+            }
         }
-    });
 
-    const tokens = data.tokens || 0;
-    const progreso = Math.min(tokens, 12);
-    const puedeCanjear = data.puede_canjear || false;
-
-    const progressFill = document.getElementById('progressFill');
-    const progressText = document.getElementById('progressText');
-
-    if (progressFill) {
-        const porcentaje = (progreso / 12) * 100;
-        progressFill.style.width = `${porcentaje}%`;
-        progressFill.style.transition = 'width 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
-    }
-    if (progressText) {
-        progressText.textContent = `${progreso} / 12`;
-        if (progreso >= 12) {
-            progressText.style.color = 'var(--gold)';
-            progressText.innerHTML += ' 🎯';
+        if (walletDisplay && data.wallet_address) {
+            walletDisplay.textContent = data.wallet_address.slice(0, 6) + '...' + data.wallet_address.slice(-4);
+            walletDisplay.style.color = 'var(--success)';
+            document.getElementById('btnConectarWallet').style.display = 'none';
+            document.getElementById('btnDesconectarWallet').style.display = 'inline-flex';
+        } else if (walletDisplay) {
+            walletDisplay.textContent = '⚠️ No conectada';
+            walletDisplay.style.color = 'var(--text-muted)';
+            document.getElementById('btnConectarWallet').style.display = 'inline-flex';
+            document.getElementById('btnDesconectarWallet').style.display = 'none';
         }
-    }
 
-    const tokenTotal = document.getElementById('tokenTotal');
-    const tokenDisponibles = document.getElementById('tokenDisponibles');
-    const tokenNFTs = document.getElementById('tokenNFTs');
+        const stats = [
+            { id: 'statTokens', value: data.tokens || 0 },
+            { id: 'statNFTS', value: data.nfts || 0 },
+            { id: 'statSeguidores', value: data.seguidores || 0 },
+            { id: 'statSiguiendo', value: data.siguiendo || 0 }
+        ];
 
-    if (tokenTotal) tokenTotal.textContent = tokens;
-    if (tokenDisponibles) tokenDisponibles.textContent = tokens;
-    if (tokenNFTs) tokenNFTs.textContent = data.progreso_canje || 0;
+        stats.forEach(stat => {
+            const el = document.getElementById(stat.id);
+            if (el && el.textContent !== String(stat.value)) {
+                animarContador(el, parseInt(el.textContent) || 0, stat.value);
+            }
+        });
 
-    const editNombre = document.getElementById('editNombre');
-    const editHandle = document.getElementById('editHandle');
-    const editBio = document.getElementById('editBio');
+        const tokens = data.tokens || 0;
+        const progreso = Math.min(tokens, 12);
+        const puedeCanjear = data.puede_canjear || false;
 
-    if (editNombre) editNombre.value = data.nombre || 'Explorador';
-    if (editHandle) editHandle.value = (data.handle || 'explorador');
-    if (editBio) editBio.value = data.bio || 'Explorando el ecosistema Sariel\'s · WEB3 · Comunidad';
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
 
-    const btnCanjear = document.getElementById('canjearNft');
-    if (btnCanjear) {
-        btnCanjear.disabled = !puedeCanjear;
-        if (puedeCanjear) {
-            btnCanjear.style.background = 'linear-gradient(135deg, var(--gold), #f7971e)';
-            btnCanjear.style.border = 'none';
-            btnCanjear.style.color = '#fff';
-            btnCanjear.innerHTML = '🎁 CANJEAR NFT';
-        } else {
-            btnCanjear.style.background = 'var(--bg-card)';
-            btnCanjear.style.border = '1px solid var(--text-muted)';
-            btnCanjear.style.color = 'var(--text-muted)';
-            btnCanjear.innerHTML = '🔒 NECESITAS 12 TOKENS';
+        if (progressFill) {
+            const porcentaje = (progreso / 12) * 100;
+            progressFill.style.width = `${porcentaje}%`;
+            progressFill.style.transition = 'width 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
         }
-    }
+        if (progressText) {
+            progressText.textContent = `${progreso} / 12`;
+            if (progreso >= 12) {
+                progressText.style.color = 'var(--gold)';
+                progressText.innerHTML += ' 🎯';
+            }
+        }
 
-    actualizarUIESIM(data);
-    actualizarUIConexion(estadoConexion);
-    actualizarUIEstado(data.online !== false);
+        const tokenTotal = document.getElementById('tokenTotal');
+        const tokenDisponibles = document.getElementById('tokenDisponibles');
+        const tokenNFTs = document.getElementById('tokenNFTs');
+
+        if (tokenTotal) tokenTotal.textContent = tokens;
+        if (tokenDisponibles) tokenDisponibles.textContent = tokens;
+        if (tokenNFTs) tokenNFTs.textContent = data.progreso_canje || 0;
+
+        const editNombre = document.getElementById('editNombre');
+        const editHandle = document.getElementById('editHandle');
+        const editBio = document.getElementById('editBio');
+
+        if (editNombre) editNombre.value = data.nombre || 'Explorador';
+        if (editHandle) editHandle.value = (data.handle || 'explorador');
+        if (editBio) editBio.value = data.bio || 'Explorando el ecosistema Sariel\'s · WEB3 · Comunidad';
+
+        const btnCanjear = document.getElementById('canjearNft');
+        if (btnCanjear) {
+            btnCanjear.disabled = !puedeCanjear;
+            if (puedeCanjear) {
+                btnCanjear.style.background = 'linear-gradient(135deg, var(--gold), #f7971e)';
+                btnCanjear.style.border = 'none';
+                btnCanjear.style.color = '#fff';
+                btnCanjear.innerHTML = '🎁 CANJEAR NFT';
+            } else {
+                btnCanjear.style.background = 'var(--bg-card)';
+                btnCanjear.style.border = '1px solid var(--text-muted)';
+                btnCanjear.style.color = 'var(--text-muted)';
+                btnCanjear.innerHTML = '🔒 NECESITAS 12 TOKENS';
+            }
+        }
+
+        actualizarUIESIM(data);
+        actualizarUIConexion(estadoConexion);
+        actualizarUIEstado(data.online !== false);
+        
+    } catch (error) {
+        console.error('Error en actualizarUI:', error);
+        // No mostrar toast aquí para evitar bucles
+    }
 }
 
 function animarContador(elemento, inicio, fin) {
@@ -1193,8 +1256,836 @@ function iniciarEscuchaConexion() {
 // eSIM - TELNYX FUNCTIONS (INTEGRACIÓN CON SERVER.JS)
 // ================================================================
 
-// ... (las funciones de eSIM continúan aquí, pero se omiten por brevedad)
-// En el archivo completo, todas las funciones eSIM están presentes.
+function actualizarUIESIM(data) {
+    try {
+        const esimStatus = document.getElementById('esimStatus');
+        const esimDataUsed = document.getElementById('esimDataUsed');
+        const esimDataLimit = document.getElementById('esimDataLimit');
+        const esimDataProgress = document.getElementById('esimDataProgress');
+        const esimIccid = document.getElementById('esimIccid');
+        const esimApn = document.getElementById('esimApn');
+        const esimRestante = document.getElementById('esimDataRestante');
+
+        if (esimStatus) {
+            const statusMap = {
+                'enabled': '✅ Activo',
+                'active': '✅ Activo',
+                'disabled': '❌ Inactivo',
+                'inactive': '❌ Inactivo',
+                'standby': '⏳ En espera',
+                'pending': '🔄 Pendiente',
+                'unknown': '❓ Desconocido'
+            };
+            esimStatus.textContent = data.esim_status ? (statusMap[data.esim_status] || data.esim_status) : '⏳ Sin eSIM';
+            esimStatus.style.color = (data.esim_status === 'enabled' || data.esim_status === 'active') 
+                ? 'var(--success)' 
+                : 'var(--warning)';
+        }
+
+        if (esimDataUsed) {
+            const used = (data.esim_data_used || 0) / 1024 / 1024 / 1024;
+            esimDataUsed.textContent = used.toFixed(2) + ' GB';
+        }
+
+        if (esimDataLimit) {
+            const limit = (data.esim_data_limit || 0) / 1024 / 1024 / 1024;
+            esimDataLimit.textContent = limit.toFixed(2) + ' GB';
+        }
+
+        if (esimRestante) {
+            const usado = (data.esim_data_used || 0) / 1024 / 1024 / 1024;
+            const limite = (data.esim_data_limit || 0) / 1024 / 1024 / 1024;
+            const restante = Math.max(limite - usado, 0);
+            esimRestante.textContent = restante.toFixed(2) + ' GB';
+            esimRestante.style.color = restante < 1 ? 'var(--danger)' : 'var(--success)';
+        }
+
+        if (esimDataProgress && data.esim_data_limit > 0) {
+            const porcentaje = ((data.esim_data_used || 0) / (data.esim_data_limit || 1)) * 100;
+            esimDataProgress.style.width = Math.min(porcentaje, 100) + '%';
+            esimDataProgress.style.transition = 'width 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
+            
+            if (porcentaje > 80) {
+                esimDataProgress.style.background = 'var(--danger)';
+            } else if (porcentaje > 50) {
+                esimDataProgress.style.background = 'var(--warning)';
+            } else {
+                esimDataProgress.style.background = 'var(--success)';
+            }
+        }
+
+        if (esimIccid) {
+            const iccid = data.esim_iccid || 'No asignado';
+            esimIccid.textContent = iccid.length > 10 ? iccid.slice(0, 10) + '...' + iccid.slice(-4) : iccid;
+        }
+
+        if (esimApn) {
+            esimApn.textContent = data.esim_apn || 'data00.telnyx';
+        }
+    } catch (error) {
+        console.error('Error en actualizarUIESIM:', error);
+    }
+}
+
+function mostrarSinESIM() {
+    actualizarUIESIM({
+        esim_iccid: 'No asignado',
+        esim_status: 'disabled',
+        esim_data_used: 0,
+        esim_data_limit: 0,
+        esim_apn: 'data00.telnyx'
+    });
+    const esimStatus = document.getElementById('esimStatus');
+    if (esimStatus) {
+        esimStatus.textContent = '⏳ Sin eSIM';
+        esimStatus.style.color = 'var(--text-muted)';
+    }
+}
+
+async function cargarDatosESIM(iccid) {
+    if (!iccid) {
+        console.warn('⚠️ No hay ICCID para cargar datos eSIM');
+        mostrarSinESIM();
+        return null;
+    }
+
+    try {
+        const session = await getSession();
+        if (!session) {
+            console.warn('⚠️ No hay sesión para cargar datos eSIM');
+            return null;
+        }
+
+        showToast('⏳ Actualizando datos de eSIM...', '', 3000);
+
+        const response = await fetch(`${API_ENDPOINTS.esim}/profile`, {
+            headers: {
+                'Authorization': `Bearer ${session.access_token}`
+            }
+        });
+
+        const result = await response.json();
+
+        if (!result.success) {
+            throw new Error(result.error || 'Error al cargar datos eSIM');
+        }
+
+        const data = result.data;
+
+        if (!data.has_esim) {
+            mostrarSinESIM();
+            return null;
+        }
+
+        actualizarUIESIM({
+            esim_iccid: data.iccid,
+            esim_status: data.status,
+            esim_data_used: data.data_used_bytes || 0,
+            esim_data_limit: data.data_limit_bytes || 0,
+            esim_apn: data.apn || 'data00.telnyx',
+            esim_activated_at: data.activated_at,
+            esim_expires_at: data.expires_at,
+            esim_operator: data.operator || 'Telnyx',
+            esim_network: data.network || '4G/5G'
+        });
+
+        if (data.telnyx_error) {
+            showToast('⚠️ No se pudo actualizar la información de la eSIM. Mostrando último estado conocido.', 'warning', 5000);
+        }
+
+        return data;
+
+    } catch (error) {
+        console.error('Error cargando datos eSIM:', error);
+        showToast('❌ Error al cargar datos de eSIM: ' + error.message, 'error');
+        await cargarDatosESIMLocal(iccid);
+        return null;
+    }
+}
+
+async function cargarDatosESIMLocal(iccid) {
+    try {
+        const session = await getSession();
+        if (!session) return;
+
+        const { data: usuario, error } = await supabaseClient
+            .from('usuarios')
+            .select('esim_iccid, esim_status, esim_data_used, esim_data_limit, esim_apn')
+            .eq('id', session.user.id)
+            .single();
+
+        if (error) throw error;
+
+        if (usuario && usuario.esim_iccid) {
+            actualizarUIESIM({
+                esim_iccid: usuario.esim_iccid,
+                esim_status: usuario.esim_status || 'disabled',
+                esim_data_used: usuario.esim_data_used || 0,
+                esim_data_limit: usuario.esim_data_limit || 0,
+                esim_apn: usuario.esim_apn || 'data00.telnyx'
+            });
+            showToast('ℹ️ Mostrando datos guardados localmente', 'warning', 3000);
+        }
+    } catch (error) {
+        console.error('Error cargando datos locales:', error);
+        mostrarSinESIM();
+    }
+}
+
+async function sincronizarESIM() {
+    try {
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ Inicia sesión para sincronizar', 'error');
+            return;
+        }
+
+        showToast('⏳ Sincronizando con Telnyx...', '', 5000);
+
+        const response = await fetch(`${API_ENDPOINTS.esim}/sync`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.access_token}`
+            }
+        });
+
+        const result = await response.json();
+
+        if (!result.success) {
+            throw new Error(result.error || 'Error al sincronizar');
+        }
+
+        showToast('✅ Datos sincronizados correctamente', 'success');
+        await cargarPerfil(true);
+
+    } catch (error) {
+        console.error('Error sincronizando eSIM:', error);
+        showToast('❌ Error al sincronizar: ' + error.message, 'error');
+    }
+}
+
+async function comprarESIM(planId) {
+    try {
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ Inicia sesión para comprar eSIM', 'error');
+            return;
+        }
+
+        const { data: plan, error } = await supabaseClient
+            .from('planes_esim')
+            .select('*')
+            .eq('id', planId)
+            .single();
+
+        if (error) throw error;
+
+        showToast('⏳ Creando orden de compra...', '', 5000);
+
+        const response = await fetch(`${API_ENDPOINTS.pagos}/crear`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.access_token}`
+            },
+            body: JSON.stringify({
+                transmisionId: null,
+                tipo: 'esim',
+                planId: plan.id,
+                idempotency_key: `esim_${session.user.id}_${planId}_${Date.now()}`
+            })
+        });
+
+        const result = await response.json();
+
+        if (!result.success) {
+            throw new Error(result.error || 'Error al crear la orden');
+        }
+
+        if (result.data && result.data.payment_url) {
+            mostrarModalPagoReal(result.data.payment_url, result.data.id, plan);
+        } else {
+            const qrData = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent('Orden: ' + result.data.id)}`;
+            mostrarModalPagoSimulado(qrData, result.data.id, plan);
+        }
+
+    } catch (error) {
+        console.error('Error comprando eSIM:', error);
+        showToast('❌ Error al comprar eSIM: ' + error.message, 'error');
+    }
+}
+
+async function activarESIM(iccid) {
+    try {
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ Inicia sesión', 'error');
+            return;
+        }
+
+        const iccidParam = iccid || perfilCache?.esim_iccid;
+        if (!iccidParam) {
+            showToast('⚠️ No hay eSIM para activar', 'error');
+            return;
+        }
+
+        showToast('⏳ Activando eSIM...', '', 5000);
+
+        const response = await fetch(`${API_ENDPOINTS.esim}/activar`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.access_token}`
+            },
+            body: JSON.stringify({ iccid: iccidParam })
+        });
+
+        const result = await response.json();
+
+        if (!result.success) {
+            throw new Error(result.error || 'Error al activar eSIM');
+        }
+
+        showToast('✅ eSIM activada correctamente', 'success');
+        await cargarPerfil(true);
+
+    } catch (error) {
+        console.error('Error activando eSIM:', error);
+        showToast('❌ Error al activar eSIM: ' + error.message, 'error');
+    }
+}
+
+async function desactivarESIM(iccid) {
+    try {
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ Inicia sesión', 'error');
+            return;
+        }
+
+        const iccidParam = iccid || perfilCache?.esim_iccid;
+        if (!iccidParam) {
+            showToast('⚠️ No hay eSIM para desactivar', 'error');
+            return;
+        }
+
+        if (!confirm('¿Seguro que quieres desactivar tu eSIM?')) return;
+
+        showToast('⏳ Desactivando eSIM...', '', 5000);
+
+        const response = await fetch(`${API_ENDPOINTS.esim}/desactivar`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.access_token}`
+            },
+            body: JSON.stringify({ iccid: iccidParam })
+        });
+
+        const result = await response.json();
+
+        if (!result.success) {
+            throw new Error(result.error || 'Error al desactivar eSIM');
+        }
+
+        showToast('🔌 eSIM desactivada', 'warning');
+        await cargarPerfil(true);
+
+    } catch (error) {
+        console.error('Error desactivando eSIM:', error);
+        showToast('❌ Error al desactivar eSIM: ' + error.message, 'error');
+    }
+}
+
+async function generarQRESIM(iccid) {
+    try {
+        const iccidParam = iccid || perfilCache?.esim_iccid;
+        if (!iccidParam) {
+            showToast('⚠️ No hay eSIM para generar QR', 'error');
+            return;
+        }
+        const qrData = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent('LPA:1$' + iccidParam + '$Sariel\'s')}`;
+        mostrarModalQR(qrData);
+    } catch (error) {
+        console.error('Error generando QR:', error);
+        showToast('❌ Error al generar QR: ' + error.message, 'error');
+    }
+}
+
+async function obtenerEstadoESIM() {
+    try {
+        const session = await getSession();
+        if (!session) return null;
+
+        const response = await fetch(`${API_ENDPOINTS.esim}/status`, {
+            headers: {
+                'Authorization': `Bearer ${session.access_token}`
+            }
+        });
+
+        const result = await response.json();
+        return result.success ? result.data : null;
+
+    } catch (error) {
+        console.error('Error obteniendo estado:', error);
+        return null;
+    }
+}
+
+async function obtenerPlanesESIM() {
+    try {
+        const { data, error } = await supabaseClient
+            .from('planes_esim')
+            .select('*')
+            .eq('activo', true)
+            .order('precio_mxn', { ascending: true });
+
+        if (error) throw error;
+        return data || [];
+
+    } catch (error) {
+        console.error('Error obteniendo planes:', error);
+        return [];
+    }
+}
+
+// ================================================================
+// MODALES DE PAGO
+// ================================================================
+
+function mostrarModalPagoReal(paymentUrl, ordenId, plan) {
+    const modal = document.createElement('div');
+    modal.id = 'pagoModal';
+    modal.style.cssText = `
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.85);
+        backdrop-filter: blur(10px);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        animation: fadeIn 0.3s ease-out;
+    `;
+    modal.innerHTML = `
+        <div style="
+            background: linear-gradient(135deg, var(--bg-card), var(--bg-dark));
+            border: 2px solid var(--gold);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 450px;
+            width: 90%;
+            text-align: center;
+            animation: scaleIn 0.3s ease-out;
+        ">
+            <h2 style="color: var(--gold); margin-bottom: 10px;">📱 Compra eSIM</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 20px;">
+                ${plan.nombre} - ${plan.datos_gb} GB por ${plan.duracion_dias} días
+            </p>
+            <p style="color: var(--gold); font-size: 1.2rem; font-weight: bold;">
+                $${plan.precio_usdt} USDT
+            </p>
+            <p style="color: var(--text-muted); font-size: 0.8rem; margin: 10px 0;">
+                💳 Paga con NOWPayments (USDT en TRC-20)
+            </p>
+            <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin: 15px 0;">
+                <a href="${paymentUrl}" target="_blank" 
+                   style="background: linear-gradient(135deg, var(--gold), #f7971e); border: none; color: #fff; padding: 12px 30px; border-radius: 10px; font-weight: 600; cursor: pointer; text-decoration: none;">
+                    💳 Ir a pagar
+                </a>
+                <button onclick="verificarPago('${ordenId}')"
+                        style="background: var(--bg-card); border: 1px solid var(--cyan); color: var(--cyan); padding: 12px 30px; border-radius: 10px; font-weight: 600; cursor: pointer;">
+                    ✅ Verificar pago
+                </button>
+                <button onclick="this.parentElement.parentElement.parentElement.remove()"
+                        style="background: transparent; border: 1px solid var(--text-muted); color: var(--text-muted); padding: 12px 30px; border-radius: 10px; cursor: pointer;">
+                    Cerrar
+                </button>
+            </div>
+            <div id="pagoStatus" style="margin-top: 10px; font-size: 0.8rem; color: var(--text-secondary);"></div>
+            <p style="color: var(--text-muted); font-size: 0.6rem; margin-top: 10px;">
+                ⏳ El pago se confirmará automáticamente vía webhook
+            </p>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+function mostrarModalPagoSimulado(qrData, ordenId, plan) {
+    const modal = document.createElement('div');
+    modal.id = 'pagoModal';
+    modal.style.cssText = `
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.85);
+        backdrop-filter: blur(10px);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        animation: fadeIn 0.3s ease-out;
+    `;
+    modal.innerHTML = `
+        <div style="
+            background: linear-gradient(135deg, var(--bg-card), var(--bg-dark));
+            border: 2px solid var(--gold);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 450px;
+            width: 90%;
+            text-align: center;
+            animation: scaleIn 0.3s ease-out;
+        ">
+            <h2 style="color: var(--gold); margin-bottom: 10px;">📱 Compra eSIM</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 20px;">
+                ${plan.nombre} - ${plan.datos_gb} GB por ${plan.duracion_dias} días
+            </p>
+            <div style="background: white; border-radius: 10px; padding: 15px; margin: 10px 0;">
+                <img src="${qrData}" alt="QR de pago" style="max-width: 200px; width: 100%;">
+            </div>
+            <p style="color: var(--gold); font-size: 1.2rem; font-weight: bold;">
+                $${plan.precio_usdt} USDT
+            </p>
+            <p style="color: var(--text-muted); font-size: 0.7rem; margin: 10px 0;">
+                ⏳ Escanea el QR para pagar. Se activará automáticamente.
+            </p>
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button onclick="verificarPago('${ordenId}')"
+                        style="background: linear-gradient(135deg, var(--gold), #f7971e); border: none; color: #fff; padding: 10px 30px; border-radius: 10px; font-weight: 600; cursor: pointer;">
+                    ✅ Verificar pago
+                </button>
+                <button onclick="this.parentElement.parentElement.parentElement.remove()"
+                        style="background: transparent; border: 1px solid var(--text-muted); color: var(--text-muted); padding: 10px 30px; border-radius: 10px; cursor: pointer;">
+                    Cerrar
+                </button>
+            </div>
+            <div id="pagoStatus" style="margin-top: 10px; font-size: 0.8rem; color: var(--text-secondary);"></div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+function mostrarModalQR(qrData) {
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.85);
+        backdrop-filter: blur(10px);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        animation: fadeIn 0.3s ease-out;
+    `;
+    modal.innerHTML = `
+        <div style="background: linear-gradient(135deg, var(--bg-card), var(--bg-dark)); border: 2px solid var(--gold); border-radius: 20px; padding: 30px; max-width: 400px; width: 90%; text-align: center; animation: scaleIn 0.3s ease-out;">
+            <h2 style="color: var(--gold); margin-bottom: 10px;">📱 Activa tu eSIM</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 20px;">Escanea con la cámara de tu móvil</p>
+            <div style="background: white; border-radius: 10px; padding: 15px; margin: 10px 0;">
+                <img src="${qrData}" alt="QR de activación" style="max-width: 200px; width: 100%;">
+            </div>
+            <p style="color: var(--text-muted); font-size: 0.7rem;">📲 Ve a Ajustes > Datos Móviles > Añadir eSIM</p>
+            <button onclick="this.parentElement.parentElement.remove()"
+                    style="margin-top: 15px; background: var(--gold); border: none; color: #fff; padding: 10px 30px; border-radius: 10px; cursor: pointer;">
+                Listo
+            </button>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+async function verificarPago(ordenId) {
+    const statusEl = document.getElementById('pagoStatus');
+    if (!statusEl) return;
+
+    statusEl.textContent = '⏳ Verificando pago...';
+
+    try {
+        const session = await getSession();
+        if (!session) {
+            statusEl.textContent = '❌ Inicia sesión nuevamente';
+            return;
+        }
+
+        const response = await fetch(`${API_ENDPOINTS.pagos}/estado/${ordenId}`, {
+            headers: {
+                'Authorization': `Bearer ${session.access_token}`
+            }
+        });
+
+        const result = await response.json();
+
+        if (!result.success) {
+            throw new Error(result.error || 'Error al verificar pago');
+        }
+
+        const orden = result.data;
+
+        if (orden.estado === 'completado' || orden.estado === 'finished' || orden.estado === 'confirmed') {
+            statusEl.textContent = '✅ ¡Pago confirmado! Activando eSIM...';
+            showToast('🎉 ¡eSIM activada exitosamente!', 'success');
+            
+            await cargarPerfil(true);
+            
+            setTimeout(() => {
+                document.getElementById('pagoModal')?.remove();
+            }, 2000);
+            
+        } else if (orden.estado === 'pendiente') {
+            statusEl.textContent = '⏳ Aún no se confirma el pago. Espera unos minutos.';
+            setTimeout(() => verificarPago(ordenId), 10000);
+        } else {
+            statusEl.textContent = `❌ Estado: ${orden.estado}`;
+        }
+
+    } catch (error) {
+        console.error('Error verificando pago:', error);
+        statusEl.textContent = '❌ Error al verificar: ' + error.message, 'error';
+    }
+}
+
+// ================================================================
+// ESCANEO QR
+// ================================================================
+
+let qrScannerInterval = null;
+let scannerActive = false;
+let qrHistorial = [];
+let qrScanningLock = false;
+
+async function abrirCamaraQR() {
+    try {
+        const container = document.getElementById('qrReaderContainer');
+        const video = document.getElementById('qrVideo');
+        const status = document.getElementById('qrCamaraStatus');
+        const canvas = document.getElementById('qrCanvas');
+        const ctx = canvas?.getContext('2d');
+        
+        if (scannerActive) {
+            cerrarCamaraQR();
+            return;
+        }
+
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 480 } }
+        });
+        
+        video.srcObject = stream;
+        await video.play();
+        container.style.display = 'block';
+        scannerActive = true;
+        status.textContent = '📷 Enfoca el QR...';
+
+        const leerQR = async () => {
+            if (!scannerActive || !video.readyState || video.readyState < 2) return;
+            
+            try {
+                if (!canvas || !ctx) return;
+                
+                canvas.width = video.videoWidth || 400;
+                canvas.height = video.videoHeight || 300;
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                
+                if (typeof jsQR !== 'undefined') {
+                    const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                        inversionAttempts: "dontInvert",
+                    });
+                    
+                    if (code && code.data) {
+                        const qrData = code.data;
+                        status.textContent = '✅ QR detectado: ' + qrData.slice(0, 30) + '...';
+                        
+                        const input = document.getElementById('qrInput');
+                        if (input) {
+                            input.value = qrData;
+                            setTimeout(async () => {
+                                await procesarQR(qrData);
+                            }, 1000);
+                        }
+                        cerrarCamaraQR();
+                        return;
+                    }
+                } else {
+                    status.textContent = '📱 Escanea el QR o ingresa el código manualmente';
+                }
+                
+            } catch (error) {
+                console.error('Error leyendo QR:', error);
+            }
+        };
+
+        if (qrScannerInterval) {
+            clearInterval(qrScannerInterval);
+        }
+        qrScannerInterval = setInterval(leerQR, 500);
+
+        showToast('📷 Apunta la cámara al QR', 'warning');
+
+    } catch (error) {
+        console.error('Error abriendo cámara:', error);
+        showToast('❌ No se pudo acceder a la cámara', 'error');
+    }
+}
+
+function cerrarCamaraQR() {
+    const container = document.getElementById('qrReaderContainer');
+    const video = document.getElementById('qrVideo');
+    const status = document.getElementById('qrCamaraStatus');
+    
+    if (video.srcObject) {
+        video.srcObject.getTracks().forEach(track => track.stop());
+    }
+    video.srcObject = null;
+    if (container) container.style.display = 'none';
+    scannerActive = false;
+    if (status) status.textContent = '';
+    
+    if (qrScannerInterval) {
+        clearInterval(qrScannerInterval);
+        qrScannerInterval = null;
+    }
+}
+
+async function procesarQR(codigo) {
+    if (qrScanningLock) {
+        showToast('⏳ Procesando otro QR...', 'warning');
+        return;
+    }
+    
+    qrScanningLock = true;
+    const status = document.getElementById('qrStatus');
+    const input = document.getElementById('qrInput');
+    
+    try {
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ Inicia sesión para escanear QR', 'error');
+            qrScanningLock = false;
+            return;
+        }
+
+        if (status) status.textContent = '⏳ Validando QR...';
+        showToast('⏳ Verificando QR...', '', 5000);
+
+        const { data, error } = await supabaseClient.rpc('reclamar_qr_domo', {
+            p_codigo: codigo
+        });
+
+        if (error) {
+            if (error.message.includes('already used')) {
+                showToast('❌ Este QR ya fue usado', 'error');
+                if (status) status.textContent = '❌ QR ya utilizado';
+            } else if (error.message.includes('invalid code')) {
+                showToast('❌ QR inválido', 'error');
+                if (status) status.textContent = '❌ QR inválido';
+            } else if (error.message.includes('not a domo')) {
+                showToast('❌ Este QR no es para un domo', 'error');
+                if (status) status.textContent = '❌ QR no es domo';
+            } else {
+                throw error;
+            }
+            qrScanningLock = false;
+            return;
+        }
+
+        if (!data.success) {
+            showToast('❌ ' + (data.error || 'Error al reclamar QR'), 'error');
+            if (status) status.textContent = '❌ ' + data.error;
+            qrScanningLock = false;
+            return;
+        }
+
+        if (status) status.textContent = '✅ ¡QR reclamado exitosamente!';
+        if (input) input.value = '';
+        
+        showToast('🎉 ¡QR escaneado! +1 Es.stok', 'success');
+        
+        await cargarPerfil(true);
+        await cargarHistorialQR();
+        mostrarCelebracion();
+
+    } catch (error) {
+        console.error('Error procesando QR:', error);
+        if (status) status.textContent = '❌ Error al procesar QR';
+        showToast('❌ Error al escanear QR: ' + error.message, 'error');
+    } finally {
+        qrScanningLock = false;
+    }
+}
+
+async function escanearQR() {
+    const input = document.getElementById('qrInput');
+    const qrCode = input?.value?.trim();
+
+    if (!qrCode) {
+        showToast('⚠️ Escribe o escanea el código QR', 'error');
+        return;
+    }
+
+    await procesarQR(qrCode);
+}
+
+async function cargarHistorialQR() {
+    try {
+        const session = await getSession();
+        if (!session) return;
+
+        const { data, error } = await supabaseClient
+            .from('qr_historial')
+            .select('*')
+            .eq('user_id', session.user.id)
+            .order('fecha', { ascending: false })
+            .limit(10);
+
+        if (error) throw error;
+
+        qrHistorial = data || [];
+        actualizarUIHistorialQR(qrHistorial);
+
+    } catch (error) {
+        console.error('Error cargando historial QR:', error);
+    }
+}
+
+function actualizarUIHistorialQR(historial = []) {
+    const container = document.getElementById('qrHistorialList');
+    const contador = document.getElementById('qrHistorialCount');
+
+    if (contador) {
+        contador.textContent = `${historial.length} escaneos`;
+    }
+
+    if (!container) return;
+
+    if (!historial || historial.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state" style="padding:10px;">
+                <span class="icon" style="font-size:1.5rem;">◈</span>
+                <p style="font-size:0.7rem;">Sin escaneos recientes</p>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = historial.map(item => `
+        <div style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+            border-bottom: 1px solid rgba(212,175,55,0.05);
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        ">
+            <span>📱 QR: ${item.qr_id?.slice(0, 15) || 'N/A'}</span>
+            <span>${new Date(item.fecha).toLocaleDateString()} ${new Date(item.fecha).toLocaleTimeString()}</span>
+        </div>
+    `).join('');
+}
 
 // ================================================================
 // WALLET
@@ -1788,12 +2679,6 @@ estilosAnimacion.textContent = `
 document.head.appendChild(estilosAnimacion);
 
 // ================================================================
-// FUNCIONES FALTANTES DE eSIM Y OTRAS
-// ================================================================
-
-// Las funciones de eSIM (cargarDatosESIM, comprarESIM, etc.) continúan aquí...
-
-// ================================================================
 // NIVEL Y ESTADÍSTICAS
 // ================================================================
 function calcularNivel(tokens) {
@@ -1933,249 +2818,6 @@ async function agregarAmigo(amigoId) {
 }
 
 // ================================================================
-// ESCANEO QR
-// ================================================================
-
-let qrScannerInterval = null;
-let scannerActive = false;
-let qrHistorial = [];
-let qrScanningLock = false;
-
-async function abrirCamaraQR() {
-    const container = document.getElementById('qrReaderContainer');
-    const video = document.getElementById('qrVideo');
-    const status = document.getElementById('qrCamaraStatus');
-    const canvas = document.getElementById('qrCanvas');
-    const ctx = canvas?.getContext('2d');
-    
-    if (scannerActive) {
-        cerrarCamaraQR();
-        return;
-    }
-
-    try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 480 } }
-        });
-        
-        video.srcObject = stream;
-        await video.play();
-        container.style.display = 'block';
-        scannerActive = true;
-        status.textContent = '📷 Enfoca el QR...';
-
-        const leerQR = async () => {
-            if (!scannerActive || !video.readyState || video.readyState < 2) return;
-            
-            try {
-                if (!canvas || !ctx) return;
-                
-                canvas.width = video.videoWidth || 400;
-                canvas.height = video.videoHeight || 300;
-                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                
-                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                
-                if (typeof jsQR !== 'undefined') {
-                    const code = jsQR(imageData.data, imageData.width, imageData.height, {
-                        inversionAttempts: "dontInvert",
-                    });
-                    
-                    if (code && code.data) {
-                        const qrData = code.data;
-                        status.textContent = '✅ QR detectado: ' + qrData.slice(0, 30) + '...';
-                        
-                        const input = document.getElementById('qrInput');
-                        if (input) {
-                            input.value = qrData;
-                            setTimeout(async () => {
-                                await procesarQR(qrData);
-                            }, 1000);
-                        }
-                        cerrarCamaraQR();
-                        return;
-                    }
-                } else {
-                    status.textContent = '📱 Escanea el QR o ingresa el código manualmente';
-                }
-                
-            } catch (error) {
-                console.error('Error leyendo QR:', error);
-            }
-        };
-
-        if (qrScannerInterval) {
-            clearInterval(qrScannerInterval);
-        }
-        qrScannerInterval = setInterval(leerQR, 500);
-
-        showToast('📷 Apunta la cámara al QR', 'warning');
-
-    } catch (error) {
-        console.error('Error abriendo cámara:', error);
-        status.textContent = '❌ No se pudo acceder a la cámara';
-        showToast('❌ No se pudo acceder a la cámara', 'error');
-    }
-}
-
-function cerrarCamaraQR() {
-    const container = document.getElementById('qrReaderContainer');
-    const video = document.getElementById('qrVideo');
-    const status = document.getElementById('qrCamaraStatus');
-    
-    if (video.srcObject) {
-        video.srcObject.getTracks().forEach(track => track.stop());
-    }
-    video.srcObject = null;
-    if (container) container.style.display = 'none';
-    scannerActive = false;
-    if (status) status.textContent = '';
-    
-    if (qrScannerInterval) {
-        clearInterval(qrScannerInterval);
-        qrScannerInterval = null;
-    }
-}
-
-async function procesarQR(codigo) {
-    if (qrScanningLock) {
-        showToast('⏳ Procesando otro QR...', 'warning');
-        return;
-    }
-    
-    qrScanningLock = true;
-    const status = document.getElementById('qrStatus');
-    const input = document.getElementById('qrInput');
-    
-    try {
-        const session = await getSession();
-        if (!session) {
-            showToast('⚠️ Inicia sesión para escanear QR', 'error');
-            qrScanningLock = false;
-            return;
-        }
-
-        if (status) status.textContent = '⏳ Validando QR...';
-        showToast('⏳ Verificando QR...', '', 5000);
-
-        const { data, error } = await supabaseClient.rpc('reclamar_qr_domo', {
-            p_codigo: codigo
-        });
-
-        if (error) {
-            if (error.message.includes('already used')) {
-                showToast('❌ Este QR ya fue usado', 'error');
-                if (status) status.textContent = '❌ QR ya utilizado';
-            } else if (error.message.includes('invalid code')) {
-                showToast('❌ QR inválido', 'error');
-                if (status) status.textContent = '❌ QR inválido';
-            } else if (error.message.includes('not a domo')) {
-                showToast('❌ Este QR no es para un domo', 'error');
-                if (status) status.textContent = '❌ QR no es domo';
-            } else {
-                throw error;
-            }
-            qrScanningLock = false;
-            return;
-        }
-
-        if (!data.success) {
-            showToast('❌ ' + (data.error || 'Error al reclamar QR'), 'error');
-            if (status) status.textContent = '❌ ' + data.error;
-            qrScanningLock = false;
-            return;
-        }
-
-        if (status) status.textContent = '✅ ¡QR reclamado exitosamente!';
-        if (input) input.value = '';
-        
-        showToast('🎉 ¡QR escaneado! +1 Es.stok', 'success');
-        
-        await cargarPerfil(true);
-        await cargarHistorialQR();
-        mostrarCelebracion();
-
-    } catch (error) {
-        console.error('Error procesando QR:', error);
-        if (status) status.textContent = '❌ Error al procesar QR';
-        showToast('❌ Error al escanear QR: ' + error.message, 'error');
-    } finally {
-        qrScanningLock = false;
-    }
-}
-
-async function escanearQR() {
-    const input = document.getElementById('qrInput');
-    const qrCode = input?.value?.trim();
-
-    if (!qrCode) {
-        showToast('⚠️ Escribe o escanea el código QR', 'error');
-        return;
-    }
-
-    await procesarQR(qrCode);
-}
-
-async function cargarHistorialQR() {
-    try {
-        const session = await getSession();
-        if (!session) return;
-
-        const { data, error } = await supabaseClient
-            .from('qr_historial')
-            .select('*')
-            .eq('user_id', session.user.id)
-            .order('fecha', { ascending: false })
-            .limit(10);
-
-        if (error) throw error;
-
-        qrHistorial = data || [];
-        actualizarUIHistorialQR(qrHistorial);
-
-    } catch (error) {
-        console.error('Error cargando historial QR:', error);
-    }
-}
-
-function actualizarUIHistorialQR(historial = []) {
-    const container = document.getElementById('qrHistorialList');
-    const contador = document.getElementById('qrHistorialCount');
-
-    if (contador) {
-        contador.textContent = `${historial.length} escaneos`;
-    }
-
-    if (!container) return;
-
-    if (!historial || historial.length === 0) {
-        container.innerHTML = `
-            <div class="empty-state" style="padding:10px;">
-                <span class="icon" style="font-size:1.5rem;">◈</span>
-                <p style="font-size:0.7rem;">Sin escaneos recientes</p>
-            </div>
-        `;
-        return;
-    }
-
-    container.innerHTML = historial.map(item => `
-        <div style="
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 6px 0;
-            border-bottom: 1px solid rgba(212,175,55,0.05);
-            font-size: 0.7rem;
-            color: var(--text-muted);
-        ">
-            <span>📱 QR: ${item.qr_id?.slice(0, 15) || 'N/A'}</span>
-            <span>${new Date(item.fecha).toLocaleDateString()} ${new Date(item.fecha).toLocaleTimeString()}</span>
-        </div>
-    `).join('');
-}
-
-// ================================================================
-// ================================================================
 // EXPOSICIÓN DE FUNCIONES GLOBALES - ¡TODAS LAS FUNCIONES EXPUESTAS!
 // ================================================================
 window.cambiarTab = cambiarTab;
@@ -2183,8 +2825,8 @@ window.cargarPerfil = cargarPerfil;
 window.guardarPerfil = guardarPerfil;
 window.abrirSelectorArchivo = abrirSelectorArchivo;
 window.subirFoto = subirFoto;
-window.subirVideo = subirVideo;
-window.editarPerfil = editarPerfil;  // ✅ CORREGIDO: expuesta globalmente
+window.subirVideo = subirVideo;  // ✅ CORREGIDO: expuesta globalmente
+window.editarPerfil = editarPerfil;
 window.compartirPerfil = compartirPerfil;
 window.conectarWallet = conectarWallet;
 window.desconectarWallet = desconectarWallet;
