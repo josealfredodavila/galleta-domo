@@ -1,15 +1,18 @@
 /* ================================================================
    MURO - SARIEL'S ECOSYSTEM
-   VERSIÓN CORREGIDA - SIN BUCLES INFINITOS
+   VERSIÓN REFACTORIZADA - SINGLETON + RESOURCE MANAGER
    ================================================================ */
 
 // ================================================================
-// CONFIGURACIÓN SUPABASE - SIN DECLARACIÓN DUPLICADA
+// CONFIGURACIÓN SUPABASE - SINGLETON GLOBAL
 // ================================================================
-const supabaseClient = window.supabaseClient || window.supabase.createClient(
-    'https://zultnlogdoajehbswlih.supabase.co',
-    'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
-);
+const supabaseClient = window.supabaseClient;
+
+// Verificar que el singleton existe
+if (!supabaseClient) {
+    console.error('❌ Supabase Client no inicializado. Cargando app.js primero.');
+    window.location.reload();
+}
 
 // ================================================================
 // VARIABLES GLOBALES
@@ -22,69 +25,24 @@ let hasMorePosts = true;
 let precioActual = 4.50;
 let publicando = false;
 let muroChannel = null;
-let isRealtimeProcessing = false; // 🔒 Evita bucles en Realtime
+let isRealtimeProcessing = false;
 
 // ================================================================
-// SHOWTOAST SEGURO - EVITA BUCLES
+// 🔥 SINGLETON DE INTERSECTION OBSERVER - REGLA C
 // ================================================================
-function showToast(mensaje, tipo = 'info') {
-    try {
-        if (typeof window.showToast === 'function') {
-            window.showToast(mensaje, tipo);
-            return;
-        }
-
-        const toastEl = document.getElementById('toast');
-        if (toastEl) {
-            toastEl.textContent = mensaje;
-            toastEl.className = 'toast show';
-            if (tipo === 'error') toastEl.classList.add('error');
-            else if (tipo === 'warning') toastEl.classList.add('warning');
-            else if (tipo === 'success') toastEl.classList.add('success');
-            else toastEl.classList.remove('error', 'warning', 'success');
-
-            clearTimeout(toastEl._timeout);
-            toastEl._timeout = setTimeout(() => {
-                toastEl.classList.remove('show');
-            }, 3500);
-            return;
-        }
-
-        console.warn('Toast no disponible:', mensaje);
-    } catch (e) {
-        console.warn('Error en showToast:', e);
-    }
-}
+let feedObserver = null;
+let lastObservedElement = null;
 
 // ================================================================
-// OBTENER SESIÓN
+// NOTA: showToast(), getSession(), escapeHTML() ESTÁN EN app.js
 // ================================================================
-async function getSession() {
-    try {
-        const { data: { session } } = await supabaseClient.auth.getSession();
-        return session;
-    } catch (error) {
-        console.error('Error obteniendo sesión:', error);
-        return null;
-    }
-}
-
-// ================================================================
-// ESCAPE HTML
-// ================================================================
-function escapeHTML(texto) {
-    if (!texto) return '';
-    const div = document.createElement('div');
-    div.textContent = texto;
-    return div.innerHTML;
-}
 
 // ================================================================
 // CARGAR USUARIO ACTUAL
 // ================================================================
 async function cargarUsuarioActual() {
     try {
-        const session = await getSession();
+        const session = await window.getSession();
         if (!session) {
             sessionUser = null;
             document.getElementById('userNombre').textContent = 'Explorador';
@@ -119,7 +77,7 @@ async function cargarUsuarioActual() {
 
     } catch (error) {
         console.error('Error cargando usuario:', error);
-        showToast('❌ Error al cargar usuario', 'error');
+        window.showToast('❌ Error al cargar usuario', 'error');
         return null;
     }
 }
@@ -180,7 +138,60 @@ async function cargarPreciosMercado() {
 }
 
 // ================================================================
-// CARGAR PUBLICACIONES - CON CONTROL DE BUCLES
+// 🔥 SETUP OBSERVER - SINGLETON CON LIMPIEZA (REGLAS B y C)
+// ================================================================
+function setupFeedObserver() {
+    // ✅ LIMPIAR OBSERVER ANTERIOR
+    if (feedObserver) {
+        try {
+            feedObserver.disconnect();
+        } catch (e) {
+            console.warn('Error desconectando observer:', e);
+        }
+        feedObserver = null;
+        lastObservedElement = null;
+    }
+
+    // ✅ CREAR NUEVO OBSERVER
+    feedObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting && !isLoading && hasMorePosts) {
+                // ✅ DESCONECTAR TEMPORALMENTE PARA EVITAR BUCLES
+                feedObserver.disconnect();
+                
+                // ✅ CARGAR MÁS POSTS
+                cargarPublicaciones(false).finally(() => {
+                    // ✅ RECONECTAR DESPUÉS DE CARGAR
+                    if (hasMorePosts) {
+                        setTimeout(() => {
+                            const lastPost = document.querySelector('.post-card:last-child');
+                            if (lastPost && feedObserver) {
+                                feedObserver.observe(lastPost);
+                                lastObservedElement = lastPost;
+                            }
+                        }, 300);
+                    }
+                });
+            }
+        });
+    }, {
+        threshold: 0.1,
+        rootMargin: '0px 0px 100px 0px'
+    });
+
+    // ✅ REGISTRAR OBSERVER CON RESOURCE MANAGER
+    window.registerObserver(feedObserver, 'feed_observer');
+
+    // ✅ OBSERVAR ÚLTIMO ELEMENTO
+    const lastPost = document.querySelector('.post-card:last-child');
+    if (lastPost) {
+        feedObserver.observe(lastPost);
+        lastObservedElement = lastPost;
+    }
+}
+
+// ================================================================
+// CARGAR PUBLICACIONES - CON OBSERVER SINGLETON
 // ================================================================
 async function cargarPublicaciones(reset = true) {
     // ✅ Evitar cargas múltiples simultáneas
@@ -191,6 +202,14 @@ async function cargarPublicaciones(reset = true) {
         hasMorePosts = true;
         const feedContainer = document.getElementById('feedContainer');
         if (feedContainer) feedContainer.innerHTML = '';
+        // ✅ Limpiar observer al resetear
+        if (feedObserver) {
+            try {
+                feedObserver.disconnect();
+                feedObserver = null;
+                lastObservedElement = null;
+            } catch (e) {}
+        }
     }
     
     if (!hasMorePosts) return;
@@ -234,7 +253,7 @@ async function cargarPublicaciones(reset = true) {
             feedContainer.innerHTML = '';
         }
 
-        // ✅ Renderizar posts sin llamadas recursivas
+        // ✅ Renderizar posts
         data.forEach(post => {
             const postElement = renderizarPost(post);
             if (feedContainer) feedContainer.appendChild(postElement);
@@ -243,22 +262,14 @@ async function cargarPublicaciones(reset = true) {
         currentPage++;
         hasMorePosts = data.length === POSTS_PER_PAGE;
 
-        // ✅ Observer para carga infinita - sin recursión
+        // ✅ Usar observer singleton
         if (hasMorePosts && feedContainer) {
-            const lastPost = feedContainer.lastElementChild;
-            if (lastPost) {
-                const observer = new IntersectionObserver((entries) => {
-                    if (entries[0].isIntersecting && !isLoading) {
-                        cargarPublicaciones(false);
-                    }
-                }, { threshold: 0.1 });
-                observer.observe(lastPost);
-            }
+            setupFeedObserver();
         }
 
     } catch (error) {
         console.error('Error cargando publicaciones:', error);
-        showToast('❌ Error al cargar publicaciones', 'error');
+        window.showToast('❌ Error al cargar publicaciones', 'error');
     } finally {
         isLoading = false;
     }
@@ -274,8 +285,8 @@ function renderizarPost(post) {
 
     const usuario = post.usuarios || {};
     const avatar = usuario.avatar_url ? `<img src="${usuario.avatar_url}">` : '◈';
-    const nombre = usuario.nombre || 'Explorador';
-    const handle = usuario.handle || 'explorador';
+    const nombre = window.escapeHTML(usuario.nombre || 'Explorador');
+    const handle = window.escapeHTML(usuario.handle || 'explorador');
     const likesCount = post.muro_likes?.[0]?.count || 0;
     const comentariosCount = post.muro_comentarios?.[0]?.count || 0;
     const contenidoSanitizado = sanitizarHTML(post.contenido || '');
@@ -342,7 +353,7 @@ function renderizarPost(post) {
         </div>
     `;
 
-    // ✅ Verificar like sin recursión - solo si hay usuario
+    // ✅ Verificar like sin recursión
     if (sessionUser) {
         verificarLike(post.id).then(liked => {
             const likeBtn = div.querySelector('.like-btn');
@@ -357,7 +368,7 @@ function renderizarPost(post) {
 }
 
 // ================================================================
-// SANITIZAR HTML
+// SANITIZAR HTML - Usa window.escapeHTML
 // ================================================================
 function sanitizarHTML(texto) {
     if (!texto) return '';
@@ -378,14 +389,13 @@ function sanitizarHTML(texto) {
 }
 
 // ================================================================
-// VERIFICAR LIKE - CON CACHE PARA EVITAR CONSULTAS REPETIDAS
+// VERIFICAR LIKE - CON CACHE
 // ================================================================
 const likeCache = new Map();
 
 async function verificarLike(postId) {
     if (!sessionUser) return false;
     
-    // ✅ Usar cache para evitar consultas repetidas
     const cacheKey = `${postId}_${sessionUser.id}`;
     if (likeCache.has(cacheKey)) {
         return likeCache.get(cacheKey);
@@ -410,11 +420,11 @@ async function verificarLike(postId) {
 }
 
 // ================================================================
-// TOGGLE LIKE - ACTUALIZA CACHE
+// TOGGLE LIKE
 // ================================================================
 async function toggleLike(postId) {
     if (!sessionUser) {
-        showToast('⚠️ Inicia sesión para dar like', 'error');
+        window.showToast('⚠️ Inicia sesión para dar like', 'error');
         return;
     }
 
@@ -453,7 +463,7 @@ async function toggleLike(postId) {
 
             if (error) {
                 if (error.code === '23505') {
-                    showToast('⚠️ Ya diste like a este post', 'warning');
+                    window.showToast('⚠️ Ya diste like a este post', 'warning');
                     return;
                 }
                 throw error;
@@ -471,7 +481,7 @@ async function toggleLike(postId) {
         }
     } catch (error) {
         console.error('Error toggling like:', error);
-        showToast('❌ Error al procesar like', 'error');
+        window.showToast('❌ Error al procesar like', 'error');
     }
 }
 
@@ -520,7 +530,7 @@ async function cargarComentarios(postId) {
 
         lista.innerHTML = data.map(c => {
             const avatar = c.usuarios?.avatar_url ? `<img src="${c.usuarios.avatar_url}">` : '◈';
-            const nombre = c.usuarios?.nombre || 'Usuario';
+            const nombre = window.escapeHTML(c.usuarios?.nombre || 'Usuario');
             const esPropietario = c.usuario_id === sessionUser?.id;
 
             return `
@@ -549,16 +559,16 @@ async function enviarComentario(postId) {
     if (!input) return;
     const texto = input.value.trim();
     if (!texto) {
-        showToast('⚠️ Escribe un comentario', 'error');
+        window.showToast('⚠️ Escribe un comentario', 'error');
         return;
     }
     if (texto.length > 2000) {
-        showToast('⚠️ El comentario es demasiado largo (máx 2000 caracteres)', 'error');
+        window.showToast('⚠️ El comentario es demasiado largo (máx 2000 caracteres)', 'error');
         return;
     }
 
     if (!sessionUser) {
-        showToast('⚠️ Inicia sesión para comentar', 'error');
+        window.showToast('⚠️ Inicia sesión para comentar', 'error');
         return;
     }
 
@@ -574,7 +584,7 @@ async function enviarComentario(postId) {
         if (error) throw error;
 
         input.value = '';
-        showToast('✅ Comentario agregado', 'success');
+        window.showToast('✅ Comentario agregado', 'success');
         cargarComentarios(postId);
 
         const countSpan = document.querySelector(`[data-post-id="${postId}"] .post-stats span:last-child .count`);
@@ -585,7 +595,7 @@ async function enviarComentario(postId) {
 
     } catch (error) {
         console.error('Error enviando comentario:', error);
-        showToast('❌ Error al comentar', 'error');
+        window.showToast('❌ Error al comentar', 'error');
     }
 }
 
@@ -594,7 +604,7 @@ async function enviarComentario(postId) {
 // ================================================================
 async function eliminarComentario(comentarioId) {
     if (!sessionUser) {
-        showToast('⚠️ Inicia sesión', 'error');
+        window.showToast('⚠️ Inicia sesión', 'error');
         return;
     }
 
@@ -609,12 +619,12 @@ async function eliminarComentario(comentarioId) {
 
         if (error) throw error;
 
-        showToast('🗑️ Comentario eliminado', 'success');
+        window.showToast('🗑️ Comentario eliminado', 'success');
         const postId = document.querySelector(`[data-comentario-id="${comentarioId}"]`)?.dataset.postId;
         if (postId) cargarComentarios(postId);
     } catch (error) {
         console.error('Error eliminando comentario:', error);
-        showToast('❌ Error al eliminar comentario', 'error');
+        window.showToast('❌ Error al eliminar comentario', 'error');
     }
 }
 
@@ -623,7 +633,7 @@ async function eliminarComentario(comentarioId) {
 // ================================================================
 async function eliminarPublicacion(postId) {
     if (!sessionUser) {
-        showToast('⚠️ Inicia sesión', 'error');
+        window.showToast('⚠️ Inicia sesión', 'error');
         return;
     }
 
@@ -638,21 +648,21 @@ async function eliminarPublicacion(postId) {
 
         if (error) throw error;
 
-        showToast('🗑️ Publicación eliminada', 'success');
+        window.showToast('🗑️ Publicación eliminada', 'success');
         const postCard = document.querySelector(`[data-post-id="${postId}"]`);
         if (postCard) postCard.remove();
     } catch (error) {
         console.error('Error eliminando publicación:', error);
-        showToast('❌ Error al eliminar publicación', 'error');
+        window.showToast('❌ Error al eliminar publicación', 'error');
     }
 }
 
 // ================================================================
-// PUBLICAR NUEVA PUBLICACIÓN - CON BLOQUEO
+// PUBLICAR NUEVA PUBLICACIÓN
 // ================================================================
 async function publicar() {
     if (publicando) {
-        showToast('⏳ Ya estás publicando, espera un momento...', 'warning');
+        window.showToast('⏳ Ya estás publicando, espera un momento...', 'warning');
         return;
     }
 
@@ -661,17 +671,17 @@ async function publicar() {
     const contenido = postContent ? postContent.value.trim() : '';
 
     if (!contenido) {
-        showToast('⚠️ Escribe algo para publicar', 'error');
+        window.showToast('⚠️ Escribe algo para publicar', 'error');
         return;
     }
 
     if (contenido.length > 5000) {
-        showToast('⚠️ El texto es demasiado largo (máx 5000 caracteres)', 'error');
+        window.showToast('⚠️ El texto es demasiado largo (máx 5000 caracteres)', 'error');
         return;
     }
 
     if (!sessionUser) {
-        showToast('⚠️ Inicia sesión para publicar', 'error');
+        window.showToast('⚠️ Inicia sesión para publicar', 'error');
         return;
     }
 
@@ -692,9 +702,8 @@ async function publicar() {
         if (error) throw error;
 
         postContent.value = '';
-        showToast('✅ Publicación creada', 'success');
+        window.showToast('✅ Publicación creada', 'success');
 
-        // ✅ Recargar feed sin recursión
         const feedContainer = document.getElementById('feedContainer');
         if (feedContainer) {
             feedContainer.innerHTML = '';
@@ -705,7 +714,7 @@ async function publicar() {
 
     } catch (error) {
         console.error('Error al publicar:', error);
-        showToast('❌ Error al publicar: ' + error.message, 'error');
+        window.showToast('❌ Error al publicar: ' + error.message, 'error');
     } finally {
         publicando = false;
         btnPublicar.disabled = false;
@@ -726,7 +735,7 @@ function compartirPublicacion(postId) {
         }).catch(() => {});
     } else {
         navigator.clipboard.writeText(url).then(() => {
-            showToast('📋 Enlace copiado al portapapeles', 'success');
+            window.showToast('📋 Enlace copiado al portapapeles', 'success');
         }).catch(() => {
             const textarea = document.createElement('textarea');
             textarea.value = url;
@@ -734,7 +743,7 @@ function compartirPublicacion(postId) {
             textarea.select();
             document.execCommand('copy');
             document.body.removeChild(textarea);
-            showToast('📋 Enlace copiado al portapapeles', 'success');
+            window.showToast('📋 Enlace copiado al portapapeles', 'success');
         });
     }
 }
@@ -744,7 +753,7 @@ function compartirPublicacion(postId) {
 // ================================================================
 async function reportarPublicacion(postId) {
     if (!sessionUser) {
-        showToast('⚠️ Inicia sesión para reportar', 'error');
+        window.showToast('⚠️ Inicia sesión para reportar', 'error');
         return;
     }
 
@@ -762,16 +771,16 @@ async function reportarPublicacion(postId) {
 
         if (error) {
             if (error.code === '42P01') {
-                showToast('⚠️ La tabla de reportes no está configurada. Contacta al administrador.', 'warning');
+                window.showToast('⚠️ La tabla de reportes no está configurada. Contacta al administrador.', 'warning');
                 return;
             }
             throw error;
         }
 
-        showToast('🚩 Reporte enviado', 'success');
+        window.showToast('🚩 Reporte enviado', 'success');
     } catch (error) {
         console.error('Error reportando:', error);
-        showToast('❌ Error al reportar', 'error');
+        window.showToast('❌ Error al reportar', 'error');
     }
 }
 
@@ -784,7 +793,7 @@ async function buscarHashtag(tag) {
         if (input) tag = input.value.trim().replace('#', '');
     }
     if (!tag) {
-        showToast('⚠️ Escribe un hashtag para buscar', 'warning');
+        window.showToast('⚠️ Escribe un hashtag para buscar', 'warning');
         return;
     }
 
@@ -837,11 +846,11 @@ async function buscarHashtag(tag) {
             feedContainer.appendChild(postElement);
         });
 
-        showToast(`🔍 Encontradas ${data.length} publicaciones con #${tag}`, 'success');
+        window.showToast(`🔍 Encontradas ${data.length} publicaciones con #${tag}`, 'success');
 
     } catch (error) {
         console.error('Error buscando hashtag:', error);
-        showToast('❌ Error al buscar hashtag', 'error');
+        window.showToast('❌ Error al buscar hashtag', 'error');
     }
 }
 
@@ -874,22 +883,22 @@ async function publicarVenta() {
     const precio = parseFloat(precioInput?.value);
 
     if (!cantidad || cantidad <= 0) {
-        showToast('⚠️ Ingresa una cantidad válida', 'error');
+        window.showToast('⚠️ Ingresa una cantidad válida', 'error');
         cantidadInput?.focus();
         return;
     }
     if (cantidad > 100) {
-        showToast('⚠️ Máximo 100 tokens por venta', 'error');
+        window.showToast('⚠️ Máximo 100 tokens por venta', 'error');
         return;
     }
     if (!precio || precio <= 0) {
-        showToast('⚠️ Ingresa un precio válido', 'error');
+        window.showToast('⚠️ Ingresa un precio válido', 'error');
         precioInput?.focus();
         return;
     }
 
     if (!sessionUser) {
-        showToast('⚠️ Inicia sesión para publicar venta', 'error');
+        window.showToast('⚠️ Inicia sesión para publicar venta', 'error');
         return;
     }
 
@@ -905,7 +914,7 @@ async function publicarVenta() {
 
         if (userError) throw userError;
         if (userData.tokens < cantidad) {
-            showToast(`⚠️ No tienes suficientes tokens. Disponibles: ${userData.tokens}`, 'error');
+            window.showToast(`⚠️ No tienes suficientes tokens. Disponibles: ${userData.tokens}`, 'error');
             btn.disabled = false;
             btn.textContent = '◆ Publicar venta';
             return;
@@ -922,13 +931,13 @@ async function publicarVenta() {
 
         if (error) throw error;
 
-        showToast('✅ Venta publicada correctamente', 'success');
+        window.showToast('✅ Venta publicada correctamente', 'success');
         cerrarModalVenta();
         cargarPublicaciones();
 
     } catch (error) {
         console.error('Error publicando venta:', error);
-        showToast('❌ Error al publicar venta: ' + error.message, 'error');
+        window.showToast('❌ Error al publicar venta: ' + error.message, 'error');
     } finally {
         btn.disabled = false;
         btn.textContent = '◆ Publicar venta';
@@ -938,26 +947,26 @@ async function publicarVenta() {
 function abrirModalCompra(postId) {
     const postCard = document.querySelector(`[data-post-id="${postId}"]`);
     if (!postCard) {
-        showToast('❌ Publicación no encontrada', 'error');
+        window.showToast('❌ Publicación no encontrada', 'error');
         return;
     }
 
     const ventaInfo = postCard.querySelector('.post-venta');
     if (!ventaInfo) {
-        showToast('❌ Esta publicación no tiene tokens en venta', 'error');
+        window.showToast('❌ Esta publicación no tiene tokens en venta', 'error');
         return;
     }
 
     const modal = document.getElementById('modalConfirmarCompra');
     if (!modal) {
-        showToast('❌ Modal no encontrado', 'error');
+        window.showToast('❌ Modal no encontrado', 'error');
         return;
     }
 
     const textoVenta = ventaInfo.querySelector('div')?.textContent || '';
     const matches = textoVenta.match(/(\d+)\s*tokens.*\$\s*([\d.]+)/);
     if (!matches) {
-        showToast('❌ No se pudo leer la información de venta', 'error');
+        window.showToast('❌ No se pudo leer la información de venta', 'error');
         return;
     }
 
@@ -985,12 +994,12 @@ async function confirmarCompraCrypto() {
     const modal = document.getElementById('modalConfirmarCompra');
     const postId = modal?.dataset.postId;
     if (!postId) {
-        showToast('❌ No hay publicación seleccionada', 'error');
+        window.showToast('❌ No hay publicación seleccionada', 'error');
         return;
     }
 
     if (!sessionUser) {
-        showToast('⚠️ Inicia sesión para comprar', 'error');
+        window.showToast('⚠️ Inicia sesión para comprar', 'error');
         return;
     }
 
@@ -1003,15 +1012,15 @@ async function confirmarCompraCrypto() {
 
         if (postError) throw postError;
         if (!post) {
-            showToast('❌ Publicación no encontrada', 'error');
+            window.showToast('❌ Publicación no encontrada', 'error');
             return;
         }
         if (post.usuario_id === sessionUser.id) {
-            showToast('⚠️ No puedes comprar tus propios tokens', 'error');
+            window.showToast('⚠️ No puedes comprar tus propios tokens', 'error');
             return;
         }
         if (post.cantidad_venta <= 0) {
-            showToast('⚠️ Estos tokens ya fueron vendidos', 'error');
+            window.showToast('⚠️ Estos tokens ya fueron vendidos', 'error');
             return;
         }
 
@@ -1035,7 +1044,7 @@ async function confirmarCompraCrypto() {
 
         if (insertError) throw insertError;
 
-        showToast('✅ Orden de compra creada. Procede al pago.', 'success');
+        window.showToast('✅ Orden de compra creada. Procede al pago.', 'success');
         cerrarModalConfirmacion();
 
         const pagoModal = document.getElementById('cryptoPaymentModal');
@@ -1054,7 +1063,7 @@ async function confirmarCompraCrypto() {
 
     } catch (error) {
         console.error('Error confirmando compra:', error);
-        showToast('❌ Error al confirmar compra: ' + error.message, 'error');
+        window.showToast('❌ Error al confirmar compra: ' + error.message, 'error');
     }
 }
 
@@ -1069,7 +1078,7 @@ function copiarDireccionCrypto() {
     const address = addressEl.textContent;
     if (address && address !== 'Cargando...') {
         navigator.clipboard.writeText(address).then(() => {
-            showToast('📋 Dirección copiada', 'success');
+            window.showToast('📋 Dirección copiada', 'success');
         }).catch(() => {
             const textarea = document.createElement('textarea');
             textarea.value = address;
@@ -1077,7 +1086,7 @@ function copiarDireccionCrypto() {
             textarea.select();
             document.execCommand('copy');
             document.body.removeChild(textarea);
-            showToast('📋 Dirección copiada', 'success');
+            window.showToast('📋 Dirección copiada', 'success');
         });
     }
 }
@@ -1089,7 +1098,7 @@ async function verificarPagoCrypto() {
     const postId = modal?.dataset.ventaId;
 
     if (!postId) {
-        showToast('❌ No hay venta para verificar', 'error');
+        window.showToast('❌ No hay venta para verificar', 'error');
         return;
     }
 
@@ -1117,7 +1126,7 @@ async function verificarPagoCrypto() {
 
         statusEl.textContent = '✅ ¡Pago verificado! Tokens transferidos.';
         statusEl.style.color = 'var(--success)';
-        showToast('✅ ¡Compra completada exitosamente!', 'success');
+        window.showToast('✅ ¡Compra completada exitosamente!', 'success');
 
         setTimeout(() => {
             cerrarModalPago();
@@ -1129,7 +1138,7 @@ async function verificarPagoCrypto() {
         console.error('Error verificando pago:', error);
         statusEl.textContent = '❌ Error al verificar pago';
         statusEl.style.color = 'var(--danger)';
-        showToast('❌ Error al verificar pago', 'error');
+        window.showToast('❌ Error al verificar pago', 'error');
     } finally {
         btn.disabled = false;
         btn.textContent = '✅ Verificar Pago';
@@ -1179,17 +1188,17 @@ async function subirImagenMuro(event) {
     if (!file) return;
 
     if (!sessionUser) {
-        showToast('⚠️ Inicia sesión para subir imagen', 'error');
+        window.showToast('⚠️ Inicia sesión para subir imagen', 'error');
         return;
     }
 
     if (!file.type.startsWith('image/')) {
-        showToast('❌ Solo se permiten imágenes', 'error');
+        window.showToast('❌ Solo se permiten imágenes', 'error');
         return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-        showToast('❌ La imagen no puede superar los 5MB', 'error');
+        window.showToast('❌ La imagen no puede superar los 5MB', 'error');
         return;
     }
 
@@ -1197,7 +1206,7 @@ async function subirImagenMuro(event) {
     const filePath = `${sessionUser.id}/${Date.now()}.${fileExt}`;
 
     try {
-        showToast('⏳ Subiendo imagen...', '', 5000);
+        window.showToast('⏳ Subiendo imagen...', '', 5000);
 
         const { error: uploadError } = await supabaseClient.storage
             .from('muro-imagenes')
@@ -1205,7 +1214,7 @@ async function subirImagenMuro(event) {
 
         if (uploadError) {
             if (uploadError.message.includes('bucket')) {
-                showToast('⚠️ El almacenamiento no está configurado. La imagen no se pudo subir.', 'warning');
+                window.showToast('⚠️ El almacenamiento no está configurado. La imagen no se pudo subir.', 'warning');
                 return;
             }
             throw uploadError;
@@ -1227,21 +1236,21 @@ async function subirImagenMuro(event) {
 
         if (insertError) throw insertError;
 
-        showToast('✅ Imagen subida correctamente', 'success');
+        window.showToast('✅ Imagen subida correctamente', 'success');
         event.target.value = '';
         cargarPublicaciones();
 
     } catch (error) {
         console.error('Error subiendo imagen:', error);
-        showToast('❌ Error al subir imagen: ' + error.message, 'error');
+        window.showToast('❌ Error al subir imagen: ' + error.message, 'error');
     }
 }
 
 // ================================================================
-// SUSCRIBIRSE A REALTIME - CORREGIDO (SIN BUCLES)
+// 🔥 SUSCRIBIRSE A REALTIME - CON REGISTER CHANNEL (REGLA D)
 // ================================================================
 async function suscribirseARealtime() {
-    // ✅ Cerrar canal anterior si existe
+    // ✅ Cerrar canal anterior
     if (muroChannel) {
         try {
             await supabaseClient.removeChannel(muroChannel);
@@ -1256,12 +1265,10 @@ async function suscribirseARealtime() {
         .on('postgres_changes',
             { event: 'INSERT', schema: 'public', table: 'muro_posts' },
             (payload) => {
-                // ✅ Evitar bucles: si está procesando Realtime, ignorar
                 if (isRealtimeProcessing) return;
                 isRealtimeProcessing = true;
 
                 try {
-                    // ✅ Solo agregar si el post no es del usuario actual
                     if (payload.new.usuario_id !== sessionUser?.id) {
                         const feedContainer = document.getElementById('feedContainer');
                         if (feedContainer) {
@@ -1270,7 +1277,7 @@ async function suscribirseARealtime() {
 
                             const postElement = renderizarPost(payload.new);
                             feedContainer.insertBefore(postElement, feedContainer.firstChild);
-                            showToast('📢 Nueva publicación en el Muro', 'success');
+                            window.showToast('📢 Nueva publicación en el Muro', 'success');
                         }
                     }
                 } catch (error) {
@@ -1283,7 +1290,6 @@ async function suscribirseARealtime() {
         .on('postgres_changes',
             { event: 'INSERT', schema: 'public', table: 'muro_comentarios' },
             () => {
-                // ✅ Solo actualizar comentarios visibles
                 try {
                     document.querySelectorAll('.post-comentarios[style*="display: block"]').forEach(el => {
                         const postId = el.id.replace('comentarios-', '');
@@ -1302,6 +1308,8 @@ async function suscribirseARealtime() {
             }
         });
 
+    // ✅ REGISTRAR CANAL CON RESOURCE MANAGER
+    window.registerSupabaseChannel(muroChannel, 'muro_realtime');
     return muroChannel;
 }
 
@@ -1392,7 +1400,6 @@ window.abrirSelectorImagen = abrirSelectorImagen;
 window.insertarHashtag = insertarHashtag;
 window.insertarEmoji = insertarEmoji;
 window.verTokens = verTokens;
-window.showToast = showToast;
 
 window.abrirModalVenta = abrirModalVenta;
 window.cerrarModalVenta = cerrarModalVenta;
