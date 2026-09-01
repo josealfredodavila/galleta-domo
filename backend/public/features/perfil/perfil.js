@@ -1,15 +1,19 @@
 /* ================================================================
    PERFIL.JS - SARIEL'S ECOSYSTEM
-   VERSIÓN PRODUCCIÓN - OPTIMIZADA Y SEGURA
+   VERSIÓN REFACTORIZADA - SINGLETON + RESOURCE MANAGER
    ================================================================ */
 
 // ================================================================
-// CONFIGURACIÓN SUPABASE
+// CONFIGURACIÓN SUPABASE - SINGLETON GLOBAL
 // ================================================================
-const supabaseClient = window.supabaseClient || window.supabase.createClient(
-    'https://zultnlogdoajehbswlih.supabase.co',
-    'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
-);
+const supabaseClient = window.supabaseClient;
+
+// Verificar que el singleton existe
+if (!supabaseClient) {
+    console.error('❌ Supabase Client no inicializado. Cargando app.js primero.');
+    // Fallback seguro
+    window.location.reload();
+}
 
 // ================================================================
 // CONFIGURACIÓN DE ENTORNO
@@ -73,51 +77,12 @@ let estadoConexion = {
 };
 
 // ================================================================
-// TOAST NOTIFICACIONES - CON FALLBACK SEGURO
+// NOTA: showToast(), getSession(), escapeHTML(), formatearTexto() 
+// ESTÁN EN app.js - NO DUPLICAR
 // ================================================================
-function showToast(msg, type = '', duration = 3500) {
-    try {
-        let t = document.getElementById('toast');
-        if (!t) {
-            t = document.createElement('div');
-            t.id = 'toast';
-            t.className = 'toast';
-            document.body.appendChild(t);
-        }
-        t.textContent = msg;
-        t.className = 'toast show';
-        t.style.animation = 'none';
-        t.offsetHeight;
-        t.style.animation = 'slideInRight 0.3s ease-out';
-        
-        if (type === 'error') t.classList.add('error');
-        else if (type === 'warning') t.classList.add('warning');
-        else if (type === 'success') t.classList.add('success');
-        else t.classList.remove('error', 'warning', 'success');
-        
-        clearTimeout(t._timeout);
-        t._timeout = setTimeout(() => {
-            t.style.animation = 'slideOutRight 0.3s ease-in';
-            setTimeout(() => t.classList.remove('show'), 300);
-        }, duration);
-    } catch (e) {
-        console.warn('Toast no disponible:', e);
-        alert(msg);
-    }
-}
 
 // ================================================================
-// FUNCIÓN ESCAPE HTML - PREVENCIÓN XSS
-// ================================================================
-function escapeHTML(texto) {
-    if (!texto) return '';
-    const div = document.createElement('div');
-    div.textContent = texto;
-    return div.innerHTML;
-}
-
-// ================================================================
-// NAVEGACIÓN Y SESIÓN
+// NAVEGACIÓN Y SESIÓN - Usa window.getSession
 // ================================================================
 function cambiarTab(tab) {
     document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
@@ -131,34 +96,12 @@ function cambiarTab(tab) {
     if (tabBtn) tabBtn.classList.add('active');
 }
 
-async function getSession() {
-    const { data: { session } } = await supabaseClient.auth.getSession();
-    return session;
-}
-
-// ================================================================
-// FORMATEO DE TEXTO - CON ESCAPE HTML
-// ================================================================
-function formatearTexto(texto) {
-    if (!texto) return '';
-    // Primero escapar HTML para prevenir XSS
-    let sanitizado = escapeHTML(texto);
-    // Luego aplicar formato
-    return sanitizado
-        .replace(/#(\w+)/g, '<a href="/features/muro/muro.html?tag=$1" class="hashtag" style="color:var(--gold);text-decoration:none;font-weight:600;">#$1</a>')
-        .replace(/@(\w+)/g, '<a href="/perfil/$1" class="mencion" style="color:var(--cyan);text-decoration:none;font-weight:600;">@$1</a>')
-        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-        .replace(/__(.*?)__/g, '<em>$1</em>')
-        .replace(/~~(.*?)~~/g, '<del>$1</del>')
-        .replace(/`(.*?)`/g, '<code style="background:var(--bg-card);padding:2px 6px;border-radius:4px;font-family:monospace;">$1</code>');
-}
-
 // ================================================================
 // CARGA DE PERFIL - CON CACHÉ Y CONTROL DE ERRORES
 // ================================================================
 async function cargarPerfil(forzarActualizacion = false) {
     try {
-        const session = await getSession();
+        const session = await window.getSession();
         if (!session) {
             window.location.href = '/';
             return;
@@ -215,7 +158,7 @@ async function cargarPerfil(forzarActualizacion = false) {
         }
     } catch (error) {
         console.error('Error cargando perfil:', error);
-        showToast('❌ Error al cargar perfil', 'error');
+        window.showToast('❌ Error al cargar perfil', 'error');
     }
 }
 
@@ -229,7 +172,7 @@ async function actualizarEstadoEnLinea(online) {
     estadoEnLineaLock = true;
     
     try {
-        const session = await getSession();
+        const session = await window.getSession();
         if (!session) {
             estadoEnLineaLock = false;
             return;
@@ -278,13 +221,15 @@ function actualizarUIEstado(online) {
 }
 
 // ================================================================
-// DETECTOR DE INACTIVIDAD - OPTIMIZADO
+// DETECTOR DE INACTIVIDAD - CON REGISTER INTERVAL
 // ================================================================
 let detectorInactividadInterval = null;
 
 function iniciarDetectorInactividad() {
+    // ✅ Limpiar intervalo anterior
     if (detectorInactividadInterval) {
         clearInterval(detectorInactividadInterval);
+        detectorInactividadInterval = null;
     }
 
     const resetInactividad = () => {
@@ -300,14 +245,17 @@ function iniciarDetectorInactividad() {
         document.addEventListener(evento, resetInactividad);
     });
 
+    // ✅ REGISTRAR INTERVAL CON RESOURCE MANAGER
     detectorInactividadInterval = setInterval(async () => {
         tiempoInactividad += 30000;
         
         if (tiempoInactividad >= MAX_INACTIVIDAD && perfilCache && perfilCache.online) {
             await actualizarEstadoEnLinea(false);
-            showToast('⭕ Marcado como inactivo por inactividad', 'warning');
+            window.showToast('⭕ Marcado como inactivo por inactividad', 'warning');
         }
     }, 30000);
+    
+    window.registerInterval(detectorInactividadInterval, 'detector_inactividad');
 }
 
 // ================================================================
@@ -315,25 +263,25 @@ function iniciarDetectorInactividad() {
 // ================================================================
 async function cambiarEstado(online) {
     try {
-        const session = await getSession();
+        const session = await window.getSession();
         if (!session) {
-            showToast('⚠️ Inicia sesión', 'error');
+            window.showToast('⚠️ Inicia sesión', 'error');
             return;
         }
 
         await actualizarEstadoEnLinea(online);
         
         if (online) {
-            showToast('🟢 Te has marcado como activo', 'success');
+            window.showToast('🟢 Te has marcado como activo', 'success');
         } else {
-            showToast('⭕ Te has marcado como inactivo', 'warning');
+            window.showToast('⭕ Te has marcado como inactivo', 'warning');
         }
         
         await notificarCambioEstado(online);
         
     } catch (error) {
         console.error('Error cambiando estado:', error);
-        showToast('❌ Error al cambiar estado', 'error');
+        window.showToast('❌ Error al cambiar estado', 'error');
     }
 }
 
@@ -358,27 +306,27 @@ async function subirVideo(event) {
     try {
         const file = event?.target?.files?.[0];
         if (!file) {
-            showToast('⚠️ No se seleccionó ningún archivo', 'warning');
+            window.showToast('⚠️ No se seleccionó ningún archivo', 'warning');
             return null;
         }
 
-        const session = await getSession();
+        const session = await window.getSession();
         if (!session) {
-            showToast('⚠️ Inicia sesión para subir videos', 'error');
+            window.showToast('⚠️ Inicia sesión para subir videos', 'error');
             return null;
         }
 
         if (!file.type.startsWith('video/')) {
-            showToast('❌ Formato no válido. Solo se permiten videos.', 'error');
+            window.showToast('❌ Formato no válido. Solo se permiten videos.', 'error');
             return null;
         }
 
         if (file.size > 50 * 1024 * 1024) {
-            showToast('❌ El video excede 50MB', 'error');
+            window.showToast('❌ El video excede 50MB', 'error');
             return null;
         }
 
-        showToast('⏳ Subiendo video... 0%', '', 10000);
+        window.showToast('⏳ Subiendo video... 0%', '', 10000);
         
         const fileExt = file.name.split('.').pop();
         const filePath = `${session.user.id}/video_${Date.now()}.${fileExt}`;
@@ -388,7 +336,7 @@ async function subirVideo(event) {
             .upload(filePath, file, {
                 onProgress: (progress) => {
                     const percent = Math.round((progress.loaded / progress.total) * 100);
-                    showToast(`⏳ Subiendo video... ${percent}%`, '', 10000);
+                    window.showToast(`⏳ Subiendo video... ${percent}%`, '', 10000);
                 }
             });
 
@@ -398,12 +346,12 @@ async function subirVideo(event) {
             .from('posts')
             .getPublicUrl(filePath);
 
-        showToast('✅ Video subido con éxito', 'success');
+        window.showToast('✅ Video subido con éxito', 'success');
         return urlData.publicUrl;
         
     } catch (error) {
         console.error('Error al subir video:', error);
-        showToast('❌ Error al subir el video: ' + error.message, 'error');
+        window.showToast('❌ Error al subir el video: ' + error.message, 'error');
         return null;
     }
 }
@@ -413,9 +361,9 @@ async function subirVideo(event) {
 // ================================================================
 async function guardarPerfil() {
     try {
-        const session = await getSession();
+        const session = await window.getSession();
         if (!session) {
-            showToast('⚠️ Inicia sesión para guardar', 'error');
+            window.showToast('⚠️ Inicia sesión para guardar', 'error');
             return;
         }
 
@@ -424,12 +372,12 @@ async function guardarPerfil() {
         const bio = document.getElementById('editBio')?.value?.trim() || 'Explorando el ecosistema Sariel\'s · WEB3 · Comunidad';
 
         if (!/^[a-zA-Z0-9_]+$/.test(handle)) {
-            showToast('❌ El handle solo puede contener letras, números y _', 'error');
+            window.showToast('❌ El handle solo puede contener letras, números y _', 'error');
             return;
         }
 
         if (handle.length < 3 || handle.length > 30) {
-            showToast('❌ El handle debe tener entre 3 y 30 caracteres', 'error');
+            window.showToast('❌ El handle debe tener entre 3 y 30 caracteres', 'error');
             return;
         }
 
@@ -454,12 +402,12 @@ async function guardarPerfil() {
             throw new Error(result.error || 'Error guardando perfil');
         }
 
-        showToast('✅ Perfil guardado correctamente', 'success');
+        window.showToast('✅ Perfil guardado correctamente', 'success');
         await cargarPerfil(true);
         
     } catch (error) {
         console.error('Error guardando perfil:', error);
-        showToast('❌ Error al guardar: ' + (error.message || 'Error interno del servidor'), 'error');
+        window.showToast('❌ Error al guardar: ' + (error.message || 'Error interno del servidor'), 'error');
     }
 }
 
@@ -476,7 +424,7 @@ function compartirPerfil() {
         navigator.share({ title: `Perfil de ${nombre} en Sariel's`, text: texto, url: url }).catch(() => {});
     } else {
         navigator.clipboard.writeText(texto).then(() => {
-            showToast('◈ Copiado al portapapeles', 'success');
+            window.showToast('◈ Copiado al portapapeles', 'success');
         }).catch(() => {
             prompt('Copia este enlace:', url);
         });
@@ -505,30 +453,30 @@ async function subirFoto(event) {
     try {
         const file = event?.target?.files?.[0];
         if (!file) {
-            showToast('⚠️ No se seleccionó ningún archivo', 'warning');
+            window.showToast('⚠️ No se seleccionó ningún archivo', 'warning');
             return;
         }
 
-        const session = await getSession();
+        const session = await window.getSession();
         if (!session) {
-            showToast('⚠️ Inicia sesión para subir foto', 'error');
+            window.showToast('⚠️ Inicia sesión para subir foto', 'error');
             return;
         }
 
         if (!file.type.startsWith('image/')) {
-            showToast('❌ Solo se permiten imágenes', 'error');
+            window.showToast('❌ Solo se permiten imágenes', 'error');
             return;
         }
 
         if (file.size > 5 * 1024 * 1024) {
-            showToast('❌ La imagen no puede superar los 5MB', 'error');
+            window.showToast('❌ La imagen no puede superar los 5MB', 'error');
             return;
         }
 
         const fileExt = file.name.split('.').pop().toLowerCase();
         const filePath = `${session.user.id}/avatar.${fileExt}`;
 
-        showToast('⏳ Subiendo foto...', '', 5000);
+        window.showToast('⏳ Subiendo foto...', '', 5000);
 
         const { error: uploadError } = await supabaseClient.storage
             .from('sariels-avatars')
@@ -555,7 +503,7 @@ async function subirFoto(event) {
                     
                 if (updateError2) throw updateError2;
                 
-                showToast('✅ Foto actualizada correctamente', 'success');
+                window.showToast('✅ Foto actualizada correctamente', 'success');
                 event.target.value = '';
                 await cargarPerfil(true);
                 return;
@@ -576,13 +524,13 @@ async function subirFoto(event) {
 
         if (updateError) throw updateError;
 
-        showToast('✅ Foto actualizada correctamente', 'success');
+        window.showToast('✅ Foto actualizada correctamente', 'success');
         event.target.value = '';
         await cargarPerfil(true);
         
     } catch (error) {
         console.error('Error al subir foto:', error);
-        showToast('❌ Error al subir foto: ' + (error.message || 'Error interno del servidor'), 'error');
+        window.showToast('❌ Error al subir foto: ' + (error.message || 'Error interno del servidor'), 'error');
     }
 }
 
@@ -591,7 +539,7 @@ async function subirFoto(event) {
 // ================================================================
 async function generarQRPerfil() {
     try {
-        const session = await getSession();
+        const session = await window.getSession();
         if (!session) return;
         
         const handle = document.getElementById('perfilHandle')?.textContent.replace('@', '') || 'explorador';
@@ -614,7 +562,7 @@ async function generarQRPerfil() {
             <div style="background: var(--bg-card); border-radius: 20px; padding: 30px; text-align: center; animation: scaleIn 0.3s ease-out;">
                 <h3 style="color: var(--gold); margin-bottom: 20px;">📱 Escanea mi perfil</h3>
                 <img src="${qrUrl}" alt="QR Code" style="border-radius: 10px; max-width: 200px;">
-                <p style="color: var(--text-muted); margin-top: 15px; font-size: 12px;">${escapeHTML(url)}</p>
+                <p style="color: var(--text-muted); margin-top: 15px; font-size: 12px;">${window.escapeHTML(url)}</p>
                 <button onclick="this.parentElement.parentElement.remove()"
                         style="margin-top: 20px; background: var(--gold); border: none; color: #fff; padding: 10px 30px; border-radius: 10px; cursor: pointer;">
                     Cerrar
@@ -625,7 +573,7 @@ async function generarQRPerfil() {
         
     } catch (error) {
         console.error('Error generando QR:', error);
-        showToast('❌ Error al generar QR', 'error');
+        window.showToast('❌ Error al generar QR', 'error');
     }
 }
 
@@ -641,7 +589,7 @@ function actualizarUI(data) {
         const walletDisplay = document.getElementById('walletDisplay');
 
         if (nombreEl) {
-            const nombre = escapeHTML(data.nombre || 'Explorador');
+            const nombre = window.escapeHTML(data.nombre || 'Explorador');
             const verificado = data.verificado ? '<span class="verified">✦ VERIFICADO</span>' : '';
             nombreEl.innerHTML = `${nombre} ${verificado}`;
         }
@@ -765,11 +713,17 @@ function animarContador(elemento, inicio, fin) {
 }
 
 // ================================================================
-// AMIGOS EN TIEMPO REAL
+// AMIGOS EN TIEMPO REAL - CON REGISTER CHANNEL
 // ================================================================
 function iniciarEscuchaAmigos() {
+    // ✅ Limpiar canal anterior
     if (canalAmigos) {
-        supabaseClient.removeChannel(canalAmigos);
+        try {
+            supabaseClient.removeChannel(canalAmigos);
+        } catch (e) {
+            console.warn('Error removiendo canal amigos:', e);
+        }
+        canalAmigos = null;
     }
 
     canalAmigos = supabaseClient
@@ -787,12 +741,14 @@ function iniciarEscuchaAmigos() {
         })
         .subscribe();
 
+    // ✅ REGISTRAR CANAL CON RESOURCE MANAGER
+    window.registerSupabaseChannel(canalAmigos, 'amigos_online');
     return canalAmigos;
 }
 
 async function cargarAmigosEnLinea() {
     try {
-        const session = await getSession();
+        const session = await window.getSession();
         if (!session) return;
 
         const response = await fetch(`${API_ENDPOINTS.contactos}`, {
@@ -869,8 +825,8 @@ function actualizarUIAmigos(todosAmigos = [], enLinea = []) {
 
     container.innerHTML = ordenados.map(amigo => {
         const estaEnLinea = enLineaIds.includes(amigo.id);
-        const nombreSanitizado = escapeHTML(amigo.nombre || amigo.handle || 'Usuario');
-        const handleSanitizado = escapeHTML(amigo.handle || 'usuario');
+        const nombreSanitizado = window.escapeHTML(amigo.nombre || amigo.handle || 'Usuario');
+        const handleSanitizado = window.escapeHTML(amigo.handle || 'usuario');
         const avatarHtml = amigo.avatar_url ? `<img src="${amigo.avatar_url}">` : '◈';
         
         return `
@@ -907,7 +863,7 @@ async function notificarCambioEstado(online) {
     notificandoCambioEstado = true;
     
     try {
-        const session = await getSession();
+        const session = await window.getSession();
         if (!session) {
             notificandoCambioEstado = false;
             return;
@@ -945,9 +901,9 @@ async function notificarCambioEstado(online) {
 
 async function obtenerSolicitudesPendientes() {
     try {
-        const session = await getSession();
+        const session = await window.getSession();
         if (!session) {
-            showToast('⚠️ Inicia sesión para ver solicitudes', 'error');
+            window.showToast('⚠️ Inicia sesión para ver solicitudes', 'error');
             return [];
         }
 
@@ -959,7 +915,7 @@ async function obtenerSolicitudesPendientes() {
 
     } catch (error) {
         console.error('Error obteniendo solicitudes pendientes:', error);
-        showToast('❌ Error al cargar solicitudes: ' + error.message, 'error');
+        window.showToast('❌ Error al cargar solicitudes: ' + error.message, 'error');
         return [];
     }
 }
@@ -968,24 +924,24 @@ let aceptandoSolicitud = false;
 
 async function aceptarSolicitudAmistad(solicitanteId) {
     if (aceptandoSolicitud) {
-        showToast('⏳ Procesando solicitud...', 'warning');
+        window.showToast('⏳ Procesando solicitud...', 'warning');
         return false;
     }
     
     try {
-        const session = await getSession();
+        const session = await window.getSession();
         if (!session) {
-            showToast('⚠️ Inicia sesión para aceptar solicitudes', 'error');
+            window.showToast('⚠️ Inicia sesión para aceptar solicitudes', 'error');
             return false;
         }
 
         if (!solicitanteId) {
-            showToast('⚠️ ID de solicitante inválido', 'error');
+            window.showToast('⚠️ ID de solicitante inválido', 'error');
             return false;
         }
 
         aceptandoSolicitud = true;
-        showToast('⏳ Aceptando solicitud...', '', 3000);
+        window.showToast('⏳ Aceptando solicitud...', '', 3000);
 
         const { data, error } = await supabaseClient.rpc('aceptar_solicitud_amistad', {
             p_solicitante_id: solicitanteId
@@ -993,7 +949,7 @@ async function aceptarSolicitudAmistad(solicitanteId) {
 
         if (error) throw error;
 
-        showToast('✅ Solicitud aceptada. ¡Ahora son amigos!', 'success', 4000);
+        window.showToast('✅ Solicitud aceptada. ¡Ahora son amigos!', 'success', 4000);
         
         await cargarSolicitudesPendientes();
         await cargarAmigosEnLinea();
@@ -1004,7 +960,7 @@ async function aceptarSolicitudAmistad(solicitanteId) {
 
     } catch (error) {
         console.error('Error aceptando solicitud:', error);
-        showToast('❌ Error al aceptar solicitud: ' + error.message, 'error');
+        window.showToast('❌ Error al aceptar solicitud: ' + error.message, 'error');
         aceptandoSolicitud = false;
         return false;
     }
@@ -1014,19 +970,19 @@ let rechazandoSolicitud = false;
 
 async function rechazarSolicitudAmistad(solicitanteId) {
     if (rechazandoSolicitud) {
-        showToast('⏳ Procesando solicitud...', 'warning');
+        window.showToast('⏳ Procesando solicitud...', 'warning');
         return false;
     }
     
     try {
-        const session = await getSession();
+        const session = await window.getSession();
         if (!session) {
-            showToast('⚠️ Inicia sesión para rechazar solicitudes', 'error');
+            window.showToast('⚠️ Inicia sesión para rechazar solicitudes', 'error');
             return false;
         }
 
         if (!solicitanteId) {
-            showToast('⚠️ ID de solicitante inválido', 'error');
+            window.showToast('⚠️ ID de solicitante inválido', 'error');
             return false;
         }
 
@@ -1035,7 +991,7 @@ async function rechazarSolicitudAmistad(solicitanteId) {
         }
 
         rechazandoSolicitud = true;
-        showToast('⏳ Rechazando solicitud...', '', 3000);
+        window.showToast('⏳ Rechazando solicitud...', '', 3000);
 
         const { data, error } = await supabaseClient.rpc('rechazar_solicitud_amistad', {
             p_solicitante_id: solicitanteId
@@ -1043,7 +999,7 @@ async function rechazarSolicitudAmistad(solicitanteId) {
 
         if (error) throw error;
 
-        showToast('❌ Solicitud rechazada', 'warning', 3000);
+        window.showToast('❌ Solicitud rechazada', 'warning', 3000);
         
         await cargarSolicitudesPendientes();
         
@@ -1052,7 +1008,7 @@ async function rechazarSolicitudAmistad(solicitanteId) {
 
     } catch (error) {
         console.error('Error rechazando solicitud:', error);
-        showToast('❌ Error al rechazar solicitud: ' + error.message, 'error');
+        window.showToast('❌ Error al rechazar solicitud: ' + error.message, 'error');
         rechazandoSolicitud = false;
         return false;
     }
@@ -1114,8 +1070,8 @@ function renderSolicitudes(solicitudes) {
     }
 
     return solicitudes.map(solicitud => {
-        const nombreSanitizado = escapeHTML(solicitud.nombre || solicitud.handle || 'Usuario');
-        const handleSanitizado = escapeHTML(solicitud.handle || 'usuario');
+        const nombreSanitizado = window.escapeHTML(solicitud.nombre || solicitud.handle || 'Usuario');
+        const handleSanitizado = window.escapeHTML(solicitud.handle || 'usuario');
         const avatarHtml = solicitud.avatar_url ? `<img src="${solicitud.avatar_url}" style="width:100%;height:100%;object-fit:cover;">` : '◈';
         
         return `
@@ -1265,24 +1221,24 @@ async function cargarEstadoConexion() {
 async function cambiarConexion(tipo) {
     try {
         if (!['wifi', 'datos'].includes(tipo)) {
-            showToast('❌ Tipo de conexión no válido', 'error');
+            window.showToast('❌ Tipo de conexión no válido', 'error');
             return;
         }
 
-        const session = await getSession();
+        const session = await window.getSession();
         if (!session) {
-            showToast('⚠️ Inicia sesión para cambiar conexión', 'error');
+            window.showToast('⚠️ Inicia sesión para cambiar conexión', 'error');
             return;
         }
 
         if (tipo === 'datos') {
             const perfil = await getPerfilActual();
             if (!perfil || !perfil.esim_iccid) {
-                showToast('⚠️ No tienes una eSIM activa. Compra una primero.', 'warning');
+                window.showToast('⚠️ No tienes una eSIM activa. Compra una primero.', 'warning');
                 return;
             }
             if (perfil.esim_status !== 'enabled') {
-                showToast('⚠️ Tu eSIM no está activa. Actívala primero.', 'warning');
+                window.showToast('⚠️ Tu eSIM no está activa. Actívala primero.', 'warning');
                 return;
             }
         }
@@ -1304,9 +1260,9 @@ async function cambiarConexion(tipo) {
         actualizarUIConexion(estadoConexion);
         
         if (tipo === 'wifi') {
-            showToast('🛜 Cambiado a WiFi', 'success');
+            window.showToast('🛜 Cambiado a WiFi', 'success');
         } else {
-            showToast('📶 Cambiado a Datos Móviles', 'success');
+            window.showToast('📶 Cambiado a Datos Móviles', 'success');
         }
         
         await cargarPerfil(true);
@@ -1317,7 +1273,7 @@ async function cambiarConexion(tipo) {
         
     } catch (error) {
         console.error('Error cambiando conexión:', error);
-        showToast('❌ Error al cambiar conexión: ' + error.message, 'error');
+        window.showToast('❌ Error al cambiar conexión: ' + error.message, 'error');
     }
 }
 
@@ -1326,11 +1282,11 @@ function getPerfilActual() {
 }
 
 // ================================================================
-// GUARDAR ESTADO CONEXIÓN - CORREGIDO (conexion_senal sin ñ)
+// GUARDAR ESTADO CONEXIÓN
 // ================================================================
 async function guardarEstadoConexion(estado) {
     try {
-        const session = await getSession();
+        const session = await window.getSession();
         if (!session) return;
 
         const { error } = await supabaseClient
@@ -1400,14 +1356,14 @@ function iniciarEscuchaConexion() {
         estadoConexion.activa = true;
         actualizarUIConexion(estadoConexion);
         guardarEstadoConexion(estadoConexion);
-        showToast('🛜 Conexión restablecida', 'success');
+        window.showToast('🛜 Conexión restablecida', 'success');
     });
 
     window.addEventListener('offline', () => {
         estadoConexion.activa = false;
         actualizarUIConexion(estadoConexion);
         guardarEstadoConexion(estadoConexion);
-        showToast('⛔ Sin conexión', 'error');
+        window.showToast('⛔ Sin conexión', 'error');
     });
 
     if (navigator.connection) {
@@ -1418,7 +1374,7 @@ function iniciarEscuchaConexion() {
 }
 
 // ================================================================
-// eSIM - TELNYX FUNCTIONS (INTEGRACIÓN CON SERVER.JS)
+// eSIM - TELNYX FUNCTIONS
 // ================================================================
 
 function actualizarUIESIM(data) {
@@ -1515,13 +1471,13 @@ async function cargarDatosESIM(iccid) {
     }
 
     try {
-        const session = await getSession();
+        const session = await window.getSession();
         if (!session) {
             console.warn('⚠️ No hay sesión para cargar datos eSIM');
             return null;
         }
 
-        showToast('⏳ Actualizando datos de eSIM...', '', 3000);
+        window.showToast('⏳ Actualizando datos de eSIM...', '', 3000);
 
         const response = await fetch(`${API_ENDPOINTS.esim}/profile`, {
             headers: {
@@ -1555,14 +1511,14 @@ async function cargarDatosESIM(iccid) {
         });
 
         if (data.telnyx_error) {
-            showToast('⚠️ No se pudo actualizar la información de la eSIM. Mostrando último estado conocido.', 'warning', 5000);
+            window.showToast('⚠️ No se pudo actualizar la información de la eSIM. Mostrando último estado conocido.', 'warning', 5000);
         }
 
         return data;
 
     } catch (error) {
         console.error('Error cargando datos eSIM:', error);
-        showToast('❌ Error al cargar datos de eSIM: ' + error.message, 'error');
+        window.showToast('❌ Error al cargar datos de eSIM: ' + error.message, 'error');
         await cargarDatosESIMLocal(iccid);
         return null;
     }
@@ -1570,7 +1526,7 @@ async function cargarDatosESIM(iccid) {
 
 async function cargarDatosESIMLocal(iccid) {
     try {
-        const session = await getSession();
+        const session = await window.getSession();
         if (!session) return;
 
         const { data: usuario, error } = await supabaseClient
@@ -1589,7 +1545,7 @@ async function cargarDatosESIMLocal(iccid) {
                 esim_data_limit: usuario.esim_data_limit || 0,
                 esim_apn: usuario.esim_apn || 'data00.telnyx'
             });
-            showToast('ℹ️ Mostrando datos guardados localmente', 'warning', 3000);
+            window.showToast('ℹ️ Mostrando datos guardados localmente', 'warning', 3000);
         }
     } catch (error) {
         console.error('Error cargando datos locales:', error);
@@ -1599,18 +1555,18 @@ async function cargarDatosESIMLocal(iccid) {
 
 async function sincronizarESIM() {
     try {
-        const session = await getSession();
+        const session = await window.getSession();
         if (!session) {
-            showToast('⚠️ Inicia sesión para sincronizar', 'error');
+            window.showToast('⚠️ Inicia sesión para sincronizar', 'error');
             return;
         }
 
         if (!perfilCache || !perfilCache.esim_iccid) {
-            showToast('⚠️ No tienes una eSIM activa asignada', 'warning');
+            window.showToast('⚠️ No tienes una eSIM activa asignada', 'warning');
             return;
         }
 
-        showToast('⏳ Sincronizando con Telnyx...', '', 5000);
+        window.showToast('⏳ Sincronizando con Telnyx...', '', 5000);
 
         const response = await fetch(`${API_ENDPOINTS.esim}/sync`, {
             method: 'POST',
@@ -1626,12 +1582,12 @@ async function sincronizarESIM() {
             throw new Error(result.error || 'Error al sincronizar');
         }
 
-        showToast('✅ Datos sincronizados correctamente', 'success');
+        window.showToast('✅ Datos sincronizados correctamente', 'success');
         await cargarPerfil(true);
 
     } catch (error) {
         console.error('Error sincronizando eSIM:', error);
-        showToast('❌ Error al sincronizar: ' + error.message, 'error');
+        window.showToast('❌ Error al sincronizar: ' + error.message, 'error');
     }
 }
 
@@ -1640,7 +1596,7 @@ async function generarQRESIM(iccid) {
         const iccidParam = iccid || perfilCache?.esim_iccid;
         
         if (!iccidParam) {
-            showToast('⚠️ No tienes una eSIM activa para generar QR', 'warning');
+            window.showToast('⚠️ No tienes una eSIM activa para generar QR', 'warning');
             return;
         }
         
@@ -1648,7 +1604,7 @@ async function generarQRESIM(iccid) {
         mostrarModalQR(qrData);
     } catch (error) {
         console.error('Error generando QR:', error);
-        showToast('❌ Error al generar QR: ' + error.message, 'error');
+        window.showToast('❌ Error al generar QR: ' + error.message, 'error');
     }
 }
 
@@ -1659,31 +1615,31 @@ let comprandoDomo = false;
 
 async function comprarDomo(cantidad = 1) {
     if (comprandoDomo) {
-        showToast('⏳ Ya hay una compra en proceso...', 'warning');
+        window.showToast('⏳ Ya hay una compra en proceso...', 'warning');
         return;
     }
     
     try {
-        const session = await getSession();
+        const session = await window.getSession();
         if (!session) {
-            showToast('⚠️ Inicia sesión para comprar domos', 'error');
+            window.showToast('⚠️ Inicia sesión para comprar domos', 'error');
             return;
         }
 
         cantidad = Math.max(1, Math.floor(cantidad));
         if (cantidad > 10) {
-            showToast('⚠️ Máximo 10 domos por transacción', 'warning');
+            window.showToast('⚠️ Máximo 10 domos por transacción', 'warning');
             return;
         }
 
         comprandoDomo = true;
-        showToast('⏳ Procesando compra de ' + cantidad + ' domo(s)...', '', 5000);
+        window.showToast('⏳ Procesando compra de ' + cantidad + ' domo(s)...', '', 5000);
 
         const { data, error } = await supabaseClient.rpc('comprar_domo', { p_cantidad: cantidad });
 
         if (error) {
             if (error.message.includes('insufficient')) {
-                showToast('❌ Fondos insuficientes para comprar domos', 'error');
+                window.showToast('❌ Fondos insuficientes para comprar domos', 'error');
             } else {
                 throw error;
             }
@@ -1691,14 +1647,14 @@ async function comprarDomo(cantidad = 1) {
             return;
         }
 
-        showToast(`🎉 ¡${cantidad} Domo(s) comprado(s) exitosamente!`, 'success', 5000);
+        window.showToast(`🎉 ¡${cantidad} Domo(s) comprado(s) exitosamente!`, 'success', 5000);
         await cargarPerfil(true);
         mostrarCelebracion();
         comprandoDomo = false;
 
     } catch (error) {
         console.error('Error al comprar domo:', error);
-        showToast('❌ Error en la compra: ' + error.message, 'error');
+        window.showToast('❌ Error en la compra: ' + error.message, 'error');
         comprandoDomo = false;
     }
 }
@@ -1710,27 +1666,27 @@ let canjeandoNFT = false;
 
 async function canjearNFT() {
     if (canjeandoNFT) {
-        showToast('⏳ Procesando canje...', 'warning');
+        window.showToast('⏳ Procesando canje...', 'warning');
         return;
     }
     
     try {
-        const session = await getSession();
+        const session = await window.getSession();
         if (!session) {
-            showToast('⚠️ Inicia sesión para canjear tu NFT', 'error');
+            window.showToast('⚠️ Inicia sesión para canjear tu NFT', 'error');
             return;
         }
 
         canjeandoNFT = true;
-        showToast('⏳ Verificando tokens para canje...', '', 4000);
+        window.showToast('⏳ Verificando tokens para canje...', '', 4000);
 
         const { data, error } = await supabaseClient.rpc('canjear_nft');
 
         if (error) {
             if (error.message.includes('insufficient tokens')) {
-                showToast('❌ Necesitas exactamente 12 Es.stoks para canjear', 'error');
+                window.showToast('❌ Necesitas exactamente 12 Es.stoks para canjear', 'error');
             } else if (error.message.includes('already redeemed')) {
-                showToast('⚠️ Ya has canjeado tu NFT', 'warning');
+                window.showToast('⚠️ Ya has canjeado tu NFT', 'warning');
             } else {
                 throw error;
             }
@@ -1738,14 +1694,14 @@ async function canjearNFT() {
             return;
         }
 
-        showToast('🎁 ¡NFT Canjeado Exitosamente! Tienes 30 días para reclamar.', 'success', 8000);
+        window.showToast('🎁 ¡NFT Canjeado Exitosamente! Tienes 30 días para reclamar.', 'success', 8000);
         await cargarPerfil(true);
         mostrarModalNFT(data);
         canjeandoNFT = false;
 
     } catch (error) {
         console.error('Error al canjear NFT:', error);
-        showToast('❌ Error al canjear NFT: ' + error.message, 'error');
+        window.showToast('❌ Error al canjear NFT: ' + error.message, 'error');
         canjeandoNFT = false;
     }
 }
@@ -1779,7 +1735,7 @@ function crearConfeti() {
 
 function mostrarCelebracion() {
     crearConfeti();
-    showToast('🎉 ¡Transacción exitosa!', 'success');
+    window.showToast('🎉 ¡Transacción exitosa!', 'success');
 }
 
 function compartirLogro() {
@@ -1788,7 +1744,7 @@ function compartirLogro() {
         navigator.share({ title: 'Mi logro en Sariel\'s', text: texto });
     } else {
         navigator.clipboard.writeText(texto).then(() => {
-            showToast('📋 Copiado al portapapeles', 'success');
+            window.showToast('📋 Copiado al portapapeles', 'success');
         });
     }
 }
@@ -1844,15 +1800,15 @@ async function cerrarSesion() {
         await actualizarEstadoEnLinea(false);
         await supabaseClient.auth.signOut();
         window.location.href = '/';
-        showToast('🔌 Sesión cerrada', 'success');
+        window.showToast('🔌 Sesión cerrada', 'success');
     } catch (error) {
         console.error('Error cerrando sesión:', error);
-        showToast('❌ Error al cerrar sesión', 'error');
+        window.showToast('❌ Error al cerrar sesión', 'error');
     }
 }
 
 // ================================================================
-// NOTIFICACIONES EN TIEMPO REAL
+// NOTIFICACIONES EN TIEMPO REAL - CON REGISTER CHANNEL
 // ================================================================
 function iniciarNotificacionesRealtime() {
     const channel = supabaseClient
@@ -1864,7 +1820,7 @@ function iniciarNotificacionesRealtime() {
         }, (payload) => {
             const notificacion = payload.new;
             if (notificacion.user_id === perfilCache?.id) {
-                showToast(`🔔 ${notificacion.mensaje}`, 'warning', 4000);
+                window.showToast(`🔔 ${notificacion.mensaje}`, 'warning', 4000);
                 
                 try {
                     const audio = new Audio('/sound/notification.mp3');
@@ -1874,6 +1830,8 @@ function iniciarNotificacionesRealtime() {
         })
         .subscribe();
 
+    // ✅ REGISTRAR CANAL CON RESOURCE MANAGER
+    window.registerSupabaseChannel(channel, 'notificaciones');
     return channel;
 }
 
@@ -1882,14 +1840,14 @@ function iniciarNotificacionesRealtime() {
 // ================================================================
 async function conectarWallet() {
     if (typeof window.ethereum === 'undefined') {
-        showToast('⚠️ Instala MetaMask para conectar tu wallet', 'error');
+        window.showToast('⚠️ Instala MetaMask para conectar tu wallet', 'error');
         return;
     }
 
     try {
-        const session = await getSession();
+        const session = await window.getSession();
         if (!session) {
-            showToast('⚠️ Inicia sesión para vincular wallet', 'error');
+            window.showToast('⚠️ Inicia sesión para vincular wallet', 'error');
             return;
         }
 
@@ -1940,20 +1898,20 @@ async function conectarWallet() {
         if (btnConectar) btnConectar.style.display = 'none';
         if (btnDesconectar) btnDesconectar.style.display = 'inline-flex';
 
-        showToast(`✅ Wallet conectada a ${ENV.networkName}`, 'success');
+        window.showToast(`✅ Wallet conectada a ${ENV.networkName}`, 'success');
         await cargarPerfil(true);
         
     } catch (error) {
         console.error('Error conectando wallet:', error);
-        showToast('❌ Error al conectar wallet: ' + error.message, 'error');
+        window.showToast('❌ Error al conectar wallet: ' + error.message, 'error');
     }
 }
 
 async function desconectarWallet() {
     try {
-        const session = await getSession();
+        const session = await window.getSession();
         if (!session) {
-            showToast('⚠️ Inicia sesión', 'error');
+            window.showToast('⚠️ Inicia sesión', 'error');
             return;
         }
 
@@ -1971,12 +1929,12 @@ async function desconectarWallet() {
         if (btnConectar) btnConectar.style.display = 'inline-flex';
         if (btnDesconectar) btnDesconectar.style.display = 'none';
 
-        showToast('🔌 Wallet desconectada', 'warning');
+        window.showToast('🔌 Wallet desconectada', 'warning');
         await cargarPerfil(true);
         
     } catch (error) {
         console.error('Error desconectando wallet:', error);
-        showToast('❌ Error al desconectar wallet', 'error');
+        window.showToast('❌ Error al desconectar wallet', 'error');
     }
 }
 
@@ -2050,12 +2008,14 @@ async function abrirCamaraQR() {
             clearInterval(qrScannerInterval);
         }
         qrScannerInterval = setInterval(leerQR, 500);
+        // ✅ REGISTRAR INTERVAL CON RESOURCE MANAGER
+        window.registerInterval(qrScannerInterval, 'qr_scanner');
 
-        showToast('📷 Apunta la cámara al QR', 'warning');
+        window.showToast('📷 Apunta la cámara al QR', 'warning');
 
     } catch (error) {
         console.error('Error abriendo cámara:', error);
-        showToast('❌ No se pudo acceder a la cámara', 'error');
+        window.showToast('❌ No se pudo acceder a la cámara', 'error');
     }
 }
 
@@ -2080,7 +2040,7 @@ function cerrarCamaraQR() {
 
 async function procesarQR(codigo) {
     if (qrScanningLock) {
-        showToast('⏳ Procesando otro QR...', 'warning');
+        window.showToast('⏳ Procesando otro QR...', 'warning');
         return;
     }
     
@@ -2089,15 +2049,15 @@ async function procesarQR(codigo) {
     const input = document.getElementById('qrInput');
     
     try {
-        const session = await getSession();
+        const session = await window.getSession();
         if (!session) {
-            showToast('⚠️ Inicia sesión para escanear QR', 'error');
+            window.showToast('⚠️ Inicia sesión para escanear QR', 'error');
             qrScanningLock = false;
             return;
         }
 
         if (status) status.textContent = '⏳ Validando QR...';
-        showToast('⏳ Verificando QR...', '', 5000);
+        window.showToast('⏳ Verificando QR...', '', 5000);
 
         const { data, error } = await supabaseClient.rpc('reclamar_qr_domo', {
             p_codigo: codigo
@@ -2105,13 +2065,13 @@ async function procesarQR(codigo) {
 
         if (error) {
             if (error.message.includes('already used')) {
-                showToast('❌ Este QR ya fue usado', 'error');
+                window.showToast('❌ Este QR ya fue usado', 'error');
                 if (status) status.textContent = '❌ QR ya utilizado';
             } else if (error.message.includes('invalid code')) {
-                showToast('❌ QR inválido', 'error');
+                window.showToast('❌ QR inválido', 'error');
                 if (status) status.textContent = '❌ QR inválido';
             } else if (error.message.includes('not a domo')) {
-                showToast('❌ Este QR no es para un domo', 'error');
+                window.showToast('❌ Este QR no es para un domo', 'error');
                 if (status) status.textContent = '❌ QR no es domo';
             } else {
                 throw error;
@@ -2121,7 +2081,7 @@ async function procesarQR(codigo) {
         }
 
         if (!data.success) {
-            showToast('❌ ' + (data.error || 'Error al reclamar QR'), 'error');
+            window.showToast('❌ ' + (data.error || 'Error al reclamar QR'), 'error');
             if (status) status.textContent = '❌ ' + data.error;
             qrScanningLock = false;
             return;
@@ -2130,7 +2090,7 @@ async function procesarQR(codigo) {
         if (status) status.textContent = '✅ ¡QR reclamado exitosamente!';
         if (input) input.value = '';
         
-        showToast('🎉 ¡QR escaneado! +1 Es.stok', 'success');
+        window.showToast('🎉 ¡QR escaneado! +1 Es.stok', 'success');
         
         await cargarPerfil(true);
         await cargarHistorialQR();
@@ -2139,7 +2099,7 @@ async function procesarQR(codigo) {
     } catch (error) {
         console.error('Error procesando QR:', error);
         if (status) status.textContent = '❌ Error al procesar QR';
-        showToast('❌ Error al escanear QR: ' + error.message, 'error');
+        window.showToast('❌ Error al escanear QR: ' + error.message, 'error');
     } finally {
         qrScanningLock = false;
     }
@@ -2150,7 +2110,7 @@ async function escanearQR() {
     const qrCode = input?.value?.trim();
 
     if (!qrCode) {
-        showToast('⚠️ Escribe o escanea el código QR', 'error');
+        window.showToast('⚠️ Escribe o escanea el código QR', 'error');
         return;
     }
 
@@ -2159,7 +2119,7 @@ async function escanearQR() {
 
 async function cargarHistorialQR() {
     try {
-        const session = await getSession();
+        const session = await window.getSession();
         if (!session) return;
 
         const { data, error } = await supabaseClient
@@ -2237,7 +2197,7 @@ function calcularNivel(tokens) {
 
 async function obtenerEstadisticas() {
     try {
-        const session = await getSession();
+        const session = await window.getSession();
         if (!session) return;
 
         const { data, error } = await supabaseClient
@@ -2259,9 +2219,9 @@ async function obtenerEstadisticas() {
 // ================================================================
 async function reaccionarPublicacion(postId, tipoReaccion) {
     try {
-        const session = await getSession();
+        const session = await window.getSession();
         if (!session) {
-            showToast('⚠️ Debes iniciar sesión', 'error');
+            window.showToast('⚠️ Debes iniciar sesión', 'error');
             return;
         }
 
@@ -2274,22 +2234,22 @@ async function reaccionarPublicacion(postId, tipoReaccion) {
             }, { onConflict: 'post_id, usuario_id' });
 
         if (error) throw error;
-        showToast(`❤️ Reaccionaste con ${tipoReaccion}`, 'success');
+        window.showToast(`❤️ Reaccionaste con ${tipoReaccion}`, 'success');
     } catch (error) {
         console.error('Error al reaccionar:', error);
-        showToast('❌ Error al reaccionar', 'error');
+        window.showToast('❌ Error al reaccionar', 'error');
     }
 }
 
 async function comentarPublicacion(postId, contenido) {
     try {
-        const session = await getSession();
+        const session = await window.getSession();
         if (!session) {
-            showToast('⚠️ Inicia sesión para comentar', 'error');
+            window.showToast('⚠️ Inicia sesión para comentar', 'error');
             return;
         }
         if (!contenido.trim()) {
-            showToast('⚠️ Escribe un comentario', 'warning');
+            window.showToast('⚠️ Escribe un comentario', 'warning');
             return;
         }
 
@@ -2304,11 +2264,11 @@ async function comentarPublicacion(postId, contenido) {
             });
 
         if (error) throw error;
-        showToast('💬 Comentario publicado', 'success');
+        window.showToast('💬 Comentario publicado', 'success');
         
     } catch (error) {
         console.error('Error al comentar:', error);
-        showToast('❌ Error al enviar comentario', 'error');
+        window.showToast('❌ Error al enviar comentario', 'error');
     }
 }
 
@@ -2317,14 +2277,14 @@ async function comentarPublicacion(postId, contenido) {
 // ================================================================
 async function agregarAmigo(amigoId) {
     try {
-        const session = await getSession();
+        const session = await window.getSession();
         if (!session) {
-            showToast('⚠️ Inicia sesión para agregar amigos', 'error');
+            window.showToast('⚠️ Inicia sesión para agregar amigos', 'error');
             return;
         }
 
         if (amigoId === session.user.id) {
-            showToast('⚠️ No puedes agregarte a ti mismo', 'warning');
+            window.showToast('⚠️ No puedes agregarte a ti mismo', 'warning');
             return;
         }
 
@@ -2338,20 +2298,30 @@ async function agregarAmigo(amigoId) {
 
         if (error) {
             if (error.code === '23505') {
-                showToast('⚠️ Ya enviaste solicitud a este usuario', 'warning');
+                window.showToast('⚠️ Ya enviaste solicitud a este usuario', 'warning');
             } else {
                 throw error;
             }
             return;
         }
 
-        showToast('🤝 Solicitud de amistad enviada', 'success');
+        window.showToast('🤝 Solicitud de amistad enviada', 'success');
         await cargarSolicitudesPendientes();
         
     } catch (error) {
         console.error('Error al agregar amigo:', error);
-        showToast('❌ No se pudo enviar la solicitud: ' + error.message, 'error');
+        window.showToast('❌ No se pudo enviar la solicitud: ' + error.message, 'error');
     }
+}
+
+// ================================================================
+// LIMPIEZA DE RECURSOS - DELEGADA AL RESOURCE MANAGER
+// ================================================================
+function limpiarRecursos() {
+    // Los recursos ahora son gestionados por el ResourceManager global
+    // Los intervalos y canales se registran con window.registerInterval y window.registerSupabaseChannel
+    // Esta función se mantiene por compatibilidad pero no es necesaria
+    console.log('🧹 Limpieza de recursos delegada al ResourceManager');
 }
 
 // ================================================================
@@ -2392,19 +2362,26 @@ document.addEventListener('DOMContentLoaded', async function() {
         await cargarHistorialQR();
         await cargarSolicitudesPendientes();
 
-        // Intervalos optimizados
+        // Intervalos optimizados - REGISTRADOS CON RESOURCE MANAGER
         let esimInterval = null;
         if (perfilCache?.esim_iccid) {
             esimInterval = setInterval(() => {
                 cargarDatosESIM(perfilCache.esim_iccid);
-            }, 60000); // Reducido de 30s a 60s
+            }, 60000);
+            window.registerInterval(esimInterval, 'esim_update');
         }
 
-        // Guardar referencia para limpiar
+        const conexionInterval = setInterval(cargarEstadoConexion, 30000);
+        window.registerInterval(conexionInterval, 'conexion_update');
+
+        const amigosInterval = setInterval(cargarAmigosEnLinea, 30000);
+        window.registerInterval(amigosInterval, 'amigos_update');
+
+        // Guardar referencias para compatibilidad
         window._perfilIntervals = {
             esim: esimInterval,
-            conexion: setInterval(cargarEstadoConexion, 30000),
-            amigos: setInterval(cargarAmigosEnLinea, 30000)
+            conexion: conexionInterval,
+            amigos: amigosInterval
         };
 
         // Configurar crypto controls
@@ -2440,91 +2417,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         
     } catch (error) {
         console.error('Error en inicialización:', error);
-        showToast('⚠️ Error al inicializar perfil', 'error');
+        window.showToast('⚠️ Error al inicializar perfil', 'error');
     }
 });
-
-// ================================================================
-// LIMPIEZA DE RECURSOS (para Single Page Apps)
-// ================================================================
-function limpiarRecursos() {
-    if (window._perfilIntervals) {
-        if (window._perfilIntervals.esim) clearInterval(window._perfilIntervals.esim);
-        if (window._perfilIntervals.conexion) clearInterval(window._perfilIntervals.conexion);
-        if (window._perfilIntervals.amigos) clearInterval(window._perfilIntervals.amigos);
-    }
-    if (detectorInactividadInterval) clearInterval(detectorInactividadInterval);
-    if (qrScannerInterval) clearInterval(qrScannerInterval);
-    if (canalAmigos) {
-        try { supabaseClient.removeChannel(canalAmigos); } catch(e) {}
-        canalAmigos = null;
-    }
-    cerrarCamaraQR();
-}
-
-// Registrar limpieza al descargar la página
-window.addEventListener('beforeunload', limpiarRecursos);
-
-// ================================================================
-// ESTILOS CSS INYECTADOS
-// ================================================================
-const estilosAnimacion = document.createElement('style');
-estilosAnimacion.textContent = `
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-    @keyframes scaleIn {
-        from { transform: scale(0.8); opacity: 0; }
-        to { transform: scale(1); opacity: 1; }
-    }
-    @keyframes slideInRight {
-        from { transform: translateX(100px); opacity: 0; }
-        to { transform: translateX(0); opacity: 1; }
-    }
-    @keyframes slideOutRight {
-        from { transform: translateX(0); opacity: 1; }
-        to { transform: translateX(100px); opacity: 0; }
-    }
-    @keyframes confetiFall {
-        from { transform: translateY(0) rotate(0deg); opacity: 1; }
-        to { transform: translateY(100vh) rotate(720deg); opacity: 0; }
-    }
-    .toast {
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        padding: 15px 25px;
-        border-radius: 12px;
-        background: var(--bg-card);
-        color: var(--text-primary);
-        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-        border: 1px solid var(--border-color);
-        z-index: 9999;
-        transform: translateX(100px);
-        opacity: 0;
-        transition: all 0.3s ease;
-        max-width: 400px;
-        backdrop-filter: blur(10px);
-    }
-    .toast.show {
-        transform: translateX(0);
-        opacity: 1;
-    }
-    .toast.error {
-        border-color: #ff6b6b;
-        background: rgba(255, 107, 107, 0.1);
-    }
-    .toast.warning {
-        border-color: #feca57;
-        background: rgba(254, 202, 87, 0.1);
-    }
-    .toast.success {
-        border-color: #2ecc71;
-        background: rgba(46, 204, 113, 0.1);
-    }
-`;
-document.head.appendChild(estilosAnimacion);
 
 // ================================================================
 // EXPOSICIÓN DE FUNCIONES GLOBALES - COMPATIBILIDAD CON HTML
@@ -2547,10 +2442,10 @@ window.comentarPublicacion = comentarPublicacion;
 window.agregarAmigo = agregarAmigo;
 window.cerrarSesion = cerrarSesion;
 window.irAMuro = irAMuro;
-window.showToast = showToast;
 window.generarQRPerfil = generarQRPerfil;
 window.calcularNivel = calcularNivel;
 window.compartirLogro = compartirLogro;
+window.limpiarRecursos = limpiarRecursos;
 
 // eSIM
 window.comprarESIM = comprarESIM;
@@ -2593,6 +2488,3 @@ window.aceptarSolicitudAmistad = aceptarSolicitudAmistad;
 window.rechazarSolicitudAmistad = rechazarSolicitudAmistad;
 window.cargarSolicitudesPendientes = cargarSolicitudesPendientes;
 window.actualizarUISolicitudes = actualizarUISolicitudes;
-
-// Utilidades de limpieza
-window.limpiarRecursos = limpiarRecursos;
