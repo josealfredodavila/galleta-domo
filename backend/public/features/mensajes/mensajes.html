@@ -102,7 +102,6 @@
             color: var(--gold);
         }
 
-        /* Buscador en conversaciones */
         .search-conv {
             padding: 10px 16px;
             border-bottom: 1px solid var(--glass-border);
@@ -632,8 +631,1097 @@
 
     <div class="toast" id="toast"></div>
 
-    <!-- ✅ SCRIPTS CORREGIDOS - SIN WEB3 ni QRCODE -->
+    <!-- ================================================================ -->
+    <!-- SCRIPTS - ORDEN CORRECTO -->
+    <!-- ================================================================ -->
+
+    <!-- 1. Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-    <script src="/features/mensajes/mensajes.js"></script>
+
+    <!-- 2. App.js - Define window.supabase y la app -->
+    <script src="/app.js"></script>
+
+    <!-- 3. TODAS las funciones de Mensajes - DEFINIDAS AQUÍ -->
+    <script>
+        // ================================================================
+        // MENSAJES - TODAS LAS FUNCIONES DEFINIDAS AQUÍ
+        // ================================================================
+
+        // ================================================================
+        // ESCAPE HTML - PREVENCIÓN XSS
+        // ================================================================
+        function escapeHTML(texto) {
+            if (!texto) return '';
+            var div = document.createElement('div');
+            div.textContent = texto;
+            return div.innerHTML;
+        }
+
+        // ================================================================
+        // TOAST NOTIFICACIONES
+        // ================================================================
+        function showToast(msg, type) {
+            try {
+                if (typeof window.showToast === 'function') { window.showToast(msg, type); return; }
+                var t = document.getElementById('toast');
+                if (!t) { t = document.createElement('div'); t.id = 'toast'; t.className = 'toast'; document.body.appendChild(t); }
+                t.textContent = msg;
+                t.className = 'toast show';
+                if (type === 'error') t.classList.add('error');
+                else if (type === 'warning') t.classList.add('warning');
+                else if (type === 'success') t.classList.add('success');
+                else t.classList.remove('error', 'warning', 'success');
+                clearTimeout(t._timeout);
+                t._timeout = setTimeout(function() { t.classList.remove('show'); }, 3500);
+            } catch (e) { console.warn('Toast error:', e); }
+        }
+
+        // ================================================================
+        // OBTENER SESIÓN
+        // ================================================================
+        async function getSession() {
+            try {
+                if (typeof window.supabase === 'undefined') { console.warn('Supabase no disponible'); return null; }
+                var r = await window.supabase.auth.getSession();
+                return r.data.session;
+            } catch (e) { console.error('Error sesión:', e); return null; }
+        }
+
+        // ================================================================
+        // VARIABLES GLOBALES
+        // ================================================================
+        var usuarioActual = null;
+        var conversacionActual = null;
+        var realtimeChannel = null;
+        var archivosSeleccionados = [];
+        var grabacionActiva = false;
+        var mediaRecorder = null;
+        var audioChunks = [];
+
+        // ================================================================
+        // VERIFICAR AUTENTICACIÓN
+        // ================================================================
+        async function verificarAutenticacion() {
+            var session = await getSession();
+            if (!session) {
+                showToast('⚠️ Inicia sesión para usar mensajería', 'warning');
+                return false;
+            }
+            usuarioActual = session.user;
+            return true;
+        }
+
+        // ================================================================
+        // FORMATEAR TEXTO (Emojis)
+        // ================================================================
+        function formatearTexto(texto) {
+            if (!texto) return '';
+            var textoFormateado = escapeHTML(texto);
+            var emojis = {
+                ':feliz:': '😊', ':risa:': '😂', ':amo:': '❤️', ':fuego:': '🔥',
+                ':estrella:': '⭐', ':genial:': '🤩', ':ok:': '👌', ':visto:': '👀',
+                ':musica:': '🎵', ':pizza:': '🍕', ':cafe:': '☕', ':helado:': '🍦',
+                ':rocket:': '🚀', ':sariel:': '◈'
+            };
+            for (var key in emojis) {
+                if (emojis.hasOwnProperty(key)) {
+                    textoFormateado = textoFormateado.replaceAll(key, emojis[key]);
+                }
+            }
+            return textoFormateado;
+        }
+
+        // ================================================================
+        // 🔍 BUSCAR CONTACTOS
+        // ================================================================
+        async function buscarContactos(query) {
+            if (!query || query.length < 2) {
+                document.getElementById('resultadosBusqueda').innerHTML = '';
+                return;
+            }
+
+            try {
+                var session = await getSession();
+                if (!session) return;
+
+                var result = await window.supabase
+                    .from('usuarios')
+                    .select('id, nombre, handle, avatar_url')
+                    .or('nombre.ilike.%' + query + '%,handle.ilike.%' + query + '%')
+                    .neq('id', session.user.id)
+                    .limit(10);
+
+                if (result.error) throw result.error;
+
+                var container = document.getElementById('resultadosBusqueda');
+                if (!container) return;
+
+                if (!result.data || result.data.length === 0) {
+                    container.innerHTML = '<div style="padding:12px;text-align:center;color:var(--text-muted);font-size:0.75rem;">No se encontraron usuarios</div>';
+                    return;
+                }
+
+                var contactosResult = await window.supabase
+                    .from('contactos')
+                    .select('contacto_id')
+                    .eq('usuario_id', session.user.id);
+
+                var idsExistentes = contactosResult.data ? contactosResult.data.map(function(c) { return c.contacto_id; }) : [];
+
+                var html = '';
+                for (var i = 0; i < result.data.length; i++) {
+                    var usuario = result.data[i];
+                    var yaEsContacto = idsExistentes.indexOf(usuario.id) !== -1;
+                    var nombreSanitizado = escapeHTML(usuario.nombre || 'Usuario');
+                    var handleSanitizado = escapeHTML(usuario.handle || 'usuario');
+                    var avatarHtml = usuario.avatar_url ? '<img src="' + escapeHTML(usuario.avatar_url) + '" style="width:100%;height:100%;object-fit:cover;">' : (usuario.nombre ? nombreSanitizado[0].toUpperCase() : '◈');
+
+                    html += '<div class="resultado-item" style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid rgba(212,175,55,0.05);transition:all 0.2s;">' +
+                        '<div class="avatar" style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--green-deep),var(--gold));display:flex;align-items:center;justify-content:center;color:white;font-size:0.8rem;overflow:hidden;">' + avatarHtml + '</div>' +
+                        '<div style="flex:1;"><div style="font-weight:600;font-size:0.8rem;">' + nombreSanitizado + '</div><div style="font-size:0.6rem;color:var(--text-muted);">@' + handleSanitizado + '</div></div>';
+
+                    if (yaEsContacto) {
+                        html += '<span style="font-size:0.55rem;color:var(--success);background:rgba(0,214,143,0.1);padding:2px 10px;border-radius:12px;">✓ Contacto</span>';
+                    } else {
+                        html += '<button onclick="agregarContacto(\'' + usuario.id + '\')" style="background:linear-gradient(135deg,var(--gold),var(--gold-dark));color:var(--space);border:none;padding:4px 12px;border-radius:12px;font-size:0.6rem;font-weight:600;cursor:pointer;">+ Agregar</button>';
+                    }
+                    html += '</div>';
+                }
+                container.innerHTML = html;
+
+            } catch (e) {
+                console.error('Error buscando contactos:', e);
+            }
+        }
+
+        // ================================================================
+        // ➕ AGREGAR CONTACTO
+        // ================================================================
+        async function agregarContacto(contactoId) {
+            try {
+                var session = await getSession();
+                if (!session) {
+                    showToast('⚠️ Inicia sesión para agregar contactos', 'error');
+                    return;
+                }
+
+                var existeResult = await window.supabase
+                    .from('contactos')
+                    .select('id')
+                    .eq('usuario_id', session.user.id)
+                    .eq('contacto_id', contactoId)
+                    .maybeSingle();
+
+                if (existeResult.data) {
+                    showToast('⚠️ Este usuario ya es tu contacto', 'warning');
+                    return;
+                }
+
+                var result = await window.supabase
+                    .from('contactos')
+                    .insert({
+                        usuario_id: session.user.id,
+                        contacto_id: contactoId,
+                        estado: 'activo'
+                    });
+
+                if (result.error) throw result.error;
+
+                showToast('✅ Contacto agregado correctamente', 'success');
+                document.getElementById('searchInputModal').value = '';
+                document.getElementById('resultadosBusqueda').innerHTML = '';
+                cerrarModalNuevoContacto();
+                await cargarConversaciones();
+
+            } catch (e) {
+                console.error('Error agregando contacto:', e);
+                showToast('❌ Error al agregar contacto', 'error');
+            }
+        }
+
+        // ================================================================
+        // 📋 CARGAR CONVERSACIONES
+        // ================================================================
+        async function cargarConversaciones() {
+            if (!await verificarAutenticacion()) return;
+
+            try {
+                var result = await window.supabase
+                    .from('contactos')
+                    .select('*, usuarios:contactos_contacto_id_fkey(id, nombre, handle, avatar_url)')
+                    .eq('usuario_id', usuarioActual.id)
+                    .eq('estado', 'activo');
+
+                if (result.error) throw result.error;
+
+                var contactos = result.data || [];
+
+                if (contactos.length === 0) {
+                    var convList = document.getElementById('conversacionesList');
+                    if (convList) {
+                        convList.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-muted);font-size:0.8rem;"><div style="font-size:2rem;margin-bottom:10px;">◈</div><p>Sin contactos agregados</p><p style="font-size:0.6rem;">Busca y agrega contactos arriba</p></div>';
+                    }
+                    return;
+                }
+
+                var conversaciones = [];
+                for (var i = 0; i < contactos.length; i++) {
+                    var contacto = contactos[i];
+                    var contactoInfo = contacto.usuarios || {};
+
+                    var ultimoResult = await window.supabase
+                        .from('mensajes_chat')
+                        .select('contenido, created_at, leido, remitente_id')
+                        .or('and(remitente_id.eq.' + usuarioActual.id + ',destinatario_id.eq.' + contactoInfo.id + '),and(remitente_id.eq.' + contactoInfo.id + ',destinatario_id.eq.' + usuarioActual.id + ')')
+                        .order('created_at', { ascending: false })
+                        .limit(1)
+                        .maybeSingle();
+
+                    var noLeidosResult = await window.supabase
+                        .from('mensajes_chat')
+                        .select('id', { count: 'exact' })
+                        .eq('remitente_id', contactoInfo.id)
+                        .eq('destinatario_id', usuarioActual.id)
+                        .eq('leido', false)
+                        .is('eliminado', false);
+
+                    conversaciones.push({
+                        id: contactoInfo.id,
+                        nombre: contactoInfo.nombre || 'Usuario',
+                        avatar_url: contactoInfo.avatar_url || null,
+                        ultimoMensaje: ultimoResult.data ? ultimoResult.data.contenido : 'Sin mensajes',
+                        ultimoRemitente: ultimoResult.data ? ultimoResult.data.remitente_id : null,
+                        noLeidos: noLeidosResult.count || 0,
+                        fecha: ultimoResult.data ? ultimoResult.data.created_at : null
+                    });
+                }
+
+                conversaciones.sort(function(a, b) {
+                    if (!a.fecha) return 1;
+                    if (!b.fecha) return -1;
+                    return new Date(b.fecha) - new Date(a.fecha);
+                });
+
+                var convList = document.getElementById('conversacionesList');
+                if (convList) {
+                    var html = '';
+                    for (var j = 0; j < conversaciones.length; j++) {
+                        var conv = conversaciones[j];
+                        var avatar = conv.avatar_url ? '<img src="' + escapeHTML(conv.avatar_url) + '" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" />' : (conv.nombre ? conv.nombre[0].toUpperCase() : '✦');
+                        var isActive = conversacionActual && conversacionActual.id === conv.id;
+                        var nombreSanitizado = escapeHTML(conv.nombre);
+                        var ultimoMensajeSanitizado = escapeHTML(conv.ultimoMensaje);
+
+                        html += '<div class="conv-item ' + (isActive ? 'active' : '') + '" data-id="' + conv.id + '" onclick="abrirConversacion(\'' + conv.id + '\')">' +
+                            '<div class="conv-avatar">' + avatar + '</div>' +
+                            '<div class="conv-info">' +
+                            '<div class="conv-nombre">' + nombreSanitizado + '</div>' +
+                            '<div class="conv-msg">' + (ultimoMensajeSanitizado.length > 40 ? ultimoMensajeSanitizado.substring(0, 40) + '...' : ultimoMensajeSanitizado) + '</div>' +
+                            '</div>' +
+                            '<div class="conv-meta">' +
+                            (conv.noLeidos > 0 ? '<span class="conv-badge">' + conv.noLeidos + '</span>' : '') +
+                            (conv.fecha ? '<span class="conv-hora">' + new Date(conv.fecha).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) + '</span>' : '') +
+                            '</div>' +
+                            '<div style="display:flex;gap:4px;flex-shrink:0;">' +
+                            '<button onclick="event.stopPropagation();eliminarConversacion(\'' + conv.id + '\')" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.6rem;">✕</button>' +
+                            '</div>' +
+                            '</div>';
+                    }
+                    convList.innerHTML = html;
+                }
+            } catch (e) {
+                console.error('Error cargando conversaciones:', e);
+            }
+        }
+
+        // ================================================================
+        // 💬 ABRIR CONVERSACIÓN
+        // ================================================================
+        async function abrirConversacion(contactoId) {
+            var session = await getSession();
+            if (!session) {
+                showToast('⚠️ Inicia sesión para abrir conversaciones', 'error');
+                return;
+            }
+
+            try {
+                var contactoResult = await window.supabase
+                    .from('usuarios')
+                    .select('id, nombre, handle, avatar_url')
+                    .eq('id', contactoId)
+                    .single();
+
+                if (contactoResult.error) throw contactoResult.error;
+
+                conversacionActual = contactoResult.data;
+
+                var chatNombre = document.getElementById('chatNombre');
+                if (chatNombre) chatNombre.textContent = contactoResult.data.nombre || 'Usuario';
+
+                var chatAvatar = document.querySelector('.chat-avatar');
+                if (chatAvatar) chatAvatar.textContent = contactoResult.data.nombre ? contactoResult.data.nombre[0].toUpperCase() : '✦';
+
+                var estadoResult = await window.supabase
+                    .from('usuarios')
+                    .select('online, ultima_conexion')
+                    .eq('id', contactoId)
+                    .single();
+
+                var chatEstado = document.getElementById('chatEstado');
+                if (chatEstado) {
+                    if (estadoResult.data && estadoResult.data.online) {
+                        chatEstado.textContent = '🟢 En línea';
+                        chatEstado.className = 'chat-estado online';
+                    } else if (estadoResult.data && estadoResult.data.ultima_conexion) {
+                        var diff = Math.floor((Date.now() - new Date(estadoResult.data.ultima_conexion)) / 60000);
+                        if (diff < 5) {
+                            chatEstado.textContent = '🟡 Última vez hace unos minutos';
+                        } else if (diff < 60) {
+                            chatEstado.textContent = '🟡 Última vez hace ' + diff + ' min';
+                        } else if (diff < 1440) {
+                            chatEstado.textContent = '🟡 Última vez hace ' + Math.floor(diff / 60) + ' h';
+                        } else {
+                            chatEstado.textContent = '🟡 Última vez hace ' + Math.floor(diff / 1440) + ' d';
+                        }
+                        chatEstado.className = 'chat-estado';
+                    } else {
+                        chatEstado.textContent = '⚪ Desconectado';
+                        chatEstado.className = 'chat-estado';
+                    }
+                }
+
+                await marcarMensajesLeidos(contactoId);
+                await cargarMensajes(contactoId);
+
+                if (realtimeChannel) {
+                    try { await window.supabase.removeChannel(realtimeChannel); } catch (e) {}
+                    realtimeChannel = null;
+                }
+
+                realtimeChannel = window.supabase
+                    .channel('chat-' + contactoId)
+                    .on('postgres_changes', {
+                        event: 'INSERT',
+                        schema: 'public',
+                        table: 'mensajes_chat',
+                        filter: 'remitente_id=eq.' + contactoId
+                    }, function(payload) {
+                        if (payload.new.destinatario_id === session.user.id) {
+                            agregarMensajeRealtime(payload.new);
+                            marcarMensajesLeidos(contactoId);
+                        }
+                    })
+                    .on('postgres_changes', {
+                        event: 'UPDATE',
+                        schema: 'public',
+                        table: 'mensajes_chat'
+                    }, function() {
+                        cargarConversaciones();
+                    })
+                    .subscribe();
+
+                cargarConversaciones();
+
+            } catch (e) {
+                console.error('Error abriendo conversación:', e);
+            }
+        }
+
+        // ================================================================
+        // 📖 CARGAR MENSAJES
+        // ================================================================
+        async function cargarMensajes(contactoId) {
+            var session = await getSession();
+            if (!session) return;
+
+            var container = document.getElementById('chatMessages');
+            if (!container) return;
+
+            var result = await window.supabase
+                .from('mensajes_chat')
+                .select('*')
+                .or('and(remitente_id.eq.' + session.user.id + ',destinatario_id.eq.' + contactoId + '),and(remitente_id.eq.' + contactoId + ',destinatario_id.eq.' + session.user.id + ')')
+                .order('created_at', { ascending: true });
+
+            if (result.error) {
+                console.error('Error cargando mensajes:', result.error);
+                return;
+            }
+
+            if (result.data && result.data.length > 0) {
+                var html = '';
+                for (var i = 0; i < result.data.length; i++) {
+                    html += crearMensajeHTML(result.data[i]);
+                }
+                container.innerHTML = html;
+                container.scrollTop = container.scrollHeight;
+            } else {
+                container.innerHTML = '<div class="empty-chat"><span class="icon">◈</span><h3>Inicia la conversación</h3><p>Envía un mensaje para comenzar</p></div>';
+            }
+        }
+
+        // ================================================================
+        // ✏️ CREAR MENSAJE HTML
+        // ================================================================
+        function crearMensajeHTML(msg) {
+            var esEnviado = msg.remitente_id === usuarioActual.id;
+            var fecha = new Date(msg.created_at);
+            var hora = fecha.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            var contenidoFormateado = formatearTexto(msg.contenido || '');
+
+            if (msg.tipo === 'imagen' && msg.imagen_url) {
+                return crearMensajeImagen(msg, esEnviado, hora);
+            }
+
+            if (msg.tipo === 'voz' && msg.imagen_url) {
+                return crearMensajeAudio(msg, esEnviado, hora);
+            }
+
+            if (esEnviado) {
+                return '<div class="msg-wrapper enviado">' +
+                    '<div class="burbuja">' + contenidoFormateado + '</div>' +
+                    '<div class="meta">' + hora + (msg.editado ? ' ✎' : '') +
+                    ' <span class="leido ' + (msg.leido ? 'leido' : 'no-leido') + '">' + (msg.leido ? '◆◆' : '◆◇') + '</span>' +
+                    ' <button onclick="eliminarMensaje(\'' + msg.id + '\')" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:0.5rem;">✕</button>' +
+                    ' <button onclick="editarMensaje(\'' + msg.id + '\')" style="background:none;border:none;color:var(--gold);cursor:pointer;font-size:0.5rem;">✎</button>' +
+                    '</div></div>';
+            }
+
+            return '<div class="msg-wrapper recibido">' +
+                '<div class="fila">' +
+                '<div class="avatar estado-conectado">◈</div>' +
+                '<div class="burbuja">' + contenidoFormateado + '</div>' +
+                '</div>' +
+                '<div class="meta">' + hora + (msg.editado ? ' ✎' : '') +
+                ' <button onclick="reportarMensaje(\'' + msg.id + '\')" style="background:none;border:none;color:var(--warning);cursor:pointer;font-size:0.5rem;">⚠️</button>' +
+                '</div></div>';
+        }
+
+        function crearMensajeImagen(msg, esEnviado, hora) {
+            var imagenUrl = escapeHTML(msg.imagen_url);
+            if (esEnviado) {
+                return '<div class="msg-wrapper enviado">' +
+                    '<div class="burbuja" style="padding:4px;background:transparent;border-radius:12px;">' +
+                    '<img src="' + imagenUrl + '" style="max-width:200px;border-radius:12px;border:2px solid var(--gold);" />' +
+                    '</div>' +
+                    '<div class="meta">' + hora + (msg.editado ? ' ✎' : '') + ' <span class="leido ' + (msg.leido ? 'leido' : 'no-leido') + '">' + (msg.leido ? '◆◆' : '◆◇') + '</span></div></div>';
+            }
+            return '<div class="msg-wrapper recibido">' +
+                '<div class="fila">' +
+                '<div class="avatar estado-conectado">◈</div>' +
+                '<div class="burbuja" style="padding:4px;background:transparent;border-radius:12px;border:1px solid var(--glass-border);">' +
+                '<img src="' + imagenUrl + '" style="max-width:200px;border-radius:12px;" />' +
+                '</div>' +
+                '</div>' +
+                '<div class="meta">' + hora + (msg.editado ? ' ✎' : '') + '</div></div>';
+        }
+
+        function crearMensajeAudio(msg, esEnviado, hora) {
+            var audioUrl = escapeHTML(msg.imagen_url);
+            if (esEnviado) {
+                return '<div class="msg-wrapper enviado">' +
+                    '<div class="burbuja" style="display:flex;align-items:center;gap:8px;">' +
+                    '<span>🎵</span>' +
+                    '<audio controls style="max-width:150px;height:30px;"><source src="' + audioUrl + '" type="audio/mpeg"></audio>' +
+                    '</div>' +
+                    '<div class="meta">' + hora + ' <span class="leido ' + (msg.leido ? 'leido' : 'no-leido') + '">' + (msg.leido ? '◆◆' : '◆◇') + '</span></div></div>';
+            }
+            return '<div class="msg-wrapper recibido">' +
+                '<div class="fila">' +
+                '<div class="avatar estado-conectado">◈</div>' +
+                '<div class="burbuja" style="display:flex;align-items:center;gap:8px;">' +
+                '<span>🎵</span>' +
+                '<audio controls style="max-width:150px;height:30px;"><source src="' + audioUrl + '" type="audio/mpeg"></audio>' +
+                '</div>' +
+                '</div>' +
+                '<div class="meta">' + hora + '</div></div>';
+        }
+
+        // ================================================================
+        // 📨 AGREGAR MENSAJE EN TIEMPO REAL
+        // ================================================================
+        function agregarMensajeRealtime(msg) {
+            var container = document.getElementById('chatMessages');
+            if (!container) return;
+
+            var empty = container.querySelector('.empty-chat');
+            if (empty) empty.remove();
+
+            if (msg.remitente_id !== conversacionActual.id && msg.destinatario_id !== conversacionActual.id) return;
+
+            container.innerHTML += crearMensajeHTML(msg);
+            container.scrollTop = container.scrollHeight;
+            cargarConversaciones();
+        }
+
+        // ================================================================
+        // 📤 ENVIAR MENSAJE
+        // ================================================================
+        async function enviarMensaje() {
+            var chatInput = document.getElementById('chatInput');
+            var contenido = chatInput.value.trim();
+
+            if (!contenido && archivosSeleccionados.length === 0) {
+                if (!conversacionActual) showToast('⚠️ Selecciona una conversación', 'warning');
+                return;
+            }
+
+            var session = await getSession();
+            if (!session) {
+                showToast('⚠️ Inicia sesión para enviar mensajes', 'error');
+                return;
+            }
+
+            if (!conversacionActual) {
+                showToast('⚠️ Selecciona una conversación', 'error');
+                return;
+            }
+
+            try {
+                if (archivosSeleccionados.length > 0) {
+                    for (var i = 0; i < archivosSeleccionados.length; i++) {
+                        await subirArchivo(archivosSeleccionados[i], session);
+                    }
+                    archivosSeleccionados = [];
+                    document.getElementById('filePreview').innerHTML = '';
+                    chatInput.value = '';
+                    return;
+                }
+
+                var result = await window.supabase
+                    .from('mensajes_chat')
+                    .insert({
+                        remitente_id: session.user.id,
+                        destinatario_id: conversacionActual.id,
+                        contenido: contenido,
+                        tipo: 'texto'
+                    });
+
+                if (result.error) throw result.error;
+
+                chatInput.value = '';
+                await cargarMensajes(conversacionActual.id);
+                cargarConversaciones();
+
+            } catch (e) {
+                console.error('Error enviando mensaje:', e);
+                showToast('❌ Error al enviar mensaje', 'error');
+            }
+        }
+
+        // ================================================================
+        // 🖼️ SUBIR ARCHIVO
+        // ================================================================
+        async function subirArchivo(file, session) {
+            try {
+                var fileExt = file.name.split('.').pop().toLowerCase();
+                var tipo = file.type.startsWith('image/') ? 'imagen' : 'voz';
+                var filePath = 'mensajes/' + session.user.id + '/' + Date.now() + '.' + fileExt;
+
+                var uploadResult = await window.supabase.storage
+                    .from('mensajes')
+                    .upload(filePath, file, { upsert: true });
+
+                if (uploadResult.error) throw uploadResult.error;
+
+                var urlData = window.supabase.storage.from('mensajes').getPublicUrl(filePath);
+                var publicUrl = urlData.data.publicUrl;
+
+                var result = await window.supabase
+                    .from('mensajes_chat')
+                    .insert({
+                        remitente_id: session.user.id,
+                        destinatario_id: conversacionActual.id,
+                        contenido: file.name,
+                        tipo: tipo,
+                        imagen_url: publicUrl
+                    });
+
+                if (result.error) throw result.error;
+
+                showToast('✅ Archivo enviado', 'success');
+                await cargarMensajes(conversacionActual.id);
+                cargarConversaciones();
+
+            } catch (e) {
+                console.error('Error subiendo archivo:', e);
+                showToast('❌ Error al subir archivo', 'error');
+            }
+        }
+
+        // ================================================================
+        // 📎 SELECCIONAR ARCHIVO
+        // ================================================================
+        function seleccionarArchivo() {
+            var input = document.getElementById('fileInput');
+            if (input) input.click();
+        }
+
+        function handleFileSelect(event) {
+            var files = event.target.files;
+            if (!files || files.length === 0) return;
+
+            var preview = document.getElementById('filePreview');
+            preview.innerHTML = '';
+            archivosSeleccionados = [];
+
+            for (var i = 0; i < files.length; i++) {
+                var file = files[i];
+                archivosSeleccionados.push(file);
+                var isImage = file.type.startsWith('image/');
+                var isAudio = file.type.startsWith('audio/');
+                var icon = isImage ? '🖼️' : (isAudio ? '🎵' : '📎');
+                var size = (file.size / 1024).toFixed(1);
+
+                var el = document.createElement('div');
+                el.style.cssText = 'display:inline-flex;align-items:center;gap:6px;background:rgba(212,175,55,0.1);padding:4px 12px;border-radius:12px;font-size:0.65rem;color:var(--text-secondary);';
+                el.innerHTML = icon + ' ' + escapeHTML(file.name) + ' (' + size + 'KB) <span onclick="this.parentElement.remove();archivosSeleccionados=[];" style="cursor:pointer;color:var(--danger);">✕</span>';
+                preview.appendChild(el);
+            }
+
+            event.target.value = '';
+            showToast('📎 ' + files.length + ' archivo(s) seleccionado(s)', 'success');
+        }
+
+        // ================================================================
+        // 🎙️ GRABACIÓN DE VOZ
+        // ================================================================
+        function toggleGrabacionVoz() {
+            var btn = document.getElementById('btnGrabarVoz');
+            if (!grabacionActiva) {
+                iniciarGrabacionVoz(btn);
+            } else {
+                detenerGrabacionVoz(btn);
+            }
+        }
+
+        async function iniciarGrabacionVoz(btn) {
+            try {
+                var stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+
+                mediaRecorder.ondataavailable = function(event) {
+                    audioChunks.push(event.data);
+                };
+
+                mediaRecorder.onstop = async function() {
+                    var audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    var file = new File([audioBlob], 'voz_' + Date.now() + '.webm', { type: 'audio/webm' });
+
+                    var session = await getSession();
+                    if (session && conversacionActual) {
+                        archivosSeleccionados = [file];
+                        await enviarMensaje();
+                    }
+
+                    stream.getTracks().forEach(function(track) { track.stop(); });
+                };
+
+                mediaRecorder.start();
+                grabacionActiva = true;
+                btn.textContent = '⏹️';
+                btn.style.color = 'var(--danger)';
+                showToast('🎙️ Grabando...', '');
+
+            } catch (e) {
+                console.error('Error iniciando grabación:', e);
+                showToast('❌ Error al acceder al micrófono', 'error');
+            }
+        }
+
+        function detenerGrabacionVoz(btn) {
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.stop();
+                grabacionActiva = false;
+                btn.textContent = '🎙️';
+                btn.style.color = '';
+                showToast('✅ Grabación finalizada', 'success');
+            }
+        }
+
+        // ================================================================
+        // 🗑️ ELIMINAR MENSAJE
+        // ================================================================
+        async function eliminarMensaje(mensajeId) {
+            if (!confirm('¿Eliminar este mensaje?')) return;
+
+            try {
+                var session = await getSession();
+                if (!session) {
+                    showToast('⚠️ Inicia sesión', 'error');
+                    return;
+                }
+
+                var result = await window.supabase
+                    .from('mensajes_chat')
+                    .update({ eliminado: true })
+                    .eq('id', mensajeId)
+                    .eq('remitente_id', session.user.id);
+
+                if (result.error) throw result.error;
+
+                showToast('🗑️ Mensaje eliminado');
+                if (conversacionActual) {
+                    await cargarMensajes(conversacionActual.id);
+                }
+                cargarConversaciones();
+
+            } catch (e) {
+                console.error('Error eliminando mensaje:', e);
+                showToast('❌ Error al eliminar mensaje', 'error');
+            }
+        }
+
+        // ================================================================
+        // ✏️ EDITAR MENSAJE
+        // ================================================================
+        async function editarMensaje(mensajeId) {
+            var nuevoContenido = prompt('Edita tu mensaje:');
+            if (nuevoContenido === null) return;
+            if (!nuevoContenido.trim()) {
+                showToast('⚠️ No puedes dejar vacío', 'error');
+                return;
+            }
+
+            try {
+                var session = await getSession();
+                if (!session) {
+                    showToast('⚠️ Inicia sesión', 'error');
+                    return;
+                }
+
+                var result = await window.supabase
+                    .from('mensajes_chat')
+                    .update({
+                        contenido: nuevoContenido,
+                        editado: true
+                    })
+                    .eq('id', mensajeId)
+                    .eq('remitente_id', session.user.id);
+
+                if (result.error) throw result.error;
+
+                showToast('✅ Mensaje editado');
+                if (conversacionActual) {
+                    await cargarMensajes(conversacionActual.id);
+                }
+
+            } catch (e) {
+                console.error('Error editando mensaje:', e);
+                showToast('❌ Error al editar mensaje', 'error');
+            }
+        }
+
+        // ================================================================
+        // 🗑️ ELIMINAR CONVERSACIÓN
+        // ================================================================
+        async function eliminarConversacion(contactoId) {
+            if (!contactoId) {
+                showToast('⚠️ No hay conversación seleccionada', 'error');
+                return;
+            }
+
+            if (!confirm('¿Eliminar toda la conversación con este contacto?')) return;
+
+            try {
+                var session = await getSession();
+                if (!session) {
+                    showToast('⚠️ Inicia sesión', 'error');
+                    return;
+                }
+
+                await window.supabase
+                    .from('mensajes_chat')
+                    .update({ eliminado: true })
+                    .or('and(remitente_id.eq.' + session.user.id + ',destinatario_id.eq.' + contactoId + '),and(remitente_id.eq.' + contactoId + ',destinatario_id.eq.' + session.user.id + ')');
+
+                await window.supabase
+                    .from('contactos')
+                    .delete()
+                    .eq('usuario_id', session.user.id)
+                    .eq('contacto_id', contactoId);
+
+                if (conversacionActual && conversacionActual.id === contactoId) {
+                    conversacionActual = null;
+                    document.getElementById('chatNombre').textContent = 'Selecciona una conversación';
+                    document.getElementById('chatMessages').innerHTML = '<div class="empty-chat"><span class="icon">◈</span><h3>Conversación eliminada</h3></div>';
+                }
+
+                showToast('🗑️ Conversación eliminada');
+                await cargarConversaciones();
+
+            } catch (e) {
+                console.error('Error eliminando conversación:', e);
+                showToast('❌ Error al eliminar conversación', 'error');
+            }
+        }
+
+        // ================================================================
+        // 👁️ MARCAR MENSAJES COMO LEÍDOS
+        // ================================================================
+        async function marcarMensajesLeidos(contactoId) {
+            try {
+                var session = await getSession();
+                if (!session) return;
+
+                var result = await window.supabase
+                    .from('mensajes_chat')
+                    .update({ leido: true })
+                    .eq('remitente_id', contactoId)
+                    .eq('destinatario_id', session.user.id)
+                    .eq('leido', false)
+                    .is('eliminado', false);
+
+                if (result.error) throw result.error;
+
+            } catch (e) {
+                console.error('Error marcando mensajes como leídos:', e);
+            }
+        }
+
+        // ================================================================
+        // ⚠️ REPORTAR MENSAJE
+        // ================================================================
+        async function reportarMensaje(mensajeId) {
+            var motivo = prompt('¿Por qué reportas este mensaje? (spam, ofensa, acoso, ilegal)');
+            if (!motivo) return;
+
+            try {
+                var session = await getSession();
+                if (!session) {
+                    showToast('⚠️ Inicia sesión para reportar', 'error');
+                    return;
+                }
+
+                var result = await window.supabase
+                    .from('mensajes_reportes')
+                    .insert({
+                        mensaje_id: mensajeId,
+                        usuario_id: session.user.id,
+                        motivo: motivo
+                    });
+
+                if (result.error) {
+                    if (result.error.code === '42P01') {
+                        showToast('⚠️ La tabla de reportes no está configurada', 'warning');
+                        return;
+                    }
+                    throw result.error;
+                }
+
+                showToast('⚠️ Reporte enviado. Gracias por ayudar.', 'warning');
+
+            } catch (e) {
+                console.error('Error reportando mensaje:', e);
+                showToast('❌ Error al reportar', 'error');
+            }
+        }
+
+        // ================================================================
+        // 🚫 BLOQUEAR USUARIO
+        // ================================================================
+        async function bloquearUsuario(usuarioId) {
+            if (!usuarioId) {
+                showToast('⚠️ No hay usuario seleccionado', 'error');
+                return;
+            }
+
+            if (!confirm('¿Bloquear a este usuario? No podrán enviarte mensajes.')) return;
+
+            try {
+                var session = await getSession();
+                if (!session) {
+                    showToast('⚠️ Inicia sesión', 'error');
+                    return;
+                }
+
+                try {
+                    await window.supabase
+                        .from('bloqueos')
+                        .insert({
+                            usuario_id: session.user.id,
+                            bloqueado_id: usuarioId
+                        });
+                } catch (insertError) {
+                    if (insertError.code === '42P01') {
+                        showToast('⚠️ La tabla de bloqueos no está configurada', 'warning');
+                        return;
+                    }
+                    throw insertError;
+                }
+
+                await window.supabase
+                    .from('contactos')
+                    .delete()
+                    .eq('usuario_id', session.user.id)
+                    .eq('contacto_id', usuarioId);
+
+                showToast('🚫 Usuario bloqueado');
+
+                if (conversacionActual && conversacionActual.id === usuarioId) {
+                    conversacionActual = null;
+                    document.getElementById('chatNombre').textContent = 'Selecciona una conversación';
+                    document.getElementById('chatMessages').innerHTML = '<div class="empty-chat"><span class="icon">◈</span><h3>Usuario bloqueado</h3></div>';
+                }
+
+                await cargarConversaciones();
+
+            } catch (e) {
+                console.error('Error bloqueando usuario:', e);
+                showToast('❌ Error al bloquear usuario', 'error');
+            }
+        }
+
+        // ================================================================
+        // 🔍 BUSCAR EN CONVERSACIÓN
+        // ================================================================
+        async function buscarEnConversacion(query) {
+            if (!query || !query.trim()) {
+                showToast('⚠️ Escribe algo para buscar', 'warning');
+                return;
+            }
+
+            if (!conversacionActual) {
+                showToast('⚠️ Selecciona una conversación', 'error');
+                return;
+            }
+
+            try {
+                var session = await getSession();
+                if (!session) return;
+
+                var result = await window.supabase
+                    .from('mensajes_chat')
+                    .select('*')
+                    .or('and(remitente_id.eq.' + session.user.id + ',destinatario_id.eq.' + conversacionActual.id + '),and(remitente_id.eq.' + conversacionActual.id + ',destinatario_id.eq.' + session.user.id + ')')
+                    .ilike('contenido', '%' + query + '%')
+                    .order('created_at', { ascending: true });
+
+                if (result.error) throw result.error;
+
+                var container = document.getElementById('chatMessages');
+                if (!result.data || result.data.length === 0) {
+                    container.innerHTML = '<div class="empty-chat"><span class="icon">◈</span><h3>No se encontraron resultados</h3><p>No hay mensajes que coincidan con "' + escapeHTML(query) + '"</p><button onclick="cargarMensajes(\'' + conversacionActual.id + '\')" style="margin-top:12px;padding:8px 20px;background:linear-gradient(135deg,var(--gold),var(--gold-dark));border:none;border-radius:30px;color:var(--space);font-weight:600;cursor:pointer;">Volver</button></div>';
+                    return;
+                }
+
+                var html = '';
+                for (var i = 0; i < result.data.length; i++) {
+                    html += crearMensajeHTML(result.data[i]);
+                }
+                container.innerHTML = html;
+                container.scrollTop = container.scrollHeight;
+                showToast('🔍 Encontrados ' + result.data.length + ' mensajes', 'success');
+
+            } catch (e) {
+                console.error('Error buscando:', e);
+                showToast('❌ Error al buscar', 'error');
+            }
+        }
+
+        // ================================================================
+        // ✎ NUEVA CONVERSACIÓN (ABRIR MODAL)
+        // ================================================================
+        function nuevaConversacion() {
+            document.getElementById('modalNuevoContacto').classList.add('show');
+            document.getElementById('searchInputModal').value = '';
+            document.getElementById('resultadosBusqueda').innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:0.75rem;">Escribe al menos 2 caracteres para buscar</div>';
+            setTimeout(function() {
+                document.getElementById('searchInputModal').focus();
+            }, 200);
+        }
+
+        function cerrarModalNuevoContacto() {
+            document.getElementById('modalNuevoContacto').classList.remove('show');
+        }
+
+        // ================================================================
+        // LIMPIEZA DE RECURSOS
+        // ================================================================
+        function limpiarRecursosMensajes() {
+            if (realtimeChannel) {
+                try { window.supabase.removeChannel(realtimeChannel); } catch (e) {}
+                realtimeChannel = null;
+            }
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                try { mediaRecorder.stop(); } catch (e) {}
+            }
+            if (audioChunks.length > 0) {
+                audioChunks = [];
+            }
+            archivosSeleccionados = [];
+            grabacionActiva = false;
+        }
+
+        window.addEventListener('beforeunload', limpiarRecursosMensajes);
+
+        // ================================================================
+        // 🔄 INICIALIZACIÓN
+        // ================================================================
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('◈ Sariel\'s - Mensajes');
+            console.log('✅ Inicializando...');
+
+            cargarConversaciones();
+
+            var chatInput = document.getElementById('chatInput');
+            if (chatInput) {
+                chatInput.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') {
+                        enviarMensaje();
+                    }
+                });
+            }
+
+            var btnEnviar = document.getElementById('btnEnviar');
+            if (btnEnviar) {
+                btnEnviar.addEventListener('click', enviarMensaje);
+            }
+
+            var searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                searchInput.addEventListener('input', function(e) {
+                    buscarContactos(e.target.value);
+                });
+            }
+
+            var searchInputModal = document.getElementById('searchInputModal');
+            if (searchInputModal) {
+                searchInputModal.addEventListener('input', function(e) {
+                    buscarContactos(e.target.value);
+                });
+            }
+
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    cerrarModalNuevoContacto();
+                }
+            });
+        });
+
+        // ================================================================
+        // 🎯 EXPOSICIÓN GLOBAL
+        // ================================================================
+        window.cargarConversaciones = cargarConversaciones;
+        window.abrirConversacion = abrirConversacion;
+        window.enviarMensaje = enviarMensaje;
+        window.eliminarMensaje = eliminarMensaje;
+        window.editarMensaje = editarMensaje;
+        window.eliminarConversacion = eliminarConversacion;
+        window.bloquearUsuario = bloquearUsuario;
+        window.reportarMensaje = reportarMensaje;
+        window.buscarEnConversacion = buscarEnConversacion;
+        window.nuevaConversacion = nuevaConversacion;
+        window.cerrarModalNuevoContacto = cerrarModalNuevoContacto;
+        window.agregarContacto = agregarContacto;
+        window.buscarContactos = buscarContactos;
+        window.seleccionarArchivo = seleccionarArchivo;
+        window.handleFileSelect = handleFileSelect;
+        window.toggleGrabacionVoz = toggleGrabacionVoz;
+        window.showToast = showToast;
+        window.limpiarRecursosMensajes = limpiarRecursosMensajes;
+    </script>
+
 </body>
 </html>
