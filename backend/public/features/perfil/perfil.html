@@ -314,6 +314,12 @@
             box-shadow: 0 4px 20px rgba(0, 255, 136, 0.2);
         }
         .btn-crypto:hover { transform: translateY(-2px); box-shadow: 0 0 40px rgba(0, 255, 136, 0.3); }
+        .btn-wallet {
+            background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+            color: #fff;
+            box-shadow: 0 4px 20px rgba(139, 92, 246, 0.2);
+        }
+        .btn-wallet:hover { transform: translateY(-2px); box-shadow: 0 0 40px rgba(139, 92, 246, 0.3); }
 
         .perfil-tabs {
             display: flex;
@@ -1071,10 +1077,10 @@
                         </div>
 
                         <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
-                            <button class="btn btn-gold" style="flex:1;justify-content:center;" onclick="comprarDomo(1)">
-                                ⟡ Comprar Domo (MXN)
+                            <button class="btn btn-gold" style="flex:1;justify-content:center;padding:10px;" onclick="comprarDomo(1)">
+                                ⟡ Comprar Domo • $75 MXN
                             </button>
-                            <button class="btn btn-gold" style="flex:1;justify-content:center;" id="canjearNft" onclick="canjearNFT()" disabled>
+                            <button class="btn btn-gold" style="flex:1;justify-content:center;padding:10px;" id="canjearNft" onclick="canjearNFT()" disabled>
                                 🔒 CANJEAR NFT
                             </button>
                         </div>
@@ -1103,7 +1109,7 @@
                             </div>
                         </div>
 
-                        <button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:8px;" onclick="irAMuro()">
+                        <button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:8px;padding:10px;" onclick="irAMuro()">
                             ◇ Ir al Muro
                         </button>
                     </div>
@@ -1149,7 +1155,7 @@
                             <button class="btn btn-outline" style="width:100%;" onclick="abrirSelectorArchivo()">📸 Subir foto</button>
                             <div class="hint">◈ Sube una foto para personalizar tu perfil</div>
                         </div>
-                        <button class="btn btn-gold" style="width:100%;justify-content:center;" onclick="guardarPerfil()">
+                        <button class="btn btn-gold" style="width:100%;justify-content:center;padding:10px;" onclick="guardarPerfil()">
                             ◆ Guardar cambios
                         </button>
                     </div>
@@ -1165,7 +1171,7 @@
                             <label>Wallet conectada</label>
                             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
                                 <span id="walletDisplay" style="font-family:monospace;font-size:0.85rem;color:var(--text-secondary);">⚠️ No conectada</span>
-                                <button class="btn btn-gold btn-sm" onclick="conectarWallet()" id="btnConectarWallet">
+                                <button class="btn btn-wallet btn-sm" onclick="conectarWallet()" id="btnConectarWallet">
                                     ◈ Conectar
                                 </button>
                                 <button class="btn btn-danger btn-sm" onclick="desconectarWallet()" style="display:none;" id="btnDesconectarWallet">
@@ -1177,7 +1183,7 @@
                                 Red: <span id="walletRed">Polygon Amoy</span>
                             </div>
                         </div>
-                        <button class="btn btn-danger" style="width:100%;justify-content:center;margin-top:8px;" onclick="cerrarSesion()">
+                        <button class="btn btn-danger" style="width:100%;justify-content:center;padding:10px;margin-top:8px;" onclick="cerrarSesion()">
                             ✕ Cerrar sesión
                         </button>
                     </div>
@@ -1262,14 +1268,14 @@
                             <div style="display:flex;gap:8px;flex-wrap:wrap;">
                                 <input type="text" id="qrInput" placeholder="Ej: DOMO-2025-ABC123" 
                                        style="flex:1;padding:10px 14px;background:rgba(0,0,0,0.3);border:1px solid var(--glass-border);border-radius:10px;color:var(--text-primary);font-size:0.85rem;outline:none;">
-                                <button class="btn btn-gold" onclick="escanearQR()" id="btnEscanearQR">
+                                <button class="btn btn-gold" id="btnEscanearQR" onclick="escanearQR()">
                                     🔍 Escanear QR
                                 </button>
                             </div>
                             <div class="hint">⚡ Escanea el QR de tu domo físico para recibir 1 Es.stok</div>
                         </div>
 
-                        <button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:8px;" onclick="abrirCamaraQR()">
+                        <button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:8px;padding:10px;" onclick="abrirCamaraQR()">
                             📷 Escanear con cámara
                         </button>
 
