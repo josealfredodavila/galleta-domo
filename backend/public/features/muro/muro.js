@@ -1,14 +1,17 @@
 /* ================================================================
    MURO - SARIEL'S ECOSYSTEM
-   VERSIÓN CORREGIDA - USANDO window.supabase (SINGLETON GLOBAL)
+   VERSIÓN CORREGIDA - SIN RPCs INEXISTENTES
    ================================================================ */
 
 // ================================================================
 // CONFIGURACIÓN SUPABASE - REUTILIZAR EL CLIENTE GLOBAL
 // ================================================================
-// ✅ ELIMINADA LA DECLARACIÓN DUPLICADA DE supabaseClient
 // ✅ Usamos window.supabase que es creado por app.js
-const supabase = window.supabase;
+let supabase = window.supabase;
+
+if (typeof supabase === 'undefined') {
+    console.error('❌ Supabase no está disponible');
+}
 
 // ================================================================
 // VARIABLES GLOBALES
@@ -22,6 +25,7 @@ let precioActual = 4.50;
 let publicando = false;
 let muroChannel = null;
 let isRealtimeProcessing = false;
+const likeCache = new Map();
 
 // ================================================================
 // ESCAPE HTML - PREVENCIÓN XSS
@@ -34,7 +38,7 @@ function escapeHTML(texto) {
 }
 
 // ================================================================
-// SHOWTOAST SEGURO - EVITA BUCLES
+// SHOWTOAST SEGURO
 // ================================================================
 function showToast(mensaje, tipo = 'info') {
     try {
@@ -179,10 +183,9 @@ async function cargarPreciosMercado() {
 }
 
 // ================================================================
-// CARGAR PUBLICACIONES - CON CONTROL DE BUCLES
+// CARGAR PUBLICACIONES
 // ================================================================
 async function cargarPublicaciones(reset = true) {
-    // ✅ Evitar cargas múltiples simultáneas
     if (isLoading) return;
     
     if (reset) {
@@ -233,7 +236,6 @@ async function cargarPublicaciones(reset = true) {
             feedContainer.innerHTML = '';
         }
 
-        // ✅ Renderizar posts sin llamadas recursivas
         data.forEach(post => {
             const postElement = renderizarPost(post);
             if (feedContainer) feedContainer.appendChild(postElement);
@@ -242,7 +244,6 @@ async function cargarPublicaciones(reset = true) {
         currentPage++;
         hasMorePosts = data.length === POSTS_PER_PAGE;
 
-        // ✅ Observer para carga infinita - sin recursión
         if (hasMorePosts && feedContainer) {
             const lastPost = feedContainer.lastElementChild;
             if (lastPost) {
@@ -264,7 +265,7 @@ async function cargarPublicaciones(reset = true) {
 }
 
 // ================================================================
-// RENDERIZAR POST - OPTIMIZADO SIN BUCLES
+// RENDERIZAR POST
 // ================================================================
 function renderizarPost(post) {
     const div = document.createElement('div');
@@ -341,7 +342,6 @@ function renderizarPost(post) {
         </div>
     `;
 
-    // ✅ Verificar like sin recursión - solo si hay usuario
     if (sessionUser) {
         verificarLike(post.id).then(liked => {
             const likeBtn = div.querySelector('.like-btn');
@@ -360,7 +360,6 @@ function renderizarPost(post) {
 // ================================================================
 function sanitizarHTML(texto) {
     if (!texto) return '';
-    // Primero escapar HTML para prevenir XSS
     let sanitizado = escapeHTML(texto);
 
     sanitizado = sanitizado.replace(
@@ -376,14 +375,11 @@ function sanitizarHTML(texto) {
 }
 
 // ================================================================
-// VERIFICAR LIKE - CON CACHE PARA EVITAR CONSULTAS REPETIDAS
+// VERIFICAR LIKE - CON CACHE
 // ================================================================
-const likeCache = new Map();
-
 async function verificarLike(postId) {
     if (!sessionUser) return false;
     
-    // ✅ Usar cache para evitar consultas repetidas
     const cacheKey = `${postId}_${sessionUser.id}`;
     if (likeCache.has(cacheKey)) {
         return likeCache.get(cacheKey);
@@ -408,7 +404,7 @@ async function verificarLike(postId) {
 }
 
 // ================================================================
-// TOGGLE LIKE - ACTUALIZA CACHE
+// TOGGLE LIKE
 // ================================================================
 async function toggleLike(postId) {
     if (!sessionUser) {
@@ -646,10 +642,9 @@ async function eliminarPublicacion(postId) {
 }
 
 // ================================================================
-// PUBLICAR NUEVA PUBLICACIÓN - CON BLOQUEO Y PREVENCIÓN DE BUCLES
+// PUBLICAR NUEVA PUBLICACIÓN
 // ================================================================
 async function publicar() {
-    // 🔒 Evitar múltiples publicaciones simultáneas
     if (publicando) {
         showToast('⏳ Ya estás publicando, espera un momento...', 'warning');
         return;
@@ -674,13 +669,11 @@ async function publicar() {
         return;
     }
 
-    // 🔒 Bloquear para evitar doble clic
     publicando = true;
     btnPublicar.disabled = true;
     btnPublicar.textContent = '⏳ Publicando...';
 
     try {
-        // ✅ Insertar publicación en Supabase
         const { data, error } = await supabase
             .from('muro_posts')
             .insert({
@@ -692,23 +685,18 @@ async function publicar() {
 
         if (error) throw error;
 
-        // ✅ Limpiar campo y mostrar éxito
         postContent.value = '';
         showToast('✅ Publicación creada', 'success');
 
-        // ✅ Recargar feed SIN recursión (reset=true)
         document.getElementById('feedContainer').innerHTML = '';
         currentPage = 0;
         hasMorePosts = true;
-        
-        // ✅ Cargar publicaciones nuevamente
         await cargarPublicaciones();
 
     } catch (error) {
         console.error('Error al publicar:', error);
         showToast('❌ Error al publicar: ' + error.message, 'error');
     } finally {
-        // 🔓 Liberar bloqueo y restaurar botón
         publicando = false;
         btnPublicar.disabled = false;
         btnPublicar.textContent = '⟡ Publicar';
@@ -1201,17 +1189,27 @@ async function subirImagenMuro(event) {
     try {
         showToast('⏳ Subiendo imagen...', '', 5000);
 
+        // ✅ VERIFICAR QUE EL BUCKET EXISTE
+        const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
+        if (bucketsError) throw bucketsError;
+
+        const bucketExists = buckets.some(b => b.name === 'muro-imagenes');
+        if (!bucketExists) {
+            const { error: createError } = await supabase.storage.createBucket('muro-imagenes', {
+                public: true
+            });
+            if (createError) {
+                console.error('Error creando bucket:', createError);
+                showToast('⚠️ El almacenamiento no está configurado. Contacta al administrador.', 'warning');
+                return;
+            }
+        }
+
         const { error: uploadError } = await supabase.storage
             .from('muro-imagenes')
             .upload(filePath, file, { upsert: true });
 
-        if (uploadError) {
-            if (uploadError.message.includes('bucket')) {
-                showToast('⚠️ El almacenamiento no está configurado. La imagen no se pudo subir.', 'warning');
-                return;
-            }
-            throw uploadError;
-        }
+        if (uploadError) throw uploadError;
 
         const { data: urlData } = supabase.storage
             .from('muro-imagenes')
@@ -1240,10 +1238,9 @@ async function subirImagenMuro(event) {
 }
 
 // ================================================================
-// SUSCRIBIRSE A REALTIME - CORREGIDO (SIN BUCLES)
+// SUSCRIBIRSE A REALTIME
 // ================================================================
 async function suscribirseARealtime() {
-    // ✅ Cerrar canal anterior si existe
     if (muroChannel) {
         try {
             await supabase.removeChannel(muroChannel);
@@ -1258,12 +1255,10 @@ async function suscribirseARealtime() {
         .on('postgres_changes',
             { event: 'INSERT', schema: 'public', table: 'muro_posts' },
             (payload) => {
-                // ✅ Evitar bucles: si está procesando Realtime, ignorar
                 if (isRealtimeProcessing) return;
                 isRealtimeProcessing = true;
 
                 try {
-                    // ✅ Solo agregar si el post no es del usuario actual
                     if (payload.new.usuario_id !== sessionUser?.id) {
                         const feedContainer = document.getElementById('feedContainer');
                         if (feedContainer) {
@@ -1285,7 +1280,6 @@ async function suscribirseARealtime() {
         .on('postgres_changes',
             { event: 'INSERT', schema: 'public', table: 'muro_comentarios' },
             () => {
-                // ✅ Solo actualizar comentarios visibles
                 try {
                     document.querySelectorAll('.post-comentarios[style*="display: block"]').forEach(el => {
                         const postId = el.id.replace('comentarios-', '');
@@ -1308,7 +1302,7 @@ async function suscribirseARealtime() {
 }
 
 // ================================================================
-// INICIALIZACIÓN - CORREGIDA (SIN BUCLES INFINITOS)
+// LIMPIEZA DE RECURSOS
 // ================================================================
 function limpiarRecursosMuro() {
     if (muroChannel) {
@@ -1320,22 +1314,21 @@ function limpiarRecursosMuro() {
 
 window.addEventListener('beforeunload', limpiarRecursosMuro);
 
+// ================================================================
+// INICIALIZACIÓN
+// ================================================================
 document.addEventListener('DOMContentLoaded', async function() {
     await cargarUsuarioActual();
     await cargarPreciosMercado();
     await cargarPublicaciones();
     await suscribirseARealtime();
 
-    // ✅ Event listener del botón "Publicar" - SOLO UNO
     const btnPublicar = document.getElementById('btnPublicar');
     if (btnPublicar) {
-        // Eliminar listeners previos para evitar duplicados
         const newBtn = btnPublicar.cloneNode(true);
         btnPublicar.parentNode.replaceChild(newBtn, btnPublicar);
-        
-        // Agregar el listener correcto
         newBtn.addEventListener('click', function(e) {
-            e.preventDefault(); // Prevenir cualquier comportamiento por defecto
+            e.preventDefault();
             publicar();
         });
     }
