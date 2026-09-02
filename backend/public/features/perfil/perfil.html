@@ -656,20 +656,17 @@
 
         <div class="perfil-container">
 
-            <!-- ===== PERFIL HEADER (DATOS E IDENTIDAD) ===== -->
+            <!-- ===== PERFIL HEADER ===== -->
             <div class="perfil-header" id="perfilHeader">
                 <div class="avatar-container">
                     <div class="avatar" id="perfilAvatar">
                         ◈
-                        <button class="edit-badge" onclick="abrirSelectorArchivo()" title="Cambiar foto de perfil" aria-label="Cambiar foto de perfil">✎</button>
+                        <button class="edit-badge" onclick="abrirSelectorArchivo()" title="Cambiar foto de perfil">✎</button>
                     </div>
                     <input type="file" id="fileInput" accept="image/*" style="display:none;" onchange="subirFoto(event)" />
                 </div>
                 <div class="info">
-                    <div class="nombre" id="perfilNombre">
-                        Cargando...
-                        <span class="verified">✦ VERIFICADO</span>
-                    </div>
+                    <div class="nombre" id="perfilNombre">Cargando...<span class="verified">✦ VERIFICADO</span></div>
                     <div class="handle" id="perfilHandle">@cargando</div>
                     <div class="bio" id="perfilBio">Cargando información del usuario...</div>
                     <div class="badges">
@@ -680,31 +677,19 @@
                     </div>
                 </div>
                 <div class="stats">
-                    <div class="stat">
-                        <div class="number" id="statTokens">0</div>
-                        <div class="label">◈ Tokens</div>
-                    </div>
-                    <div class="stat">
-                        <div class="number" id="statNFTS">0</div>
-                        <div class="label">◈ NFTs</div>
-                    </div>
-                    <div class="stat">
-                        <div class="number" id="statSeguidores">0</div>
-                        <div class="label">◈ Seguidores</div>
-                    </div>
-                    <div class="stat">
-                        <div class="number" id="statSiguiendo">0</div>
-                        <div class="label">◈ Siguiendo</div>
-                    </div>
+                    <div class="stat"><div class="number" id="statTokens">0</div><div class="label">◈ Tokens</div></div>
+                    <div class="stat"><div class="number" id="statNFTS">0</div><div class="label">◈ NFTs</div></div>
+                    <div class="stat"><div class="number" id="statSeguidores">0</div><div class="label">◈ Seguidores</div></div>
+                    <div class="stat"><div class="number" id="statSiguiendo">0</div><div class="label">◈ Siguiendo</div></div>
                 </div>
                 <div class="acciones">
-                    <button class="btn btn-gold btn-sm" id="btnEditarPerfil" onclick="editarPerfil()">✎ Editar perfil</button>
-                    <button class="btn btn-outline btn-sm" id="btnCompartirPerfil" onclick="compartirPerfil()">◈ Compartir</button>
-                    <button class="btn btn-outline btn-sm" id="btnQRPerfil" onclick="generarQRPerfil()">📱 QR</button>
+                    <button class="btn btn-gold btn-sm" onclick="editarPerfil()">✎ Editar perfil</button>
+                    <button class="btn btn-outline btn-sm" onclick="compartirPerfil()">◈ Compartir</button>
+                    <button class="btn btn-outline btn-sm" onclick="generarQRPerfil()">📱 QR</button>
                 </div>
             </div>
 
-            <!-- ===== SECCIÓN DE ESTADO Y SOCIAL ===== -->
+            <!-- ===== SECCIÓN DE ESTADO ===== -->
             <div class="estado-section">
                 <div class="estado-header">
                     <div class="estado-info">
@@ -713,26 +698,18 @@
                         <span class="amigos-online">· <span id="amigosEnLineaContador">0</span> amigos en línea</span>
                     </div>
                     <div class="estado-buttons">
-                        <button class="btn-estado online" id="btnEstadoActivo" onclick="cambiarEstado(true)">🟢 Activo</button>
-                        <button class="btn-estado offline" id="btnEstadoInactivo" onclick="cambiarEstado(false)">⭕ Inactivo</button>
+                        <button class="btn-estado online" onclick="cambiarEstado(true)">🟢 Activo</button>
+                        <button class="btn-estado offline" onclick="cambiarEstado(false)">⭕ Inactivo</button>
                     </div>
                 </div>
-
-                <!-- SOLICITUDES PENDIENTES -->
                 <div id="solicitudesSection">
                     <h4 style="margin-top:12px;">📨 Solicitudes de Amistad <span id="solicitudesContador" style="font-size:0.7rem;color:var(--warning);">0</span></h4>
-                    <div id="solicitudesContainer" style="max-height: 200px; overflow-y: auto;">
-                        <div style="text-align:center; padding:10px; color:var(--text-muted); font-size:0.75rem;">
-                            Cargando solicitudes...
-                        </div>
-                    </div>
+                    <div id="solicitudesContainer" style="max-height:200px;overflow-y:auto;"><div style="text-align:center;padding:10px;color:var(--text-muted);font-size:0.75rem;">Cargando solicitudes...</div></div>
                 </div>
-
-                <!-- LISTA DE AMIGOS -->
                 <div id="amigosContainer"></div>
             </div>
 
-            <!-- ===== SECCIÓN DE CONEXIÓN (WiFi/Datos) ===== -->
+            <!-- ===== SECCIÓN DE CONEXIÓN ===== -->
             <div class="conexion-section">
                 <div class="conexion-header">
                     <div class="conexion-info">
@@ -741,104 +718,48 @@
                         <span class="señal" id="conexionSeñal" style="color:var(--success);">████</span>
                     </div>
                     <div class="conexion-buttons">
-                        <button class="btn-conexion wifi active" id="btnWifi" onclick="cambiarConexion('wifi')">🛜 WiFi</button>
-                        <button class="btn-conexion datos" id="btnDatos" onclick="cambiarConexion('datos')">📶 Datos</button>
+                        <button class="btn-conexion wifi active" onclick="cambiarConexion('wifi')">🛜 WiFi</button>
+                        <button class="btn-conexion datos" onclick="cambiarConexion('datos')">📶 Datos</button>
                     </div>
                 </div>
-                <div style="font-size:0.6rem;color:var(--text-muted);margin-top:6px;">
-                    Conexión actual: <span id="conexionTipo">🛜 WiFi</span>
-                    · Operador: <span id="conexionOperador">Sariel's Net</span>
-                </div>
+                <div style="font-size:0.6rem;color:var(--text-muted);margin-top:6px;">Conexión actual: <span id="conexionTipo">🛜 WiFi</span> · Operador: <span id="conexionOperador">Sariel's Net</span></div>
             </div>
 
-            <!-- ===== TABS PRINCIPALES ===== -->
+            <!-- ===== TABS ===== -->
             <div class="perfil-tabs" role="tablist">
-                <button class="tab-btn active" id="tabBtnActividad" onclick="cambiarTab('actividad')">◈ Actividad</button>
-                <button class="tab-btn" id="tabBtnTokens" onclick="cambiarTab('tokens')">⟡ E.S.TOKS</button>
-                <button class="tab-btn" id="tabBtnNfts" onclick="cambiarTab('nfts')">🎨 NFTs</button>
-                <button class="tab-btn" id="tabBtnEsim" onclick="cambiarTab('esim')">📱 eSIM</button>
-                <button class="tab-btn" id="tabBtnQr" onclick="cambiarTab('qr')">📷 Escanear QR</button>
-                <button class="tab-btn" id="tabBtnConfig" onclick="cambiarTab('config')">◆ Ajustes</button>
+                <button class="tab-btn active" onclick="cambiarTab('actividad')">◈ Actividad</button>
+                <button class="tab-btn" onclick="cambiarTab('tokens')">⟡ E.S.TOKS</button>
+                <button class="tab-btn" onclick="cambiarTab('nfts')">🎨 NFTs</button>
+                <button class="tab-btn" onclick="cambiarTab('esim')">📱 eSIM</button>
+                <button class="tab-btn" onclick="cambiarTab('qr')">📷 Escanear QR</button>
+                <button class="tab-btn" onclick="cambiarTab('config')">◆ Ajustes</button>
             </div>
 
             <!-- ===== TAB: ACTIVIDAD ===== -->
             <div id="tab-actividad" class="tab-content active">
-                <div class="panel">
-                    <div class="panel-header">
-                        <h3>◈ Última actividad</h3>
-                        <span class="panel-badge">En vivo</span>
-                    </div>
-                    <div class="panel-body" id="actividadList">
-                        <div class="empty-state">
-                            <span class="icon">◈</span>
-                            <h4>Sin actividad reciente</h4>
-                            <p>Interactúa en la comunidad para generar actividad.</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="panel">
-                    <div class="panel-header">
-                        <h3>◈ Mis Publicaciones</h3>
-                        <span class="panel-badge" id="postsCount">0</span>
-                    </div>
-                    <div class="panel-body" id="postsList">
-                        <div class="empty-state">
-                            <span class="icon">◈</span>
-                            <h4>Sin publicaciones</h4>
-                            <p>Crea tu primera publicación desde el Muro.</p>
-                        </div>
-                    </div>
-                </div>
+                <div class="panel"><div class="panel-header"><h3>◈ Última actividad</h3><span class="panel-badge">En vivo</span></div><div class="panel-body" id="actividadList"><div class="empty-state"><span class="icon">◈</span><h4>Sin actividad reciente</h4><p>Interactúa en la comunidad para generar actividad.</p></div></div></div>
+                <div class="panel"><div class="panel-header"><h3>◈ Mis Publicaciones</h3><span class="panel-badge" id="postsCount">0</span></div><div class="panel-body" id="postsList"><div class="empty-state"><span class="icon">◈</span><h4>Sin publicaciones</h4><p>Crea tu primera publicación desde el Muro.</p></div></div></div>
             </div>
 
             <!-- ===== TAB: E.S.TOKS ===== -->
             <div id="tab-tokens" class="tab-content">
                 <div class="panel">
-                    <div class="panel-header">
-                        <h3>⟡ Balance E.S.TOKS & Domos</h3>
-                        <span class="panel-badge">Ecosistema</span>
-                    </div>
+                    <div class="panel-header"><h3>⟡ Balance E.S.TOKS & Domos</h3><span class="panel-badge">Ecosistema</span></div>
                     <div class="panel-body">
                         <div class="token-status">
-                            <div class="item">
-                                <div class="value" id="tokenTotal">0</div>
-                                <div class="label">◈ Balance Tokens</div>
-                            </div>
-                            <div class="item">
-                                <div class="value" id="tokenDisponibles">0</div>
-                                <div class="label">◈ Disponibles</div>
-                            </div>
-                            <div class="item">
-                                <div class="value" id="tokenVendidos">0</div>
-                                <div class="label">◈ Domos Leídos</div>
-                            </div>
-                            <div class="item">
-                                <div class="value" id="tokenNFTs">0</div>
-                                <div class="label">◈ NFTs Desbloqueados</div>
-                            </div>
+                            <div class="item"><div class="value" id="tokenTotal">0</div><div class="label">◈ Balance Tokens</div></div>
+                            <div class="item"><div class="value" id="tokenDisponibles">0</div><div class="label">◈ Disponibles</div></div>
+                            <div class="item"><div class="value" id="tokenVendidos">0</div><div class="label">◈ Domos Leídos</div></div>
+                            <div class="item"><div class="value" id="tokenNFTs">0</div><div class="label">◈ NFTs Desbloqueados</div></div>
                         </div>
-
                         <div class="progress-bar-container">
-                            <div class="bar">
-                                <div class="fill" id="progressFill" style="width: 0%;"></div>
-                            </div>
-                            <div class="label">
-                                <span>Progreso meta 12 E.S.TOKS</span>
-                                <span id="progressText">0 / 12</span>
-                            </div>
+                            <div class="bar"><div class="fill" id="progressFill" style="width:0%;"></div></div>
+                            <div class="label"><span>Progreso meta 12 E.S.TOKS</span><span id="progressText">0 / 12</span></div>
                         </div>
-
                         <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;">
-                            <button class="btn btn-gold" style="flex:1;justify-content:center;padding:10px;" id="btnComprarDomo" onclick="comprarDomo(1)">
-                                ⟡ Registrar Domo • $75 MXN
-                            </button>
-                            <button class="btn btn-gold" style="flex:1;justify-content:center;padding:10px;" id="canjearNft" onclick="canjearNFT()" disabled>
-                                🔒 CANJEAR NFT (Requiere 12 Tokens)
-                            </button>
+                            <button class="btn btn-gold" style="flex:1;justify-content:center;padding:10px;" onclick="comprarDomo(1)">⟡ Registrar Domo • $75 MXN</button>
+                            <button class="btn btn-gold" style="flex:1;justify-content:center;padding:10px;" id="canjearNft" onclick="canjearNFT()" disabled>🔒 CANJEAR NFT (Requiere 12 Tokens)</button>
                         </div>
-
-                        <!-- COMPRAR CON CRIPTO -->
                         <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--glass-border);">
                             <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
                                 <span style="font-size:0.8rem;color:var(--gold);font-weight:600;">💳 Obtención vía Cripto</span>
@@ -846,231 +767,112 @@
                             </div>
                             <div class="crypto-controls">
                                 <div class="qty-group">
-                                    <button class="qty-btn" id="cryptoDecreaseQty" aria-label="Reducir cantidad">−</button>
+                                    <button class="qty-btn" id="cryptoDecreaseQty">−</button>
                                     <span class="qty-value" id="cryptoQuantity">1</span>
-                                    <button class="qty-btn" id="cryptoIncreaseQty" aria-label="Aumentar cantidad">+</button>
+                                    <button class="qty-btn" id="cryptoIncreaseQty">+</button>
                                 </div>
-                                <div style="flex:1;text-align:center;">
-                                    <span class="crypto-total" id="cryptoTotal">$4.59 USDT</span>
-                                </div>
+                                <div style="flex:1;text-align:center;"><span class="crypto-total" id="cryptoTotal">$4.59 USDT</span></div>
                             </div>
-                            <button class="btn btn-crypto" style="width:100%;justify-content:center;margin-top:10px;padding:10px;" id="btnPagarCripto" onclick="comprarConCripto()">
-                                💳 Pagar con USDT/USDC
-                            </button>
+                            <button class="btn btn-crypto" style="width:100%;justify-content:center;margin-top:10px;padding:10px;" onclick="comprarConCripto()">💳 Pagar con USDT/USDC</button>
                         </div>
                     </div>
                 </div>
-
                 <div class="panel">
-                    <div class="panel-header">
-                        <h3>◈ Historial de E.S.TOKS y Domos</h3>
-                        <span class="panel-badge" id="historialCount">0</span>
-                    </div>
-                    <div class="panel-body" id="historialList">
-                        <div class="empty-state">
-                            <span class="icon">◈</span>
-                            <h4>Sin registros</h4>
-                            <p>Registra o escanea Domos para acumular tu historial.</p>
-                        </div>
-                    </div>
+                    <div class="panel-header"><h3>◈ Historial de E.S.TOKS y Domos</h3><span class="panel-badge" id="historialCount">0</span></div>
+                    <div class="panel-body" id="historialList"><div class="empty-state"><span class="icon">◈</span><h4>Sin registros</h4><p>Registra o escanea Domos para acumular tu historial.</p></div></div>
                 </div>
             </div>
 
-            <!-- ===== TAB: NFTs (CONMEMORATIVOS) ===== -->
+            <!-- ===== TAB: NFTs ===== -->
             <div id="tab-nfts" class="tab-content">
                 <div class="panel">
-                    <div class="panel-header">
-                        <h3>🎨 Galería de NFTs Conmemorativos</h3>
-                        <span class="panel-badge">Sariel's Collection</span>
-                    </div>
+                    <div class="panel-header"><h3>🎨 Galería de NFTs Conmemorativos</h3><span class="panel-badge">Sariel's Collection</span></div>
                     <div class="panel-body">
-                        <div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:14px;">
-                            ⓘ Los NFTs de Sariel's son activos digitales conmemorativos e intransferibles emitidos al completar metas dentro de la red.
-                        </div>
-                        <div id="nftGalleryContainer" class="nft-grid">
-                            <div class="empty-state" style="grid-column:1/-1;">
-                                <span class="icon">🎨</span>
-                                <h4>No posees NFTs conmemorativos</h4>
-                                <p>Reúne 12 E.S.TOKS para canjear tu primer NFT conmemorativo.</p>
-                            </div>
-                        </div>
+                        <div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:14px;">ⓘ Los NFTs de Sariel's son activos digitales conmemorativos e intransferibles emitidos al completar metas dentro de la red.</div>
+                        <div id="nftGalleryContainer" class="nft-grid"><div class="empty-state" style="grid-column:1/-1;"><span class="icon">🎨</span><h4>No posees NFTs conmemorativos</h4><p>Reúne 12 E.S.TOKS para canjear tu primer NFT conmemorativo.</p></div></div>
                     </div>
                 </div>
             </div>
 
-            <!-- ===== TAB: eSIM / CONECTIVIDAD ===== -->
+            <!-- ===== TAB: eSIM ===== -->
             <div id="tab-esim" class="tab-content">
                 <div class="panel">
-                    <div class="panel-header">
-                        <h3>📱 Estado de eSIM</h3>
-                        <span class="panel-badge">Telnyx Mobile</span>
-                    </div>
+                    <div class="panel-header"><h3>📱 Estado de eSIM</h3><span class="panel-badge">Telnyx Mobile</span></div>
                     <div class="panel-body">
-                        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));gap:10px;">
-                            <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;border:1px solid var(--glass-border);">
-                                <span style="color:var(--text-muted);font-size:0.6rem;">ESTADO ACTIVACIÓN</span>
-                                <div id="esimStatus" style="font-weight:600;font-size:0.85rem;">⏳ No asignada</div>
-                            </div>
-                            <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;border:1px solid var(--glass-border);">
-                                <span style="color:var(--text-muted);font-size:0.6rem;">DATOS CONSUMIDOS</span>
-                                <div id="esimDataUsed" style="font-weight:600;font-size:0.85rem;">-- GB</div>
-                            </div>
-                            <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;border:1px solid var(--glass-border);">
-                                <span style="color:var(--text-muted);font-size:0.6rem;">LÍMITE DEL PLAN</span>
-                                <div id="esimDataLimit" style="font-weight:600;font-size:0.85rem;">-- GB</div>
-                            </div>
-                            <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;border:1px solid var(--glass-border);">
-                                <span style="color:var(--text-muted);font-size:0.6rem;">DATOS RESTANTES</span>
-                                <div id="esimDataRestante" style="font-weight:600;font-size:0.85rem;color:var(--success);">-- GB</div>
-                            </div>
+                        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;">
+                            <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;border:1px solid var(--glass-border);"><span style="color:var(--text-muted);font-size:0.6rem;">ESTADO ACTIVACIÓN</span><div id="esimStatus" style="font-weight:600;font-size:0.85rem;">⏳ No asignada</div></div>
+                            <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;border:1px solid var(--glass-border);"><span style="color:var(--text-muted);font-size:0.6rem;">DATOS CONSUMIDOS</span><div id="esimDataUsed" style="font-weight:600;font-size:0.85rem;">-- GB</div></div>
+                            <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;border:1px solid var(--glass-border);"><span style="color:var(--text-muted);font-size:0.6rem;">LÍMITE DEL PLAN</span><div id="esimDataLimit" style="font-weight:600;font-size:0.85rem;">-- GB</div></div>
+                            <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;border:1px solid var(--glass-border);"><span style="color:var(--text-muted);font-size:0.6rem;">DATOS RESTANTES</span><div id="esimDataRestante" style="font-weight:600;font-size:0.85rem;color:var(--success);">-- GB</div></div>
                         </div>
-
-                        <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;border:1px solid var(--glass-border);margin-top:10px;">
-                            <span style="color:var(--text-muted);font-size:0.6rem;">ICCID IDENTIFICADOR</span>
-                            <div id="esimIccid" style="font-weight:600;font-size:0.8rem;font-family:monospace;">--</div>
-                        </div>
-
-                        <div style="margin-top:12px;">
-                            <div style="background:rgba(0,0,0,0.2);border-radius:10px;height:8px;overflow:hidden;">
-                                <div id="esimDataProgress" style="height:100%;width:0%;background:var(--success);transition:width 0.8s;"></div>
-                            </div>
-                        </div>
-
+                        <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;border:1px solid var(--glass-border);margin-top:10px;"><span style="color:var(--text-muted);font-size:0.6rem;">ICCID IDENTIFICADOR</span><div id="esimIccid" style="font-weight:600;font-size:0.8rem;font-family:monospace;">--</div></div>
+                        <div style="margin-top:12px;"><div style="background:rgba(0,0,0,0.2);border-radius:10px;height:8px;overflow:hidden;"><div id="esimDataProgress" style="height:100%;width:0%;background:var(--success);transition:width 0.8s;"></div></div></div>
                         <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;">
-                            <button class="btn btn-gold" style="flex:1;justify-content:center;padding:10px;" id="btnComprarESIM" onclick="comprarESIM(1)">
-                                📱 Adquirir eSIM
-                            </button>
-                            <button class="btn btn-outline" style="flex:1;justify-content:center;padding:10px;" id="btnQrEsim" onclick="generarQRESIM()">
-                                📲 Obtener QR
-                            </button>
-                            <button class="btn btn-outline" style="flex:1;justify-content:center;padding:10px;" id="btnSincronizarEsim" onclick="sincronizarESIM()">
-                                🔄 Sincronizar
-                            </button>
+                            <button class="btn btn-gold" style="flex:1;justify-content:center;padding:10px;" onclick="comprarESIM(1)">📱 Adquirir eSIM</button>
+                            <button class="btn btn-outline" style="flex:1;justify-content:center;padding:10px;" onclick="generarQRESIM()">📲 Obtener QR</button>
+                            <button class="btn btn-outline" style="flex:1;justify-content:center;padding:10px;" onclick="sincronizarESIM()">🔄 Sincronizar</button>
                         </div>
-
                         <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
-                            <button class="btn btn-outline btn-sm" id="btnActivarESIM" onclick="activarESIM()" style="border-color:var(--success);color:var(--success);">
-                                ✅ Activar eSIM
-                            </button>
-                            <button class="btn btn-danger btn-sm" id="btnDesactivarESIM" onclick="desactivarESIM()">
-                                ⛔ Desactivar eSIM
-                            </button>
+                            <button class="btn btn-outline btn-sm" onclick="activarESIM()" style="border-color:var(--success);color:var(--success);">✅ Activar eSIM</button>
+                            <button class="btn btn-danger btn-sm" onclick="desactivarESIM()">⛔ Desactivar eSIM</button>
                         </div>
-
-                        <div style="margin-top:10px;font-size:0.6rem;color:var(--text-muted);">
-                            APN Requerido: <span id="esimApn" style="font-family:monospace;color:var(--text-secondary);">data00.telnyx</span>
-                        </div>
+                        <div style="margin-top:10px;font-size:0.6rem;color:var(--text-muted);">APN Requerido: <span id="esimApn" style="font-family:monospace;color:var(--text-secondary);">data00.telnyx</span></div>
                     </div>
                 </div>
             </div>
 
-            <!-- ===== TAB: ESCANEAR QR ===== -->
+            <!-- ===== TAB: QR ===== -->
             <div id="tab-qr" class="tab-content">
                 <div class="panel">
-                    <div class="panel-header">
-                        <h3>📱 Escaneo e Ingreso de QR Domo</h3>
-                        <span class="panel-badge">Validación Real</span>
-                    </div>
+                    <div class="panel-header"><h3>📱 Escaneo e Ingreso de QR Domo</h3><span class="panel-badge">Validación Real</span></div>
                     <div class="panel-body">
-                        <form id="formIngresoQR" onsubmit="event.preventDefault(); escanearQR();" class="config-group">
+                        <form onsubmit="event.preventDefault(); escanearQR();" class="config-group">
                             <label for="qrInput">Código del QR (Escanea o ingresa manualmente)</label>
                             <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                                <input type="text" id="qrInput" placeholder="Ej: DOMO-2026-X89A12" required
-                                       style="flex:1;padding:10px 14px;background:rgba(0,0,0,0.3);border:1px solid var(--glass-border);border-radius:10px;color:var(--text-primary);font-size:0.85rem;outline:none;">
-                                <button type="submit" class="btn btn-gold" id="btnEscanearQR">
-                                    🔍 Validar Código
-                                </button>
+                                <input type="text" id="qrInput" placeholder="Ej: DOMO-2026-X89A12" required style="flex:1;padding:10px 14px;background:rgba(0,0,0,0.3);border:1px solid var(--glass-border);border-radius:10px;color:var(--text-primary);font-size:0.85rem;outline:none;">
+                                <button type="submit" class="btn btn-gold">🔍 Validar Código</button>
                             </div>
                             <div class="hint">⚡ Ingresa el identificador único del Domo físico para acumular 1 E.S.TOK real.</div>
                         </form>
-
-                        <button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:8px;padding:10px;" id="btnAbrirCamaraQR" onclick="abrirCamaraQR()">
-                            📷 Abrir Cámara del Dispositivo
-                        </button>
-
+                        <button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:8px;padding:10px;" onclick="abrirCamaraQR()">📷 Abrir Cámara del Dispositivo</button>
                         <div id="qrReaderContainer">
                             <video id="qrVideo" playsinline style="width:100%;max-width:300px;border-radius:10px;background:black;"></video>
                             <canvas id="qrCanvas" style="display:none;"></canvas>
-                            <div style="margin-top:8px;">
-                                <button class="btn btn-danger btn-sm" onclick="cerrarCamaraQR()">
-                                    ✕ Cerrar cámara
-                                </button>
-                            </div>
+                            <div style="margin-top:8px;"><button class="btn btn-danger btn-sm" onclick="cerrarCamaraQR()">✕ Cerrar cámara</button></div>
                             <div id="qrCamaraStatus" style="font-size:0.7rem;color:var(--text-muted);margin-top:4px;">Iniciando cámara...</div>
                         </div>
-
                         <div id="qrStatus" style="margin-top:12px;font-size:0.8rem;color:var(--text-muted);min-height:24px;text-align:center;"></div>
-
-                        <div style="margin-top:16px;border-top:1px solid var(--glass-border);padding-top:12px;">
-                            <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.7rem;color:var(--text-muted);">
-                                <span>📋 Escaneos Confirmados</span>
-                                <span id="qrHistorialCount">0</span>
-                            </div>
-                            <div id="qrHistorialList" style="margin-top:8px;">
-                                <div class="empty-state" style="padding:10px;">
-                                    <span class="icon" style="font-size:1.5rem;">◈</span>
-                                    <p style="font-size:0.7rem;">Sin escaneos registrados aún.</p>
-                                </div>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- ===== TAB: CONFIGURACIÓN Y PERFIL ===== -->
+            <!-- ===== TAB: CONFIGURACIÓN ===== -->
             <div id="tab-config" class="tab-content">
                 <div class="panel">
-                    <div class="panel-header">
-                        <h3>◆ Perfil e Información</h3>
-                        <span class="panel-badge">Editar</span>
-                    </div>
+                    <div class="panel-header"><h3>◆ Perfil e Información</h3><span class="panel-badge">Editar</span></div>
                     <div class="panel-body">
-                        <form id="formPerfil" onsubmit="event.preventDefault(); guardarPerfil();">
-                            <div class="config-group">
-                                <label for="editNombre">Nombre de Usuario</label>
-                                <input type="text" id="editNombre" required />
-                            </div>
-                            <div class="config-group">
-                                <label for="editHandle">Handle / Apodo (@)</label>
-                                <input type="text" id="editHandle" required />
-                            </div>
-                            <div class="config-group">
-                                <label for="editBio">Biografía</label>
-                                <textarea id="editBio" rows="3"></textarea>
-                            </div>
-                            <div class="config-group">
-                                <label>Imagen de Perfil</label>
-                                <button type="button" class="btn btn-outline" style="width:100%;" onclick="abrirSelectorArchivo()">📸 Subir nueva foto</button>
-                            </div>
-                            <button type="submit" class="btn btn-gold" style="width:100%;justify-content:center;padding:10px;" id="btnGuardarPerfil">
-                                ◆ Guardar Cambios
-                            </button>
+                        <form onsubmit="event.preventDefault(); guardarPerfil();">
+                            <div class="config-group"><label for="editNombre">Nombre de Usuario</label><input type="text" id="editNombre" required /></div>
+                            <div class="config-group"><label for="editHandle">Handle / Apodo (@)</label><input type="text" id="editHandle" required /></div>
+                            <div class="config-group"><label for="editBio">Biografía</label><textarea id="editBio" rows="3"></textarea></div>
+                            <div class="config-group"><label>Imagen de Perfil</label><button type="button" class="btn btn-outline" style="width:100%;" onclick="abrirSelectorArchivo()">📸 Subir nueva foto</button></div>
+                            <button type="submit" class="btn btn-gold" style="width:100%;justify-content:center;padding:10px;">◆ Guardar Cambios</button>
                         </form>
                     </div>
                 </div>
-
                 <div class="panel">
-                    <div class="panel-header">
-                        <h3>◆ Seguridad y Wallet Web3</h3>
-                        <span class="panel-badge">Conexión</span>
-                    </div>
+                    <div class="panel-header"><h3>◆ Seguridad y Wallet Web3</h3><span class="panel-badge">Conexión</span></div>
                     <div class="panel-body">
                         <div class="config-group">
                             <label>Dirección Wallet Conectada</label>
                             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px;">
                                 <span id="walletDisplay" style="font-family:monospace;font-size:0.85rem;color:var(--text-secondary);">⚠️ No conectada</span>
-                                <button type="button" class="btn btn-wallet btn-sm" onclick="conectarWallet()" id="btnConectarWallet">
-                                    ◈ Conectar Wallet
-                                </button>
-                                <button type="button" class="btn btn-danger btn-sm" onclick="desconectarWallet()" style="display:none;" id="btnDesconectarWallet">
-                                    ✕ Desconectar
-                                </button>
+                                <button type="button" class="btn btn-wallet btn-sm" onclick="conectarWallet()">◈ Conectar Wallet</button>
+                                <button type="button" class="btn btn-danger btn-sm" onclick="desconectarWallet()" style="display:none;">✕ Desconectar</button>
                             </div>
                             <div class="hint">Red Actual: <span id="walletRed">Polygon Mainnet</span></div>
                         </div>
-                        <button type="button" class="btn btn-danger" style="width:100%;justify-content:center;padding:10px;margin-top:12px;" id="btnCerrarSesion" onclick="cerrarSesion()">
-                            ✕ Cerrar Sesión
-                        </button>
+                        <button type="button" class="btn btn-danger" style="width:100%;justify-content:center;padding:10px;margin-top:12px;" onclick="cerrarSesion()">✕ Cerrar Sesión</button>
                     </div>
                 </div>
             </div>
@@ -1092,89 +894,74 @@
 
     <div class="toast" id="toast"></div>
 
-    <!-- ===== MODAL DETALLE NFT ===== -->
+    <!-- ===== MODALES ===== -->
     <div class="modal-overlay" id="nftModal">
         <div class="modal-content">
             <button class="close-btn" onclick="cerrarModal('nftModal')">✕</button>
             <h2 id="nftModalTitle">NFT Conmemorativo</h2>
-            <div style="margin: 15px 0;">
-                <img id="nftModalImage" src="" alt="NFT Preview" style="max-width:200px;width:100%;border-radius:12px;border:1px solid var(--gold);" />
-            </div>
+            <div style="margin:15px 0;"><img id="nftModalImage" src="" alt="NFT" style="max-width:200px;width:100%;border-radius:12px;border:1px solid var(--gold);" /></div>
             <p id="nftModalDescription" class="subtitle" style="font-size:0.8rem;"></p>
-            <div class="address-box">
-                <div class="label">Domo de Origen / Transacción</div>
-                <div class="address" id="nftModalDomo">--</div>
-            </div>
-            <div class="address-box">
-                <div class="label">Fecha de Obtención</div>
-                <div class="address" id="nftModalFecha">--</div>
-            </div>
-            <div class="actions">
-                <button class="btn btn-outline btn-sm" onclick="cerrarModal('nftModal')">Cerrar</button>
-            </div>
+            <div class="address-box"><div class="label">Domo de Origen / Transacción</div><div class="address" id="nftModalDomo">--</div></div>
+            <div class="address-box"><div class="label">Fecha de Obtención</div><div class="address" id="nftModalFecha">--</div></div>
+            <div class="actions"><button class="btn btn-outline btn-sm" onclick="cerrarModal('nftModal')">Cerrar</button></div>
         </div>
     </div>
 
-    <!-- ===== MODAL PAGO CRIPTO ===== -->
     <div class="modal-overlay" id="cryptoPaymentModal">
         <div class="modal-content">
             <button class="close-btn" onclick="cerrarModal('cryptoPaymentModal')">✕</button>
             <h2>💳 Pagar con Cripto</h2>
             <p class="subtitle">Escanea el QR o copia la dirección oficial de depósito</p>
-            
-            <div class="qr-container">
-                <img id="cryptoQR" src="" alt="QR de pago" />
-            </div>
-
-            <div class="address-box">
-                <div class="label">📤 Dirección TRC-20 de pago</div>
-                <div class="address" id="cryptoAddress">Cargando dirección...</div>
-            </div>
-
-            <div class="amount">
-                <span id="cryptoMonto">0.00</span> <span id="cryptoMoneda">USDT</span>
-            </div>
-
+            <div class="qr-container"><img id="cryptoQR" src="" alt="QR" /></div>
+            <div class="address-box"><div class="label">📤 Dirección TRC-20 de pago</div><div class="address" id="cryptoAddress">Cargando dirección...</div></div>
+            <div class="amount"><span id="cryptoMonto">0.00</span> <span id="cryptoMoneda">USDT</span></div>
             <div class="actions">
                 <button class="btn btn-outline btn-sm" onclick="copiarDireccion()">📋 Copiar dirección</button>
-                <button class="btn btn-gold btn-sm" id="btnVerificarPago" onclick="verificarPagoCrypto()">✅ Verificar depósito</button>
+                <button class="btn btn-gold btn-sm" onclick="verificarPagoCrypto()">✅ Verificar depósito</button>
                 <button class="btn btn-outline btn-sm" onclick="cerrarModal('cryptoPaymentModal')">Cancelar</button>
             </div>
-
             <div class="status" id="cryptoStatus">⏳ Esperando confirmación en la red...</div>
         </div>
     </div>
 
-    <!-- MODAL VISTA QR PERFIL -->
     <div class="modal-overlay" id="qrPerfilModal">
         <div class="modal-content">
             <button class="close-btn" onclick="cerrarModal('qrPerfilModal')">✕</button>
             <h2>📱 Mi QR de Perfil</h2>
             <p class="subtitle">Muestra este código para que te agreguen rápidamente</p>
-            <div class="qr-container">
-                <img id="qrPerfilImage" src="" alt="QR Perfil" />
-            </div>
-            <div class="actions">
-                <button class="btn btn-outline btn-sm" onclick="cerrarModal('qrPerfilModal')">Cerrar</button>
-            </div>
+            <div class="qr-container"><img id="qrPerfilImage" src="" alt="QR" /></div>
+            <div class="actions"><button class="btn btn-outline btn-sm" onclick="cerrarModal('qrPerfilModal')">Cerrar</button></div>
         </div>
     </div>
 
-    <!-- NOTIFICADOR DE ERRORES SCRIPT -->
-    <div id="errorBanner" style="display:none; position:fixed; top:0; left:0; right:0; z-index:99999; background:#ff3366; color:#fff; padding:12px 16px; font-family:monospace; font-size:0.75rem; word-break:break-word;">
+    <!-- ===== ERROR BANNER ===== -->
+    <div id="errorBanner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:99999;background:#ff3366;color:#fff;padding:12px 16px;font-family:monospace;font-size:0.75rem;word-break:break-word;">
         <strong>⚠️ Error detectado:</strong>
         <span id="errorBannerText"></span>
-        <button onclick="document.getElementById('errorBanner').style.display='none'" style="float:right; background:none; border:1px solid #fff; color:#fff; border-radius:6px; padding:2px 10px; cursor:pointer;">Cerrar</button>
+        <button onclick="document.getElementById('errorBanner').style.display='none'" style="float:right;background:none;border:1px solid #fff;color:#fff;border-radius:6px;padding:2px 10px;cursor:pointer;">Cerrar</button>
     </div>
 
+    <!-- ================================================================ -->
+    <!-- SCRIPTS - ORDEN CORRECTO -->
+    <!-- ================================================================ -->
+
+    <!-- 1. Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
+    <!-- 2. App.js - Define window.supabase y la app -->
+    <script src="/app.js"></script>
+
+    <!-- 3. jsQR para escaneo -->
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+
+    <!-- 4. TODAS las funciones de Perfil - DEFINIDAS AQUÍ -->
     <script>
         // ================================================================
-        // FUNCIONES DE PERFIL - TODAS DEFINIDAS LOCALMENTE
+        // FUNCIONES DE PERFIL - DEFINIDAS GLOBALMENTE
         // ================================================================
 
-        // Toast para mensajes
-        function showToast(msg, type, duration) {
-            duration = duration || 3500;
+        // Toast
+        function showToast(msg, type) {
             var t = document.getElementById('toast');
             if (!t) {
                 t = document.createElement('div');
@@ -1189,12 +976,10 @@
             else if (type === 'success') t.classList.add('success');
             else t.classList.remove('error', 'warning', 'success');
             clearTimeout(t._timeout);
-            t._timeout = setTimeout(function() {
-                t.classList.remove('show');
-            }, duration);
+            t._timeout = setTimeout(function() { t.classList.remove('show'); }, 3500);
         }
 
-        // Función para cambiar tabs
+        // Cambiar tab
         function cambiarTab(tab) {
             var contents = document.querySelectorAll('.tab-content');
             for (var i = 0; i < contents.length; i++) {
@@ -1210,7 +995,7 @@
             if (tabBtn) tabBtn.classList.add('active');
         }
 
-        // ===== FUNCIONES DEL PERFIL =====
+        // ===== PERFIL =====
         function editarPerfil() {
             cambiarTab('config');
             showToast('✏️ Edita tu perfil en la pestaña Ajustes', '');
@@ -1258,6 +1043,14 @@
             showToast('📸 Foto seleccionada: ' + file.name, '');
         }
 
+        function guardarPerfil() {
+            showToast('⏳ Guardando perfil...', '');
+            setTimeout(function() {
+                showToast('✅ Perfil actualizado', 'success');
+            }, 1500);
+        }
+
+        // ===== ESTADO Y CONEXIÓN =====
         function cambiarEstado(activo) {
             showToast(activo ? '✅ Estado: Activo' : '⭕ Estado: Inactivo', 'success');
         }
@@ -1266,6 +1059,7 @@
             showToast(tipo === 'wifi' ? '🛜 Conectado a WiFi' : '📶 Conectado a datos móviles', 'success');
         }
 
+        // ===== QR =====
         function escanearQR() {
             var input = document.getElementById('qrInput');
             if (!input) return;
@@ -1296,6 +1090,7 @@
             }
         }
 
+        // ===== E.S.TOKS =====
         function comprarDomo(cantidad) {
             showToast('⏳ Procesando compra de Domo...', '');
             setTimeout(function() {
@@ -1310,6 +1105,7 @@
             }, 1500);
         }
 
+        // ===== CRIPTO =====
         function comprarConCripto() {
             var modal = document.getElementById('cryptoPaymentModal');
             if (modal) {
@@ -1329,6 +1125,7 @@
             showToast('📋 Dirección copiada al portapapeles', 'success');
         }
 
+        // ===== eSIM =====
         function comprarESIM(cantidad) {
             showToast('⏳ Adquiriendo eSIM...', '');
             setTimeout(function() {
@@ -1364,6 +1161,7 @@
             }, 1500);
         }
 
+        // ===== WALLET =====
         function conectarWallet() {
             showToast('⏳ Conectando wallet...', '');
             setTimeout(function() {
@@ -1378,6 +1176,7 @@
             }, 1500);
         }
 
+        // ===== SESIÓN =====
         function cerrarSesion() {
             if (confirm('¿Seguro que quieres cerrar sesión?')) {
                 showToast('👋 Sesión cerrada', 'success');
@@ -1387,13 +1186,7 @@
             }
         }
 
-        function guardarPerfil() {
-            showToast('⏳ Guardando perfil...', '');
-            setTimeout(function() {
-                showToast('✅ Perfil actualizado', 'success');
-            }, 1500);
-        }
-
+        // ===== MODALES =====
         function cerrarModal(modalId) {
             var modal = document.getElementById(modalId);
             if (modal) modal.classList.remove('active');
@@ -1407,7 +1200,7 @@
             }
         }
 
-        // ===== MANEJO DE ERRORES =====
+        // ===== ERRORES =====
         function mostrarErrorEnPantalla(mensaje) {
             var banner = document.getElementById('errorBanner');
             var texto = document.getElementById('errorBannerText');
@@ -1425,7 +1218,7 @@
             mostrarErrorEnPantalla('Promesa rechazada: ' + (event.reason?.message || event.reason));
         });
 
-        // ===== CERRAR MODALES CON ESC =====
+        // ===== CERRAR MODALES =====
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
                 document.querySelectorAll('.modal-overlay.active').forEach(function(modal) {
@@ -1434,7 +1227,6 @@
             }
         });
 
-        // ===== CERRAR MODALES CLICK FUERA =====
         document.querySelectorAll('.modal-overlay').forEach(function(modal) {
             modal.addEventListener('click', function(e) {
                 if (e.target === this) {
@@ -1449,13 +1241,14 @@
             showToast('✅ ¡Bienvenido Usuario!', 'success');
         });
 
-        // Exponer funciones globalmente
-        window.cambiarTab = cambiarTab;
+        // Exponer funciones globalmente para que el HTML las vea
         window.editarPerfil = editarPerfil;
         window.compartirPerfil = compartirPerfil;
         window.generarQRPerfil = generarQRPerfil;
         window.abrirSelectorArchivo = abrirSelectorArchivo;
         window.subirFoto = subirFoto;
+        window.guardarPerfil = guardarPerfil;
+        window.cambiarTab = cambiarTab;
         window.cambiarEstado = cambiarEstado;
         window.cambiarConexion = cambiarConexion;
         window.escanearQR = escanearQR;
@@ -1474,16 +1267,11 @@
         window.conectarWallet = conectarWallet;
         window.desconectarWallet = desconectarWallet;
         window.cerrarSesion = cerrarSesion;
-        window.guardarPerfil = guardarPerfil;
         window.cerrarModal = cerrarModal;
         window.abrirModalNft = abrirModalNft;
         window.showToast = showToast;
         window.mostrarErrorEnPantalla = mostrarErrorEnPantalla;
     </script>
 
-    <!-- DEPENDENCIAS CORE -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-    <script src="/app.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 </body>
 </html>
