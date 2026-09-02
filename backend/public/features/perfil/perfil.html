@@ -995,7 +995,140 @@
             if (tabBtn) tabBtn.classList.add('active');
         }
 
-        // ===== PERFIL =====
+        // ================================================================
+        // CARGAR PERFIL DESDE SUPABASE
+        // ================================================================
+        async function cargarPerfil() {
+            try {
+                // Verificar que Supabase está disponible
+                if (typeof window.supabase === 'undefined') {
+                    console.warn('⚠️ Supabase no está disponible');
+                    return;
+                }
+
+                // Obtener sesión
+                const { data: { session }, error: sessionError } = await window.supabase.auth.getSession();
+                if (sessionError) {
+                    console.warn('⚠️ Error obteniendo sesión:', sessionError);
+                    return;
+                }
+
+                if (!session) {
+                    console.warn('⚠️ Usuario no autenticado');
+                    document.getElementById('perfilNombre').innerHTML = 'Inicia sesión';
+                    document.getElementById('perfilHandle').textContent = '@usuario';
+                    document.getElementById('perfilBio').textContent = 'Inicia sesión para ver tu perfil';
+                    return;
+                }
+
+                // Obtener datos del usuario
+                const { data: usuario, error: userError } = await window.supabase
+                    .from('usuarios')
+                    .select('*')
+                    .eq('id', session.user.id)
+                    .single();
+
+                if (userError) {
+                    console.error('❌ Error cargando usuario:', userError);
+                    showToast('❌ Error cargando perfil', 'error');
+                    return;
+                }
+
+                if (!usuario) {
+                    console.warn('⚠️ Usuario no encontrado en tabla usuarios');
+                    return;
+                }
+
+                // Actualizar UI con los datos
+                actualizarUI(usuario);
+
+                // Mostrar mensaje de bienvenida
+                showToast('✅ ¡Bienvenido ' + (usuario.nombre || 'Usuario') + '!', 'success');
+
+            } catch (error) {
+                console.error('❌ Error en cargarPerfil:', error);
+                showToast('❌ Error al cargar perfil', 'error');
+            }
+        }
+
+        // ================================================================
+        // ACTUALIZAR UI CON DATOS DEL USUARIO
+        // ================================================================
+        function actualizarUI(data) {
+            if (!data) return;
+
+            // Nombre
+            var nombreEl = document.getElementById('perfilNombre');
+            if (nombreEl) {
+                var verificado = data.verificado ? ' <span class="verified">✦ VERIFICADO</span>' : '';
+                nombreEl.innerHTML = (data.nombre || 'Usuario') + verificado;
+            }
+
+            // Handle
+            var handleEl = document.getElementById('perfilHandle');
+            if (handleEl) {
+                handleEl.textContent = '@' + (data.handle || 'usuario');
+            }
+
+            // Bio
+            var bioEl = document.getElementById('perfilBio');
+            if (bioEl) {
+                bioEl.textContent = data.bio || 'Sin biografía';
+            }
+
+            // Avatar
+            var avatarEl = document.getElementById('perfilAvatar');
+            if (avatarEl && data.avatar_url) {
+                avatarEl.innerHTML = '<img src="' + data.avatar_url + '" alt="Avatar" style="width:100%;height:100%;object-fit:cover;"/>';
+            }
+
+            // Tokens
+            var statTokens = document.getElementById('statTokens');
+            if (statTokens) {
+                statTokens.textContent = data.tokens || 0;
+            }
+
+            // Tokens total
+            var tokenTotal = document.getElementById('tokenTotal');
+            if (tokenTotal) {
+                tokenTotal.textContent = data.tokens || 0;
+            }
+
+            // Progreso E.S.TOKS
+            var progressFill = document.getElementById('progressFill');
+            var progressText = document.getElementById('progressText');
+            if (progressFill && progressText) {
+                var tokensParaCanje = data.tokens_para_canje || 0;
+                var progreso = Math.min(tokensParaCanje, 12);
+                progressFill.style.width = (progreso / 12 * 100) + '%';
+                progressText.textContent = progreso + ' / 12';
+            }
+
+            // Estado online
+            var estadoBadge = document.getElementById('estadoBadge');
+            var estadoTexto = document.getElementById('estadoTexto');
+            if (estadoBadge && estadoTexto) {
+                if (data.online) {
+                    estadoBadge.textContent = '🟢';
+                    estadoTexto.textContent = 'Activo ahora';
+                    estadoTexto.style.color = 'var(--success)';
+                } else {
+                    estadoBadge.textContent = '⭕';
+                    estadoTexto.textContent = 'Inactivo';
+                    estadoTexto.style.color = 'var(--text-muted)';
+                }
+            }
+
+            // Inputs de edición
+            var editNombre = document.getElementById('editNombre');
+            var editHandle = document.getElementById('editHandle');
+            var editBio = document.getElementById('editBio');
+            if (editNombre) editNombre.value = data.nombre || '';
+            if (editHandle) editHandle.value = data.handle || '';
+            if (editBio) editBio.value = data.bio || '';
+        }
+
+        // ===== FUNCIONES DE PERFIL =====
         function editarPerfil() {
             cambiarTab('config');
             showToast('✏️ Edita tu perfil en la pestaña Ajustes', '');
@@ -1235,10 +1368,15 @@
             });
         });
 
-        // ===== INICIALIZACIÓN =====
+        // ================================================================
+        // INICIALIZACIÓN - Cargar perfil al iniciar
+        // ================================================================
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('✅ Perfil cargado correctamente');
-            showToast('✅ ¡Bienvenido Usuario!', 'success');
+            console.log('✅ Perfil cargado - Cargando datos...');
+            // Esperar un momento para que app.js se inicialice
+            setTimeout(function() {
+                cargarPerfil();
+            }, 500);
         });
 
         // Exponer funciones globalmente para que el HTML las vea
@@ -1271,6 +1409,8 @@
         window.abrirModalNft = abrirModalNft;
         window.showToast = showToast;
         window.mostrarErrorEnPantalla = mostrarErrorEnPantalla;
+        window.cargarPerfil = cargarPerfil;
+        window.actualizarUI = actualizarUI;
     </script>
 
 </body>
