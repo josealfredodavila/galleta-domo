@@ -1,1585 +1,1217 @@
-/* ================================================================
-   PERFIL.JS - SARIEL'S ECOSYSTEM
-   INTEGRACIÓN REAL SUPABASE - PRODUCCIÓN
-   RUTA: backend/public/features/perfil/perfil.js
-   ================================================================ */
-
-// ================================================================
-// CONFIGURACIÓN SUPABASE - REUTILIZAR EL CLIENTE GLOBAL
-// ================================================================
-let supabase = window.supabase;
-
-if (typeof supabase === 'undefined') {
-    console.error('❌ Supabase no está disponible. Asegúrate de que app.js cargue primero.');
-}
-
-// ================================================================
-// CONFIGURACIÓN DE ENTORNO
-// ================================================================
-const ENV = {
-    isProduction: window.location.hostname !== 'localhost' && !window.location.hostname.includes('127.0.0.1'),
-    isTestnet: true,
-    networkName: 'Polygon Amoy Testnet',
-    networkChainId: '0x13882',
-    networkCurrency: 'MATIC',
-    networkRPC: 'https://rpc-amoy.polygon.technology/',
-    networkExplorer: 'https://www.oklink.com/amoy'
-};
-
-// ================================================================
-// UTILIDADES
-// ================================================================
-function escapeHTML(texto) {
-    if (!texto) return '';
-    const div = document.createElement('div');
-    div.textContent = texto;
-    return div.innerHTML;
-}
-
-function showToast(msg, type = '', duration = 3500) {
-    try {
-        let t = document.getElementById('toast');
-        if (!t) {
-            t = document.createElement('div');
-            t.id = 'toast';
-            t.className = 'toast';
-            document.body.appendChild(t);
-        }
-        t.textContent = msg;
-        t.className = 'toast show';
-        
-        if (type === 'error') t.classList.add('error');
-        else if (type === 'warning') t.classList.add('warning');
-        else if (type === 'success') t.classList.add('success');
-        else t.classList.remove('error', 'warning', 'success');
-        
-        clearTimeout(t._timeout);
-        t._timeout = setTimeout(() => {
-            t.classList.remove('show');
-        }, duration);
-    } catch (e) {
-        console.warn('Toast no disponible:', e);
-        alert(msg);
-    }
-}
-
-function haceTiempo(fecha) {
-    if (!fecha) return 'hace tiempo';
-    const ahora = new Date();
-    const entonces = new Date(fecha);
-    const diffMs = ahora - entonces;
-    const diffMin = Math.floor(diffMs / 60000);
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>◈ Perfil · Sariel's</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
     
-    if (diffMin < 1) return 'hace un momento';
-    if (diffMin < 60) return `hace ${diffMin} min`;
-    if (diffMin < 1440) return `hace ${Math.floor(diffMin / 60)} h`;
-    return `hace ${Math.floor(diffMin / 1440)} d`;
-}
-
-// ================================================================
-// SESIÓN Y NAVEGACIÓN
-// ================================================================
-async function getSession() {
-    const { data: { session }, error } = await supabase.auth.getSession();
-    if (error || !session) return null;
-    return session;
-}
-
-function cambiarTab(tab) {
-    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-    
-    const tabContent = document.getElementById('tab-' + tab);
-    if (tabContent) {
-        tabContent.classList.add('active');
-    }
-    const tabBtn = document.querySelector(`.tab-btn[onclick="cambiarTab('${tab}')"]`);
-    if (tabBtn) tabBtn.classList.add('active');
-}
-
-// ================================================================
-// CARGA DE PERFIL REAL (TABLA: usuarios)
-// ================================================================
-let perfilCache = null;
-
-async function cargarPerfil() {
-    try {
-        const session = await getSession();
-        if (!session) {
-            window.location.href = '/login.html';
-            return;
+    <style>
+        :root {
+            --gold: #D4AF37;
+            --gold-dark: #b8923a;
+            --gold-light: #e8c84a;
+            --gold-bright: #f0d060;
+            --green-deep: #0F2D1A;
+            --green-mid: #1a4a2a;
+            --green-bright: #2a6a3a;
+            --space: #05080f;
+            --text-primary: #f0f4f8;
+            --text-secondary: #c0d8e8;
+            --text-muted: #8aa8b8;
+            --glass-bg: rgba(15, 45, 26, 0.55);
+            --glass-border: rgba(212, 175, 55, 0.15);
+            --shadow-gold: 0 8px 32px rgba(212, 175, 55, 0.25);
+            --shadow-gold-strong: 0 0 60px rgba(212, 175, 55, 0.15);
+            --radius: 16px;
+            --radius-xl: 24px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --success: #00d68f;
+            --danger: #ff3366;
+            --warning: #f7d44a;
+            --cyan: #00e5ff;
+            --purple: #a855f7;
+            --pink: #ec4899;
+            --bronze: #CD7F32;
+            --bronze-light: #D4A574;
+            --bronze-dark: #8B5A2B;
+            --bg-card: rgba(15, 45, 26, 0.4);
+            --bg-dark: rgba(5, 8, 15, 0.8);
+            --border-color: rgba(212, 175, 55, 0.08);
         }
 
-        // Usar RPC obtener_mi_perfil() si existe, o consulta directa
-        try {
-            const { data: perfilRPC, error: rpcError } = await supabase
-                .rpc('obtener_mi_perfil');
-            
-            if (!rpcError && perfilRPC) {
-                perfilCache = perfilRPC;
-                actualizarUI(perfilRPC);
-            } else {
-                // Fallback a consulta directa
-                const { data: usuario, error } = await supabase
-                    .from('usuarios')
-                    .select('*')
-                    .eq('id', session.user.id)
-                    .single();
-                
-                if (error) throw error;
-                perfilCache = usuario;
-                actualizarUI(usuario);
-            }
-        } catch (error) {
-            // Fallback a consulta directa
-            const { data: usuario, error } = await supabase
-                .from('usuarios')
-                .select('*')
-                .eq('id', session.user.id)
-                .single();
-            
-            if (error) throw error;
-            perfilCache = usuario;
-            actualizarUI(usuario);
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: var(--space);
+            color: var(--text-primary);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            min-height: 100vh;
+            line-height: 1.6;
+            background-image: 
+                radial-gradient(ellipse at 20% 50%, rgba(26, 74, 42, 0.4) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 50%, rgba(212, 175, 55, 0.08) 0%, transparent 60%);
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
-        // Cargas secundarias vinculadas
-        await Promise.allSettled([
-            cargarWalletConectada(),
-            cargarHistorialESTOKS(),
-            cargarNFTsUsuario(),
-            cargarEstadisticas(),
-            cargarRelacionesSociales(),
-            cargarSolicitudesPendientes(),
-            cargarAmigos()
-        ]);
-
-    } catch (error) {
-        console.error('Error al cargar perfil real:', error);
-        showToast('❌ Error al cargar datos del perfil', 'error');
-    }
-}
-
-function actualizarUI(data) {
-    if (!data) return;
-
-    // Identidad
-    const nombreEl = document.getElementById('perfilNombre');
-    const handleEl = document.getElementById('perfilHandle');
-    const bioEl = document.getElementById('perfilBio');
-    const avatarEl = document.getElementById('perfilAvatar');
-    const portadaEl = document.getElementById('perfilPortada');
-    const ubicacionEl = document.getElementById('perfilUbicacion');
-    const sitioWebEl = document.getElementById('perfilSitioWeb');
-
-    if (nombreEl) {
-        const verificado = data.verificado ? ' <span class="verified">✦ VERIFICADO</span>' : '';
-        nombreEl.innerHTML = `${escapeHTML(data.nombre || 'Usuario')}${verificado}`;
-    }
-    if (handleEl) handleEl.textContent = '@' + (data.handle || 'usuario');
-    if (bioEl) bioEl.textContent = data.bio || 'Sin biografía';
-    if (ubicacionEl) ubicacionEl.textContent = data.ubicacion || 'No especificada';
-    if (sitioWebEl) sitioWebEl.textContent = data.sitio_web || '';
-
-    if (avatarEl && data.avatar_url) {
-        avatarEl.innerHTML = `<img src="${data.avatar_url}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;"/>`;
-    }
-    if (portadaEl && data.portada_url) {
-        portadaEl.style.backgroundImage = `url(${data.portada_url})`;
-    }
-
-    // Tokens y Canje
-    const tokenTotal = document.getElementById('tokenTotal');
-    const progressFill = document.getElementById('progressFill');
-    const progressText = document.getElementById('progressText');
-    const btnCanjear = document.getElementById('canjearNft');
-
-    const tokensParaCanje = data.tokens_para_canje || 0;
-    const progreso = Math.min(tokensParaCanje, 12);
-
-    if (tokenTotal) tokenTotal.textContent = data.tokens || 0;
-    if (progressFill) progressFill.style.width = `${(progreso / 12) * 100}%`;
-    if (progressText) progressText.textContent = `${progreso} / 12`;
-
-    if (btnCanjear) {
-        btnCanjear.disabled = !data.puede_canjear && tokensParaCanje < 12;
-    }
-
-    // Conectividad & eSIM
-    actualizarUIConectividad(data);
-
-    // Campos de edición
-    const editNombre = document.getElementById('editNombre');
-    const editHandle = document.getElementById('editHandle');
-    const editBio = document.getElementById('editBio');
-    const editUbicacion = document.getElementById('editUbicacion');
-    const editSitioWeb = document.getElementById('editSitioWeb');
-
-    if (editNombre) editNombre.value = data.nombre || '';
-    if (editHandle) editHandle.value = data.handle || '';
-    if (editBio) editBio.value = data.bio || '';
-    if (editUbicacion) editUbicacion.value = data.ubicacion || '';
-    if (editSitioWeb) editSitioWeb.value = data.sitio_web || '';
-}
-
-function actualizarUIConectividad(data) {
-    const esimStatus = document.getElementById('esimStatus');
-    const esimDataUsed = document.getElementById('esimDataUsed');
-    const esimDataLimit = document.getElementById('esimDataLimit');
-    const esimIccid = document.getElementById('esimIccid');
-    const esimDataRestante = document.getElementById('esimDataRestante');
-    const esimDataProgress = document.getElementById('esimDataProgress');
-    const conexionTipo = document.getElementById('conexionTipo');
-
-    if (esimIccid) esimIccid.textContent = data.esim_iccid || 'Sin eSIM';
-    if (esimStatus) esimStatus.textContent = data.esim_status || 'Inactiva';
-
-    if (data.esim_iccid) {
-        const usado = data.esim_data_used || 0;
-        const limite = data.esim_data_limit || 0;
-        const restante = Math.max(0, limite - usado);
-        
-        if (esimDataUsed) esimDataUsed.textContent = `${(usado / 1024 / 1024).toFixed(2)} MB`;
-        if (esimDataLimit) esimDataLimit.textContent = `${(limite / 1024 / 1024).toFixed(2)} MB`;
-        if (esimDataRestante) esimDataRestante.textContent = `${(restante / 1024 / 1024).toFixed(2)} MB`;
-        
-        if (esimDataProgress) {
-            const porcentaje = limite > 0 ? (usado / limite) * 100 : 0;
-            esimDataProgress.style.width = `${Math.min(porcentaje, 100)}%`;
-            esimDataProgress.style.background = porcentaje > 80 ? 'var(--danger)' : 'var(--success)';
-        }
-    } else {
-        if (esimDataUsed) esimDataUsed.textContent = '0 MB';
-        if (esimDataLimit) esimDataLimit.textContent = '0 MB';
-        if (esimDataRestante) esimDataRestante.textContent = '0 MB';
-        if (esimDataProgress) esimDataProgress.style.width = '0%';
-    }
-
-    if (conexionTipo) {
-        conexionTipo.textContent = data.conexion_tipo ? `${data.conexion_tipo.toUpperCase()} (${data.conexion_velocidad || 'N/A'})` : 'Desconectado';
-    }
-}
-
-// ================================================================
-// GUARDAR PERFIL REAL (TABLA: usuarios)
-// ================================================================
-async function guardarPerfil() {
-    try {
-        const session = await getSession();
-        if (!session) {
-            showToast('⚠️ Sesión no encontrada', 'error');
-            return;
+        #stars-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
         }
 
-        const nombre = document.getElementById('editNombre')?.value?.trim();
-        const handle = document.getElementById('editHandle')?.value?.trim().replace('@', '');
-        const bio = document.getElementById('editBio')?.value?.trim();
-        const ubicacion = document.getElementById('editUbicacion')?.value?.trim();
-        const sitio_web = document.getElementById('editSitioWeb')?.value?.trim();
+        .nebula {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(120px);
+            opacity: 0.12;
+            pointer-events: none;
+            z-index: 0;
+            animation: nebula-drift 25s ease-in-out infinite alternate;
+        }
+        .nebula-1 { width: 700px; height: 700px; background: var(--green-bright); top: -15%; right: -15%; }
+        .nebula-2 { width: 600px; height: 600px; background: var(--gold-light); bottom: -15%; left: -15%; animation-delay: -8s; opacity: 0.06; }
+        .nebula-3 { width: 500px; height: 500px; background: var(--purple); top: 50%; left: 50%; transform: translate(-50%, -50%); animation-delay: -15s; opacity: 0.04; }
 
-        if (!handle || handle.length < 3) {
-            showToast('❌ El handle debe tener al menos 3 caracteres', 'error');
-            return;
+        @keyframes nebula-drift {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(40px, -30px) scale(1.15); }
         }
 
-        // Validar que el handle no esté en uso por otro usuario
-        const { data: existingUser, error: checkError } = await supabase
-            .from('usuarios')
-            .select('id')
-            .eq('handle', handle)
-            .neq('id', session.user.id)
-            .maybeSingle();
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: var(--space); }
+        ::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 2px; }
 
-        if (checkError) throw checkError;
-        if (existingUser) {
-            showToast('❌ Este handle ya está en uso', 'error');
-            return;
+        .app {
+            position: relative;
+            z-index: 1;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 16px 20px 30px;
         }
 
-        const updates = {
-            nombre: nombre,
-            handle: handle,
-            bio: bio,
-            ubicacion: ubicacion,
-            sitio_web: sitio_web
-        };
-
-        const { error } = await supabase
-            .from('usuarios')
-            .update(updates)
-            .eq('id', session.user.id);
-
-        if (error) throw error;
-
-        showToast('✅ Perfil actualizado exitosamente', 'success');
-        await cargarPerfil();
-
-    } catch (error) {
-        console.error('Error al guardar perfil:', error);
-        showToast('❌ Error al actualizar el perfil: ' + error.message, 'error');
-    }
-}
-
-// ================================================================
-// WALLET REAL (RPC: vincular_wallet / desvincular_wallet)
-// ================================================================
-async function cargarWalletConectada() {
-    try {
-        const session = await getSession();
-        if (!session) return;
-
-        const { data: wallet } = await supabase
-            .from('wallet_conexiones')
-            .select('*')
-            .eq('usuario_id', session.user.id)
-            .eq('activa', true)
-            .maybeSingle();
-
-        const walletDisplay = document.getElementById('walletDisplay');
-        const btnConectar = document.getElementById('btnConectarWallet');
-        const btnDesconectar = document.getElementById('btnDesconectarWallet');
-
-        if (wallet && wallet.wallet_address) {
-            if (walletDisplay) {
-                walletDisplay.textContent = wallet.wallet_address.slice(0, 6) + '...' + wallet.wallet_address.slice(-4);
-                walletDisplay.style.color = 'var(--success)';
-            }
-            if (btnConectar) btnConectar.style.display = 'none';
-            if (btnDesconectar) btnDesconectar.style.display = 'inline-flex';
-        } else {
-            if (walletDisplay) {
-                walletDisplay.textContent = '⚠️ No conectada';
-                walletDisplay.style.color = 'var(--text-muted)';
-            }
-            if (btnConectar) btnConectar.style.display = 'inline-flex';
-            if (btnDesconectar) btnDesconectar.style.display = 'none';
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0 14px;
+            border-bottom: 1px solid var(--glass-border);
+            flex-wrap: wrap;
+            gap: 10px;
+            background: rgba(5, 8, 15, 0.92);
+            border-radius: var(--radius) var(--radius) 0 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
-    } catch (error) {
-        console.error('Error al cargar wallet:', error);
-    }
-}
-
-async function conectarWallet() {
-    if (typeof window.ethereum === 'undefined') {
-        showToast('⚠️ No se detectó proveedor Web3 (ej. MetaMask)', 'error');
-        return;
-    }
-
-    try {
-        const session = await getSession();
-        if (!session) {
-            showToast('⚠️ Inicia sesión para conectar wallet', 'error');
-            return;
+        .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+        .logo-hex { font-size: 1.8rem; color: var(--gold); font-weight: 800; font-family: 'Orbitron', monospace; text-shadow: 0 0 30px rgba(212, 175, 55, 0.3); animation: glow-pulse 3s ease-in-out infinite; }
+        @keyframes glow-pulse {
+            0%, 100% { text-shadow: 0 0 30px rgba(212, 175, 55, 0.3); }
+            50% { text-shadow: 0 0 60px rgba(212, 175, 55, 0.6); }
+        }
+        .logo-text { font-family: 'Orbitron', monospace; font-size: 1.2rem; font-weight: 700; color: var(--text-primary); letter-spacing: 2px; }
+        .logo-text span { color: var(--gold); }
+        .logo-badge { font-size: 0.45rem; background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: var(--space); padding: 2px 10px; border-radius: 20px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
+        .network-badge { display: flex; align-items: center; gap: 6px; font-size: 0.6rem; color: var(--gold); background: rgba(212, 175, 55, 0.1); padding: 4px 12px; border-radius: 20px; border: 1px solid rgba(212, 175, 55, 0.15); }
+        .network-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); animation: pulse-dot 2s infinite; }
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.3; transform: scale(0.8); }
         }
 
-        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-        const address = accounts[0];
-        const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+        .main-nav {
+            display: flex;
+            gap: 4px;
+            background: rgba(15, 45, 26, 0.3);
+            border-radius: var(--radius);
+            padding: 4px;
+            border: 1px solid var(--glass-border);
+            margin: 16px 0 20px;
+            overflow-x: auto;
+        }
+        .main-nav .nav-link {
+            padding: 8px 16px;
+            border-radius: 12px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.7rem;
+            font-weight: 500;
+            transition: var(--transition);
+            white-space: nowrap;
+            position: relative;
+        }
+        .main-nav .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: 2px;
+            left: 50%;
+            width: 0;
+            height: 2px;
+            background: var(--gold);
+            transition: var(--transition);
+            transform: translateX(-50%);
+        }
+        .main-nav .nav-link:hover::after, .main-nav .nav-link.active::after { width: 60%; }
+        .main-nav .nav-link:hover { color: var(--text-primary); background: rgba(212, 175, 55, 0.05); }
+        .main-nav .nav-link.active { background: rgba(212, 175, 55, 0.12); color: var(--gold); }
+        .main-nav .nav-link.live { color: var(--danger); }
 
-        // Usar RPC vincular_wallet
-        const { data, error } = await supabase.rpc('vincular_wallet', {
-            p_wallet_address: address,
-            p_chain_id: chainId,
-            p_network_name: ENV.networkName
-        });
+        .perfil-container { max-width: 1100px; margin: 0 auto; }
 
-        if (error) throw error;
-
-        showToast('✅ Wallet vinculada correctamente', 'success');
-        await cargarPerfil();
-
-    } catch (error) {
-        console.error('Error al conectar wallet:', error);
-        showToast('❌ Error al conectar wallet: ' + error.message, 'error');
-    }
-}
-
-async function desconectarWallet() {
-    try {
-        const session = await getSession();
-        if (!session) {
-            showToast('⚠️ Inicia sesión para desconectar wallet', 'error');
-            return;
+        .perfil-header {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-xl);
+            padding: 24px 28px;
+            margin-bottom: 24px;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            flex-wrap: wrap;
+            position: relative;
+            overflow: hidden;
+        }
+        .perfil-header::before {
+            content: '';
+            position: absolute;
+            top: -2px; left: -2px; right: -2px; bottom: -2px;
+            background: linear-gradient(135deg, var(--gold), var(--green-deep), var(--gold));
+            background-size: 300% 300%;
+            border-radius: var(--radius-xl);
+            z-index: -1;
+            opacity: 0.1;
+            animation: border-flow 6s ease-in-out infinite;
+        }
+        @keyframes border-flow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
 
-        // Usar RPC desvincular_wallet
-        const { data, error } = await supabase.rpc('desvincular_wallet');
-
-        if (error) throw error;
-
-        showToast('🔌 Wallet desconectada', 'warning');
-        await cargarPerfil();
-
-    } catch (error) {
-        console.error('Error al desconectar wallet:', error);
-        showToast('❌ Error al desconectar wallet: ' + error.message, 'error');
-    }
-}
-
-// ================================================================
-// E.S.TOKS REALES (TABLA: es_toks_movimientos)
-// ================================================================
-async function cargarHistorialESTOKS() {
-    try {
-        const session = await getSession();
-        if (!session) return;
-
-        const { data: movimientos, error } = await supabase
-            .from('es_toks_movimientos')
-            .select('*')
-            .eq('usuario_id', session.user.id)
-            .order('created_at', { ascending: false });
-
-        if (error) throw error;
-
-        const container = document.getElementById('historialList');
-        if (!container) return;
-
-        if (!movimientos || movimientos.length === 0) {
-            container.innerHTML = '<p class="empty-state">No hay movimientos registrados.</p>';
-            return;
+        .perfil-header .avatar-container { position: relative; flex-shrink: 0; }
+        .perfil-header .avatar {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--green-deep), var(--gold));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.4rem;
+            font-weight: 700;
+            color: white;
+            overflow: hidden;
+            border: 3px solid var(--gold);
+            box-shadow: 0 0 40px rgba(212, 175, 55, 0.15);
+            font-family: 'Orbitron', monospace;
+        }
+        .perfil-header .avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .perfil-header .avatar .edit-badge {
+            position: absolute;
+            bottom: 4px;
+            right: 4px;
+            background: var(--gold);
+            border-radius: 50%;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.65rem;
+            color: var(--space);
+            border: 2px solid var(--space);
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
         }
 
-        container.innerHTML = movimientos.map(m => `
-            <div class="movimiento-item">
-                <span class="tipo ${m.cantidad >= 0 ? 'ingreso' : 'egreso'}">${escapeHTML(m.tipo)}</span>
-                <span class="cantidad">${m.cantidad >= 0 ? '+' : ''}${m.cantidad}</span>
-                <span class="fecha">${haceTiempo(m.created_at)}</span>
+        .perfil-header .info { flex: 1; min-width: 200px; }
+        .perfil-header .info .nombre {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.4rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--gold), var(--text-primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .perfil-header .info .nombre .verified {
+            font-size: 0.5rem;
+            background: rgba(212, 175, 55, 0.15);
+            color: var(--gold);
+            padding: 2px 12px;
+            border-radius: 12px;
+            font-family: 'Orbitron', monospace;
+            border: 1px solid rgba(212, 175, 55, 0.1);
+            -webkit-text-fill-color: var(--gold);
+        }
+        .perfil-header .info .handle { font-size: 0.85rem; color: var(--text-muted); letter-spacing: 0.5px; }
+        .perfil-header .info .bio { font-size: 0.9rem; color: var(--text-secondary); margin-top: 6px; max-width: 500px; line-height: 1.5; }
+        .perfil-header .info .badges { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+        .perfil-header .info .badges .badge {
+            font-size: 0.55rem;
+            padding: 3px 14px;
+            border-radius: 20px;
+            font-family: 'Orbitron', monospace;
+            border: 1px solid var(--glass-border);
+            color: var(--text-muted);
+            background: rgba(255, 255, 255, 0.03);
+        }
+        .perfil-header .info .badges .badge.gold { border-color: var(--gold); color: var(--gold); background: rgba(212, 175, 55, 0.05); }
+        .perfil-header .info .badges .badge.success { border-color: var(--success); color: var(--success); background: rgba(0, 214, 143, 0.05); }
+
+        .perfil-header .stats { display: flex; gap: 24px; flex-wrap: wrap; margin-left: auto; }
+        .perfil-header .stats .stat { text-align: center; }
+        .perfil-header .stats .stat .number {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--gold);
+            text-shadow: 0 0 20px rgba(212, 175, 55, 0.05);
+        }
+        .perfil-header .stats .stat .label { font-size: 0.55rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-family: 'Orbitron', monospace; }
+        .perfil-header .acciones { display: flex; gap: 8px; flex-wrap: wrap; margin-left: 10px; }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 20px;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: var(--transition);
+            font-family: 'Inter', sans-serif;
+        }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+        .btn-gold { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); box-shadow: 0 4px 20px rgba(212, 175, 55, 0.2); }
+        .btn-gold:hover:not(:disabled) { transform: translateY(-2px); box-shadow: var(--shadow-gold); }
+        .btn-outline { background: transparent; color: var(--text-secondary); border: 1px solid var(--glass-border); }
+        .btn-outline:hover:not(:disabled) { border-color: var(--gold); color: var(--gold); box-shadow: 0 0 20px rgba(212, 175, 55, 0.1); }
+        .btn-sm { padding: 4px 12px; font-size: 0.65rem; }
+        .btn-danger { background: rgba(255, 51, 102, 0.1); color: var(--danger); border: 1px solid rgba(255, 51, 102, 0.2); }
+        .btn-danger:hover:not(:disabled) { background: rgba(255, 51, 102, 0.2); }
+        .btn-crypto { background: linear-gradient(135deg, #00ff88, #00b894); color: var(--space); box-shadow: 0 4px 20px rgba(0, 255, 136, 0.2); }
+        .btn-crypto:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 0 40px rgba(0, 255, 136, 0.3); }
+        .btn-wallet { background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: #fff; box-shadow: 0 4px 20px rgba(139, 92, 246, 0.2); }
+        .btn-wallet:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 0 40px rgba(139, 92, 246, 0.3); }
+        .btn-video { background: linear-gradient(135deg, #ff6b6b, #ee5a24); color: #fff; box-shadow: 0 4px 20px rgba(238, 90, 36, 0.2); }
+        .btn-video:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 0 40px rgba(238, 90, 36, 0.3); }
+
+        .perfil-tabs {
+            display: flex;
+            gap: 4px;
+            background: var(--glass-bg);
+            border-radius: var(--radius);
+            padding: 4px;
+            border: 1px solid var(--glass-border);
+            margin-bottom: 20px;
+            overflow-x: auto;
+        }
+        .perfil-tabs .tab-btn {
+            padding: 10px 20px;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.7rem;
+            font-weight: 600;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: var(--transition);
+            white-space: nowrap;
+        }
+        .perfil-tabs .tab-btn.active { background: rgba(212, 175, 55, 0.12); color: var(--gold); box-shadow: 0 0 20px rgba(212, 175, 55, 0.05); }
+
+        .tab-content { display: none; animation: fadeIn 0.3s ease; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .panel {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            transition: var(--transition);
+            margin-bottom: 16px;
+        }
+        .panel-header {
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(212, 175, 55, 0.03);
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .panel-header h3 { font-size: 0.85rem; font-weight: 600; color: var(--gold); }
+        .panel-badge { font-size: 0.6rem; background: rgba(212, 175, 55, 0.12); color: var(--gold); padding: 2px 12px; border-radius: 20px; font-weight: 600; text-transform: uppercase; border: 1px solid rgba(212, 175, 55, 0.08); }
+        .panel-body { padding: 18px; }
+
+        /* ===== SECCIÓN DE CONEXIÓN ===== */
+        .conexion-section {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            padding: 15px;
+            margin-top: 15px;
+        }
+        .conexion-section .conexion-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .conexion-section .conexion-info { display: flex; align-items: center; gap: 10px; }
+        .conexion-section .conexion-info .status { font-weight: 600; font-size: 0.9rem; }
+        .conexion-section .conexion-info .velocidad { color: var(--text-muted); font-size: 0.7rem; }
+        .conexion-section .conexion-info .señal { font-size: 0.7rem; }
+        .conexion-buttons { display: flex; gap: 8px; }
+        .conexion-buttons .btn-conexion {
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            border: 1px solid var(--glass-border);
+            background: transparent;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .conexion-buttons .btn-conexion:hover { border-color: var(--gold); color: var(--gold); }
+        .conexion-buttons .btn-conexion.active { border-color: var(--gold); background: rgba(212, 175, 55, 0.15); color: var(--gold); }
+        .conexion-buttons .btn-conexion.wifi.active { border-color: var(--success); background: rgba(0, 214, 143, 0.1); color: var(--success); }
+        .conexion-buttons .btn-conexion.datos.active { border-color: var(--cyan); background: rgba(0, 229, 255, 0.1); color: var(--cyan); }
+
+        /* ===== SECCIÓN DE ESTADO ===== */
+        .estado-section {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            padding: 15px;
+            margin-top: 15px;
+        }
+        .estado-section .estado-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .estado-section .estado-info { display: flex; align-items: center; gap: 10px; }
+        .estado-section .estado-info .badge { font-size: 1.2rem; }
+        .estado-section .estado-info .texto { font-weight: 600; }
+        .estado-section .estado-info .amigos-online { font-size: 0.6rem; color: var(--text-muted); }
+        .estado-buttons { display: flex; gap: 8px; }
+        .estado-buttons .btn-estado {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.6rem;
+            font-weight: 600;
+            border: 1px solid var(--glass-border);
+            background: transparent;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .estado-buttons .btn-estado:hover { border-color: var(--gold); color: var(--gold); }
+        .estado-buttons .btn-estado.online { border-color: var(--success); color: var(--success); }
+        .estado-buttons .btn-estado.online:hover { background: rgba(0, 214, 143, 0.1); }
+        .estado-buttons .btn-estado.offline { border-color: var(--text-muted); color: var(--text-muted); }
+        .estado-buttons .btn-estado.offline:hover { background: rgba(255, 255, 255, 0.05); }
+
+        /* ===== SOLICITUDES Y AMIGOS ===== */
+        #solicitudesSection { margin-top: 10px; padding: 10px 0; }
+        #solicitudesSection h4 { color: var(--gold); font-size: 0.85rem; margin-bottom: 8px; }
+
+        #amigosContainer {
+            margin-top: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        #amigosContainer .amigo-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            border-radius: 10px;
+            border: 1px solid var(--glass-border);
+            transition: var(--transition);
+        }
+        #amigosContainer .amigo-item:hover { background: rgba(212, 175, 55, 0.05); }
+        #amigosContainer .amigo-item .avatar-mini {
+            width: 32px; height: 32px; border-radius: 50%; overflow: hidden;
+            border: 2px solid var(--text-muted); flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center; font-size: 0.8rem; background: var(--bg-card);
+        }
+        #amigosContainer .amigo-item.online .avatar-mini { border-color: var(--success); }
+        #amigosContainer .amigo-item .avatar-mini img { width: 100%; height: 100%; object-fit: cover; }
+        #amigosContainer .amigo-item .info { flex: 1; min-width: 0; }
+        #amigosContainer .amigo-item .info .nombre { font-weight: 600; font-size: 0.8rem; }
+        #amigosContainer .amigo-item .info .estado { font-size: 0.6rem; color: var(--text-muted); }
+
+        .nft-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 14px;
+        }
+        .nft-card {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            padding: 12px;
+            text-align: center;
+            transition: var(--transition);
+        }
+        .nft-card:hover { border-color: var(--gold); transform: translateY(-3px); }
+        .nft-card img { width: 100%; height: 120px; object-fit: cover; border-radius: 10px; margin-bottom: 8px; }
+        .nft-card .title { font-family: 'Orbitron', monospace; font-size: 0.75rem; color: var(--gold); font-weight: 700; }
+        .nft-card .meta { font-size: 0.6rem; color: var(--text-muted); margin-top: 4px; }
+
+        .token-status { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; }
+        .token-status .item { background: rgba(0, 0, 0, 0.2); border: 1px solid var(--glass-border); border-radius: 12px; padding: 14px; text-align: center; transition: var(--transition); }
+        .token-status .item:hover { border-color: var(--gold); transform: translateY(-2px); }
+        .token-status .item .value { font-family: 'Orbitron', monospace; font-size: 1.3rem; font-weight: 700; color: var(--gold); }
+        .token-status .item .label { font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-family: 'Orbitron', monospace; }
+
+        .progress-bar-container { margin-top: 16px; }
+        .progress-bar-container .bar { width: 100%; height: 8px; background: rgba(255, 255, 255, 0.05); border-radius: 10px; overflow: hidden; }
+        .progress-bar-container .bar .fill { height: 100%; background: linear-gradient(90deg, var(--gold), var(--gold-light)); border-radius: 10px; transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1); }
+        .progress-bar-container .label { display: flex; justify-content: space-between; font-size: 0.6rem; color: var(--text-muted); margin-top: 4px; font-family: 'Orbitron', monospace; }
+
+        .config-group { margin-bottom: 16px; }
+        .config-group label { display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px; font-weight: 500; letter-spacing: 0.3px; }
+        .config-group input, .config-group textarea {
+            width: 100%;
+            padding: 10px 14px;
+            background: rgba(0, 0, 0, 0.25);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            outline: none;
+            transition: var(--transition);
+            font-family: 'Inter', sans-serif;
+        }
+        .config-group input:focus, .config-group textarea:focus { border-color: var(--gold); box-shadow: 0 0 30px rgba(212, 175, 55, 0.05); background: rgba(0, 0, 0, 0.35); }
+        .config-group textarea { resize: vertical; min-height: 80px; }
+        .config-group .hint { font-size: 0.6rem; color: var(--text-muted); margin-top: 4px; }
+
+        .empty-state { text-align: center; padding: 30px 20px; color: var(--text-muted); }
+        .empty-state .icon { font-size: 2.2rem; display: block; margin-bottom: 8px; font-family: 'Orbitron', monospace; color: var(--gold); opacity: 0.4; }
+        .empty-state h4 { font-family: 'Orbitron', monospace; color: var(--text-secondary); font-size: 0.9rem; font-weight: 500; }
+
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: var(--green-deep);
+            border: 1px solid var(--gold);
+            color: var(--gold);
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            box-shadow: var(--shadow-gold-strong);
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.4s ease;
+            z-index: 9999;
+            max-width: 400px;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.error { border-color: var(--danger); color: var(--danger); }
+        .toast.warning { border-color: var(--warning); color: var(--warning); }
+        .toast.success { border-color: var(--success); color: var(--success); }
+
+        .footer { margin-top: 30px; padding-top: 16px; border-top: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; font-size: 0.7rem; color: var(--text-muted); padding-bottom: 8px; letter-spacing: 0.3px; }
+        .footer .brand { color: var(--gold); font-weight: 600; letter-spacing: 1px; }
+        .footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
+        .footer-links a { color: var(--text-muted); text-decoration: none; transition: var(--transition); }
+        .footer-links a:hover { color: var(--gold); }
+
+        /* MODALES */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(12px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            animation: fadeIn 0.3s ease-out;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal-content {
+            background: linear-gradient(135deg, var(--bg-card), var(--bg-dark));
+            border: 2px solid var(--gold);
+            border-radius: 20px;
+            padding: 24px;
+            max-width: 480px;
+            width: 90%;
+            text-align: center;
+            position: relative;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal-content .close-btn {
+            position: absolute;
+            top: 12px;
+            right: 15px;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.4rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .modal-content .close-btn:hover { color: var(--text-primary); transform: rotate(90deg); }
+        .modal-content h2 { color: var(--gold); font-family: 'Orbitron', monospace; font-size: 1.2rem; margin-bottom: 10px; }
+        .modal-content .subtitle { color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 16px; }
+        .modal-content .qr-container { background: white; border-radius: 12px; padding: 15px; margin: 10px 0; display: inline-block; }
+        .modal-content .qr-container img { max-width: 180px; width: 100%; }
+        .modal-content .address-box { background: var(--bg-dark); border-radius: 10px; padding: 12px; margin: 10px 0; word-break: break-all; }
+        .modal-content .address-box .label { font-size: 0.6rem; color: var(--text-muted); }
+        .modal-content .address-box .address { font-family: monospace; font-size: 0.75rem; color: var(--gold); margin-top: 4px; }
+        .modal-content .actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 16px; }
+
+        .crypto-controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+        .crypto-controls .qty-group {
+            display: flex; align-items: center; gap: 10px;
+            background: rgba(0, 0, 0, 0.2); padding: 4px 12px; border-radius: 30px; border: 1px solid var(--glass-border);
+        }
+        .crypto-controls .qty-group .qty-btn {
+            width: 28px; height: 28px; border-radius: 50%; border: none; background: transparent;
+            color: var(--text-primary); font-size: 1.1rem; cursor: pointer; transition: var(--transition);
+        }
+        .crypto-controls .qty-group .qty-btn:hover { background: rgba(212, 175, 55, 0.1); }
+        .crypto-controls .qty-group .qty-value { font-family: 'Orbitron', monospace; font-size: 1rem; font-weight: 600; color: var(--gold); min-width: 20px; text-align: center; }
+        .crypto-total { font-family: 'Orbitron', monospace; font-size: 1.2rem; color: var(--gold); font-weight: 700; }
+
+        #qrReaderContainer { display: none; margin-top: 10px; text-align: center; }
+
+        @media (max-width: 768px) {
+            .app { padding: 12px 14px; }
+            .perfil-header { flex-direction: column; text-align: center; padding: 20px; }
+            .perfil-header .stats { margin-left: 0; justify-content: center; width: 100%; }
+            .perfil-header .acciones { margin-left: 0; justify-content: center; width: 100%; }
+            .perfil-tabs .tab-btn { font-size: 0.6rem; padding: 8px 14px; }
+            .main-nav .nav-link { font-size: 0.6rem; padding: 6px 10px; }
+            .crypto-controls { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="stars-canvas"></canvas>
+    <div class="nebula nebula-1"></div>
+    <div class="nebula nebula-2"></div>
+    <div class="nebula nebula-3"></div>
+
+    <div class="app">
+
+        <!-- HEADER PRINCIPAL -->
+        <header class="header">
+            <a href="/" class="logo">
+                <span class="logo-hex">◈</span>
+                <span class="logo-text">Sariel<span>'s</span></span>
+                <span class="logo-badge">✦ WEB3</span>
+            </a>
+            <div class="header-actions" style="display:flex;gap:8px;align-items:center;">
+                <button class="btn-video" onclick="window.location.href='/videos/videos.html'" style="padding:4px 12px;border-radius:20px;border:none;font-size:0.7rem;cursor:pointer;font-weight:600;" aria-label="Ir a Videos">
+                    🎬 Videos
+                </button>
+                <button onclick="window.location.href='/muro/muro.html'" style="background:transparent;border:none;color:var(--text-muted);font-size:1.2rem;cursor:pointer;" aria-label="Ir al Muro">◇</button>
+                <span class="network-badge"><span class="dot"></span> Polygon</span>
             </div>
-        `).join('');
+        </header>
 
-    } catch (error) {
-        console.error('Error al cargar E.S.TOKS:', error);
-    }
-}
+        <!-- NAVEGACIÓN GENERAL -->
+        <nav class="main-nav" aria-label="Navegación principal">
+            <a href="/" class="nav-link">⌂ Inicio</a>
+            <a href="/muro/muro.html" class="nav-link">◇ Muro</a>
+            <a href="/perfil/perfil.html" class="nav-link active">◆ Perfil</a>
+            <a href="/mensajes/mensajes.html" class="nav-link">◈ Mensajes</a>
+            <a href="/live/live.html" class="nav-link live">◉ Live</a>
+            <a href="/videos/videos.html" class="nav-link">🎬 Videos</a>
+        </nav>
 
-// ================================================================
-// ESCANEO QR Y DOMOS (RPC: registrar_escaneo_domo)
-// ================================================================
-async function procesarEscaneoQR(codigoQR) {
-    if (!codigoQR) return;
+        <div class="perfil-container">
 
-    try {
-        const session = await getSession();
-        if (!session) {
-            showToast('⚠️ Sesión requerida para escanear', 'error');
-            return;
-        }
-
-        showToast('⏳ Validando QR con el servidor...', '', 4000);
-
-        // Llamada correcta: SOLO p_codigo, usuario se obtiene con auth.uid()
-        const { data, error } = await supabase.rpc('registrar_escaneo_domo', {
-            p_codigo: codigoQR
-        });
-
-        if (error) throw error;
-
-        if (data && data.ok) {
-            // Actualizar UI con los datos devueltos
-            if (data.tokens !== undefined) {
-                const tokenTotal = document.getElementById('tokenTotal');
-                if (tokenTotal) tokenTotal.textContent = data.tokens;
-            }
-            
-            if (data.tokens_acumulados !== undefined) {
-                const progressFill = document.getElementById('progressFill');
-                const progressText = document.getElementById('progressText');
-                const progreso = Math.min(data.tokens_acumulados, 12);
-                if (progressFill) progressFill.style.width = `${(progreso / 12) * 100}%`;
-                if (progressText) progressText.textContent = `${progreso} / 12`;
-            }
-
-            if (data.puede_canjear !== undefined) {
-                const btnCanjear = document.getElementById('canjearNft');
-                if (btnCanjear) btnCanjear.disabled = !data.puede_canjear;
-            }
-
-            showToast('🎉 ¡QR Escaneado con éxito! +1 E.S.TOK', 'success');
-            await cargarPerfil();
-        } else {
-            showToast(`❌ Error: ${data?.message || 'QR inválido o ya utilizado'}`, 'error');
-        }
-
-    } catch (error) {
-        console.error('Error en procesarEscaneoQR:', error);
-        showToast('❌ Fallo en la validación del QR: ' + error.message, 'error');
-    }
-}
-
-// ================================================================
-// NFTS REALES (TABLA: nfts_usuario)
-// ================================================================
-async function cargarNFTsUsuario() {
-    try {
-        const session = await getSession();
-        if (!session) return;
-
-        const { data: nfts, error } = await supabase
-            .from('nfts_usuario')
-            .select('*')
-            .eq('usuario_id', session.user.id)
-            .order('created_at', { ascending: false });
-
-        if (error) throw error;
-
-        const container = document.getElementById('nftGalleryContainer');
-        const statNFTS = document.getElementById('statNFTS');
-
-        if (statNFTS) statNFTS.textContent = nfts ? nfts.length : 0;
-        if (!container) return;
-
-        if (!nfts || nfts.length === 0) {
-            container.innerHTML = '<p class="empty-state">No posees NFTs conmemorativos.</p>';
-            return;
-        }
-
-        container.innerHTML = nfts.map(nft => `
-            <div class="nft-card" onclick="abrirModalNft('${nft.id}')">
-                <img src="${nft.imagen_url || '/placeholder-nft.png'}" alt="${escapeHTML(nft.nombre)}" class="nft-img"/>
-                <div class="nft-info">
-                    <h4>${escapeHTML(nft.nombre)}</h4>
-                    <p class="codigo">Código: ${escapeHTML(nft.codigo_nft)}</p>
-                    <p class="estado">Estado: ${escapeHTML(nft.estado)}</p>
+            <!-- ===== PERFIL HEADER (DATOS E IDENTIDAD) ===== -->
+            <div class="perfil-header" id="perfilHeader">
+                <div class="avatar-container">
+                    <div class="avatar" id="perfilAvatar">
+                        ◈
+                        <button class="edit-badge" onclick="abrirSelectorArchivo()" title="Cambiar foto de perfil" aria-label="Cambiar foto de perfil">✎</button>
+                    </div>
+                    <input type="file" id="fileInput" accept="image/*" style="display:none;" onchange="subirFoto(event)" />
+                </div>
+                <div class="info">
+                    <div class="nombre" id="perfilNombre">
+                        Cargando...
+                        <span class="verified">✦ VERIFICADO</span>
+                    </div>
+                    <div class="handle" id="perfilHandle">@cargando</div>
+                    <div class="bio" id="perfilBio">Cargando información del usuario...</div>
+                    <div class="badges">
+                        <span class="badge gold">✦ MIEMBRO</span>
+                        <span class="badge success">● ACTIVO</span>
+                        <span class="badge">◈ WEB3</span>
+                        <span class="badge" id="nivelUsuario" style="border-color:var(--purple);color:var(--purple);background:rgba(168,85,247,0.05);">🌱 Explorador</span>
+                    </div>
+                </div>
+                <div class="stats">
+                    <div class="stat">
+                        <div class="number" id="statTokens">0</div>
+                        <div class="label">◈ Tokens</div>
+                    </div>
+                    <div class="stat">
+                        <div class="number" id="statNFTS">0</div>
+                        <div class="label">◈ NFTs</div>
+                    </div>
+                    <div class="stat">
+                        <div class="number" id="statSeguidores">0</div>
+                        <div class="label">◈ Seguidores</div>
+                    </div>
+                    <div class="stat">
+                        <div class="number" id="statSiguiendo">0</div>
+                        <div class="label">◈ Siguiendo</div>
+                    </div>
+                </div>
+                <div class="acciones">
+                    <button class="btn btn-gold btn-sm" id="btnEditarPerfil" onclick="editarPerfil()">✎ Editar perfil</button>
+                    <button class="btn btn-outline btn-sm" id="btnCompartirPerfil" onclick="compartirPerfil()">◈ Compartir</button>
+                    <button class="btn btn-outline btn-sm" id="btnQRPerfil" onclick="generarQRPerfil()">📱 QR</button>
                 </div>
             </div>
-        `).join('');
 
-    } catch (error) {
-        console.error('Error al cargar NFTs:', error);
-    }
-}
+            <!-- ===== SECCIÓN DE ESTADO Y SOCIAL ===== -->
+            <div class="estado-section">
+                <div class="estado-header">
+                    <div class="estado-info">
+                        <span class="badge" id="estadoBadge">🟢</span>
+                        <span class="texto" id="estadoTexto" style="color:var(--success);">Activo ahora</span>
+                        <span class="amigos-online">· <span id="amigosEnLineaContador">0</span> amigos en línea</span>
+                    </div>
+                    <div class="estado-buttons">
+                        <button class="btn-estado online" id="btnEstadoActivo" onclick="cambiarEstado(true)">🟢 Activo</button>
+                        <button class="btn-estado offline" id="btnEstadoInactivo" onclick="cambiarEstado(false)">⭕ Inactivo</button>
+                    </div>
+                </div>
 
-// ================================================================
-// ESTADÍSTICAS REALES (TABLA: estadisticas_usuarios)
-// ================================================================
-async function cargarEstadisticas() {
-    try {
-        const session = await getSession();
-        if (!session) return;
+                <!-- SOLICITUDES PENDIENTES -->
+                <div id="solicitudesSection">
+                    <h4 style="margin-top:12px;">📨 Solicitudes de Amistad <span id="solicitudesContador" style="font-size:0.7rem;color:var(--warning);">0</span></h4>
+                    <div id="solicitudesContainer" style="max-height: 200px; overflow-y: auto;">
+                        <div style="text-align:center; padding:10px; color:var(--text-muted); font-size:0.75rem;">
+                            Cargando solicitudes...
+                        </div>
+                    </div>
+                </div>
 
-        const { data: stats, error } = await supabase
-            .from('estadisticas_usuarios')
-            .select('*')
-            .eq('user_id', session.user.id)
-            .maybeSingle();
+                <!-- LISTA DE AMIGOS -->
+                <div id="amigosContainer"></div>
+            </div>
 
-        if (error) throw error;
-        if (!stats) return;
-
-        const domosEl = document.getElementById('statDomos');
-        const publicacionesEl = document.getElementById('statPublicaciones');
-
-        if (domosEl) domosEl.textContent = stats.domos_comprados || 0;
-        if (publicacionesEl) publicacionesEl.textContent = stats.publicaciones_creadas || 0;
-
-    } catch (error) {
-        console.error('Error al cargar estadísticas:', error);
-    }
-}
-
-// ================================================================
-// RED SOCIAL REAL
-// ================================================================
-async function cargarRelacionesSociales() {
-    try {
-        const session = await getSession();
-        if (!session) return;
-
-        // Seguidores
-        const { count: countSeguidores } = await supabase
-            .from('seguidores')
-            .select('*', { count: 'exact', head: true })
-            .eq('seguido_id', session.user.id);
-
-        // Siguiendo
-        const { count: countSiguiendo } = await supabase
-            .from('seguidores')
-            .select('*', { count: 'exact', head: true })
-            .eq('seguidor_id', session.user.id);
-
-        const elSeguidores = document.getElementById('statSeguidores');
-        const elSiguiendo = document.getElementById('statSiguiendo');
-
-        if (elSeguidores) elSeguidores.textContent = countSeguidores || 0;
-        if (elSiguiendo) elSiguiendo.textContent = countSiguiendo || 0;
-
-    } catch (error) {
-        console.error('Error cargando relaciones sociales:', error);
-    }
-}
-
-async function cargarSolicitudesPendientes() {
-    try {
-        const session = await getSession();
-        if (!session) return;
-
-        const { data: solicitudes, error } = await supabase
-            .from('solicitudes_amistad')
-            .select('id, solicitante_id, fecha_solicitud, usuarios!solicitante_id(nombre, handle, avatar_url)')
-            .eq('receptor_id', session.user.id)
-            .eq('estado', 'pendiente');
-
-        if (error) throw error;
-        renderSolicitudesUI(solicitudes || []);
-
-    } catch (error) {
-        console.error('Error cargando solicitudes:', error);
-    }
-}
-
-function renderSolicitudesUI(solicitudes) {
-    const container = document.getElementById('solicitudesContainer');
-    if (!container) return;
-
-    if (solicitudes.length === 0) {
-        container.innerHTML = '<p class="empty-state">No hay solicitudes pendientes.</p>';
-        return;
-    }
-
-    container.innerHTML = solicitudes.map(s => {
-        const u = s.usuarios || {};
-        return `
-            <div class="solicitud-item">
-                <span>${escapeHTML(u.nombre || u.handle)}</span>
-                <div>
-                    <button onclick="responderSolicitud('${s.id}', 'aceptada')">Aceptar</button>
-                    <button onclick="responderSolicitud('${s.id}', 'rechazada')">Rechazar</button>
+            <!-- ===== SECCIÓN DE CONEXIÓN (WiFi/Datos) ===== -->
+            <div class="conexion-section">
+                <div class="conexion-header">
+                    <div class="conexion-info">
+                        <span class="status" id="conexionStatus">🛜 WiFi</span>
+                        <span class="velocidad" id="conexionVelocidad">-- Mbps</span>
+                        <span class="señal" id="conexionSeñal" style="color:var(--success);">████</span>
+                    </div>
+                    <div class="conexion-buttons">
+                        <button class="btn-conexion wifi active" id="btnWifi" onclick="cambiarConexion('wifi')">🛜 WiFi</button>
+                        <button class="btn-conexion datos" id="btnDatos" onclick="cambiarConexion('datos')">📶 Datos</button>
+                    </div>
+                </div>
+                <div style="font-size:0.6rem;color:var(--text-muted);margin-top:6px;">
+                    Conexión actual: <span id="conexionTipo">🛜 WiFi</span>
+                    · Operador: <span id="conexionOperador">Sariel's Net</span>
                 </div>
             </div>
-        `;
-    }).join('');
-}
 
-async function responderSolicitud(solicitudId, nuevoEstado) {
-    try {
-        const session = await getSession();
-        if (!session) {
-            showToast('⚠️ Sesión requerida', 'error');
-            return;
-        }
+            <!-- ===== TABS PRINCIPALES ===== -->
+            <div class="perfil-tabs" role="tablist">
+                <button class="tab-btn active" id="tabBtnActividad" onclick="cambiarTab('actividad')">◈ Actividad</button>
+                <button class="tab-btn" id="tabBtnTokens" onclick="cambiarTab('tokens')">⟡ E.S.TOKS</button>
+                <button class="tab-btn" id="tabBtnNfts" onclick="cambiarTab('nfts')">🎨 NFTs</button>
+                <button class="tab-btn" id="tabBtnEsim" onclick="cambiarTab('esim')">📱 eSIM</button>
+                <button class="tab-btn" id="tabBtnQr" onclick="cambiarTab('qr')">📷 Escanear QR</button>
+                <button class="tab-btn" id="tabBtnConfig" onclick="cambiarTab('config')">◆ Ajustes</button>
+            </div>
 
-        const { error } = await supabase
-            .from('solicitudes_amistad')
-            .update({ estado: nuevoEstado })
-            .eq('id', solicitudId)
-            .eq('receptor_id', session.user.id);
-
-        if (error) throw error;
-
-        showToast(`Solicitud ${nuevoEstado}`, 'success');
-        await cargarPerfil();
-
-    } catch (error) {
-        console.error('Error al responder solicitud:', error);
-        showToast('❌ Error al actualizar solicitud', 'error');
-    }
-}
-
-async function cargarAmigos() {
-    try {
-        const session = await getSession();
-        if (!session) return;
-
-        const { data: amigos, error } = await supabase
-            .from('amigos')
-            .select('id, amigo_id, usuarios!amigo_id(id, nombre, handle, avatar_url, online)')
-            .eq('usuario_id', session.user.id);
-
-        if (error) throw error;
-
-        const container = document.getElementById('amigosContainer');
-        if (!container) return;
-
-        if (!amigos || amigos.length === 0) {
-            container.innerHTML = '<p class="empty-state">Sin amigos agregados.</p>';
-            return;
-        }
-
-        container.innerHTML = amigos.map(a => {
-            const u = a.usuarios || {};
-            return `
-                <div class="amigo-card">
-                    <img src="${u.avatar_url || '/placeholder-avatar.png'}" class="avatar-mini"/>
-                    <span>${escapeHTML(u.nombre || u.handle)}</span>
-                    <span class="status">${u.online ? '🟢' : '⭕'}</span>
+            <!-- ===== TAB: ACTIVIDAD ===== -->
+            <div id="tab-actividad" class="tab-content active">
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3>◈ Última actividad</h3>
+                        <span class="panel-badge">En vivo</span>
+                    </div>
+                    <div class="panel-body" id="actividadList">
+                        <div class="empty-state">
+                            <span class="icon">◈</span>
+                            <h4>Sin actividad reciente</h4>
+                            <p>Interactúa en la comunidad para generar actividad.</p>
+                        </div>
+                    </div>
                 </div>
-            `;
-        }).join('');
 
-    } catch (error) {
-        console.error('Error al cargar amigos:', error);
-    }
-}
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3>◈ Mis Publicaciones</h3>
+                        <span class="panel-badge" id="postsCount">0</span>
+                    </div>
+                    <div class="panel-body" id="postsList">
+                        <div class="empty-state">
+                            <span class="icon">◈</span>
+                            <h4>Sin publicaciones</h4>
+                            <p>Crea tu primera publicación desde el Muro.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-async function bloquearUsuario(targetUserId) {
-    try {
-        const session = await getSession();
-        if (!session) {
-            showToast('⚠️ Sesión requerida', 'error');
-            return;
-        }
-
-        const { error } = await supabase
-            .from('bloquear')
-            .insert({
-                usuario_id: session.user.id,
-                bloqueado_id: targetUserId,
-                created_at: new Date().toISOString()
-            });
-
-        if (error) throw error;
-        showToast('Usuario bloqueado', 'warning');
-
-    } catch (error) {
-        console.error('Error al bloquear usuario:', error);
-        showToast('❌ Error al bloquear usuario', 'error');
-    }
-}
-
-// ================================================================
-// FUNCIONES DE PERFIL (Handlers HTML → JS)
-// ================================================================
-
-// ===== EDICIÓN DE PERFIL =====
-function editarPerfil() {
-    cambiarTab('config');
-    
-    const form = document.getElementById('formPerfil');
-    if (form) {
-        setTimeout(() => {
-            form.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 300);
-    }
-    
-    const nombreInput = document.getElementById('editNombre');
-    if (nombreInput) {
-        setTimeout(() => nombreInput.focus(), 400);
-    }
-    
-    showToast('✏️ Edita tu perfil en la pestaña Ajustes', '');
-}
-
-function compartirPerfil() {
-    const url = window.location.href;
-    if (navigator.share) {
-        navigator.share({
-            title: 'Mi perfil en Sariel\'s',
-            text: '◈ Mira mi perfil en Sariel\'s Ecosystem',
-            url: url
-        }).catch(() => {});
-    } else {
-        navigator.clipboard.writeText(url).then(() => {
-            showToast('📋 Enlace copiado al portapapeles', 'success');
-        }).catch(() => {
-            showToast('📋 Copia el enlace: ' + url, '');
-        });
-    }
-}
-
-function generarQRPerfil() {
-    const modal = document.getElementById('qrPerfilModal');
-    if (!modal) {
-        showToast('⚠️ Modal de QR no disponible', 'error');
-        return;
-    }
-    
-    const url = window.location.href;
-    const qrImg = document.getElementById('qrPerfilImage');
-    if (qrImg) {
-        qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}`;
-    }
-    modal.classList.add('active');
-}
-
-// ===== IMAGENES =====
-function abrirSelectorArchivo() {
-    const input = document.getElementById('fileInput');
-    if (input) {
-        input.click();
-    }
-}
-
-async function subirFoto(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    
-    try {
-        const session = await getSession();
-        if (!session) {
-            showToast('⚠️ Sesión requerida', 'error');
-            return;
-        }
-        
-        showToast('⏳ Subiendo imagen...', '', 4000);
-        
-        // Verificar si existe el bucket 'avatars'
-        const { data: buckets, error: bucketError } = await supabase.storage.listBuckets();
-        
-        if (bucketError) {
-            console.error('Error al listar buckets:', bucketError);
-            showToast('❌ Storage no disponible', 'error');
-            return;
-        }
-        
-        const bucketExists = buckets.some(b => b.name === 'avatars');
-        
-        if (!bucketExists) {
-            showToast('⚠️ El bucket de avatares no está configurado. Contacta al administrador.', 'error');
-            return;
-        }
-        
-        // Subir archivo a Storage
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${session.user.id}-${Date.now()}.${fileExt}`;
-        
-        const { error: uploadError } = await supabase.storage
-            .from('avatars')
-            .upload(fileName, file);
-        
-        if (uploadError) throw uploadError;
-        
-        // Obtener URL pública
-        const { data: urlData } = await supabase.storage
-            .from('avatars')
-            .getPublicUrl(fileName);
-        
-        const avatarUrl = urlData.publicUrl;
-        
-        // Registrar en tabla fotos_perfil
-        const { error: fotoError } = await supabase
-            .from('fotos_perfil')
-            .insert({
-                usuario_id: session.user.id,
-                url: avatarUrl,
-                tipo: 'avatar',
-                es_principal: true,
-                created_at: new Date().toISOString()
-            });
-        
-        if (fotoError) {
-            console.warn('Error al registrar foto en fotos_perfil:', fotoError);
-            // Continuar de todas formas
-        }
-        
-        // Actualizar avatar_url en usuarios
-        const { error: updateError } = await supabase
-            .from('usuarios')
-            .update({ avatar_url: avatarUrl })
-            .eq('id', session.user.id);
-        
-        if (updateError) throw updateError;
-        
-        // Actualizar UI
-        const avatarEl = document.getElementById('perfilAvatar');
-        if (avatarEl) {
-            avatarEl.innerHTML = `<img src="${avatarUrl}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;"/>`;
-        }
-        
-        showToast('✅ Foto de perfil actualizada', 'success');
-        await cargarPerfil();
-        
-    } catch (error) {
-        console.error('Error al subir foto:', error);
-        showToast('❌ Error al subir foto: ' + error.message, 'error');
-    }
-}
-
-// ===== ESTADO DEL USUARIO =====
-async function cambiarEstado(activo) {
-    try {
-        const session = await getSession();
-        if (!session) {
-            showToast('⚠️ Sesión requerida', 'error');
-            return;
-        }
-        
-        const { error } = await supabase
-            .from('usuarios')
-            .update({ 
-                online: activo,
-                ultima_conexion: activo ? new Date().toISOString() : null,
-                offline_desde: activo ? null : new Date().toISOString()
-            })
-            .eq('id', session.user.id);
-        
-        if (error) throw error;
-        
-        const badge = document.getElementById('estadoBadge');
-        const texto = document.getElementById('estadoTexto');
-        
-        if (badge) badge.textContent = activo ? '🟢' : '⭕';
-        if (texto) {
-            texto.textContent = activo ? 'Activo ahora' : 'Inactivo';
-            texto.style.color = activo ? 'var(--success)' : 'var(--text-muted)';
-        }
-        
-        showToast(activo ? '✅ Estado: Activo' : '⭕ Estado: Inactivo', 'success');
-        
-    } catch (error) {
-        console.error('Error al cambiar estado:', error);
-        showToast('❌ Error al actualizar estado', 'error');
-    }
-}
-
-// ===== CONEXIÓN =====
-async function cambiarConexion(tipo) {
-    try {
-        const session = await getSession();
-        if (!session) return;
-        
-        const status = document.getElementById('conexionStatus');
-        const tipoEl = document.getElementById('conexionTipo');
-        const btnWifi = document.getElementById('btnWifi');
-        const btnDatos = document.getElementById('btnDatos');
-        
-        // Persistir en la base de datos
-        const { error } = await supabase
-            .from('usuarios')
-            .update({ conexion_tipo: tipo })
-            .eq('id', session.user.id);
-        
-        if (error) throw error;
-        
-        if (tipo === 'wifi') {
-            if (status) status.textContent = '🛜 WiFi';
-            if (tipoEl) tipoEl.textContent = '🛜 WiFi';
-            if (btnWifi) btnWifi.classList.add('active');
-            if (btnDatos) btnDatos.classList.remove('active');
-            showToast('🛜 Conectado a WiFi', 'success');
-        } else if (tipo === 'datos') {
-            if (status) status.textContent = '📶 Datos móviles';
-            if (tipoEl) tipoEl.textContent = '📶 Datos móviles';
-            if (btnDatos) btnDatos.classList.add('active');
-            if (btnWifi) btnWifi.classList.remove('active');
-            showToast('📶 Conectado a datos móviles', 'success');
-        }
-        
-    } catch (error) {
-        console.error('Error al cambiar conexión:', error);
-        showToast('❌ Error al cambiar conexión', 'error');
-    }
-}
-
-// ===== QR Y ESCANEO =====
-function escanearQR() {
-    const input = document.getElementById('qrInput');
-    const status = document.getElementById('qrStatus');
-    
-    if (!input) return;
-    
-    const codigo = input.value.trim();
-    if (!codigo) {
-        if (status) status.textContent = '⚠️ Ingresa un código QR válido';
-        showToast('⚠️ Ingresa un código QR', 'warning');
-        return;
-    }
-    
-    if (status) status.textContent = '⏳ Validando código...';
-    procesarEscaneoQR(codigo);
-    
-    input.value = '';
-}
-
-function abrirCamaraQR() {
-    const container = document.getElementById('qrReaderContainer');
-    const video = document.getElementById('qrVideo');
-    const canvas = document.getElementById('qrCanvas');
-    const status = document.getElementById('qrCamaraStatus');
-    
-    if (!container || !video) {
-        showToast('⚠️ Elementos de cámara no encontrados', 'error');
-        return;
-    }
-    
-    container.style.display = 'block';
-    
-    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-            .then((stream) => {
-                video.srcObject = stream;
-                video.setAttribute('playsinline', 'true');
-                video.play();
-                if (status) status.textContent = '📷 Cámara activa - Enfoca el QR';
-                
-                escanearContinuoQR(video, canvas);
-            })
-            .catch((err) => {
-                console.error('Error al acceder a la cámara:', err);
-                if (status) status.textContent = '❌ No se pudo acceder a la cámara';
-                showToast('❌ Error al abrir la cámara', 'error');
-            });
-    } else {
-        if (status) status.textContent = '❌ Cámara no soportada en este dispositivo';
-        showToast('❌ Cámara no soportada', 'error');
-    }
-}
-
-function escanearContinuoQR(video, canvas) {
-    if (typeof jsQR === 'undefined') {
-        console.warn('jsQR no cargado');
-        return;
-    }
-    
-    const context = canvas.getContext('2d');
-    let escaneando = true;
-    let ultimoEscaneo = 0;
-    
-    function scanFrame() {
-        if (!escaneando) return;
-        
-        if (video.readyState === video.HAVE_ENOUGH_DATA) {
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            context.drawImage(video, 0, 0, canvas.width, canvas.height);
-            
-            const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-            const code = jsQR(imageData.data, imageData.width, imageData.height, {
-                inversionAttempts: "dontInvert",
-            });
-            
-            if (code && code.data && (Date.now() - ultimoEscaneo > 2000)) {
-                ultimoEscaneo = Date.now();
-                const input = document.getElementById('qrInput');
-                const status = document.getElementById('qrStatus');
-                
-                if (input) input.value = code.data;
-                if (status) status.textContent = '✅ QR detectado: ' + code.data;
-                
-                escanearQR();
-                escaneando = false;
-                
-                cerrarCamaraQR();
-                showToast('✅ QR escaneado correctamente', 'success');
-                return;
-            }
-        }
-        
-        requestAnimationFrame(scanFrame);
-    }
-    
-    scanFrame();
-}
-
-function cerrarCamaraQR() {
-    const container = document.getElementById('qrReaderContainer');
-    const video = document.getElementById('qrVideo');
-    
-    if (video && video.srcObject) {
-        const tracks = video.srcObject.getTracks();
-        tracks.forEach(track => track.stop());
-        video.srcObject = null;
-    }
-    
-    if (container) container.style.display = 'none';
-    
-    const status = document.getElementById('qrCamaraStatus');
-    if (status) status.textContent = '📷 Cámara cerrada';
-}
-
-// ===== E.S.TOKS Y DOMOS =====
-async function comprarDomo(cantidad) {
-    try {
-        const session = await getSession();
-        if (!session) {
-            showToast('⚠️ Inicia sesión para comprar Domos', 'error');
-            return;
-        }
-        
-        showToast('⏳ Procesando compra de Domo...', '', 4000);
-        
-        // Usar RPC comprar_domo si existe
-        const { data, error } = await supabase.rpc('comprar_domo', {
-            p_cantidad: cantidad || 1
-        });
-        
-        if (error) throw error;
-        
-        showToast('✅ Domo registrado correctamente', 'success');
-        await cargarPerfil();
-        
-    } catch (error) {
-        console.error('Error al comprar Domo:', error);
-        showToast('❌ Error al registrar Domo: ' + error.message, 'error');
-    }
-}
-
-async function canjearNFT() {
-    try {
-        const session = await getSession();
-        if (!session) {
-            showToast('⚠️ Inicia sesión para canjear NFT', 'error');
-            return;
-        }
-        
-        showToast('⏳ Canjeando NFT...', '', 4000);
-        
-        // Usar RPC canjear_nft - NO recibe parámetros
-        const { data, error } = await supabase.rpc('canjear_nft');
-        
-        if (error) throw error;
-        
-        if (data && data.nft_id) {
-            showToast('🎉 ¡NFT canjeado exitosamente!', 'success');
-            await cargarPerfil();
-        } else {
-            showToast('❌ No se pudo canjear el NFT', 'error');
-        }
-        
-    } catch (error) {
-        console.error('Error al canjear NFT:', error);
-        showToast('❌ Error al canjear NFT: ' + error.message, 'error');
-    }
-}
-
-// ===== CRIPTO PAGOS =====
-function comprarConCripto() {
-    const modal = document.getElementById('cryptoPaymentModal');
-    if (!modal) {
-        showToast('⚠️ Modal de pago no disponible', 'error');
-        return;
-    }
-    
-    // Obtener cantidad
-    const qtyEl = document.getElementById('cryptoQuantity');
-    const cantidad = qtyEl ? parseInt(qtyEl.textContent) || 1 : 1;
-    
-    // Mostrar modal con estado de carga
-    const statusEl = document.getElementById('cryptoStatus');
-    if (statusEl) {
-        statusEl.textContent = '⏳ Cargando información de pago...';
-    }
-    
-    // Obtener precio real del backend
-    fetch('/api/pagos/precio', {
-        method: 'GET',
-        headers: {
-            'Content-Type': 'application/json'
-        }
-    })
-    .then(response => {
-        if (!response.ok) throw new Error('Error al obtener precio');
-        return response.json();
-    })
-    .then(data => {
-        if (data.success && data.precio) {
-            const montoEl = document.getElementById('cryptoMonto');
-            const monedaEl = document.getElementById('cryptoMoneda');
-            const addressEl = document.getElementById('cryptoAddress');
-            const qrEl = document.getElementById('cryptoQR');
-            const statusEl = document.getElementById('cryptoStatus');
-            
-            if (montoEl) montoEl.textContent = (data.precio * cantidad).toFixed(2);
-            if (monedaEl) monedaEl.textContent = data.moneda || 'USDT';
-            if (addressEl) addressEl.textContent = data.direccion || 'No disponible';
-            
-            if (qrEl && data.direccion) {
-                qrEl.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(data.direccion)}`;
-            }
-            
-            if (statusEl) statusEl.textContent = '⏳ Esperando confirmación en la red...';
-            modal.classList.add('active');
-        } else {
-            throw new Error(data.message || 'No se pudo obtener precio');
-        }
-    })
-    .catch(error => {
-        console.error('Error al obtener precio:', error);
-        showToast('❌ Error al cargar información de pago', 'error');
-        if (statusEl) statusEl.textContent = '❌ No se pudo cargar la información de pago';
-    });
-}
-
-async function verificarPagoCrypto() {
-    const statusEl = document.getElementById('cryptoStatus');
-    if (!statusEl) return;
-    
-    try {
-        statusEl.textContent = '🔍 Verificando depósito en la blockchain...';
-        
-        const session = await getSession();
-        if (!session) {
-            statusEl.textContent = '⚠️ Sesión expirada';
-            return;
-        }
-        
-        const response = await fetch('/api/pagos/verificar', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                usuario_id: session.user.id
-            })
-        });
-        
-        const data = await response.json();
-        
-        if (!response.ok) throw new Error(data.message || 'Error al verificar');
-        
-        if (data.success) {
-            statusEl.textContent = '✅ Pago verificado correctamente';
-            showToast('✅ Pago verificado. ¡Domo registrado!', 'success');
-            setTimeout(() => {
-                cerrarModal('cryptoPaymentModal');
-                comprarDomo(1);
-            }, 1500);
-        } else {
-            statusEl.textContent = `⏳ ${data.message || 'Pago no confirmado aún'}`;
-            showToast('⏳ Pago pendiente de confirmación', 'warning');
-        }
-        
-    } catch (error) {
-        console.error('Error al verificar pago:', error);
-        statusEl.textContent = '❌ Error al verificar pago: ' + error.message;
-        showToast('❌ Error al verificar pago', 'error');
-    }
-}
-
-function copiarDireccion() {
-    const addressEl = document.getElementById('cryptoAddress');
-    if (addressEl && addressEl.textContent && addressEl.textContent !== 'No disponible') {
-        navigator.clipboard.writeText(addressEl.textContent).then(() => {
-            showToast('📋 Dirección copiada al portapapeles', 'success');
-        }).catch(() => {
-            showToast('📋 Selecciona y copia la dirección manualmente', '');
-        });
-    } else {
-        showToast('⚠️ No hay dirección disponible para copiar', 'warning');
-    }
-}
-
-// ===== eSIM =====
-async function comprarESIM(cantidad) {
-    try {
-        const session = await getSession();
-        if (!session) {
-            showToast('⚠️ Inicia sesión para adquirir eSIM', 'error');
-            return;
-        }
-        
-        showToast('⏳ Procesando adquisición de eSIM...', '', 4000);
-        
-        // Obtener planes disponibles
-        const { data: planes, error: planesError } = await supabase
-            .from('planes_esim')
-            .select('*')
-            .eq('activo', true)
-            .order('precio', { ascending: true });
-        
-        if (planesError) throw planesError;
-        
-        if (!planes || planes.length === 0) {
-            showToast('⚠️ No hay planes eSIM disponibles', 'error');
-            return;
-        }
-        
-        // Seleccionar primer plan disponible (o plan por defecto)
-        const planId = planes[0].id;
-        const idempotencyKey = `esim_${session.user.id}_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-        
-        // Usar RPC crear_orden_esim
-        const { data, error } = await supabase.rpc('crear_orden_esim', {
-            p_plan_id: planId,
-            p_idempotency_key: idempotencyKey
-        });
-        
-        if (error) throw error;
-        
-        if (data && data.success) {
-            showToast('✅ Orden eSIM creada correctamente', 'success');
-            await cargarPerfil();
-        } else if (data && data.idempotent) {
-            showToast('⏳ Esta orden ya fue procesada', 'warning');
-        } else {
-            showToast('❌ Error al crear orden eSIM', 'error');
-        }
-        
-    } catch (error) {
-        console.error('Error al comprar eSIM:', error);
-        showToast('❌ Error al adquirir eSIM: ' + error.message, 'error');
-    }
-}
-
-async function generarQRESIM() {
-    try {
-        const session = await getSession();
-        if (!session) {
-            showToast('⚠️ Inicia sesión para obtener QR de eSIM', 'error');
-            return;
-        }
-        
-        showToast('⏳ Generando QR de eSIM...', '', 4000);
-        
-        // Obtener ordenes activas del usuario
-        const { data: ordenes, error } = await supabase
-            .from('ordenes_esim')
-            .select('*')
-            .eq('usuario_id', session.user.id)
-            .eq('estado', 'activa')
-            .order('created_at', { ascending: false })
-            .limit(1);
-        
-        if (error) throw error;
-        
-        if (!ordenes || ordenes.length === 0) {
-            showToast('⚠️ No tienes ninguna eSIM activa', 'warning');
-            return;
-        }
-        
-        const orden = ordenes[0];
-        
-        // Si la orden tiene QR, mostrarlo
-        if (orden.qr_code) {
-            const qrWindow = window.open('', '_blank');
-            if (qrWindow) {
-                qrWindow.document.write(`
-                    <html>
-                        <head>
-                            <title>QR eSIM - Sariel's</title>
-                            <style>
-                                body {
-                                    display: flex;
-                                    justify-content: center;
-                                    align-items: center;
-                                    height: 100vh;
-                                    margin: 0;
-                                    background: #0F2D1A;
-                                    font-family: 'Inter', sans-serif;
-                                }
-                                .container {
-                                    text-align: center;
-                                    padding: 40px;
-                                    background: rgba(15, 45, 26, 0.9);
-                                    border-radius: 20px;
-                                    border: 1px solid #D4AF37;
-                                }
-                                h2 {
-                                    color: #D4AF37;
-                                    font-family: 'Orbitron', monospace;
-                                    margin-bottom: 20px;
-                                }
-                                img {
-                                    max-width: 300px;
-                                    border: 2px solid #D4AF37;
-                                    border-radius: 12px;
-                                    background: white;
-                                    padding: 10px;
-                                }
-                                .info {
-                                    color: #c0d8e8;
-                                    margin-top: 15px;
-                                    font-size: 0.8rem;
-                                }
-                            </style>
-                        </head>
-                        <body>
-                            <div class="container">
-                                <h2>📱 eSIM - Sariel's</h2>
-                                <img src="${orden.qr_code}" alt="QR eSIM"/>
-                                <div class="info">ICCID: ${orden.iccid || '---'}</div>
+            <!-- ===== TAB: E.S.TOKS ===== -->
+            <div id="tab-tokens" class="tab-content">
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3>⟡ Balance E.S.TOKS & Domos</h3>
+                        <span class="panel-badge">Ecosistema</span>
+                    </div>
+                    <div class="panel-body">
+                        <div class="token-status">
+                            <div class="item">
+                                <div class="value" id="tokenTotal">0</div>
+                                <div class="label">◈ Balance Tokens</div>
                             </div>
-                        </body>
-                    </html>
-                `);
-            }
-            showToast('✅ QR de eSIM generado', 'success');
-        } else {
-            showToast('⚠️ Esta eSIM no tiene QR disponible', 'warning');
-        }
-        
-    } catch (error) {
-        console.error('Error al generar QR eSIM:', error);
-        showToast('❌ Error al generar QR de eSIM', 'error');
-    }
-}
+                            <div class="item">
+                                <div class="value" id="tokenDisponibles">0</div>
+                                <div class="label">◈ Disponibles</div>
+                            </div>
+                            <div class="item">
+                                <div class="value" id="tokenVendidos">0</div>
+                                <div class="label">◈ Domos Leídos</div>
+                            </div>
+                            <div class="item">
+                                <div class="value" id="tokenNFTs">0</div>
+                                <div class="label">◈ NFTs Desbloqueados</div>
+                            </div>
+                        </div>
 
-async function sincronizarESIM() {
-    try {
-        const session = await getSession();
-        if (!session) {
-            showToast('⚠️ Inicia sesión para sincronizar eSIM', 'error');
-            return;
-        }
-        
-        showToast('⏳ Sincronizando eSIM...', '', 4000);
-        
-        // Sincronizar desde Telnyx (si existe endpoint)
-        const response = await fetch('/api/esim/sincronizar', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                usuario_id: session.user.id
-            })
-        });
-        
-        if (!response.ok) {
-            // Si no existe endpoint, usar datos locales
-            console.warn('Endpoint /api/esim/sincronizar no disponible, usando datos locales');
-            await cargarPerfil();
-            showToast('✅ eSIM sincronizada (datos locales)', 'success');
-            return;
-        }
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            showToast('✅ eSIM sincronizada correctamente', 'success');
-            await cargarPerfil();
-        } else {
-            showToast('❌ Error al sincronizar eSIM: ' + data.message, 'error');
-        }
-        
-    } catch (error) {
-        console.error('Error al sincronizar eSIM:', error);
-        // Fallback: recargar perfil
-        await cargarPerfil();
-        showToast('✅ eSIM sincronizada (datos locales)', 'success');
-    }
-}
+                        <div class="progress-bar-container">
+                            <div class="bar">
+                                <div class="fill" id="progressFill" style="width: 0%;"></div>
+                            </div>
+                            <div class="label">
+                                <span>Progreso meta 12 E.S.TOKS</span>
+                                <span id="progressText">0 / 12</span>
+                            </div>
+                        </div>
 
-async function activarESIM() {
-    try {
-        const session = await getSession();
-        if (!session) {
-            showToast('⚠️ Inicia sesión para activar eSIM', 'error');
-            return;
-        }
-        
-        showToast('⏳ Activando eSIM...', '', 4000);
-        
-        const { error } = await supabase
-            .from('usuarios')
-            .update({ esim_status: 'activa' })
-            .eq('id', session.user.id);
-        
-        if (error) throw error;
-        
-        showToast('✅ eSIM activada correctamente', 'success');
-        await cargarPerfil();
-        
-    } catch (error) {
-        console.error('Error al activar eSIM:', error);
-        showToast('❌ Error al activar eSIM', 'error');
-    }
-}
+                        <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;">
+                            <button class="btn btn-gold" style="flex:1;justify-content:center;padding:10px;" id="btnComprarDomo" onclick="comprarDomo(1)">
+                                ⟡ Registrar Domo • $75 MXN
+                            </button>
+                            <button class="btn btn-gold" style="flex:1;justify-content:center;padding:10px;" id="canjearNft" onclick="canjearNFT()" disabled>
+                                🔒 CANJEAR NFT (Requiere 12 Tokens)
+                            </button>
+                        </div>
 
-async function desactivarESIM() {
-    try {
-        const session = await getSession();
-        if (!session) {
-            showToast('⚠️ Inicia sesión para desactivar eSIM', 'error');
-            return;
-        }
-        
-        showToast('⏳ Desactivando eSIM...', '', 4000);
-        
-        const { error } = await supabase
-            .from('usuarios')
-            .update({ esim_status: 'inactiva' })
-            .eq('id', session.user.id);
-        
-        if (error) throw error;
-        
-        showToast('✅ eSIM desactivada correctamente', 'success');
-        await cargarPerfil();
-        
-    } catch (error) {
-        console.error('Error al desactivar eSIM:', error);
-        showToast('❌ Error al desactivar eSIM', 'error');
-    }
-}
+                        <!-- COMPRAR CON CRIPTO -->
+                        <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--glass-border);">
+                            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+                                <span style="font-size:0.8rem;color:var(--gold);font-weight:600;">💳 Obtención vía Cripto</span>
+                                <span style="font-size:0.6rem;color:var(--text-muted);">USDT / USDC · Red TRC-20</span>
+                            </div>
+                            <div class="crypto-controls">
+                                <div class="qty-group">
+                                    <button class="qty-btn" id="cryptoDecreaseQty" aria-label="Reducir cantidad">−</button>
+                                    <span class="qty-value" id="cryptoQuantity">1</span>
+                                    <button class="qty-btn" id="cryptoIncreaseQty" aria-label="Aumentar cantidad">+</button>
+                                </div>
+                                <div style="flex:1;text-align:center;">
+                                    <span class="crypto-total" id="cryptoTotal">$4.59 USDT</span>
+                                </div>
+                            </div>
+                            <button class="btn btn-crypto" style="width:100%;justify-content:center;margin-top:10px;padding:10px;" id="btnPagarCripto" onclick="comprarConCripto()">
+                                💳 Pagar con USDT/USDC
+                            </button>
+                        </div>
+                    </div>
+                </div>
 
-// ===== SESIÓN =====
-async function cerrarSesion() {
-    try {
-        const { error } = await supabase.auth.signOut();
-        if (error) throw error;
-        
-        showToast('👋 Sesión cerrada correctamente', 'success');
-        
-        setTimeout(() => {
-            window.location.href = '/login.html';
-        }, 1000);
-        
-    } catch (error) {
-        console.error('Error al cerrar sesión:', error);
-        showToast('❌ Error al cerrar sesión: ' + error.message, 'error');
-    }
-}
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3>◈ Historial de E.S.TOKS y Domos</h3>
+                        <span class="panel-badge" id="historialCount">0</span>
+                    </div>
+                    <div class="panel-body" id="historialList">
+                        <div class="empty-state">
+                            <span class="icon">◈</span>
+                            <h4>Sin registros</h4>
+                            <p>Registra o escanea Domos para acumular tu historial.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-// ===== MODAL NFT =====
-function abrirModalNft(nftId) {
-    const modal = document.getElementById('nftModal');
-    if (!modal) {
-        showToast('⚠️ Modal de NFT no disponible', 'error');
-        return;
-    }
-    
-    // Cargar datos del NFT desde Supabase
-    supabase
-        .from('nfts_usuario')
-        .select('*')
-        .eq('id', nftId)
-        .single()
-        .then(({ data, error }) => {
-            if (error) throw error;
+            <!-- ===== TAB: NFTs (CONMEMORATIVOS) ===== -->
+            <div id="tab-nfts" class="tab-content">
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3>🎨 Galería de NFTs Conmemorativos</h3>
+                        <span class="panel-badge">Sariel's Collection</span>
+                    </div>
+                    <div class="panel-body">
+                        <div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:14px;">
+                            ⓘ Los NFTs de Sariel's son activos digitales conmemorativos e intransferibles emitidos al completar metas dentro de la red.
+                        </div>
+                        <div id="nftGalleryContainer" class="nft-grid">
+                            <div class="empty-state" style="grid-column:1/-1;">
+                                <span class="icon">🎨</span>
+                                <h4>No posees NFTs conmemorativos</h4>
+                                <p>Reúne 12 E.S.TOKS para canjear tu primer NFT conmemorativo.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== TAB: eSIM / CONECTIVIDAD ===== -->
+            <div id="tab-esim" class="tab-content">
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3>📱 Estado de eSIM</h3>
+                        <span class="panel-badge">Telnyx Mobile</span>
+                    </div>
+                    <div class="panel-body">
+                        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));gap:10px;">
+                            <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;border:1px solid var(--glass-border);">
+                                <span style="color:var(--text-muted);font-size:0.6rem;">ESTADO ACTIVACIÓN</span>
+                                <div id="esimStatus" style="font-weight:600;font-size:0.85rem;">⏳ No asignada</div>
+                            </div>
+                            <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;border:1px solid var(--glass-border);">
+                                <span style="color:var(--text-muted);font-size:0.6rem;">DATOS CONSUMIDOS</span>
+                                <div id="esimDataUsed" style="font-weight:600;font-size:0.85rem;">-- GB</div>
+                            </div>
+                            <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;border:1px solid var(--glass-border);">
+                                <span style="color:var(--text-muted);font-size:0.6rem;">LÍMITE DEL PLAN</span>
+                                <div id="esimDataLimit" style="font-weight:600;font-size:0.85rem;">-- GB</div>
+                            </div>
+                            <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;border:1px solid var(--glass-border);">
+                                <span style="color:var(--text-muted);font-size:0.6rem;">DATOS RESTANTES</span>
+                                <div id="esimDataRestante" style="font-weight:600;font-size:0.85rem;color:var(--success);">-- GB</div>
+                            </div>
+                        </div>
+
+                        <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;border:1px solid var(--glass-border);margin-top:10px;">
+                            <span style="color:var(--text-muted);font-size:0.6rem;">ICCID IDENTIFICADOR</span>
+                            <div id="esimIccid" style="font-weight:600;font-size:0.8rem;font-family:monospace;">--</div>
+                        </div>
+
+                        <div style="margin-top:12px;">
+                            <div style="background:rgba(0,0,0,0.2);border-radius:10px;height:8px;overflow:hidden;">
+                                <div id="esimDataProgress" style="height:100%;width:0%;background:var(--success);transition:width 0.8s;"></div>
+                            </div>
+                        </div>
+
+                        <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;">
+                            <button class="btn btn-gold" style="flex:1;justify-content:center;padding:10px;" id="btnComprarESIM" onclick="comprarESIM(1)">
+                                📱 Adquirir eSIM
+                            </button>
+                            <button class="btn btn-outline" style="flex:1;justify-content:center;padding:10px;" id="btnQrEsim" onclick="generarQRESIM()">
+                                📲 Obtener QR
+                            </button>
+                            <button class="btn btn-outline" style="flex:1;justify-content:center;padding:10px;" id="btnSincronizarEsim" onclick="sincronizarESIM()">
+                                🔄 Sincronizar
+                            </button>
+                        </div>
+
+                        <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
+                            <button class="btn btn-outline btn-sm" id="btnActivarESIM" onclick="activarESIM()" style="border-color:var(--success);color:var(--success);">
+                                ✅ Activar eSIM
+                            </button>
+                            <button class="btn btn-danger btn-sm" id="btnDesactivarESIM" onclick="desactivarESIM()">
+                                ⛔ Desactivar eSIM
+                            </button>
+                        </div>
+
+                        <div style="margin-top:10px;font-size:0.6rem;color:var(--text-muted);">
+                            APN Requerido: <span id="esimApn" style="font-family:monospace;color:var(--text-secondary);">data00.telnyx</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== TAB: ESCANEAR QR ===== -->
+            <div id="tab-qr" class="tab-content">
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3>📱 Escaneo e Ingreso de QR Domo</h3>
+                        <span class="panel-badge">Validación Real</span>
+                    </div>
+                    <div class="panel-body">
+                        <form id="formIngresoQR" onsubmit="event.preventDefault(); escanearQR();" class="config-group">
+                            <label for="qrInput">Código del QR (Escanea o ingresa manualmente)</label>
+                            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                                <input type="text" id="qrInput" placeholder="Ej: DOMO-2026-X89A12" required
+                                       style="flex:1;padding:10px 14px;background:rgba(0,0,0,0.3);border:1px solid var(--glass-border);border-radius:10px;color:var(--text-primary);font-size:0.85rem;outline:none;">
+                                <button type="submit" class="btn btn-gold" id="btnEscanearQR">
+                                    🔍 Validar Código
+                                </button>
+                            </div>
+                            <div class="hint">⚡ Ingresa el identificador único del Domo físico para acumular 1 E.S.TOK real.</div>
+                        </form>
+
+                        <button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:8px;padding:10px;" id="btnAbrirCamaraQR" onclick="abrirCamaraQR()">
+                            📷 Abrir Cámara del Dispositivo
+                        </button>
+
+                        <div id="qrReaderContainer">
+                            <video id="qrVideo" playsinline style="width:100%;max-width:300px;border-radius:10px;background:black;"></video>
+                            <canvas id="qrCanvas" style="display:none;"></canvas>
+                            <div style="margin-top:8px;">
+                                <button class="btn btn-danger btn-sm" onclick="cerrarCamaraQR()">
+                                    ✕ Cerrar cámara
+                                </button>
+                            </div>
+                            <div id="qrCamaraStatus" style="font-size:0.7rem;color:var(--text-muted);margin-top:4px;">Iniciando cámara...</div>
+                        </div>
+
+                        <div id="qrStatus" style="margin-top:12px;font-size:0.8rem;color:var(--text-muted);min-height:24px;text-align:center;"></div>
+
+                        <div style="margin-top:16px;border-top:1px solid var(--glass-border);padding-top:12px;">
+                            <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.7rem;color:var(--text-muted);">
+                                <span>📋 Escaneos Confirmados</span>
+                                <span id="qrHistorialCount">0</span>
+                            </div>
+                            <div id="qrHistorialList" style="margin-top:8px;">
+                                <div class="empty-state" style="padding:10px;">
+                                    <span class="icon" style="font-size:1.5rem;">◈</span>
+                                    <p style="font-size:0.7rem;">Sin escaneos registrados aún.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== TAB: CONFIGURACIÓN Y PERFIL ===== -->
+            <div id="tab-config" class="tab-content">
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3>◆ Perfil e Información</h3>
+                        <span class="panel-badge">Editar</span>
+                    </div>
+                    <div class="panel-body">
+                        <form id="formPerfil" onsubmit="event.preventDefault(); guardarPerfil();">
+                            <div class="config-group">
+                                <label for="editNombre">Nombre de Usuario</label>
+                                <input type="text" id="editNombre" required />
+                            </div>
+                            <div class="config-group">
+                                <label for="editHandle">Handle / Apodo (@)</label>
+                                <input type="text" id="editHandle" required />
+                            </div>
+                            <div class="config-group">
+                                <label for="editBio">Biografía</label>
+                                <textarea id="editBio" rows="3"></textarea>
+                            </div>
+                            <div class="config-group">
+                                <label>Imagen de Perfil</label>
+                                <button type="button" class="btn btn-outline" style="width:100%;" onclick="abrirSelectorArchivo()">📸 Subir nueva foto</button>
+                            </div>
+                            <button type="submit" class="btn btn-gold" style="width:100%;justify-content:center;padding:10px;" id="btnGuardarPerfil">
+                                ◆ Guardar Cambios
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3>◆ Seguridad y Wallet Web3</h3>
+                        <span class="panel-badge">Conexión</span>
+                    </div>
+                    <div class="panel-body">
+                        <div class="config-group">
+                            <label>Dirección Wallet Conectada</label>
+                            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px;">
+                                <span id="walletDisplay" style="font-family:monospace;font-size:0.85rem;color:var(--text-secondary);">⚠️ No conectada</span>
+                                <button type="button" class="btn btn-wallet btn-sm" onclick="conectarWallet()" id="btnConectarWallet">
+                                    ◈ Conectar Wallet
+                                </button>
+                                <button type="button" class="btn btn-danger btn-sm" onclick="desconectarWallet()" style="display:none;" id="btnDesconectarWallet">
+                                    ✕ Desconectar
+                                </button>
+                            </div>
+                            <div class="hint">Red Actual: <span id="walletRed">Polygon Mainnet</span></div>
+                        </div>
+                        <button type="button" class="btn btn-danger" style="width:100%;justify-content:center;padding:10px;margin-top:12px;" id="btnCerrarSesion" onclick="cerrarSesion()">
+                            ✕ Cerrar Sesión
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- FOOTER -->
+        <footer class="footer">
+            <span><span class="brand">◈ Sariel's</span> · Red Social WEB3</span>
+            <div class="footer-links">
+                <a href="/terminos">Términos</a>
+                <a href="/privacidad">Privacidad</a>
+                <a href="/cookies">Cookies</a>
+                <span style="opacity:0.4;">⚡ Powered by Polygon</span>
+            </div>
+        </footer>
+
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <!-- ===== MODAL DETALLE NFT ===== -->
+    <div class="modal-overlay" id="nftModal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="cerrarModal('nftModal')">✕</button>
+            <h2 id="nftModalTitle">NFT Conmemorativo</h2>
+            <div style="margin: 15px 0;">
+                <img id="nftModalImage" src="" alt="NFT Preview" style="max-width:200px;width:100%;border-radius:12px;border:1px solid var(--gold);" />
+            </div>
+            <p id="nftModalDescription" class="subtitle" style="font-size:0.8rem;"></p>
+            <div class="address-box">
+                <div class="label">Domo de Origen / Transacción</div>
+                <div class="address" id="nftModalDomo">--</div>
+            </div>
+            <div class="address-box">
+                <div class="label">Fecha de Obtención</div>
+                <div class="address" id="nftModalFecha">--</div>
+            </div>
+            <div class="actions">
+                <button class="btn btn-outline btn-sm" onclick="cerrarModal('nftModal')">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== MODAL PAGO CRIPTO ===== -->
+    <div class="modal-overlay" id="cryptoPaymentModal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="cerrarModal('cryptoPaymentModal')">✕</button>
+            <h2>💳 Pagar con Cripto</h2>
+            <p class="subtitle">Escanea el QR o copia la dirección oficial de depósito</p>
             
-            const title = document.getElementById('nftModalTitle');
-            const image = document.getElementById('nftModalImage');
-            const description = document.getElementById('nftModalDescription');
-            const domo = document.getElementById('nftModalDomo');
-            const fecha = document.getElementById('nftModalFecha');
-            
-            if (title) title.textContent = data.nombre || 'NFT Conmemorativo';
-            if (image) image.src = data.imagen_url || '/placeholder-nft.png';
-            if (description) {
-                description.textContent = `NFT conmemorativo de Sariel's Ecosystem - ${data.codigo_nft || 'Código: N/A'}`;
-            }
-            if (domo) domo.textContent = data.qr_domo_origen || '---';
-            if (fecha) {
-                fecha.textContent = data.fecha_canje ? 
-                    new Date(data.fecha_canje).toLocaleDateString('es-ES', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                    }) : '---';
-            }
-            
-            modal.classList.add('active');
-        })
-        .catch(error => {
-            console.error('Error al cargar NFT:', error);
-            showToast('❌ Error al cargar detalles del NFT', 'error');
-        });
-}
+            <div class="qr-container">
+                <img id="cryptoQR" src="" alt="QR de pago" />
+            </div>
 
-// ================================================================
-// INICIALIZACIÓN
-// ================================================================
-document.addEventListener('DOMContentLoaded', () => {
-    cargarPerfil();
-    
-    // Botones de cantidad para cripto
-    const decreaseBtn = document.getElementById('cryptoDecreaseQty');
-    const increaseBtn = document.getElementById('cryptoIncreaseQty');
-    const qtyDisplay = document.getElementById('cryptoQuantity');
-    
-    if (decreaseBtn && qtyDisplay) {
-        decreaseBtn.addEventListener('click', () => {
-            let val = parseInt(qtyDisplay.textContent) || 1;
-            if (val > 1) {
-                qtyDisplay.textContent = val - 1;
+            <div class="address-box">
+                <div class="label">📤 Dirección TRC-20 de pago</div>
+                <div class="address" id="cryptoAddress">Cargando dirección...</div>
+            </div>
+
+            <div class="amount">
+                <span id="cryptoMonto">0.00</span> <span id="cryptoMoneda">USDT</span>
+            </div>
+
+            <div class="actions">
+                <button class="btn btn-outline btn-sm" onclick="copiarDireccion()">📋 Copiar dirección</button>
+                <button class="btn btn-gold btn-sm" id="btnVerificarPago" onclick="verificarPagoCrypto()">✅ Verificar depósito</button>
+                <button class="btn btn-outline btn-sm" onclick="cerrarModal('cryptoPaymentModal')">Cancelar</button>
+            </div>
+
+            <div class="status" id="cryptoStatus">⏳ Esperando confirmación en la red...</div>
+        </div>
+    </div>
+
+    <!-- MODAL VISTA QR PERFIL -->
+    <div class="modal-overlay" id="qrPerfilModal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="cerrarModal('qrPerfilModal')">✕</button>
+            <h2>📱 Mi QR de Perfil</h2>
+            <p class="subtitle">Muestra este código para que te agreguen rápidamente</p>
+            <div class="qr-container">
+                <img id="qrPerfilImage" src="" alt="QR Perfil" />
+            </div>
+            <div class="actions">
+                <button class="btn btn-outline btn-sm" onclick="cerrarModal('qrPerfilModal')">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- NOTIFICADOR DE ERRORES SCRIPT -->
+    <div id="errorBanner" style="display:none; position:fixed; top:0; left:0; right:0; z-index:99999; background:#ff3366; color:#fff; padding:12px 16px; font-family:monospace; font-size:0.75rem; word-break:break-word;">
+        <strong>⚠️ Error detectado:</strong>
+        <span id="errorBannerText"></span>
+        <button onclick="document.getElementById('errorBanner').style.display='none'" style="float:right; background:none; border:1px solid #fff; color:#fff; border-radius:6px; padding:2px 10px; cursor:pointer;">Cerrar</button>
+    </div>
+
+    <script>
+        function mostrarErrorEnPantalla(mensaje) {
+            const banner = document.getElementById('errorBanner');
+            const texto = document.getElementById('errorBannerText');
+            if (banner && texto) {
+                texto.textContent = mensaje;
+                banner.style.display = 'block';
+            }
+        }
+
+        window.addEventListener('error', function (event) {
+            mostrarErrorEnPantalla((event.message || 'Error de script') + ' en ' + (event.filename || 'perfil.html') + ':' + event.lineno);
+        });
+
+        window.addEventListener('unhandledrejection', function (event) {
+            mostrarErrorEnPantalla('Promesa rechazada: ' + (event.reason?.message || event.reason));
+        });
+
+        // MANEJO SEGURO DE CLOSING DE MODALES (CLIC FUERA / ESCAPE)
+        document.querySelectorAll('.modal-overlay').forEach(modal => {
+            modal.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    this.classList.remove('active');
+                }
+            });
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.modal-overlay.active').forEach(modal => {
+                    modal.classList.remove('active');
+                });
             }
         });
-    }
-    
-    if (increaseBtn && qtyDisplay) {
-        increaseBtn.addEventListener('click', () => {
-            let val = parseInt(qtyDisplay.textContent) || 1;
-            qtyDisplay.textContent = val + 1;
-        });
-    }
-});
+
+        function cerrarModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) modal.classList.remove('active');
+        }
+    </script>
+
+    <!-- DEPENDENCIAS CORE -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="/app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+    <script src="/features/perfil/perfil.js"></script>
+</body>
+</html>
