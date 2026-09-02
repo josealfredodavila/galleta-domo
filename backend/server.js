@@ -1,6 +1,6 @@
 /* ================================================================
    SERVER.JS - SARIEL'S ECOSYSTEM
-   VERSIÓN FINAL DE PRODUCCIÓN
+   VERSIÓN FINAL DE PRODUCCIÓN - CON RUTAS COMPLETAS
    Integración completa con Supabase, Telnyx, NOWPayments, LiveKit
    ================================================================ */
 
@@ -197,14 +197,107 @@ if (fs.existsSync(publicPath)) {
 }
 
 /* ================================================================
-   SPA FALLBACK - Corregido para Railway
+   RUTAS HTML - COMPLETAS
    ================================================================ */
 
-// Las rutas HTML específicas ya están definidas abajo.
-// Este fallback captura cualquier ruta que no sea /api/* o archivo estático
-// y devuelve index.html para que el cliente SPA maneje el routing.
+// ===== RUTA PRINCIPAL =====
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// ===== FEATURES - RUTAS DIRECTAS =====
+app.get('/features/muro/muro.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'features', 'muro', 'muro.html'));
+});
+
+app.get('/features/perfil/perfil.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'features', 'perfil', 'perfil.html'));
+});
+
+app.get('/features/mensajes/mensajes.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'features', 'mensajes', 'mensajes.html'));
+});
+
+app.get('/features/mensajes/contactos.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'features', 'mensajes', 'contactos.html'));
+});
+
+app.get('/features/live/live.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'features', 'live', 'live.html'));
+});
+
+app.get('/features/internet/internet.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'features', 'internet', 'internet.html'));
+});
+
+app.get('/features/videos/videos.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'features', 'videos', 'videos.html'));
+});
+
+// ===== RUTAS AMIGABLES =====
+app.get('/perfil', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'features', 'perfil', 'perfil.html'));
+});
+
+app.get('/muro', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'features', 'muro', 'muro.html'));
+});
+
+app.get('/mensajes', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'features', 'mensajes', 'mensajes.html'));
+});
+
+app.get('/contactos', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'features', 'mensajes', 'contactos.html'));
+});
+
+app.get('/live', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'features', 'live', 'live.html'));
+});
+
+app.get('/internet', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'features', 'internet', 'internet.html'));
+});
+
+app.get('/videos', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'features', 'videos', 'videos.html'));
+});
+
+// ===== OTRAS RUTAS =====
+app.get('/admin.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
+
+app.get('/qr', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'qr-generator.html'));
+});
+
+app.get('/actualizar-contrasena', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'actualizar-contrasena.html'));
+});
+
+app.get('/terminos', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'terminos.html'));
+});
+
+app.get('/privacidad', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'privacidad.html'));
+});
+
+app.get('/cookies', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'cookies.html'));
+});
+
+app.get('/live-terminos', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'live-terminos.html'));
+});
+
+/* ================================================================
+   SPA FALLBACK - PARA RUTAS NO ENCONTRADAS
+   ================================================================ */
+
 app.get('*', (req, res, next) => {
-    // Excluir rutas de API y archivos estáticos (ya manejados por express.static)
+    // Excluir rutas de API y archivos estáticos
     if (req.path.startsWith('/api/') || req.path.startsWith('/webhooks/')) {
         return next();
     }
@@ -2458,67 +2551,7 @@ app.delete('/api/admin/planes/:id', verificarAdmin, async (req, res) => {
 });
 
 /* ================================================================
-   RUTAS HTML
-   ================================================================ */
-
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
-app.get('/perfil', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'features', 'perfil', 'perfil.html'));
-});
-
-app.get('/muro', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'features', 'muro', 'muro.html'));
-});
-
-app.get('/mensajes', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'features', 'mensajes', 'mensajes.html'));
-});
-
-app.get('/contactos', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'features', 'mensajes', 'contactos.html'));
-});
-
-app.get('/live', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'features', 'live', 'live.html'));
-});
-
-app.get('/internet', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'features', 'internet', 'internet.html'));
-});
-
-app.get('/admin.html', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'admin.html'));
-});
-
-app.get('/qr', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'qr-generator.html'));
-});
-
-app.get('/actualizar-contrasena', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'actualizar-contrasena.html'));
-});
-
-app.get('/terminos', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'terminos.html'));
-});
-
-app.get('/privacidad', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'privacidad.html'));
-});
-
-app.get('/cookies', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'cookies.html'));
-});
-
-app.get('/live-terminos', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'live-terminos.html'));
-});
-
-/* ================================================================
-   MANEJO DE ERRORES
+   MANEJO DE ERRORES - API
    ================================================================ */
 
 app.use('/api', (req, res) => {
