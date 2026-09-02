@@ -184,10 +184,7 @@
         .perfil-header::before {
             content: '';
             position: absolute;
-            top: -2px;
-            left: -2px;
-            right: -2px;
-            bottom: -2px;
+            top: -2px; left: -2px; right: -2px; bottom: -2px;
             background: linear-gradient(135deg, var(--gold), var(--green-deep), var(--gold));
             background-size: 300% 300%;
             border-radius: var(--radius-xl);
@@ -301,25 +298,20 @@
             transition: var(--transition);
             font-family: 'Inter', sans-serif;
         }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
         .btn-gold { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); box-shadow: 0 4px 20px rgba(212, 175, 55, 0.2); }
-        .btn-gold:hover { transform: translateY(-2px); box-shadow: var(--shadow-gold); }
+        .btn-gold:hover:not(:disabled) { transform: translateY(-2px); box-shadow: var(--shadow-gold); }
         .btn-outline { background: transparent; color: var(--text-secondary); border: 1px solid var(--glass-border); }
-        .btn-outline:hover { border-color: var(--gold); color: var(--gold); box-shadow: 0 0 20px rgba(212, 175, 55, 0.1); }
+        .btn-outline:hover:not(:disabled) { border-color: var(--gold); color: var(--gold); box-shadow: 0 0 20px rgba(212, 175, 55, 0.1); }
         .btn-sm { padding: 4px 12px; font-size: 0.65rem; }
         .btn-danger { background: rgba(255, 51, 102, 0.1); color: var(--danger); border: 1px solid rgba(255, 51, 102, 0.2); }
-        .btn-danger:hover { background: rgba(255, 51, 102, 0.2); }
-        .btn-crypto {
-            background: linear-gradient(135deg, #00ff88, #00b894);
-            color: var(--space);
-            box-shadow: 0 4px 20px rgba(0, 255, 136, 0.2);
-        }
-        .btn-crypto:hover { transform: translateY(-2px); box-shadow: 0 0 40px rgba(0, 255, 136, 0.3); }
-        .btn-wallet {
-            background: linear-gradient(135deg, #8b5cf6, #6d28d9);
-            color: #fff;
-            box-shadow: 0 4px 20px rgba(139, 92, 246, 0.2);
-        }
-        .btn-wallet:hover { transform: translateY(-2px); box-shadow: 0 0 40px rgba(139, 92, 246, 0.3); }
+        .btn-danger:hover:not(:disabled) { background: rgba(255, 51, 102, 0.2); }
+        .btn-crypto { background: linear-gradient(135deg, #00ff88, #00b894); color: var(--space); box-shadow: 0 4px 20px rgba(0, 255, 136, 0.2); }
+        .btn-crypto:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 0 40px rgba(0, 255, 136, 0.3); }
+        .btn-wallet { background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: #fff; box-shadow: 0 4px 20px rgba(139, 92, 246, 0.2); }
+        .btn-wallet:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 0 40px rgba(139, 92, 246, 0.3); }
+        .btn-video { background: linear-gradient(135deg, #ff6b6b, #ee5a24); color: #fff; box-shadow: 0 4px 20px rgba(238, 90, 36, 0.2); }
+        .btn-video:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 0 40px rgba(238, 90, 36, 0.3); }
 
         .perfil-tabs {
             display: flex;
@@ -388,26 +380,11 @@
             flex-wrap: wrap;
             gap: 10px;
         }
-        .conexion-section .conexion-info {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .conexion-section .conexion-info .status {
-            font-weight: 600;
-            font-size: 0.9rem;
-        }
-        .conexion-section .conexion-info .velocidad {
-            color: var(--text-muted);
-            font-size: 0.7rem;
-        }
-        .conexion-section .conexion-info .señal {
-            font-size: 0.7rem;
-        }
-        .conexion-buttons {
-            display: flex;
-            gap: 8px;
-        }
+        .conexion-section .conexion-info { display: flex; align-items: center; gap: 10px; }
+        .conexion-section .conexion-info .status { font-weight: 600; font-size: 0.9rem; }
+        .conexion-section .conexion-info .velocidad { color: var(--text-muted); font-size: 0.7rem; }
+        .conexion-section .conexion-info .señal { font-size: 0.7rem; }
+        .conexion-buttons { display: flex; gap: 8px; }
         .conexion-buttons .btn-conexion {
             padding: 6px 14px;
             border-radius: 20px;
@@ -419,25 +396,10 @@
             cursor: pointer;
             transition: var(--transition);
         }
-        .conexion-buttons .btn-conexion:hover {
-            border-color: var(--gold);
-            color: var(--gold);
-        }
-        .conexion-buttons .btn-conexion.active {
-            border-color: var(--gold);
-            background: rgba(212, 175, 55, 0.15);
-            color: var(--gold);
-        }
-        .conexion-buttons .btn-conexion.wifi.active {
-            border-color: var(--success);
-            background: rgba(0, 214, 143, 0.1);
-            color: var(--success);
-        }
-        .conexion-buttons .btn-conexion.datos.active {
-            border-color: var(--cyan);
-            background: rgba(0, 229, 255, 0.1);
-            color: var(--cyan);
-        }
+        .conexion-buttons .btn-conexion:hover { border-color: var(--gold); color: var(--gold); }
+        .conexion-buttons .btn-conexion.active { border-color: var(--gold); background: rgba(212, 175, 55, 0.15); color: var(--gold); }
+        .conexion-buttons .btn-conexion.wifi.active { border-color: var(--success); background: rgba(0, 214, 143, 0.1); color: var(--success); }
+        .conexion-buttons .btn-conexion.datos.active { border-color: var(--cyan); background: rgba(0, 229, 255, 0.1); color: var(--cyan); }
 
         /* ===== SECCIÓN DE ESTADO ===== */
         .estado-section {
@@ -447,32 +409,12 @@
             padding: 15px;
             margin-top: 15px;
         }
-        .estado-section .estado-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-        .estado-section .estado-info {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .estado-section .estado-info .badge {
-            font-size: 1.2rem;
-        }
-        .estado-section .estado-info .texto {
-            font-weight: 600;
-        }
-        .estado-section .estado-info .amigos-online {
-            font-size: 0.6rem;
-            color: var(--text-muted);
-        }
-        .estado-buttons {
-            display: flex;
-            gap: 8px;
-        }
+        .estado-section .estado-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .estado-section .estado-info { display: flex; align-items: center; gap: 10px; }
+        .estado-section .estado-info .badge { font-size: 1.2rem; }
+        .estado-section .estado-info .texto { font-weight: 600; }
+        .estado-section .estado-info .amigos-online { font-size: 0.6rem; color: var(--text-muted); }
+        .estado-buttons { display: flex; gap: 8px; }
         .estado-buttons .btn-estado {
             padding: 4px 12px;
             border-radius: 20px;
@@ -484,37 +426,16 @@
             cursor: pointer;
             transition: var(--transition);
         }
-        .estado-buttons .btn-estado:hover {
-            border-color: var(--gold);
-            color: var(--gold);
-        }
-        .estado-buttons .btn-estado.online {
-            border-color: var(--success);
-            color: var(--success);
-        }
-        .estado-buttons .btn-estado.online:hover {
-            background: rgba(0, 214, 143, 0.1);
-        }
-        .estado-buttons .btn-estado.offline {
-            border-color: var(--text-muted);
-            color: var(--text-muted);
-        }
-        .estado-buttons .btn-estado.offline:hover {
-            background: rgba(255, 255, 255, 0.05);
-        }
+        .estado-buttons .btn-estado:hover { border-color: var(--gold); color: var(--gold); }
+        .estado-buttons .btn-estado.online { border-color: var(--success); color: var(--success); }
+        .estado-buttons .btn-estado.online:hover { background: rgba(0, 214, 143, 0.1); }
+        .estado-buttons .btn-estado.offline { border-color: var(--text-muted); color: var(--text-muted); }
+        .estado-buttons .btn-estado.offline:hover { background: rgba(255, 255, 255, 0.05); }
 
-        /* ===== SOLICITUDES PENDIENTES ===== */
-        #solicitudesSection {
-            margin-top: 10px;
-            padding: 10px 0;
-        }
-        #solicitudesSection h4 {
-            color: var(--gold);
-            font-size: 0.85rem;
-            margin-bottom: 8px;
-        }
+        /* ===== SOLICITUDES Y AMIGOS ===== */
+        #solicitudesSection { margin-top: 10px; padding: 10px 0; }
+        #solicitudesSection h4 { color: var(--gold); font-size: 0.85rem; margin-bottom: 8px; }
 
-        /* ===== LISTA DE AMIGOS ===== */
         #amigosContainer {
             margin-top: 10px;
             max-height: 300px;
@@ -531,71 +452,36 @@
             border-radius: 10px;
             border: 1px solid var(--glass-border);
             transition: var(--transition);
-            cursor: pointer;
         }
-        #amigosContainer .amigo-item:hover {
-            background: rgba(212, 175, 55, 0.05);
-        }
-        #amigosContainer .amigo-item.online {
-            border-color: rgba(0, 214, 143, 0.2);
-            background: rgba(0, 214, 143, 0.05);
-        }
+        #amigosContainer .amigo-item:hover { background: rgba(212, 175, 55, 0.05); }
         #amigosContainer .amigo-item .avatar-mini {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            overflow: hidden;
-            border: 2px solid var(--text-muted);
-            flex-shrink: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.8rem;
-            background: var(--bg-card);
+            width: 32px; height: 32px; border-radius: 50%; overflow: hidden;
+            border: 2px solid var(--text-muted); flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center; font-size: 0.8rem; background: var(--bg-card);
         }
-        #amigosContainer .amigo-item.online .avatar-mini {
-            border-color: var(--success);
-        }
-        #amigosContainer .amigo-item .avatar-mini img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        #amigosContainer .amigo-item .info {
-            flex: 1;
-            min-width: 0;
-        }
-        #amigosContainer .amigo-item .info .nombre {
-            font-weight: 600;
-            font-size: 0.8rem;
-        }
-        #amigosContainer .amigo-item .info .estado {
-            font-size: 0.6rem;
-        }
-        #amigosContainer .amigo-item .badge-online {
-            background: rgba(0, 214, 143, 0.1);
-            border: 1px solid rgba(0, 214, 143, 0.2);
-            border-radius: 20px;
-            padding: 2px 10px;
-            font-size: 0.5rem;
-            color: var(--success);
-            font-weight: 600;
-        }
+        #amigosContainer .amigo-item.online .avatar-mini { border-color: var(--success); }
+        #amigosContainer .amigo-item .avatar-mini img { width: 100%; height: 100%; object-fit: cover; }
+        #amigosContainer .amigo-item .info { flex: 1; min-width: 0; }
+        #amigosContainer .amigo-item .info .nombre { font-weight: 600; font-size: 0.8rem; }
+        #amigosContainer .amigo-item .info .estado { font-size: 0.6rem; color: var(--text-muted); }
 
-        .activity-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 10px 0;
-            border-bottom: 1px solid rgba(212, 175, 55, 0.04);
+        .nft-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 14px;
+        }
+        .nft-card {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            padding: 12px;
+            text-align: center;
             transition: var(--transition);
         }
-        .activity-item:hover { background: rgba(255, 255, 255, 0.02); padding-left: 8px; border-radius: 8px; }
-        .activity-item .icon { font-size: 1.2rem; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: rgba(212, 175, 55, 0.05); flex-shrink: 0; }
-        .activity-item .content { flex: 1; }
-        .activity-item .content .text { font-size: 0.85rem; color: var(--text-secondary); }
-        .activity-item .content .text strong { color: var(--text-primary); }
-        .activity-item .content .fecha { font-size: 0.6rem; color: var(--text-muted); margin-top: 2px; }
+        .nft-card:hover { border-color: var(--gold); transform: translateY(-3px); }
+        .nft-card img { width: 100%; height: 120px; object-fit: cover; border-radius: 10px; margin-bottom: 8px; }
+        .nft-card .title { font-family: 'Orbitron', monospace; font-size: 0.75rem; color: var(--gold); font-weight: 700; }
+        .nft-card .meta { font-size: 0.6rem; color: var(--text-muted); margin-top: 4px; }
 
         .token-status { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; }
         .token-status .item { background: rgba(0, 0, 0, 0.2); border: 1px solid var(--glass-border); border-radius: 12px; padding: 14px; text-align: center; transition: var(--transition); }
@@ -604,27 +490,9 @@
         .token-status .item .label { font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-family: 'Orbitron', monospace; }
 
         .progress-bar-container { margin-top: 16px; }
-        .progress-bar-container .bar {
-            width: 100%;
-            height: 8px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 10px;
-            overflow: hidden;
-        }
-        .progress-bar-container .bar .fill {
-            height: 100%;
-            background: linear-gradient(90deg, var(--gold), var(--gold-light));
-            border-radius: 10px;
-            transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .progress-bar-container .label {
-            display: flex;
-            justify-content: space-between;
-            font-size: 0.6rem;
-            color: var(--text-muted);
-            margin-top: 4px;
-            font-family: 'Orbitron', monospace;
-        }
+        .progress-bar-container .bar { width: 100%; height: 8px; background: rgba(255, 255, 255, 0.05); border-radius: 10px; overflow: hidden; }
+        .progress-bar-container .bar .fill { height: 100%; background: linear-gradient(90deg, var(--gold), var(--gold-light)); border-radius: 10px; transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1); }
+        .progress-bar-container .label { display: flex; justify-content: space-between; font-size: 0.6rem; color: var(--text-muted); margin-top: 4px; font-family: 'Orbitron', monospace; }
 
         .config-group { margin-bottom: 16px; }
         .config-group label { display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px; font-weight: 500; letter-spacing: 0.3px; }
@@ -644,10 +512,9 @@
         .config-group textarea { resize: vertical; min-height: 80px; }
         .config-group .hint { font-size: 0.6rem; color: var(--text-muted); margin-top: 4px; }
 
-        .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); }
-        .empty-state .icon { font-size: 2.5rem; display: block; margin-bottom: 12px; font-family: 'Orbitron', monospace; color: var(--gold); opacity: 0.3; }
-        .empty-state h4 { font-family: 'Orbitron', monospace; color: var(--text-secondary); font-size: 1rem; font-weight: 400; letter-spacing: 0.5px; }
-        .empty-state p { font-size: 0.8rem; }
+        .empty-state { text-align: center; padding: 30px 20px; color: var(--text-muted); }
+        .empty-state .icon { font-size: 2.2rem; display: block; margin-bottom: 8px; font-family: 'Orbitron', monospace; color: var(--gold); opacity: 0.4; }
+        .empty-state h4 { font-family: 'Orbitron', monospace; color: var(--text-secondary); font-size: 0.9rem; font-weight: 500; }
 
         .toast {
             position: fixed;
@@ -680,13 +547,10 @@
         .footer-links a { color: var(--text-muted); text-decoration: none; transition: var(--transition); }
         .footer-links a:hover { color: var(--gold); }
 
-        /* ===== MODAL CRIPTO ===== */
+        /* MODALES */
         .modal-overlay {
             position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
+            top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(0, 0, 0, 0.85);
             backdrop-filter: blur(12px);
             display: none;
@@ -695,159 +559,54 @@
             z-index: 9999;
             animation: fadeIn 0.3s ease-out;
         }
-        .modal-overlay.active {
-            display: flex;
-        }
+        .modal-overlay.active { display: flex; }
         .modal-content {
             background: linear-gradient(135deg, var(--bg-card), var(--bg-dark));
             border: 2px solid var(--gold);
             border-radius: 20px;
-            padding: 30px;
+            padding: 24px;
             max-width: 480px;
             width: 90%;
             text-align: center;
-            animation: scaleIn 0.3s ease-out;
             position: relative;
             max-height: 90vh;
             overflow-y: auto;
         }
         .modal-content .close-btn {
             position: absolute;
-            top: 10px;
+            top: 12px;
             right: 15px;
             background: transparent;
             border: none;
             color: var(--text-muted);
-            font-size: 1.5rem;
+            font-size: 1.4rem;
             cursor: pointer;
             transition: var(--transition);
         }
-        .modal-content .close-btn:hover {
-            color: var(--text-primary);
-            transform: rotate(90deg);
-        }
-        .modal-content h2 {
-            color: var(--gold);
-            font-family: 'Orbitron', monospace;
-            font-size: 1.2rem;
-            margin-bottom: 10px;
-        }
-        .modal-content .subtitle {
-            color: var(--text-secondary);
-            font-size: 0.85rem;
-            margin-bottom: 16px;
-        }
-        .modal-content .qr-container {
-            background: white;
-            border-radius: 12px;
-            padding: 15px;
-            margin: 10px 0;
-            display: inline-block;
-        }
-        .modal-content .qr-container img {
-            max-width: 200px;
-            width: 100%;
-        }
-        .modal-content .address-box {
-            background: var(--bg-dark);
-            border-radius: 10px;
-            padding: 12px;
-            margin: 10px 0;
-            word-break: break-all;
-        }
-        .modal-content .address-box .label {
-            font-size: 0.6rem;
-            color: var(--text-muted);
-        }
-        .modal-content .address-box .address {
-            font-family: monospace;
-            font-size: 0.75rem;
-            color: var(--gold);
-            margin-top: 4px;
-        }
-        .modal-content .amount {
-            font-family: 'Orbitron', monospace;
-            font-size: 1.4rem;
-            color: var(--gold);
-            margin: 10px 0;
-        }
-        .modal-content .actions {
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-            flex-wrap: wrap;
-            margin-top: 12px;
-        }
-        .modal-content .status {
-            margin-top: 10px;
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            min-height: 20px;
-        }
+        .modal-content .close-btn:hover { color: var(--text-primary); transform: rotate(90deg); }
+        .modal-content h2 { color: var(--gold); font-family: 'Orbitron', monospace; font-size: 1.2rem; margin-bottom: 10px; }
+        .modal-content .subtitle { color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 16px; }
+        .modal-content .qr-container { background: white; border-radius: 12px; padding: 15px; margin: 10px 0; display: inline-block; }
+        .modal-content .qr-container img { max-width: 180px; width: 100%; }
+        .modal-content .address-box { background: var(--bg-dark); border-radius: 10px; padding: 12px; margin: 10px 0; word-break: break-all; }
+        .modal-content .address-box .label { font-size: 0.6rem; color: var(--text-muted); }
+        .modal-content .address-box .address { font-family: monospace; font-size: 0.75rem; color: var(--gold); margin-top: 4px; }
+        .modal-content .actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 16px; }
 
-        /* ===== CRIPTO SECTION ===== */
-        .crypto-controls {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            align-items: center;
-        }
+        .crypto-controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
         .crypto-controls .qty-group {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            background: rgba(0, 0, 0, 0.2);
-            padding: 4px 12px;
-            border-radius: 30px;
-            border: 1px solid var(--glass-border);
+            display: flex; align-items: center; gap: 10px;
+            background: rgba(0, 0, 0, 0.2); padding: 4px 12px; border-radius: 30px; border: 1px solid var(--glass-border);
         }
         .crypto-controls .qty-group .qty-btn {
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            border: none;
-            background: transparent;
-            color: var(--text-primary);
-            font-size: 1.1rem;
-            cursor: pointer;
-            transition: var(--transition);
+            width: 28px; height: 28px; border-radius: 50%; border: none; background: transparent;
+            color: var(--text-primary); font-size: 1.1rem; cursor: pointer; transition: var(--transition);
         }
-        .crypto-controls .qty-group .qty-btn:hover {
-            background: rgba(212, 175, 55, 0.1);
-        }
-        .crypto-controls .qty-group .qty-value {
-            font-family: 'Orbitron', monospace;
-            font-size: 1rem;
-            font-weight: 600;
-            color: var(--gold);
-            min-width: 20px;
-            text-align: center;
-        }
-        .crypto-total {
-            font-family: 'Orbitron', monospace;
-            font-size: 1.2rem;
-            color: var(--gold);
-            font-weight: 700;
-        }
-        .crypto-hint {
-            font-size: 0.55rem;
-            color: var(--text-muted);
-            margin-top: 6px;
-            text-align: center;
-        }
+        .crypto-controls .qty-group .qty-btn:hover { background: rgba(212, 175, 55, 0.1); }
+        .crypto-controls .qty-group .qty-value { font-family: 'Orbitron', monospace; font-size: 1rem; font-weight: 600; color: var(--gold); min-width: 20px; text-align: center; }
+        .crypto-total { font-family: 'Orbitron', monospace; font-size: 1.2rem; color: var(--gold); font-weight: 700; }
 
-        /* ===== QR SCANNER ===== */
-        #qrReaderContainer {
-            display: none;
-            margin-top: 10px;
-            text-align: center;
-        }
-        #qrReaderContainer video {
-            width: 100%;
-            max-width: 300px;
-            border-radius: 10px;
-            background: black;
-        }
+        #qrReaderContainer { display: none; margin-top: 10px; text-align: center; }
 
         @media (max-width: 768px) {
             .app { padding: 12px 14px; }
@@ -856,19 +615,7 @@
             .perfil-header .acciones { margin-left: 0; justify-content: center; width: 100%; }
             .perfil-tabs .tab-btn { font-size: 0.6rem; padding: 8px 14px; }
             .main-nav .nav-link { font-size: 0.6rem; padding: 6px 10px; }
-            .header .logo-text { font-size: 1rem; }
-            .header .logo-hex { font-size: 1.4rem; }
-            .conexion-section .conexion-header { flex-direction: column; align-items: stretch; }
-            .estado-section .estado-header { flex-direction: column; align-items: stretch; }
             .crypto-controls { flex-direction: column; }
-            .modal-content { padding: 20px; }
-        }
-        @media (max-width: 480px) {
-            .perfil-header .avatar { width: 70px; height: 70px; font-size: 1.8rem; }
-            .perfil-header .info .nombre { font-size: 1.1rem; }
-            .perfil-header .stats { gap: 16px; }
-            .main-nav .nav-link { font-size: 0.55rem; padding: 4px 8px; }
-            .modal-content .qr-container img { max-width: 150px; }
         }
     </style>
 </head>
@@ -881,44 +628,50 @@
 
     <div class="app">
 
+        <!-- HEADER PRINCIPAL -->
         <header class="header">
             <a href="/" class="logo">
                 <span class="logo-hex">◈</span>
                 <span class="logo-text">Sariel<span>'s</span></span>
                 <span class="logo-badge">✦ WEB3</span>
             </a>
-            <div class="header-actions">
+            <div class="header-actions" style="display:flex;gap:8px;align-items:center;">
+                <button class="btn-video" onclick="window.location.href='/videos/videos.html'" style="padding:4px 12px;border-radius:20px;border:none;font-size:0.7rem;cursor:pointer;font-weight:600;" aria-label="Ir a Videos">
+                    🎬 Videos
+                </button>
+                <button onclick="window.location.href='/muro/muro.html'" style="background:transparent;border:none;color:var(--text-muted);font-size:1.2rem;cursor:pointer;" aria-label="Ir al Muro">◇</button>
                 <span class="network-badge"><span class="dot"></span> Polygon</span>
             </div>
         </header>
 
-        <nav class="main-nav">
+        <!-- NAVEGACIÓN GENERAL -->
+        <nav class="main-nav" aria-label="Navegación principal">
             <a href="/" class="nav-link">⌂ Inicio</a>
-            <a href="/features/muro/muro.html" class="nav-link">◇ Muro</a>
-            <a href="/features/perfil/perfil.html" class="nav-link active">◆ Perfil</a>
-            <a href="/features/mensajes/contactos.html" class="nav-link">◈ Contactos</a>
-            <a href="/features/live/live.html" class="nav-link live">◉ Live</a>
-            <a href="/features/internet/internet.html" class="nav-link">◈ Internet</a>
+            <a href="/muro/muro.html" class="nav-link">◇ Muro</a>
+            <a href="/perfil/perfil.html" class="nav-link active">◆ Perfil</a>
+            <a href="/mensajes/mensajes.html" class="nav-link">◈ Mensajes</a>
+            <a href="/live/live.html" class="nav-link live">◉ Live</a>
+            <a href="/videos/videos.html" class="nav-link">🎬 Videos</a>
         </nav>
 
         <div class="perfil-container">
 
-            <!-- ===== PERFIL HEADER ===== -->
+            <!-- ===== PERFIL HEADER (DATOS E IDENTIDAD) ===== -->
             <div class="perfil-header" id="perfilHeader">
                 <div class="avatar-container">
                     <div class="avatar" id="perfilAvatar">
                         ◈
-                        <span class="edit-badge" onclick="abrirSelectorArchivo()" title="Cambiar avatar">✎</span>
+                        <button class="edit-badge" onclick="abrirSelectorArchivo()" title="Cambiar foto de perfil" aria-label="Cambiar foto de perfil">✎</button>
                     </div>
                     <input type="file" id="fileInput" accept="image/*" style="display:none;" onchange="subirFoto(event)" />
                 </div>
                 <div class="info">
                     <div class="nombre" id="perfilNombre">
-                        Explorador
+                        Cargando...
                         <span class="verified">✦ VERIFICADO</span>
                     </div>
-                    <div class="handle" id="perfilHandle">@explorador</div>
-                    <div class="bio" id="perfilBio">Explorando el ecosistema Sariel's · WEB3 · Comunidad</div>
+                    <div class="handle" id="perfilHandle">@cargando</div>
+                    <div class="bio" id="perfilBio">Cargando información del usuario...</div>
                     <div class="badges">
                         <span class="badge gold">✦ MIEMBRO</span>
                         <span class="badge success">● ACTIVO</span>
@@ -945,13 +698,13 @@
                     </div>
                 </div>
                 <div class="acciones">
-                    <button class="btn btn-gold btn-sm" onclick="editarPerfil()">✎ Editar perfil</button>
-                    <button class="btn btn-outline btn-sm" onclick="compartirPerfil()">◈ Compartir</button>
-                    <button class="btn btn-outline btn-sm" onclick="generarQRPerfil()">📱 QR</button>
+                    <button class="btn btn-gold btn-sm" id="btnEditarPerfil" onclick="editarPerfil()">✎ Editar perfil</button>
+                    <button class="btn btn-outline btn-sm" id="btnCompartirPerfil" onclick="compartirPerfil()">◈ Compartir</button>
+                    <button class="btn btn-outline btn-sm" id="btnQRPerfil" onclick="generarQRPerfil()">📱 QR</button>
                 </div>
             </div>
 
-            <!-- ===== SECCIÓN DE ESTADO (ACTIVO/INACTIVO) ===== -->
+            <!-- ===== SECCIÓN DE ESTADO Y SOCIAL ===== -->
             <div class="estado-section">
                 <div class="estado-header">
                     <div class="estado-info">
@@ -960,23 +713,22 @@
                         <span class="amigos-online">· <span id="amigosEnLineaContador">0</span> amigos en línea</span>
                     </div>
                     <div class="estado-buttons">
-                        <button class="btn-estado online" onclick="cambiarEstado(true)">🟢 Activo</button>
-                        <button class="btn-estado offline" onclick="cambiarEstado(false)">⭕ Inactivo</button>
+                        <button class="btn-estado online" id="btnEstadoActivo" onclick="cambiarEstado(true)">🟢 Activo</button>
+                        <button class="btn-estado offline" id="btnEstadoInactivo" onclick="cambiarEstado(false)">⭕ Inactivo</button>
                     </div>
                 </div>
 
-                <!-- ===== SOLICITUDES PENDIENTES ===== -->
+                <!-- SOLICITUDES PENDIENTES -->
                 <div id="solicitudesSection">
-                    <h4>📨 Solicitudes pendientes <span id="solicitudesContador" style="font-size:0.7rem;color:var(--warning);">0</span></h4>
+                    <h4 style="margin-top:12px;">📨 Solicitudes de Amistad <span id="solicitudesContador" style="font-size:0.7rem;color:var(--warning);">0</span></h4>
                     <div id="solicitudesContainer" style="max-height: 200px; overflow-y: auto;">
-                        <div style="text-align:center; padding:10px; color:var(--text-muted); font-size:0.7rem;">
-                            <span style="font-size:1.2rem;">✅</span>
-                            <p>No tienes solicitudes pendientes</p>
+                        <div style="text-align:center; padding:10px; color:var(--text-muted); font-size:0.75rem;">
+                            Cargando solicitudes...
                         </div>
                     </div>
                 </div>
 
-                <!-- Lista de amigos -->
+                <!-- LISTA DE AMIGOS -->
                 <div id="amigosContainer"></div>
             </div>
 
@@ -985,7 +737,7 @@
                 <div class="conexion-header">
                     <div class="conexion-info">
                         <span class="status" id="conexionStatus">🛜 WiFi</span>
-                        <span class="velocidad" id="conexionVelocidad">0 Mbps</span>
+                        <span class="velocidad" id="conexionVelocidad">-- Mbps</span>
                         <span class="señal" id="conexionSeñal" style="color:var(--success);">████</span>
                     </div>
                     <div class="conexion-buttons">
@@ -994,18 +746,19 @@
                     </div>
                 </div>
                 <div style="font-size:0.6rem;color:var(--text-muted);margin-top:6px;">
-                    Conexión: <span id="conexionTipo">🛜 WiFi</span>
+                    Conexión actual: <span id="conexionTipo">🛜 WiFi</span>
                     · Operador: <span id="conexionOperador">Sariel's Net</span>
                 </div>
             </div>
 
-            <!-- ===== TABS ===== -->
-            <div class="perfil-tabs">
-                <button class="tab-btn active" onclick="cambiarTab('actividad')">◈ Actividad</button>
-                <button class="tab-btn" onclick="cambiarTab('tokens')">⟡ Tokens</button>
-                <button class="tab-btn" onclick="cambiarTab('config')">◆ Configuración</button>
-                <button class="tab-btn" onclick="cambiarTab('esim')">📱 eSIM</button>
-                <button class="tab-btn" onclick="cambiarTab('qr')">📱 Escanear QR</button>
+            <!-- ===== TABS PRINCIPALES ===== -->
+            <div class="perfil-tabs" role="tablist">
+                <button class="tab-btn active" id="tabBtnActividad" onclick="cambiarTab('actividad')">◈ Actividad</button>
+                <button class="tab-btn" id="tabBtnTokens" onclick="cambiarTab('tokens')">⟡ E.S.TOKS</button>
+                <button class="tab-btn" id="tabBtnNfts" onclick="cambiarTab('nfts')">🎨 NFTs</button>
+                <button class="tab-btn" id="tabBtnEsim" onclick="cambiarTab('esim')">📱 eSIM</button>
+                <button class="tab-btn" id="tabBtnQr" onclick="cambiarTab('qr')">📷 Escanear QR</button>
+                <button class="tab-btn" id="tabBtnConfig" onclick="cambiarTab('config')">◆ Ajustes</button>
             </div>
 
             <!-- ===== TAB: ACTIVIDAD ===== -->
@@ -1013,44 +766,44 @@
                 <div class="panel">
                     <div class="panel-header">
                         <h3>◈ Última actividad</h3>
-                        <span class="panel-badge">En tiempo real</span>
+                        <span class="panel-badge">En vivo</span>
                     </div>
                     <div class="panel-body" id="actividadList">
                         <div class="empty-state">
                             <span class="icon">◈</span>
                             <h4>Sin actividad reciente</h4>
-                            <p>Comienza a interactuar en el Muro</p>
+                            <p>Interactúa en la comunidad para generar actividad.</p>
                         </div>
                     </div>
                 </div>
 
                 <div class="panel">
                     <div class="panel-header">
-                        <h3>◈ Publicaciones</h3>
+                        <h3>◈ Mis Publicaciones</h3>
                         <span class="panel-badge" id="postsCount">0</span>
                     </div>
                     <div class="panel-body" id="postsList">
                         <div class="empty-state">
                             <span class="icon">◈</span>
                             <h4>Sin publicaciones</h4>
-                            <p>Publica algo en el Muro</p>
+                            <p>Crea tu primera publicación desde el Muro.</p>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- ===== TAB: TOKENS ===== -->
+            <!-- ===== TAB: E.S.TOKS ===== -->
             <div id="tab-tokens" class="tab-content">
                 <div class="panel">
                     <div class="panel-header">
-                        <h3>⟡ Estado de tokens</h3>
-                        <span class="panel-badge">Actualizado</span>
+                        <h3>⟡ Balance E.S.TOKS & Domos</h3>
+                        <span class="panel-badge">Ecosistema</span>
                     </div>
                     <div class="panel-body">
                         <div class="token-status">
                             <div class="item">
                                 <div class="value" id="tokenTotal">0</div>
-                                <div class="label">◈ Total tokens</div>
+                                <div class="label">◈ Balance Tokens</div>
                             </div>
                             <div class="item">
                                 <div class="value" id="tokenDisponibles">0</div>
@@ -1058,11 +811,11 @@
                             </div>
                             <div class="item">
                                 <div class="value" id="tokenVendidos">0</div>
-                                <div class="label">◈ Vendidos</div>
+                                <div class="label">◈ Domos Leídos</div>
                             </div>
                             <div class="item">
                                 <div class="value" id="tokenNFTs">0</div>
-                                <div class="label">◈ NFTs</div>
+                                <div class="label">◈ NFTs Desbloqueados</div>
                             </div>
                         </div>
 
@@ -1071,185 +824,141 @@
                                 <div class="fill" id="progressFill" style="width: 0%;"></div>
                             </div>
                             <div class="label">
-                                <span>Progreso NFT</span>
+                                <span>Progreso meta 12 E.S.TOKS</span>
                                 <span id="progressText">0 / 12</span>
                             </div>
                         </div>
 
-                        <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
-                            <button class="btn btn-gold" style="flex:1;justify-content:center;padding:10px;" onclick="comprarDomo(1)">
-                                ⟡ Comprar Domo • $75 MXN
+                        <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;">
+                            <button class="btn btn-gold" style="flex:1;justify-content:center;padding:10px;" id="btnComprarDomo" onclick="comprarDomo(1)">
+                                ⟡ Registrar Domo • $75 MXN
                             </button>
                             <button class="btn btn-gold" style="flex:1;justify-content:center;padding:10px;" id="canjearNft" onclick="canjearNFT()" disabled>
-                                🔒 CANJEAR NFT
+                                🔒 CANJEAR NFT (Requiere 12 Tokens)
                             </button>
                         </div>
 
-                        <!-- ===== COMPRAR CON CRIPTO ===== -->
-                        <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--glass-border);">
+                        <!-- COMPRAR CON CRIPTO -->
+                        <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--glass-border);">
                             <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
-                                <span style="font-size:0.75rem;color:var(--gold);font-weight:600;">💳 Comprar con Cripto</span>
-                                <span style="font-size:0.55rem;color:var(--text-muted);">USDT / USDC · 2% comisión</span>
+                                <span style="font-size:0.8rem;color:var(--gold);font-weight:600;">💳 Obtención vía Cripto</span>
+                                <span style="font-size:0.6rem;color:var(--text-muted);">USDT / USDC · Red TRC-20</span>
                             </div>
                             <div class="crypto-controls">
                                 <div class="qty-group">
-                                    <button class="qty-btn" id="cryptoDecreaseQty">−</button>
+                                    <button class="qty-btn" id="cryptoDecreaseQty" aria-label="Reducir cantidad">−</button>
                                     <span class="qty-value" id="cryptoQuantity">1</span>
-                                    <button class="qty-btn" id="cryptoIncreaseQty">+</button>
+                                    <button class="qty-btn" id="cryptoIncreaseQty" aria-label="Aumentar cantidad">+</button>
                                 </div>
                                 <div style="flex:1;text-align:center;">
                                     <span class="crypto-total" id="cryptoTotal">$4.59 USDT</span>
                                 </div>
                             </div>
-                            <button class="btn btn-crypto" style="width:100%;justify-content:center;margin-top:8px;padding:10px;" onclick="comprarConCripto()">
+                            <button class="btn btn-crypto" style="width:100%;justify-content:center;margin-top:10px;padding:10px;" id="btnPagarCripto" onclick="comprarConCripto()">
                                 💳 Pagar con USDT/USDC
                             </button>
-                            <div class="crypto-hint">
-                                ⚡ Red: TRC-20 (tarifas bajas) · Acepta USDT y USDC
-                            </div>
                         </div>
-
-                        <button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:8px;padding:10px;" onclick="irAMuro()">
-                            ◇ Ir al Muro
-                        </button>
                     </div>
                 </div>
 
                 <div class="panel">
                     <div class="panel-header">
-                        <h3>◈ Historial de transacciones</h3>
+                        <h3>◈ Historial de E.S.TOKS y Domos</h3>
                         <span class="panel-badge" id="historialCount">0</span>
                     </div>
                     <div class="panel-body" id="historialList">
                         <div class="empty-state">
                             <span class="icon">◈</span>
-                            <h4>Sin transacciones</h4>
-                            <p>Compra domos para acumular tokens</p>
+                            <h4>Sin registros</h4>
+                            <p>Registra o escanea Domos para acumular tu historial.</p>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- ===== TAB: CONFIGURACIÓN ===== -->
-            <div id="tab-config" class="tab-content">
+            <!-- ===== TAB: NFTs (CONMEMORATIVOS) ===== -->
+            <div id="tab-nfts" class="tab-content">
                 <div class="panel">
                     <div class="panel-header">
-                        <h3>◆ Editar perfil</h3>
-                        <span class="panel-badge">Privado</span>
+                        <h3>🎨 Galería de NFTs Conmemorativos</h3>
+                        <span class="panel-badge">Sariel's Collection</span>
                     </div>
                     <div class="panel-body">
-                        <div class="config-group">
-                            <label>Nombre</label>
-                            <input type="text" id="editNombre" value="Explorador" />
+                        <div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:14px;">
+                            ⓘ Los NFTs de Sariel's son activos digitales conmemorativos e intransferibles emitidos al completar metas dentro de la red.
                         </div>
-                        <div class="config-group">
-                            <label>Handle</label>
-                            <input type="text" id="editHandle" value="explorador" />
-                        </div>
-                        <div class="config-group">
-                            <label>Biografía</label>
-                            <textarea id="editBio" rows="3">Explorando el ecosistema Sariel's · WEB3 · Comunidad</textarea>
-                        </div>
-                        <div class="config-group">
-                            <label>Foto de perfil</label>
-                            <button class="btn btn-outline" style="width:100%;" onclick="abrirSelectorArchivo()">📸 Subir foto</button>
-                            <div class="hint">◈ Sube una foto para personalizar tu perfil</div>
-                        </div>
-                        <button class="btn btn-gold" style="width:100%;justify-content:center;padding:10px;" onclick="guardarPerfil()">
-                            ◆ Guardar cambios
-                        </button>
-                    </div>
-                </div>
-
-                <div class="panel">
-                    <div class="panel-header">
-                        <h3>◆ Seguridad</h3>
-                        <span class="panel-badge">Recomendado</span>
-                    </div>
-                    <div class="panel-body">
-                        <div class="config-group">
-                            <label>Wallet conectada</label>
-                            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-                                <span id="walletDisplay" style="font-family:monospace;font-size:0.85rem;color:var(--text-secondary);">⚠️ No conectada</span>
-                                <button class="btn btn-wallet btn-sm" onclick="conectarWallet()" id="btnConectarWallet">
-                                    ◈ Conectar
-                                </button>
-                                <button class="btn btn-danger btn-sm" onclick="desconectarWallet()" style="display:none;" id="btnDesconectarWallet">
-                                    ✕ Desconectar
-                                </button>
-                            </div>
-                            <div class="hint">◈ Conecta tu wallet para interactuar con el ecosistema</div>
-                            <div style="font-size:0.6rem;color:var(--text-muted);margin-top:4px;">
-                                Red: <span id="walletRed">Polygon Amoy</span>
+                        <div id="nftGalleryContainer" class="nft-grid">
+                            <div class="empty-state" style="grid-column:1/-1;">
+                                <span class="icon">🎨</span>
+                                <h4>No posees NFTs conmemorativos</h4>
+                                <p>Reúne 12 E.S.TOKS para canjear tu primer NFT conmemorativo.</p>
                             </div>
                         </div>
-                        <button class="btn btn-danger" style="width:100%;justify-content:center;padding:10px;margin-top:8px;" onclick="cerrarSesion()">
-                            ✕ Cerrar sesión
-                        </button>
                     </div>
                 </div>
             </div>
 
-            <!-- ===== TAB: eSIM ===== -->
+            <!-- ===== TAB: eSIM / CONECTIVIDAD ===== -->
             <div id="tab-esim" class="tab-content">
                 <div class="panel">
                     <div class="panel-header">
-                        <h3>📱 Mi eSIM</h3>
-                        <span class="panel-badge">Telnyx</span>
+                        <h3>📱 Estado de eSIM</h3>
+                        <span class="panel-badge">Telnyx Mobile</span>
                     </div>
                     <div class="panel-body">
-                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));gap:10px;">
                             <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;border:1px solid var(--glass-border);">
-                                <span style="color:var(--text-muted);font-size:0.6rem;">ESTADO</span>
-                                <div id="esimStatus" style="font-weight:600;font-size:0.9rem;">⏳ Sin eSIM</div>
+                                <span style="color:var(--text-muted);font-size:0.6rem;">ESTADO ACTIVACIÓN</span>
+                                <div id="esimStatus" style="font-weight:600;font-size:0.85rem;">⏳ No asignada</div>
                             </div>
                             <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;border:1px solid var(--glass-border);">
-                                <span style="color:var(--text-muted);font-size:0.6rem;">DATOS USADOS</span>
-                                <div id="esimDataUsed" style="font-weight:600;font-size:0.9rem;">0 GB</div>
+                                <span style="color:var(--text-muted);font-size:0.6rem;">DATOS CONSUMIDOS</span>
+                                <div id="esimDataUsed" style="font-weight:600;font-size:0.85rem;">-- GB</div>
                             </div>
                             <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;border:1px solid var(--glass-border);">
-                                <span style="color:var(--text-muted);font-size:0.6rem;">LÍMITE</span>
-                                <div id="esimDataLimit" style="font-weight:600;font-size:0.9rem;">0 GB</div>
+                                <span style="color:var(--text-muted);font-size:0.6rem;">LÍMITE DEL PLAN</span>
+                                <div id="esimDataLimit" style="font-weight:600;font-size:0.85rem;">-- GB</div>
                             </div>
                             <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;border:1px solid var(--glass-border);">
-                                <span style="color:var(--text-muted);font-size:0.6rem;">RESTANTE</span>
-                                <div id="esimDataRestante" style="font-weight:600;font-size:0.9rem;color:var(--success);">0 GB</div>
-                            </div>
-                            <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;border:1px solid var(--glass-border);grid-column:span 2;">
-                                <span style="color:var(--text-muted);font-size:0.6rem;">ICCID</span>
-                                <div id="esimIccid" style="font-weight:600;font-size:0.8rem;font-family:monospace;">No asignado</div>
+                                <span style="color:var(--text-muted);font-size:0.6rem;">DATOS RESTANTES</span>
+                                <div id="esimDataRestante" style="font-weight:600;font-size:0.85rem;color:var(--success);">-- GB</div>
                             </div>
                         </div>
 
-                        <div style="margin-top:10px;">
+                        <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;border:1px solid var(--glass-border);margin-top:10px;">
+                            <span style="color:var(--text-muted);font-size:0.6rem;">ICCID IDENTIFICADOR</span>
+                            <div id="esimIccid" style="font-weight:600;font-size:0.8rem;font-family:monospace;">--</div>
+                        </div>
+
+                        <div style="margin-top:12px;">
                             <div style="background:rgba(0,0,0,0.2);border-radius:10px;height:8px;overflow:hidden;">
                                 <div id="esimDataProgress" style="height:100%;width:0%;background:var(--success);transition:width 0.8s;"></div>
                             </div>
                         </div>
 
-                        <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
-                            <button class="btn btn-gold" style="flex:1;justify-content:center;padding:10px;" onclick="comprarESIM(1)">
-                                📱 Comprar eSIM
+                        <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;">
+                            <button class="btn btn-gold" style="flex:1;justify-content:center;padding:10px;" id="btnComprarESIM" onclick="comprarESIM(1)">
+                                📱 Adquirir eSIM
                             </button>
-                            <button class="btn btn-outline" style="flex:1;justify-content:center;padding:10px;" onclick="generarQRESIM()">
-                                📲 QR Activación
+                            <button class="btn btn-outline" style="flex:1;justify-content:center;padding:10px;" id="btnQrEsim" onclick="generarQRESIM()">
+                                📲 Obtener QR
                             </button>
-                            <button class="btn btn-outline" style="flex:1;justify-content:center;padding:10px;" onclick="sincronizarESIM()">
+                            <button class="btn btn-outline" style="flex:1;justify-content:center;padding:10px;" id="btnSincronizarEsim" onclick="sincronizarESIM()">
                                 🔄 Sincronizar
                             </button>
                         </div>
 
                         <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
-                            <button class="btn btn-outline btn-sm" onclick="activarESIM()" style="border-color:var(--success);color:var(--success);">
-                                ✅ Activar
+                            <button class="btn btn-outline btn-sm" id="btnActivarESIM" onclick="activarESIM()" style="border-color:var(--success);color:var(--success);">
+                                ✅ Activar eSIM
                             </button>
-                            <button class="btn btn-danger btn-sm" onclick="desactivarESIM()">
-                                ⛔ Desactivar
+                            <button class="btn btn-danger btn-sm" id="btnDesactivarESIM" onclick="desactivarESIM()">
+                                ⛔ Desactivar eSIM
                             </button>
                         </div>
 
                         <div style="margin-top:10px;font-size:0.6rem;color:var(--text-muted);">
-                            APN: <span id="esimApn" style="font-family:monospace;color:var(--text-secondary);">data00.telnyx</span>
+                            APN Requerido: <span id="esimApn" style="font-family:monospace;color:var(--text-secondary);">data00.telnyx</span>
                         </div>
                     </div>
                 </div>
@@ -1259,46 +968,48 @@
             <div id="tab-qr" class="tab-content">
                 <div class="panel">
                     <div class="panel-header">
-                        <h3>📱 Escanear QR</h3>
-                        <span class="panel-badge">Recibe Es.stoks</span>
+                        <h3>📱 Escaneo e Ingreso de QR Domo</h3>
+                        <span class="panel-badge">Validación Real</span>
                     </div>
                     <div class="panel-body">
-                        <div class="config-group">
-                            <label>Código del QR (escanea o escribe)</label>
+                        <form id="formIngresoQR" onsubmit="event.preventDefault(); escanearQR();" class="config-group">
+                            <label for="qrInput">Código del QR (Escanea o ingresa manualmente)</label>
                             <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                                <input type="text" id="qrInput" placeholder="Ej: DOMO-2025-ABC123" 
+                                <input type="text" id="qrInput" placeholder="Ej: DOMO-2026-X89A12" required
                                        style="flex:1;padding:10px 14px;background:rgba(0,0,0,0.3);border:1px solid var(--glass-border);border-radius:10px;color:var(--text-primary);font-size:0.85rem;outline:none;">
-                                <button class="btn btn-gold" id="btnEscanearQR" onclick="escanearQR()">
-                                    🔍 Escanear QR
+                                <button type="submit" class="btn btn-gold" id="btnEscanearQR">
+                                    🔍 Validar Código
                                 </button>
                             </div>
-                            <div class="hint">⚡ Escanea el QR de tu domo físico para recibir 1 Es.stok</div>
-                        </div>
+                            <div class="hint">⚡ Ingresa el identificador único del Domo físico para acumular 1 E.S.TOK real.</div>
+                        </form>
 
-                        <button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:8px;padding:10px;" onclick="abrirCamaraQR()">
-                            📷 Escanear con cámara
+                        <button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:8px;padding:10px;" id="btnAbrirCamaraQR" onclick="abrirCamaraQR()">
+                            📷 Abrir Cámara del Dispositivo
                         </button>
 
                         <div id="qrReaderContainer">
-                            <video id="qrVideo" style="width:100%;max-width:300px;border-radius:10px;background:black;"></video>
+                            <video id="qrVideo" playsinline style="width:100%;max-width:300px;border-radius:10px;background:black;"></video>
                             <canvas id="qrCanvas" style="display:none;"></canvas>
-                            <button class="btn btn-danger btn-sm" onclick="cerrarCamaraQR()" style="margin-top:8px;">
-                                ✕ Cerrar cámara
-                            </button>
-                            <div id="qrCamaraStatus" style="font-size:0.7rem;color:var(--text-muted);margin-top:4px;"></div>
+                            <div style="margin-top:8px;">
+                                <button class="btn btn-danger btn-sm" onclick="cerrarCamaraQR()">
+                                    ✕ Cerrar cámara
+                                </button>
+                            </div>
+                            <div id="qrCamaraStatus" style="font-size:0.7rem;color:var(--text-muted);margin-top:4px;">Iniciando cámara...</div>
                         </div>
 
                         <div id="qrStatus" style="margin-top:12px;font-size:0.8rem;color:var(--text-muted);min-height:24px;text-align:center;"></div>
 
                         <div style="margin-top:16px;border-top:1px solid var(--glass-border);padding-top:12px;">
                             <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.7rem;color:var(--text-muted);">
-                                <span>📋 Últimos escaneos</span>
+                                <span>📋 Escaneos Confirmados</span>
                                 <span id="qrHistorialCount">0</span>
                             </div>
                             <div id="qrHistorialList" style="margin-top:8px;">
                                 <div class="empty-state" style="padding:10px;">
                                     <span class="icon" style="font-size:1.5rem;">◈</span>
-                                    <p style="font-size:0.7rem;">Sin escaneos recientes</p>
+                                    <p style="font-size:0.7rem;">Sin escaneos registrados aún.</p>
                                 </div>
                             </div>
                         </div>
@@ -1306,16 +1017,74 @@
                 </div>
             </div>
 
+            <!-- ===== TAB: CONFIGURACIÓN Y PERFIL ===== -->
+            <div id="tab-config" class="tab-content">
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3>◆ Perfil e Información</h3>
+                        <span class="panel-badge">Editar</span>
+                    </div>
+                    <div class="panel-body">
+                        <form id="formPerfil" onsubmit="event.preventDefault(); guardarPerfil();">
+                            <div class="config-group">
+                                <label for="editNombre">Nombre de Usuario</label>
+                                <input type="text" id="editNombre" required />
+                            </div>
+                            <div class="config-group">
+                                <label for="editHandle">Handle / Apodo (@)</label>
+                                <input type="text" id="editHandle" required />
+                            </div>
+                            <div class="config-group">
+                                <label for="editBio">Biografía</label>
+                                <textarea id="editBio" rows="3"></textarea>
+                            </div>
+                            <div class="config-group">
+                                <label>Imagen de Perfil</label>
+                                <button type="button" class="btn btn-outline" style="width:100%;" onclick="abrirSelectorArchivo()">📸 Subir nueva foto</button>
+                            </div>
+                            <button type="submit" class="btn btn-gold" style="width:100%;justify-content:center;padding:10px;" id="btnGuardarPerfil">
+                                ◆ Guardar Cambios
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3>◆ Seguridad y Wallet Web3</h3>
+                        <span class="panel-badge">Conexión</span>
+                    </div>
+                    <div class="panel-body">
+                        <div class="config-group">
+                            <label>Dirección Wallet Conectada</label>
+                            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px;">
+                                <span id="walletDisplay" style="font-family:monospace;font-size:0.85rem;color:var(--text-secondary);">⚠️ No conectada</span>
+                                <button type="button" class="btn btn-wallet btn-sm" onclick="conectarWallet()" id="btnConectarWallet">
+                                    ◈ Conectar Wallet
+                                </button>
+                                <button type="button" class="btn btn-danger btn-sm" onclick="desconectarWallet()" style="display:none;" id="btnDesconectarWallet">
+                                    ✕ Desconectar
+                                </button>
+                            </div>
+                            <div class="hint">Red Actual: <span id="walletRed">Polygon Mainnet</span></div>
+                        </div>
+                        <button type="button" class="btn btn-danger" style="width:100%;justify-content:center;padding:10px;margin-top:12px;" id="btnCerrarSesion" onclick="cerrarSesion()">
+                            ✕ Cerrar Sesión
+                        </button>
+                    </div>
+                </div>
+            </div>
+
         </div>
 
+        <!-- FOOTER -->
         <footer class="footer">
-            <span><span class="brand">◈ Sariel's</span> · Sabor al Paladar · WEB3</span>
+            <span><span class="brand">◈ Sariel's</span> · Red Social WEB3</span>
             <div class="footer-links">
-                <a href="/terminos">◈ Términos</a>
-                <a href="/privacidad">◈ Privacidad</a>
-                <a href="/cookies">◈ Cookies</a>
-                <a href="/live-terminos">◈ Términos Live</a>
-                <span style="opacity:0.3;">⚡ Polygon</span>
+                <a href="/terminos">Términos</a>
+                <a href="/privacidad">Privacidad</a>
+                <a href="/cookies">Cookies</a>
+                <span style="opacity:0.4;">⚡ Powered by Polygon</span>
             </div>
         </footer>
 
@@ -1323,19 +1092,42 @@
 
     <div class="toast" id="toast"></div>
 
-    <!-- ===== MODAL DE PAGO CRIPTO ===== -->
+    <!-- ===== MODAL DETALLE NFT ===== -->
+    <div class="modal-overlay" id="nftModal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="cerrarModal('nftModal')">✕</button>
+            <h2 id="nftModalTitle">NFT Conmemorativo</h2>
+            <div style="margin: 15px 0;">
+                <img id="nftModalImage" src="" alt="NFT Preview" style="max-width:200px;width:100%;border-radius:12px;border:1px solid var(--gold);" />
+            </div>
+            <p id="nftModalDescription" class="subtitle" style="font-size:0.8rem;"></p>
+            <div class="address-box">
+                <div class="label">Domo de Origen / Transacción</div>
+                <div class="address" id="nftModalDomo">--</div>
+            </div>
+            <div class="address-box">
+                <div class="label">Fecha de Obtención</div>
+                <div class="address" id="nftModalFecha">--</div>
+            </div>
+            <div class="actions">
+                <button class="btn btn-outline btn-sm" onclick="cerrarModal('nftModal')">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== MODAL PAGO CRIPTO ===== -->
     <div class="modal-overlay" id="cryptoPaymentModal">
         <div class="modal-content">
-            <button class="close-btn" onclick="cerrarModalPago()">✕</button>
+            <button class="close-btn" onclick="cerrarModal('cryptoPaymentModal')">✕</button>
             <h2>💳 Pagar con Cripto</h2>
-            <p class="subtitle">Escanea el QR o copia la dirección para pagar</p>
+            <p class="subtitle">Escanea el QR o copia la dirección oficial de depósito</p>
             
             <div class="qr-container">
                 <img id="cryptoQR" src="" alt="QR de pago" />
             </div>
 
             <div class="address-box">
-                <div class="label">📤 Dirección de pago</div>
+                <div class="label">📤 Dirección TRC-20 de pago</div>
                 <div class="address" id="cryptoAddress">Cargando dirección...</div>
             </div>
 
@@ -1345,28 +1137,34 @@
 
             <div class="actions">
                 <button class="btn btn-outline btn-sm" onclick="copiarDireccion()">📋 Copiar dirección</button>
-                <button class="btn btn-gold btn-sm" onclick="verificarPagoCrypto()">✅ Verificar pago</button>
-                <button class="btn btn-outline btn-sm" onclick="cerrarModalPago()">Cerrar</button>
+                <button class="btn btn-gold btn-sm" id="btnVerificarPago" onclick="verificarPagoCrypto()">✅ Verificar depósito</button>
+                <button class="btn btn-outline btn-sm" onclick="cerrarModal('cryptoPaymentModal')">Cancelar</button>
             </div>
 
-            <div class="status" id="cryptoStatus">⏳ Esperando confirmación de pago...</div>
+            <div class="status" id="cryptoStatus">⏳ Esperando confirmación en la red...</div>
         </div>
     </div>
 
-    <!-- ============================================================ -->
-    <!-- BANNER DE ERRORES VISIBLES EN PANTALLA                       -->
-    <!-- ============================================================ -->
-    <div id="errorBanner" style="
-        display:none; position:fixed; top:0; left:0; right:0; z-index:99999;
-        background:#ff3366; color:#fff; padding:12px 16px; font-family:monospace;
-        font-size:0.75rem; word-break:break-word; box-shadow:0 4px 20px rgba(0,0,0,0.4);
-    ">
+    <!-- MODAL VISTA QR PERFIL -->
+    <div class="modal-overlay" id="qrPerfilModal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="cerrarModal('qrPerfilModal')">✕</button>
+            <h2>📱 Mi QR de Perfil</h2>
+            <p class="subtitle">Muestra este código para que te agreguen rápidamente</p>
+            <div class="qr-container">
+                <img id="qrPerfilImage" src="" alt="QR Perfil" />
+            </div>
+            <div class="actions">
+                <button class="btn btn-outline btn-sm" onclick="cerrarModal('qrPerfilModal')">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- NOTIFICADOR DE ERRORES SCRIPT -->
+    <div id="errorBanner" style="display:none; position:fixed; top:0; left:0; right:0; z-index:99999; background:#ff3366; color:#fff; padding:12px 16px; font-family:monospace; font-size:0.75rem; word-break:break-word;">
         <strong>⚠️ Error detectado:</strong>
         <span id="errorBannerText"></span>
-        <button onclick="document.getElementById('errorBanner').style.display='none'"
-            style="float:right; background:none; border:1px solid #fff; color:#fff; border-radius:6px; padding:2px 10px; cursor:pointer;">
-            Cerrar
-        </button>
+        <button onclick="document.getElementById('errorBanner').style.display='none'" style="float:right; background:none; border:1px solid #fff; color:#fff; border-radius:6px; padding:2px 10px; cursor:pointer;">Cerrar</button>
     </div>
 
     <script>
@@ -1380,29 +1178,39 @@
         }
 
         window.addEventListener('error', function (event) {
-            mostrarErrorEnPantalla(
-                (event.message || 'Error desconocido') +
-                ' — línea ' + event.lineno + ' de ' + (event.filename || 'este archivo')
-            );
+            mostrarErrorEnPantalla((event.message || 'Error de script') + ' en ' + (event.filename || 'perfil.html') + ':' + event.lineno);
         });
 
         window.addEventListener('unhandledrejection', function (event) {
             mostrarErrorEnPantalla('Promesa rechazada: ' + (event.reason?.message || event.reason));
         });
 
-        window.addEventListener('load', function () {
-            if (typeof window.supabase === 'undefined') {
-                mostrarErrorEnPantalla(
-                    'No se pudo cargar la conexión a la base de datos (Supabase). ' +
-                    'Revisa tu internet o si algo está bloqueando cdn.jsdelivr.net.'
-                );
+        // MANEJO SEGURO DE CLOSING DE MODALES (CLIC FUERA / ESCAPE)
+        document.querySelectorAll('.modal-overlay').forEach(modal => {
+            modal.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    this.classList.remove('active');
+                }
+            });
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.modal-overlay.active').forEach(modal => {
+                    modal.classList.remove('active');
+                });
             }
         });
+
+        function cerrarModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) modal.classList.remove('active');
+        }
     </script>
 
-    <!-- ✅ SCRIPTS: SOLO Supabase + jsQR + perfil.js -->
+    <!-- DEPENDENCIAS CORE -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
-    <script src="/features/perfil/perfil.js"></script>
+    <script src="/perfil/perfil.js"></script>
 </body>
 </html>
