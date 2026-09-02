@@ -6,9 +6,12 @@
 // ================================================================
 // CONFIGURACIÓN SUPABASE - REUTILIZAR EL CLIENTE GLOBAL
 // ================================================================
-// ✅ ELIMINADA LA DECLARACIÓN DUPLICADA DE supabaseClient
 // ✅ Usamos window.supabase que es creado por app.js
-const supabase = window.supabase;
+let supabase = window.supabase;
+
+if (typeof supabase === 'undefined') {
+    console.error('❌ Supabase no está disponible');
+}
 
 // ================================================================
 // ESCAPE HTML - PREVENCIÓN XSS
@@ -50,8 +53,13 @@ function showToast(msg, type = '', duration = 3500) {
 // OBTENER SESIÓN
 // ================================================================
 async function getSession() {
-    const { data: { session } } = await supabase.auth.getSession();
-    return session;
+    try {
+        const { data: { session } } = await supabase.auth.getSession();
+        return session;
+    } catch (error) {
+        console.error('Error obteniendo sesión:', error);
+        return null;
+    }
 }
 
 // ================================================================
@@ -896,26 +904,23 @@ async function eliminarConversacion(contactoId) {
 }
 
 // ================================================================
-// 👁️ MARCAR MENSAJES COMO LEÍDOS
+// 👁️ MARCAR MENSAJES COMO LEÍDOS - CORREGIDO (SIN RPC)
 // ================================================================
 async function marcarMensajesLeidos(contactoId) {
     try {
         const session = await getSession();
         if (!session) return;
 
-        try {
-            await supabase.rpc('marcar_mensajes_leidos', {
-                p_remitente_id: contactoId,
-                p_destinatario_id: session.user.id
-            });
-        } catch (rpcError) {
-            await supabase
-                .from('mensajes_chat')
-                .update({ leido: true })
-                .eq('remitente_id', contactoId)
-                .eq('destinatario_id', session.user.id)
-                .eq('leido', false);
-        }
+        // ✅ MARCAR DIRECTAMENTE (SIN RPC)
+        const { error } = await supabase
+            .from('mensajes_chat')
+            .update({ leido: true })
+            .eq('remitente_id', contactoId)
+            .eq('destinatario_id', session.user.id)
+            .eq('leido', false)
+            .is('eliminado', false);
+
+        if (error) throw error;
 
     } catch (error) {
         console.error('Error marcando mensajes como leídos:', error);
