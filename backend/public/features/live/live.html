@@ -1,6 +1,6 @@
 <!-- ================================================================
      LIVE - SARIEL'S ECOSYSTEM
-     VERSIÓN CORREGIDA - CONEXIÓN REAL CON SUPABASE + LIVEKIT
+     VERSIÓN CORREGIDA - TODAS LAS FUNCIONES EN EL HTML
      ================================================================ -->
 <!DOCTYPE html>
 <html lang="es">
@@ -231,10 +231,6 @@
             80% { transform: rotateY(360deg) scale(1); opacity: 1; }
             100% { transform: rotateY(720deg) scale(0.8); opacity: 0; }
         }
-        @keyframes brillo {
-            0%, 100% { text-shadow: 0 0 20px currentColor; }
-            50% { text-shadow: 0 0 60px currentColor, 0 0 100px currentColor; }
-        }
         @keyframes coheteVuelo {
             0% { transform: translateX(-200%) rotate(-45deg); opacity: 0; }
             30% { transform: translateX(0%) rotate(0deg); opacity: 1; }
@@ -312,7 +308,7 @@
                     <button onclick="togglePlay()" id="playBtn" title="Play/Pause">⏸</button>
                     <button onclick="toggleMute()" id="muteBtn" title="Mute/Unmute" class="mic">🔊</button>
                     <button onclick="capturarPantalla()" id="screenBtn" title="Compartir pantalla">🖥️</button>
-                    <button onclick="toggleVoice()" id="voiceBtn" title="Lector de voz" class="voice">🔊</button>
+                    <button onclick="toggleVoice()" id="voiceBtn" title="Lector de voz" class="voice">🔈</button>
                     <button class="end" onclick="finalizarTransmision()" title="Finalizar">✕ Finalizar</button>
                 </div>
             </div>
@@ -405,42 +401,985 @@
         </button>
     </div>
 
+    <!-- ===== SCRIPTS ===== -->
+    <script src="https://cdn.jsdelivr.net/npm/livekit-client/dist/livekit-client.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="/app.js"></script>
+
     <script>
-        function mostrarErrorEnPantalla(mensaje) {
-            const banner = document.getElementById('errorBanner');
-            const texto = document.getElementById('errorBannerText');
-            if (banner && texto) {
-                texto.textContent = mensaje;
-                banner.style.display = 'block';
+        // ================================================================
+        // LIVE - TODAS LAS FUNCIONES DEFINIDAS AQUÍ
+        // ================================================================
+
+        // ================================================================
+        // CONFIGURACIÓN LIVEKIT
+        // ================================================================
+        var LIVEKIT_CONFIG = {
+            url: 'wss://csariels-domo-57ujk04t.livekit.cloud'
+        };
+
+        // ================================================================
+        // CONFIGURACIÓN DONACIONES
+        // ================================================================
+        var DONACIONES = {
+            5: { nombre: 'Cubo Plata', emoji: '🥈', color: '#C0C0C0', duracion: 3000, efecto: 'cubo_plata' },
+            10: { nombre: 'Cubo Bronce', emoji: '🥉', color: '#CD7F32', duracion: 4000, efecto: 'cubo_bronce' },
+            20: { nombre: 'Cubo Oro', emoji: '🥇', color: '#D4AF37', duracion: 5000, efecto: 'cubo_oro' },
+            50: { nombre: 'Cohete Bronce', emoji: '🚀', color: '#CD7F32', duracion: 6000, efecto: 'cohete_explosion' },
+            100: { nombre: 'Cohete Esmeralda', emoji: '💚', color: '#50C878', duracion: 8000, efecto: 'cohete_esmeralda' }
+        };
+
+        // ================================================================
+        // PALABRAS PROHIBIDAS
+        // ================================================================
+        var PALABRAS_PROHIBIDAS = [
+            'puta', 'verga', 'mierda', 'pendejo', 'chingar', 'chingada',
+            'cabron', 'cabrón', 'pinche', 'wey', 'güey', 'culero',
+            'puto', 'maricon', 'maricón', 'joto',
+            'negro', 'indio', 'naco', 'naca', 'sudaca',
+            'matar', 'mata', 'asesinar', 'suicidio', 'violar',
+            'droga', 'cocaína', 'marihuana', 'perico', 'cristal',
+            'cerveza', 'tequila', 'whisky', 'ron', 'vodka',
+            'fuck', 'shit', 'bitch', 'asshole', 'motherfucker'
+        ];
+
+        // ================================================================
+        // ESTADO GLOBAL
+        // ================================================================
+        var currentUser = null;
+        var currentStream = null;
+        var liveKitRoom = null;
+        var isLive = false;
+        var isMuted = false;
+        var isVoiceActive = false;
+        var streamInterval = null;
+        var channelChat = null;
+        var espectadores = 0;
+        var localStream = null;
+
+        // ================================================================
+        // TOAST
+        // ================================================================
+        function showToast(msg, type) {
+            try {
+                if (typeof window.showToast === 'function') {
+                    window.showToast(msg, type);
+                    return;
+                }
+                var t = document.getElementById('toast');
+                if (!t) { t = document.createElement('div'); t.id = 'toast'; t.className = 'toast'; document.body.appendChild(t); }
+                t.textContent = msg;
+                t.className = 'toast show';
+                if (type === 'error') t.classList.add('error');
+                else if (type === 'warning') t.classList.add('warning');
+                else if (type === 'success') t.classList.add('success');
+                else t.classList.remove('error', 'warning', 'success');
+                clearTimeout(t._timeout);
+                t._timeout = setTimeout(function() { t.classList.remove('show'); }, 3500);
+            } catch (e) { console.warn('Toast error:', e); }
+        }
+
+        // ================================================================
+        // ESCAPE HTML
+        // ================================================================
+        function escapeHTML(texto) {
+            if (!texto) return '';
+            var div = document.createElement('div');
+            div.textContent = texto;
+            return div.innerHTML;
+        }
+
+        // ================================================================
+        // OBTENER SESIÓN
+        // ================================================================
+        async function getSession() {
+            try {
+                if (typeof window.supabase === 'undefined') {
+                    console.warn('Supabase no disponible');
+                    return null;
+                }
+                var r = await window.supabase.auth.getSession();
+                return r.data.session;
+            } catch (e) {
+                console.error('Error sesión:', e);
+                return null;
             }
         }
 
-        window.addEventListener('error', function (event) {
-            mostrarErrorEnPantalla(
-                (event.message || 'Error desconocido') +
-                ' — línea ' + event.lineno + ' de ' + (event.filename || 'este archivo')
-            );
-        });
+        // ================================================================
+        // OBTENER TOKEN LIVEKIT DEL BACKEND
+        // ================================================================
+        async function obtenerTokenLiveKit(roomName, participantName, role) {
+            role = role || 'subscriber';
+            try {
+                var session = await getSession();
+                if (!session) throw new Error('No autenticado');
 
-        window.addEventListener('unhandledrejection', function (event) {
-            mostrarErrorEnPantalla('Promesa rechazada: ' + (event.reason?.message || event.reason));
-        });
+                var response = await fetch('/api/token?room=' + encodeURIComponent(roomName) + '&role=' + role, {
+                    headers: {
+                        'Authorization': 'Bearer ' + session.access_token
+                    }
+                });
 
-        window.addEventListener('load', function () {
-            if (typeof window.supabase === 'undefined') {
-                mostrarErrorEnPantalla(
-                    'No se pudo cargar la conexión a la base de datos (Supabase). ' +
-                    'Revisa tu internet o si algo está bloqueando cdn.jsdelivr.net.'
-                );
+                if (!response.ok) {
+                    var error = await response.json();
+                    throw new Error(error.error || 'Error al obtener token');
+                }
+
+                var data = await response.json();
+                return data.token;
+            } catch (e) {
+                console.error('Error obteniendo token LiveKit:', e);
+                throw e;
+            }
+        }
+
+        // ================================================================
+        // 🎥 INICIAR TRANSMISIÓN
+        // ================================================================
+        async function iniciarTransmision() {
+            try {
+                var session = await getSession();
+                if (!session) {
+                    showToast('⚠️ Inicia sesión para transmitir', 'error');
+                    return;
+                }
+                currentUser = session.user;
+
+                showToast('⏳ Iniciando transmisión...', '');
+
+                var titulo = prompt('Título de tu transmisión:', 'Mi live en Sariel\'s') || 'Live en Sariel\'s';
+                var categoria = prompt('Categoría (gaming, musica, educacion, comunidad, tecnologia, general):', 'general') || 'general';
+
+                var roomName = 'live-' + currentUser.id + '-' + Date.now();
+
+                var result = await window.supabase
+                    .from('transmisiones')
+                    .insert({
+                        streamer_id: currentUser.id,
+                        room_name: roomName,
+                        titulo: titulo,
+                        categoria: categoria || 'general',
+                        descripcion: '',
+                        tipo_transmision: 'gratis',
+                        precio: 0,
+                        estado: 'en_vivo',
+                        fecha_inicio: new Date().toISOString(),
+                        viewers_count: 0
+                    })
+                    .select()
+                    .single();
+
+                if (result.error) throw result.error;
+
+                currentStream = result.data;
+
+                // Conectar a LiveKit
+                try {
+                    showToast('🔗 Conectando a LiveKit...', '');
+
+                    var token = await obtenerTokenLiveKit(
+                        currentStream.room_name,
+                        currentUser.user_metadata?.nombre || currentUser.email || 'streamer',
+                        'publisher'
+                    );
+
+                    if (typeof window.livekitClient !== 'undefined') {
+                        liveKitRoom = new window.livekitClient.Room();
+                        await liveKitRoom.connect(LIVEKIT_CONFIG.url, token);
+                        await liveKitRoom.localParticipant.setCameraEnabled(true);
+                        await liveKitRoom.localParticipant.setMicrophoneEnabled(true);
+
+                        var videoElement = document.getElementById('liveVideo');
+                        if (videoElement) {
+                            var videoTrack = liveKitRoom.localParticipant.videoTrackPublications.values().next().value;
+                            if (videoTrack && videoTrack.track) {
+                                var stream = new MediaStream();
+                                stream.addTrack(videoTrack.track);
+                                videoElement.srcObject = stream;
+                                try { await videoElement.play(); } catch (e) {}
+                            }
+                        }
+
+                        liveKitRoom.on('participantConnected', function() {
+                            espectadores++;
+                            document.getElementById('viewersCount').textContent = espectadores + ' espectadores';
+                        });
+
+                        liveKitRoom.on('participantDisconnected', function() {
+                            espectadores = Math.max(0, espectadores - 1);
+                            document.getElementById('viewersCount').textContent = espectadores + ' espectadores';
+                        });
+
+                        showToast('✅ Conectado a LiveKit', 'success');
+                    } else {
+                        showToast('⚠️ LiveKit no disponible, modo local', 'warning');
+                        var fallbackStream = await navigator.mediaDevices.getUserMedia({
+                            video: { facingMode: 'user', width: 1280, height: 720 },
+                            audio: true
+                        });
+                        localStream = fallbackStream;
+                        var video = document.getElementById('liveVideo');
+                        if (video) {
+                            video.srcObject = fallbackStream;
+                            try { await video.play(); } catch (e) {}
+                        }
+                    }
+
+                } catch (e) {
+                    console.warn('LiveKit error:', e);
+                    showToast('⚠️ Modo local - sin transmisión en vivo', 'warning');
+                    try {
+                        var fallbackStream2 = await navigator.mediaDevices.getUserMedia({
+                            video: { facingMode: 'user', width: 1280, height: 720 },
+                            audio: true
+                        });
+                        localStream = fallbackStream2;
+                        var video2 = document.getElementById('liveVideo');
+                        if (video2) {
+                            video2.srcObject = fallbackStream2;
+                            try { await video2.play(); } catch (e) {}
+                        }
+                    } catch (e) {}
+                }
+
+                isLive = true;
+                document.getElementById('viewersCount').textContent = '0 espectadores';
+                suscribirseAlChat();
+                showToast('🎥 ¡Transmisión iniciada!', 'success');
+
+            } catch (e) {
+                console.error('Error iniciando transmisión:', e);
+                showToast('❌ Error al iniciar: ' + e.message, 'error');
+                if (liveKitRoom) {
+                    try { await liveKitRoom.disconnect(); } catch (ex) {}
+                    liveKitRoom = null;
+                }
+                if (localStream) {
+                    localStream.getTracks().forEach(function(t) { t.stop(); });
+                    localStream = null;
+                }
+            }
+        }
+
+        // ================================================================
+        // ✋ FINALIZAR TRANSMISIÓN
+        // ================================================================
+        async function finalizarTransmision() {
+            try {
+                if (!currentStream) {
+                    showToast('⚠️ No hay transmisión activa', 'error');
+                    return;
+                }
+                if (!confirm('¿Seguro que quieres finalizar la transmisión?')) return;
+
+                showToast('⏳ Finalizando transmisión...', '');
+
+                var fechaFin = new Date().toISOString();
+                var duracion = Math.floor((new Date() - new Date(currentStream.fecha_inicio)) / 1000);
+
+                var result = await window.supabase
+                    .from('transmisiones')
+                    .update({
+                        estado: 'finalizada',
+                        fecha_fin: fechaFin,
+                        duracion: duracion
+                    })
+                    .eq('id', currentStream.id)
+                    .eq('streamer_id', currentUser ? currentUser.id : null)
+                    .select()
+                    .single();
+
+                if (result.error) throw result.error;
+
+                showToast('✅ Transmisión finalizada - Duración: ' + Math.floor(duracion / 60) + ' min', 'success');
+
+            } catch (e) {
+                console.error('Error finalizando transmisión:', e);
+                showToast('❌ Error al finalizar: ' + e.message, 'error');
+            } finally {
+                limpiarRecursosLive();
+            }
+        }
+
+        // ================================================================
+        // 🧹 LIMPIEZA DE RECURSOS
+        // ================================================================
+        function limpiarRecursosLive() {
+            if (localStream) {
+                try {
+                    localStream.getTracks().forEach(function(t) {
+                        t.stop();
+                        t.enabled = false;
+                    });
+                    localStream = null;
+                } catch (e) {}
+            }
+
+            var video = document.getElementById('liveVideo');
+            if (video) {
+                try {
+                    if (video.srcObject) {
+                        if (video.srcObject.getTracks) {
+                            video.srcObject.getTracks().forEach(function(t) { t.stop(); });
+                        }
+                        video.srcObject = null;
+                    }
+                    video.pause();
+                    video.src = '';
+                    video.load();
+                } catch (e) {}
+            }
+
+            if (liveKitRoom) {
+                try {
+                    if (liveKitRoom.localParticipant) {
+                        try {
+                            liveKitRoom.localParticipant.setCameraEnabled(false);
+                            liveKitRoom.localParticipant.setMicrophoneEnabled(false);
+                        } catch (e) {}
+                    }
+                    liveKitRoom.disconnect();
+                } catch (e) {}
+                liveKitRoom = null;
+            }
+
+            if (streamInterval) {
+                clearInterval(streamInterval);
+                streamInterval = null;
+            }
+
+            if (channelChat) {
+                try {
+                    window.supabase.removeChannel(channelChat);
+                } catch (e) {}
+                channelChat = null;
+            }
+
+            isLive = false;
+            currentStream = null;
+            espectadores = 0;
+
+            var viewersEl = document.getElementById('viewersCount');
+            if (viewersEl) viewersEl.textContent = '0 espectadores';
+
+            var container = document.getElementById('liveVideoContainer');
+            if (container) {
+                var overlays = container.querySelectorAll('.donacion-overlay');
+                overlays.forEach(function(el) { el.remove(); });
+            }
+        }
+
+        // ================================================================
+        // 📺 UNIRSE A TRANSMISIÓN
+        // ================================================================
+        async function unirseATransmision(streamId) {
+            try {
+                var session = await getSession();
+                if (!session) {
+                    showToast('⚠️ Inicia sesión para ver transmisiones', 'error');
+                    return;
+                }
+
+                showToast('⏳ Uniéndose a la transmisión...', '');
+
+                var result = await window.supabase
+                    .from('transmisiones')
+                    .select('*, usuarios(id, nombre, avatar_url)')
+                    .eq('id', streamId)
+                    .single();
+
+                if (result.error) throw result.error;
+
+                currentStream = result.data;
+
+                try {
+                    if (typeof window.livekitClient !== 'undefined') {
+                        liveKitRoom = new window.livekitClient.Room();
+                        var token = await obtenerTokenLiveKit(
+                            currentStream.room_name,
+                            session.user.user_metadata?.nombre || session.user.email || 'espectador',
+                            'subscriber'
+                        );
+                        await liveKitRoom.connect(LIVEKIT_CONFIG.url, token);
+
+                        liveKitRoom.on('trackSubscribed', function(track, publication, participant) {
+                            if (track.kind === 'video') {
+                                var video = document.getElementById('liveVideo');
+                                if (video) {
+                                    track.attach(video);
+                                    try {
+                                        video.play().catch(function(e) {});
+                                    } catch (e) {}
+                                }
+                            }
+                        });
+
+                        showToast('📺 Conectado a la transmisión', 'success');
+                    } else {
+                        showToast('⚠️ Modo solo chat - sin video', 'warning');
+                    }
+                } catch (e) {
+                    console.warn('LiveKit no disponible:', e);
+                    showToast('⚠️ Modo solo chat - sin video', 'warning');
+                }
+
+                suscribirseAlChat();
+                showToast('📺 Viendo: ' + (currentStream.titulo || 'Live'), 'success');
+
+            } catch (e) {
+                console.error('Error uniéndose:', e);
+                showToast('❌ Error al unirse', 'error');
+            }
+        }
+
+        // ================================================================
+        // 💬 CHAT
+        // ================================================================
+
+        function suscribirseAlChat() {
+            if (!currentStream) return;
+            if (channelChat) {
+                try { window.supabase.removeChannel(channelChat); } catch (e) {}
+                channelChat = null;
+            }
+
+            channelChat = window.supabase
+                .channel('live-' + currentStream.id)
+                .on('postgres_changes', {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'mensajes_live',
+                    filter: 'transmision_id=eq.' + currentStream.id
+                }, function(payload) {
+                    agregarMensajeAlChat(payload.new);
+                })
+                .subscribe();
+        }
+
+        async function enviarMensaje() {
+            var input = document.getElementById('chatInput');
+            var mensaje = input.value.trim();
+
+            if (!mensaje) {
+                showToast('⚠️ Escribe un mensaje', 'warning');
+                return;
+            }
+
+            var session = await getSession();
+            if (!session) {
+                showToast('⚠️ Inicia sesión para chatear', 'error');
+                return;
+            }
+
+            if (!currentStream) {
+                showToast('⚠️ No hay transmisión activa', 'error');
+                return;
+            }
+
+            var moderationResult = verificarContenido(mensaje);
+            if (moderationResult.prohibido) {
+                showToast('⚠️ ' + moderationResult.razon, 'warning');
+                input.value = '';
+                return;
+            }
+
+            try {
+                var result = await window.supabase
+                    .from('mensajes_live')
+                    .insert({
+                        transmision_id: currentStream.id,
+                        usuario_id: session.user.id,
+                        mensaje: mensaje,
+                        nombre_usuario: session.user.user_metadata?.nombre || 'Explorador',
+                        creado_en: new Date().toISOString()
+                    })
+                    .select()
+                    .single();
+
+                if (result.error) throw result.error;
+
+                input.value = '';
+                input.focus();
+
+            } catch (e) {
+                console.error('Error enviando mensaje:', e);
+                showToast('❌ Error al enviar mensaje: ' + e.message, 'error');
+            }
+        }
+
+        function agregarMensajeAlChat(mensaje) {
+            var container = document.getElementById('chatMessages');
+            if (!container) return;
+
+            var div = document.createElement('div');
+            div.className = 'chat-msg';
+
+            var avatar = mensaje.nombre_usuario ? mensaje.nombre_usuario.charAt(0).toUpperCase() : '◈';
+
+            div.innerHTML = '<div class="avatar">' + avatar + '</div>' +
+                '<div class="msg">' +
+                '<span class="name">' + escapeHTML(mensaje.nombre_usuario || 'Explorador') + '</span>' +
+                '<span class="time">' + new Date(mensaje.creado_en || mensaje.created_at).toLocaleTimeString() + '</span>' +
+                '<div class="text">' + escapeHTML(mensaje.mensaje) + '</div>' +
+                '</div>';
+
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+
+            var countEl = document.getElementById('chatCount');
+            if (countEl) {
+                var messages = container.querySelectorAll('.chat-msg').length;
+                countEl.textContent = messages + ' mensajes';
+            }
+        }
+
+        // ================================================================
+        // 🛡️ MODERACIÓN
+        // ================================================================
+
+        function verificarContenido(texto) {
+            var textoLower = texto.toLowerCase();
+
+            for (var i = 0; i < PALABRAS_PROHIBIDAS.length; i++) {
+                if (textoLower.indexOf(PALABRAS_PROHIBIDAS[i]) !== -1) {
+                    return { prohibido: true, razon: 'Contiene lenguaje inapropiado' };
+                }
+            }
+
+            if (/(acoso|bullying|hostigamiento|amenaza)/i.test(texto)) {
+                return { prohibido: true, razon: 'Contenido de acoso detectado' };
+            }
+
+            var palabras = texto.split(' ');
+            var repetidas = [];
+            for (var j = 0; j < palabras.length; j++) {
+                if (palabras.indexOf(palabras[j]) !== j) {
+                    repetidas.push(palabras[j]);
+                }
+            }
+            if (repetidas.length > 5) {
+                return { prohibido: true, razon: 'Posible spam detectado' };
+            }
+
+            return { prohibido: false };
+        }
+
+        // ================================================================
+        // 💰 DONACIONES
+        // ================================================================
+
+        async function enviarDonacion(monto) {
+            try {
+                var session = await getSession();
+                if (!session) {
+                    showToast('⚠️ Inicia sesión para donar', 'error');
+                    return;
+                }
+
+                if (!currentStream) {
+                    showToast('⚠️ No hay transmisión activa', 'error');
+                    return;
+                }
+
+                var donacion = DONACIONES[monto];
+                if (!donacion) {
+                    showToast('⚠️ Monto no válido', 'error');
+                    return;
+                }
+
+                showToast('⏳ Procesando donación de $' + monto + ' USD...', '');
+
+                var idempotencyKey = 'donacion_' + session.user.id + '_' + currentStream.id + '_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8);
+
+                var result = await window.supabase
+                    .from('live_donaciones')
+                    .insert({
+                        transmision_id: currentStream.id,
+                        usuario_id: session.user.id,
+                        monto_usd: monto,
+                        mensaje: '💎 ' + donacion.nombre,
+                        idempotency_key: idempotencyKey,
+                        estado: 'completado',
+                        creado_en: new Date().toISOString()
+                    })
+                    .select()
+                    .single();
+
+                if (result.error) throw result.error;
+
+                mostrarEfectoDonacion(monto, donacion, session.user);
+
+                var mensajeDonacion = {
+                    nombre_usuario: session.user.user_metadata?.nombre || 'Explorador',
+                    mensaje: '🎉 ¡Donó $' + monto + ' USD (' + donacion.nombre + ')!',
+                    creado_en: new Date().toISOString()
+                };
+                agregarMensajeAlChat(mensajeDonacion);
+
+                showToast('🎉 ¡' + donacion.nombre + ' recibido!', 'success');
+
+            } catch (e) {
+                console.error('Error en donación:', e);
+                showToast('❌ Error al procesar donación: ' + e.message, 'error');
+            }
+        }
+
+        // ================================================================
+        // 🎨 EFECTOS VISUALES
+        // ================================================================
+
+        function mostrarEfectoDonacion(monto, donacion, usuario) {
+            var container = document.getElementById('liveVideoContainer');
+            if (!container) return;
+
+            var overlay = document.createElement('div');
+            overlay.className = 'donacion-overlay';
+            overlay.style.animation = 'fadeInOut ' + donacion.duracion + 'ms ease forwards';
+
+            var nombre = escapeHTML(usuario.user_metadata?.nombre || 'Alguien');
+
+            var contenido = '';
+            switch (donacion.efecto) {
+                case 'cubo_plata':
+                    contenido = '<div style="background:linear-gradient(135deg,#E8E8E8,#C0C0C0);border-radius:8px;padding:30px;font-size:4rem;box-shadow:0 0 50px rgba(192,192,192,0.5);animation:cuboGirar 3s ease;text-align:center;"><div>🥈</div><div style="font-size:1rem;color:#C0C0C0;margin-top:10px;">' + nombre + ' donó $' + monto + '</div><div style="font-size:0.7rem;color:#C0C0C0;">Cubo de Plata</div></div>';
+                    break;
+                case 'cubo_bronce':
+                    contenido = '<div style="background:linear-gradient(135deg,#D4A574,#CD7F32);border-radius:8px;padding:30px;font-size:5rem;box-shadow:0 0 60px rgba(205,127,50,0.6);animation:cuboGirar 4s ease;text-align:center;"><div>🥉</div><div style="font-size:1.2rem;color:#CD7F32;margin-top:10px;">' + nombre + ' donó $' + monto + '</div><div style="font-size:0.8rem;color:#CD7F32;">Cubo de Bronce</div></div>';
+                    break;
+                case 'cubo_oro':
+                    contenido = '<div style="background:linear-gradient(135deg,#F0D060,#D4AF37);border-radius:8px;padding:30px;font-size:6rem;box-shadow:0 0 80px rgba(212,175,55,0.7);animation:cuboGirar 5s ease;text-align:center;"><div>🥇</div><div style="font-size:1.5rem;color:#D4AF37;margin-top:10px;text-shadow:0 0 20px rgba(212,175,55,0.5);">' + nombre + ' donó $' + monto + '</div><div style="font-size:1rem;color:#D4AF37;">Cubo de Oro</div></div>';
+                    break;
+                case 'cohete_explosion':
+                    contenido = '<div style="animation:coheteGirar 4s ease;text-align:center;"><div style="font-size:8rem;animation:coheteVuelo 3s ease;">🚀</div><div style="font-size:1.5rem;color:#CD7F32;margin-top:10px;text-shadow:0 0 40px rgba(205,127,50,0.8);">' + nombre + ' donó $' + monto + '</div><div style="font-size:1rem;color:#CD7F32;">🚀 Cohete Bronce</div></div>';
+                    break;
+                case 'cohete_esmeralda':
+                    contenido = '<div style="animation:coheteGirar 6s ease;text-align:center;"><div style="font-size:10rem;animation:coheteVuelo 4s ease;filter:drop-shadow(0 0 50px rgba(80,200,120,0.8));">🚀</div><div style="font-size:2rem;color:#50C878;margin-top:10px;text-shadow:0 0 60px rgba(80,200,120,0.9);">' + nombre + ' donó $' + monto + '</div><div style="font-size:1.2rem;color:#50C878;">💚 Cohete Esmeralda</div></div>';
+                    break;
+            }
+
+            overlay.innerHTML = contenido;
+            container.appendChild(overlay);
+
+            setTimeout(function() {
+                if (overlay.parentNode) overlay.remove();
+            }, donacion.duracion + 500);
+        }
+
+        // ================================================================
+        // 🎮 CONTROLES
+        // ================================================================
+
+        function togglePlay() {
+            var video = document.getElementById('liveVideo');
+            if (!video) return;
+
+            if (video.paused) {
+                var playPromise = video.play();
+                if (playPromise !== undefined) {
+                    playPromise.then(function() {
+                        document.getElementById('playBtn').textContent = '⏸';
+                    }).catch(function(error) {
+                        console.warn('Autoplay bloqueado:', error);
+                        showToast('⚠️ Presiona play manualmente', 'warning');
+                    });
+                }
+            } else {
+                video.pause();
+                document.getElementById('playBtn').textContent = '▶';
+            }
+        }
+
+        function toggleMute() {
+            var video = document.getElementById('liveVideo');
+            if (!video) return;
+
+            isMuted = !isMuted;
+            video.muted = isMuted;
+
+            var btn = document.getElementById('muteBtn');
+            if (isMuted) {
+                btn.textContent = '🔇';
+                btn.classList.add('muted');
+            } else {
+                btn.textContent = '🔊';
+                btn.classList.remove('muted');
+            }
+        }
+
+        async function capturarPantalla() {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+                showToast('⚠️ Tu navegador no soporta compartir pantalla', 'error');
+                return;
+            }
+
+            try {
+                var screenStream = await navigator.mediaDevices.getDisplayMedia({
+                    video: true,
+                    audio: true
+                });
+
+                var video = document.getElementById('liveVideo');
+                if (video) {
+                    video.srcObject = screenStream;
+                    try {
+                        await video.play();
+                        document.getElementById('playBtn').textContent = '⏸';
+                    } catch (playError) {
+                        console.warn('Autoplay bloqueado en compartir pantalla:', playError);
+                    }
+                }
+
+                showToast('🖥️ Compartiendo pantalla', 'success');
+
+                screenStream.getVideoTracks()[0].onended = function() {
+                    restaurarCamara();
+                };
+
+            } catch (e) {
+                console.error('Error capturando pantalla:', e);
+                if (e.name === 'NotAllowedError' || e.name === 'PermissionDeniedError') {
+                    showToast('⚠️ Permiso denegado para compartir pantalla', 'warning');
+                } else {
+                    showToast('❌ Error al compartir pantalla: ' + e.message, 'error');
+                }
+            }
+        }
+
+        async function restaurarCamara() {
+            try {
+                if (liveKitRoom) {
+                    await liveKitRoom.localParticipant.setCameraEnabled(true);
+                    var videoTrack = liveKitRoom.localParticipant.videoTrackPublications.values().next().value;
+                    if (videoTrack && videoTrack.track) {
+                        var stream = new MediaStream();
+                        stream.addTrack(videoTrack.track);
+                        var video = document.getElementById('liveVideo');
+                        if (video) {
+                            video.srcObject = stream;
+                            try { await video.play(); } catch (e) {}
+                        }
+                    }
+                } else {
+                    var stream2 = await navigator.mediaDevices.getUserMedia({
+                        video: { facingMode: 'user', width: 1280, height: 720 },
+                        audio: true
+                    });
+                    var video2 = document.getElementById('liveVideo');
+                    if (video2) {
+                        video2.srcObject = stream2;
+                        try { await video2.play(); } catch (e) {}
+                    }
+                }
+            } catch (e) {
+                console.error('Error restaurando cámara:', e);
+                showToast('⚠️ No se pudo restaurar la cámara', 'error');
+            }
+        }
+
+        function toggleVoice() {
+            isVoiceActive = !isVoiceActive;
+            var btn = document.getElementById('voiceBtn');
+
+            if (isVoiceActive) {
+                btn.textContent = '🔊';
+                btn.classList.add('voice-active');
+                var msg = 'Bienvenidos al Live de Sariel\'s';
+                var utterance = new SpeechSynthesisUtterance(msg);
+                utterance.lang = 'es-ES';
+                utterance.rate = 0.9;
+                window.speechSynthesis.speak(utterance);
+            } else {
+                btn.textContent = '🔈';
+                btn.classList.remove('voice-active');
+                window.speechSynthesis.cancel();
+            }
+        }
+
+        function verTodasLasTransmisiones() {
+            cargarTransmisionesActivas();
+            showToast('📺 Cargando transmisiones activas...', '');
+        }
+
+        // ================================================================
+        // 📋 LISTA DE TRANSMISIONES ACTIVAS
+        // ================================================================
+
+        async function cargarTransmisionesActivas() {
+            try {
+                var result = await window.supabase
+                    .from('transmisiones')
+                    .select('*, usuarios(id, nombre, avatar_url)')
+                    .eq('estado', 'en_vivo')
+                    .order('fecha_inicio', { ascending: false });
+
+                if (result.error) throw result.error;
+
+                renderizarTransmisiones(result.data);
+
+            } catch (e) {
+                console.error('Error cargando transmisiones:', e);
+            }
+        }
+
+        function renderizarTransmisiones(streams) {
+            var container = document.getElementById('streamsList');
+            if (!container) return;
+
+            if (!streams || streams.length === 0) {
+                container.innerHTML = '<div class="empty-state" style="grid-column:1/-1;padding:20px;"><span class="icon">◉</span><h3>Sin transmisiones activas</h3><p>Sé el primero en iniciar una transmisión</p></div>';
+                return;
+            }
+
+            var html = '';
+            for (var i = 0; i < streams.length; i++) {
+                var stream = streams[i];
+                var usuario = stream.usuarios || {};
+                html += '<div class="stream-card" onclick="unirseATransmision(\'' + stream.id + '\')">' +
+                    '<div class="stream-thumb"><span style="font-size:2rem;">◉</span><span class="live-badge">🔴 EN VIVO</span></div>' +
+                    '<div class="stream-name">' + escapeHTML(stream.titulo || 'Live') + '</div>' +
+                    '<div class="stream-host">' + escapeHTML(usuario.nombre || 'Streamer') + ' · ' + (stream.viewers_count || 0) + ' espectadores</div>' +
+                    '<div style="font-size:0.55rem;color:var(--text-muted);margin-top:4px;">' + escapeHTML(stream.categoria || 'General') + ' · ' + new Date(stream.fecha_inicio).toLocaleTimeString() + '</div>' +
+                    '</div>';
+            }
+            container.innerHTML = html;
+        }
+
+        // ================================================================
+        // 📊 ESTADÍSTICAS
+        // ================================================================
+
+        async function cargarEstadisticas() {
+            try {
+                var session = await getSession();
+                if (!session) {
+                    showToast('⚠️ Inicia sesión para ver estadísticas', 'error');
+                    return;
+                }
+
+                var result = await window.supabase
+                    .from('transmisiones')
+                    .select('*')
+                    .eq('streamer_id', session.user.id)
+                    .order('fecha_inicio', { ascending: false });
+
+                if (result.error) throw result.error;
+
+                var data = result.data || [];
+                if (data.length === 0) {
+                    showToast('📊 Sin estadísticas aún', 'warning');
+                    return;
+                }
+
+                var totalStreams = data.length;
+                var totalHoras = 0;
+                var totalEspectadores = 0;
+                var totalDonaciones = 0;
+
+                for (var i = 0; i < data.length; i++) {
+                    var s = data[i];
+                    if (s.fecha_inicio && s.fecha_fin) {
+                        var diff = (new Date(s.fecha_fin) - new Date(s.fecha_inicio)) / 1000;
+                        totalHoras += diff > 0 ? diff : 0;
+                    }
+                    totalEspectadores += s.viewers_count || 0;
+                    totalDonaciones += s.donaciones_totales || 0;
+                }
+                totalHoras = totalHoras / 3600;
+
+                showToast('📊 Estadísticas:\nTransmisiones: ' + totalStreams + '\nHoras: ' + totalHoras.toFixed(1) + 'h\nEspectadores: ' + totalEspectadores + '\nDonaciones: $' + totalDonaciones.toFixed(2) + ' USD', 'success');
+
+            } catch (e) {
+                console.error('Error cargando estadísticas:', e);
+                showToast('❌ Error cargando estadísticas', 'error');
+            }
+        }
+
+        // ================================================================
+        // 👥 SEGUIDORES
+        // ================================================================
+
+        async function seguirStreamer(streamerId) {
+            try {
+                var session = await getSession();
+                if (!session) {
+                    showToast('⚠️ Inicia sesión para seguir', 'error');
+                    return;
+                }
+
+                var result = await window.supabase
+                    .from('live_seguidores')
+                    .insert({
+                        streamer_id: streamerId,
+                        seguidor_id: session.user.id,
+                        creado_en: new Date().toISOString()
+                    })
+                    .select()
+                    .single();
+
+                if (result.error) {
+                    if (result.error.code === '23505') {
+                        showToast('⚠️ Ya sigues a este streamer', 'warning');
+                        return;
+                    }
+                    throw result.error;
+                }
+
+                showToast('✅ Ahora sigues a este streamer', 'success');
+
+            } catch (e) {
+                console.error('Error siguiendo:', e);
+                showToast('❌ Error al seguir: ' + e.message, 'error');
+            }
+        }
+
+        // ================================================================
+        // 🚀 INICIALIZACIÓN
+        // ================================================================
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('◈ Sariel\'s - Live');
+            console.log('📡 LiveKit URL:', LIVEKIT_CONFIG.url);
+
+            getSession().then(function(session) {
+                if (session) {
+                    currentUser = session.user;
+                } else {
+                    showToast('⚠️ Inicia sesión para transmitir y chatear', 'warning');
+                }
+            });
+
+            cargarTransmisionesActivas();
+            setInterval(cargarTransmisionesActivas, 30000);
+
+            var chatInput = document.getElementById('chatInput');
+            if (chatInput) {
+                chatInput.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') {
+                        enviarMensaje();
+                    }
+                });
             }
         });
+
+        // ================================================================
+        // EXPOSICIÓN GLOBAL
+        // ================================================================
+        window.iniciarTransmision = iniciarTransmision;
+        window.finalizarTransmision = finalizarTransmision;
+        window.verTodasLasTransmisiones = verTodasLasTransmisiones;
+        window.unirseATransmision = unirseATransmision;
+        window.enviarMensaje = enviarMensaje;
+        window.enviarDonacion = enviarDonacion;
+        window.togglePlay = togglePlay;
+        window.toggleMute = toggleMute;
+        window.capturarPantalla = capturarPantalla;
+        window.toggleVoice = toggleVoice;
+        window.seguirStreamer = seguirStreamer;
+        window.cargarEstadisticas = cargarEstadisticas;
+        window.showToast = showToast;
+        window.limpiarRecursosLive = limpiarRecursosLive;
+        window.cargarTransmisionesActivas = cargarTransmisionesActivas;
     </script>
 
-    <!-- ✅ SDK DE LIVEKIT - CARGA ESTÁTICA -->
-    <script src="https://cdn.jsdelivr.net/npm/livekit-client/dist/livekit-client.umd.min.js"></script>
-
-    <!-- ✅ SOLO SUPABASE -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-    <script src="/features/live/live.js"></script>
 </body>
 </html>
