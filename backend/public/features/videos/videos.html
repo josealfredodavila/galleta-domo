@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>◈ Videos · Sariel's</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
@@ -99,7 +99,7 @@
 
         .video-card .thumbnail {
             width: 100%;
-            aspect-ratio: 16/9;
+            aspect-ratio: 9/16;  /* ✅ Cambiado a vertical (9:16) como TikTok */
             background: var(--space);
             display: flex;
             align-items: center;
@@ -112,7 +112,7 @@
         .video-card .thumbnail img {
             width: 100%;
             height: 100%;
-            object-fit: cover;
+            object-fit: cover;  /* ✅ Ocupa todo sin bordes negros */
         }
         .video-card .thumbnail .play-btn {
             position: absolute;
@@ -246,81 +246,92 @@
             transform: none;
         }
 
-        /* ===== MODAL REPRODUCTOR FLOTANTE ===== */
+        /* ===== MODAL REPRODUCTOR FLOTANTE (FULL SCREEN) ===== */
         .modal-overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(5,8,15,0.92);
+            background: rgba(0,0,0,0.95);
             backdrop-filter: blur(12px);
             display: none;
             align-items: center;
             justify-content: center;
             z-index: 9999;
-            padding: 20px;
+            padding: 0;
         }
         .modal-overlay.show { display: flex; }
 
         .modal-video {
-            background: var(--glass-bg);
-            border: 1px solid var(--gold);
-            border-radius: var(--radius-xl);
-            max-width: 900px;
+            background: #000;
+            border: none;
+            border-radius: 0;
+            max-width: 100%;
             width: 100%;
-            max-height: 90vh;
-            overflow-y: auto;
-            padding: 24px;
+            max-height: 100vh;
+            height: 100vh;
+            overflow: hidden;
+            padding: 0;
             position: relative;
         }
         .modal-video .btn-cerrar {
             position: absolute;
             top: 12px;
             right: 16px;
-            background: none;
+            background: rgba(0,0,0,0.5);
             border: none;
-            color: var(--text-muted);
+            color: #fff;
             font-size: 1.6rem;
             cursor: pointer;
             transition: var(--transition);
             z-index: 10;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         .modal-video .btn-cerrar:hover {
-            color: var(--text-primary);
+            background: rgba(255,255,255,0.1);
             transform: rotate(90deg);
         }
 
         .modal-video .video-wrapper {
             position: relative;
             width: 100%;
-            aspect-ratio: 16/9;
-            background: var(--space);
-            border-radius: 12px;
-            overflow: hidden;
+            height: 100vh;
+            background: #000;
         }
         .modal-video .video-wrapper video {
             width: 100%;
             height: 100%;
-            object-fit: contain;
-            background: var(--space);
+            object-fit: contain;  /* ✅ El video se ajusta sin deformarse */
+            background: #000;
         }
 
         .modal-video .info-video {
-            margin-top: 16px;
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 40px 20px 20px;
+            background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 100%);
+            z-index: 5;
         }
         .modal-video .info-video .titulo {
             font-family: 'Orbitron', monospace;
-            font-size: 1.1rem;
+            font-size: 1rem;
             color: var(--gold);
             font-weight: 700;
         }
         .modal-video .info-video .autor {
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             color: var(--text-muted);
         }
         .modal-video .info-video .descripcion {
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             color: var(--text-secondary);
-            margin-top: 8px;
-            line-height: 1.6;
+            margin-top: 4px;
+            line-height: 1.5;
         }
         .modal-video .info-video .stats {
             display: flex;
@@ -332,83 +343,13 @@
         }
         .modal-video .info-video .stats span {
             cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 12px;
+            transition: var(--transition);
         }
         .modal-video .info-video .stats span:hover {
             color: var(--gold);
-        }
-
-        .modal-video .comentarios-section {
-            margin-top: 16px;
-            border-top: 1px solid var(--glass-border);
-            padding-top: 12px;
-        }
-        .modal-video .comentarios-section h4 {
-            font-family: 'Orbitron', monospace;
-            color: var(--gold);
-            font-size: 0.8rem;
-            margin-bottom: 8px;
-        }
-        .modal-video .comentarios-section .comentario {
-            display: flex;
-            gap: 8px;
-            padding: 6px 0;
-            border-bottom: 1px solid rgba(212,175,55,0.04);
-        }
-        .modal-video .comentarios-section .comentario .avatar {
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--green-deep), var(--gold));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.6rem;
-            color: #fff;
-            overflow: hidden;
-        }
-        .modal-video .comentarios-section .comentario .avatar img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        .modal-video .comentarios-section .comentario .texto {
-            flex: 1;
-            font-size: 0.7rem;
-        }
-        .modal-video .comentarios-section .comentario .texto strong {
-            color: var(--gold);
-        }
-        .modal-video .comentarios-section .comentario .texto .fecha {
-            font-size: 0.55rem;
-            color: var(--text-muted);
-        }
-        .modal-video .comentarios-section .input-comentario {
-            display: flex;
-            gap: 8px;
-            margin-top: 8px;
-        }
-        .modal-video .comentarios-section .input-comentario input {
-            flex: 1;
-            padding: 6px 12px;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid var(--glass-border);
-            border-radius: 20px;
-            color: var(--text-primary);
-            font-size: 0.7rem;
-            outline: none;
-        }
-        .modal-video .comentarios-section .input-comentario input:focus {
-            border-color: var(--gold);
-        }
-        .modal-video .comentarios-section .input-comentario button {
-            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
-            color: var(--space);
-            border: none;
-            padding: 4px 16px;
-            border-radius: 20px;
-            font-weight: 700;
-            font-size: 0.7rem;
-            cursor: pointer;
+            background: rgba(212,175,55,0.05);
         }
 
         .btn-video-like {
@@ -428,7 +369,94 @@
             color: var(--danger);
         }
 
-        /* ===== EMPTY STATE ===== */
+        /* ===== COMENTARIOS EN MODAL ===== */
+        .modal-video .comentarios-section {
+            position: absolute;
+            bottom: 80px;
+            left: 0;
+            right: 0;
+            padding: 0 16px 10px;
+            max-height: 30vh;
+            overflow-y: auto;
+            z-index: 5;
+        }
+        .modal-video .comentarios-section::-webkit-scrollbar {
+            width: 2px;
+        }
+        .modal-video .comentarios-section::-webkit-scrollbar-thumb {
+            background: var(--gold);
+            border-radius: 2px;
+        }
+        .modal-video .comentarios-section h4 {
+            font-family: 'Orbitron', monospace;
+            color: var(--gold);
+            font-size: 0.7rem;
+            margin-bottom: 4px;
+        }
+        .modal-video .comentarios-section .comentario {
+            display: flex;
+            gap: 8px;
+            padding: 4px 0;
+            border-bottom: 1px solid rgba(212,175,55,0.04);
+        }
+        .modal-video .comentarios-section .comentario .avatar {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--green-deep), var(--gold));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.5rem;
+            color: #fff;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        .modal-video .comentarios-section .comentario .avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .modal-video .comentarios-section .comentario .texto {
+            flex: 1;
+            font-size: 0.65rem;
+        }
+        .modal-video .comentarios-section .comentario .texto strong {
+            color: var(--gold);
+        }
+        .modal-video .comentarios-section .comentario .texto .fecha {
+            font-size: 0.5rem;
+            color: var(--text-muted);
+        }
+        .modal-video .comentarios-section .input-comentario {
+            display: flex;
+            gap: 6px;
+            margin-top: 6px;
+        }
+        .modal-video .comentarios-section .input-comentario input {
+            flex: 1;
+            padding: 6px 12px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            color: var(--text-primary);
+            font-size: 0.7rem;
+            outline: none;
+        }
+        .modal-video .comentarios-section .input-comentario input:focus {
+            border-color: var(--gold);
+        }
+        .modal-video .comentarios-section .input-comentario button {
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            color: var(--space);
+            border: none;
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 0.65rem;
+            cursor: pointer;
+        }
+
         .empty-state {
             text-align: center;
             padding: 60px 20px;
@@ -489,7 +517,9 @@
         @media (max-width: 768px) {
             .app { padding: 12px 14px; }
             .videos-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
-            .modal-video { padding: 16px; }
+            .modal-video { padding: 0; }
+            .modal-video .info-video { padding: 30px 16px 10px; }
+            .modal-video .comentarios-section { bottom: 60px; max-height: 25vh; }
             .upload-section .form-group .file-input-wrapper { flex-direction: column; }
             .upload-section .form-group .file-input-wrapper input[type="file"] { width: 100%; }
         }
@@ -508,7 +538,6 @@
 
     <div class="app">
 
-        <!-- ===== HEADER ===== -->
         <header class="header">
             <a href="/" class="logo">
                 <span class="logo-hex">◈</span>
@@ -523,7 +552,6 @@
             </div>
         </header>
 
-        <!-- ===== NAVEGACIÓN ===== -->
         <nav class="main-nav">
             <a href="/" class="nav-link">⌂ Inicio</a>
             <a href="/features/muro/muro.html" class="nav-link">◇ Muro</a>
@@ -534,7 +562,7 @@
             <a href="/features/videos/videos.html" class="nav-link active">🎬 Videos</a>
         </nav>
 
-        <!-- ===== SUBIR VIDEO ===== -->
+        <!-- SUBIR VIDEO -->
         <div class="upload-section">
             <h3>🎬 Subir nuevo video</h3>
             <form id="formSubirVideo" onsubmit="event.preventDefault(); subirVideo();">
@@ -553,7 +581,7 @@
                         <button type="submit" class="btn-subir-video" id="btnSubirVideo">🚀 Subir video</button>
                     </div>
                     <div style="font-size:0.55rem;color:var(--text-muted);margin-top:4px;">
-                        Formatos: MP4, WebM, MOV · Máx 100MB
+                        Formatos: MP4, WebM, MOV · Máx 100MB · Full HD
                     </div>
                 </div>
                 <div id="uploadProgress" style="display:none;margin-top:8px;">
@@ -565,7 +593,7 @@
             </form>
         </div>
 
-        <!-- ===== LISTA DE VIDEOS ===== -->
+        <!-- LISTA DE VIDEOS -->
         <div id="videosContainer">
             <div class="empty-state">
                 <span class="icon">🎬</span>
@@ -574,7 +602,6 @@
             </div>
         </div>
 
-        <!-- ===== FOOTER ===== -->
         <footer class="footer">
             <span><span class="brand">◈ Sariel's</span> · Sabor al Paladar · WEB3</span>
             <div class="footer-links">
@@ -587,13 +614,13 @@
 
     </div>
 
-    <!-- ===== MODAL REPRODUCTOR FLOTANTE ===== -->
+    <!-- ===== MODAL REPRODUCTOR FLOTANTE (FULL SCREEN) ===== -->
     <div class="modal-overlay" id="videoModal">
         <div class="modal-video">
             <button class="btn-cerrar" onclick="cerrarModalVideo()">✕</button>
 
             <div class="video-wrapper">
-                <video id="modalVideoPlayer" controls autoplay></video>
+                <video id="modalVideoPlayer" controls autoplay playsinline></video>
             </div>
 
             <div class="info-video">
@@ -622,10 +649,8 @@
         </div>
     </div>
 
-    <!-- ===== TOAST ===== -->
     <div class="toast" id="toast"></div>
 
-    <!-- ===== ERROR BANNER ===== -->
     <div id="errorBanner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:99999;background:#ff3366;color:#fff;padding:12px 16px;font-family:monospace;font-size:0.75rem;word-break:break-word;">
         <strong>⚠️ Error detectado:</strong>
         <span id="errorBannerText"></span>
@@ -641,7 +666,6 @@
         // VIDEOS - TODAS LAS FUNCIONES DEFINIDAS AQUÍ
         // ================================================================
 
-        // ===== VARIABLES GLOBALES =====
         var sessionUser = null;
         var videoActual = null;
         var likeCache = new Map();
@@ -669,6 +693,14 @@
             } catch (e) { console.error('Error sesión:', e); return null; }
         }
 
+        // ===== ESCAPE HTML =====
+        function escapeHTML(texto) {
+            if (!texto) return '';
+            var div = document.createElement('div');
+            div.textContent = texto;
+            return div.innerHTML;
+        }
+
         // ===== CARGAR USUARIO ACTUAL =====
         async function cargarUsuarioActual() {
             try {
@@ -683,7 +715,9 @@
             } catch (e) { console.error('Error cargando usuario:', e); return null; }
         }
 
-        // ===== CARGAR VIDEOS =====
+        // ================================================================
+        // CARGAR VIDEOS CON AUTO-REPRODUCCIÓN AL HACER SCROLL
+        // ================================================================
         async function cargarVideos() {
             try {
                 var result = await window.supabase
@@ -704,7 +738,6 @@
 
                 container.innerHTML = data.map(function(v) {
                     var autor = v.usuarios || {};
-                    var avatar = autor.avatar_url ? '<img src="' + escapeHTML(autor.avatar_url) + '">' : '◈';
                     var vistas = v.reproducciones || 0;
                     var likes = v.likes || 0;
                     var miniatura = v.url_miniatura || '';
@@ -712,7 +745,7 @@
                         '<img src="' + escapeHTML(miniatura) + '" alt="' + escapeHTML(v.titulo) + '" />' :
                         '<span style="font-size:4rem;opacity:0.3;">🎬</span>';
 
-                    return '<div class="video-card" onclick="abrirVideo(\'' + v.id + '\')">' +
+                    return '<div class="video-card" data-video-id="' + v.id + '" onclick="abrirVideo(\'' + v.id + '\')">' +
                         '<div class="thumbnail">' +
                         thumbnailHtml +
                         '<div class="play-btn">▶</div>' +
@@ -730,21 +763,40 @@
                         '</div>';
                 }).join('');
 
+                // ✅ Activar auto-reproducción al hacer scroll
+                activarAutoReproduccion();
+
             } catch (e) {
                 console.error('Error cargando videos:', e);
                 showToast('❌ Error al cargar videos', 'error');
             }
         }
 
-        // ===== ESCAPE HTML =====
-        function escapeHTML(texto) {
-            if (!texto) return '';
-            var div = document.createElement('div');
-            div.textContent = texto;
-            return div.innerHTML;
+        // ================================================================
+        // AUTO-REPRODUCCIÓN AL HACER SCROLL (como TikTok)
+        // ================================================================
+        function activarAutoReproduccion() {
+            var cards = document.querySelectorAll('.video-card');
+            var observer = new IntersectionObserver(function(entries) {
+                entries.forEach(function(entry) {
+                    if (entry.isIntersecting) {
+                        var videoId = entry.target.dataset.videoId;
+                        if (videoId) {
+                            // Abrir el video automáticamente cuando es visible
+                            abrirVideo(videoId);
+                        }
+                    }
+                });
+            }, { threshold: 0.6 }); // 60% visible para activar
+
+            cards.forEach(function(card) {
+                observer.observe(card);
+            });
         }
 
-        // ===== SUBIR VIDEO =====
+        // ================================================================
+        // SUBIR VIDEO
+        // ================================================================
         async function subirVideo() {
             var titulo = document.getElementById('inputTituloVideo').value.trim();
             var descripcion = document.getElementById('inputDescripcionVideo').value.trim();
@@ -793,7 +845,6 @@
                 var urlData = window.supabase.storage.from('videos').getPublicUrl(filePath);
                 var videoUrl = urlData.data.publicUrl;
 
-                // Generar miniatura (captura del video - se hace en el backend idealmente)
                 var miniaturaUrl = '';
 
                 var insertResult = await window.supabase
@@ -831,7 +882,9 @@
             }
         }
 
-        // ===== ABRIR VIDEO EN MODAL =====
+        // ================================================================
+        // ABRIR VIDEO EN MODAL (FULL SCREEN)
+        // ================================================================
         async function abrirVideo(videoId) {
             var modal = document.getElementById('videoModal');
             var videoPlayer = document.getElementById('modalVideoPlayer');
@@ -848,16 +901,13 @@
                 var video = result.data;
                 videoActual = video;
 
-                // Registrar vista
                 await registrarVista(videoId);
 
-                // Cargar datos en modal
                 document.getElementById('modalTitulo').textContent = video.titulo || 'Sin título';
                 document.getElementById('modalAutor').textContent = '@' + (video.usuarios?.handle || 'usuario');
                 document.getElementById('modalDescripcion').textContent = video.descripcion || 'Sin descripción';
                 document.getElementById('modalVistas').textContent = (video.reproducciones || 0) + 1;
 
-                // Likes
                 var liked = await verificarLikeVideo(videoId);
                 var likeBtn = document.getElementById('btnLikeVideo');
                 var likesCount = video.likes || 0;
@@ -871,11 +921,9 @@
 
                 document.getElementById('modalComentariosCount').textContent = video.comentarios || 0;
 
-                // Video
                 videoPlayer.src = video.url_video;
                 videoPlayer.load();
 
-                // Cargar comentarios
                 cargarComentariosVideo(videoId);
 
                 modal.classList.add('show');
@@ -887,7 +935,9 @@
             }
         }
 
-        // ===== CERRAR MODAL VIDEO =====
+        // ================================================================
+        // CERRAR MODAL VIDEO
+        // ================================================================
         function cerrarModalVideo() {
             var modal = document.getElementById('videoModal');
             var videoPlayer = document.getElementById('modalVideoPlayer');
@@ -897,13 +947,15 @@
             videoActual = null;
         }
 
-        // ===== REGISTRAR VISTA =====
+        // ================================================================
+        // REGISTRAR VISTA
+        // ================================================================
         async function registrarVista(videoId) {
             try {
                 var session = await getSession();
                 var userId = session?.user?.id || null;
 
-                var result = await window.supabase
+                await window.supabase
                     .from('vistas_videos')
                     .insert({
                         video_id: videoId,
@@ -912,11 +964,6 @@
                         user_agent: navigator.userAgent
                     });
 
-                if (result.error) {
-                    console.warn('No se pudo registrar vista:', result.error);
-                }
-
-                // Actualizar contador de reproducciones
                 await window.supabase
                     .from('videos')
                     .update({ reproducciones: window.supabase.raw('reproducciones + 1') })
@@ -925,7 +972,9 @@
             } catch (e) { console.error('Error registrando vista:', e); }
         }
 
-        // ===== VERIFICAR LIKE VIDEO =====
+        // ================================================================
+        // VERIFICAR LIKE VIDEO
+        // ================================================================
         async function verificarLikeVideo(videoId) {
             if (!sessionUser) return false;
             var key = videoId + '_' + sessionUser.id;
@@ -943,7 +992,9 @@
             } catch (e) { console.error('Error verificando like:', e); return false; }
         }
 
-        // ===== TOGGLE LIKE VIDEO =====
+        // ================================================================
+        // TOGGLE LIKE VIDEO
+        // ================================================================
         async function toggleLikeVideo() {
             if (!videoActual) { showToast('⚠️ No hay video seleccionado', 'warning'); return; }
             if (!sessionUser) { showToast('⚠️ Inicia sesión para dar like', 'error'); return; }
@@ -1009,7 +1060,9 @@
             }
         }
 
-        // ===== CARGAR COMENTARIOS VIDEO =====
+        // ================================================================
+        // CARGAR COMENTARIOS VIDEO
+        // ================================================================
         async function cargarComentariosVideo(videoId) {
             try {
                 var result = await window.supabase
@@ -1047,7 +1100,9 @@
             }
         }
 
-        // ===== ENVIAR COMENTARIO VIDEO =====
+        // ================================================================
+        // ENVIAR COMENTARIO VIDEO
+        // ================================================================
         async function enviarComentarioVideo() {
             if (!videoActual) { showToast('⚠️ No hay video seleccionado', 'warning'); return; }
             if (!sessionUser) { showToast('⚠️ Inicia sesión para comentar', 'error'); return; }
@@ -1089,10 +1144,14 @@
             }
         }
 
-        // ===== VER TOKENS =====
+        // ================================================================
+        // VER TOKENS
+        // ================================================================
         function verTokens() { window.location.href = '/features/perfil/perfil.html'; }
 
-        // ===== ERRORES =====
+        // ================================================================
+        // ERRORES
+        // ================================================================
         function mostrarErrorEnPantalla(msg) {
             var banner = document.getElementById('errorBanner');
             var texto = document.getElementById('errorBannerText');
@@ -1107,22 +1166,27 @@
             mostrarErrorEnPantalla('Promesa rechazada: ' + (e.reason?.message || e.reason));
         });
 
-        // ===== CERRAR MODAL CON ESC =====
+        // ================================================================
+        // CERRAR MODAL CON ESC O CLICK FUERA
+        // ================================================================
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') { cerrarModalVideo(); }
         });
 
-        // ===== CERRAR MODAL CLICK FUERA =====
         document.getElementById('videoModal').addEventListener('click', function(e) {
             if (e.target === this) { cerrarModalVideo(); }
         });
 
-        // ===== ENTER PARA COMENTAR =====
+        // ================================================================
+        // ENTER PARA COMENTAR
+        // ================================================================
         document.getElementById('inputComentarioVideo').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') { e.preventDefault(); enviarComentarioVideo(); }
         });
 
-        // ===== INICIALIZACIÓN =====
+        // ================================================================
+        // INICIALIZACIÓN
+        // ================================================================
         document.addEventListener('DOMContentLoaded', function() {
             console.log('◈ Sariel\'s - Videos');
             console.log('✅ Inicializando...');
@@ -1131,7 +1195,9 @@
             });
         });
 
-        // ===== EXPOSICIÓN GLOBAL =====
+        // ================================================================
+        // EXPOSICIÓN GLOBAL
+        // ================================================================
         window.subirVideo = subirVideo;
         window.cargarVideos = cargarVideos;
         window.abrirVideo = abrirVideo;
