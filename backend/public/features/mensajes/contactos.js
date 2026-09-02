@@ -6,9 +6,12 @@
 // ================================================================
 // CONFIGURACIÓN SUPABASE - REUTILIZAR EL CLIENTE GLOBAL
 // ================================================================
-// ✅ ELIMINADA LA DECLARACIÓN DUPLICADA DE supabaseClient
 // ✅ Usamos window.supabase que es creado por app.js
-const supabase = window.supabase;
+let supabase = window.supabase;
+
+if (typeof supabase === 'undefined') {
+    console.error('❌ Supabase no está disponible');
+}
 
 // ================================================================
 // ESCAPE HTML - PREVENCIÓN XSS
@@ -50,8 +53,13 @@ function showToast(msg, type = '', duration = 3500) {
 // OBTENER SESIÓN
 // ================================================================
 async function getSession() {
-    const { data: { session } } = await supabase.auth.getSession();
-    return session;
+    try {
+        const { data: { session } } = await supabase.auth.getSession();
+        return session;
+    } catch (error) {
+        console.error('Error obteniendo sesión:', error);
+        return null;
+    }
 }
 
 // ================================================================
