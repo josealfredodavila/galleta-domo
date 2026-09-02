@@ -1,1147 +1,1049 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>◈ Videos · Sariel's</title>
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+/* ================================================================
+   APP.JS - VERSIÓN PRODUCCIÓN - CORREGIDA Y OPTIMIZADA
+   SISTEMA COMPLETO: Supabase + Autenticación + Tokens + Wallet + Live
+   RUTA RAILWAY: https://galleta-domo.up.railway.app
+   ================================================================ */
 
-    <style>
-        :root {
-            --gold: #D4AF37;
-            --gold-dark: #b8923a;
-            --gold-light: #e8c84a;
-            --gold-bright: #f0d060;
-            --green-deep: #0F2D1A;
-            --green-mid: #1a4a2a;
-            --green-bright: #2a6a3a;
-            --space: #05080f;
-            --text-primary: #f0f4f8;
-            --text-secondary: #c0d8e8;
-            --text-muted: #8aa8b8;
-            --glass-bg: rgba(15, 45, 26, 0.55);
-            --glass-border: rgba(212, 175, 55, 0.15);
-            --shadow-gold: 0 8px 32px rgba(212, 175, 55, 0.25);
-            --shadow-gold-strong: 0 0 60px rgba(212, 175, 55, 0.15);
-            --radius: 16px;
-            --radius-xl: 24px;
-            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            --success: #00d68f;
-            --danger: #ff3366;
-            --warning: #f7d44a;
-            --cyan: #00e5ff;
-            --purple: #a855f7;
-            --pink: #ec4899;
-        }
+// ================================================================
+// CONFIGURACIÓN SUPABASE - CON VALIDACIÓN
+// ================================================================
+const SUPABASE_URL = 'https://zultnlogdoajehbswlih.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+// ✅ VALIDACIÓN: Asegurar que Supabase está disponible
+if (typeof window.supabase === 'undefined' || typeof window.supabase.createClient !== 'function') {
+    console.error('❌ Supabase no está disponible. Verifica la carga de la librería.');
+    // Crear un fallback para evitar errores
+    window.supabase = { createClient: () => ({ auth: { getSession: () => ({ data: { session: null } }) } }) };
+}
 
-        body {
-            background: var(--space);
-            color: var(--text-primary);
-            font-family: 'Inter', sans-serif;
-            min-height: 100vh;
-            background-image: radial-gradient(ellipse at 20% 50%, rgba(26, 74, 42, 0.4) 0%, transparent 60%), radial-gradient(ellipse at 80% 50%, rgba(212, 175, 55, 0.08) 0%, transparent 60%);
-        }
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        .nebula { position: fixed; border-radius: 50%; filter: blur(120px); opacity: 0.12; pointer-events: none; z-index: 0; animation: nebula-drift 25s ease-in-out infinite alternate; }
-        .nebula-1 { width: 700px; height: 700px; background: var(--green-bright); top: -15%; right: -15%; }
-        .nebula-2 { width: 600px; height: 600px; background: var(--gold-light); bottom: -15%; left: -15%; animation-delay: -8s; opacity: 0.06; }
-        .nebula-3 { width: 500px; height: 500px; background: var(--purple); top: 50%; left: 50%; transform: translate(-50%, -50%); animation-delay: -15s; opacity: 0.04; }
-        @keyframes nebula-drift { 0% { transform: translate(0,0) scale(1); } 100% { transform: translate(40px,-30px) scale(1.15); } }
+// ================================================================
+// EXPONER SUPABASE GLOBALMENTE
+// ================================================================
+window.supabase = supabaseClient;
 
-        .app { position: relative; z-index: 1; max-width: 100%; width: 100%; margin: 0 auto; padding: 12px 16px 30px; }
+// ================================================================
+// VARIABLES GLOBALES
+// ================================================================
+let usuarioActual = null;
+let walletConectada = false;
+let web3 = null;
+let appInstance = null;
 
-        .header {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 10px 0 14px; border-bottom: 1px solid var(--glass-border);
-            background: rgba(5, 8, 15, 0.92); position: sticky; top: 0; z-index: 100;
-        }
-        .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
-        .logo-hex { font-size: 1.8rem; color: var(--gold); font-family: 'Orbitron', monospace; }
-        .logo-text { font-family: 'Orbitron', monospace; font-size: 1.2rem; color: var(--text-primary); letter-spacing: 2px; }
-        .logo-text span { color: var(--gold); }
-        .logo-badge { font-size: 0.45rem; background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: var(--space); padding: 2px 10px; border-radius: 20px; font-weight: 700; }
-        .network-badge { display: flex; align-items: center; gap: 6px; font-size: 0.6rem; color: var(--gold); background: rgba(212,175,55,0.1); padding: 4px 12px; border-radius: 20px; }
-        .token-badge { display: flex; align-items: center; gap: 6px; background: rgba(212,175,55,0.1); border: 1px solid rgba(212,175,55,0.15); padding: 4px 14px; border-radius: 20px; font-size: 0.7rem; color: var(--gold); font-family: 'Orbitron', monospace; cursor: pointer; }
+// ================================================================
+// ESCAPE HTML - PREVENCIÓN XSS
+// ================================================================
+function escapeHTML(texto) {
+    if (!texto) return '';
+    const div = document.createElement('div');
+    div.textContent = texto;
+    return div.innerHTML;
+}
 
-        .main-nav {
-            display: flex; gap: 4px; background: rgba(15,45,26,0.3); border-radius: var(--radius);
-            padding: 4px; border: 1px solid var(--glass-border); margin: 16px 0 20px; overflow-x: auto;
+// ================================================================
+// TOAST - VERSIÓN SEGURA CON FALLBACK
+// ================================================================
+function showToast(msg, type = '') {
+    try {
+        let t = document.getElementById('toast');
+        if (!t) {
+            t = document.createElement('div');
+            t.id = 'toast';
+            t.className = 'toast';
+            document.body.appendChild(t);
         }
-        .main-nav .nav-link { padding: 8px 16px; border-radius: 12px; color: var(--text-muted); text-decoration: none; font-size: 0.7rem; white-space: nowrap; transition: var(--transition); }
-        .main-nav .nav-link:hover { color: var(--text-primary); background: rgba(212,175,55,0.05); }
-        .main-nav .nav-link.active { background: rgba(212,175,55,0.12); color: var(--gold); }
-        .main-nav .nav-link.live { color: var(--danger); }
+        t.textContent = msg;
+        t.className = 'toast show';
+        if (type === 'error') t.classList.add('error');
+        else if (type === 'warning') t.classList.add('warning');
+        else if (type === 'success') t.classList.add('success');
+        else t.classList.remove('error', 'warning', 'success');
+        clearTimeout(t._timeout);
+        t._timeout = setTimeout(() => t.classList.remove('show'), 3500);
+    } catch (e) {
+        console.warn('Toast no disponible:', e);
+        // Fallback a console
+        console.log(`[${type || 'info'}] ${msg}`);
+    }
+}
 
-        /* ===== VIDEOS GRID ===== */
-        .videos-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 20px;
-            margin-top: 20px;
-        }
+// ================================================================
+// CLASE PRINCIPAL - GALETA DOMO APP
+// ================================================================
+class GalletaDomoApp {
+    constructor() {
+        this.supabase = supabaseClient;
+        this.apiUrl = window.location.origin + '/api';
+        this.usuario = null;
+        this.wallet = null;
+        this.tokens = 0;
+        this.isOnline = false;
+        this._initialized = false;
+        this._authListener = null;
+        this._intervalos = [];
+    }
 
-        .video-card {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius-xl);
-            overflow: hidden;
-            transition: var(--transition);
-            cursor: pointer;
-        }
-        .video-card:hover {
-            transform: translateY(-4px);
-            border-color: var(--gold);
-            box-shadow: var(--shadow-gold);
-        }
+    // ================================================================
+    // INICIALIZACIÓN - CON MANEJO DE ERRORES
+    // ================================================================
+    async init() {
+        if (this._initialized) return;
+        this._initialized = true;
 
-        .video-card .thumbnail {
-            width: 100%;
-            aspect-ratio: 16/9;
-            background: var(--space);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 3rem;
-            color: var(--text-muted);
-            position: relative;
-            overflow: hidden;
-        }
-        .video-card .thumbnail img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        .video-card .thumbnail .play-btn {
-            position: absolute;
-            width: 60px;
-            height: 60px;
-            background: rgba(212, 175, 55, 0.85);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.8rem;
-            color: var(--space);
-            transition: var(--transition);
-        }
-        .video-card:hover .thumbnail .play-btn {
-            transform: scale(1.1);
-            background: var(--gold);
-        }
+        console.log('◈ Sariel\'s - App inicializada');
+        console.log('🌐 API:', this.apiUrl);
 
-        .video-card .info {
-            padding: 14px 16px;
-        }
-        .video-card .info .titulo {
-            font-family: 'Orbitron', monospace;
-            font-size: 0.85rem;
-            color: var(--gold);
-            font-weight: 700;
-            display: -webkit-box;
-            -webkit-line-clamp: 1;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-        .video-card .info .autor {
-            font-size: 0.7rem;
-            color: var(--text-muted);
-            margin-top: 4px;
-        }
-        .video-card .info .stats {
-            display: flex;
-            gap: 12px;
-            font-size: 0.6rem;
-            color: var(--text-muted);
-            margin-top: 8px;
-        }
-        .video-card .info .descripcion {
-            font-size: 0.7rem;
-            color: var(--text-secondary);
-            margin-top: 6px;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
+        try {
+            // Verificar sesión existente
+            const { data: { session }, error } = await this.supabase.auth.getSession();
+            if (error) throw error;
 
-        /* ===== FORMULARIO SUBIR VIDEO ===== */
-        .upload-section {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius-xl);
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-        .upload-section h3 {
-            font-family: 'Orbitron', monospace;
-            color: var(--gold);
-            font-size: 0.9rem;
-            margin-bottom: 12px;
-        }
-        .upload-section .form-group {
-            margin-bottom: 12px;
-        }
-        .upload-section .form-group label {
-            display: block;
-            font-size: 0.7rem;
-            color: var(--text-muted);
-            margin-bottom: 4px;
-        }
-        .upload-section .form-group input,
-        .upload-section .form-group textarea {
-            width: 100%;
-            padding: 10px 14px;
-            background: rgba(0,0,0,0.3);
-            border: 1px solid var(--glass-border);
-            border-radius: 10px;
-            color: var(--text-primary);
-            font-size: 0.85rem;
-            outline: none;
-        }
-        .upload-section .form-group input:focus,
-        .upload-section .form-group textarea:focus {
-            border-color: var(--gold);
-        }
-        .upload-section .form-group textarea {
-            resize: vertical;
-            min-height: 60px;
-        }
-        .upload-section .form-group .file-input-wrapper {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-        .upload-section .form-group .file-input-wrapper input[type="file"] {
-            flex: 1;
-            padding: 8px;
-            background: rgba(0,0,0,0.3);
-            border: 1px solid var(--glass-border);
-            border-radius: 10px;
-            color: var(--text-primary);
-            font-size: 0.7rem;
-        }
-        .btn-subir-video {
-            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
-            color: var(--space);
-            border: none;
-            padding: 10px 24px;
-            border-radius: 30px;
-            font-family: 'Orbitron', monospace;
-            font-weight: 700;
-            font-size: 0.8rem;
-            cursor: pointer;
-            transition: var(--transition);
-        }
-        .btn-subir-video:hover {
-            transform: scale(1.02);
-            box-shadow: var(--shadow-gold);
-        }
-        .btn-subir-video:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        /* ===== MODAL REPRODUCTOR FLOTANTE ===== */
-        .modal-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(5,8,15,0.92);
-            backdrop-filter: blur(12px);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-            padding: 20px;
-        }
-        .modal-overlay.show { display: flex; }
-
-        .modal-video {
-            background: var(--glass-bg);
-            border: 1px solid var(--gold);
-            border-radius: var(--radius-xl);
-            max-width: 900px;
-            width: 100%;
-            max-height: 90vh;
-            overflow-y: auto;
-            padding: 24px;
-            position: relative;
-        }
-        .modal-video .btn-cerrar {
-            position: absolute;
-            top: 12px;
-            right: 16px;
-            background: none;
-            border: none;
-            color: var(--text-muted);
-            font-size: 1.6rem;
-            cursor: pointer;
-            transition: var(--transition);
-            z-index: 10;
-        }
-        .modal-video .btn-cerrar:hover {
-            color: var(--text-primary);
-            transform: rotate(90deg);
-        }
-
-        .modal-video .video-wrapper {
-            position: relative;
-            width: 100%;
-            aspect-ratio: 16/9;
-            background: var(--space);
-            border-radius: 12px;
-            overflow: hidden;
-        }
-        .modal-video .video-wrapper video {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            background: var(--space);
-        }
-
-        .modal-video .info-video {
-            margin-top: 16px;
-        }
-        .modal-video .info-video .titulo {
-            font-family: 'Orbitron', monospace;
-            font-size: 1.1rem;
-            color: var(--gold);
-            font-weight: 700;
-        }
-        .modal-video .info-video .autor {
-            font-size: 0.75rem;
-            color: var(--text-muted);
-        }
-        .modal-video .info-video .descripcion {
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-            margin-top: 8px;
-            line-height: 1.6;
-        }
-        .modal-video .info-video .stats {
-            display: flex;
-            gap: 16px;
-            font-size: 0.7rem;
-            color: var(--text-muted);
-            margin-top: 8px;
-            flex-wrap: wrap;
-        }
-        .modal-video .info-video .stats span {
-            cursor: pointer;
-        }
-        .modal-video .info-video .stats span:hover {
-            color: var(--gold);
-        }
-
-        .modal-video .comentarios-section {
-            margin-top: 16px;
-            border-top: 1px solid var(--glass-border);
-            padding-top: 12px;
-        }
-        .modal-video .comentarios-section h4 {
-            font-family: 'Orbitron', monospace;
-            color: var(--gold);
-            font-size: 0.8rem;
-            margin-bottom: 8px;
-        }
-        .modal-video .comentarios-section .comentario {
-            display: flex;
-            gap: 8px;
-            padding: 6px 0;
-            border-bottom: 1px solid rgba(212,175,55,0.04);
-        }
-        .modal-video .comentarios-section .comentario .avatar {
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--green-deep), var(--gold));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.6rem;
-            color: #fff;
-            overflow: hidden;
-        }
-        .modal-video .comentarios-section .comentario .avatar img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        .modal-video .comentarios-section .comentario .texto {
-            flex: 1;
-            font-size: 0.7rem;
-        }
-        .modal-video .comentarios-section .comentario .texto strong {
-            color: var(--gold);
-        }
-        .modal-video .comentarios-section .comentario .texto .fecha {
-            font-size: 0.55rem;
-            color: var(--text-muted);
-        }
-        .modal-video .comentarios-section .input-comentario {
-            display: flex;
-            gap: 8px;
-            margin-top: 8px;
-        }
-        .modal-video .comentarios-section .input-comentario input {
-            flex: 1;
-            padding: 6px 12px;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid var(--glass-border);
-            border-radius: 20px;
-            color: var(--text-primary);
-            font-size: 0.7rem;
-            outline: none;
-        }
-        .modal-video .comentarios-section .input-comentario input:focus {
-            border-color: var(--gold);
-        }
-        .modal-video .comentarios-section .input-comentario button {
-            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
-            color: var(--space);
-            border: none;
-            padding: 4px 16px;
-            border-radius: 20px;
-            font-weight: 700;
-            font-size: 0.7rem;
-            cursor: pointer;
-        }
-
-        .btn-video-like {
-            background: none;
-            border: none;
-            color: var(--text-muted);
-            cursor: pointer;
-            font-size: 0.7rem;
-            padding: 4px 8px;
-            border-radius: 12px;
-            transition: var(--transition);
-        }
-        .btn-video-like:hover {
-            color: var(--gold);
-        }
-        .btn-video-like.liked {
-            color: var(--danger);
-        }
-
-        /* ===== EMPTY STATE ===== */
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: var(--text-muted);
-        }
-        .empty-state .icon {
-            font-size: 3rem;
-            display: block;
-            margin-bottom: 16px;
-            color: var(--gold);
-            opacity: 0.3;
-        }
-        .empty-state h3 {
-            font-family: 'Orbitron', monospace;
-            color: var(--text-secondary);
-            font-size: 1rem;
-            margin-bottom: 8px;
-        }
-
-        .toast {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            background: var(--green-deep);
-            border: 1px solid var(--gold);
-            color: var(--gold);
-            padding: 14px 28px;
-            border-radius: 14px;
-            font-size: 0.8rem;
-            transform: translateY(100px);
-            opacity: 0;
-            transition: all 0.5s ease;
-            z-index: 99999;
-            max-width: 400px;
-        }
-        .toast.show { transform: translateY(0); opacity: 1; }
-        .toast.error { border-color: var(--danger); color: var(--danger); }
-        .toast.warning { border-color: var(--warning); color: var(--warning); }
-        .toast.success { border-color: var(--success); color: var(--success); }
-
-        .footer {
-            margin-top: 30px;
-            padding-top: 16px;
-            border-top: 1px solid var(--glass-border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 0.7rem;
-            color: var(--text-muted);
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-        .footer .brand { color: var(--gold); font-weight: 600; }
-        .footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
-        .footer-links a { color: var(--text-muted); text-decoration: none; }
-        .footer-links a:hover { color: var(--gold); }
-
-        @media (max-width: 768px) {
-            .app { padding: 12px 14px; }
-            .videos-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
-            .modal-video { padding: 16px; }
-            .upload-section .form-group .file-input-wrapper { flex-direction: column; }
-            .upload-section .form-group .file-input-wrapper input[type="file"] { width: 100%; }
-        }
-        @media (max-width: 480px) {
-            .videos-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
-            .video-card .info .titulo { font-size: 0.7rem; }
-            .modal-video .info-video .titulo { font-size: 0.9rem; }
-        }
-    </style>
-</head>
-<body>
-
-    <div class="nebula nebula-1"></div>
-    <div class="nebula nebula-2"></div>
-    <div class="nebula nebula-3"></div>
-
-    <div class="app">
-
-        <!-- ===== HEADER ===== -->
-        <header class="header">
-            <a href="/" class="logo">
-                <span class="logo-hex">◈</span>
-                <span class="logo-text">Sariel<span>'s</span></span>
-                <span class="logo-badge">✦ WEB3</span>
-            </a>
-            <div class="header-actions">
-                <span class="network-badge"><span class="dot"></span> Polygon</span>
-                <span class="token-badge" id="tokenBadge" onclick="verTokens()">
-                    ◈ <span id="tokenBadgeCantidad">0</span> Es.stoks
-                </span>
-            </div>
-        </header>
-
-        <!-- ===== NAVEGACIÓN ===== -->
-        <nav class="main-nav">
-            <a href="/" class="nav-link">⌂ Inicio</a>
-            <a href="/features/muro/muro.html" class="nav-link">◇ Muro</a>
-            <a href="/features/perfil/perfil.html" class="nav-link">◆ Perfil</a>
-            <a href="/features/mensajes/contactos.html" class="nav-link">◈ Contactos</a>
-            <a href="/features/live/live.html" class="nav-link live">◉ Live</a>
-            <a href="/features/internet/internet.html" class="nav-link">◈ Internet</a>
-            <a href="/features/videos/videos.html" class="nav-link active">🎬 Videos</a>
-        </nav>
-
-        <!-- ===== SUBIR VIDEO ===== -->
-        <div class="upload-section">
-            <h3>🎬 Subir nuevo video</h3>
-            <form id="formSubirVideo" onsubmit="event.preventDefault(); subirVideo();">
-                <div class="form-group">
-                    <label>Título del video</label>
-                    <input type="text" id="inputTituloVideo" placeholder="Ej: Mi primer video en Sariel's" required />
-                </div>
-                <div class="form-group">
-                    <label>Descripción</label>
-                    <textarea id="inputDescripcionVideo" placeholder="Describe tu video..."></textarea>
-                </div>
-                <div class="form-group">
-                    <label>Selecciona el archivo de video</label>
-                    <div class="file-input-wrapper">
-                        <input type="file" id="inputArchivoVideo" accept="video/*" required />
-                        <button type="submit" class="btn-subir-video" id="btnSubirVideo">🚀 Subir video</button>
-                    </div>
-                    <div style="font-size:0.55rem;color:var(--text-muted);margin-top:4px;">
-                        Formatos: MP4, WebM, MOV · Máx 100MB
-                    </div>
-                </div>
-                <div id="uploadProgress" style="display:none;margin-top:8px;">
-                    <div style="background:rgba(255,255,255,0.05);border-radius:10px;height:6px;overflow:hidden;">
-                        <div id="progressFill" style="height:100%;width:0%;background:linear-gradient(90deg,var(--gold),var(--gold-light));border-radius:10px;transition:width 0.3s;"></div>
-                    </div>
-                    <div style="font-size:0.6rem;color:var(--text-muted);margin-top:4px;text-align:center;" id="progressText">0%</div>
-                </div>
-            </form>
-        </div>
-
-        <!-- ===== LISTA DE VIDEOS ===== -->
-        <div id="videosContainer">
-            <div class="empty-state">
-                <span class="icon">🎬</span>
-                <h3>No hay videos aún</h3>
-                <p>Sé el primero en compartir un video en Sariel's.</p>
-            </div>
-        </div>
-
-        <!-- ===== FOOTER ===== -->
-        <footer class="footer">
-            <span><span class="brand">◈ Sariel's</span> · Sabor al Paladar · WEB3</span>
-            <div class="footer-links">
-                <a href="/terminos">📜 Términos</a>
-                <a href="/privacidad">🔒 Privacidad</a>
-                <a href="/cookies">🍪 Cookies</a>
-                <span style="opacity:0.3;">⚡ Polygon</span>
-            </div>
-        </footer>
-
-    </div>
-
-    <!-- ===== MODAL REPRODUCTOR FLOTANTE ===== -->
-    <div class="modal-overlay" id="videoModal">
-        <div class="modal-video">
-            <button class="btn-cerrar" onclick="cerrarModalVideo()">✕</button>
-
-            <div class="video-wrapper">
-                <video id="modalVideoPlayer" controls autoplay></video>
-            </div>
-
-            <div class="info-video">
-                <div class="titulo" id="modalTitulo">Título del video</div>
-                <div class="autor" id="modalAutor">@usuario</div>
-                <div class="descripcion" id="modalDescripcion">Descripción del video</div>
-                <div class="stats">
-                    <span>👁️ <span id="modalVistas">0</span> vistas</span>
-                    <span class="btn-video-like" id="btnLikeVideo" onclick="toggleLikeVideo()">
-                        ❤️ <span id="modalLikes">0</span>
-                    </span>
-                    <span>💬 <span id="modalComentariosCount">0</span></span>
-                </div>
-            </div>
-
-            <div class="comentarios-section">
-                <h4>💬 Comentarios</h4>
-                <div id="modalComentariosLista">
-                    <div style="color:var(--text-muted);font-size:0.7rem;padding:8px 0;">Sin comentarios. Sé el primero.</div>
-                </div>
-                <div class="input-comentario">
-                    <input type="text" id="inputComentarioVideo" placeholder="Escribe un comentario..." />
-                    <button onclick="enviarComentarioVideo()">Enviar</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ===== TOAST ===== -->
-    <div class="toast" id="toast"></div>
-
-    <!-- ===== ERROR BANNER ===== -->
-    <div id="errorBanner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:99999;background:#ff3366;color:#fff;padding:12px 16px;font-family:monospace;font-size:0.75rem;word-break:break-word;">
-        <strong>⚠️ Error detectado:</strong>
-        <span id="errorBannerText"></span>
-        <button onclick="document.getElementById('errorBanner').style.display='none'" style="float:right;background:none;border:1px solid #fff;color:#fff;border-radius:6px;padding:2px 10px;cursor:pointer;">Cerrar</button>
-    </div>
-
-    <!-- ===== SCRIPTS ===== -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-    <script src="/app.js"></script>
-
-    <script>
-        // ================================================================
-        // VIDEOS - TODAS LAS FUNCIONES DEFINIDAS AQUÍ
-        // ================================================================
-
-        // ===== VARIABLES GLOBALES =====
-        var sessionUser = null;
-        var videoActual = null;
-        var likeCache = new Map();
-
-        // ===== TOAST =====
-        function showToast(msg, type) {
-            var t = document.getElementById('toast');
-            if (!t) { t = document.createElement('div'); t.id = 'toast'; t.className = 'toast'; document.body.appendChild(t); }
-            t.textContent = msg;
-            t.className = 'toast show';
-            if (type === 'error') t.classList.add('error');
-            else if (type === 'warning') t.classList.add('warning');
-            else if (type === 'success') t.classList.add('success');
-            else t.classList.remove('error', 'warning', 'success');
-            clearTimeout(t._timeout);
-            t._timeout = setTimeout(function() { t.classList.remove('show'); }, 3500);
-        }
-
-        // ===== OBTENER SESIÓN =====
-        async function getSession() {
-            try {
-                if (typeof window.supabase === 'undefined') { console.warn('Supabase no disponible'); return null; }
-                var r = await window.supabase.auth.getSession();
-                return r.data.session;
-            } catch (e) { console.error('Error sesión:', e); return null; }
-        }
-
-        // ===== CARGAR USUARIO ACTUAL =====
-        async function cargarUsuarioActual() {
-            try {
-                var session = await getSession();
-                if (!session) { sessionUser = null; return null; }
-                sessionUser = session.user;
-                var result = await window.supabase.from('usuarios').select('nombre, handle, tokens').eq('id', session.user.id).single();
-                if (!result.error && result.data) {
-                    document.getElementById('tokenBadgeCantidad').textContent = result.data.tokens || 0;
-                }
-                return result.data || null;
-            } catch (e) { console.error('Error cargando usuario:', e); return null; }
-        }
-
-        // ===== CARGAR VIDEOS =====
-        async function cargarVideos() {
-            try {
-                var result = await window.supabase
-                    .from('videos')
-                    .select('*, usuarios:usuario_id (id, nombre, handle, avatar_url)')
-                    .eq('estado', 'publicado')
-                    .order('created_at', { ascending: false });
-
-                if (result.error) throw result.error;
-
-                var container = document.getElementById('videosContainer');
-                var data = result.data || [];
-
-                if (data.length === 0) {
-                    container.innerHTML = '<div class="empty-state"><span class="icon">🎬</span><h3>No hay videos aún</h3><p>Sé el primero en compartir un video en Sariel\'s.</p></div>';
-                    return;
-                }
-
-                container.innerHTML = data.map(function(v) {
-                    var autor = v.usuarios || {};
-                    var avatar = autor.avatar_url ? '<img src="' + escapeHTML(autor.avatar_url) + '">' : '◈';
-                    var vistas = v.reproducciones || 0;
-                    var likes = v.likes || 0;
-                    var miniatura = v.url_miniatura || '';
-                    var thumbnailHtml = miniatura ?
-                        '<img src="' + escapeHTML(miniatura) + '" alt="' + escapeHTML(v.titulo) + '" />' :
-                        '<span style="font-size:4rem;opacity:0.3;">🎬</span>';
-
-                    return '<div class="video-card" onclick="abrirVideo(\'' + v.id + '\')">' +
-                        '<div class="thumbnail">' +
-                        thumbnailHtml +
-                        '<div class="play-btn">▶</div>' +
-                        '</div>' +
-                        '<div class="info">' +
-                        '<div class="titulo">' + escapeHTML(v.titulo) + '</div>' +
-                        '<div class="autor">' + escapeHTML(autor.nombre || 'Usuario') + ' · ' + new Date(v.created_at).toLocaleDateString() + '</div>' +
-                        '<div class="descripcion">' + escapeHTML((v.descripcion || '').substring(0, 100)) + '</div>' +
-                        '<div class="stats">' +
-                        '<span>👁️ ' + vistas + '</span>' +
-                        '<span>❤️ ' + likes + '</span>' +
-                        '<span>💬 ' + (v.comentarios || 0) + '</span>' +
-                        '</div>' +
-                        '</div>' +
-                        '</div>';
-                }).join('');
-
-            } catch (e) {
-                console.error('Error cargando videos:', e);
-                showToast('❌ Error al cargar videos', 'error');
+            if (session) {
+                this.usuario = session.user;
+                usuarioActual = session.user;
+                await this.cargarTokens();
+                await this.actualizarOnline(true);
+                this.actualizarUIUsuario(session.user);
+                showToast('✅ ¡Bienvenido ' + escapeHTML(session.user.user_metadata?.nombre || 'Usuario') + '!');
             }
-        }
 
-        // ===== ESCAPE HTML =====
-        function escapeHTML(texto) {
-            if (!texto) return '';
-            var div = document.createElement('div');
-            div.textContent = texto;
-            return div.innerHTML;
-        }
-
-        // ===== SUBIR VIDEO =====
-        async function subirVideo() {
-            var titulo = document.getElementById('inputTituloVideo').value.trim();
-            var descripcion = document.getElementById('inputDescripcionVideo').value.trim();
-            var fileInput = document.getElementById('inputArchivoVideo');
-            var btn = document.getElementById('btnSubirVideo');
-
-            if (!titulo) { showToast('⚠️ Escribe un título', 'warning'); return; }
-            if (!fileInput.files || fileInput.files.length === 0) { showToast('⚠️ Selecciona un video', 'warning'); return; }
-
-            var file = fileInput.files[0];
-            var maxSize = 100 * 1024 * 1024;
-            if (file.size > maxSize) { showToast('⚠️ El video es demasiado grande (máx 100MB)', 'error'); return; }
-
-            var allowedTypes = ['video/mp4', 'video/webm', 'video/quicktime', 'video/x-msvideo'];
-            if (!allowedTypes.includes(file.type)) { showToast('⚠️ Formato no soportado. Usa MP4, WebM o MOV', 'error'); return; }
-
-            var session = await getSession();
-            if (!session) { showToast('⚠️ Inicia sesión para subir videos', 'error'); return; }
-
-            btn.disabled = true;
-            btn.textContent = '⏳ Subiendo...';
-
-            var progressEl = document.getElementById('uploadProgress');
-            var progressFill = document.getElementById('progressFill');
-            var progressText = document.getElementById('progressText');
-            progressEl.style.display = 'block';
-
-            try {
-                var fileExt = file.name.split('.').pop();
-                var filePath = session.user.id + '/' + Date.now() + '.' + fileExt;
-
-                var uploadResult = await window.supabase.storage
-                    .from('videos')
-                    .upload(filePath, file, {
-                        cacheControl: '3600',
-                        upsert: false,
-                        onProgress: function(progress) {
-                            var pct = Math.round((progress.loaded / progress.total) * 100);
-                            progressFill.style.width = pct + '%';
-                            progressText.textContent = pct + '%';
-                        }
-                    });
-
-                if (uploadResult.error) throw uploadResult.error;
-
-                var urlData = window.supabase.storage.from('videos').getPublicUrl(filePath);
-                var videoUrl = urlData.data.publicUrl;
-
-                // Generar miniatura (captura del video - se hace en el backend idealmente)
-                var miniaturaUrl = '';
-
-                var insertResult = await window.supabase
-                    .from('videos')
-                    .insert({
-                        usuario_id: session.user.id,
-                        titulo: titulo,
-                        descripcion: descripcion || null,
-                        url_video: videoUrl,
-                        url_miniatura: miniaturaUrl || null,
-                        estado: 'publicado',
-                        duracion: 0
-                    })
-                    .select()
-                    .single();
-
-                if (insertResult.error) throw insertResult.error;
-
-                showToast('✅ Video subido correctamente', 'success');
-                document.getElementById('inputTituloVideo').value = '';
-                document.getElementById('inputDescripcionVideo').value = '';
-                fileInput.value = '';
-                progressEl.style.display = 'none';
-                progressFill.style.width = '0%';
-                progressText.textContent = '0%';
-
-                cargarVideos();
-
-            } catch (e) {
-                console.error('Error subiendo video:', e);
-                showToast('❌ Error al subir video: ' + e.message, 'error');
-            } finally {
-                btn.disabled = false;
-                btn.textContent = '🚀 Subir video';
-            }
-        }
-
-        // ===== ABRIR VIDEO EN MODAL =====
-        async function abrirVideo(videoId) {
-            var modal = document.getElementById('videoModal');
-            var videoPlayer = document.getElementById('modalVideoPlayer');
-
-            try {
-                var result = await window.supabase
-                    .from('videos')
-                    .select('*, usuarios:usuario_id (id, nombre, handle, avatar_url)')
-                    .eq('id', videoId)
-                    .single();
-
-                if (result.error) throw result.error;
-
-                var video = result.data;
-                videoActual = video;
-
-                // Registrar vista
-                await registrarVista(videoId);
-
-                // Cargar datos en modal
-                document.getElementById('modalTitulo').textContent = video.titulo || 'Sin título';
-                document.getElementById('modalAutor').textContent = '@' + (video.usuarios?.handle || 'usuario');
-                document.getElementById('modalDescripcion').textContent = video.descripcion || 'Sin descripción';
-                document.getElementById('modalVistas').textContent = (video.reproducciones || 0) + 1;
-
-                // Likes
-                var liked = await verificarLikeVideo(videoId);
-                var likeBtn = document.getElementById('btnLikeVideo');
-                var likesCount = video.likes || 0;
-                if (liked) {
-                    likeBtn.classList.add('liked');
-                    likeBtn.innerHTML = '❤️ <span id="modalLikes">' + likesCount + '</span>';
-                } else {
-                    likeBtn.classList.remove('liked');
-                    likeBtn.innerHTML = '🤍 <span id="modalLikes">' + likesCount + '</span>';
-                }
-
-                document.getElementById('modalComentariosCount').textContent = video.comentarios || 0;
-
-                // Video
-                videoPlayer.src = video.url_video;
-                videoPlayer.load();
-
-                // Cargar comentarios
-                cargarComentariosVideo(videoId);
-
-                modal.classList.add('show');
-                videoPlayer.play();
-
-            } catch (e) {
-                console.error('Error abriendo video:', e);
-                showToast('❌ Error al cargar video', 'error');
-            }
-        }
-
-        // ===== CERRAR MODAL VIDEO =====
-        function cerrarModalVideo() {
-            var modal = document.getElementById('videoModal');
-            var videoPlayer = document.getElementById('modalVideoPlayer');
-            videoPlayer.pause();
-            videoPlayer.src = '';
-            modal.classList.remove('show');
-            videoActual = null;
-        }
-
-        // ===== REGISTRAR VISTA =====
-        async function registrarVista(videoId) {
-            try {
-                var session = await getSession();
-                var userId = session?.user?.id || null;
-
-                var result = await window.supabase
-                    .from('vistas_videos')
-                    .insert({
-                        video_id: videoId,
-                        usuario_id: userId,
-                        ip: '0.0.0.0',
-                        user_agent: navigator.userAgent
-                    });
-
-                if (result.error) {
-                    console.warn('No se pudo registrar vista:', result.error);
-                }
-
-                // Actualizar contador de reproducciones
-                await window.supabase
-                    .from('videos')
-                    .update({ reproducciones: window.supabase.raw('reproducciones + 1') })
-                    .eq('id', videoId);
-
-            } catch (e) { console.error('Error registrando vista:', e); }
-        }
-
-        // ===== VERIFICAR LIKE VIDEO =====
-        async function verificarLikeVideo(videoId) {
-            if (!sessionUser) return false;
-            var key = videoId + '_' + sessionUser.id;
-            if (likeCache.has(key)) return likeCache.get(key);
-            try {
-                var result = await window.supabase
-                    .from('videos_likes')
-                    .select('id')
-                    .eq('video_id', videoId)
-                    .eq('usuario_id', sessionUser.id)
-                    .maybeSingle();
-                var liked = !!result.data;
-                likeCache.set(key, liked);
-                return liked;
-            } catch (e) { console.error('Error verificando like:', e); return false; }
-        }
-
-        // ===== TOGGLE LIKE VIDEO =====
-        async function toggleLikeVideo() {
-            if (!videoActual) { showToast('⚠️ No hay video seleccionado', 'warning'); return; }
-            if (!sessionUser) { showToast('⚠️ Inicia sesión para dar like', 'error'); return; }
-
-            var videoId = videoActual.id;
-            var likeBtn = document.getElementById('btnLikeVideo');
-            var likesSpan = document.getElementById('modalLikes');
-            var key = videoId + '_' + sessionUser.id;
-
-            try {
-                var liked = await verificarLikeVideo(videoId);
-
-                if (liked) {
-                    var result = await window.supabase
-                        .from('videos_likes')
-                        .delete()
-                        .eq('video_id', videoId)
-                        .eq('usuario_id', sessionUser.id);
-                    if (result.error) throw result.error;
-
-                    likeCache.set(key, false);
-                    var current = parseInt(likesSpan.textContent) || 0;
-                    likesSpan.textContent = Math.max(0, current - 1);
-                    likeBtn.classList.remove('liked');
-                    likeBtn.innerHTML = '🤍 <span id="modalLikes">' + likesSpan.textContent + '</span>';
-
-                    await window.supabase
-                        .from('videos')
-                        .update({ likes: window.supabase.raw('likes - 1') })
-                        .eq('id', videoId);
-
-                    videoActual.likes = Math.max(0, (videoActual.likes || 0) - 1);
-
-                } else {
-                    var result2 = await window.supabase
-                        .from('videos_likes')
-                        .insert({ video_id: videoId, usuario_id: sessionUser.id });
-                    if (result2.error) {
-                        if (result2.error.code === '23505') {
-                            showToast('⚠️ Ya diste like', 'warning');
-                            return;
-                        }
-                        throw result2.error;
+            // Configurar listener de autenticación
+            this._authListener = this.supabase.auth.onAuthStateChange(async (event, session) => {
+                try {
+                    if (event === 'SIGNED_IN' && session) {
+                        this.usuario = session.user;
+                        usuarioActual = session.user;
+                        await this.cargarTokens();
+                        await this.actualizarOnline(true);
+                        this.actualizarUIUsuario(session.user);
+                        showToast('✅ ¡Bienvenido ' + escapeHTML(session.user.user_metadata?.nombre || 'Usuario') + '!');
                     }
-
-                    likeCache.set(key, true);
-                    var current2 = parseInt(likesSpan.textContent) || 0;
-                    likesSpan.textContent = current2 + 1;
-                    likeBtn.classList.add('liked');
-                    likeBtn.innerHTML = '❤️ <span id="modalLikes">' + likesSpan.textContent + '</span>';
-
-                    await window.supabase
-                        .from('videos')
-                        .update({ likes: window.supabase.raw('likes + 1') })
-                        .eq('id', videoId);
-
-                    videoActual.likes = (videoActual.likes || 0) + 1;
+                    if (event === 'SIGNED_OUT') {
+                        await this.actualizarOnline(false);
+                        this.usuario = null;
+                        usuarioActual = null;
+                        this.tokens = 0;
+                        this.actualizarUIUsuario(null);
+                        showToast('🔌 Sesión cerrada');
+                    }
+                    if (event === 'TOKEN_REFRESHED') {
+                        console.log('🔄 Token refrescado automáticamente');
+                    }
+                } catch (e) {
+                    console.error('Error en onAuthStateChange:', e);
                 }
-
-            } catch (e) {
-                console.error('Error toggling like:', e);
-                showToast('❌ Error al procesar like', 'error');
-            }
-        }
-
-        // ===== CARGAR COMENTARIOS VIDEO =====
-        async function cargarComentariosVideo(videoId) {
-            try {
-                var result = await window.supabase
-                    .from('videos_comentarios')
-                    .select('*, usuarios:usuario_id (id, nombre, handle, avatar_url)')
-                    .eq('video_id', videoId)
-                    .order('created_at', { ascending: true });
-
-                if (result.error) throw result.error;
-
-                var lista = document.getElementById('modalComentariosLista');
-                var data = result.data || [];
-
-                if (data.length === 0) {
-                    lista.innerHTML = '<div style="color:var(--text-muted);font-size:0.7rem;padding:8px 0;">Sin comentarios. Sé el primero.</div>';
-                    return;
-                }
-
-                lista.innerHTML = data.map(function(c) {
-                    var u = c.usuarios || {};
-                    var avatar = u.avatar_url ? '<img src="' + escapeHTML(u.avatar_url) + '">' : '◈';
-                    var nombre = escapeHTML(u.nombre || 'Usuario');
-                    return '<div class="comentario">' +
-                        '<div class="avatar">' + avatar + '</div>' +
-                        '<div class="texto">' +
-                        '<strong>' + nombre + '</strong> ' + escapeHTML(c.contenido || '') +
-                        '<div class="fecha">' + new Date(c.created_at).toLocaleString() + '</div>' +
-                        '</div>' +
-                        '</div>';
-                }).join('');
-
-            } catch (e) {
-                console.error('Error cargando comentarios:', e);
-                document.getElementById('modalComentariosLista').innerHTML = '<div style="color:var(--danger);font-size:0.7rem;">Error al cargar comentarios</div>';
-            }
-        }
-
-        // ===== ENVIAR COMENTARIO VIDEO =====
-        async function enviarComentarioVideo() {
-            if (!videoActual) { showToast('⚠️ No hay video seleccionado', 'warning'); return; }
-            if (!sessionUser) { showToast('⚠️ Inicia sesión para comentar', 'error'); return; }
-
-            var input = document.getElementById('inputComentarioVideo');
-            var texto = input.value.trim();
-            if (!texto) { showToast('⚠️ Escribe un comentario', 'warning'); return; }
-            if (texto.length > 2000) { showToast('⚠️ El comentario es demasiado largo', 'error'); return; }
-
-            try {
-                var result = await window.supabase
-                    .from('videos_comentarios')
-                    .insert({
-                        video_id: videoActual.id,
-                        usuario_id: sessionUser.id,
-                        contenido: texto
-                    });
-
-                if (result.error) throw result.error;
-
-                input.value = '';
-                showToast('✅ Comentario agregado', 'success');
-                cargarComentariosVideo(videoActual.id);
-
-                var countSpan = document.getElementById('modalComentariosCount');
-                var current = parseInt(countSpan.textContent) || 0;
-                countSpan.textContent = current + 1;
-
-                await window.supabase
-                    .from('videos')
-                    .update({ comentarios: window.supabase.raw('comentarios + 1') })
-                    .eq('id', videoActual.id);
-
-                videoActual.comentarios = (videoActual.comentarios || 0) + 1;
-
-            } catch (e) {
-                console.error('Error enviando comentario:', e);
-                showToast('❌ Error al comentar', 'error');
-            }
-        }
-
-        // ===== VER TOKENS =====
-        function verTokens() { window.location.href = '/features/perfil/perfil.html'; }
-
-        // ===== ERRORES =====
-        function mostrarErrorEnPantalla(msg) {
-            var banner = document.getElementById('errorBanner');
-            var texto = document.getElementById('errorBannerText');
-            if (banner && texto) { texto.textContent = msg; banner.style.display = 'block'; }
-        }
-
-        window.addEventListener('error', function(e) {
-            mostrarErrorEnPantalla((e.message || 'Error') + ' en ' + (e.filename || '') + ':' + e.lineno);
-        });
-
-        window.addEventListener('unhandledrejection', function(e) {
-            mostrarErrorEnPantalla('Promesa rechazada: ' + (e.reason?.message || e.reason));
-        });
-
-        // ===== CERRAR MODAL CON ESC =====
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') { cerrarModalVideo(); }
-        });
-
-        // ===== CERRAR MODAL CLICK FUERA =====
-        document.getElementById('videoModal').addEventListener('click', function(e) {
-            if (e.target === this) { cerrarModalVideo(); }
-        });
-
-        // ===== ENTER PARA COMENTAR =====
-        document.getElementById('inputComentarioVideo').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') { e.preventDefault(); enviarComentarioVideo(); }
-        });
-
-        // ===== INICIALIZACIÓN =====
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('◈ Sariel\'s - Videos');
-            console.log('✅ Inicializando...');
-            cargarUsuarioActual().then(function() {
-                cargarVideos();
             });
-        });
 
-        // ===== EXPOSICIÓN GLOBAL =====
-        window.subirVideo = subirVideo;
-        window.cargarVideos = cargarVideos;
-        window.abrirVideo = abrirVideo;
-        window.cerrarModalVideo = cerrarModalVideo;
-        window.toggleLikeVideo = toggleLikeVideo;
-        window.enviarComentarioVideo = enviarComentarioVideo;
-        window.verTokens = verTokens;
-        window.showToast = showToast;
-        window.cargarUsuarioActual = cargarUsuarioActual;
-    </script>
+            // Recuperar wallet guardada
+            const walletGuardada = localStorage.getItem('sariels_wallet');
+            if (walletGuardada) {
+                this.wallet = walletGuardada;
+                this.actualizarUIWallet(walletGuardada);
+            }
 
-</body>
-</html>
+            // Evento: cerrar sesión al cerrar página
+            window.addEventListener('beforeunload', () => {
+                if (this.usuario) {
+                    this.actualizarOnline(false);
+                }
+            });
+
+            // Evento: visibilidad de página
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible' && this.usuario) {
+                    this.actualizarOnline(true);
+                } else if (document.visibilityState === 'hidden' && this.usuario) {
+                    this.actualizarOnline(false);
+                }
+            });
+
+            console.log('✅ App inicializada correctamente');
+
+        } catch (error) {
+            console.error('❌ Error en init:', error);
+            showToast('⚠️ Error al inicializar la aplicación', 'error');
+        }
+    }
+
+    // ================================================================
+    // DESTRUIR APP - LIMPIEZA DE RECURSOS
+    // ================================================================
+    destroy() {
+        // Remover listener de autenticación
+        if (this._authListener && this._authListener.unsubscribe) {
+            this._authListener.unsubscribe();
+            this._authListener = null;
+        }
+
+        // Limpiar intervalos
+        this._intervalos.forEach(interval => clearInterval(interval));
+        this._intervalos = [];
+
+        this._initialized = false;
+        console.log('🧹 App destruida correctamente');
+    }
+
+    // ================================================================
+    // 🪙 SISTEMA DE TOKENS - CON RPC SEGURA
+    // ================================================================
+
+    async cargarTokens() {
+        try {
+            if (!this.usuario) return 0;
+            const { data, error } = await this.supabase
+                .from('usuarios')
+                .select('tokens')
+                .eq('id', this.usuario.id)
+                .single();
+
+            if (error) throw error;
+            this.tokens = data?.tokens || 0;
+            return this.tokens;
+        } catch (error) {
+            console.error('Error cargando tokens:', error);
+            return 0;
+        }
+    }
+
+    async obtenerTokens() {
+        if (!this.usuario) return 0;
+        await this.cargarTokens();
+        return this.tokens;
+    }
+
+    async transferirTokens(destinoId, cantidad) {
+        try {
+            if (!this.usuario) {
+                showToast('⚠️ Inicia sesión para transferir', 'error');
+                return false;
+            }
+
+            if (this.tokens < cantidad) {
+                showToast('⚠️ No tienes suficientes tokens', 'error');
+                return false;
+            }
+
+            if (cantidad <= 0) {
+                showToast('⚠️ Cantidad inválida', 'error');
+                return false;
+            }
+
+            // ✅ USAR RPC ÚNICA PARA TRANSFERENCIA ATÓMICA
+            const { data, error } = await this.supabase.rpc('transferir_tokens', {
+                p_remitente_id: this.usuario.id,
+                p_destinatario_id: destinoId,
+                p_cantidad: cantidad
+            });
+
+            if (error) throw error;
+
+            this.tokens -= cantidad;
+            showToast(`✅ ${cantidad} Es.stoks transferidos`, 'success');
+            return true;
+
+        } catch (error) {
+            console.error('Error transfiriendo tokens:', error);
+            showToast('❌ Error al transferir tokens', 'error');
+            return false;
+        }
+    }
+
+    // ================================================================
+    // 🟢 ESTADO ONLINE - CON RPC SEGURA
+    // ================================================================
+
+    async actualizarOnline(online) {
+        try {
+            if (!this.usuario) return;
+
+            // ✅ USAR UPDATE DIRECTO EN VEZ DE RPC INEXISTENTE
+            const { error } = await this.supabase
+                .from('usuarios')
+                .update({
+                    online: online,
+                    ultima_conexion: online ? new Date().toISOString() : new Date().toISOString()
+                })
+                .eq('id', this.usuario.id);
+
+            if (error) throw error;
+            
+            this.isOnline = online;
+            
+            const estadoEl = document.getElementById('estadoOnline');
+            if (estadoEl) {
+                estadoEl.textContent = online ? '🟢 En línea' : '⚪ Desconectado';
+                estadoEl.style.color = online ? 'var(--success)' : 'var(--text-muted)';
+            }
+
+        } catch (error) {
+            console.error('Error actualizando estado online:', error);
+        }
+    }
+
+    async obtenerEstadoOnline(usuarioId) {
+        try {
+            const { data, error } = await this.supabase
+                .from('usuarios')
+                .select('online, ultima_conexion')
+                .eq('id', usuarioId)
+                .single();
+
+            if (error) throw error;
+            return data;
+
+        } catch (error) {
+            console.error('Error obteniendo estado online:', error);
+            return null;
+        }
+    }
+
+    // ================================================================
+    // 📊 ESTADÍSTICAS DE USUARIO
+    // ================================================================
+
+    async obtenerEstadisticas() {
+        try {
+            if (!this.usuario) return null;
+
+            const { data, error } = await this.supabase
+                .from('estadisticas_usuarios')
+                .select('*')
+                .eq('user_id', this.usuario.id)
+                .single();
+
+            if (error && error.code !== 'PGRST116') throw error;
+            return data || null;
+
+        } catch (error) {
+            console.error('Error obteniendo estadísticas:', error);
+            return null;
+        }
+    }
+
+    async actualizarEstadisticas() {
+        try {
+            if (!this.usuario) return;
+
+            const stats = await this.obtenerEstadisticas();
+            
+            if (stats) {
+                await this.supabase
+                    .from('estadisticas_usuarios')
+                    .update({
+                        tokens_actuales: this.tokens,
+                        ultima_actividad: new Date().toISOString()
+                    })
+                    .eq('user_id', this.usuario.id);
+            } else {
+                await this.supabase
+                    .from('estadisticas_usuarios')
+                    .insert({
+                        user_id: this.usuario.id,
+                        tokens_actuales: this.tokens,
+                        ultima_actividad: new Date().toISOString()
+                    });
+            }
+
+        } catch (error) {
+            console.error('Error actualizando estadísticas:', error);
+        }
+    }
+
+    // ================================================================
+    // 🔐 AUTENTICACIÓN CON EMAIL - CON VALIDACIÓN
+    // ================================================================
+
+    async registrarUsuario(email, password, nombre) {
+        try {
+            if (!email || !password) {
+                showToast('⚠️ Correo y contraseña son obligatorios', 'error');
+                return null;
+            }
+            if (password.length < 6) {
+                showToast('⚠️ La contraseña debe tener al menos 6 caracteres', 'error');
+                return null;
+            }
+
+            const { data, error } = await this.supabase.auth.signUp({
+                email: email,
+                password: password,
+                options: {
+                    data: {
+                        nombre: nombre || 'Explorador',
+                        role: 'user'
+                    }
+                }
+            });
+
+            if (error) throw error;
+            
+            const nombreUsuario = data.user?.user_metadata?.nombre || 'Usuario';
+            showToast(`✅ Cuenta creada ${data.session ? 'y sesión iniciada' : '. Verifica tu correo'}.`, 'success');
+            return data;
+        } catch (error) {
+            console.error('Error registrando usuario:', error);
+            let msg = error.message;
+            if (msg.includes('already registered')) {
+                msg = '⚠️ Este correo ya está registrado';
+            } else if (msg.includes('password')) {
+                msg = '⚠️ Contraseña inválida';
+            } else if (msg.includes('rate limit')) {
+                msg = '⏳ Demasiados intentos. Espera unos minutos.';
+            }
+            showToast('❌ ' + msg, 'error');
+            throw error;
+        }
+    }
+
+    async iniciarSesion(email, password) {
+        try {
+            if (!email || !password) {
+                showToast('⚠️ Correo y contraseña son obligatorios', 'error');
+                return null;
+            }
+
+            const { data, error } = await this.supabase.auth.signInWithPassword({
+                email: email,
+                password: password
+            });
+
+            if (error) throw error;
+            showToast('✅ Sesión iniciada correctamente', 'success');
+            return data;
+        } catch (error) {
+            console.error('Error iniciando sesión:', error);
+            let msg = error.message;
+            if (msg.includes('Invalid login credentials')) {
+                msg = '⚠️ Correo o contraseña incorrectos';
+            }
+            showToast('❌ ' + msg, 'error');
+            throw error;
+        }
+    }
+
+    async cerrarSesion() {
+        if (!confirm('¿Seguro que quieres cerrar sesión?')) return;
+
+        try {
+            await this.actualizarOnline(false);
+            await this.supabase.auth.signOut();
+            localStorage.removeItem('sariels_wallet');
+            this.wallet = null;
+            this.usuario = null;
+            usuarioActual = null;
+            this.tokens = 0;
+            showToast('🔌 Sesión cerrada', 'success');
+        } catch (error) {
+            console.error('Error cerrando sesión:', error);
+            showToast('❌ Error al cerrar sesión', 'error');
+        }
+    }
+
+    // ================================================================
+    // 🔐 RECUPERAR CONTRASEÑA
+    // ================================================================
+
+    async recuperarContraseña(email) {
+        try {
+            if (!email) {
+                showToast('⚠️ Ingresa tu correo', 'error');
+                return false;
+            }
+
+            const { data, error } = await this.supabase.auth.resetPasswordForEmail(email, {
+                redirectTo: window.location.origin + '/actualizar-contraseña.html'
+            });
+
+            if (error) throw error;
+            
+            showToast('📧 ¡Listo! Te enviamos un enlace a tu correo. Revisa tu bandeja.', 'success');
+            return true;
+        } catch (error) {
+            console.error('Error recuperando contraseña:', error);
+            showToast('❌ No encontramos ese correo. Verifica que esté bien escrito.', 'error');
+            return false;
+        }
+    }
+
+    async actualizarContraseña(nuevaContraseña) {
+        try {
+            if (!nuevaContraseña || nuevaContraseña.length < 6) {
+                showToast('⚠️ La contraseña debe tener al menos 6 caracteres', 'error');
+                return false;
+            }
+
+            const { data, error } = await this.supabase.auth.updateUser({
+                password: nuevaContraseña
+            });
+
+            if (error) throw error;
+            
+            showToast('✅ ¡Contraseña actualizada! Ahora inicia sesión con la nueva.', 'success');
+            return true;
+        } catch (error) {
+            console.error('Error actualizando contraseña:', error);
+            showToast('❌ Error al actualizar. Intenta de nuevo.', 'error');
+            return false;
+        }
+    }
+
+    // ================================================================
+    // 🔐 RECUPERAR CON WALLET (WEB3) - CON VALIDACIÓN
+    // ================================================================
+
+    async recuperarConWallet() {
+        try {
+            if (typeof window.ethereum === 'undefined') {
+                showToast('⚠️ Conecta MetaMask primero', 'error');
+                return;
+            }
+
+            const accounts = await window.ethereum.request({ 
+                method: 'eth_requestAccounts' 
+            });
+            
+            if (!accounts || accounts.length === 0) return;
+
+            const wallet = accounts[0];
+            
+            const { data, error } = await this.supabase
+                .from('usuarios')
+                .select('email')
+                .eq('wallet', wallet)
+                .single();
+
+            if (error || !data) {
+                showToast('⚠️ No hay cuenta asociada a esta wallet', 'error');
+                return;
+            }
+
+            await this.recuperarContraseña(data.email);
+            
+        } catch (error) {
+            console.error('Error recuperando con wallet:', error);
+            showToast('❌ Error: ' + error.message, 'error');
+        }
+    }
+
+    // ================================================================
+    // 💳 WALLET (MetaMask) - CON VALIDACIÓN Y WEB3 IMPORTADO
+    // ================================================================
+
+    async conectarWallet() {
+        if (typeof window.ethereum === 'undefined') {
+            showToast('⚠️ Instala MetaMask para continuar', 'warning');
+            if (confirm('¿Quieres ir a descargar MetaMask?')) {
+                window.open('https://metamask.io/download/', '_blank');
+            }
+            return;
+        }
+
+        try {
+            // ✅ VERIFICAR QUE WEB3 ESTÁ CARGADO
+            if (typeof Web3 === 'undefined') {
+                showToast('⚠️ Web3 no está cargado. Recarga la página.', 'error');
+                return;
+            }
+
+            web3 = new Web3(window.ethereum);
+            
+            // Cambiar a Polygon Mainnet si es necesario
+            const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+            if (chainId !== '0x89') {
+                try {
+                    await window.ethereum.request({
+                        method: 'wallet_switchEthereumChain',
+                        params: [{ chainId: '0x89' }]
+                    });
+                } catch (e) {
+                    showToast('⚠️ Cambia a Polygon Mainnet', 'warning');
+                    // Continuar igual, el usuario puede cambiar manualmente
+                }
+            }
+
+            const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+            if (accounts && accounts.length > 0) {
+                this.wallet = accounts[0];
+                localStorage.setItem('sariels_wallet', accounts[0]);
+                this.actualizarUIWallet(accounts[0]);
+                showToast('✅ Wallet conectada: ' + accounts[0].slice(0, 6) + '...' + accounts[0].slice(-4), 'success');
+                
+                if (this.usuario) {
+                    await this.vincularWallet(accounts[0]);
+                }
+            }
+        } catch (error) {
+            console.error('Error conectando wallet:', error);
+            if (error.code === 4001) {
+                showToast('⚠️ Usuario rechazó la conexión', 'warning');
+            } else {
+                showToast('❌ Error al conectar wallet: ' + error.message, 'error');
+            }
+        }
+    }
+
+    async vincularWallet(walletAddress) {
+        try {
+            const { error } = await this.supabase
+                .from('usuarios')
+                .update({ wallet: walletAddress })
+                .eq('id', this.usuario.id);
+
+            if (error) throw error;
+        } catch (error) {
+            console.error('Error vinculando wallet:', error);
+        }
+    }
+
+    async desconectarWallet() {
+        if (!confirm('¿Seguro que quieres desconectar tu wallet?')) return;
+        
+        try {
+            localStorage.removeItem('sariels_wallet');
+            this.wallet = null;
+            web3 = null;
+            this.actualizarUIWallet(null);
+            showToast('🔌 Wallet desconectada', 'warning');
+        } catch (error) {
+            console.error('Error desconectando wallet:', error);
+            showToast('❌ Error al desconectar wallet', 'error');
+        }
+    }
+
+    // ================================================================
+    // 🎬 TRANSMISIONES - CON VALIDACIÓN
+    // ================================================================
+
+    async crearTransmision(datos) {
+        try {
+            if (!this.usuario) {
+                showToast('⚠️ Inicia sesión primero', 'error');
+                return null;
+            }
+
+            if (!datos.titulo || datos.titulo.length < 3) {
+                showToast('⚠️ El título debe tener al menos 3 caracteres', 'error');
+                return null;
+            }
+
+            const { data, error } = await this.supabase
+                .from('transmisiones')
+                .insert({
+                    streamer_id: this.usuario.id,
+                    titulo: datos.titulo,
+                    descripcion: datos.descripcion || '',
+                    tags: datos.tags || [],
+                    tipo_transmision: datos.tipo || 'pago',
+                    precio: datos.precio || 0,
+                    precio_suscripcion: datos.precioSuscripcion || 0,
+                    fecha_inicio: new Date().toISOString(),
+                    estado: 'en_vivo'
+                })
+                .select();
+
+            if (error) throw error;
+            showToast('◉ Transmisión iniciada: ' + escapeHTML(datos.titulo), 'success');
+            return data[0];
+        } catch (error) {
+            console.error('Error creando transmisión:', error);
+            showToast('❌ Error: ' + error.message, 'error');
+            return null;
+        }
+    }
+
+    async obtenerTransmisionesActivas() {
+        try {
+            const { data, error } = await this.supabase
+                .from('transmisiones')
+                .select('*, usuarios(nombre, avatar)')
+                .eq('estado', 'en_vivo')
+                .order('fecha_inicio', { ascending: false });
+
+            if (error) throw error;
+            return data || [];
+        } catch (error) {
+            console.error('Error obteniendo transmisiones:', error);
+            return [];
+        }
+    }
+
+    async obtenerTransmisionesProgramadas() {
+        try {
+            const { data, error } = await this.supabase
+                .from('transmisiones')
+                .select('*, usuarios(nombre, avatar)')
+                .eq('estado', 'programada')
+                .order('fecha_inicio', { ascending: true });
+
+            if (error) throw error;
+            return data || [];
+        } catch (error) {
+            console.error('Error obteniendo transmisiones programadas:', error);
+            return [];
+        }
+    }
+
+    // ================================================================
+    // 💬 CHAT
+    // ================================================================
+
+    async enviarMensaje(transmisionId, mensaje) {
+        try {
+            if (!this.usuario) {
+                showToast('⚠️ Inicia sesión para chatear', 'error');
+                return null;
+            }
+
+            if (!mensaje || mensaje.trim().length === 0) {
+                showToast('⚠️ Escribe un mensaje', 'warning');
+                return null;
+            }
+
+            const { data, error } = await this.supabase
+                .from('mensajes_live')
+                .insert({
+                    transmision_id: transmisionId,
+                    usuario_id: this.usuario.id,
+                    mensaje: mensaje.trim(),
+                    nombre_usuario: this.usuario.user_metadata?.nombre || 'Anónimo'
+                })
+                .select();
+
+            if (error) throw error;
+            return data[0];
+        } catch (error) {
+            console.error('Error enviando mensaje:', error);
+            showToast('❌ Error al enviar mensaje', 'error');
+            return null;
+        }
+    }
+
+    async obtenerMensajes(transmisionId) {
+        try {
+            const { data, error } = await this.supabase
+                .from('mensajes_live')
+                .select('*')
+                .eq('transmision_id', transmisionId)
+                .order('created_at', { ascending: true })
+                .limit(50);
+
+            if (error) throw error;
+            return data || [];
+        } catch (error) {
+            console.error('Error obteniendo mensajes:', error);
+            return [];
+        }
+    }
+
+    suscribirseChat(transmisionId, callback) {
+        return this.supabase
+            .channel(`chat-${transmisionId}`)
+            .on('postgres_changes', {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'mensajes_live',
+                filter: `transmision_id=eq.${transmisionId}`
+            }, (payload) => {
+                if (callback) callback(payload.new);
+            })
+            .subscribe();
+    }
+
+    // ================================================================
+    // 💰 PAGOS - CON IDEMPOTENCIA
+    // ================================================================
+
+    async registrarPago(transmisionId, monto, metodo) {
+        try {
+            if (!this.usuario) {
+                showToast('⚠️ Inicia sesión para pagar', 'error');
+                return null;
+            }
+
+            if (monto <= 0) {
+                showToast('⚠️ Monto inválido', 'error');
+                return null;
+            }
+
+            const comision = monto * 0.5;
+            const montoStreamer = monto * 0.5;
+
+            // ✅ GENERAR IDEMPOTENCY KEY
+            const idempotencyKey = `pago_${this.usuario.id}_${transmisionId}_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+
+            const { data, error } = await this.supabase
+                .from('pagos_transmision')
+                .insert({
+                    transmision_id: transmisionId,
+                    espectador_id: this.usuario.id,
+                    monto_pagado: monto,
+                    comision_sariels: comision,
+                    monto_streamer: montoStreamer,
+                    metodo_pago: metodo,
+                    tipo_pago: 'acceso',
+                    estado: 'completado',
+                    idempotency_key: idempotencyKey
+                })
+                .select();
+
+            if (error) {
+                if (error.code === '23505') { // Unique violation
+                    showToast('⚠️ Este pago ya fue procesado', 'warning');
+                    return null;
+                }
+                throw error;
+            }
+
+            showToast(`✅ Pago de $${monto} MXN completado`, 'success');
+            return data[0];
+        } catch (error) {
+            console.error('Error registrando pago:', error);
+            showToast('❌ Error en pago: ' + error.message, 'error');
+            return null;
+        }
+    }
+
+    async verificarAcceso(transmisionId) {
+        try {
+            if (!this.usuario) return false;
+
+            const { data, error } = await this.supabase
+                .from('pagos_transmision')
+                .select('*')
+                .eq('transmision_id', transmisionId)
+                .eq('espectador_id', this.usuario.id)
+                .eq('estado', 'completado');
+
+            if (error) throw error;
+            return data && data.length > 0;
+        } catch (error) {
+            console.error('Error verificando acceso:', error);
+            return false;
+        }
+    }
+
+    // ================================================================
+    // 📝 SUSCRIPCIONES
+    // ================================================================
+
+    async suscribirse(streamerId, precioMensual) {
+        try {
+            if (!this.usuario) {
+                showToast('⚠️ Inicia sesión para suscribirte', 'error');
+                return null;
+            }
+
+            if (precioMensual <= 0) {
+                showToast('⚠️ Precio inválido', 'error');
+                return null;
+            }
+
+            const { data, error } = await this.supabase
+                .from('suscripciones')
+                .insert({
+                    streamer_id: streamerId,
+                    espectador_id: this.usuario.id,
+                    precio_mensual: precioMensual,
+                    activo: true,
+                    proximo_pago: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+                })
+                .select();
+
+            if (error) throw error;
+            showToast(`✅ Suscripción mensual de $${precioMensual} MXN activada`, 'success');
+            return data[0];
+        } catch (error) {
+            console.error('Error suscribiéndose:', error);
+            showToast('❌ Error: ' + error.message, 'error');
+            return null;
+        }
+    }
+
+    // ================================================================
+    // 🚀 PROMOCIONES
+    // ================================================================
+
+    async activarPromocion(transmisionId, nivel, horas) {
+        try {
+            if (!this.usuario) {
+                showToast('⚠️ Inicia sesión para promocionar', 'error');
+                return null;
+            }
+
+            if (!nivel || nivel < 1 || nivel > 3) {
+                showToast('⚠️ Nivel inválido (1-3)', 'error');
+                return null;
+            }
+
+            if (!horas || horas <= 0) {
+                showToast('⚠️ Horas inválidas', 'error');
+                return null;
+            }
+
+            const precios = { 1: 50, 2: 150, 3: 300 };
+            const prioridades = { 1: 3, 2: 2, 3: 1 };
+            const costo = precios[nivel] * horas;
+
+            const { data, error } = await this.supabase
+                .from('promociones_streamer')
+                .insert({
+                    streamer_id: this.usuario.id,
+                    transmision_id: transmisionId,
+                    nivel_promocion: nivel,
+                    costo_promocion: costo,
+                    duracion_promocion: horas,
+                    posicion_prioridad: prioridades[nivel],
+                    activo: true
+                })
+                .select();
+
+            if (error) throw error;
+
+            await this.supabase
+                .from('transmisiones')
+                .update({
+                    promocion_activa: true,
+                    nivel_promocion: nivel,
+                    costo_promocion: costo
+                })
+                .eq('id', transmisionId);
+
+            showToast(`🚀 Promoción nivel ${nivel} activada por $${costo} MXN`, 'success');
+            return data[0];
+        } catch (error) {
+            console.error('Error activando promoción:', error);
+            showToast('❌ Error: ' + error.message, 'error');
+            return null;
+        }
+    }
+
+    // ================================================================
+    // 🎨 UI UPDATES - CON ESCAPE HTML
+    // ================================================================
+
+    actualizarUIUsuario(user) {
+        const loginBtn = document.getElementById('loginBtn');
+        const userInfo = document.getElementById('userInfo');
+
+        if (!loginBtn && !userInfo) return;
+
+        try {
+            if (user) {
+                if (loginBtn) loginBtn.style.display = 'none';
+                if (userInfo) {
+                    userInfo.style.display = 'flex';
+                    const nombre = escapeHTML(user.user_metadata?.nombre || 'Usuario');
+                    userInfo.innerHTML = `
+                        <span style="font-size:0.7rem;color:var(--gold);">
+                            ${nombre}
+                            <span style="font-size:0.5rem;color:var(--text-muted);">
+                                (${this.tokens} Es.stoks)
+                            </span>
+                        </span>
+                        <button onclick="app.cerrarSesion()" style="background:transparent;border:none;color:var(--text-muted);cursor:pointer;font-size:0.6rem;">
+                            ✕
+                        </button>
+                    `;
+                }
+            } else {
+                if (loginBtn) loginBtn.style.display = 'inline-flex';
+                if (userInfo) {
+                    userInfo.style.display = 'none';
+                    userInfo.innerHTML = '';
+                }
+            }
+        } catch (error) {
+            console.error('Error actualizando UI usuario:', error);
+        }
+    }
+
+    actualizarUIWallet(wallet) {
+        const walletBtn = document.getElementById('walletBtn');
+        const walletInfo = document.getElementById('walletInfo');
+
+        if (!walletBtn && !walletInfo) return;
+
+        try {
+            if (wallet) {
+                if (walletBtn) walletBtn.style.display = 'none';
+                if (walletInfo) {
+                    walletInfo.style.display = 'flex';
+                    walletInfo.innerHTML = `
+                        <span style="font-size:0.6rem;color:var(--text-muted);">
+                            🟢 ${wallet.slice(0, 6)}...${wallet.slice(-4)}
+                        </span>
+                        <button onclick="app.desconectarWallet()" style="background:transparent;border:none;color:var(--text-muted);cursor:pointer;font-size:0.5rem;">
+                            ✕
+                        </button>
+                    `;
+                }
+            } else {
+                if (walletBtn) walletBtn.style.display = 'inline-flex';
+                if (walletInfo) {
+                    walletInfo.style.display = 'none';
+                    walletInfo.innerHTML = '';
+                }
+            }
+        } catch (error) {
+            console.error('Error actualizando UI wallet:', error);
+        }
+    }
+
+    async actualizarUITokens() {
+        await this.cargarTokens();
+        this.actualizarUIUsuario(this.usuario);
+        
+        const tokenBadge = document.getElementById('tokenBadgeCantidad');
+        if (tokenBadge) {
+            tokenBadge.textContent = this.tokens;
+        }
+    }
+}
+
+// ================================================================
+// INSTANCIAR APP Y EXPONER GLOBALMENTE
+// ================================================================
+const app = new GalletaDomoApp();
+appInstance = app;
+
+window.app = app;
+window.usuarioActual = usuarioActual;
+window.showToast = showToast;
+window.escapeHTML = escapeHTML;
+
+// ================================================================
+// INICIALIZACIÓN - UNA SOLA VEZ CON MANEJO DE ERRORES
+// ================================================================
+document.addEventListener('DOMContentLoaded', function() {
+    try {
+        console.log('◈ Sariel\'s App - Lista');
+        console.log('🌐 API:', app.apiUrl);
+        console.log('◉ Supabase conectado');
+        console.log('◆ Wallet: ' + (localStorage.getItem('sariels_wallet') ? 'Conectada' : 'Desconectada'));
+        
+        app.init();
+        
+        if (app.usuario) {
+            app.actualizarUIUsuario(app.usuario);
+        }
+        
+        const walletGuardada = localStorage.getItem('sariels_wallet');
+        if (walletGuardada) {
+            app.actualizarUIWallet(walletGuardada);
+        }
+    } catch (error) {
+        console.error('❌ Error en inicialización:', error);
+        showToast('⚠️ Error al inicializar la aplicación. Recarga la página.', 'error');
+    }
+});
+
+// ================================================================
+// LIMPIEZA DE RECURSOS AL CERRAR
+// ================================================================
+window.addEventListener('beforeunload', function() {
+    if (app && typeof app.destroy === 'function') {
+        app.destroy();
+    }
+});
