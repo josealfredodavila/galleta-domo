@@ -1,6 +1,6 @@
 /* ================================================================
    SERVER.JS - SARIEL'S ECOSYSTEM
-   VERSIÓN FINAL - CON TODAS LAS RUTAS Y AUTENTICACIÓN
+   VERSIÓN FINAL - CON RUTAS DE FEATURES Y AUTENTICACIÓN
    ================================================================ */
 
 const express = require('express');
@@ -194,6 +194,16 @@ if (fs.existsSync(publicPath)) {
 } else {
     console.warn('⚠️ No se encontró la carpeta public/:', publicPath);
 }
+
+/* ================================================================
+   RUTAS DE FEATURES - REDIRECCIÓN LIMPIA
+   ================================================================ */
+app.use('/live', express.static(path.join(__dirname, 'public', 'features', 'live')));
+app.use('/videos', express.static(path.join(__dirname, 'public', 'features', 'videos')));
+app.use('/muro', express.static(path.join(__dirname, 'public', 'features', 'muro')));
+app.use('/perfil', express.static(path.join(__dirname, 'public', 'features', 'perfil')));
+app.use('/mensajes', express.static(path.join(__dirname, 'public', 'features', 'mensajes')));
+app.use('/internet', express.static(path.join(__dirname, 'public', 'features', 'internet')));
 
 /* ================================================================
    RUTAS DE AUTENTICACIÓN - MONTAJE
@@ -1357,6 +1367,7 @@ app.listen(PORT, '0.0.0.0', () => {
     console.log(`📱 Telnyx: ${process.env.TELNYX_API_KEY ? '✅ Configurado' : '❌ No configurado'}`);
     console.log(`💳 NOWPayments: ${process.env.NOWPAYMENTS_API_KEY ? '✅ Configurado' : '❌ No configurado'}`);
     console.log(`🔐 Auth router: ✅ Montado en /api/auth`);
+    console.log(`📂 Rutas de features: ✅ /muro, /perfil, /live, /videos, /mensajes, /internet`);
     console.log('========================================');
 });
 
