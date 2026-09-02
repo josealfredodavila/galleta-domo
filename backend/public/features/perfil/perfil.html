@@ -648,7 +648,7 @@
         <nav class="main-nav" aria-label="Navegación principal">
             <a href="/" class="nav-link">⌂ Inicio</a>
             <a href="/muro/muro.html" class="nav-link">◇ Muro</a>
-            <a href="/perfil/perfil.html" class="nav-link active">◆ Perfil</a>
+            <a href="/features/perfil/perfil.html" class="nav-link active">◆ Perfil</a>
             <a href="/mensajes/mensajes.html" class="nav-link">◈ Mensajes</a>
             <a href="/live/live.html" class="nav-link live">◉ Live</a>
             <a href="/videos/videos.html" class="nav-link">🎬 Videos</a>
@@ -1169,7 +1169,7 @@
 
     <script>
         // ================================================================
-        // FUNCIONES DE PERFIL - DEFINIDAS LOCALMENTE
+        // FUNCIONES DE PERFIL - TODAS DEFINIDAS LOCALMENTE
         // ================================================================
 
         // Toast para mensajes
@@ -1194,9 +1194,24 @@
             }, duration);
         }
 
-        // Funciones de Perfil
+        // Función para cambiar tabs
+        function cambiarTab(tab) {
+            var contents = document.querySelectorAll('.tab-content');
+            for (var i = 0; i < contents.length; i++) {
+                contents[i].classList.remove('active');
+            }
+            var btns = document.querySelectorAll('.tab-btn');
+            for (var i = 0; i < btns.length; i++) {
+                btns[i].classList.remove('active');
+            }
+            var tabContent = document.getElementById('tab-' + tab);
+            if (tabContent) tabContent.classList.add('active');
+            var tabBtn = document.querySelector('.tab-btn[onclick*="' + tab + '"]');
+            if (tabBtn) tabBtn.classList.add('active');
+        }
+
+        // ===== FUNCIONES DEL PERFIL =====
         function editarPerfil() {
-            // Cambiar a la pestaña de configuración
             cambiarTab('config');
             showToast('✏️ Edita tu perfil en la pestaña Ajustes', '');
         }
@@ -1243,21 +1258,6 @@
             showToast('📸 Foto seleccionada: ' + file.name, '');
         }
 
-        function cambiarTab(tab) {
-            var contents = document.querySelectorAll('.tab-content');
-            for (var i = 0; i < contents.length; i++) {
-                contents[i].classList.remove('active');
-            }
-            var btns = document.querySelectorAll('.tab-btn');
-            for (var i = 0; i < btns.length; i++) {
-                btns[i].classList.remove('active');
-            }
-            var tabContent = document.getElementById('tab-' + tab);
-            if (tabContent) tabContent.classList.add('active');
-            var tabBtn = document.querySelector('.tab-btn[onclick*="' + tab + '"]');
-            if (tabBtn) tabBtn.classList.add('active');
-        }
-
         function cambiarEstado(activo) {
             showToast(activo ? '✅ Estado: Activo' : '⭕ Estado: Inactivo', 'success');
         }
@@ -1275,7 +1275,6 @@
                 return;
             }
             showToast('⏳ Procesando QR: ' + codigo, '');
-            // Simular procesamiento
             setTimeout(function() {
                 showToast('✅ QR procesado correctamente', 'success');
             }, 1500);
@@ -1383,7 +1382,7 @@
             if (confirm('¿Seguro que quieres cerrar sesión?')) {
                 showToast('👋 Sesión cerrada', 'success');
                 setTimeout(function() {
-                    window.location.href = '/login.html';
+                    window.location.href = '/';
                 }, 1000);
             }
         }
@@ -1408,7 +1407,7 @@
             }
         }
 
-        // Manejo de errores
+        // ===== MANEJO DE ERRORES =====
         function mostrarErrorEnPantalla(mensaje) {
             var banner = document.getElementById('errorBanner');
             var texto = document.getElementById('errorBannerText');
@@ -1426,7 +1425,7 @@
             mostrarErrorEnPantalla('Promesa rechazada: ' + (event.reason?.message || event.reason));
         });
 
-        // Cerrar modales con ESC
+        // ===== CERRAR MODALES CON ESC =====
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
                 document.querySelectorAll('.modal-overlay.active').forEach(function(modal) {
@@ -1435,7 +1434,7 @@
             }
         });
 
-        // Cerrar modales click fuera
+        // ===== CERRAR MODALES CLICK FUERA =====
         document.querySelectorAll('.modal-overlay').forEach(function(modal) {
             modal.addEventListener('click', function(e) {
                 if (e.target === this) {
@@ -1444,17 +1443,47 @@
             });
         });
 
-        // Cargar perfil al iniciar
+        // ===== INICIALIZACIÓN =====
         document.addEventListener('DOMContentLoaded', function() {
-            // Simular carga de perfil
-            console.log('Perfil cargado correctamente');
+            console.log('✅ Perfil cargado correctamente');
+            showToast('✅ ¡Bienvenido Usuario!', 'success');
         });
+
+        // Exponer funciones globalmente
+        window.cambiarTab = cambiarTab;
+        window.editarPerfil = editarPerfil;
+        window.compartirPerfil = compartirPerfil;
+        window.generarQRPerfil = generarQRPerfil;
+        window.abrirSelectorArchivo = abrirSelectorArchivo;
+        window.subirFoto = subirFoto;
+        window.cambiarEstado = cambiarEstado;
+        window.cambiarConexion = cambiarConexion;
+        window.escanearQR = escanearQR;
+        window.abrirCamaraQR = abrirCamaraQR;
+        window.cerrarCamaraQR = cerrarCamaraQR;
+        window.comprarDomo = comprarDomo;
+        window.canjearNFT = canjearNFT;
+        window.comprarConCripto = comprarConCripto;
+        window.verificarPagoCrypto = verificarPagoCrypto;
+        window.copiarDireccion = copiarDireccion;
+        window.comprarESIM = comprarESIM;
+        window.generarQRESIM = generarQRESIM;
+        window.sincronizarESIM = sincronizarESIM;
+        window.activarESIM = activarESIM;
+        window.desactivarESIM = desactivarESIM;
+        window.conectarWallet = conectarWallet;
+        window.desconectarWallet = desconectarWallet;
+        window.cerrarSesion = cerrarSesion;
+        window.guardarPerfil = guardarPerfil;
+        window.cerrarModal = cerrarModal;
+        window.abrirModalNft = abrirModalNft;
+        window.showToast = showToast;
+        window.mostrarErrorEnPantalla = mostrarErrorEnPantalla;
     </script>
 
     <!-- DEPENDENCIAS CORE -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="/app.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
-    <script src="/features/perfil/perfil.js"></script>
 </body>
 </html>
