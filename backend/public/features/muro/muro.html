@@ -1,6 +1,6 @@
 <!-- ================================================================
      MURO - SARIEL'S ECOSYSTEM
-     VERSIÓN CORREGIDA - CON SCRIPTS ALINEADOS
+     VERSIÓN CORREGIDA - CON RUTAS Y SCRIPTS ALINEADOS
      ================================================================ -->
 <!DOCTYPE html>
 <html lang="es">
@@ -74,7 +74,8 @@
             display: flex; gap: 4px; background: rgba(15,45,26,0.3); border-radius: var(--radius);
             padding: 4px; border: 1px solid var(--glass-border); margin: 16px 0 20px; overflow-x: auto;
         }
-        .main-nav .nav-link { padding: 8px 16px; border-radius: 12px; color: var(--text-muted); text-decoration: none; font-size: 0.7rem; white-space: nowrap; }
+        .main-nav .nav-link { padding: 8px 16px; border-radius: 12px; color: var(--text-muted); text-decoration: none; font-size: 0.7rem; white-space: nowrap; transition: var(--transition); }
+        .main-nav .nav-link:hover { color: var(--text-primary); background: rgba(212,175,55,0.05); }
         .main-nav .nav-link.active { background: rgba(212,175,55,0.12); color: var(--gold); }
         .main-nav .nav-link.live { color: var(--danger); }
 
