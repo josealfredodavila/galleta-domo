@@ -1,6 +1,6 @@
 <!-- ================================================================
      MURO - SARIEL'S ECOSYSTEM
-     VERSIÓN CORREGIDA - CON BANNER DE ERRORES Y SCRIPTS OPTIMIZADOS
+     VERSIÓN CORREGIDA - CON SCRIPTS ALINEADOS
      ================================================================ -->
 <!DOCTYPE html>
 <html lang="es">
@@ -477,8 +477,826 @@
         });
     </script>
 
-    <!-- ===== SCRIPTS ===== -->
+    <!-- ===== SCRIPTS - ORDEN CORRECTO ===== -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-    <script src="/features/muro/muro.js"></script>
+    <script src="/app.js"></script>
+    <script>
+        // ================================================================
+        // MURO - TODAS LAS FUNCIONES DEFINIDAS AQUÍ
+        // ================================================================
+
+        // ===== VARIABLES GLOBALES =====
+        var sessionUser = null;
+        var currentPage = 0;
+        var POSTS_PER_PAGE = 10;
+        var isLoading = false;
+        var hasMorePosts = true;
+        var precioActual = 4.50;
+        var publicando = false;
+        var muroChannel = null;
+        var isRealtimeProcessing = false;
+        var likeCache = new Map();
+
+        // ===== TOAST =====
+        function showToast(mensaje, tipo) {
+            try {
+                if (typeof window.showToast === 'function') {
+                    window.showToast(mensaje, tipo);
+                    return;
+                }
+                var toastEl = document.getElementById('toast');
+                if (toastEl) {
+                    toastEl.textContent = mensaje;
+                    toastEl.className = 'toast show';
+                    if (tipo === 'error') toastEl.classList.add('error');
+                    else if (tipo === 'warning') toastEl.classList.add('warning');
+                    else if (tipo === 'success') toastEl.classList.add('success');
+                    else toastEl.classList.remove('error', 'warning', 'success');
+                    clearTimeout(toastEl._timeout);
+                    toastEl._timeout = setTimeout(function() {
+                        toastEl.classList.remove('show');
+                    }, 3500);
+                }
+            } catch (e) { console.warn('Toast error:', e); }
+        }
+
+        // ===== ESCAPE HTML =====
+        function escapeHTML(texto) {
+            if (!texto) return '';
+            var div = document.createElement('div');
+            div.textContent = texto;
+            return div.innerHTML;
+        }
+
+        // ===== OBTENER SESIÓN =====
+        async function getSession() {
+            try {
+                if (typeof window.supabase === 'undefined') {
+                    console.warn('⚠️ Supabase no disponible');
+                    return null;
+                }
+                var result = await window.supabase.auth.getSession();
+                return result.data.session;
+            } catch (e) {
+                console.error('Error obteniendo sesión:', e);
+                return null;
+            }
+        }
+
+        // ===== CARGAR USUARIO ACTUAL =====
+        async function cargarUsuarioActual() {
+            try {
+                var session = await getSession();
+                if (!session) {
+                    sessionUser = null;
+                    document.getElementById('userNombre').textContent = 'Explorador';
+                    document.getElementById('userHandle').textContent = '@explorador';
+                    document.getElementById('userAvatar').textContent = '◈';
+                    return null;
+                }
+                sessionUser = session.user;
+                var result = await window.supabase
+                    .from('usuarios')
+                    .select('nombre, handle, avatar_url, tokens')
+                    .eq('id', session.user.id)
+                    .single();
+                if (result.error) throw result.error;
+                var data = result.data;
+                if (data) {
+                    document.getElementById('userNombre').textContent = data.nombre || 'Explorador';
+                    document.getElementById('userHandle').textContent = '@' + (data.handle || 'explorador');
+                    document.getElementById('userAvatar').textContent = data.avatar_url ? '◈' : '◈';
+                    var tokenBadge = document.getElementById('tokenBadgeCantidad');
+                    if (tokenBadge) tokenBadge.textContent = data.tokens || 0;
+                    var tokensDisp = document.getElementById('tokensDisponibles');
+                    if (tokensDisp) tokensDisp.textContent = data.tokens || 0;
+                }
+                return data;
+            } catch (e) {
+                console.error('Error cargando usuario:', e);
+                return null;
+            }
+        }
+
+        // ===== CARGAR PRECIOS MERCADO =====
+        async function cargarPreciosMercado() {
+            try {
+                var result = await window.supabase
+                    .from('muro_precios')
+                    .select('*')
+                    .order('ultima_actualizacion', { ascending: false })
+                    .limit(1);
+                if (result.error) throw result.error;
+                var data = result.data;
+                if (data && data.length > 0) {
+                    var precios = data[0];
+                    precioActual = precios.precio_actual || 4.50;
+                    var precioToken = document.getElementById('precioToken');
+                    var ofertaTotalEl = document.getElementById('ofertaTotal');
+                    var demandaTotalEl = document.getElementById('demandaTotal');
+                    var tendenciaValor = document.getElementById('tendenciaValor');
+                    if (precioToken) precioToken.innerHTML = precioActual.toFixed(2) + ' <span class="moneda">MXN</span>';
+                    if (ofertaTotalEl) ofertaTotalEl.textContent = precios.oferta_total || 0;
+                    if (demandaTotalEl) demandaTotalEl.textContent = precios.demanda_total || 0;
+                    if (tendenciaValor) {
+                        var diff = precioActual - (precios.precio_base || precioActual);
+                        if (diff > 0) { tendenciaValor.textContent = '📈 ALZA'; tendenciaValor.style.color = 'var(--success)'; }
+                        else if (diff < 0) { tendenciaValor.textContent = '📉 BAJA'; tendenciaValor.style.color = 'var(--danger)'; }
+                        else { tendenciaValor.textContent = '➡️ ESTABLE'; tendenciaValor.style.color = 'var(--text-muted)'; }
+                    }
+                    var precioSugerido = document.getElementById('precioSugerido');
+                    if (precioSugerido) precioSugerido.textContent = precioActual.toFixed(2);
+                    var precioUsdt = document.getElementById('precioUsdtSugerido');
+                    if (precioUsdt) precioUsdt.textContent = '≈ $' + (precioActual / 20).toFixed(2) + ' USDT';
+                    return precios;
+                }
+            } catch (e) { console.error('Error cargando precios:', e); }
+            return null;
+        }
+
+        // ===== RENDERIZAR POST =====
+        function renderizarPost(post) {
+            var div = document.createElement('div');
+            div.className = 'post-card';
+            div.dataset.postId = post.id;
+            var usuario = post.usuarios || {};
+            var avatar = usuario.avatar_url ? '<img src="' + escapeHTML(usuario.avatar_url) + '">' : '◈';
+            var nombre = escapeHTML(usuario.nombre || 'Explorador');
+            var handle = escapeHTML(usuario.handle || 'explorador');
+            var likesCount = (post.muro_likes && post.muro_likes[0]) ? post.muro_likes[0].count || 0 : 0;
+            var comentariosCount = (post.muro_comentarios && post.muro_comentarios[0]) ? post.muro_comentarios[0].count || 0 : 0;
+            var contenidoSanitizado = sanitizarHTML(post.contenido || '');
+            var seccionVenta = '';
+            if (post.cantidad_venta && post.cantidad_venta > 0 && post.precio_venta) {
+                var precioPorToken = (post.precio_venta / post.cantidad_venta).toFixed(2);
+                seccionVenta = '<div class="post-venta"><div><span style="font-size:0.7rem;color:var(--text-muted);">💎 Venta de tokens</span><div style="font-weight:600;color:var(--gold);">' + post.cantidad_venta + ' tokens · $' + precioPorToken + ' c/u</div><div style="font-size:0.65rem;color:var(--text-muted);">Total: $' + post.precio_venta.toFixed(2) + ' MXN</div></div><button class="btn-comprar" onclick="abrirModalCompra(\'' + post.id + '\')">Comprar</button></div>';
+            }
+            var fecha = new Date(post.created_at).toLocaleString();
+            div.innerHTML = '<div class="post-header"><div class="post-avatar">' + avatar + '</div><div><div class="post-author">' + nombre + ' <span class="badge-verificado">✦ Verificado</span></div><div class="post-date">' + fecha + '</div></div><div class="post-actions-header">' + (post.usuario_id === sessionUser?.id ? '<button class="btn-delete" onclick="eliminarPublicacion(\'' + post.id + '\')" title="Eliminar">🗑️</button>' : '<button class="btn-report" onclick="reportarPublicacion(\'' + post.id + '\')" title="Reportar">🚩</button>') + '<button class="btn-share" onclick="compartirPublicacion(\'' + post.id + '\')" title="Compartir">📤</button></div></div><div class="post-content">' + contenidoSanitizado + '</div>' + (post.imagen_url ? '<img src="' + escapeHTML(post.imagen_url) + '" style="width:100%; border-radius:12px; margin-top:12px;" />' : '') + seccionVenta + '<div class="post-stats"><span class="like-btn" onclick="toggleLike(\'' + post.id + '\')" data-liked="false">❤️ <span class="count">' + likesCount + '</span></span><span onclick="toggleComentarios(\'' + post.id + '\')">💬 <span class="count">' + comentariosCount + '</span></span>' + (post.cantidad_venta ? '<span style="color:var(--gold);font-size:0.7rem;">💎 ' + post.cantidad_venta + ' tokens en venta</span>' : '') + '</div><div class="post-comentarios" id="comentarios-' + post.id + '" style="display:none;"><div class="comentarios-lista" id="comentarios-lista-' + post.id + '"></div><div class="input-comentario"><input type="text" id="input-comentario-' + post.id + '" placeholder="Escribe un comentario..." /><button onclick="enviarComentario(\'' + post.id + '\')">Enviar</button></div></div>';
+            if (sessionUser) {
+                verificarLike(post.id).then(function(liked) {
+                    var likeBtn = div.querySelector('.like-btn');
+                    if (likeBtn && liked) {
+                        likeBtn.dataset.liked = 'true';
+                        likeBtn.innerHTML = '❤️ <span class="count">' + likesCount + '</span>';
+                    }
+                });
+            }
+            return div;
+        }
+
+        // ===== SANITIZAR HTML =====
+        function sanitizarHTML(texto) {
+            if (!texto) return '';
+            var sanitizado = escapeHTML(texto);
+            sanitizado = sanitizado.replace(/#(\w+)/g, '<a href="#" class="hashtag" onclick="buscarHashtag(\'$1\');return false;">#$1</a>');
+            sanitizado = sanitizado.replace(/@(\w+)/g, '<a href="/perfil/$1" class="mencion">@$1</a>');
+            return sanitizado;
+        }
+
+        // ===== VERIFICAR LIKE =====
+        async function verificarLike(postId) {
+            if (!sessionUser) return false;
+            var cacheKey = postId + '_' + sessionUser.id;
+            if (likeCache.has(cacheKey)) return likeCache.get(cacheKey);
+            try {
+                var result = await window.supabase
+                    .from('muro_likes')
+                    .select('id')
+                    .eq('post_id', postId)
+                    .eq('usuario_id', sessionUser.id)
+                    .maybeSingle();
+                if (result.error) throw result.error;
+                var liked = !!result.data;
+                likeCache.set(cacheKey, liked);
+                return liked;
+            } catch (e) { console.error('Error verificando like:', e); return false; }
+        }
+
+        // ===== TOGGLE LIKE =====
+        async function toggleLike(postId) {
+            if (!sessionUser) { showToast('⚠️ Inicia sesión para dar like', 'error'); return; }
+            var likeBtn = document.querySelector('[data-post-id="' + postId + '"] .like-btn');
+            var countSpan = likeBtn ? likeBtn.querySelector('.count') : null;
+            var cacheKey = postId + '_' + sessionUser.id;
+            try {
+                var liked = await verificarLike(postId);
+                if (liked) {
+                    var result = await window.supabase
+                        .from('muro_likes')
+                        .delete()
+                        .eq('post_id', postId)
+                        .eq('usuario_id', sessionUser.id);
+                    if (result.error) throw result.error;
+                    likeCache.set(cacheKey, false);
+                    if (countSpan) { var current = parseInt(countSpan.textContent); countSpan.textContent = Math.max(0, current - 1); }
+                    if (likeBtn) { likeBtn.dataset.liked = 'false'; likeBtn.innerHTML = '❤️ <span class="count">' + (countSpan ? countSpan.textContent : 0) + '</span>'; }
+                } else {
+                    var result2 = await window.supabase
+                        .from('muro_likes')
+                        .insert({ post_id: postId, usuario_id: sessionUser.id });
+                    if (result2.error) { if (result2.error.code === '23505') { showToast('⚠️ Ya diste like a este post', 'warning'); return; } throw result2.error; }
+                    likeCache.set(cacheKey, true);
+                    if (countSpan) { var current2 = parseInt(countSpan.textContent); countSpan.textContent = current2 + 1; }
+                    if (likeBtn) { likeBtn.dataset.liked = 'true'; likeBtn.innerHTML = '❤️ <span class="count">' + (countSpan ? countSpan.textContent : 0) + '</span>'; }
+                }
+            } catch (e) { console.error('Error toggling like:', e); showToast('❌ Error al procesar like', 'error'); }
+        }
+
+        // ===== TOGGLE COMENTARIOS =====
+        function toggleComentarios(postId) {
+            var container = document.getElementById('comentarios-' + postId);
+            if (!container) return;
+            var isVisible = container.style.display !== 'none';
+            container.style.display = isVisible ? 'none' : 'block';
+            if (!isVisible) {
+                cargarComentarios(postId);
+                setTimeout(function() {
+                    var input = document.getElementById('input-comentario-' + postId);
+                    if (input) input.focus();
+                }, 200);
+            }
+        }
+
+        // ===== CARGAR COMENTARIOS =====
+        async function cargarComentarios(postId) {
+            var lista = document.getElementById('comentarios-lista-' + postId);
+            if (!lista) return;
+            try {
+                var result = await window.supabase
+                    .from('muro_comentarios')
+                    .select('*, usuarios:usuario_id (id, nombre, handle, avatar_url)')
+                    .eq('post_id', postId)
+                    .order('created_at', { ascending: true });
+                if (result.error) throw result.error;
+                var data = result.data;
+                if (!data || data.length === 0) {
+                    lista.innerHTML = '<div style="color:var(--text-muted);font-size:0.7rem;padding:8px 0;">Sin comentarios. Sé el primero.</div>';
+                    return;
+                }
+                lista.innerHTML = data.map(function(c) {
+                    var avatar = (c.usuarios && c.usuarios.avatar_url) ? '<img src="' + escapeHTML(c.usuarios.avatar_url) + '">' : '◈';
+                    var nombre = escapeHTML((c.usuarios && c.usuarios.nombre) || 'Usuario');
+                    var esPropietario = c.usuario_id === sessionUser?.id;
+                    return '<div class="comentario"><div class="avatar">' + avatar + '</div><div class="texto"><strong>' + nombre + '</strong> ' + sanitizarHTML(c.contenido || '') + '<div class="fecha">' + new Date(c.created_at).toLocaleString() + '</div>' + (esPropietario ? '<button class="btn-eliminar-comentario" onclick="eliminarComentario(\'' + c.id + '\')">✕ Eliminar</button>' : '') + '</div></div>';
+                }).join('');
+            } catch (e) { console.error('Error cargando comentarios:', e); lista.innerHTML = '<div style="color:var(--danger);font-size:0.7rem;">Error al cargar comentarios</div>'; }
+        }
+
+        // ===== ENVIAR COMENTARIO =====
+        async function enviarComentario(postId) {
+            var input = document.getElementById('input-comentario-' + postId);
+            if (!input) return;
+            var texto = input.value.trim();
+            if (!texto) { showToast('⚠️ Escribe un comentario', 'error'); return; }
+            if (texto.length > 2000) { showToast('⚠️ El comentario es demasiado largo (máx 2000 caracteres)', 'error'); return; }
+            if (!sessionUser) { showToast('⚠️ Inicia sesión para comentar', 'error'); return; }
+            try {
+                var result = await window.supabase
+                    .from('muro_comentarios')
+                    .insert({ post_id: postId, usuario_id: sessionUser.id, contenido: texto });
+                if (result.error) throw result.error;
+                input.value = '';
+                showToast('✅ Comentario agregado', 'success');
+                cargarComentarios(postId);
+                var countSpan = document.querySelector('[data-post-id="' + postId + '"] .post-stats span:last-child .count');
+                if (countSpan) { var current = parseInt(countSpan.textContent); countSpan.textContent = current + 1; }
+            } catch (e) { console.error('Error enviando comentario:', e); showToast('❌ Error al comentar', 'error'); }
+        }
+
+        // ===== ELIMINAR COMENTARIO =====
+        async function eliminarComentario(comentarioId) {
+            if (!sessionUser) { showToast('⚠️ Inicia sesión', 'error'); return; }
+            if (!confirm('¿Eliminar este comentario?')) return;
+            try {
+                var result = await window.supabase
+                    .from('muro_comentarios')
+                    .delete()
+                    .eq('id', comentarioId)
+                    .eq('usuario_id', sessionUser.id);
+                if (result.error) throw result.error;
+                showToast('🗑️ Comentario eliminado', 'success');
+                var postId = document.querySelector('[data-comentario-id="' + comentarioId + '"]')?.dataset.postId;
+                if (postId) cargarComentarios(postId);
+            } catch (e) { console.error('Error eliminando comentario:', e); showToast('❌ Error al eliminar comentario', 'error'); }
+        }
+
+        // ===== ELIMINAR PUBLICACIÓN =====
+        async function eliminarPublicacion(postId) {
+            if (!sessionUser) { showToast('⚠️ Inicia sesión', 'error'); return; }
+            if (!confirm('¿Eliminar esta publicación?')) return;
+            try {
+                var result = await window.supabase
+                    .from('muro_posts')
+                    .delete()
+                    .eq('id', postId)
+                    .eq('usuario_id', sessionUser.id);
+                if (result.error) throw result.error;
+                showToast('🗑️ Publicación eliminada', 'success');
+                var postCard = document.querySelector('[data-post-id="' + postId + '"]');
+                if (postCard) postCard.remove();
+            } catch (e) { console.error('Error eliminando publicación:', e); showToast('❌ Error al eliminar publicación', 'error'); }
+        }
+
+        // ===== CARGAR PUBLICACIONES =====
+        async function cargarPublicaciones(reset) {
+            if (reset === undefined) reset = true;
+            if (isLoading) return;
+            if (reset) { currentPage = 0; hasMorePosts = true; var fc = document.getElementById('feedContainer'); if (fc) fc.innerHTML = ''; }
+            if (!hasMorePosts) return;
+            isLoading = true;
+            var feedContainer = document.getElementById('feedContainer');
+            try {
+                var from = currentPage * POSTS_PER_PAGE;
+                var to = from + POSTS_PER_PAGE - 1;
+                var result = await window.supabase
+                    .from('muro_posts')
+                    .select('*, usuarios:usuario_id (id, nombre, handle, avatar_url), muro_likes(count), muro_comentarios(count)')
+                    .order('created_at', { ascending: false })
+                    .range(from, to);
+                if (result.error) throw result.error;
+                var data = result.data;
+                if (!data || data.length === 0) {
+                    hasMorePosts = false;
+                    if (currentPage === 0 && feedContainer) {
+                        feedContainer.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3>Sin publicaciones</h3><p>Sé el primero en compartir algo.</p></div>';
+                    }
+                    isLoading = false;
+                    return;
+                }
+                if (currentPage === 0 && feedContainer) feedContainer.innerHTML = '';
+                data.forEach(function(post) {
+                    var postElement = renderizarPost(post);
+                    if (feedContainer) feedContainer.appendChild(postElement);
+                });
+                currentPage++;
+                hasMorePosts = data.length === POSTS_PER_PAGE;
+                if (hasMorePosts && feedContainer) {
+                    var lastPost = feedContainer.lastElementChild;
+                    if (lastPost) {
+                        var observer = new IntersectionObserver(function(entries) {
+                            if (entries[0].isIntersecting && !isLoading) { cargarPublicaciones(false); }
+                        }, { threshold: 0.1 });
+                        observer.observe(lastPost);
+                    }
+                }
+            } catch (e) { console.error('Error cargando publicaciones:', e); showToast('❌ Error al cargar publicaciones', 'error'); }
+            finally { isLoading = false; }
+        }
+
+        // ===== PUBLICAR =====
+        async function publicar() {
+            if (publicando) { showToast('⏳ Ya estás publicando, espera un momento...', 'warning'); return; }
+            var postContent = document.getElementById('postContent');
+            var btnPublicar = document.getElementById('btnPublicar');
+            var contenido = postContent ? postContent.value.trim() : '';
+            if (!contenido) { showToast('⚠️ Escribe algo para publicar', 'error'); return; }
+            if (contenido.length > 5000) { showToast('⚠️ El texto es demasiado largo (máx 5000 caracteres)', 'error'); return; }
+            if (!sessionUser) { showToast('⚠️ Inicia sesión para publicar', 'error'); return; }
+            publicando = true;
+            btnPublicar.disabled = true;
+            btnPublicar.textContent = '⏳ Publicando...';
+            try {
+                var result = await window.supabase
+                    .from('muro_posts')
+                    .insert({ usuario_id: sessionUser.id, contenido: contenido })
+                    .select()
+                    .single();
+                if (result.error) throw result.error;
+                postContent.value = '';
+                showToast('✅ Publicación creada', 'success');
+                document.getElementById('feedContainer').innerHTML = '';
+                currentPage = 0;
+                hasMorePosts = true;
+                await cargarPublicaciones();
+            } catch (e) { console.error('Error al publicar:', e); showToast('❌ Error al publicar: ' + e.message, 'error'); }
+            finally { publicando = false; btnPublicar.disabled = false; btnPublicar.textContent = '⟡ Publicar'; }
+        }
+
+        // ===== COMPARTIR PUBLICACIÓN =====
+        function compartirPublicacion(postId) {
+            var url = window.location.origin + '/features/muro/muro.html?post=' + postId;
+            if (navigator.share) {
+                navigator.share({ title: 'Publicación en Sariel\'s', text: 'Mira esta publicación en el Muro de Sariel\'s', url: url }).catch(function() {});
+            } else {
+                navigator.clipboard.writeText(url).then(function() {
+                    showToast('📋 Enlace copiado al portapapeles', 'success');
+                }).catch(function() {
+                    var textarea = document.createElement('textarea');
+                    textarea.value = url;
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textarea);
+                    showToast('📋 Enlace copiado al portapapeles', 'success');
+                });
+            }
+        }
+
+        // ===== REPORTAR PUBLICACIÓN =====
+        async function reportarPublicacion(postId) {
+            if (!sessionUser) { showToast('⚠️ Inicia sesión para reportar', 'error'); return; }
+            var motivo = prompt('Motivo del reporte:', 'Contenido inapropiado');
+            if (!motivo) return;
+            try {
+                var result = await window.supabase
+                    .from('muro_reportes')
+                    .insert({ post_id: postId, usuario_id: sessionUser.id, motivo: motivo });
+                if (result.error) { if (result.error.code === '42P01') { showToast('⚠️ La tabla de reportes no está configurada. Contacta al administrador.', 'warning'); return; } throw result.error; }
+                showToast('🚩 Reporte enviado', 'success');
+            } catch (e) { console.error('Error reportando:', e); showToast('❌ Error al reportar', 'error'); }
+        }
+
+        // ===== BUSCAR HASHTAG =====
+        async function buscarHashtag(tag) {
+            if (!tag) { var input = document.getElementById('searchHashtag'); if (input) tag = input.value.trim().replace('#', ''); }
+            if (!tag) { showToast('⚠️ Escribe un hashtag para buscar', 'warning'); return; }
+            try {
+                var result = await window.supabase
+                    .from('muro_posts')
+                    .select('*, usuarios:usuario_id (id, nombre, handle, avatar_url), muro_likes(count), muro_comentarios(count)')
+                    .ilike('contenido', '%#' + tag + '%')
+                    .order('created_at', { ascending: false })
+                    .limit(50);
+                if (result.error) throw result.error;
+                var data = result.data;
+                var feedContainer = document.getElementById('feedContainer');
+                feedContainer.innerHTML = '';
+                if (!data || data.length === 0) {
+                    feedContainer.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3>#' + tag + '</h3><p>No se encontraron publicaciones con este hashtag</p><button class="btn-gold" onclick="cargarPublicaciones()" style="margin-top:12px;padding:8px 24px;border-radius:30px;border:none;background:linear-gradient(135deg,var(--gold),var(--gold-dark));color:var(--space);font-weight:600;cursor:pointer;">Volver al feed</button></div>';
+                    return;
+                }
+                var header = document.createElement('div');
+                header.style.cssText = 'padding:12px 0;border-bottom:1px solid var(--glass-border);margin-bottom:16px;';
+                header.innerHTML = '<h3 style="font-family:Orbitron,monospace;color:var(--gold);font-size:0.9rem;">#' + tag + ' · ' + data.length + ' publicaciones</h3><button onclick="cargarPublicaciones()" style="background:transparent;border:none;color:var(--text-muted);font-size:0.7rem;cursor:pointer;">← Volver al feed</button>';
+                feedContainer.appendChild(header);
+                data.forEach(function(post) {
+                    var postElement = renderizarPost(post);
+                    feedContainer.appendChild(postElement);
+                });
+                showToast('🔍 Encontradas ' + data.length + ' publicaciones con #' + tag, 'success');
+            } catch (e) { console.error('Error buscando hashtag:', e); showToast('❌ Error al buscar hashtag', 'error'); }
+        }
+
+        // ===== FUNCIONES DE VENTA =====
+        function abrirModalVenta() {
+            var modal = document.getElementById('modalVender');
+            if (modal) {
+                modal.classList.add('show');
+                var tokensDisp = document.getElementById('tokensDisponibles');
+                if (tokensDisp) tokensDisp.textContent = sessionUser?.tokens || 0;
+                document.getElementById('inputCantidadTokens').value = 1;
+                document.getElementById('inputPrecioToken').value = precioActual.toFixed(2);
+            }
+        }
+
+        function cerrarModalVenta() {
+            var modal = document.getElementById('modalVender');
+            if (modal) modal.classList.remove('show');
+        }
+
+        async function publicarVenta() {
+            var cantidadInput = document.getElementById('inputCantidadTokens');
+            var precioInput = document.getElementById('inputPrecioToken');
+            var btn = document.getElementById('btnPublicarVenta');
+            var cantidad = parseInt(cantidadInput ? cantidadInput.value : 0);
+            var precio = parseFloat(precioInput ? precioInput.value : 0);
+            if (!cantidad || cantidad <= 0) { showToast('⚠️ Ingresa una cantidad válida', 'error'); if (cantidadInput) cantidadInput.focus(); return; }
+            if (cantidad > 100) { showToast('⚠️ Máximo 100 tokens por venta', 'error'); return; }
+            if (!precio || precio <= 0) { showToast('⚠️ Ingresa un precio válido', 'error'); if (precioInput) precioInput.focus(); return; }
+            if (!sessionUser) { showToast('⚠️ Inicia sesión para publicar venta', 'error'); return; }
+            btn.disabled = true;
+            btn.textContent = '⏳ Publicando...';
+            try {
+                var userResult = await window.supabase.from('usuarios').select('tokens').eq('id', sessionUser.id).single();
+                if (userResult.error) throw userResult.error;
+                if (userResult.data.tokens < cantidad) { showToast('⚠️ No tienes suficientes tokens. Disponibles: ' + userResult.data.tokens, 'error'); btn.disabled = false; btn.textContent = '◆ Publicar venta'; return; }
+                var result = await window.supabase
+                    .from('muro_posts')
+                    .insert({ usuario_id: sessionUser.id, contenido: '💎 Venta de ' + cantidad + ' tokens a $' + precio.toFixed(2) + ' c/u', cantidad_venta: cantidad, precio_venta: precio * cantidad });
+                if (result.error) throw result.error;
+                showToast('✅ Venta publicada correctamente', 'success');
+                cerrarModalVenta();
+                cargarPublicaciones();
+            } catch (e) { console.error('Error publicando venta:', e); showToast('❌ Error al publicar venta: ' + e.message, 'error'); }
+            finally { btn.disabled = false; btn.textContent = '◆ Publicar venta'; }
+        }
+
+        function abrirModalCompra(postId) {
+            var postCard = document.querySelector('[data-post-id="' + postId + '"]');
+            if (!postCard) { showToast('❌ Publicación no encontrada', 'error'); return; }
+            var ventaInfo = postCard.querySelector('.post-venta');
+            if (!ventaInfo) { showToast('❌ Esta publicación no tiene tokens en venta', 'error'); return; }
+            var modal = document.getElementById('modalConfirmarCompra');
+            if (!modal) { showToast('❌ Modal no encontrado', 'error'); return; }
+            var textoVenta = ventaInfo.querySelector('div')?.textContent || '';
+            var matches = textoVenta.match(/(\d+)\s*tokens.*\$\s*([\d.]+)/);
+            if (!matches) { showToast('❌ No se pudo leer la información de venta', 'error'); return; }
+            var cantidad = parseInt(matches[1]);
+            var precioTotal = parseFloat(matches[2]);
+            document.getElementById('confirmCantidad').textContent = cantidad;
+            document.getElementById('confirmPrecio').textContent = '$' + precioTotal.toFixed(2) + ' MXN';
+            document.getElementById('confirmTotal').textContent = '$' + precioTotal.toFixed(2) + ' MXN';
+            var usdtTotal = precioTotal / 20;
+            document.getElementById('confirmTotalFinal').textContent = usdtTotal.toFixed(2) + ' USDT';
+            document.getElementById('confirmComision').textContent = (usdtTotal * 0.02).toFixed(2) + ' USDT';
+            modal.dataset.postId = postId;
+            modal.classList.add('show');
+        }
+
+        function cerrarModalConfirmacion() {
+            var modal = document.getElementById('modalConfirmarCompra');
+            if (modal) modal.classList.remove('show');
+        }
+
+        async function confirmarCompraCrypto() {
+            var modal = document.getElementById('modalConfirmarCompra');
+            var postId = modal ? modal.dataset.postId : null;
+            if (!postId) { showToast('❌ No hay publicación seleccionada', 'error'); return; }
+            if (!sessionUser) { showToast('⚠️ Inicia sesión para comprar', 'error'); return; }
+            try {
+                var postResult = await window.supabase.from('muro_posts').select('id, usuario_id, cantidad_venta, precio_venta').eq('id', postId).single();
+                if (postResult.error) throw postResult.error;
+                var post = postResult.data;
+                if (!post) { showToast('❌ Publicación no encontrada', 'error'); return; }
+                if (post.usuario_id === sessionUser.id) { showToast('⚠️ No puedes comprar tus propios tokens', 'error'); return; }
+                if (post.cantidad_venta <= 0) { showToast('⚠️ Estos tokens ya fueron vendidos', 'error'); return; }
+                var comision = post.precio_venta * 0.02;
+                var montoRecibido = post.precio_venta - comision;
+                var precioUsdt = post.precio_venta / 20;
+                var insertResult = await window.supabase
+                    .from('muro_ventas_tokens')
+                    .insert({ post_id: post.id, vendedor_id: post.usuario_id, comprador_id: sessionUser.id, cantidad: post.cantidad_venta, precio_mxn: post.precio_venta, precio_usdt: precioUsdt, comision_plataforma: comision, monto_recibido: montoRecibido, estado: 'pendiente' });
+                if (insertResult.error) throw insertResult.error;
+                showToast('✅ Orden de compra creada. Procede al pago.', 'success');
+                cerrarModalConfirmacion();
+                var pagoModal = document.getElementById('cryptoPaymentModal');
+                if (pagoModal) {
+                    pagoModal.classList.add('show');
+                    var address = '0x' + Array.from({length: 40}, function() { return Math.floor(Math.random() * 16).toString(16); }).join('');
+                    document.getElementById('cryptoAddress').textContent = address;
+                    document.getElementById('cryptoMonto').textContent = precioUsdt.toFixed(2);
+                    document.getElementById('cryptoStatus').textContent = '⏳ Esperando confirmación de pago...';
+                    var qrImg = document.getElementById('cryptoQR');
+                    if (qrImg) { qrImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(address); }
+                    pagoModal.dataset.ventaId = post.id;
+                }
+            } catch (e) { console.error('Error confirmando compra:', e); showToast('❌ Error al confirmar compra: ' + e.message, 'error'); }
+        }
+
+        function cerrarModalPago() {
+            var modal = document.getElementById('cryptoPaymentModal');
+            if (modal) modal.classList.remove('show');
+        }
+
+        function copiarDireccionCrypto() {
+            var addressEl = document.getElementById('cryptoAddress');
+            if (!addressEl) return;
+            var address = addressEl.textContent;
+            if (address && address !== 'Cargando...') {
+                navigator.clipboard.writeText(address).then(function() {
+                    showToast('📋 Dirección copiada', 'success');
+                }).catch(function() {
+                    var textarea = document.createElement('textarea');
+                    textarea.value = address;
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textarea);
+                    showToast('📋 Dirección copiada', 'success');
+                });
+            }
+        }
+
+        async function verificarPagoCrypto() {
+            var btn = document.getElementById('btnVerificarPago');
+            var statusEl = document.getElementById('cryptoStatus');
+            var modal = document.getElementById('cryptoPaymentModal');
+            var postId = modal ? modal.dataset.ventaId : null;
+            if (!postId) { showToast('❌ No hay venta para verificar', 'error'); return; }
+            btn.disabled = true;
+            btn.textContent = '⏳ Verificando...';
+            statusEl.textContent = '⏳ Verificando pago en blockchain...';
+            statusEl.style.color = 'var(--text-secondary)';
+            try {
+                await new Promise(function(resolve) { setTimeout(resolve, 2000); });
+                var result = await window.supabase
+                    .from('muro_ventas_tokens')
+                    .update({ estado: 'pagado' })
+                    .eq('post_id', postId)
+                    .eq('comprador_id', sessionUser ? sessionUser.id : null)
+                    .eq('estado', 'pendiente');
+                if (result.error) throw result.error;
+                await window.supabase.from('muro_posts').update({ cantidad_venta: 0 }).eq('id', postId);
+                statusEl.textContent = '✅ ¡Pago verificado! Tokens transferidos.';
+                statusEl.style.color = 'var(--success)';
+                showToast('✅ ¡Compra completada exitosamente!', 'success');
+                setTimeout(function() {
+                    cerrarModalPago();
+                    cargarPublicaciones();
+                    cargarPreciosMercado();
+                }, 2000);
+            } catch (e) {
+                console.error('Error verificando pago:', e);
+                statusEl.textContent = '❌ Error al verificar pago';
+                statusEl.style.color = 'var(--danger)';
+                showToast('❌ Error al verificar pago', 'error');
+            }
+            finally { btn.disabled = false; btn.textContent = '✅ Verificar Pago'; }
+        }
+
+        // ===== FUNCIONES DE UTILIDAD =====
+        function verTokens() { window.location.href = '/features/perfil/perfil.html'; }
+
+        function insertarHashtag() {
+            var input = document.getElementById('postContent');
+            if (!input) return;
+            var start = input.selectionStart || 0;
+            var end = input.selectionEnd || 0;
+            var texto = input.value;
+            input.value = texto.substring(0, start) + '#' + texto.substring(end);
+            input.focus();
+            input.selectionStart = input.selectionEnd = start + 1;
+        }
+
+        function insertarEmoji() {
+            var input = document.getElementById('postContent');
+            if (!input) return;
+            var start = input.selectionStart || 0;
+            var end = input.selectionEnd || 0;
+            var texto = input.value;
+            var emojis = ['😊', '🔥', '❤️', '💎', '✨', '🎉', '🚀', '🌟', '💪', '🤝'];
+            var emoji = emojis[Math.floor(Math.random() * emojis.length)];
+            input.value = texto.substring(0, start) + emoji + texto.substring(end);
+            input.focus();
+            input.selectionStart = input.selectionEnd = start + emoji.length;
+        }
+
+        function abrirSelectorImagen() {
+            var input = document.getElementById('inputImagen');
+            if (input) input.click();
+        }
+
+        async function subirImagenMuro(event) {
+            var file = event.target.files[0];
+            if (!file) return;
+            if (!sessionUser) { showToast('⚠️ Inicia sesión para subir imagen', 'error'); return; }
+            if (!file.type.startsWith('image/')) { showToast('❌ Solo se permiten imágenes', 'error'); return; }
+            if (file.size > 5 * 1024 * 1024) { showToast('❌ La imagen no puede superar los 5MB', 'error'); return; }
+            var fileExt = file.name.split('.').pop();
+            var filePath = sessionUser.id + '/' + Date.now() + '.' + fileExt;
+            try {
+                showToast('⏳ Subiendo imagen...', '');
+                var bucketsResult = await window.supabase.storage.listBuckets();
+                if (bucketsResult.error) throw bucketsResult.error;
+                var bucketExists = bucketsResult.data.some(function(b) { return b.name === 'muro-imagenes'; });
+                if (!bucketExists) {
+                    var createResult = await window.supabase.storage.createBucket('muro-imagenes', { public: true });
+                    if (createResult.error) { console.error('Error creando bucket:', createResult.error); showToast('⚠️ El almacenamiento no está configurado. Contacta al administrador.', 'warning'); return; }
+                }
+                var uploadResult = await window.supabase.storage.from('muro-imagenes').upload(filePath, file, { upsert: true });
+                if (uploadResult.error) throw uploadResult.error;
+                var urlData = window.supabase.storage.from('muro-imagenes').getPublicUrl(filePath);
+                var publicUrl = urlData.data.publicUrl;
+                var insertResult = await window.supabase
+                    .from('muro_posts')
+                    .insert({ usuario_id: sessionUser.id, contenido: '', imagen_url: publicUrl });
+                if (insertResult.error) throw insertResult.error;
+                showToast('✅ Imagen subida correctamente', 'success');
+                event.target.value = '';
+                cargarPublicaciones();
+            } catch (e) { console.error('Error subiendo imagen:', e); showToast('❌ Error al subir imagen: ' + e.message, 'error'); }
+        }
+
+        // ===== SUSCRIBIRSE A REALTIME =====
+        async function suscribirseARealtime() {
+            if (muroChannel) {
+                try { await window.supabase.removeChannel(muroChannel); } catch (e) {}
+                muroChannel = null;
+            }
+            muroChannel = window.supabase
+                .channel('muro-realtime')
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'muro_posts' }, function(payload) {
+                    if (isRealtimeProcessing) return;
+                    isRealtimeProcessing = true;
+                    try {
+                        if (payload.new.usuario_id !== sessionUser?.id) {
+                            var feedContainer = document.getElementById('feedContainer');
+                            if (feedContainer) {
+                                var emptyState = feedContainer.querySelector('.empty-state');
+                                if (emptyState) emptyState.remove();
+                                var postElement = renderizarPost(payload.new);
+                                feedContainer.insertBefore(postElement, feedContainer.firstChild);
+                                showToast('📢 Nueva publicación en el Muro', 'success');
+                            }
+                        }
+                    } catch (e) { console.error('Error en Realtime INSERT:', e); }
+                    finally { isRealtimeProcessing = false; }
+                })
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'muro_comentarios' }, function() {
+                    try {
+                        document.querySelectorAll('.post-comentarios[style*="display: block"]').forEach(function(el) {
+                            var postId = el.id.replace('comentarios-', '');
+                            cargarComentarios(postId);
+                        });
+                    } catch (e) { console.error('Error en Realtime comentarios:', e); }
+                })
+                .subscribe(function(status) {
+                    if (status === 'SUBSCRIBED') { console.log('✅ Muro Realtime conectado'); }
+                    else if (status === 'CHANNEL_ERROR') { console.error('❌ Error en Realtime:', status); }
+                });
+            return muroChannel;
+        }
+
+        // ===== LIMPIEZA =====
+        function limpiarRecursosMuro() {
+            if (muroChannel) {
+                try { window.supabase.removeChannel(muroChannel); } catch (e) {}
+                muroChannel = null;
+            }
+            likeCache.clear();
+        }
+
+        window.addEventListener('beforeunload', limpiarRecursosMuro);
+
+        // ===== INICIALIZACIÓN =====
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('◈ Sariel\'s - Muro');
+            console.log('✅ Inicializando...');
+            cargarUsuarioActual().then(function() {
+                cargarPreciosMercado();
+                cargarPublicaciones();
+                suscribirseARealtime();
+            });
+            var btnPublicar = document.getElementById('btnPublicar');
+            if (btnPublicar) {
+                var newBtn = btnPublicar.cloneNode(true);
+                btnPublicar.parentNode.replaceChild(newBtn, btnPublicar);
+                newBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    publicar();
+                });
+            }
+            var searchInput = document.getElementById('searchHashtag');
+            if (searchInput) {
+                searchInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') { e.preventDefault(); buscarHashtag(); }
+                });
+            }
+            document.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    var input = e.target;
+                    if (input.id && input.id.startsWith('input-comentario-')) {
+                        e.preventDefault();
+                        var postId = input.id.replace('input-comentario-', '');
+                        enviarComentario(postId);
+                    }
+                }
+            });
+            var btnPublicarVenta = document.getElementById('btnPublicarVenta');
+            if (btnPublicarVenta) {
+                btnPublicarVenta.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    publicarVenta();
+                });
+            }
+            document.querySelectorAll('.modal-overlay').forEach(function(modal) {
+                modal.addEventListener('click', function(e) {
+                    if (e.target === this) { this.classList.remove('show'); }
+                });
+            });
+            console.log('✅ Muro inicializado correctamente');
+        });
+
+        // ===== EXPOSICIÓN GLOBAL =====
+        window.publicar = publicar;
+        window.cargarPublicaciones = cargarPublicaciones;
+        window.cargarPreciosMercado = cargarPreciosMercado;
+        window.toggleLike = toggleLike;
+        window.toggleComentarios = toggleComentarios;
+        window.enviarComentario = enviarComentario;
+        window.eliminarComentario = eliminarComentario;
+        window.eliminarPublicacion = eliminarPublicacion;
+        window.compartirPublicacion = compartirPublicacion;
+        window.reportarPublicacion = reportarPublicacion;
+        window.buscarHashtag = buscarHashtag;
+        window.subirImagenMuro = subirImagenMuro;
+        window.abrirSelectorImagen = abrirSelectorImagen;
+        window.insertarHashtag = insertarHashtag;
+        window.insertarEmoji = insertarEmoji;
+        window.verTokens = verTokens;
+        window.showToast = showToast;
+        window.abrirModalVenta = abrirModalVenta;
+        window.cerrarModalVenta = cerrarModalVenta;
+        window.publicarVenta = publicarVenta;
+        window.abrirModalCompra = abrirModalCompra;
+        window.cerrarModalConfirmacion = cerrarModalConfirmacion;
+        window.confirmarCompraCrypto = confirmarCompraCrypto;
+        window.cerrarModalPago = cerrarModalPago;
+        window.copiarDireccionCrypto = copiarDireccionCrypto;
+        window.verificarPagoCrypto = verificarPagoCrypto;
+        window.limpiarRecursosMuro = limpiarRecursosMuro;
+        window.cargarUsuarioActual = cargarUsuarioActual;
+    </script>
 </body>
 </html>
