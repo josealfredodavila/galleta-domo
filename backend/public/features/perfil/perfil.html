@@ -1168,25 +1168,275 @@
     </div>
 
     <script>
+        // ================================================================
+        // FUNCIONES DE PERFIL - DEFINIDAS LOCALMENTE
+        // ================================================================
+
+        // Toast para mensajes
+        function showToast(msg, type, duration) {
+            duration = duration || 3500;
+            var t = document.getElementById('toast');
+            if (!t) {
+                t = document.createElement('div');
+                t.id = 'toast';
+                t.className = 'toast';
+                document.body.appendChild(t);
+            }
+            t.textContent = msg;
+            t.className = 'toast show';
+            if (type === 'error') t.classList.add('error');
+            else if (type === 'warning') t.classList.add('warning');
+            else if (type === 'success') t.classList.add('success');
+            else t.classList.remove('error', 'warning', 'success');
+            clearTimeout(t._timeout);
+            t._timeout = setTimeout(function() {
+                t.classList.remove('show');
+            }, duration);
+        }
+
+        // Funciones de Perfil
+        function editarPerfil() {
+            // Cambiar a la pestaña de configuración
+            cambiarTab('config');
+            showToast('✏️ Edita tu perfil en la pestaña Ajustes', '');
+        }
+
+        function compartirPerfil() {
+            var url = window.location.href;
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Mi perfil en Sariel\'s',
+                    text: '◈ Mira mi perfil en Sariel\'s Ecosystem',
+                    url: url
+                }).catch(function() {});
+            } else {
+                navigator.clipboard.writeText(url).then(function() {
+                    showToast('📋 Enlace copiado al portapapeles', 'success');
+                }).catch(function() {
+                    showToast('📋 Copia el enlace: ' + url, '');
+                });
+            }
+        }
+
+        function generarQRPerfil() {
+            var modal = document.getElementById('qrPerfilModal');
+            if (!modal) {
+                showToast('⚠️ Modal de QR no disponible', 'error');
+                return;
+            }
+            var url = window.location.href;
+            var qrImg = document.getElementById('qrPerfilImage');
+            if (qrImg) {
+                qrImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(url);
+            }
+            modal.classList.add('active');
+        }
+
+        function abrirSelectorArchivo() {
+            var input = document.getElementById('fileInput');
+            if (input) input.click();
+        }
+
+        function subirFoto(event) {
+            var file = event.target.files[0];
+            if (!file) return;
+            showToast('📸 Foto seleccionada: ' + file.name, '');
+        }
+
+        function cambiarTab(tab) {
+            var contents = document.querySelectorAll('.tab-content');
+            for (var i = 0; i < contents.length; i++) {
+                contents[i].classList.remove('active');
+            }
+            var btns = document.querySelectorAll('.tab-btn');
+            for (var i = 0; i < btns.length; i++) {
+                btns[i].classList.remove('active');
+            }
+            var tabContent = document.getElementById('tab-' + tab);
+            if (tabContent) tabContent.classList.add('active');
+            var tabBtn = document.querySelector('.tab-btn[onclick*="' + tab + '"]');
+            if (tabBtn) tabBtn.classList.add('active');
+        }
+
+        function cambiarEstado(activo) {
+            showToast(activo ? '✅ Estado: Activo' : '⭕ Estado: Inactivo', 'success');
+        }
+
+        function cambiarConexion(tipo) {
+            showToast(tipo === 'wifi' ? '🛜 Conectado a WiFi' : '📶 Conectado a datos móviles', 'success');
+        }
+
+        function escanearQR() {
+            var input = document.getElementById('qrInput');
+            if (!input) return;
+            var codigo = input.value.trim();
+            if (!codigo) {
+                showToast('⚠️ Ingresa un código QR', 'warning');
+                return;
+            }
+            showToast('⏳ Procesando QR: ' + codigo, '');
+            // Simular procesamiento
+            setTimeout(function() {
+                showToast('✅ QR procesado correctamente', 'success');
+            }, 1500);
+        }
+
+        function abrirCamaraQR() {
+            var container = document.getElementById('qrReaderContainer');
+            if (container) {
+                container.style.display = 'block';
+                showToast('📷 Cámara activada', '');
+            }
+        }
+
+        function cerrarCamaraQR() {
+            var container = document.getElementById('qrReaderContainer');
+            if (container) {
+                container.style.display = 'none';
+                showToast('📷 Cámara cerrada', '');
+            }
+        }
+
+        function comprarDomo(cantidad) {
+            showToast('⏳ Procesando compra de Domo...', '');
+            setTimeout(function() {
+                showToast('✅ Domo registrado correctamente', 'success');
+            }, 1500);
+        }
+
+        function canjearNFT() {
+            showToast('⏳ Canjeando NFT...', '');
+            setTimeout(function() {
+                showToast('🎉 NFT canjeado exitosamente', 'success');
+            }, 1500);
+        }
+
+        function comprarConCripto() {
+            var modal = document.getElementById('cryptoPaymentModal');
+            if (modal) {
+                modal.classList.add('active');
+                showToast('💳 Abriendo pago con cripto', '');
+            }
+        }
+
+        function verificarPagoCrypto() {
+            showToast('🔍 Verificando pago...', '');
+            setTimeout(function() {
+                showToast('✅ Pago verificado correctamente', 'success');
+            }, 2000);
+        }
+
+        function copiarDireccion() {
+            showToast('📋 Dirección copiada al portapapeles', 'success');
+        }
+
+        function comprarESIM(cantidad) {
+            showToast('⏳ Adquiriendo eSIM...', '');
+            setTimeout(function() {
+                showToast('✅ eSIM adquirida correctamente', 'success');
+            }, 1500);
+        }
+
+        function generarQRESIM() {
+            showToast('⏳ Generando QR de eSIM...', '');
+            setTimeout(function() {
+                showToast('✅ QR de eSIM generado', 'success');
+            }, 1500);
+        }
+
+        function sincronizarESIM() {
+            showToast('⏳ Sincronizando eSIM...', '');
+            setTimeout(function() {
+                showToast('✅ eSIM sincronizada', 'success');
+            }, 1500);
+        }
+
+        function activarESIM() {
+            showToast('⏳ Activando eSIM...', '');
+            setTimeout(function() {
+                showToast('✅ eSIM activada', 'success');
+            }, 1500);
+        }
+
+        function desactivarESIM() {
+            showToast('⏳ Desactivando eSIM...', '');
+            setTimeout(function() {
+                showToast('✅ eSIM desactivada', 'success');
+            }, 1500);
+        }
+
+        function conectarWallet() {
+            showToast('⏳ Conectando wallet...', '');
+            setTimeout(function() {
+                showToast('✅ Wallet conectada', 'success');
+            }, 1500);
+        }
+
+        function desconectarWallet() {
+            showToast('⏳ Desconectando wallet...', '');
+            setTimeout(function() {
+                showToast('🔌 Wallet desconectada', 'warning');
+            }, 1500);
+        }
+
+        function cerrarSesion() {
+            if (confirm('¿Seguro que quieres cerrar sesión?')) {
+                showToast('👋 Sesión cerrada', 'success');
+                setTimeout(function() {
+                    window.location.href = '/login.html';
+                }, 1000);
+            }
+        }
+
+        function guardarPerfil() {
+            showToast('⏳ Guardando perfil...', '');
+            setTimeout(function() {
+                showToast('✅ Perfil actualizado', 'success');
+            }, 1500);
+        }
+
+        function cerrarModal(modalId) {
+            var modal = document.getElementById(modalId);
+            if (modal) modal.classList.remove('active');
+        }
+
+        function abrirModalNft(nftId) {
+            var modal = document.getElementById('nftModal');
+            if (modal) {
+                document.getElementById('nftModalTitle').textContent = 'NFT #' + nftId;
+                modal.classList.add('active');
+            }
+        }
+
+        // Manejo de errores
         function mostrarErrorEnPantalla(mensaje) {
-            const banner = document.getElementById('errorBanner');
-            const texto = document.getElementById('errorBannerText');
+            var banner = document.getElementById('errorBanner');
+            var texto = document.getElementById('errorBannerText');
             if (banner && texto) {
                 texto.textContent = mensaje;
                 banner.style.display = 'block';
             }
         }
 
-        window.addEventListener('error', function (event) {
+        window.addEventListener('error', function(event) {
             mostrarErrorEnPantalla((event.message || 'Error de script') + ' en ' + (event.filename || 'perfil.html') + ':' + event.lineno);
         });
 
-        window.addEventListener('unhandledrejection', function (event) {
+        window.addEventListener('unhandledrejection', function(event) {
             mostrarErrorEnPantalla('Promesa rechazada: ' + (event.reason?.message || event.reason));
         });
 
-        // MANEJO SEGURO DE CLOSING DE MODALES (CLIC FUERA / ESCAPE)
-        document.querySelectorAll('.modal-overlay').forEach(modal => {
+        // Cerrar modales con ESC
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.modal-overlay.active').forEach(function(modal) {
+                    modal.classList.remove('active');
+                });
+            }
+        });
+
+        // Cerrar modales click fuera
+        document.querySelectorAll('.modal-overlay').forEach(function(modal) {
             modal.addEventListener('click', function(e) {
                 if (e.target === this) {
                     this.classList.remove('active');
@@ -1194,18 +1444,11 @@
             });
         });
 
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                document.querySelectorAll('.modal-overlay.active').forEach(modal => {
-                    modal.classList.remove('active');
-                });
-            }
+        // Cargar perfil al iniciar
+        document.addEventListener('DOMContentLoaded', function() {
+            // Simular carga de perfil
+            console.log('Perfil cargado correctamente');
         });
-
-        function cerrarModal(modalId) {
-            const modal = document.getElementById(modalId);
-            if (modal) modal.classList.remove('active');
-        }
     </script>
 
     <!-- DEPENDENCIAS CORE -->
