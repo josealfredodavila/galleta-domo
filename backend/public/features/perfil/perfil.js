@@ -1,12 +1,23 @@
 /* ================================================================
    PERFIL.JS - SARIEL'S ECOSYSTEM
-   VERSIÓN CORREGIDA - LISTA PARA PRODUCCIÓN
+   VERSIÓN CORREGIDA - USANDO window.supabase (SINGLETON GLOBAL)
    ================================================================ */
 
 // ================================================================
 // CONFIGURACIÓN SUPABASE - REUTILIZAR EL CLIENTE GLOBAL
 // ================================================================
-const supabase = window.supabase;
+// ✅ Usamos window.supabase que es creado por app.js
+// ✅ No redeclaramos con const para evitar error "already declared"
+let supabase = window.supabase;
+
+// Si no existe, mostrar error en consola
+if (typeof supabase === 'undefined') {
+    console.error('❌ Supabase no está disponible. Asegúrate de que app.js cargue primero.');
+    // Intentar mostrar error en pantalla si la función existe
+    if (typeof mostrarErrorEnPantalla === 'function') {
+        mostrarErrorEnPantalla('❌ No se pudo cargar Supabase. Revisa tu conexión.');
+    }
+}
 
 // ================================================================
 // CONFIGURACIÓN DE ENTORNO
