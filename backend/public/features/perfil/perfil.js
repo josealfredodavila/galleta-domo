@@ -1,13 +1,11 @@
 /* ================================================================
    PERFIL.JS - SARIEL'S ECOSYSTEM
-   VERSIÓN CORREGIDA - USANDO window.supabase (SINGLETON GLOBAL)
+   VERSIÓN CORREGIDA - LISTA PARA PRODUCCIÓN
    ================================================================ */
 
 // ================================================================
 // CONFIGURACIÓN SUPABASE - REUTILIZAR EL CLIENTE GLOBAL
 // ================================================================
-// ✅ ELIMINADA LA DECLARACIÓN DUPLICADA DE supabaseClient
-// ✅ Usamos window.supabase que es creado por app.js
 const supabase = window.supabase;
 
 // ================================================================
@@ -121,7 +119,7 @@ function formatearTexto(texto) {
 }
 
 // ================================================================
-// CARGA DE PERFIL - RPC obtener_mi_perfil
+// CARGA DE PERFIL
 // ================================================================
 let perfilCache = null;
 let ultimaActualizacion = 0;
@@ -168,6 +166,7 @@ async function cargarPerfil(forzarActualizacion = false) {
                 bio: 'Explorando el ecosistema Sariel\'s · WEB3 · Comunidad',
                 avatar_url: null,
                 tokens: 0,
+                tokens_para_canje: 0,
                 progreso_canje: 0,
                 puede_canjear: false,
                 wallet_address: null,
@@ -657,12 +656,17 @@ function actualizarUI(data) {
             }
         });
 
-        const tokens = data.tokens || 0;
-        const progreso = Math.min(tokens, 12);
-        const puedeCanjear = data.puede_canjear || false;
+        // ============================================================
+        // NUEVO: MOSTRAR tokens_para_canje Y PROGRESO A 12
+        // ============================================================
+        const tokensParaCanje = data.tokens_para_canje || 0;
+        const progreso = Math.min(tokensParaCanje, 12);
+        const puedeCanjear = tokensParaCanje >= 12;
 
         const progressFill = document.getElementById('progressFill');
         const progressText = document.getElementById('progressText');
+        const tokenTotal = document.getElementById('tokenTotal');
+        const tokenDisponibles = document.getElementById('tokenDisponibles');
 
         if (progressFill) {
             const porcentaje = (progreso / 12) * 100;
@@ -676,14 +680,31 @@ function actualizarUI(data) {
                 progressText.innerHTML += ' 🎯';
             }
         }
+        if (tokenTotal) tokenTotal.textContent = data.tokens || 0;
+        if (tokenDisponibles) tokenDisponibles.textContent = data.tokens || 0;
 
-        const tokenTotal = document.getElementById('tokenTotal');
-        const tokenDisponibles = document.getElementById('tokenDisponibles');
-        const tokenNFTs = document.getElementById('tokenNFTs');
-
-        if (tokenTotal) tokenTotal.textContent = tokens;
-        if (tokenDisponibles) tokenDisponibles.textContent = tokens;
-        if (tokenNFTs) tokenNFTs.textContent = data.progreso_canje || 0;
+        // ============================================================
+        // NUEVO: BOTÓN CANJEAR NFT CONECTADO
+        // ============================================================
+        const btnCanjear = document.getElementById('canjearNft');
+        if (btnCanjear) {
+            btnCanjear.disabled = !puedeCanjear;
+            btnCanjear.onclick = puedeCanjear ? canjearNFT : null;
+            
+            if (puedeCanjear) {
+                btnCanjear.style.background = 'linear-gradient(135deg, var(--gold), #f7971e)';
+                btnCanjear.style.border = 'none';
+                btnCanjear.style.color = '#fff';
+                btnCanjear.innerHTML = '🎁 CANJEAR NFT';
+                btnCanjear.style.cursor = 'pointer';
+            } else {
+                btnCanjear.style.background = 'var(--bg-card)';
+                btnCanjear.style.border = '1px solid var(--text-muted)';
+                btnCanjear.style.color = 'var(--text-muted)';
+                btnCanjear.innerHTML = `🔒 ${12 - tokensParaCanje} TOKENS PARA CANJEAR`;
+                btnCanjear.style.cursor = 'default';
+            }
+        }
 
         const editNombre = document.getElementById('editNombre');
         const editHandle = document.getElementById('editHandle');
@@ -692,22 +713,6 @@ function actualizarUI(data) {
         if (editNombre) editNombre.value = data.nombre || 'Explorador';
         if (editHandle) editHandle.value = (data.handle || 'explorador');
         if (editBio) editBio.value = data.bio || 'Explorando el ecosistema Sariel\'s · WEB3 · Comunidad';
-
-        const btnCanjear = document.getElementById('canjearNft');
-        if (btnCanjear) {
-            btnCanjear.disabled = !puedeCanjear;
-            if (puedeCanjear) {
-                btnCanjear.style.background = 'linear-gradient(135deg, var(--gold), #f7971e)';
-                btnCanjear.style.border = 'none';
-                btnCanjear.style.color = '#fff';
-                btnCanjear.innerHTML = '🎁 CANJEAR NFT';
-            } else {
-                btnCanjear.style.background = 'var(--bg-card)';
-                btnCanjear.style.border = '1px solid var(--text-muted)';
-                btnCanjear.style.color = 'var(--text-muted)';
-                btnCanjear.innerHTML = '🔒 NECESITAS 12 TOKENS';
-            }
-        }
 
         actualizarUIESIM(data);
         actualizarUIConexion(estadoConexion);
@@ -1995,14 +2000,13 @@ async function verificarPago(ordenId) {
 
     } catch (error) {
         console.error('Error verificando pago:', error);
-        statusEl.textContent = '❌ Error al verificar: ' + error.message, 'error';
+        statusEl.textContent = '❌ Error al verificar: ' + error.message;
     }
 }
 
 // ================================================================
-// WALLET
+// WALLET - CONEXIÓN DIRECTA (SIN RPC)
 // ================================================================
-
 async function conectarWallet() {
     if (typeof window.ethereum === 'undefined') {
         showToast('⚠️ Instala MetaMask para conectar tu wallet', 'error');
@@ -2045,12 +2049,17 @@ async function conectarWallet() {
             }
         }
 
-        const { error } = await supabase.rpc('vincular_wallet', { 
-            p_wallet_address: cuenta,
-            p_chain_id: chainId,
-            p_network_name: ENV.networkName
-        });
-        if (error) throw error;
+        // Guardar wallet directamente en la tabla usuarios
+        const { error: updateError } = await supabase
+            .from('usuarios')
+            .update({ 
+                wallet_address: cuenta,
+                wallet_chain: ENV.networkName,
+                wallet_connected_at: new Date().toISOString()
+            })
+            .eq('id', session.user.id);
+
+        if (updateError) throw updateError;
 
         const walletDisplay = document.getElementById('walletDisplay');
         const btnConectar = document.getElementById('btnConectarWallet');
@@ -2080,8 +2089,17 @@ async function desconectarWallet() {
             return;
         }
 
-        const { error } = await supabase.rpc('desvincular_wallet');
-        if (error) console.warn('RPC desvincular_wallet no encontrada:', error);
+        // Eliminar wallet directamente de la tabla usuarios
+        const { error: updateError } = await supabase
+            .from('usuarios')
+            .update({ 
+                wallet_address: null,
+                wallet_chain: null,
+                wallet_connected_at: null
+            })
+            .eq('id', session.user.id);
+
+        if (updateError) throw updateError;
 
         const walletDisplay = document.getElementById('walletDisplay');
         const btnConectar = document.getElementById('btnConectarWallet');
@@ -2104,7 +2122,7 @@ async function desconectarWallet() {
 }
 
 // ================================================================
-// COMPRAR DOMO
+// COMPRAR DOMO - LÓGICA DIRECTA (SIN RPC)
 // ================================================================
 let comprandoDomo = false;
 
@@ -2130,17 +2148,53 @@ async function comprarDomo(cantidad = 1) {
         comprandoDomo = true;
         showToast('⏳ Procesando compra de ' + cantidad + ' domo(s)...', '', 5000);
 
-        const { data, error } = await supabase.rpc('comprar_domo', { p_cantidad: cantidad });
-
-        if (error) {
-            if (error.message.includes('insufficient')) {
-                showToast('❌ Fondos insuficientes para comprar domos', 'error');
-            } else {
-                throw error;
-            }
-            comprandoDomo = false;
-            return;
+        // Insertar QR en qr_domos
+        const qrInserts = [];
+        for (let i = 0; i < cantidad; i++) {
+            const codigoQR = `DOMO-${Date.now()}-${i}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+            qrInserts.push({
+                usuario_id: session.user.id,
+                codigo: codigoQR,
+                tipo: 'domo',
+                usado: false,
+                created_at: new Date().toISOString()
+            });
         }
+
+        const { error: qrError } = await supabase
+            .from('qr_domos')
+            .insert(qrInserts);
+
+        if (qrError) throw qrError;
+
+        // Actualizar tokens_para_canje en usuarios
+        const { data: usuario, error: fetchError } = await supabase
+            .from('usuarios')
+            .select('tokens_para_canje')
+            .eq('id', session.user.id)
+            .single();
+
+        if (fetchError) throw fetchError;
+
+        const nuevoTotal = (usuario.tokens_para_canje || 0) + cantidad;
+
+        const { error: updateError } = await supabase
+            .from('usuarios')
+            .update({ tokens_para_canje: nuevoTotal })
+            .eq('id', session.user.id);
+
+        if (updateError) throw updateError;
+
+        // Registrar en historial
+        await supabase
+            .from('qr_historial')
+            .insert({
+                user_id: session.user.id,
+                tipo_accion: 'escaneo_inicial',
+                fecha: new Date().toISOString(),
+                qr_id: qrInserts[0].codigo,
+                metadata: { cantidad: cantidad }
+            });
 
         showToast(`🎉 ¡${cantidad} Domo(s) comprado(s) exitosamente!`, 'success', 5000);
         await cargarPerfil(true);
@@ -2259,7 +2313,7 @@ async function verificarPagoCrypto() {
             statusEl.textContent = '✅ ¡Pago confirmado! Procesando compra...';
             showToast('🎉 ¡Compra exitosa!', 'success');
             
-            await cargarPerfil(true);
+            await comprarDomo(parseInt(document.getElementById('cryptoQuantity').textContent) || 1);
             setTimeout(() => cerrarModalPago(), 2000);
         } else if (orden.estado === 'pendiente') {
             statusEl.textContent = '⏳ Aún no se confirma el pago. Espera unos minutos.';
@@ -2270,7 +2324,7 @@ async function verificarPagoCrypto() {
 
     } catch (error) {
         console.error('Error verificando pago:', error);
-        statusEl.textContent = '❌ Error al verificar: ' + error.message, 'error');
+        statusEl.textContent = '❌ Error al verificar: ' + error.message;
     }
 }
 
@@ -2300,7 +2354,7 @@ function cerrarModalPago() {
 }
 
 // ================================================================
-// CANJEAR NFT
+// CANJEAR NFT - LÓGICA DIRECTA (SIN RPC)
 // ================================================================
 let canjeandoNFT = false;
 
@@ -2320,23 +2374,78 @@ async function canjearNFT() {
         canjeandoNFT = true;
         showToast('⏳ Verificando tokens para canje...', '', 4000);
 
-        const { data, error } = await supabase.rpc('canjear_nft');
+        // 1. Obtener tokens_para_canje del usuario
+        const { data: usuario, error: fetchError } = await supabase
+            .from('usuarios')
+            .select('tokens_para_canje')
+            .eq('id', session.user.id)
+            .single();
 
-        if (error) {
-            if (error.message.includes('insufficient tokens')) {
-                showToast('❌ Necesitas exactamente 12 Es.stoks para canjear', 'error');
-            } else if (error.message.includes('already redeemed')) {
-                showToast('⚠️ Ya has canjeado tu NFT', 'warning');
-            } else {
-                throw error;
-            }
+        if (fetchError) throw fetchError;
+
+        const tokensDisponibles = usuario.tokens_para_canje || 0;
+
+        if (tokensDisponibles < 12) {
+            showToast(`❌ Necesitas ${12 - tokensDisponibles} tokens más para canjear tu NFT`, 'error');
             canjeandoNFT = false;
             return;
         }
 
+        // 2. Generar código NFT
+        const codigoNFT = `CS-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`;
+
+        // 3. Insertar NFT en nfts_usuario
+        const { data: nft, error: nftError } = await supabase
+            .from('nfts_usuario')
+            .insert({
+                usuario_id: session.user.id,
+                codigo_nft: codigoNFT,
+                nombre: 'Galleta Dorada',
+                imagen_url: 'https://tudominio.com/imagenes/galleta_dorada.png',
+                estado: 'activo',
+                fecha_canje: new Date().toISOString(),
+                fecha_expiracion: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+            })
+            .select()
+            .single();
+
+        if (nftError) throw nftError;
+
+        // 4. Descontar tokens_para_canje
+        const { error: updateError } = await supabase
+            .from('usuarios')
+            .update({ 
+                tokens_para_canje: tokensDisponibles - 12,
+                progreso_canje: (usuario.progreso_canje || 0) + 1
+            })
+            .eq('id', session.user.id);
+
+        if (updateError) throw updateError;
+
+        // 5. Registrar en historial
+        await supabase
+            .from('qr_historial')
+            .insert({
+                user_id: session.user.id,
+                tipo_accion: 'canje_nft',
+                fecha: new Date().toISOString(),
+                metadata: { nft_id: nft.id, codigo: codigoNFT }
+            });
+
+        // 6. Registrar en es_toks_movimientos (débito)
+        await supabase
+            .from('es_toks_movimientos')
+            .insert({
+                usuario_id: session.user.id,
+                tipo: 'canje_nft',
+                cantidad: -12,
+                descripcion: `Canje de NFT Galleta Dorada - ${codigoNFT}`,
+                created_at: new Date().toISOString()
+            });
+
         showToast('🎁 ¡NFT Canjeado Exitosamente! Tienes 30 días para reclamar.', 'success', 8000);
         await cargarPerfil(true);
-        mostrarModalNFT(data);
+        mostrarModalNFT(nft);
         canjeandoNFT = false;
 
     } catch (error) {
@@ -2411,7 +2520,7 @@ function mostrarModalNFT(data) {
             <p style="color: var(--text-primary); margin-bottom: 20px; font-size: 18px;">Tu Domo físico te espera</p>
             <div style="background: var(--bg-dark); border-radius: 10px; padding: 15px; margin-bottom: 20px;">
                 <p style="color: var(--text-muted); font-size: 14px;">⏳ Vigencia: 30 días para reclamar</p>
-                <p style="color: var(--cyan); font-size: 12px; margin-top: 5px;">ID: ${data?.nft_id || 'NFT-' + Date.now().toString().slice(-6)}</p>
+                <p style="color: var(--cyan); font-size: 12px; margin-top: 5px;">ID: ${data?.codigo_nft || 'NFT-' + Date.now().toString().slice(-6)}</p>
             </div>
             <div style="display: flex; gap: 10px; justify-content: center;">
                 <button onclick="this.parentElement.parentElement.parentElement.remove()" 
@@ -2431,50 +2540,7 @@ function mostrarModalNFT(data) {
 }
 
 // ================================================================
-// CERRAR SESIÓN
-// ================================================================
-async function cerrarSesion() {
-    if (!confirm('¿Seguro que quieres cerrar sesión?')) return;
-    
-    try {
-        await actualizarEstadoEnLinea(false);
-        await supabase.auth.signOut();
-        window.location.href = '/';
-        showToast('🔌 Sesión cerrada', 'success');
-    } catch (error) {
-        console.error('Error cerrando sesión:', error);
-        showToast('❌ Error al cerrar sesión', 'error');
-    }
-}
-
-// ================================================================
-// NOTIFICACIONES EN TIEMPO REAL
-// ================================================================
-function iniciarNotificacionesRealtime() {
-    const channel = supabase
-        .channel('notificaciones')
-        .on('postgres_changes', {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'notificaciones'
-        }, (payload) => {
-            const notificacion = payload.new;
-            if (notificacion.user_id === perfilCache?.id) {
-                showToast(`🔔 ${notificacion.mensaje}`, 'warning', 4000);
-                
-                try {
-                    const audio = new Audio('/sound/notification.mp3');
-                    audio.play().catch(() => {});
-                } catch (e) {}
-            }
-        })
-        .subscribe();
-
-    return channel;
-}
-
-// ================================================================
-// ESCANEO QR
+// ESCANEO QR - LÓGICA DIRECTA (SIN RPC)
 // ================================================================
 
 let qrScannerInterval = null;
@@ -2598,38 +2664,80 @@ async function procesarQR(codigo) {
         if (status) status.textContent = '⏳ Validando QR...';
         showToast('⏳ Verificando QR...', '', 5000);
 
-        const { data, error } = await supabase.rpc('reclamar_qr_domo', {
-            p_codigo: codigo
-        });
+        // 1. Verificar que el QR existe y no está usado
+        const { data: qr, error: qrError } = await supabase
+            .from('qr_domos')
+            .select('*')
+            .eq('codigo', codigo)
+            .eq('usado', false)
+            .single();
 
-        if (error) {
-            if (error.message.includes('already used')) {
-                showToast('❌ Este QR ya fue usado', 'error');
-                if (status) status.textContent = '❌ QR ya utilizado';
-            } else if (error.message.includes('invalid code')) {
-                showToast('❌ QR inválido', 'error');
+        if (qrError) {
+            if (qrError.code === 'PGRST116') {
+                showToast('❌ QR inválido o ya usado', 'error');
                 if (status) status.textContent = '❌ QR inválido';
-            } else if (error.message.includes('not a domo')) {
-                showToast('❌ Este QR no es para un domo', 'error');
-                if (status) status.textContent = '❌ QR no es domo';
             } else {
-                throw error;
+                throw qrError;
             }
             qrScanningLock = false;
             return;
         }
 
-        if (!data.success) {
-            showToast('❌ ' + (data.error || 'Error al reclamar QR'), 'error');
-            if (status) status.textContent = '❌ ' + data.error;
-            qrScanningLock = false;
-            return;
-        }
+        // 2. Marcar QR como usado
+        const { error: updateQrError } = await supabase
+            .from('qr_domos')
+            .update({ 
+                usado: true, 
+                fecha_uso: new Date().toISOString() 
+            })
+            .eq('id', qr.id);
+
+        if (updateQrError) throw updateQrError;
+
+        // 3. Actualizar tokens_para_canje del usuario
+        const { data: usuario, error: fetchError } = await supabase
+            .from('usuarios')
+            .select('tokens_para_canje')
+            .eq('id', session.user.id)
+            .single();
+
+        if (fetchError) throw fetchError;
+
+        const nuevoTotal = (usuario.tokens_para_canje || 0) + 1;
+
+        const { error: updateTokensError } = await supabase
+            .from('usuarios')
+            .update({ tokens_para_canje: nuevoTotal })
+            .eq('id', session.user.id);
+
+        if (updateTokensError) throw updateTokensError;
+
+        // 4. Registrar en historial
+        await supabase
+            .from('qr_historial')
+            .insert({
+                user_id: session.user.id,
+                tipo_accion: 'escaneo_inicial',
+                fecha: new Date().toISOString(),
+                qr_id: qr.id,
+                metadata: { codigo: codigo }
+            });
+
+        // 5. Registrar en es_toks_movimientos (abono)
+        await supabase
+            .from('es_toks_movimientos')
+            .insert({
+                usuario_id: session.user.id,
+                tipo: 'escaneo_domo',
+                cantidad: 1,
+                descripcion: `Escaneo de domo - ${codigo}`,
+                created_at: new Date().toISOString()
+            });
 
         if (status) status.textContent = '✅ ¡QR reclamado exitosamente!';
         if (input) input.value = '';
         
-        showToast('🎉 ¡QR escaneado! +1 Es.stok', 'success');
+        showToast('🎉 ¡QR escaneado! +1 token', 'success');
         
         await cargarPerfil(true);
         await cargarHistorialQR();
@@ -2708,10 +2816,53 @@ function actualizarUIHistorialQR(historial = []) {
             font-size: 0.7rem;
             color: var(--text-muted);
         ">
-            <span>📱 QR: ${item.qr_id?.slice(0, 15) || 'N/A'}</span>
+            <span>📱 ${item.tipo_accion || 'Escaneo'}: ${item.qr_id?.slice(0, 15) || 'N/A'}</span>
             <span>${new Date(item.fecha).toLocaleDateString()} ${new Date(item.fecha).toLocaleTimeString()}</span>
         </div>
     `).join('');
+}
+
+// ================================================================
+// CERRAR SESIÓN
+// ================================================================
+async function cerrarSesion() {
+    if (!confirm('¿Seguro que quieres cerrar sesión?')) return;
+    
+    try {
+        await actualizarEstadoEnLinea(false);
+        await supabase.auth.signOut();
+        window.location.href = '/';
+        showToast('🔌 Sesión cerrada', 'success');
+    } catch (error) {
+        console.error('Error cerrando sesión:', error);
+        showToast('❌ Error al cerrar sesión', 'error');
+    }
+}
+
+// ================================================================
+// NOTIFICACIONES EN TIEMPO REAL
+// ================================================================
+function iniciarNotificacionesRealtime() {
+    const channel = supabase
+        .channel('notificaciones')
+        .on('postgres_changes', {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'notificaciones'
+        }, (payload) => {
+            const notificacion = payload.new;
+            if (notificacion.user_id === perfilCache?.id) {
+                showToast(`🔔 ${notificacion.mensaje}`, 'warning', 4000);
+                
+                try {
+                    const audio = new Audio('/sound/notification.mp3');
+                    audio.play().catch(() => {});
+                } catch (e) {}
+            }
+        })
+        .subscribe();
+
+    return channel;
 }
 
 // ================================================================
