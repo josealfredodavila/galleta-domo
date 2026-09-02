@@ -1,3 +1,8 @@
+<!-- ================================================================
+     LIVE - SARIEL'S ECOSYSTEM
+     VERSIÓN UNIFICADA - TODAS LAS FUNCIONES EN EL HTML
+     CON BOTÓN 🎮 JUEGOS Y SELECTOR
+     ================================================================ -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -27,12 +32,12 @@
             --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             --success: #00d68f;
             --danger: #ff3366;
-            --warning: #ffaa00;
             --live-red: #ff0044;
             --bronze: #CD7F32;
             --bronze-light: #D4A574;
             --bronze-dark: #8B5A2B;
             --esmeralda: #50C878;
+            --warning: #ffaa00;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -239,10 +244,27 @@
             80% { transform: rotate(720deg) scale(1); opacity: 1; }
             100% { transform: rotate(1080deg) scale(0.5); opacity: 0; }
         }
-        @keyframes brillo {
-            0%, 100% { text-shadow: 0 0 20px currentColor; }
-            50% { text-shadow: 0 0 60px currentColor, 0 0 100px currentColor; }
-        }
+
+        /* 🎮 Selector de juegos */
+        .btn-game { color: #fff !important; background: rgba(80, 200, 120, 0.12) !important; border: 1px solid rgba(80, 200, 120, 0.45) !important; }
+        .btn-game:hover { color: var(--gold) !important; border-color: var(--gold) !important; background: rgba(212, 175, 55, 0.14) !important; }
+        .game-modal-backdrop { position: fixed; inset: 0; z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px; background: rgba(0,0,0,.78); backdrop-filter: blur(8px); }
+        .game-modal { width: min(680px, 100%); max-height: min(88vh, 720px); overflow-y: auto; background: linear-gradient(160deg, rgba(15,45,26,.98), rgba(5,8,15,.98)); border: 1px solid var(--gold); border-radius: 22px; padding: 22px; box-shadow: 0 20px 70px rgba(0,0,0,.55), var(--shadow-gold); }
+        .game-modal-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
+        .game-modal-kicker { color: var(--gold); font: 700 .55rem 'Orbitron', monospace; letter-spacing: 2px; margin-bottom: 5px; }
+        .game-modal h2 { color: var(--text-primary); font: 700 1.05rem 'Orbitron', monospace; }
+        .game-modal-close { border: 0; background: transparent; color: var(--text-muted); font-size: 1.8rem; line-height: 1; cursor: pointer; }
+        .game-modal-close:hover { color: var(--gold); }
+        .game-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; }
+        .game-option { padding: 13px 12px; border-radius: 13px; border: 1px solid var(--glass-border); background: rgba(0,0,0,.28); color: var(--text-primary); cursor: pointer; font: 600 .72rem 'Inter', sans-serif; text-align: left; transition: var(--transition); }
+        .game-option:hover, .game-option:focus-visible { border-color: var(--gold); color: var(--gold); transform: translateY(-1px); outline: none; }
+        .game-option-other { border-color: rgba(212,175,55,.35); }
+        .otro-juego-wrap { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--glass-border); }
+        .otro-juego-wrap label { display: block; color: var(--text-secondary); font-size: .65rem; margin-bottom: 7px; }
+        .otro-juego-row { display: flex; gap: 8px; }
+        .otro-juego-row input { flex: 1; min-width: 0; padding: 10px 13px; border-radius: 20px; border: 1px solid var(--glass-border); background: rgba(255,255,255,.05); color: var(--text-primary); outline: none; }
+        .otro-juego-row input:focus { border-color: var(--gold); }
+        .game-modal-help { margin-top: 14px; color: var(--text-muted); font-size: .58rem; line-height: 1.5; }
 
         @media (max-width: 768px) {
             .live-video-container { height: 50vh; min-height: 300px; }
@@ -309,7 +331,8 @@
                     <button onclick="togglePlay()" id="playBtn" title="Play/Pause">⏸</button>
                     <button onclick="toggleMute()" id="muteBtn" title="Mute/Unmute" class="mic">🔊</button>
                     <button onclick="capturarPantalla()" id="screenBtn" title="Compartir pantalla">🖥️</button>
-                    <button onclick="toggleVoice()" id="voiceBtn" title="Lector de voz" class="voice">🔈</button>
+                    <button onclick="abrirSelectorJuego()" class="btn-game" id="gameBtn" title="Transmitir juego">🎮 Juego</button>
+                    <button onclick="toggleVoice()" id="voiceBtn" title="Lector de voz" class="voice">🔊</button>
                     <button class="end" onclick="finalizarTransmision()" title="Finalizar">✕ Finalizar</button>
                 </div>
             </div>
@@ -375,14 +398,23 @@
         <button onclick="document.getElementById('errorBanner').style.display='none'" style="float:right;background:none;border:1px solid #fff;color:#fff;border-radius:6px;padding:2px 10px;cursor:pointer;">Cerrar</button>
     </div>
 
-    <!-- ===== SCRIPTS ===== -->
+    <!-- ================================================================ -->
+    <!-- SCRIPTS - ORDEN CORRECTO -->
+    <!-- ================================================================ -->
+
+    <!-- 1. LiveKit Client -->
     <script src="https://cdn.jsdelivr.net/npm/livekit-client/dist/livekit-client.umd.min.js"></script>
+
+    <!-- 2. Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
+    <!-- 3. App.js - Define window.supabase -->
     <script src="/app.js"></script>
 
+    <!-- 4. TODAS las funciones de Live - DEFINIDAS AQUÍ -->
     <script>
         // ================================================================
-        // LIVE - TODAS LAS FUNCIONES DEFINIDAS AQUÍ (VERSIÓN CORREGIDA)
+        // LIVE - TODAS LAS FUNCIONES DEFINIDAS AQUÍ
         // ================================================================
 
         // ================================================================
@@ -411,10 +443,11 @@
         var isLive = false;
         var isMuted = false;
         var isVoiceActive = false;
-        var channelChat = null;
-        var localStream = null;
         var streamInterval = null;
+        var channelChat = null;
         var espectadores = 0;
+        var localStream = null;
+        var gameStream = null;
 
         // ================================================================
         // TOAST
@@ -480,7 +513,220 @@
         }
 
         // ================================================================
-        // 🎥 INICIAR TRANSMISIÓN - CORREGIDO
+        // 🎮 ABRIR SELECTOR DE JUEGOS
+        // ================================================================
+        var juegos = [
+            '🎯 Free Fire',
+            '🎯 Roblox',
+            '🎯 Fortnite',
+            '🎯 Minecraft',
+            '🎯 Call of Duty Mobile',
+            '🎯 PUBG Mobile',
+            '🎯 Valorant',
+            '🎯 League of Legends'
+        ];
+
+        function abrirSelectorJuego() {
+            var modal = document.createElement('div');
+            modal.className = 'game-modal-backdrop';
+            modal.id = 'gameModal';
+
+            var gameOptions = '';
+            for (var i = 0; i < juegos.length; i++) {
+                var juego = juegos[i];
+                gameOptions += '<button class="game-option" onclick="seleccionarJuego(\'' + juego.replace(/'/g, "\\'") + '\')">' + juego + '</button>';
+            }
+
+            modal.innerHTML = 
+                '<div class="game-modal">' +
+                '<div class="game-modal-header">' +
+                '<div><div class="game-modal-kicker">🎮 TRANSMITIR JUEGO</div><h2>Elige tu juego</h2></div>' +
+                '<button class="game-modal-close" onclick="cerrarSelectorJuego()">✕</button>' +
+                '</div>' +
+                '<div class="game-grid">' + gameOptions + '</div>' +
+                '<div class="otro-juego-wrap">' +
+                '<label>🔹 Otro juego</label>' +
+                '<div class="otro-juego-row">' +
+                '<input type="text" id="otroJuegoInput" placeholder="Ej: Genshin Impact..." />' +
+                '<button class="btn btn-gold btn-sm" onclick="seleccionarOtroJuego()" style="padding:8px 16px;border-radius:20px;">▶</button>' +
+                '</div>' +
+                '</div>' +
+                '<div class="game-modal-help">' +
+                '📱 Android: Chrome soporta compartir pantalla. iOS: usa una PC con Chrome.' +
+                '</div>' +
+                '</div>';
+
+            document.body.appendChild(modal);
+
+            var input = document.getElementById('otroJuegoInput');
+            if (input) {
+                input.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') {
+                        seleccionarOtroJuego();
+                    }
+                });
+                setTimeout(function() { input.focus(); }, 200);
+            }
+        }
+
+        function cerrarSelectorJuego() {
+            var modal = document.getElementById('gameModal');
+            if (modal) modal.remove();
+        }
+
+        function seleccionarOtroJuego() {
+            var input = document.getElementById('otroJuegoInput');
+            if (!input) return;
+            var juego = input.value.trim();
+            if (!juego) {
+                showToast('⚠️ Escribe el nombre del juego', 'warning');
+                return;
+            }
+            seleccionarJuego('🎯 ' + juego);
+        }
+
+        // ================================================================
+        // 🎮 INICIAR TRANSMISIÓN DE JUEGO
+        // ================================================================
+        async function seleccionarJuego(juego) {
+            cerrarSelectorJuego();
+
+            try {
+                var session = await getSession();
+                if (!session) {
+                    showToast('⚠️ Inicia sesión para transmitir', 'error');
+                    return;
+                }
+
+                showToast('🎮 Iniciando transmisión de juego...', '');
+
+                // Primero intentar compartir pantalla
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+                    showToast('⚠️ Tu navegador no soporta compartir pantalla. Usa Chrome en Android o PC.', 'error');
+                    return;
+                }
+
+                var titulo = '🎮 Jugando ' + juego.replace('🎯 ', '');
+                var categoria = 'gaming';
+
+                // Verificar live activo
+                var existente = await window.supabase
+                    .from('transmisiones')
+                    .select('id')
+                    .eq('streamer_id', session.user.id)
+                    .eq('estado', 'en_vivo')
+                    .maybeSingle();
+
+                if (existente.data) {
+                    await window.supabase
+                        .from('transmisiones')
+                        .delete()
+                        .eq('id', existente.data.id);
+                    showToast('🔄 Cerrando live anterior...', 'warning');
+                }
+
+                var roomName = 'live-' + session.user.id + '-' + Date.now();
+
+                // Crear transmisión
+                var result = await window.supabase
+                    .from('transmisiones')
+                    .insert({
+                        streamer_id: session.user.id,
+                        room_name: roomName,
+                        titulo: titulo,
+                        categoria: categoria,
+                        descripcion: 'Transmitiendo ' + juego.replace('🎯 ', ''),
+                        tipo_transmision: 'gratis',
+                        precio: 0,
+                        estado: 'en_vivo',
+                        fecha_inicio: new Date().toISOString(),
+                        viewers_count: 0
+                    })
+                    .select()
+                    .single();
+
+                if (result.error) throw result.error;
+
+                currentStream = result.data;
+                currentUser = session.user;
+                isLive = true;
+                document.getElementById('viewersCount').textContent = '0 espectadores';
+
+                // ✅ CAPTURAR PANTALLA
+                try {
+                    var screenStream = await navigator.mediaDevices.getDisplayMedia({
+                        video: { width: 1920, height: 1080 },
+                        audio: true
+                    });
+
+                    gameStream = screenStream;
+
+                    var video = document.getElementById('liveVideo');
+                    if (video) {
+                        video.srcObject = screenStream;
+                        video.muted = true;
+                        video.onloadedmetadata = function() {
+                            video.play().catch(function() {});
+                        };
+                        setTimeout(function() {
+                            if (video.paused) {
+                                video.play().catch(function() {});
+                            }
+                        }, 1000);
+                        document.getElementById('playBtn').textContent = '⏸';
+                        showToast('🖥️ Pantalla compartida', 'success');
+                    }
+
+                    // ✅ CONECTAR LIVEKIT
+                    try {
+                        if (typeof window.livekitClient !== 'undefined') {
+                            showToast('🔗 Conectando a LiveKit...', '');
+                            var token = await obtenerTokenLiveKit(currentStream.room_name, currentUser.user_metadata?.nombre || currentUser.email || 'streamer', 'publisher');
+                            liveKitRoom = new window.livekitClient.Room();
+                            await liveKitRoom.connect(LIVEKIT_CONFIG.url, token);
+
+                            // Publicar pantalla
+                            var videoTrack = screenStream.getVideoTracks()[0];
+                            if (videoTrack) {
+                                await liveKitRoom.localParticipant.publishTrack(videoTrack);
+                            }
+                            var audioTrack = screenStream.getAudioTracks()[0];
+                            if (audioTrack) {
+                                await liveKitRoom.localParticipant.publishTrack(audioTrack);
+                            }
+
+                            showToast('✅ Conectado a LiveKit', 'success');
+                        }
+                    } catch (e) {
+                        console.warn('LiveKit error:', e);
+                    }
+
+                    // ✅ SUSCRIBIRSE AL CHAT
+                    suscribirseAlChat();
+                    cargarTransmisionesActivas();
+
+                    showToast('🎮 ¡Transmisión de ' + juego.replace('🎯 ', '') + ' iniciada!', 'success');
+
+                } catch (e) {
+                    console.error('Error capturando pantalla:', e);
+                    if (e.name === 'NotAllowedError' || e.name === 'PermissionDeniedError') {
+                        showToast('⚠️ Permiso denegado para compartir pantalla', 'error');
+                    } else {
+                        showToast('❌ Error al compartir pantalla: ' + e.message, 'error');
+                    }
+                    // Si falla, limpiar
+                    limpiarRecursosLive();
+                }
+
+            } catch (e) {
+                console.error('Error iniciando transmisión de juego:', e);
+                showToast('❌ Error al iniciar: ' + e.message, 'error');
+                limpiarRecursosLive();
+            }
+        }
+
+        // ================================================================
+        // 🎥 INICIAR TRANSMISIÓN NORMAL
         // ================================================================
         async function iniciarTransmision() {
             try {
@@ -493,7 +739,6 @@
 
                 showToast('⏳ Iniciando transmisión...', '');
 
-                // Verificar live activo
                 var existente = await window.supabase
                     .from('transmisiones')
                     .select('id')
@@ -520,7 +765,7 @@
                         streamer_id: currentUser.id,
                         room_name: roomName,
                         titulo: titulo,
-                        categoria: categoria || 'general',
+                        categoria: categoria,
                         descripcion: '',
                         tipo_transmision: 'gratis',
                         precio: 0,
@@ -537,54 +782,38 @@
                 isLive = true;
                 document.getElementById('viewersCount').textContent = '0 espectadores';
 
-                // ✅ CONECTAR CÁMARA CON FALLBACK
+                // Conectar cámara
                 try {
                     showToast('📷 Activando cámara...', '');
-                    
-                    // Primero intentar con cámara trasera si es móvil
                     var constraints = {
                         video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
                         audio: { echoCancellation: true, noiseSuppression: true }
                     };
-                    
-                    // En móvil, intentar usar la cámara trasera primero
                     if (/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)) {
                         constraints.video.facingMode = 'environment';
                     }
-                    
+
                     var stream = await navigator.mediaDevices.getUserMedia(constraints);
                     localStream = stream;
-                    
+
                     var video = document.getElementById('liveVideo');
                     if (video) {
-                        // ✅ IMPORTANTE: Asignar stream primero
                         video.srcObject = stream;
                         video.muted = true;
-                        
-                        // ✅ Esperar a que el video esté listo
                         video.onloadedmetadata = function() {
-                            video.play().then(function() {
-                                document.getElementById('playBtn').textContent = '⏸';
-                                showToast('📷 Cámara activada', 'success');
-                            }).catch(function(playError) {
-                                console.warn('Autoplay bloqueado:', playError);
-                                // Intentar con un click
-                                video.play();
-                            });
+                            video.play().catch(function() {});
                         };
-                        
-                        // Fallback si onloadedmetadata no se dispara
                         setTimeout(function() {
                             if (video.paused) {
                                 video.play().catch(function() {});
                             }
                         }, 1000);
+                        document.getElementById('playBtn').textContent = '⏸';
+                        showToast('📷 Cámara activada', 'success');
                     }
                 } catch (cameraError) {
                     console.error('Error accediendo a cámara:', cameraError);
-                    showToast('⚠️ No se pudo acceder a la cámara. Verifica permisos.', 'error');
-                    
-                    // Intentar solo audio
+                    showToast('⚠️ No se pudo acceder a la cámara', 'error');
                     try {
                         var audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
                         localStream = audioStream;
@@ -594,19 +823,14 @@
                     }
                 }
 
-                // ✅ CONECTAR LIVEKIT
+                // Conectar LiveKit
                 try {
                     if (typeof window.livekitClient !== 'undefined') {
                         showToast('🔗 Conectando a LiveKit...', '');
-                        var token = await obtenerTokenLiveKit(
-                            currentStream.room_name,
-                            currentUser.user_metadata?.nombre || currentUser.email || 'streamer',
-                            'publisher'
-                        );
+                        var token = await obtenerTokenLiveKit(currentStream.room_name, currentUser.user_metadata?.nombre || currentUser.email || 'streamer', 'publisher');
                         liveKitRoom = new window.livekitClient.Room();
                         await liveKitRoom.connect(LIVEKIT_CONFIG.url, token);
-                        
-                        // Publicar video si hay stream
+
                         if (localStream) {
                             var videoTrack = localStream.getVideoTracks()[0];
                             if (videoTrack) {
@@ -617,7 +841,7 @@
                                 await liveKitRoom.localParticipant.publishTrack(audioTrack);
                             }
                         }
-                        
+
                         liveKitRoom.on('participantConnected', function() {
                             espectadores++;
                             document.getElementById('viewersCount').textContent = espectadores + ' espectadores';
@@ -627,7 +851,7 @@
                             espectadores = Math.max(0, espectadores - 1);
                             document.getElementById('viewersCount').textContent = espectadores + ' espectadores';
                         });
-                        
+
                         showToast('✅ Conectado a LiveKit', 'success');
                     }
                 } catch (e) {
@@ -635,10 +859,8 @@
                     showToast('⚠️ LiveKit no disponible - modo local', 'warning');
                 }
 
-                // ✅ SUSCRIBIRSE AL CHAT
                 suscribirseAlChat();
                 cargarTransmisionesActivas();
-
                 showToast('🎥 ¡Transmisión iniciada!', 'success');
 
             } catch (e) {
@@ -694,10 +916,12 @@
         // ================================================================
         function limpiarRecursosLive() {
             if (localStream) {
-                try {
-                    localStream.getTracks().forEach(function(t) { t.stop(); });
-                    localStream = null;
-                } catch (e) {}
+                try { localStream.getTracks().forEach(function(t) { t.stop(); }); } catch (e) {}
+                localStream = null;
+            }
+            if (gameStream) {
+                try { gameStream.getTracks().forEach(function(t) { t.stop(); }); } catch (e) {}
+                gameStream = null;
             }
             var video = document.getElementById('liveVideo');
             if (video) {
@@ -754,15 +978,10 @@
 
                 currentStream = result.data;
 
-                // Intentar conectar LiveKit como espectador
                 try {
                     if (typeof window.livekitClient !== 'undefined') {
                         liveKitRoom = new window.livekitClient.Room();
-                        var token = await obtenerTokenLiveKit(
-                            currentStream.room_name,
-                            session.user.user_metadata?.nombre || session.user.email || 'espectador',
-                            'subscriber'
-                        );
+                        var token = await obtenerTokenLiveKit(currentStream.room_name, session.user.user_metadata?.nombre || session.user.email || 'espectador', 'subscriber');
                         await liveKitRoom.connect(LIVEKIT_CONFIG.url, token);
                         liveKitRoom.on('trackSubscribed', function(track) {
                             if (track.kind === 'video') {
@@ -907,7 +1126,7 @@
         }
 
         // ================================================================
-        // 💰 DONACIONES - CON EFECTOS VISUALES
+        // 💰 DONACIONES
         // ================================================================
         async function enviarDonacion(monto) {
             try {
@@ -964,14 +1183,10 @@
             }
         }
 
-        // ================================================================
-        // 🎨 EFECTOS VISUALES - CORREGIDO
-        // ================================================================
         function mostrarEfectoDonacion(monto, donacion, usuario) {
             var container = document.getElementById('liveVideoContainer');
             if (!container) return;
 
-            // Remover overlays anteriores
             var overlays = container.querySelectorAll('.donacion-overlay');
             overlays.forEach(function(el) { el.remove(); });
 
@@ -1224,6 +1439,10 @@
         window.cargarTransmisionesActivas = cargarTransmisionesActivas;
         window.showToast = showToast;
         window.limpiarRecursosLive = limpiarRecursosLive;
+        window.abrirSelectorJuego = abrirSelectorJuego;
+        window.cerrarSelectorJuego = cerrarSelectorJuego;
+        window.seleccionarJuego = seleccionarJuego;
+        window.seleccionarOtroJuego = seleccionarOtroJuego;
     </script>
 
 </body>
