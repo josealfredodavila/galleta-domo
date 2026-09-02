@@ -261,6 +261,7 @@
             <a href="/features/mensajes/mensajes.html" class="nav-link">◈ Mensajes</a>
             <a href="/features/live/live.html" class="nav-link live">◉ Live</a>
             <a href="/features/internet/internet.html" class="nav-link">◈ Internet</a>
+            <a href="/features/videos/videos.html" class="nav-link">🎬 Videos</a>
         </nav>
 
         <div class="contactos-container">
@@ -355,8 +356,760 @@
 
     <div class="toast" id="toast"></div>
 
-    <!-- ✅ SCRIPTS CORREGIDOS - SIN WEB3 ni QRCODE -->
+    <!-- ================================================================ -->
+    <!-- SCRIPTS - ORDEN CORRECTO -->
+    <!-- ================================================================ -->
+
+    <!-- 1. Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-    <script src="/features/mensajes/contactos.js"></script>
+
+    <!-- 2. App.js - Define window.supabase y la app -->
+    <script src="/app.js"></script>
+
+    <!-- 3. TODAS las funciones de Contactos - DEFINIDAS AQUÍ -->
+    <script>
+        // ================================================================
+        // CONTACTOS - TODAS LAS FUNCIONES DEFINIDAS AQUÍ
+        // ================================================================
+
+        // ================================================================
+        // ESCAPE HTML - PREVENCIÓN XSS
+        // ================================================================
+        function escapeHTML(texto) {
+            if (!texto) return '';
+            var div = document.createElement('div');
+            div.textContent = texto;
+            return div.innerHTML;
+        }
+
+        // ================================================================
+        // TOAST NOTIFICACIONES
+        // ================================================================
+        function showToast(msg, type) {
+            try {
+                if (typeof window.showToast === 'function') { window.showToast(msg, type); return; }
+                var t = document.getElementById('toast');
+                if (!t) { t = document.createElement('div'); t.id = 'toast'; t.className = 'toast'; document.body.appendChild(t); }
+                t.textContent = msg;
+                t.className = 'toast show';
+                if (type === 'error') t.classList.add('error');
+                else if (type === 'warning') t.classList.add('warning');
+                else if (type === 'success') t.classList.add('success');
+                else t.classList.remove('error', 'warning', 'success');
+                clearTimeout(t._timeout);
+                t._timeout = setTimeout(function() { t.classList.remove('show'); }, 3500);
+            } catch (e) { console.warn('Toast error:', e); }
+        }
+
+        // ================================================================
+        // OBTENER SESIÓN
+        // ================================================================
+        async function getSession() {
+            try {
+                if (typeof window.supabase === 'undefined') { console.warn('Supabase no disponible'); return null; }
+                var r = await window.supabase.auth.getSession();
+                return r.data.session;
+            } catch (e) { console.error('Error sesión:', e); return null; }
+        }
+
+        // ================================================================
+        // VARIABLES GLOBALES
+        // ================================================================
+        var contactos = [];
+        var contactosFiltrados = [];
+        var filtroActual = 'todos';
+        var usuarioActual = null;
+        var canalContactos = null;
+
+        // ================================================================
+        // VERIFICAR AUTENTICACIÓN
+        // ================================================================
+        async function verificarAutenticacion() {
+            var session = await getSession();
+            if (!session) {
+                showToast('⚠️ Inicia sesión para ver contactos', 'warning');
+                return false;
+            }
+            usuarioActual = session.user;
+            return true;
+        }
+
+        // ================================================================
+        // ACTUALIZAR ESTADO ONLINE
+        // ================================================================
+        async function actualizarOnline(online) {
+            try {
+                var session = await getSession();
+                if (!session) return;
+
+                var result = await window.supabase
+                    .from('usuarios')
+                    .update({
+                        online: online,
+                        ultima_conexion: online ? new Date().toISOString() : new Date().toISOString()
+                    })
+                    .eq('id', session.user.id);
+
+                if (result.error) throw result.error;
+
+                if (usuarioActual) {
+                    usuarioActual.online = online;
+                }
+            } catch (e) {
+                console.error('Error actualizando estado online:', e);
+            }
+        }
+
+        // ================================================================
+        // CARGAR CONTACTOS
+        // ================================================================
+        async function cargarContactos() {
+            try {
+                if (!await verificarAutenticacion()) {
+                    mostrarSinContactos();
+                    return;
+                }
+
+                var result = await window.supabase
+                    .from('contactos')
+                    .select('id, contacto_id, estado, es_favorito, created_at, usuarios:contacto_id (id, nombre, handle, avatar_url, online, ultima_conexion, verificado)')
+                    .eq('usuario_id', usuarioActual.id)
+                    .eq('estado', 'activo');
+
+                if (result.error) throw result.error;
+
+                var data = result.data || [];
+
+                if (data.length === 0) {
+                    mostrarSinContactos();
+                    contactos = [];
+                    actualizarContadores();
+                    aplicarFiltros();
+                    return;
+                }
+
+                contactos = data.map(function(c) {
+                    var usuario = c.usuarios || {};
+                    return {
+                        _id: c.contacto_id,
+                        nombre: usuario.nombre || 'Usuario',
+                        handle: usuario.handle || '',
+                        avatar_url: usuario.avatar_url || null,
+                        online: usuario.online || false,
+                        ultima_conexion: usuario.ultima_conexion || null,
+                        esFavorito: c.es_favorito || false,
+                        verificado: usuario.verificado || false,
+                        estado_relacion: c.estado || 'activo'
+                    };
+                });
+
+                actualizarContadores();
+                aplicarFiltros();
+                iniciarEscuchaContactos();
+
+            } catch (e) {
+                console.error('Error cargando contactos:', e);
+                mostrarSinContactos();
+            }
+        }
+
+        // ================================================================
+        // MOSTRAR SIN CONTACTOS
+        // ================================================================
+        function mostrarSinContactos() {
+            var contactosListEl = document.getElementById('contactosList');
+            if (contactosListEl) {
+                contactosListEl.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3>Sin contactos</h3><p>Comienza a agregar personas a tu red</p><button class="btn-accion" onclick="abrirAgregarContacto()">◈ Agregar contacto</button></div>';
+            }
+        }
+
+        // ================================================================
+        // INICIAR ESCUCHA DE CONTACTOS (REALTIME)
+        // ================================================================
+        function iniciarEscuchaContactos() {
+            if (canalContactos) {
+                try { window.supabase.removeChannel(canalContactos); } catch (e) {}
+                canalContactos = null;
+            }
+
+            canalContactos = window.supabase
+                .channel('contactos-realtime')
+                .on('postgres_changes', {
+                    event: '*',
+                    schema: 'public',
+                    table: 'contactos',
+                    filter: 'usuario_id=eq.' + usuarioActual.id
+                }, function() {
+                    cargarContactos();
+                })
+                .on('postgres_changes', {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'usuarios'
+                }, function(payload) {
+                    var usuario = payload.new;
+                    for (var i = 0; i < contactos.length; i++) {
+                        if (contactos[i]._id === usuario.id) {
+                            contactos[i].online = usuario.online || false;
+                            contactos[i].ultima_conexion = usuario.ultima_conexion;
+                            actualizarContadores();
+                            aplicarFiltros();
+                            break;
+                        }
+                    }
+                })
+                .subscribe();
+        }
+
+        // ================================================================
+        // ACTUALIZAR CONTADORES
+        // ================================================================
+        function actualizarContadores() {
+            var total = contactos.length;
+            var online = 0;
+            for (var i = 0; i < contactos.length; i++) {
+                if (contactos[i].online) online++;
+            }
+
+            var totalContactosEl = document.getElementById('totalContactos');
+            var onlineContactosEl = document.getElementById('onlineContactos');
+
+            if (totalContactosEl) totalContactosEl.textContent = total;
+            if (onlineContactosEl) onlineContactosEl.textContent = online;
+        }
+
+        // ================================================================
+        // FORMATEAR TIEMPO
+        // ================================================================
+        function formatearTiempo(fecha) {
+            if (!fecha) return 'Desconectado';
+            var ahora = new Date();
+            var entonces = new Date(fecha);
+            var diffMs = ahora - entonces;
+            var diffMin = Math.floor(diffMs / 60000);
+
+            if (diffMin < 1) return 'hace un momento';
+            if (diffMin < 60) return 'hace ' + diffMin + ' min';
+            if (diffMin < 1440) return 'hace ' + Math.floor(diffMin / 60) + ' h';
+            return 'hace ' + Math.floor(diffMin / 1440) + ' d';
+        }
+
+        // ================================================================
+        // RENDERIZAR CONTACTOS
+        // ================================================================
+        function renderizarContactos(lista) {
+            var contactosListEl = document.getElementById('contactosList');
+            if (!contactosListEl) return;
+
+            if (!lista || lista.length === 0) {
+                mostrarSinContactos();
+                return;
+            }
+
+            var html = '';
+            for (var i = 0; i < lista.length; i++) {
+                var contacto = lista[i];
+                var esOnline = contacto.online === true;
+                var esFavorito = contacto.esFavorito || false;
+                var inicial = contacto.nombre ? contacto.nombre[0].toUpperCase() : '✦';
+                var estadoTexto = esOnline ? '◉ En línea' : '◈ ' + formatearTiempo(contacto.ultima_conexion);
+                var nombreSanitizado = escapeHTML(contacto.nombre || 'Usuario');
+                var handleSanitizado = escapeHTML(contacto.handle || 'usuario');
+                var avatarHtml = contacto.avatar_url ? '<img src="' + escapeHTML(contacto.avatar_url) + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">' : inicial;
+
+                html += '<div class="contacto-card" data-id="' + escapeHTML(contacto._id) + '">' +
+                    '<div class="contacto-avatar ' + (esOnline ? 'online' : 'offline') + (esFavorito ? ' favorito' : '') + '">' +
+                    avatarHtml +
+                    (esOnline ? '<span class="online-dot"></span>' : '') +
+                    (esFavorito ? '<span class="favorito-badge">◆</span>' : '') +
+                    '</div>' +
+                    '<div class="contacto-info">' +
+                    '<div class="nombre">' + nombreSanitizado + (contacto.verificado ? ' <span class="verified">✦ VERIFICADO</span>' : '') + '</div>' +
+                    '<div class="estado ' + (esOnline ? 'online' : 'offline') + '">' + estadoTexto + '</div>' +
+                    '<div class="contacto-meta"><span>@' + handleSanitizado + '</span></div>' +
+                    '</div>' +
+                    '<div class="contacto-actions">' +
+                    '<button class="mensaje" onclick="irAMensajes(\'' + escapeHTML(contacto._id) + '\')" title="Enviar mensaje">◈</button>' +
+                    '<button class="favorito ' + (esFavorito ? 'active' : '') + '" onclick="toggleFavorito(\'' + escapeHTML(contacto._id) + '\')" title="Favorito">◆</button>' +
+                    '<button class="bloquear" onclick="bloquearContacto(\'' + escapeHTML(contacto._id) + '\')" title="Bloquear">🚫</button>' +
+                    '<button class="eliminar" onclick="eliminarContacto(\'' + escapeHTML(contacto._id) + '\')" title="Eliminar">✕</button>' +
+                    '</div>' +
+                    '</div>';
+            }
+            contactosListEl.innerHTML = html;
+        }
+
+        // ================================================================
+        // APLICAR FILTROS
+        // ================================================================
+        function aplicarFiltros() {
+            var searchInputEl = document.getElementById('searchInput');
+            var query = searchInputEl ? searchInputEl.value.toLowerCase().trim() : '';
+
+            contactosFiltrados = contactos.filter(function(c) {
+                var matchNombre = c.nombre ? c.nombre.toLowerCase().indexOf(query) !== -1 : false;
+                var matchHandle = c.handle ? c.handle.toLowerCase().indexOf(query) !== -1 : false;
+                var matchBusqueda = matchNombre || matchHandle;
+
+                var matchFiltro = true;
+                if (filtroActual === 'online') {
+                    matchFiltro = c.online === true;
+                } else if (filtroActual === 'favoritos') {
+                    matchFiltro = c.esFavorito === true;
+                } else if (filtroActual === 'recientes') {
+                    matchFiltro = true;
+                }
+
+                return matchBusqueda && matchFiltro;
+            });
+
+            renderizarContactos(contactosFiltrados);
+        }
+
+        // ================================================================
+        // 🔍 BUSCAR USUARIOS
+        // ================================================================
+        async function buscarUsuarios(query) {
+            if (!query || query.length < 2) {
+                document.getElementById('resultadosBusqueda').innerHTML = '';
+                return;
+            }
+
+            try {
+                var session = await getSession();
+                if (!session) return;
+
+                var result = await window.supabase
+                    .from('usuarios')
+                    .select('id, nombre, handle, avatar_url, online')
+                    .or('nombre.ilike.%' + query + '%,handle.ilike.%' + query + '%')
+                    .neq('id', session.user.id)
+                    .limit(10);
+
+                if (result.error) throw result.error;
+
+                var container = document.getElementById('resultadosBusqueda');
+                if (!container) return;
+
+                if (!result.data || result.data.length === 0) {
+                    container.innerHTML = '<div style="padding:12px;text-align:center;color:var(--text-muted);font-size:0.75rem;">No se encontraron usuarios</div>';
+                    return;
+                }
+
+                var contactosResult = await window.supabase
+                    .from('contactos')
+                    .select('contacto_id')
+                    .eq('usuario_id', session.user.id);
+
+                var idsExistentes = contactosResult.data ? contactosResult.data.map(function(c) { return c.contacto_id; }) : [];
+
+                var html = '';
+                for (var i = 0; i < result.data.length; i++) {
+                    var usuario = result.data[i];
+                    var yaEsContacto = idsExistentes.indexOf(usuario.id) !== -1;
+                    var estaOnline = usuario.online || false;
+                    var nombreSanitizado = escapeHTML(usuario.nombre || 'Usuario');
+                    var handleSanitizado = escapeHTML(usuario.handle || 'usuario');
+                    var avatarHtml = usuario.avatar_url ? '<img src="' + escapeHTML(usuario.avatar_url) + '" style="width:100%;height:100%;object-fit:cover;">' : (usuario.nombre ? nombreSanitizado[0].toUpperCase() : '◈');
+
+                    html += '<div class="resultado-item" style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid rgba(212,175,55,0.05);transition:all 0.2s;">' +
+                        '<div class="avatar" style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--green-deep),var(--gold));display:flex;align-items:center;justify-content:center;color:white;font-size:0.8rem;overflow:hidden;border:2px solid ' + (estaOnline ? 'var(--success)' : 'var(--text-muted)') + ';position:relative;">' + avatarHtml + '</div>' +
+                        '<div style="flex:1;"><div style="font-weight:600;font-size:0.8rem;">' + nombreSanitizado + '</div><div style="font-size:0.6rem;color:var(--text-muted);">@' + handleSanitizado + (estaOnline ? ' · 🟢 En línea' : '') + '</div></div>';
+
+                    if (yaEsContacto) {
+                        html += '<span style="font-size:0.55rem;color:var(--success);background:rgba(0,214,143,0.1);padding:2px 10px;border-radius:12px;">✓ Contacto</span>';
+                    } else {
+                        html += '<button onclick="agregarContacto(\'' + usuario.id + '\')" style="background:linear-gradient(135deg,var(--gold),var(--gold-dark));color:var(--space);border:none;padding:4px 12px;border-radius:12px;font-size:0.6rem;font-weight:600;cursor:pointer;">+ Agregar</button>';
+                    }
+                    html += '</div>';
+                }
+                container.innerHTML = html;
+
+            } catch (e) {
+                console.error('Error buscando usuarios:', e);
+            }
+        }
+
+        // ================================================================
+        // ➕ AGREGAR CONTACTO
+        // ================================================================
+        async function agregarContacto(contactoId) {
+            try {
+                var session = await getSession();
+                if (!session) {
+                    showToast('⚠️ Inicia sesión para agregar contactos', 'error');
+                    return;
+                }
+
+                var existeResult = await window.supabase
+                    .from('contactos')
+                    .select('id')
+                    .eq('usuario_id', session.user.id)
+                    .eq('contacto_id', contactoId)
+                    .maybeSingle();
+
+                if (existeResult.data) {
+                    showToast('⚠️ Este usuario ya es tu contacto', 'warning');
+                    return;
+                }
+
+                var result = await window.supabase
+                    .from('contactos')
+                    .insert({
+                        usuario_id: session.user.id,
+                        contacto_id: contactoId,
+                        estado: 'activo',
+                        es_favorito: false
+                    });
+
+                if (result.error) throw result.error;
+
+                showToast('✅ Contacto agregado correctamente', 'success');
+
+                document.getElementById('searchInputModal').value = '';
+                document.getElementById('resultadosBusqueda').innerHTML = '';
+                cerrarModalBuscar();
+                await cargarContactos();
+
+            } catch (e) {
+                console.error('Error agregando contacto:', e);
+                showToast('❌ Error al agregar contacto', 'error');
+            }
+        }
+
+        // ================================================================
+        // 🚫 BLOQUEAR CONTACTO
+        // ================================================================
+        async function bloquearContacto(contactoId) {
+            if (!confirm('¿Bloquear a este usuario? No podrán enviarte mensajes ni ver tu perfil.')) return;
+
+            try {
+                var session = await getSession();
+                if (!session) {
+                    showToast('⚠️ Inicia sesión', 'error');
+                    return;
+                }
+
+                try {
+                    var result = await window.supabase
+                        .from('bloqueos')
+                        .insert({
+                            usuario_id: session.user.id,
+                            bloqueado_id: contactoId
+                        });
+
+                    if (result.error) {
+                        if (result.error.code === '42P01') {
+                            showToast('⚠️ La tabla de bloqueos no está configurada', 'warning');
+                            return;
+                        }
+                        throw result.error;
+                    }
+                } catch (insertError) {
+                    console.error('Error insertando bloqueo:', insertError);
+                    showToast('❌ Error al bloquear usuario', 'error');
+                    return;
+                }
+
+                await window.supabase
+                    .from('contactos')
+                    .delete()
+                    .eq('usuario_id', session.user.id)
+                    .eq('contacto_id', contactoId);
+
+                contactos = contactos.filter(function(c) { return c._id !== contactoId; });
+                actualizarContadores();
+                aplicarFiltros();
+                showToast('🚫 Usuario bloqueado', 'warning');
+
+            } catch (e) {
+                console.error('Error bloqueando usuario:', e);
+                showToast('❌ Error al bloquear usuario', 'error');
+            }
+        }
+
+        // ================================================================
+        // 📨 IR A MENSAJES
+        // ================================================================
+        function irAMensajes(contactoId) {
+            window.location.href = '/features/mensajes/mensajes.html?contacto=' + contactoId;
+        }
+
+        // ================================================================
+        // ◆ TOGGLE FAVORITO
+        // ================================================================
+        async function toggleFavorito(contactoId) {
+            var session = await getSession();
+            if (!session) {
+                showToast('⚠️ Inicia sesión para marcar favoritos', 'error');
+                return;
+            }
+
+            try {
+                var contacto = null;
+                for (var i = 0; i < contactos.length; i++) {
+                    if (contactos[i]._id === contactoId) {
+                        contacto = contactos[i];
+                        break;
+                    }
+                }
+                if (!contacto) return;
+
+                var nuevoEstado = !contacto.esFavorito;
+
+                var result = await window.supabase
+                    .from('contactos')
+                    .update({ es_favorito: nuevoEstado })
+                    .eq('usuario_id', session.user.id)
+                    .eq('contacto_id', contactoId);
+
+                if (result.error) throw result.error;
+
+                contacto.esFavorito = nuevoEstado;
+                aplicarFiltros();
+                showToast(nuevoEstado ? '◆ Agregado a favoritos' : '◆ Favorito eliminado');
+
+            } catch (e) {
+                console.error('Error actualizando favorito:', e);
+                showToast('❌ Error al actualizar favorito', 'error');
+            }
+        }
+
+        // ================================================================
+        // 🗑️ ELIMINAR CONTACTO
+        // ================================================================
+        async function eliminarContacto(contactoId) {
+            if (!confirm('¿Estás seguro de eliminar este contacto?')) return;
+
+            var session = await getSession();
+            if (!session) {
+                showToast('⚠️ Inicia sesión para eliminar contactos', 'error');
+                return;
+            }
+
+            try {
+                var result = await window.supabase
+                    .from('contactos')
+                    .delete()
+                    .eq('usuario_id', session.user.id)
+                    .eq('contacto_id', contactoId);
+
+                if (result.error) throw result.error;
+
+                contactos = contactos.filter(function(c) { return c._id !== contactoId; });
+                actualizarContadores();
+                aplicarFiltros();
+                showToast('✅ Contacto eliminado');
+
+            } catch (e) {
+                console.error('Error eliminando contacto:', e);
+                showToast('❌ Error al eliminar contacto', 'error');
+            }
+        }
+
+        // ================================================================
+        // 📧 INVITAR CONTACTO POR CÓDIGO
+        // ================================================================
+        async function invitarContacto() {
+            try {
+                var session = await getSession();
+                if (!session) {
+                    showToast('⚠️ Inicia sesión para invitar', 'error');
+                    return;
+                }
+
+                var codigo = 'SAR-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+
+                try {
+                    var result = await window.supabase
+                        .from('invitaciones')
+                        .insert({
+                            usuario_id: session.user.id,
+                            codigo: codigo,
+                            activo: true
+                        })
+                        .select()
+                        .single();
+
+                    if (result.error) {
+                        if (result.error.code === '42P01') {
+                            showToast('⚠️ La tabla de invitaciones no está configurada', 'warning');
+                            return;
+                        }
+                        throw result.error;
+                    }
+
+                    var modal = document.getElementById('modalInvitacion');
+                    var codigoEl = document.getElementById('codigoInvitacion');
+                    if (modal && codigoEl) {
+                        codigoEl.textContent = codigo;
+                        modal.style.display = 'flex';
+                    }
+
+                    showToast('✅ Código de invitación generado', 'success');
+
+                } catch (insertError) {
+                    console.error('Error generando invitación:', insertError);
+                    showToast('❌ Error al generar invitación', 'error');
+                }
+
+            } catch (e) {
+                console.error('Error generando invitación:', e);
+                showToast('❌ Error al generar invitación', 'error');
+            }
+        }
+
+        function cerrarModalInvitacion() {
+            document.getElementById('modalInvitacion').style.display = 'none';
+        }
+
+        async function copiarCodigoInvitacion() {
+            var codigo = document.getElementById('codigoInvitacion') ? document.getElementById('codigoInvitacion').textContent : '';
+            if (!codigo) return;
+
+            try {
+                await navigator.clipboard.writeText('◈ Únete a Sariel\'s con mi código: ' + codigo);
+                showToast('📋 Código copiado', 'success');
+            } catch {
+                prompt('Copia este código:', codigo);
+            }
+        }
+
+        // ================================================================
+        // 🔄 ORDENAR CONTACTOS
+        // ================================================================
+        function ordenarContactos(criterio) {
+            switch (criterio) {
+                case 'nombre':
+                    contactos.sort(function(a, b) {
+                        return (a.nombre || '').localeCompare(b.nombre || '');
+                    });
+                    break;
+                case 'online':
+                    contactos.sort(function(a, b) {
+                        return (b.online ? 1 : 0) - (a.online ? 1 : 0);
+                    });
+                    break;
+                case 'reciente':
+                    contactos.sort(function(a, b) {
+                        var fechaA = a.ultima_conexion ? new Date(a.ultima_conexion) : new Date(0);
+                        var fechaB = b.ultima_conexion ? new Date(b.ultima_conexion) : new Date(0);
+                        return fechaB - fechaA;
+                    });
+                    break;
+                default:
+                    break;
+            }
+            aplicarFiltros();
+        }
+
+        // ================================================================
+        // ABRIR MODAL AGREGAR CONTACTO
+        // ================================================================
+        function abrirAgregarContacto() {
+            var modal = document.getElementById('modalBuscarContacto');
+            if (modal) {
+                modal.style.display = 'flex';
+                setTimeout(function() {
+                    var input = document.getElementById('searchInputModal');
+                    if (input) input.focus();
+                }, 300);
+            }
+        }
+
+        function cerrarModalBuscar() {
+            document.getElementById('modalBuscarContacto').style.display = 'none';
+            document.getElementById('searchInputModal').value = '';
+            document.getElementById('resultadosBusqueda').innerHTML = '';
+        }
+
+        // ================================================================
+        // LIMPIEZA DE RECURSOS
+        // ================================================================
+        function limpiarRecursosContactos() {
+            if (canalContactos) {
+                try { window.supabase.removeChannel(canalContactos); } catch (e) {}
+                canalContactos = null;
+            }
+        }
+
+        window.addEventListener('beforeunload', limpiarRecursosContactos);
+
+        // ================================================================
+        // 🎯 INICIALIZAR
+        // ================================================================
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('◈ Sariel\'s - Contactos');
+            console.log('✅ Inicializando...');
+
+            verificarAutenticacion().then(function(autenticado) {
+                if (autenticado) {
+                    actualizarOnline(true);
+                    cargarContactos();
+
+                    window.addEventListener('beforeunload', function() {
+                        actualizarOnline(false);
+                    });
+                } else {
+                    mostrarSinContactos();
+                }
+            });
+
+            var searchModal = document.getElementById('searchInputModal');
+            if (searchModal) {
+                var timeoutId;
+                searchModal.addEventListener('input', function() {
+                    clearTimeout(timeoutId);
+                    timeoutId = setTimeout(function() {
+                        buscarUsuarios(this.value);
+                    }.bind(this), 300);
+                });
+                searchModal.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') {
+                        buscarUsuarios(this.value);
+                    }
+                });
+            }
+
+            var searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                searchInput.addEventListener('input', function() {
+                    aplicarFiltros();
+                });
+            }
+
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    document.querySelectorAll('.modal-overlay.show').forEach(function(modal) {
+                        modal.style.display = 'none';
+                    });
+                    cerrarModalBuscar();
+                    cerrarModalInvitacion();
+                }
+            });
+        });
+
+        // ================================================================
+        // 📤 EXPOSICIÓN DE FUNCIONES GLOBALES
+        // ================================================================
+        window.cargarContactos = cargarContactos;
+        window.irAMensajes = irAMensajes;
+        window.toggleFavorito = toggleFavorito;
+        window.eliminarContacto = eliminarContacto;
+        window.abrirAgregarContacto = abrirAgregarContacto;
+        window.buscarUsuarios = buscarUsuarios;
+        window.agregarContacto = agregarContacto;
+        window.bloquearContacto = bloquearContacto;
+        window.invitarContacto = invitarContacto;
+        window.copiarCodigoInvitacion = copiarCodigoInvitacion;
+        window.cerrarModalInvitacion = cerrarModalInvitacion;
+        window.cerrarModalBuscar = cerrarModalBuscar;
+        window.ordenarContactos = ordenarContactos;
+        window.actualizarOnline = actualizarOnline;
+        window.showToast = showToast;
+        window.limpiarRecursosContactos = limpiarRecursosContactos;
+        window.aplicarFiltros = aplicarFiltros;
+    </script>
+
 </body>
 </html>
