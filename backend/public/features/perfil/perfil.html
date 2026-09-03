@@ -1231,7 +1231,7 @@
             };
         }
 
-        // ===== PUBLICAR CONTENIDO - CORREGIDO =====
+        // ===== PUBLICAR CONTENIDO - CORREGIDO (STORAGE PATH FIX) =====
         async function publicarContenido() {
             var texto = document.getElementById('pubTexto').value.trim();
             var fileInput = document.getElementById('pubArchivo');
@@ -1244,8 +1244,9 @@
             }
 
             var sessionResult = await window.supabase.auth.getSession();
-            if (!sessionResult.data.session) {
+            if (sessionResult.error || !sessionResult.data.session) {
                 status.textContent = '⚠️ Inicia sesión para publicar';
+                console.error('❌ Error de sesión:', sessionResult.error);
                 return;
             }
 
@@ -1261,20 +1262,24 @@
                 if (fileInput.files.length > 0) {
                     var file = fileInput.files[0];
                     var fileExt = file.name.split('.').pop();
-                    var filePath = 'publicaciones/' + userId + '/' + Date.now() + '.' + fileExt;
+                    // ✅ CORREGIDO: Path correcto para Storage RLS (sin carpeta "publicaciones/")
+                    var filePath = userId + '/' + Date.now() + '.' + fileExt;
 
                     var uploadResult = await window.supabase.storage
                         .from('publicaciones')
                         .upload(filePath, file, { cacheControl: '3600', upsert: true });
 
-                    if (uploadResult.error) throw uploadResult.error;
+                    if (uploadResult.error) {
+                        console.error('❌ Error subiendo archivo:', uploadResult.error);
+                        throw uploadResult.error;
+                    }
 
                     var urlData = window.supabase.storage.from('publicaciones').getPublicUrl(filePath);
                     mediaUrl = urlData.data.publicUrl;
                     mediaType = file.type.startsWith('image/') ? 'imagen' : 'video';
                 }
 
-                // ✅ CORREGIDO: usuario_id ELIMINADO, Supabase asigna auth.uid()
+                // ✅ INSERT en publicaciones (usuario_id lo asigna DEFAULT auth.uid())
                 var insertResult = await window.supabase
                     .from('publicaciones')
                     .insert({
