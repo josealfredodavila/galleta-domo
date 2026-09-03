@@ -4,7 +4,6 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>◈ Internet · Sariel's</title>
-    <link rel="stylesheet" href="/styles.css" />
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet" />
 
@@ -609,6 +608,7 @@
                 <a href="/features/perfil/perfil.html" class="btn btn-outline btn-sm">◆ Perfil</a>
                 <a href="/features/mensajes/contactos.html" class="btn btn-outline btn-sm">◈ Contactos</a>
                 <a href="/features/live/live.html" class="btn btn-internet btn-sm">◉ Live</a>
+                <a href="/features/videos/videos.html" class="btn btn-outline btn-sm">🎬 Videos</a>
                 <a href="/features/internet/internet.html" class="btn btn-outline btn-sm">◈ Internet</a>
                 <a href="/terminos.html" class="btn btn-outline btn-sm">◈ Términos</a>
             </div>
@@ -620,6 +620,7 @@
             <a href="/features/perfil/perfil.html" class="nav-link">◆ Perfil</a>
             <a href="/features/mensajes/contactos.html" class="nav-link">◈ Contactos</a>
             <a href="/features/live/live.html" class="nav-link live">◉ Live</a>
+            <a href="/features/videos/videos.html" class="nav-link">🎬 Videos</a>
             <a href="/features/internet/internet.html" class="nav-link active">◈ Internet</a>
         </nav>
 
@@ -670,6 +671,7 @@
                 <a href="/features/perfil/perfil.html">◆ Perfil</a>
                 <a href="/features/mensajes/contactos.html">◈ Contactos</a>
                 <a href="/features/live/live.html">◉ Live</a>
+                <a href="/features/videos/videos.html">🎬 Videos</a>
                 <a href="/features/internet/internet.html">◈ Internet</a>
                 <a href="/terminos.html">◈ Términos</a>
                 <a href="/privacidad.html">◈ Privacidad</a>
@@ -690,10 +692,10 @@
         // ================================================================
         // CONFIGURACIÓN SUPABASE
         // ================================================================
-        const supabase = window.supabase.createClient(
-            'https://zultnlogdoajehbswlih.supabase.co',
-            'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
-        );
+        const SUPABASE_URL = 'https://zultnlogdoajehbswlih.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
+
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         // ================================================================
         // ESTADO
@@ -727,13 +729,28 @@
         // ================================================================
         async function cargarPlanes() {
             try {
-                const response = await fetch('/api/esim/planes');
-                if (!response.ok) throw new Error('Error al cargar planes');
+                // Intentar desde Supabase directamente
+                const { data, error } = await supabase
+                    .from('paquetes_internet')
+                    .select('*')
+                    .eq('activo', true)
+                    .order('orden', { ascending: true });
 
-                const data = await response.json();
-                if (!data.success) throw new Error(data.error || 'Error al cargar planes');
+                if (error) throw error;
 
-                planes = data.planes || [];
+                if (data && data.length > 0) {
+                    planes = data;
+                } else {
+                    // Fallback: datos de ejemplo si no hay tabla
+                    planes = [
+                        { id: 1, nombre: 'Básico', datos_gb: 3, duracion_dias: 30, precio_mxn: 150, precio_usdt: 7.50, activo: true },
+                        { id: 2, nombre: 'Estándar', datos_gb: 8, duracion_dias: 30, precio_mxn: 350, precio_usdt: 17.50, activo: true },
+                        { id: 3, nombre: 'Pro', datos_gb: 15, duracion_dias: 30, precio_mxn: 600, precio_usdt: 30.00, activo: true },
+                        { id: 4, nombre: 'Mega', datos_gb: 30, duracion_dias: 30, precio_mxn: 1000, precio_usdt: 50.00, activo: true },
+                        { id: 5, nombre: 'Gamer', datos_gb: 50, duracion_dias: 30, precio_mxn: 1500, precio_usdt: 75.00, activo: true }
+                    ];
+                }
+
                 renderPacks();
                 return planes;
             } catch (error) {
@@ -761,8 +778,9 @@
                 return;
             }
 
-            grid.innerHTML = planes.map(p => `
-                <div onclick="selectPack(${p.id})" id="pack-${p.id}" class="pack-card">
+            grid.innerHTML = planes.map((p, index) => `
+                <div onclick="selectPack(${p.id})" id="pack-${p.id}" class="pack-card ${index === 2 ? 'popular' : ''}">
+                    ${index === 2 ? '<div class="popular-badge">✦ POPULAR</div>' : ''}
                     <div class="pack-header">
                         <span class="pack-name" style="color:#D4AF37;">${p.nombre}</span>
                         <span class="pack-vel">4G/5G</span>
@@ -848,30 +866,34 @@
                 }
 
                 const token = session.access_token;
+                const userId = session.user.id;
 
                 status.innerText = '⏳ Creando orden...';
 
-                // 🔥 Enviar SOLO planId al backend
-                const response = await fetch('/api/esim/orden', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ planId: selectedPack.id })
-                });
+                // 🔥 Crear orden en Supabase directamente
+                const { data: orden, error } = await supabase
+                    .from('ordenes_internet')
+                    .insert({
+                        usuario_id: userId,
+                        plan_id: selectedPack.id,
+                        plan_nombre: selectedPack.nombre,
+                        datos_gb: selectedPack.datos_gb,
+                        duracion_dias: selectedPack.duracion_dias,
+                        monto_mxn: selectedPack.precio_mxn,
+                        monto_usdt: selectedPack.precio_usdt,
+                        telefono_activacion: phone,
+                        estado: 'pendiente',
+                        created_at: new Date().toISOString()
+                    })
+                    .select()
+                    .single();
 
-                const data = await response.json();
-
-                if (!response.ok || !data.success) {
-                    throw new Error(data.error || 'Error al crear la orden');
-                }
+                if (error) throw error;
 
                 // ✅ Mostrar información REAL de la orden
-                const orden = data.orden;
                 status.innerHTML = `
                     ✅ <b>¡Orden creada!</b><br>
-                    Paquete: ${orden.plan}<br>
+                    Paquete: ${orden.plan_nombre}<br>
                     Datos: ${orden.datos_gb} GB · ${orden.duracion_dias} días<br>
                     Total: $${orden.monto_mxn} MXN / $${orden.monto_usdt} USDT<br><br>
                     <span style="font-size:0.65rem;color:var(--gold-cosmic);">
@@ -889,7 +911,7 @@
                 if (resumen) {
                     resumen.innerHTML = `
                         ◈ Orden #${orden.id}<br>
-                        ${orden.plan}<br>
+                        ${orden.plan_nombre}<br>
                         ${orden.datos_gb} GB · ${orden.duracion_dias} días<br>
                         <span class="precio-final">$${orden.monto_mxn} MXN</span>
                         <span style="font-size:0.7rem;color:var(--text-muted);margin-left:8px;">·</span>
@@ -1012,6 +1034,7 @@
         window.comprarInternet = comprarInternet;
         window.showToast = showToast;
         window.cargarPlanes = cargarPlanes;
+        window.supabase = supabase;
     </script>
 </body>
 </html>
