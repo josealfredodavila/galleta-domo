@@ -99,7 +99,7 @@
 
         .video-card .thumbnail {
             width: 100%;
-            aspect-ratio: 9/16;  /* ✅ Cambiado a vertical (9:16) como TikTok */
+            aspect-ratio: 9/16;
             background: var(--space);
             display: flex;
             align-items: center;
@@ -112,7 +112,7 @@
         .video-card .thumbnail img {
             width: 100%;
             height: 100%;
-            object-fit: cover;  /* ✅ Ocupa todo sin bordes negros */
+            object-fit: cover;
         }
         .video-card .thumbnail .play-btn {
             position: absolute;
@@ -304,8 +304,61 @@
         .modal-video .video-wrapper video {
             width: 100%;
             height: 100%;
-            object-fit: contain;  /* ✅ El video se ajusta sin deformarse */
+            object-fit: contain;
             background: #000;
+        }
+
+        /* ================================================================
+           🎯 MARCA DE AGUA "◈ Sariel's" (Estilo TikTok)
+           ================================================================ */
+        .watermark {
+            position: absolute;
+            bottom: 80px;
+            right: 16px;
+            z-index: 15;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(8px);
+            padding: 8px 14px 8px 12px;
+            border-radius: 30px;
+            border: 1px solid rgba(212, 175, 55, 0.25);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            animation: watermarkPulse 3s ease-in-out infinite;
+            pointer-events: none;
+            user-select: none;
+        }
+        .watermark .icon {
+            font-size: 1.2rem;
+            color: var(--gold);
+            font-family: 'Orbitron', monospace;
+            text-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+        }
+        .watermark .text {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: 1px;
+        }
+        .watermark .text span {
+            color: var(--gold);
+        }
+        .watermark .badge-web3 {
+            font-size: 0.45rem;
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            color: var(--space);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            margin-left: 4px;
+        }
+
+        @keyframes watermarkPulse {
+            0%, 100% { opacity: 0.8; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.02); }
         }
 
         .modal-video .info-video {
@@ -522,11 +575,18 @@
             .modal-video .comentarios-section { bottom: 60px; max-height: 25vh; }
             .upload-section .form-group .file-input-wrapper { flex-direction: column; }
             .upload-section .form-group .file-input-wrapper input[type="file"] { width: 100%; }
+            .watermark { bottom: 70px; right: 10px; padding: 6px 12px 6px 10px; }
+            .watermark .icon { font-size: 1rem; }
+            .watermark .text { font-size: 0.6rem; }
+            .watermark .badge-web3 { font-size: 0.4rem; padding: 1px 6px; }
         }
         @media (max-width: 480px) {
             .videos-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
             .video-card .info .titulo { font-size: 0.7rem; }
             .modal-video .info-video .titulo { font-size: 0.9rem; }
+            .watermark { bottom: 60px; right: 8px; padding: 4px 10px 4px 8px; }
+            .watermark .icon { font-size: 0.8rem; }
+            .watermark .text { font-size: 0.5rem; }
         }
     </style>
 </head>
@@ -621,6 +681,14 @@
 
             <div class="video-wrapper">
                 <video id="modalVideoPlayer" controls autoplay playsinline></video>
+                <!-- ============================================================
+                     🎯 MARCA DE AGUA "◈ Sariel's" (Estilo TikTok)
+                     ============================================================ -->
+                <div class="watermark" id="watermark">
+                    <span class="icon">◈</span>
+                    <span class="text">Sariel<span>'s</span></span>
+                    <span class="badge-web3">✦ WEB3</span>
+                </div>
             </div>
 
             <div class="info-video">
@@ -883,7 +951,7 @@
         }
 
         // ================================================================
-        // ABRIR VIDEO EN MODAL (FULL SCREEN)
+        // ABRIR VIDEO EN MODAL (FULL SCREEN) - CORREGIDO SIN ADVERTENCIA
         // ================================================================
         async function abrirVideo(videoId) {
             var modal = document.getElementById('videoModal');
@@ -921,13 +989,22 @@
 
                 document.getElementById('modalComentariosCount').textContent = video.comentarios || 0;
 
+                // ✅ ASIGNAR FUENTE Y CARGAR
                 videoPlayer.src = video.url_video;
                 videoPlayer.load();
 
                 cargarComentariosVideo(videoId);
 
+                // ✅ MOSTRAR MODAL
                 modal.classList.add('show');
-                videoPlayer.play();
+
+                // ✅ REPRODUCIR CON MANEJO DE ERROR SILENCIOSO (ADVERTENCIA ELIMINADA)
+                try {
+                    await videoPlayer.play();
+                } catch (playError) {
+                    // ✅ Advertencia silenciada - el usuario puede dar clic en play
+                    console.log('ℹ️ El usuario debe interactuar para reproducir el video.');
+                }
 
             } catch (e) {
                 console.error('Error abriendo video:', e);
