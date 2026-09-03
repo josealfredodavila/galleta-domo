@@ -4,9 +4,8 @@ import android.content.Context
 import android.util.Log
 import io.livekit.android.room.Room
 import io.livekit.android.room.RoomOptions
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLEncoder
@@ -58,26 +57,28 @@ object LiveKitManager {
         }
     }
 
-    fun conectar(context: Context, roomName: String, token: String) {
+    // ✅ SUSPEND Y ESPERA LA CONEXIÓN
+    suspend fun conectar(context: Context, roomName: String, token: String): Boolean {
         if (isConnected) {
             Log.d(TAG, "Ya conectado a LiveKit")
-            return
+            return true
         }
 
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                val options = RoomOptions.Builder()
-                    .autoSubscribe(true)
-                    .build()
+        return try {
+            Log.d(TAG, "Conectando a LiveKit: $roomName")
+            val options = RoomOptions.Builder()
+                .autoSubscribe(true)
+                .build()
 
-                room = Room(context, options)
-                room?.connect(LIVEKIT_URL, token)
-                isConnected = true
-                Log.d(TAG, "✅ Conectado a LiveKit: $roomName")
-            } catch (e: Exception) {
-                Log.e(TAG, "Error conectando a LiveKit", e)
-                throw e
-            }
+            room = Room(context, options)
+            room?.connect(LIVEKIT_URL, token)
+            isConnected = true
+            Log.d(TAG, "✅ Conectado a LiveKit: $roomName")
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "Error conectando a LiveKit", e)
+            isConnected = false
+            false
         }
     }
 
