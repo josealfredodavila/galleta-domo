@@ -1,6 +1,7 @@
 <!-- ================================================================
      LIVE - SARIEL'S ECOSYSTEM
      VERSIÓN FINAL - CÁMARA ↔ PANTALLA CON TRACKS SEPARADOS
+     CORREGIDO: BOTÓN FINALIZAR FUNCIONANDO
      ================================================================ -->
 <!DOCTYPE html>
 <html lang="es">
@@ -511,10 +512,10 @@
         var juegoSeleccionado = null;
         var juegosCache = null;
 
-        // ✅ TRACKS SEPARADOS - CORREGIDO
-        var currentVideoTrack = null;        // Cámara o pantalla
-        var currentMicTrack = null;          // Micrófono
-        var currentScreenAudioTrack = null;  // Audio de pantalla (si existe)
+        // ✅ TRACKS SEPARADOS
+        var currentVideoTrack = null;
+        var currentMicTrack = null;
+        var currentScreenAudioTrack = null;
         var isScreenSharing = false;
 
         function showToast(msg, type) {
@@ -858,7 +859,6 @@
                         showToast('📷 Cámara activada', 'success');
                     }
 
-                    // ✅ Guardar tracks iniciales
                     if (liveKitRoom) {
                         var videoTrack = stream.getVideoTracks()[0];
                         if (videoTrack) {
@@ -944,21 +944,58 @@
         }
 
         // ================================================================
-        // ✋ FINALIZAR TRANSMISIÓN
+        // ✋ FINALIZAR TRANSMISIÓN - CORREGIDO CON LOGS
         // ================================================================
 
         async function finalizarTransmision() {
             try {
-                if (!currentStream) {
+                console.log('🛑 Intentando finalizar transmisión...');
+                console.log('📊 currentStream:', currentStream);
+                console.log('📊 currentStreamId:', currentStreamId);
+
+                // Verificar si hay transmisión activa
+                if (!currentStream && !currentStreamId) {
                     showToast('⚠️ No hay transmisión activa', 'error');
+                    console.warn('⚠️ No hay transmisión activa (currentStream y currentStreamId son null)');
                     return;
                 }
-                if (!confirm('¿Seguro que quieres finalizar la transmisión?')) return;
+
+                // Obtener el ID disponible
+                var id = currentStreamId || (currentStream ? currentStream.id : null);
+
+                if (!id) {
+                    showToast('⚠️ No se pudo encontrar el ID de la transmisión', 'error');
+                    console.error('❌ ID no encontrado');
+                    return;
+                }
+
+                console.log('✅ ID encontrado:', id);
+
+                if (!confirm('¿Seguro que quieres finalizar la transmisión?')) {
+                    console.log('❌ Cancelado por el usuario');
+                    return;
+                }
 
                 showToast('⏳ Finalizando transmisión...', '');
 
                 var fechaFin = new Date().toISOString();
-                var duracion = Math.floor((new Date() - new Date(currentStream.fecha_inicio)) / 1000);
+                console.log('📝 Fecha fin:', fechaFin);
+
+                // Calcular duración si existe fecha_inicio
+                var duracion = 0;
+                if (currentStream && currentStream.fecha_inicio) {
+                    duracion = Math.floor((new Date() - new Date(currentStream.fecha_inicio)) / 1000);
+                    console.log('⏱️ Duración calculada:', duracion, 'segundos');
+                } else {
+                    console.warn('⚠️ No se pudo calcular duración, fecha_inicio no disponible');
+                }
+
+                console.log('📝 Actualizando transmisión ID:', id);
+                console.log('📝 Datos a actualizar:', {
+                    estado: 'finalizada',
+                    fecha_fin: fechaFin,
+                    duracion: duracion
+                });
 
                 var result = await window.supabase
                     .from('transmisiones')
@@ -967,16 +1004,21 @@
                         fecha_fin: fechaFin,
                         duracion: duracion
                     })
-                    .eq('id', currentStreamId || currentStream.id)
+                    .eq('id', id)
                     .select()
                     .single();
 
-                if (result.error) throw result.error;
+                if (result.error) {
+                    console.error('❌ Error en UPDATE:', result.error);
+                    throw result.error;
+                }
+
+                console.log('✅ Transmisión finalizada:', result.data);
 
                 showToast('✅ Transmisión finalizada - Duración: ' + Math.floor(duracion / 60) + ' min', 'success');
 
             } catch (e) {
-                console.error('Error finalizando transmisión:', e);
+                console.error('❌ Error finalizando transmisión:', e);
                 showToast('❌ Error al finalizar: ' + e.message, 'error');
             } finally {
                 limpiarRecursosLive();
@@ -1028,7 +1070,6 @@
             juegoSeleccionado = null;
             espectadores = 0;
             isScreenSharing = false;
-            // ✅ Limpiar tracks
             currentVideoTrack = null;
             currentMicTrack = null;
             currentScreenAudioTrack = null;
@@ -1369,7 +1410,6 @@
                 var audioTrack = screenStream.getAudioTracks()[0];
                 if (audioTrack && liveKitRoom) {
                     try {
-                        // Si ya hay audio de pantalla, removerlo primero
                         if (currentScreenAudioTrack) {
                             try {
                                 await liveKitRoom.localParticipant.unpublishTrack(currentScreenAudioTrack);
@@ -1411,7 +1451,6 @@
                     return;
                 }
                 
-                // ✅ 1. REMOVER TRACK DE PANTALLA (video)
                 if (currentVideoTrack && isScreenSharing) {
                     try {
                         await liveKitRoom.localParticipant.unpublishTrack(currentVideoTrack);
@@ -1423,7 +1462,6 @@
                     isScreenSharing = false;
                 }
                 
-                // ✅ 2. REMOVER AUDIO DE PANTALLA (si existe)
                 if (currentScreenAudioTrack) {
                     try {
                         await liveKitRoom.localParticipant.unpublishTrack(currentScreenAudioTrack);
@@ -1434,10 +1472,8 @@
                     currentScreenAudioTrack = null;
                 }
                 
-                // ✅ 3. OBTENER CÁMARA (SOLO VIDEO, NO AUDIO para no duplicar micrófono)
                 var cameraStream = await navigator.mediaDevices.getUserMedia({
                     video: { facingMode: 'user', width: 1280, height: 720 }
-                    // ⚠️ NO audio - el micrófono ya está publicado
                 });
                 
                 var video = document.getElementById('liveVideo');
@@ -1446,7 +1482,6 @@
                     video.play().catch(function(e) {});
                 }
                 
-                // ✅ 4. PUBLICAR TRACK DE CÁMARA
                 var videoTrack = cameraStream.getVideoTracks()[0];
                 if (videoTrack && liveKitRoom) {
                     await liveKitRoom.localParticipant.publishTrack(videoTrack);
@@ -1454,9 +1489,7 @@
                     console.log('📷 Track de cámara publicado');
                 }
                 
-                // ✅ 5. VERIFICAR QUE EL MICRÓFONO SIGA ACTIVO
                 if (!currentMicTrack) {
-                    // Si por alguna razón no hay micrófono, intentar obtenerlo
                     try {
                         var micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
                         var micTrack = micStream.getAudioTracks()[0];
