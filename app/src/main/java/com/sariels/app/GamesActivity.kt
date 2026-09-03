@@ -26,6 +26,24 @@ class GamesActivity : AppCompatActivity() {
         binding = ActivityGamesBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        // ✅ MANEJAR DEEP LINK DESDE HTML
+        intent?.data?.let { uri ->
+            val juegoId = uri.getQueryParameter("juego_id")
+            val packageName = uri.getQueryParameter("package_name")
+            val nombre = uri.getQueryParameter("nombre")
+            
+            if (juegoId != null && packageName != null && packageName.isNotBlank()) {
+                val intent = Intent(this, StreamActivity::class.java).apply {
+                    putExtra(StreamActivity.EXTRA_JUEGO_NOMBRE, nombre ?: "Juego")
+                    putExtra(StreamActivity.EXTRA_JUEGO_PACKAGE, packageName)
+                    putExtra(StreamActivity.EXTRA_JUEGO_ID, juegoId)
+                }
+                startActivity(intent)
+                finish()
+                return
+            }
+        }
+
         setupRecyclerView()
         cargarJuegos()
     }
