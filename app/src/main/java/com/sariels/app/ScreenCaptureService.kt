@@ -27,13 +27,13 @@ class ScreenCaptureService : Service() {
         const val EXTRA_DATA = "data"
         const val EXTRA_ROOM_NAME = "roomName"
         const val EXTRA_TOKEN = "token"
-        const val EXTRA_TRANSMISION_ID = "transmisionId"
+        const val EXTRA_TRANSMISION_ID = "transmisionId"  // ✅ INT
         const val EXTRA_JUEGO_NOMBRE = "juegoNombre"
         const val EXTRA_JUEGO_PACKAGE = "juegoPackage"
     }
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
-    private var transmisionId: String? = null
+    private var transmisionId: Int? = null  // ✅ INT
     private var screenShareActive = false
 
     override fun onCreate() {
@@ -71,7 +71,7 @@ class ScreenCaptureService : Service() {
 
         val roomName = intent.getStringExtra(EXTRA_ROOM_NAME)
         val token = intent.getStringExtra(EXTRA_TOKEN)
-        transmisionId = intent.getStringExtra(EXTRA_TRANSMISION_ID)
+        transmisionId = intent.getIntExtra(EXTRA_TRANSMISION_ID, 0)  // ✅ INT
         val juegoNombre = intent.getStringExtra(EXTRA_JUEGO_NOMBRE) ?: "Juego"
 
         if (resultCode == -1 || projectionData == null || roomName.isNullOrBlank() || token.isNullOrBlank()) {
@@ -87,13 +87,24 @@ class ScreenCaptureService : Service() {
         return START_NOT_STICKY
     }
 
+    // ✅ PRIMERO CONECTA, DESPUÉS PUBLICA
     private fun iniciarLiveKit(resultCode: Int, projectionData: Intent, roomName: String, token: String, juegoNombre: String) {
         serviceScope.launch {
             try {
                 Log.d(TAG, "Conectando a LiveKit...")
-                LiveKitManager.conectar(applicationContext, roomName, token)
-                Log.d(TAG, "LiveKit conectado.")
+                
+                // 1. CONECTAR Y ESPERAR
+                val conectado = LiveKitManager.conectar(applicationContext, roomName, token)
+                
+                if (!conectado) {
+                    Log.e(TAG, "❌ No se pudo conectar a LiveKit")
+                    stopSelf()
+                    return@launch
+                }
+                
+                Log.d(TAG, "✅ LiveKit conectado.")
 
+                // 2. PUBLICAR SCREEN SHARE
                 val resultado = LiveKitManager.room
                     ?.localParticipant
                     ?.setScreenShareEnabled(
@@ -155,6 +166,7 @@ class ScreenCaptureService : Service() {
 
     override fun onDestroy() {
         Log.d(TAG, "Deteniendo ScreenCaptureService.")
+        // Limpiar antes de cancelar
         serviceScope.launch {
             try {
                 if (screenShareActive) {
