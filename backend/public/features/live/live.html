@@ -1303,4 +1303,310 @@
         }
 
         function toggleMute() {
-            var video = document.getElementById
+            var video = document.getElementById('liveVideo');
+            if (!video) return;
+            isMuted = !isMuted;
+            video.muted = isMuted;
+            var btn = document.getElementById('muteBtn');
+            if (isMuted) { btn.textContent = '🔇'; btn.classList.add('muted'); } 
+            else { btn.textContent = '🔊'; btn.classList.remove('muted'); }
+        }
+
+        // ================================================================
+        // 🖥️ CAPTURAR PANTALLA - CORREGIDO CON TRACKS SEPARADOS
+        // ================================================================
+
+        async function capturarPantalla() {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+                showToast('⚠️ Tu navegador no soporta compartir pantalla', 'error');
+                return;
+            }
+            
+            if (!liveKitRoom) {
+                showToast('⚠️ Debes iniciar una transmisión primero', 'error');
+                return;
+            }
+
+            if (isScreenSharing) {
+                showToast('⚠️ Ya estás compartiendo pantalla', 'warning');
+                return;
+            }
+            
+            try {
+                showToast('🖥️ Solicitando compartir pantalla...', '');
+                var screenStream = await navigator.mediaDevices.getDisplayMedia({ 
+                    video: true, 
+                    audio: true 
+                });
+                
+                var video = document.getElementById('liveVideo');
+                if (video) {
+                    video.srcObject = screenStream;
+                    video.play().catch(function(e) {});
+                }
+                
+                // ✅ 1. REMOVER TRACK DE CÁMARA (solo video, NO el micrófono)
+                if (currentVideoTrack && liveKitRoom) {
+                    try {
+                        await liveKitRoom.localParticipant.unpublishTrack(currentVideoTrack);
+                        console.log('📷 Track de cámara removido');
+                    } catch (e) {
+                        console.warn('Error removiendo track de cámara:', e);
+                    }
+                    currentVideoTrack = null;
+                }
+                
+                // ✅ 2. PUBLICAR TRACK DE PANTALLA
+                var videoTrack = screenStream.getVideoTracks()[0];
+                if (videoTrack && liveKitRoom) {
+                    await liveKitRoom.localParticipant.publishTrack(videoTrack);
+                    currentVideoTrack = videoTrack;
+                    isScreenSharing = true;
+                    console.log('🖥️ Track de pantalla publicado');
+                }
+                
+                // ✅ 3. PUBLICAR AUDIO DE PANTALLA (si existe)
+                var audioTrack = screenStream.getAudioTracks()[0];
+                if (audioTrack && liveKitRoom) {
+                    try {
+                        // Si ya hay audio de pantalla, removerlo primero
+                        if (currentScreenAudioTrack) {
+                            try {
+                                await liveKitRoom.localParticipant.unpublishTrack(currentScreenAudioTrack);
+                            } catch (e) {}
+                            currentScreenAudioTrack = null;
+                        }
+                        await liveKitRoom.localParticipant.publishTrack(audioTrack);
+                        currentScreenAudioTrack = audioTrack;
+                        console.log('🔊 Audio de pantalla publicado');
+                    } catch (e) {
+                        console.warn('No se pudo publicar audio de pantalla:', e);
+                    }
+                }
+                
+                showToast('🖥️ Pantalla compartida en vivo', 'success');
+                
+                // ✅ 4. CUANDO EL USUARIO DETIENE DESDE EL NAVEGADOR
+                screenStream.getVideoTracks()[0].onended = function() {
+                    console.log('🛑 Captura de pantalla detenida por el usuario');
+                    restaurarCamara();
+                };
+                
+            } catch (e) {
+                console.error('Error capturando pantalla:', e);
+                showToast('❌ Error al compartir pantalla: ' + e.message, 'error');
+            }
+        }
+
+        // ================================================================
+        // 📷 RESTAURAR CÁMARA - CORREGIDO SIN DUPLICAR MICRÓFONO
+        // ================================================================
+
+        async function restaurarCamara() {
+            try {
+                showToast('📷 Restaurando cámara...', '');
+                
+                if (!liveKitRoom) {
+                    showToast('⚠️ No hay conexión LiveKit activa', 'error');
+                    return;
+                }
+                
+                // ✅ 1. REMOVER TRACK DE PANTALLA (video)
+                if (currentVideoTrack && isScreenSharing) {
+                    try {
+                        await liveKitRoom.localParticipant.unpublishTrack(currentVideoTrack);
+                        console.log('🖥️ Track de pantalla removido');
+                    } catch (e) {
+                        console.warn('Error removiendo track de pantalla:', e);
+                    }
+                    currentVideoTrack = null;
+                    isScreenSharing = false;
+                }
+                
+                // ✅ 2. REMOVER AUDIO DE PANTALLA (si existe)
+                if (currentScreenAudioTrack) {
+                    try {
+                        await liveKitRoom.localParticipant.unpublishTrack(currentScreenAudioTrack);
+                        console.log('🔊 Audio de pantalla removido');
+                    } catch (e) {
+                        console.warn('Error removiendo audio de pantalla:', e);
+                    }
+                    currentScreenAudioTrack = null;
+                }
+                
+                // ✅ 3. OBTENER CÁMARA (SOLO VIDEO, NO AUDIO para no duplicar micrófono)
+                var cameraStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'user', width: 1280, height: 720 }
+                    // ⚠️ NO audio - el micrófono ya está publicado
+                });
+                
+                var video = document.getElementById('liveVideo');
+                if (video) {
+                    video.srcObject = cameraStream;
+                    video.play().catch(function(e) {});
+                }
+                
+                // ✅ 4. PUBLICAR TRACK DE CÁMARA
+                var videoTrack = cameraStream.getVideoTracks()[0];
+                if (videoTrack && liveKitRoom) {
+                    await liveKitRoom.localParticipant.publishTrack(videoTrack);
+                    currentVideoTrack = videoTrack;
+                    console.log('📷 Track de cámara publicado');
+                }
+                
+                // ✅ 5. VERIFICAR QUE EL MICRÓFONO SIGA ACTIVO
+                if (!currentMicTrack) {
+                    // Si por alguna razón no hay micrófono, intentar obtenerlo
+                    try {
+                        var micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                        var micTrack = micStream.getAudioTracks()[0];
+                        if (micTrack && liveKitRoom) {
+                            await liveKitRoom.localParticipant.publishTrack(micTrack);
+                            currentMicTrack = micTrack;
+                            console.log('🎤 Micrófono restaurado');
+                        }
+                    } catch (e) {
+                        console.warn('No se pudo restaurar micrófono:', e);
+                    }
+                } else {
+                    console.log('🎤 Micrófono ya está activo, no se duplica');
+                }
+                
+                showToast('📷 Cámara restaurada', 'success');
+                
+            } catch (e) {
+                console.error('Error restaurando cámara:', e);
+                showToast('⚠️ No se pudo restaurar la cámara: ' + e.message, 'error');
+            }
+        }
+
+        function toggleVoice() {
+            isVoiceActive = !isVoiceActive;
+            var btn = document.getElementById('voiceBtn');
+            if (isVoiceActive) {
+                btn.textContent = '🔊';
+                btn.classList.add('voice-active');
+                var utterance = new SpeechSynthesisUtterance('Bienvenidos al Live de Sariel\'s');
+                utterance.lang = 'es-ES';
+                utterance.rate = 0.9;
+                window.speechSynthesis.speak(utterance);
+            } else {
+                btn.textContent = '🔈';
+                btn.classList.remove('voice-active');
+                window.speechSynthesis.cancel();
+            }
+        }
+
+        // ================================================================
+        // 📋 LISTA DE TRANSMISIONES ACTIVAS
+        // ================================================================
+
+        async function cargarTransmisionesActivas() {
+            try {
+                var result = await window.supabase
+                    .from('transmisiones')
+                    .select('*, usuarios(id, nombre, avatar_url)')
+                    .eq('estado', 'activa')
+                    .order('fecha_inicio', { ascending: false });
+
+                if (result.error) throw result.error;
+
+                var container = document.getElementById('streamsList');
+                var streams = result.data || [];
+
+                if (streams.length === 0) {
+                    container.innerHTML = '<div class="empty-state" style="grid-column:1/-1;padding:20px;"><span class="icon">◉</span><h3>Sin transmisiones activas</h3><p>Sé el primero en iniciar una transmisión</p></div>';
+                    return;
+                }
+
+                var html = '';
+                for (var i = 0; i < streams.length; i++) {
+                    var stream = streams[i];
+                    var usuario = stream.usuarios || {};
+                    html += '<div class="stream-card" onclick="unirseATransmision(\'' + stream.id + '\')">' +
+                        '<div class="stream-thumb"><span style="font-size:2rem;">◉</span><span class="live-badge">🔴 EN VIVO</span></div>' +
+                        '<div class="stream-name">' + escapeHTML(stream.titulo || 'Live') + '</div>' +
+                        '<div class="stream-host">' + escapeHTML(usuario.nombre || 'Streamer') + ' · ' + (stream.viewers_count || 0) + ' espectadores</div>' +
+                        '<div style="font-size:0.55rem;color:var(--text-muted);margin-top:4px;">' + escapeHTML(stream.categoria || 'General') + ' · ' + new Date(stream.fecha_inicio).toLocaleTimeString() + '</div>' +
+                        '</div>';
+                }
+                container.innerHTML = html;
+
+            } catch (e) {
+                console.error('Error cargando transmisiones:', e);
+            }
+        }
+
+        // ================================================================
+        // 📊 ESTADÍSTICAS
+        // ================================================================
+
+        async function cargarEstadisticas() {
+            try {
+                var session = await getSession();
+                if (!session) { showToast('⚠️ Inicia sesión para ver estadísticas', 'error'); return; }
+                var result = await window.supabase.from('transmisiones').select('*').eq('streamer_id', session.user.id).order('fecha_inicio', { ascending: false });
+                if (result.error) throw result.error;
+                var data = result.data || [];
+                if (data.length === 0) { showToast('📊 Sin estadísticas aún', 'warning'); return; }
+                var totalStreams = data.length;
+                var totalHoras = 0;
+                var totalEspectadores = 0;
+                for (var i = 0; i < data.length; i++) {
+                    var s = data[i];
+                    if (s.fecha_inicio && s.fecha_fin) {
+                        var diff = (new Date(s.fecha_fin) - new Date(s.fecha_inicio)) / 1000;
+                        totalHoras += diff > 0 ? diff : 0;
+                    }
+                    totalEspectadores += s.viewers_count || 0;
+                }
+                totalHoras = totalHoras / 3600;
+                showToast('📊 Transmisiones: ' + totalStreams + ' | Horas: ' + totalHoras.toFixed(1) + 'h | Espectadores: ' + totalEspectadores, 'success');
+            } catch (e) {
+                console.error('Error cargando estadísticas:', e);
+                showToast('❌ Error cargando estadísticas', 'error');
+            }
+        }
+
+        // ================================================================
+        // 🚀 INICIALIZACIÓN
+        // ================================================================
+
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('◈ Sariel\'s - Live');
+            console.log('📡 LiveKit URL:', LIVEKIT_CONFIG.url);
+            getSession().then(function(session) { if (session) { currentUser = session.user; } });
+            cargarTransmisionesActivas();
+            setInterval(cargarTransmisionesActivas, 30000);
+            var chatInput = document.getElementById('chatInput');
+            if (chatInput) {
+                chatInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') { enviarMensaje(); } });
+            }
+        });
+
+        // ================================================================
+        // EXPOSICIÓN GLOBAL
+        // ================================================================
+
+        window.iniciarTransmision = iniciarTransmision;
+        window.finalizarTransmision = finalizarTransmision;
+        window.unirseATransmision = unirseATransmision;
+        window.enviarMensaje = enviarMensaje;
+        window.enviarDonacion = enviarDonacion;
+        window.togglePlay = togglePlay;
+        window.toggleMute = toggleMute;
+        window.capturarPantalla = capturarPantalla;
+        window.toggleVoice = toggleVoice;
+        window.cargarEstadisticas = cargarEstadisticas;
+        window.cargarTransmisionesActivas = cargarTransmisionesActivas;
+        window.showToast = showToast;
+        window.limpiarRecursosLive = limpiarRecursosLive;
+        window.abrirSelectorJuego = abrirSelectorJuego;
+        window.cerrarSelectorJuego = cerrarSelectorJuego;
+        window.seleccionarJuego = seleccionarJuego;
+        window.iniciarTransmisionJuego = iniciarTransmisionJuego;
+        window.restaurarCamara = restaurarCamara;
+    </script>
+
+</body>
+</html>
