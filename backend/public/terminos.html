@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>◈ Términos y Condiciones · Sariel's</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --gold-cosmic: #D4AF37;
+            --gold-dim: rgba(212, 168, 87, 0.25);
+            --text-primary: #FFFFFF;
+            --text-secondary: #E2E8F0;
+            --text-muted: #94A3B8;
+            --space-deep: #05080f;
+            --radius: 16px;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: var(--space-deep);
+            color: var(--text-primary);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            min-height: 100vh;
+            line-height: 1.6;
+            padding: 0;
+        }
+        .terminos-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 24px;
+            background: rgba(15, 45, 26, 0.4);
+            border: 1px solid var(--gold-dim);
+            border-radius: var(--radius);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
+        }
+        .terminos-container h1 {
+            font-family: 'Orbitron', monospace;
+            font-size: 2rem;
+            color: var(--gold-cosmic);
+            text-align: center;
+            margin-bottom: 8px;
+        }
+        .terminos-container .fecha {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-bottom: 30px;
+            border-bottom: 1px solid var(--gold-dim);
+            padding-bottom: 20px;
+        }
+        .terminos-container h2 {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.2rem;
+            color: var(--gold-cosmic);
+            margin-top: 30px;
+            margin-bottom: 12px;
+            border-left: 4px solid var(--gold-cosmic);
+            padding-left: 14px;
+        }
+        .terminos-container p {
+            color: var(--text-secondary);
+            line-height: 1.7;
+            margin-bottom: 12px;
+            font-size: 0.95rem;
+        }
+        .terminos-container ul {
+            list-style: none;
+            padding-left: 10px;
+            margin: 12px 0 18px 0;
+        }
+        .terminos-container ul li {
+            padding: 6px 0 6px 28px;
+            position: relative;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+        .terminos-container ul li::before {
+            content: "✦";
+            color: var(--gold-cosmic);
+            position: absolute;
+            left: 4px;
+            font-size: 0.8rem;
+            top: 8px;
+        }
+        .terminos-container .art {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(212, 168, 87, 0.25);
+            border-left: 4px solid var(--gold-cosmic);
+            padding: 16px 20px;
+            border-radius: 10px;
+            margin: 18px 0;
+        }
+        .terminos-container .art p { color: #F8FAFC !important; }
+        .terminos-container .art strong { color: #FFE066 !important; font-weight: 700; }
+        .terminos-container .divisor {
+            border: none;
+            border-top: 1px solid rgba(212, 168, 87, 0.12);
+            margin: 40px 0 20px 0;
+        }
+        .terminos-container .footer-tyc {
+            text-align: center;
+            margin-top: 45px;
+            padding-top: 25px;
+            border-top: 1px solid rgba(212, 168, 87, 0.1);
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+        .btn-volver {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 12px 32px;
+            background: linear-gradient(135deg, var(--gold-cosmic), #b8923a);
+            color: #0a0c10;
+            font-weight: 700;
+            text-decoration: none;
+            border-radius: 40px;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            font-family: 'Orbitron', monospace;
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        .btn-volver.active { opacity: 1; pointer-events: auto; }
+        .btn-volver.active:hover {
+            transform: scale(1.03);
+            box-shadow: 0 0 30px rgba(212, 168, 87, 0.25);
+        }
+        .text-center { text-align: center; }
+        
+        .aceptacion-container {
+            margin-top: 30px;
+            padding: 20px;
+            background: rgba(212, 168, 87, 0.08);
+            border: 1px solid rgba(212, 168, 87, 0.25);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+        .aceptacion-wrapper {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+        }
+        .aceptacion-container input[type="checkbox"] {
+            width: 22px;
+            height: 22px;
+            accent-color: #D4AF37;
+            cursor: pointer;
+            flex-shrink: 0;
+            appearance: none;
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.08);
+            border: 2px solid rgba(212, 168, 87, 0.4);
+            border-radius: 4px;
+            transition: all 0.3s ease;
+            position: relative;
+            margin-top: 2px;
+        }
+        .aceptacion-container input[type="checkbox"]:checked {
+            background: #D4AF37;
+            border-color: #D4AF37;
+        }
+        .aceptacion-container input[type="checkbox"]:checked::after {
+            content: "✓";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #05080f;
+            font-size: 14px;
+            font-weight: 700;
+        }
+        .aceptacion-container label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            cursor: pointer;
+        }
+        .aceptacion-container label strong { color: var(--gold-cosmic); }
+        .firma-digital {
+            margin-top: 4px;
+            padding: 12px 16px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px dashed rgba(212, 168, 87, 0.3);
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            display: none;
+            transition: all 0.4s ease;
+            word-break: break-all;
+        }
+        .firma-digital.visible { display: block; }
+        .firma-digital .hash { color: var(--gold-cosmic); font-weight: 600; }
+        .firma-digital .fecha-hora { color: #8FBC8F; }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0 16px;
+            border-bottom: 2px solid var(--gold-dim);
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 10px;
+            backdrop-filter: blur(10px);
+            position: relative;
+            max-width: 900px;
+            margin-left: auto;
+            margin-right: auto;
+            padding-left: 20px;
+            padding-right: 20px;
+        }
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--gold-cosmic), var(--gold-cosmic), transparent);
+            opacity: 0.4;
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+        }
+        .logo-icon { font-size: 2rem; filter: drop-shadow(0 0 20px rgba(212, 168, 87, 0.2)); }
+        .logo-text {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.3rem;
+            font-weight: 900;
+            letter-spacing: 2px;
+            background: linear-gradient(135deg, var(--gold-cosmic), #b8923a);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .logo-badge {
+            font-size: 0.5rem;
+            background: linear-gradient(135deg, var(--gold-cosmic), #b8923a);
+            color: #0a0c10;
+            padding: 2px 12px;
+            border-radius: 20px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .header-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .network-badge {
+            font-size: 0.7rem;
+            color: var(--gold-cosmic);
+            background: rgba(212, 168, 87, 0.1);
+            padding: 4px 14px;
+            border-radius: 20px;
+            border: 1px solid rgba(212, 168, 87, 0.2);
+        }
+        #stars-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+        .nebula {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(120px);
+            opacity: 0.10;
+            pointer-events: none;
+            z-index: 0;
+            animation: nebula-drift 25s ease-in-out infinite alternate;
+        }
+        .nebula-1 { width: 700px; height: 700px; background: #0B3D2E; top: -15%; right: -15%; }
+        .nebula-2 { width: 600px; height: 600px; background: var(--gold-cosmic); bottom: -15%; left: -15%; animation-delay: -8s; opacity: 0.05; }
+        .nebula-3 { width: 500px; height: 500px; background: #00e5ff; top: 50%; left: 50%; transform: translate(-50%, -50%); animation-delay: -15s; opacity: 0.04; }
+        @keyframes nebula-drift {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(40px, -30px) scale(1.15); }
+        }
+        .container { max-width: 900px; margin: 0 auto; padding: 0 20px; }
+        .main { position: relative; z-index: 1; }
+    </style>
+</head>
+<body>
+    <canvas id="stars-canvas"></canvas>
+    <div class="nebula nebula-1"></div>
+    <div class="nebula nebula-2"></div>
+    <div class="nebula nebula-3"></div>
+
+    <div id="app">
+        <header class="header">
+            <div class="header-content" style="display:flex;justify-content:space-between;align-items:center;width:100%;flex-wrap:wrap;gap:10px;">
+                <a href="/" class="logo">
+                    <span class="logo-icon"><span style="font-size:2rem;color:var(--gold-cosmic);">◈</span></span>
+                    <span class="logo-text">Sariel's</span>
+                    <span class="logo-badge">✦ WEB3</span>
+                </a>
+                <div class="header-info">
+                    <span class="network-badge">🟢 Polygon</span>
+                </div>
+            </div>
+        </header>
+
+        <main class="main">
+            <div class="container">
+                <div class="terminos-container">
+
+                    <h1>✦ Términos y Condiciones de Uso</h1>
+                    <div class="fecha">📅 Última actualización: 10 de agosto de 2026</div>
+
+                    <div class="art" style="background:rgba(212,168,87,0.08);border-color:var(--gold-cosmic);text-align:center;">
+                        <p style="font-weight:600;color:var(--gold-cosmic) !important;">
+                            ⚡ Al utilizar la plataforma Sariel's, aceptas los presentes Términos y Condiciones. Si no estás de acuerdo, no uses la plataforma.
+                        </p>
+                    </div>
+
+                    <h2>📘 1. Aceptación de los Términos</h2>
+                    <div class="art">
+                        <p>Al registrarte, conectar tu wallet o utilizar cualquier servicio de Sariel's, aceptas cumplir con estos Términos y Condiciones, así como con nuestras Políticas de Privacidad y Cookies.</p>
+                        <p>Estos Términos aplican a todos los usuarios: clientes, vendedores, compradores y visitantes de la plataforma.</p>
+                    </div>
+
+                    <h2>📗 2. Registro y Elegibilidad</h2>
+                    <div class="art" style="border-left-color:#ff6b35;">
+                        <p style="color:#FFE066 !important;font-weight:700;">🔞 EDAD MÍNIMA OBLIGATORIA:</p>
+                        <p><strong>La plataforma está dirigida exclusivamente a personas mayores de 18 años con plena capacidad legal para contratar.</strong></p>
+                        <p>Al registrarte, declaras bajo protesta de decir verdad que eres mayor de 18 años y que la información proporcionada es verídica y completa.</p>
+                        <p>Sariel's se reserva el derecho de solicitar verificación de edad en cualquier momento.</p>
+                    </div>
+
+                    <h2>📙 3. Programa de Lealtad y Tokens "Regalitos"</h2>
+                    <div class="art">
+                        <p><strong>3.1. Acumulación de Regalitos:</strong> Por cada compra de un domo de galleta físico, el cliente recibe <strong>1 token "Regalito"</strong> en su wallet, siempre que el QR haya sido escaneado por un terminal autorizado en el local de Sariel's.</p>
+                        <p><strong>3.2. Minteo de NFT:</strong> Al acumular <strong>12 Regalitos</strong>, el usuario tiene derecho a <strong>mintear un NFT (Domo NFT)</strong> en la red Polygon. Los 12 Regalitos se queman (retiran) para validar el derecho.</p>
+                        <p><strong>3.3. Sin valor comercial inicial:</strong> Los Regalitos son tokens de utilidad sin valor financiero. No representan acciones, dividendos ni participaciones en Sariel's.</p>
+                    </div>
+
+                    <h2>📕 4. El NFT Domo y la Regla de los 30 Días</h2>
+                    <div class="art" style="border-left-color:#ff6b35;">
+                        <p style="color:#FFE066 !important;font-weight:700;">⏰ REGLA DE CADUCIDAD DE 30 DÍAS:</p>
+                        <p><strong>4.1. Periodo de Canje:</strong> El NFT Domo puede ser canjeado por <strong>un domo de galleta físico gratis</strong> únicamente dentro de los <strong>30 días</strong> siguientes a su minteo.</p>
+                        <p><strong>4.2. Canje Físico:</strong> El canje debe realizarse <strong>exclusivamente en el local físico de Sariel's en Puebla, México</strong>. El usuario debe presentar el NFT, nosotros lo quemamos (burn) y entregamos la galleta gratis.</p>
+                        <p><strong>4.3. Sujeto a disponibilidad:</strong> El canje está sujeto a disponibilidad de inventario en el momento de la visita al local.</p>
+                        <p><strong>4.4. Sin envíos internacionales:</strong> No realizamos envíos de galletas. El canje es presencial en Puebla.</p>
+                    </div>
+
+                    <h2>📒 5. NFT Conmemorativo (Soulbound)</h2>
+                    <div class="art" style="border-left-color:#ff6b35;">
+                        <p style="color:#FFE066 !important;font-weight:700;">🎗️ CONVERSIÓN A SOULBOUND (NO TRANSFERIBLE):</p>
+                        <p><strong>5.1.</strong> Si el NFT <strong>no es canjeado dentro de los 30 días</strong>, automáticamente se convierte en un <strong>Soulbound Token</strong>.</p>
+                        <p><strong>5.2. Consecuencias:</strong> El NFT queda <strong>permanentemente bloqueado</strong> en la wallet del propietario. No puede ser vendido, transferido ni regalado. El derecho a reclamar la galleta física <strong>se extingue</strong>.</p>
+                        <p><strong>5.3. Metadatos actualizados:</strong> La imagen del NFT cambia automáticamente al <strong>listón conmemorativo 🎗️</strong>, indicando que es un trofeo digital sin valor comercial.</p>
+                        <p><strong>5.4. Naturaleza permanente:</strong> El NFT conmemorativo es permanente e inmutable. No se puede revertir ni recuperar el derecho de canje.</p>
+                    </div>
+
+                    <h2>📘 6. Mercado Secundario P2P</h2>
+                    <div class="art">
+                        <p><strong>6.1. Venta de NFTs:</strong> Los usuarios pueden listar sus NFTs para la venta en el mercado P2P dentro de la plataforma, <strong>siempre que el NFT esté dentro del período de 30 días</strong>.</p>
+                        <p><strong>6.2. Precio Libre:</strong> El precio de venta lo determina el vendedor, basado en oferta y demanda del mercado.</p>
+                        <p><strong>6.3. Comisión del 2%:</strong> Por cada transacción exitosa, Sariel's cobra una <strong>comisión del 2%</strong> sobre el precio total de venta. Esta comisión se utiliza para el mantenimiento de la plataforma y el desarrollo del ecosistema.</p>
+                        <p><strong>6.4. Pago en MATIC/POL:</strong> Las transacciones se realizan en la criptomoneda nativa de Polygon (MATIC/POL).</p>
+                        <p><strong>6.5. Restricción de Tiempo:</strong> Si un NFT expira (30 días) mientras está en el mercado, <strong>no se puede vender</strong> y se convierte automáticamente en Soulbound.</p>
+                        <p><strong>6.6. Responsabilidad del Usuario:</strong> Sariel's actúa como intermediario tecnológico. No se responsabiliza por negociaciones, precios o disputas entre compradores y vendedores.</p>
+                    </div>
+
+                    <h2>📙 7. Canje Físico en el Local</h2>
+                    <div class="art">
+                        <p><strong>7.1. Proceso:</strong> El usuario se presenta en el local de Sariel's en Puebla, muestra su NFT y el personal autorizado <strong>quema (burn) el NFT en el Smart Contract</strong>.</p>
+                        <p><strong>7.2. Quema Permanente:</strong> El NFT se destruye de forma permanente. No hay reversa.</p>
+                        <p><strong>7.3. Producto Entregado:</strong> Una vez quemado el NFT, el usuario recibe un <strong>domo de galleta físico gratis</strong> en el momento.</p>
+                        <p><strong>7.4. Sin reemplazo:</strong> Si el NFT se quema sin completar el canje (por error técnico), el usuario deberá contactar a Sariel's para evaluar el caso.</p>
+                    </div>
+
+                    <h2>📕 8. Política de Reembolsos y Cancelaciones</h2>
+                    <div class="art">
+                        <p><strong>8.1. Naturaleza Digital:</strong> Los tokens Regalitos, NFTs y transacciones en la blockchain son <strong>irreversibles por su naturaleza tecnológica</strong>.</p>
+                        <p><strong>8.2. Sin Reembolsos:</strong> No se ofrecen reembolsos por compras de domos físicos una vez escaneado el QR, ni por minteo de NFTs, ni por ventas en el mercado P2P.</p>
+                        <p><strong>8.3. Excepción:</strong> En caso de error comprobado del sistema, Sariel's evaluará cada caso de forma individual y podrá ofrecer soluciones discrecionales.</p>
+                    </div>
+
+                    <h2>📒 9. Gas Fees y Costos de Red</h2>
+                    <div class="art">
+                        <p><strong>9.1. Responsabilidad del Usuario:</strong> Todas las transacciones en la red Polygon requieren el pago de <strong>gas fees (comisiones de red)</strong>. Estas comisiones son pagadas por el usuario que ejecuta la transacción.</p>
+                        <p><strong>9.2. Sariel's no cubre gas fees:</strong> Sariel's no subsidia ni cubre los costos de gas bajo ninguna circunstancia.</p>
+                        <p><strong>9.3. Congestión de Red:</strong> Sariel's no es responsable por retrasos, fallas o costos elevados debido a congestión en la red Polygon.</p>
+                    </div>
+
+                    <h2>📘 10. Limitación de Responsabilidad</h2>
+                    <div class="art">
+                        <p><strong>10.1. Plataforma "Como Está":</strong> Sariel's proporciona la plataforma "tal cual" y "según disponibilidad". No garantizamos que el servicio sea ininterrumpido, libre de errores o seguro.</p>
+                        <p><strong>10.2. Riesgo del Usuario:</strong> El uso de la plataforma, la conexión de la wallet y las transacciones en blockchain son <strong>bajo el propio riesgo del usuario</strong>.</p>
+                        <p><strong>10.3. Responsabilidad Limitada:</strong> Sariel's no será responsable por daños directos, indirectos, incidentales o consecuentes derivados del uso de la plataforma.</p>
+                        <p><strong>10.4. Máximo de Responsabilidad:</strong> En ningún caso, la responsabilidad de Sariel's excederá el monto pagado por el usuario en los últimos 12 meses.</p>
+                    </div>
+
+                    <h2>📙 11. Propiedad Intelectual</h2>
+                    <div class="art">
+                        <p><strong>11.1. Marca y Contenido:</strong> La marca "Sariel's", el logo, los diseños, el nombre "Regalitos" y todos los contenidos de la plataforma son <strong>propiedad intelectual de Sariel's</strong>.</p>
+                        <p><strong>11.2. Prohibición de Uso:</strong> No se permite copiar, modificar, distribuir o utilizar el contenido sin autorización expresa de Sariel's.</p>
+                        <p><strong>11.3. NFTs y Derechos:</strong> Los NFTs son propiedad del usuario que los posee, pero los diseños asociados son propiedad intelectual de Sariel's.</p>
+                    </div>
+
+                    <h2>📗 12. Modificaciones de los Términos</h2>
+                    <div class="art">
+                        <p><strong>12.1. Actualizaciones:</strong> Sariel's puede modificar estos Términos en cualquier momento. Te notificaremos mediante aviso en la plataforma o por correo electrónico.</p>
+                        <p><strong>12.2. Aceptación Continua:</strong> El uso continuado de la plataforma después de una modificación constituye tu aceptación de los nuevos Términos.</p>
+                    </div>
+
+                    <h2>📕 13. Ley Aplicable y Jurisdicción</h2>
+                    <div class="art">
+                        <p><strong>13.1. Ley Mexicana:</strong> Estos Términos se rigen por las leyes de los Estados Unidos Mexicanos.</p>
+                        <p><strong>13.2. Jurisdicción:</strong> Cualquier controversia será resuelta por los tribunales competentes de <strong>Puebla, México</strong>.</p>
+                        <p><strong>13.3. Renuncia a Domicilios Extranjeros:</strong> Los usuarios aceptan someterse a la jurisdicción de Puebla para cualquier disputa.</p>
+                    </div>
+
+                    <h2>📙 14. Contacto</h2>
+                    <div class="art">
+                        <p><strong>Correo electrónico:</strong> csarielscontacto@gmail.com</p>
+                        <p><strong>Dirección postal:</strong> Puebla, México.</p>
+                    </div>
+
+                    <hr class="divisor" />
+
+                    <div class="footer-tyc">
+                        <p>© <strong>Sariel's</strong>. Todos los derechos reservados. Puebla, México 🇲🇽</p>
+                    </div>
+
+                    <div class="aceptacion-container" id="aceptacionContainer">
+                        <div class="aceptacion-wrapper">
+                            <input type="checkbox" id="aceptoTerminos" />
+                            <label for="aceptoTerminos">
+                                <strong>He leído y acepto los Términos y Condiciones de Uso</strong> de <strong>Sariel's</strong>.
+                                Entiendo las reglas del programa de lealtad, la regla de los 30 días, el NFT Conmemorativo y las condiciones del mercado P2P.
+                            </label>
+                        </div>
+
+                        <div class="firma-digital" id="firmaDigital">
+                            <span>🔐 Firma digital registrada:</span><br />
+                            <span class="fecha-hora" id="fechaHoraFirma">--</span><br />
+                            <span>ID: <span class="hash" id="hashFirma">--</span></span>
+                        </div>
+                    </div>
+
+                    <div class="text-center">
+                        <a href="/" class="btn-volver" id="btnVolver">← Volver a la plataforma</a>
+                    </div>
+
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const checkbox = document.getElementById('aceptoTerminos');
+            const btnVolver = document.getElementById('btnVolver');
+            const firmaDigital = document.getElementById('firmaDigital');
+            const fechaHoraFirma = document.getElementById('fechaHoraFirma');
+            const hashFirma = document.getElementById('hashFirma');
+
+            btnVolver.classList.remove('active');
+
+            function generarHashSimbolico() {
+                const chars = 'ABCDEF0123456789';
+                let hash = '0x';
+                for (let i = 0; i < 16; i++) {
+                    hash += chars.charAt(Math.floor(Math.random() * chars.length));
+                }
+                return hash;
+            }
+
+            function obtenerFechaHora() {
+                const ahora = new Date();
+                const opciones = {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    timeZoneName: 'short'
+                };
+                return ahora.toLocaleDateString('es-MX', opciones);
+            }
+
+            checkbox.addEventListener('change', function() {
+                if (this.checked) {
+                    btnVolver.classList.add('active');
+
+                    const fechaHora = obtenerFechaHora();
+                    const hash = generarHashSimbolico();
+
+                    fechaHoraFirma.textContent = `📅 ${fechaHora}`;
+                    hashFirma.textContent = hash;
+                    firmaDigital.classList.add('visible');
+
+                    const container = document.getElementById('aceptacionContainer');
+                    container.style.borderColor = 'rgba(212, 168, 87, 0.5)';
+                    setTimeout(() => {
+                        container.style.borderColor = '';
+                    }, 1500);
+
+                } else {
+                    btnVolver.classList.remove('active');
+                    firmaDigital.classList.remove('visible');
+                    fechaHoraFirma.textContent = '--';
+                    hashFirma.textContent = '--';
+                }
+            });
+
+            btnVolver.addEventListener('click', function(e) {
+                if (!checkbox.checked) {
+                    e.preventDefault();
+                    checkbox.style.borderColor = '#ff3366';
+                    checkbox.style.boxShadow = '0 0 20px rgba(255, 51, 102, 0.3)';
+                    setTimeout(() => {
+                        checkbox.style.borderColor = '';
+                        checkbox.style.boxShadow = '';
+                    }, 1500);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
