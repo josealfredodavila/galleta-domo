@@ -23,10 +23,20 @@
             </intent-filter>
         </activity>
 
+        <!-- ✅ DEEP LINK PARA RECIBIR DESDE HTML -->
         <activity
             android:name=".GamesActivity"
-            android:exported="false"
-            android:theme="@style/Theme.Sariels" />
+            android:exported="true"
+            android:theme="@style/Theme.Sariels">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="sariels"
+                    android:host="stream" />
+            </intent-filter>
+        </activity>
 
         <activity
             android:name=".StreamActivity"
