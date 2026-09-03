@@ -1202,7 +1202,7 @@
         }
 
         // ================================================================
-        // 📸 PUBLICACIONES - NUEVA FUNCIONALIDAD
+        // 📸 PUBLICACIONES - CORREGIDO (usuario_id eliminado)
         // ================================================================
 
         // ===== ABRIR MODAL DE PUBLICACIÓN =====
@@ -1214,7 +1214,6 @@
             document.getElementById('pubStatus').textContent = '';
             document.getElementById('publicacionModal').classList.add('active');
 
-            // Previsualización del archivo
             document.getElementById('pubArchivo').onchange = function(e) {
                 var file = e.target.files[0];
                 if (!file) return;
@@ -1232,7 +1231,7 @@
             };
         }
 
-        // ===== PUBLICAR CONTENIDO =====
+        // ===== PUBLICAR CONTENIDO - CORREGIDO =====
         async function publicarContenido() {
             var texto = document.getElementById('pubTexto').value.trim();
             var fileInput = document.getElementById('pubArchivo');
@@ -1259,7 +1258,6 @@
                 var mediaUrl = null;
                 var mediaType = null;
 
-                // Subir archivo si existe
                 if (fileInput.files.length > 0) {
                     var file = fileInput.files[0];
                     var fileExt = file.name.split('.').pop();
@@ -1276,19 +1274,20 @@
                     mediaType = file.type.startsWith('image/') ? 'imagen' : 'video';
                 }
 
-                // Insertar publicación
+                // ✅ CORREGIDO: usuario_id ELIMINADO, Supabase asigna auth.uid()
                 var insertResult = await window.supabase
                     .from('publicaciones')
                     .insert({
-                        usuario_id: userId,
                         contenido: texto || null,
                         media_url: mediaUrl,
                         media_type: mediaType,
-                        estado: 'publicado',
-                        created_at: new Date().toISOString()
+                        estado: 'publicado'
                     });
 
-                if (insertResult.error) throw insertResult.error;
+                if (insertResult.error) {
+                    console.error('❌ Error insert:', insertResult.error);
+                    throw insertResult.error;
+                }
 
                 status.textContent = '✅ Publicación creada!';
                 showToast('📸 Publicación subida correctamente', 'success');
@@ -1299,7 +1298,7 @@
             } catch (error) {
                 console.error('Error publicando:', error);
                 status.textContent = '❌ Error: ' + error.message;
-                showToast('❌ Error al publicar', 'error');
+                showToast('❌ Error al publicar: ' + error.message, 'error');
             } finally {
                 btn.disabled = false;
                 btn.textContent = '🚀 Publicar';
