@@ -365,7 +365,6 @@
         .panel-badge { font-size: 0.6rem; background: rgba(212, 175, 55, 0.12); color: var(--gold); padding: 2px 12px; border-radius: 20px; font-weight: 600; text-transform: uppercase; border: 1px solid rgba(212, 175, 55, 0.08); }
         .panel-body { padding: 18px; }
 
-        /* ===== SECCIÓN DE CONEXIÓN ===== */
         .conexion-section {
             background: var(--glass-bg);
             border: 1px solid var(--glass-border);
@@ -401,7 +400,6 @@
         .conexion-buttons .btn-conexion.wifi.active { border-color: var(--success); background: rgba(0, 214, 143, 0.1); color: var(--success); }
         .conexion-buttons .btn-conexion.datos.active { border-color: var(--cyan); background: rgba(0, 229, 255, 0.1); color: var(--cyan); }
 
-        /* ===== SECCIÓN DE ESTADO ===== */
         .estado-section {
             background: var(--glass-bg);
             border: 1px solid var(--glass-border);
@@ -432,7 +430,6 @@
         .estado-buttons .btn-estado.offline { border-color: var(--text-muted); color: var(--text-muted); }
         .estado-buttons .btn-estado.offline:hover { background: rgba(255, 255, 255, 0.05); }
 
-        /* ===== SOLICITUDES Y AMIGOS ===== */
         #solicitudesSection { margin-top: 10px; padding: 10px 0; }
         #solicitudesSection h4 { color: var(--gold); font-size: 0.85rem; margin-bottom: 8px; }
 
@@ -547,7 +544,6 @@
         .footer-links a { color: var(--text-muted); text-decoration: none; transition: var(--transition); }
         .footer-links a:hover { color: var(--gold); }
 
-        /* MODALES */
         .modal-overlay {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -628,7 +624,6 @@
 
     <div class="app">
 
-        <!-- HEADER PRINCIPAL -->
         <header class="header">
             <a href="/" class="logo">
                 <span class="logo-hex">◈</span>
@@ -636,16 +631,13 @@
                 <span class="logo-badge">✦ WEB3</span>
             </a>
             <div class="header-actions" style="display:flex;gap:8px;align-items:center;">
-                <button class="btn-video" onclick="window.location.href='/videos/videos.html'" style="padding:4px 12px;border-radius:20px;border:none;font-size:0.7rem;cursor:pointer;font-weight:600;" aria-label="Ir a Videos">
-                    🎬 Videos
-                </button>
-                <button onclick="window.location.href='/muro/muro.html'" style="background:transparent;border:none;color:var(--text-muted);font-size:1.2rem;cursor:pointer;" aria-label="Ir al Muro">◇</button>
+                <button class="btn-video" onclick="window.location.href='/videos/videos.html'" style="padding:4px 12px;border-radius:20px;border:none;font-size:0.7rem;cursor:pointer;font-weight:600;">🎬 Videos</button>
+                <button onclick="window.location.href='/muro/muro.html'" style="background:transparent;border:none;color:var(--text-muted);font-size:1.2rem;cursor:pointer;">◇</button>
                 <span class="network-badge"><span class="dot"></span> Polygon</span>
             </div>
         </header>
 
-        <!-- NAVEGACIÓN GENERAL -->
-        <nav class="main-nav" aria-label="Navegación principal">
+        <nav class="main-nav">
             <a href="/" class="nav-link">⌂ Inicio</a>
             <a href="/muro/muro.html" class="nav-link">◇ Muro</a>
             <a href="/features/perfil/perfil.html" class="nav-link active">◆ Perfil</a>
@@ -656,7 +648,6 @@
 
         <div class="perfil-container">
 
-            <!-- ===== PERFIL HEADER ===== -->
             <div class="perfil-header" id="perfilHeader">
                 <div class="avatar-container">
                     <div class="avatar" id="perfilAvatar">
@@ -689,7 +680,6 @@
                 </div>
             </div>
 
-            <!-- ===== SECCIÓN DE ESTADO ===== -->
             <div class="estado-section">
                 <div class="estado-header">
                     <div class="estado-info">
@@ -709,7 +699,6 @@
                 <div id="amigosContainer"></div>
             </div>
 
-            <!-- ===== SECCIÓN DE CONEXIÓN ===== -->
             <div class="conexion-section">
                 <div class="conexion-header">
                     <div class="conexion-info">
@@ -725,7 +714,6 @@
                 <div style="font-size:0.6rem;color:var(--text-muted);margin-top:6px;">Conexión actual: <span id="conexionTipo">🛜 WiFi</span> · Operador: <span id="conexionOperador">Sariel's Net</span></div>
             </div>
 
-            <!-- ===== TABS ===== -->
             <div class="perfil-tabs" role="tablist">
                 <button class="tab-btn active" onclick="cambiarTab('actividad')">◈ Actividad</button>
                 <button class="tab-btn" onclick="cambiarTab('tokens')">⟡ E.S.TOKS</button>
@@ -735,13 +723,11 @@
                 <button class="tab-btn" onclick="cambiarTab('config')">◆ Ajustes</button>
             </div>
 
-            <!-- ===== TAB: ACTIVIDAD ===== -->
             <div id="tab-actividad" class="tab-content active">
                 <div class="panel"><div class="panel-header"><h3>◈ Última actividad</h3><span class="panel-badge">En vivo</span></div><div class="panel-body" id="actividadList"><div class="empty-state"><span class="icon">◈</span><h4>Sin actividad reciente</h4><p>Interactúa en la comunidad para generar actividad.</p></div></div></div>
                 <div class="panel"><div class="panel-header"><h3>◈ Mis Publicaciones</h3><span class="panel-badge" id="postsCount">0</span></div><div class="panel-body" id="postsList"><div class="empty-state"><span class="icon">◈</span><h4>Sin publicaciones</h4><p>Crea tu primera publicación desde el Muro.</p></div></div></div>
             </div>
 
-            <!-- ===== TAB: E.S.TOKS ===== -->
             <div id="tab-tokens" class="tab-content">
                 <div class="panel">
                     <div class="panel-header"><h3>⟡ Balance E.S.TOKS & Domos</h3><span class="panel-badge">Ecosistema</span></div>
@@ -783,7 +769,6 @@
                 </div>
             </div>
 
-            <!-- ===== TAB: NFTs ===== -->
             <div id="tab-nfts" class="tab-content">
                 <div class="panel">
                     <div class="panel-header"><h3>🎨 Galería de NFTs Conmemorativos</h3><span class="panel-badge">Sariel's Collection</span></div>
@@ -794,7 +779,6 @@
                 </div>
             </div>
 
-            <!-- ===== TAB: eSIM ===== -->
             <div id="tab-esim" class="tab-content">
                 <div class="panel">
                     <div class="panel-header"><h3>📱 Estado de eSIM</h3><span class="panel-badge">Telnyx Mobile</span></div>
@@ -821,7 +805,6 @@
                 </div>
             </div>
 
-            <!-- ===== TAB: QR ===== -->
             <div id="tab-qr" class="tab-content">
                 <div class="panel">
                     <div class="panel-header"><h3>📱 Escaneo e Ingreso de QR Domo</h3><span class="panel-badge">Validación Real</span></div>
@@ -846,7 +829,6 @@
                 </div>
             </div>
 
-            <!-- ===== TAB: CONFIGURACIÓN ===== -->
             <div id="tab-config" class="tab-content">
                 <div class="panel">
                     <div class="panel-header"><h3>◆ Perfil e Información</h3><span class="panel-badge">Editar</span></div>
@@ -879,7 +861,6 @@
 
         </div>
 
-        <!-- FOOTER -->
         <footer class="footer">
             <span><span class="brand">◈ Sariel's</span> · Red Social WEB3</span>
             <div class="footer-links">
@@ -894,7 +875,6 @@
 
     <div class="toast" id="toast"></div>
 
-    <!-- ===== MODALES ===== -->
     <div class="modal-overlay" id="nftModal">
         <div class="modal-content">
             <button class="close-btn" onclick="cerrarModal('nftModal')">✕</button>
@@ -934,7 +914,6 @@
         </div>
     </div>
 
-    <!-- ===== ERROR BANNER ===== -->
     <div id="errorBanner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:99999;background:#ff3366;color:#fff;padding:12px 16px;font-family:monospace;font-size:0.75rem;word-break:break-word;">
         <strong>⚠️ Error detectado:</strong>
         <span id="errorBannerText"></span>
@@ -942,22 +921,16 @@
     </div>
 
     <!-- ================================================================ -->
-    <!-- SCRIPTS - ORDEN CORRECTO -->
+    <!-- SCRIPTS -->
     <!-- ================================================================ -->
 
-    <!-- 1. Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-
-    <!-- 2. App.js - Define window.supabase y la app -->
     <script src="/app.js"></script>
-
-    <!-- 3. jsQR para escaneo -->
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 
-    <!-- 4. TODAS las funciones de Perfil - DEFINIDAS AQUÍ -->
     <script>
         // ================================================================
-        // FUNCIONES DE PERFIL - CONECTADAS A SUPABASE REAL
+        // FUNCIONES DE PERFIL
         // ================================================================
 
         // ===== TOAST =====
@@ -995,9 +968,7 @@
             if (tabBtn) tabBtn.classList.add('active');
         }
 
-        // ================================================================
-        // CARGAR PERFIL DESDE SUPABASE
-        // ================================================================
+        // ===== CARGAR PERFIL =====
         async function cargarPerfil() {
             try {
                 if (typeof window.supabase === 'undefined') {
@@ -1031,9 +1002,7 @@
             }
         }
 
-        // ================================================================
-        // ACTUALIZAR UI CON DATOS DEL USUARIO
-        // ================================================================
+        // ===== ACTUALIZAR UI =====
         function actualizarUI(data) {
             if (!data) return;
 
@@ -1091,9 +1060,7 @@
             if (editBio) editBio.value = data.bio || '';
         }
 
-        // ================================================================
-        // 📸 SUBIR FOTO - CONECTADA A STORAGE
-        // ================================================================
+        // ===== SUBIR FOTO =====
         function abrirSelectorArchivo() {
             var input = document.getElementById('fileInput');
             if (input) input.click();
@@ -1161,9 +1128,7 @@
             }
         }
 
-        // ================================================================
-        // 💾 GUARDAR PERFIL - CONECTADA A RPC actualizar_perfil
-        // ================================================================
+        // ===== GUARDAR PERFIL =====
         async function guardarPerfil() {
             var nombre = document.getElementById('editNombre')?.value?.trim();
             var handle = document.getElementById('editHandle')?.value?.trim().replace('@', '');
@@ -1198,9 +1163,7 @@
             }
         }
 
-        // ================================================================
-        // 💳 WALLET - CONECTADA A RPC vincular_wallet / desvincular_wallet
-        // ================================================================
+        // ===== WALLET =====
         async function conectarWallet() {
             if (typeof window.ethereum === 'undefined') {
                 showToast('⚠️ Instala MetaMask para continuar', 'warning');
@@ -1233,11 +1196,6 @@
                     walletDisplay.style.color = 'var(--success)';
                 }
 
-                var btnConectar = document.getElementById('btnConectarWallet');
-                var btnDesconectar = document.getElementById('btnDesconectarWallet');
-                if (btnConectar) btnConectar.style.display = 'none';
-                if (btnDesconectar) btnDesconectar.style.display = 'inline-flex';
-
                 showToast('✅ Wallet conectada correctamente', 'success');
 
             } catch (error) {
@@ -1261,11 +1219,6 @@
                     walletDisplay.style.color = 'var(--text-muted)';
                 }
 
-                var btnConectar = document.getElementById('btnConectarWallet');
-                var btnDesconectar = document.getElementById('btnDesconectarWallet');
-                if (btnConectar) btnConectar.style.display = 'inline-flex';
-                if (btnDesconectar) btnDesconectar.style.display = 'none';
-
                 showToast('🔌 Wallet desconectada', 'warning');
 
             } catch (error) {
@@ -1274,9 +1227,7 @@
             }
         }
 
-        // ================================================================
-        // ⟡ E.S.TOKS - COMPRAR DOMO
-        // ================================================================
+        // ===== COMPRAR DOMO =====
         async function comprarDomo(cantidad) {
             var sessionResult = await window.supabase.auth.getSession();
             if (!sessionResult.data.session) {
@@ -1302,9 +1253,7 @@
             }
         }
 
-        // ================================================================
-        // 🎨 CANJEAR NFT
-        // ================================================================
+        // ===== CANJEAR NFT =====
         async function canjearNFT() {
             var sessionResult = await window.supabase.auth.getSession();
             if (!sessionResult.data.session) {
@@ -1327,9 +1276,7 @@
             }
         }
 
-        // ================================================================
-        // 📷 ESCANEAR QR - CONECTADA A RPC registrar_escaneo_domo
-        // ================================================================
+        // ===== ESCANEAR QR =====
         async function escanearQR() {
             var input = document.getElementById('qrInput');
             if (!input) return;
@@ -1370,8 +1317,174 @@
         }
 
         // ================================================================
-        // 📱 eSIM - COMPRAR
+        // 📷 CÁMARA QR - CORREGIDO
         // ================================================================
+
+        var qrStream = null;
+        var qrScanInterval = null;
+
+        async function abrirCamaraQR() {
+            var container = document.getElementById('qrReaderContainer');
+            if (!container) return;
+            
+            container.style.display = 'block';
+            
+            var status = document.getElementById('qrCamaraStatus');
+            if (status) status.textContent = '📷 Solicitando permiso de cámara...';
+            
+            try {
+                var stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 480 } }
+                });
+                
+                qrStream = stream;
+                
+                var video = document.getElementById('qrVideo');
+                if (video) {
+                    video.srcObject = stream;
+                    video.setAttribute('playsinline', 'true');
+                    await video.play();
+                    
+                    if (status) status.textContent = '✅ Cámara activa - Escaneando QR...';
+                    showToast('📷 Cámara activada', 'success');
+                    
+                    iniciarEscaneoQR();
+                }
+                
+            } catch (error) {
+                console.error('Error al abrir cámara:', error);
+                
+                if (status) {
+                    if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+                        status.textContent = '❌ Permiso de cámara denegado. Habilítalo en la configuración del navegador.';
+                        showToast('❌ Permiso de cámara denegado', 'error');
+                    } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
+                        status.textContent = '❌ No se encontró cámara en el dispositivo.';
+                        showToast('❌ No se encontró cámara', 'error');
+                    } else {
+                        status.textContent = '❌ Error al iniciar cámara: ' + error.message;
+                        showToast('❌ Error al iniciar cámara', 'error');
+                    }
+                }
+                
+                cerrarCamaraQR();
+            }
+        }
+
+        function cerrarCamaraQR() {
+            if (qrScanInterval) {
+                clearInterval(qrScanInterval);
+                qrScanInterval = null;
+            }
+            
+            if (qrStream) {
+                try {
+                    qrStream.getTracks().forEach(function(track) { track.stop(); });
+                } catch (e) {}
+                qrStream = null;
+            }
+            
+            var video = document.getElementById('qrVideo');
+            if (video) {
+                try {
+                    video.srcObject = null;
+                    video.pause();
+                } catch (e) {}
+            }
+            
+            var container = document.getElementById('qrReaderContainer');
+            if (container) {
+                container.style.display = 'none';
+            }
+            
+            var status = document.getElementById('qrCamaraStatus');
+            if (status) status.textContent = '📷 Cámara cerrada';
+            
+            showToast('📷 Cámara cerrada', '');
+        }
+
+        function iniciarEscaneoQR() {
+            var video = document.getElementById('qrVideo');
+            var canvas = document.getElementById('qrCanvas');
+            var status = document.getElementById('qrCamaraStatus');
+            
+            if (!video || !canvas) return;
+            
+            var context = canvas.getContext('2d');
+            var lastScanned = '';
+            var scanCooldown = 0;
+            
+            if (qrScanInterval) {
+                clearInterval(qrScanInterval);
+                qrScanInterval = null;
+            }
+            
+            qrScanInterval = setInterval(function() {
+                try {
+                    if (!video || video.paused || video.ended || !video.videoWidth) {
+                        return;
+                    }
+                    
+                    if (scanCooldown > 0) {
+                        scanCooldown--;
+                        return;
+                    }
+                    
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    
+                    var imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+                    var code = jsQR(imageData.data, imageData.width, imageData.height, {
+                        inversionAttempts: "dontInvert"
+                    });
+                    
+                    if (code && code.data && code.data.length > 0) {
+                        var qrData = code.data.trim();
+                        
+                        if (qrData !== lastScanned) {
+                            lastScanned = qrData;
+                            
+                            if (status) status.textContent = '✅ QR detectado: ' + qrData;
+                            
+                            if (qrData.includes('DOMO') || qrData.match(/DOMO-\d{4}-[A-Z0-9]{6}/i)) {
+                                var input = document.getElementById('qrInput');
+                                if (input) {
+                                    input.value = qrData;
+                                    showToast('✅ QR Domo detectado: ' + qrData, 'success');
+                                    
+                                    setTimeout(function() {
+                                        escanearQR();
+                                    }, 1000);
+                                    
+                                    setTimeout(function() {
+                                        cerrarCamaraQR();
+                                    }, 3000);
+                                }
+                            } else {
+                                showToast('📱 QR detectado: ' + qrData, '');
+                                
+                                var input = document.getElementById('qrInput');
+                                if (input) {
+                                    input.value = qrData;
+                                }
+                                
+                                scanCooldown = 5;
+                            }
+                        }
+                    } else {
+                        if (status && status.textContent.includes('QR detectado')) {
+                            status.textContent = '🔍 Buscando código QR...';
+                        }
+                    }
+                    
+                } catch (e) {
+                    // Silenciar errores de escaneo
+                }
+            }, 500);
+        }
+
+        // ===== eSIM =====
         async function comprarESIM(cantidad) {
             var sessionResult = await window.supabase.auth.getSession();
             if (!sessionResult.data.session) {
@@ -1382,7 +1495,6 @@
             showToast('⏳ Procesando adquisición de eSIM...', '');
 
             try {
-                // Primero obtener planes disponibles
                 var planesResult = await window.supabase
                     .from('planes_esim')
                     .select('id')
@@ -1418,9 +1530,6 @@
             }
         }
 
-        // ================================================================
-        // 📱 eSIM - ACTIVAR
-        // ================================================================
         async function activarESIM() {
             var sessionResult = await window.supabase.auth.getSession();
             if (!sessionResult.data.session) {
@@ -1431,7 +1540,6 @@
             showToast('⏳ Activando eSIM...', '');
 
             try {
-                // Obtener el ICCID del usuario
                 var userResult = await window.supabase
                     .from('usuarios')
                     .select('esim_iccid')
@@ -1462,7 +1570,6 @@
 
             } catch (error) {
                 console.error('Error activando eSIM:', error);
-                // Fallback: actualizar estado localmente
                 try {
                     await window.supabase
                         .from('usuarios')
@@ -1476,9 +1583,6 @@
             }
         }
 
-        // ================================================================
-        // 📱 eSIM - DESACTIVAR
-        // ================================================================
         async function desactivarESIM() {
             var sessionResult = await window.supabase.auth.getSession();
             if (!sessionResult.data.session) {
@@ -1514,7 +1618,6 @@
                     showToast('✅ eSIM desactivada correctamente', 'success');
                     await cargarPerfil();
                 } else {
-                    // Fallback: actualizar estado localmente
                     await window.supabase
                         .from('usuarios')
                         .update({ esim_status: 'inactiva' })
@@ -1529,9 +1632,6 @@
             }
         }
 
-        // ================================================================
-        // 📱 eSIM - GENERAR QR
-        // ================================================================
         function generarQRESIM() {
             showToast('📲 Escanea el QR desde la pestaña eSIM', '');
             var esimTab = document.getElementById('tab-esim');
@@ -1543,9 +1643,6 @@
             }
         }
 
-        // ================================================================
-        // 📱 eSIM - SINCRONIZAR
-        // ================================================================
         async function sincronizarESIM() {
             var sessionResult = await window.supabase.auth.getSession();
             if (!sessionResult.data.session) {
@@ -1577,9 +1674,7 @@
             }
         }
 
-        // ================================================================
-        // 🔵 ESTADO Y CONEXIÓN - FUNCIONES EXISTENTES
-        // ================================================================
+        // ===== ESTADO Y CONEXIÓN =====
         function cambiarEstado(activo) {
             showToast(activo ? '✅ Estado: Activo' : '⭕ Estado: Inactivo', 'success');
         }
@@ -1588,28 +1683,7 @@
             showToast(tipo === 'wifi' ? '🛜 Conectado a WiFi' : '📶 Conectado a datos móviles', 'success');
         }
 
-        // ================================================================
-        // 📷 CÁMARA QR - FUNCIONES EXISTENTES
-        // ================================================================
-        function abrirCamaraQR() {
-            var container = document.getElementById('qrReaderContainer');
-            if (container) {
-                container.style.display = 'block';
-                showToast('📷 Cámara activada', '');
-            }
-        }
-
-        function cerrarCamaraQR() {
-            var container = document.getElementById('qrReaderContainer');
-            if (container) {
-                container.style.display = 'none';
-                showToast('📷 Cámara cerrada', '');
-            }
-        }
-
-        // ================================================================
-        // 💳 CRIPTO - FUNCIONES EXISTENTES
-        // ================================================================
+        // ===== CRIPTO =====
         function comprarConCripto() {
             var modal = document.getElementById('cryptoPaymentModal');
             if (modal) {
@@ -1629,9 +1703,7 @@
             showToast('📋 Dirección copiada al portapapeles', 'success');
         }
 
-        // ================================================================
-        // 🔐 SESIÓN - FUNCIONES EXISTENTES
-        // ================================================================
+        // ===== SESIÓN =====
         function cerrarSesion() {
             if (confirm('¿Seguro que quieres cerrar sesión?')) {
                 showToast('👋 Sesión cerrada', 'success');
@@ -1641,9 +1713,7 @@
             }
         }
 
-        // ================================================================
-        // 🎨 MODALES - FUNCIONES EXISTENTES
-        // ================================================================
+        // ===== MODALES =====
         function cerrarModal(modalId) {
             var modal = document.getElementById(modalId);
             if (modal) modal.classList.remove('active');
@@ -1657,9 +1727,7 @@
             }
         }
 
-        // ================================================================
-        // 📋 PERFIL - FUNCIONES EXISTENTES
-        // ================================================================
+        // ===== PERFIL - EXTRAS =====
         function editarPerfil() {
             cambiarTab('config');
             showToast('✏️ Edita tu perfil en la pestaña Ajustes', '');
@@ -1696,9 +1764,7 @@
             modal.classList.add('active');
         }
 
-        // ================================================================
-        // ⚠️ ERRORES - FUNCIONES EXISTENTES
-        // ================================================================
+        // ===== ERRORES =====
         function mostrarErrorEnPantalla(mensaje) {
             var banner = document.getElementById('errorBanner');
             var texto = document.getElementById('errorBannerText');
@@ -1716,9 +1782,7 @@
             mostrarErrorEnPantalla('Promesa rechazada: ' + (event.reason?.message || event.reason));
         });
 
-        // ================================================================
-        // 🚀 INICIALIZACIÓN
-        // ================================================================
+        // ===== INICIALIZACIÓN =====
         document.addEventListener('DOMContentLoaded', function() {
             console.log('✅ Perfil cargado - Cargando datos...');
             setTimeout(function() {
@@ -1726,9 +1790,7 @@
             }, 500);
         });
 
-        // ================================================================
-        // 🎯 EXPOSICIÓN GLOBAL
-        // ================================================================
+        // ===== EXPOSICIÓN GLOBAL =====
         window.editarPerfil = editarPerfil;
         window.compartirPerfil = compartirPerfil;
         window.generarQRPerfil = generarQRPerfil;
