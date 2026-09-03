@@ -32,7 +32,7 @@ class StreamActivity : AppCompatActivity() {
     private var juegoNombre: String = ""
     private var juegoPackage: String = ""
     private var juegoId: String = ""
-    private var transmisionId: String? = null
+    private var transmisionId: Int? = null  // ✅ AHORA INT
     private var roomName: String? = null
     private var liveKitToken: String? = null
     private var transmisionIniciada = false
@@ -90,26 +90,20 @@ class StreamActivity : AppCompatActivity() {
                 val generatedRoomName = "live-$userId-${System.currentTimeMillis()}"
                 val titulo = "🎮 Jugando $juegoNombre"
 
+                // ✅ USAR RPC crear_transmision
                 val transmision = withContext(Dispatchers.IO) {
                     SupabaseClient.client
-                        .from("transmisiones")
-                        .insert(
-                            TransmisionInsert(
-                                streamerId = userId,
-                                roomName = generatedRoomName,
-                                titulo = titulo,
-                                categoria = "gaming",
-                                descripcion = "Transmitiendo $juegoNombre",
-                                tipoTransmision = "gratis",
-                                precio = 0.0,
-                                estado = "en_vivo",
-                                fechaInicio = Instant.now().toString()
+                        .rpc("crear_transmision")
+                        .decodeFrom<TransmisionCreada>(
+                            mapOf(
+                                "p_titulo" to titulo,
+                                "p_categoria" to "gaming",
+                                "p_room_name" to generatedRoomName
                             )
-                        ) { select() }
-                        .decodeSingle<TransmisionCreada>()
+                        )
                 }
 
-                transmisionId = transmision.id
+                transmisionId = transmision.id  // ✅ INT
                 roomName = transmision.roomName
 
                 val token = withContext(Dispatchers.IO) {
@@ -122,7 +116,7 @@ class StreamActivity : AppCompatActivity() {
                     putExtra(ScreenCaptureService.EXTRA_DATA, data)
                     putExtra(ScreenCaptureService.EXTRA_ROOM_NAME, transmision.roomName)
                     putExtra(ScreenCaptureService.EXTRA_TOKEN, token)
-                    putExtra(ScreenCaptureService.EXTRA_TRANSMISION_ID, transmision.id)
+                    putExtra(ScreenCaptureService.EXTRA_TRANSMISION_ID, transmision.id)  // ✅ INT
                     putExtra(ScreenCaptureService.EXTRA_JUEGO_NOMBRE, juegoNombre)
                     putExtra(ScreenCaptureService.EXTRA_JUEGO_PACKAGE, juegoPackage)
                 }
@@ -194,14 +188,15 @@ class StreamActivity : AppCompatActivity() {
         }
     }
 
-    private suspend fun finalizarTransmisionEnSupabase(id: String) {
+    // ✅ RECIBE INT
+    private suspend fun finalizarTransmisionEnSupabase(id: Int) {
         withContext(Dispatchers.IO) {
             SupabaseClient.client
                 .from("transmisiones")
                 .update(
-                    TransmisionFinalizada(
-                        estado = "finalizada",
-                        fechaFin = Instant.now().toString()
+                    mapOf(
+                        "estado" to "finalizada",
+                        "fecha_fin" to Instant.now().toString()
                     )
                 ) { filter { eq("id", id) } }
         }
@@ -220,27 +215,9 @@ class StreamActivity : AppCompatActivity() {
     }
 }
 
-@Serializable
-private data class TransmisionInsert(
-    @SerialName("streamer_id") val streamerId: String,
-    @SerialName("room_name") val roomName: String,
-    val titulo: String,
-    val categoria: String,
-    val descripcion: String,
-    @SerialName("tipo_transmision") val tipoTransmision: String,
-    val precio: Double,
-    val estado: String,
-    @SerialName("fecha_inicio") val fechaInicio: String
-)
-
+// ✅ ID ES INT
 @Serializable
 private data class TransmisionCreada(
-    val id: String,
+    val id: Int,  // ✅ INT
     @SerialName("room_name") val roomName: String
-)
-
-@Serializable
-private data class TransmisionFinalizada(
-    val estado: String,
-    @SerialName("fecha_fin") val fechaFin: String
 )
