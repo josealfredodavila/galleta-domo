@@ -1014,6 +1014,31 @@ window.showToast = showToast;
 window.escapeHTML = escapeHTML;
 
 // ================================================================
+// ✅ EXPONER FUNCIONES GLOBALES PARA PERFIL.HTML
+// ================================================================
+
+// getSession() - Para que perfil.html pueda obtener la sesión
+async function getSession() {
+    try {
+        const { data: { session }, error } = await supabaseClient.auth.getSession();
+        if (error) throw error;
+        return session;
+    } catch (error) {
+        console.error('❌ Error en getSession:', error);
+        return null;
+    }
+}
+window.getSession = getSession;
+
+// getSupabase() - Para exponer el cliente directamente si es necesario
+function getSupabase() {
+    return supabaseClient;
+}
+window.getSupabase = getSupabase;
+
+console.log('✅ Funciones globales expuestas: getSession(), getSupabase()');
+
+// ================================================================
 // INICIALIZACIÓN - UNA SOLA VEZ CON MANEJO DE ERRORES
 // ================================================================
 document.addEventListener('DOMContentLoaded', function() {
