@@ -724,6 +724,7 @@
             <a href="/mensajes/mensajes.html" class="nav-link">◈ Mensajes</a>
             <a href="/live/live.html" class="nav-link live">◉ Live</a>
             <a href="/videos/videos.html" class="nav-link">🎬 Videos</a>
+            <a href="/features/grupos/grupos.html" class="nav-link">👥 Grupos</a>
         </nav>
 
         <div class="perfil-container">
@@ -1002,9 +1003,15 @@
                 </div>
                 <div id="pubPreview" style="margin-top:10px;display:none;border-radius:10px;overflow:hidden;max-height:200px;background:var(--space);"></div>
             </div>
-            <div style="display:flex;gap:10px;margin-top:12px;">
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;">
                 <button class="btn btn-outline" style="flex:1;justify-content:center;padding:10px;" onclick="cerrarModal('publicacionModal')">Cancelar</button>
-                <button class="btn btn-gold" style="flex:2;justify-content:center;padding:10px;" id="btnPublicar" onclick="publicarContenido()">🚀 Publicar</button>
+                <button class="btn btn-gold" style="flex:1;justify-content:center;padding:10px;" id="btnPublicar" onclick="publicarContenido()">🚀 Publicar</button>
+                <button class="btn-outline btn-sm" onclick="toggleEmojiPickerPerfil()" id="btnEmojiPerfil" style="font-size:1.2rem;padding:8px 12px;">😊</button>
+                <!-- ===== SELECTOR DE EMOJIS PARA PERFIL ===== -->
+                <div class="emoji-picker" id="emojiPickerPerfil" style="display:none;position:absolute;bottom:100%;left:0;background:rgba(15,25,20,0.95);border:1px solid var(--glass-border);border-radius:var(--radius);padding:12px;width:280px;max-width:90vw;z-index:1000;box-shadow:var(--shadow-gold-strong);backdrop-filter:blur(12px);margin-bottom:8px;">
+                    <div class="titulo" style="color:var(--text-muted);font-size:0.6rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;text-align:center;font-family:'Orbitron',monospace;">✦ Elige tu emoji</div>
+                    <div class="grid" id="emojiGridPerfil" style="display:grid;grid-template-columns:repeat(8,1fr);gap:4px;"></div>
+                </div>
             </div>
             <div id="pubStatus" style="margin-top:10px;font-size:0.7rem;color:var(--text-muted);text-align:center;min-height:20px;"></div>
         </div>
@@ -1240,6 +1247,80 @@
         // 📸 PUBLICACIONES
         // ================================================================
 
+        // 🎯 LISTA DE EMOJIS COMPLETA
+        var emojisDisponibles = [
+            // Unicode 17.0 (2025)
+            '🧌', '🫨', '🪭', '🐋', '🧰', '💥',
+            // Unicode 18.0 (2026)
+            '🫩', '👈', '👉', '🦋', '🥒', '🗼', '☄️', '🧽', '🪤', '🩹',
+            // Dinero / Ganancia
+            '💸', '💵', '💴', '💶', '💷', '🪙', '💰', '💳', '💎',
+            // Fuego / Viral
+            '🔥', '⚡', '✨', '🌟', '💫', '🚀', '🪐',
+            // Ojitos / Chisme
+            '👀', '👁️', '👁️‍🗨️', '🤩', '😍', '😳', '🫣',
+            // Manitas / Señalando
+            '👉', '👈', '☝️', '👇', '🫵', '🤏', '✋', '🤚', '👋',
+            // Caritas pa vender
+            '🥹', '🥺', '😍', '🤩', '🤤', '😎', '😏', '🤗', '🫶', '🥰', '😘',
+            // Tiempo / Correle
+            '⏰', '⏳', '⌛', '⏲️', '🚨', '⚠️',
+            // Check / Apartado
+            '✅', '☑️', '✔️', '🔒', '📌', '📍', '📝',
+            // Cajas / Envío
+            '📦', '📤', '📥', '🚚', '🚀', '🏍️', '💨',
+            // Corazones
+            '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '💖', '💝', '💘', '💗'
+        ];
+
+        function toggleEmojiPickerPerfil() {
+            var picker = document.getElementById('emojiPickerPerfil');
+            if (!picker) return;
+            if (picker.style.display === 'block') {
+                picker.style.display = 'none';
+                return;
+            }
+            // Llenar la grilla si está vacía
+            var grid = document.getElementById('emojiGridPerfil');
+            if (grid && grid.children.length === 0) {
+                emojisDisponibles.forEach(function(emoji) {
+                    var btn = document.createElement('button');
+                    btn.textContent = emoji;
+                    btn.setAttribute('data-emoji', emoji);
+                    btn.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        insertarEmojiSeleccionadoPerfil(emoji);
+                        picker.style.display = 'none';
+                    });
+                    grid.appendChild(btn);
+                });
+            }
+            picker.style.display = 'block';
+        }
+
+        function insertarEmojiSeleccionadoPerfil(emoji) {
+            var input = document.getElementById('pubTexto');
+            if (!input) return;
+            var start = input.selectionStart || 0;
+            var end = input.selectionEnd || 0;
+            var texto = input.value;
+            input.value = texto.substring(0, start) + emoji + texto.substring(end);
+            input.focus();
+            var newPos = start + emoji.length;
+            input.selectionStart = input.selectionEnd = newPos;
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+
+        // Cerrar selector al hacer clic fuera
+        document.addEventListener('click', function(e) {
+            var picker = document.getElementById('emojiPickerPerfil');
+            var btnEmoji = document.getElementById('btnEmojiPerfil');
+            if (!picker || !btnEmoji) return;
+            if (!picker.contains(e.target) && !btnEmoji.contains(e.target)) {
+                picker.style.display = 'none';
+            }
+        });
+
         function abrirModalPublicacion() {
             document.getElementById('pubTexto').value = '';
             document.getElementById('pubArchivo').value = '';
@@ -1263,6 +1344,10 @@
                 };
                 reader.readAsDataURL(file);
             };
+
+            // Cerrar selector de emojis al abrir el modal
+            var picker = document.getElementById('emojiPickerPerfil');
+            if (picker) picker.style.display = 'none';
         }
 
         async function publicarContenido() {
@@ -2446,6 +2531,7 @@
         window.abrirModalComentarios = abrirModalComentarios;
         window.enviarComentario = enviarComentario;
         window.cargarComentarios = cargarComentarios;
+        window.toggleEmojiPickerPerfil = toggleEmojiPickerPerfil;
     </script>
 
 </body>
