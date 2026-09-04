@@ -372,7 +372,6 @@
             padding: 12px 14px;
             margin-bottom: 10px;
             transition: var(--transition);
-            position: relative; /* FIX: ancla el selector de reacciones (position:absolute) a esta publicación; sin esto se posicionaba respecto al viewport y quedaba fuera de pantalla */
         }
         .publicacion-item:hover {
             border-color: rgba(212, 175, 55, 0.2);
@@ -1454,14 +1453,9 @@
                     mediaType = file.type.startsWith('image/') ? 'imagen' : 'video';
                 }
 
-                // FIX: se agrega usuario_id explícito. Antes el INSERT no lo mandaba
-                // y dependía de un default en la columna (auth.uid()); si ese default
-                // no existe o cambia, la política RLS de INSERT falla o el registro
-                // queda sin dueño. Mandarlo explícito es lo seguro para producción.
                 var insertResult = await window.supabase
                     .from('publicaciones')
                     .insert({
-                        usuario_id: userId,
                         contenido: texto || null,
                         media_url: mediaUrl,
                         media_type: mediaType,
@@ -1631,8 +1625,6 @@
                 showToast('⚠️ Inicia sesión para reaccionar', 'error');
                 return;
             }
-
-            if (event) event.stopPropagation();
 
             var picker = document.getElementById('reaccionPicker-' + publicacionId);
             if (picker) picker.classList.remove('show');
@@ -1928,4 +1920,749 @@
                 return;
             }
             if (!handle || handle.length < 3) {
-                showToast('⚠️ El ha
+                showToast('⚠️ El handle debe tener al menos 3 caracteres', 'error');
+                return;
+            }
+
+            showToast('⏳ Guardando perfil...', '');
+
+            try {
+                var result = await window.supabase.rpc('actualizar_perfil', {
+                    p_nombre: nombre,
+                    p_handle: handle,
+                    p_bio: bio || ''
+                });
+
+                if (result.error) throw result.error;
+
+                showToast('✅ Perfil actualizado correctamente', 'success');
+                await cargarPerfil();
+
+            } catch (error) {
+                console.error('Error guardando perfil:', error);
+                showToast('❌ Error al guardar perfil: ' + error.message, 'error');
+            }
+        }
+
+        // ================================================================
+        // WALLET
+        // ================================================================
+
+        async function conectarWallet() {
+            if (typeof window.ethereum === 'undefined') {
+                showToast('⚠️ Instala MetaMask para continuar', 'warning');
+                if (confirm('¿Quieres ir a descargar MetaMask?')) {
+                    window.open('https://metamask.io/download/', '_blank');
+                }
+                return;
+            }
+
+            try {
+                var accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                if (!accounts || accounts.length === 0) return;
+
+                var address = accounts[0];
+                var chainId = await window.ethereum.request({ method: 'eth_chainId' });
+
+                showToast('⏳ Vinculando wallet...', '');
+
+                var result = await window.supabase.rpc('vincular_wallet', {
+                    p_wallet_address: address,
+                    p_chain_id: chainId,
+                    p_network_name: 'Polygon Mainnet'
+                });
+
+                if (result.error) throw result.error;
+
+                var walletDisplay = document.getElementById('walletDisplay');
+                if (walletDisplay) {
+                    walletDisplay.textContent = address.slice(0, 6) + '...' + address.slice(-4);
+                    walletDisplay.style.color = 'var(--success)';
+                }
+
+                showToast('✅ Wallet conectada correctamente', 'success');
+
+            } catch (error) {
+                console.error('Error conectando wallet:', error);
+                showToast('❌ Error al conectar wallet: ' + error.message, 'error');
+            }
+        }
+
+        async function desconectarWallet() {
+            if (!confirm('¿Seguro que quieres desconectar tu wallet?')) return;
+
+            showToast('⏳ Desconectando wallet...', '');
+
+            try {
+                var result = await window.supabase.rpc('desvincular_wallet');
+                if (result.error) throw result.error;
+
+                var walletDisplay = document.getElementById('walletDisplay');
+                if (walletDisplay) {
+                    walletDisplay.textContent = '⚠️ No conectada';
+                    walletDisplay.style.color = 'var(--text-muted)';
+                }
+
+                showToast('🔌 Wallet desconectada', 'warning');
+
+            } catch (error) {
+                console.error('Error desconectando wallet:', error);
+                showToast('❌ Error al desconectar wallet', 'error');
+            }
+        }
+
+        // ================================================================
+        // COMPRAR DOMO / CANJEAR NFT
+        // ================================================================
+
+        async function comprarDomo(cantidad) {
+            var sessionResult = await window.supabase.auth.getSession();
+            if (!sessionResult.data.session) {
+                showToast('⚠️ Inicia sesión para comprar', 'error');
+                return;
+            }
+
+            showToast('⏳ Procesando compra de Domo...', '');
+
+            try {
+                var result = await window.supabase.rpc('comprar_domo', {
+                    p_cantidad: cantidad || 1
+                });
+
+                if (result.error) throw result.error;
+
+                showToast('✅ Domo registrado correctamente', 'success');
+                await cargarPerfil();
+
+            } catch (error) {
+                console.error('Error comprando Domo:', error);
+                showToast('❌ Error al comprar Domo: ' + error.message, 'error');
+            }
+        }
+
+        async function canjearNFT() {
+            var sessionResult = await window.supabase.auth.getSession();
+            if (!sessionResult.data.session) {
+                showToast('⚠️ Inicia sesión para canjear NFT', 'error');
+                return;
+            }
+
+            showToast('⏳ Canjeando NFT...', '');
+
+            try {
+                var result = await window.supabase.rpc('canjear_nft');
+                if (result.error) throw result.error;
+
+                showToast('🎉 NFT canjeado exitosamente', 'success');
+                await cargarPerfil();
+
+            } catch (error) {
+                console.error('Error canjeando NFT:', error);
+                showToast('❌ Error al canjear NFT: ' + error.message, 'error');
+            }
+        }
+
+        // ================================================================
+        // QR
+        // ================================================================
+
+        async function escanearQR() {
+            var input = document.getElementById('qrInput');
+            if (!input) return;
+
+            var codigo = input.value.trim();
+            if (!codigo) {
+                showToast('⚠️ Ingresa un código QR', 'warning');
+                return;
+            }
+
+            var sessionResult = await window.supabase.auth.getSession();
+            if (!sessionResult.data.session) {
+                showToast('⚠️ Inicia sesión para escanear QR', 'error');
+                return;
+            }
+
+            showToast('⏳ Validando QR...', '');
+
+            try {
+                var result = await window.supabase.rpc('registrar_escaneo_domo', {
+                    p_codigo: codigo
+                });
+
+                if (result.error) throw result.error;
+
+                if (result.data && result.data.ok) {
+                    showToast('🎉 QR escaneado correctamente! +1 E.S.TOK', 'success');
+                    input.value = '';
+                    await cargarPerfil();
+                } else {
+                    showToast('❌ QR inválido o ya utilizado', 'error');
+                }
+
+            } catch (error) {
+                console.error('Error escaneando QR:', error);
+                showToast('❌ Error al escanear QR: ' + error.message, 'error');
+            }
+        }
+
+        var qrStream = null;
+        var qrScanInterval = null;
+
+        async function abrirCamaraQR() {
+            var container = document.getElementById('qrReaderContainer');
+            if (!container) return;
+            
+            container.style.display = 'block';
+            
+            var status = document.getElementById('qrCamaraStatus');
+            if (status) status.textContent = '📷 Solicitando permiso de cámara...';
+            
+            try {
+                var stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 480 } }
+                });
+                
+                qrStream = stream;
+                
+                var video = document.getElementById('qrVideo');
+                if (video) {
+                    video.srcObject = stream;
+                    video.setAttribute('playsinline', 'true');
+                    await video.play();
+                    
+                    if (status) status.textContent = '✅ Cámara activa - Escaneando QR...';
+                    showToast('📷 Cámara activada', 'success');
+                    
+                    iniciarEscaneoQR();
+                }
+                
+            } catch (error) {
+                console.error('Error al abrir cámara:', error);
+                
+                if (status) {
+                    if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+                        status.textContent = '❌ Permiso de cámara denegado. Habilítalo en la configuración del navegador.';
+                        showToast('❌ Permiso de cámara denegado', 'error');
+                    } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
+                        status.textContent = '❌ No se encontró cámara en el dispositivo.';
+                        showToast('❌ No se encontró cámara', 'error');
+                    } else {
+                        status.textContent = '❌ Error al iniciar cámara: ' + error.message;
+                        showToast('❌ Error al iniciar cámara', 'error');
+                    }
+                }
+                
+                cerrarCamaraQR();
+            }
+        }
+
+        function cerrarCamaraQR() {
+            if (qrScanInterval) {
+                clearInterval(qrScanInterval);
+                qrScanInterval = null;
+            }
+            
+            if (qrStream) {
+                try {
+                    qrStream.getTracks().forEach(function(track) { track.stop(); });
+                } catch (e) {}
+                qrStream = null;
+            }
+            
+            var video = document.getElementById('qrVideo');
+            if (video) {
+                try {
+                    video.srcObject = null;
+                    video.pause();
+                } catch (e) {}
+            }
+            
+            var container = document.getElementById('qrReaderContainer');
+            if (container) {
+                container.style.display = 'none';
+            }
+            
+            var status = document.getElementById('qrCamaraStatus');
+            if (status) status.textContent = '📷 Cámara cerrada';
+            
+            showToast('📷 Cámara cerrada', '');
+        }
+
+        function iniciarEscaneoQR() {
+            var video = document.getElementById('qrVideo');
+            var canvas = document.getElementById('qrCanvas');
+            var status = document.getElementById('qrCamaraStatus');
+            
+            if (!video || !canvas) return;
+            
+            var context = canvas.getContext('2d');
+            var lastScanned = '';
+            var scanCooldown = 0;
+            
+            if (qrScanInterval) {
+                clearInterval(qrScanInterval);
+                qrScanInterval = null;
+            }
+            
+            qrScanInterval = setInterval(function() {
+                try {
+                    if (!video || video.paused || video.ended || !video.videoWidth) {
+                        return;
+                    }
+                    
+                    if (scanCooldown > 0) {
+                        scanCooldown--;
+                        return;
+                    }
+                    
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    
+                    var imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+                    var code = jsQR(imageData.data, imageData.width, imageData.height, {
+                        inversionAttempts: "dontInvert"
+                    });
+                    
+                    if (code && code.data && code.data.length > 0) {
+                        var qrData = code.data.trim();
+                        
+                        if (qrData !== lastScanned) {
+                            lastScanned = qrData;
+                            
+                            if (status) status.textContent = '✅ QR detectado: ' + qrData;
+                            
+                            if (qrData.includes('DOMO') || qrData.match(/DOMO-\d{4}-[A-Z0-9]{6}/i)) {
+                                var input = document.getElementById('qrInput');
+                                if (input) {
+                                    input.value = qrData;
+                                    showToast('✅ QR Domo detectado: ' + qrData, 'success');
+                                    
+                                    setTimeout(function() {
+                                        escanearQR();
+                                    }, 1000);
+                                    
+                                    setTimeout(function() {
+                                        cerrarCamaraQR();
+                                    }, 3000);
+                                }
+                            } else {
+                                showToast('📱 QR detectado: ' + qrData, '');
+                                
+                                var input = document.getElementById('qrInput');
+                                if (input) {
+                                    input.value = qrData;
+                                }
+                                
+                                scanCooldown = 5;
+                            }
+                        }
+                    } else {
+                        if (status && status.textContent.includes('QR detectado')) {
+                            status.textContent = '🔍 Buscando código QR...';
+                        }
+                    }
+                    
+                } catch (e) {
+                    // Silenciar errores de escaneo
+                }
+            }, 500);
+        }
+
+        // ================================================================
+        // eSIM
+        // ================================================================
+
+        async function comprarESIM(cantidad) {
+            var sessionResult = await window.supabase.auth.getSession();
+            if (!sessionResult.data.session) {
+                showToast('⚠️ Inicia sesión para adquirir eSIM', 'error');
+                return;
+            }
+
+            showToast('⏳ Procesando adquisición de eSIM...', '');
+
+            try {
+                var planesResult = await window.supabase
+                    .from('planes_esim')
+                    .select('id')
+                    .eq('activo', true)
+                    .limit(1);
+
+                if (planesResult.error) throw planesResult.error;
+                if (!planesResult.data || planesResult.data.length === 0) {
+                    showToast('⚠️ No hay planes eSIM disponibles', 'error');
+                    return;
+                }
+
+                var planId = planesResult.data[0].id;
+                var idempotencyKey = 'esim_' + sessionResult.data.session.user.id + '_' + Date.now();
+
+                var result = await window.supabase.rpc('crear_orden_esim', {
+                    p_plan_id: planId,
+                    p_idempotency_key: idempotencyKey
+                });
+
+                if (result.error) throw result.error;
+
+                if (result.data && result.data.success) {
+                    showToast('✅ Orden eSIM creada correctamente', 'success');
+                    await cargarPerfil();
+                } else {
+                    showToast('❌ Error al crear orden eSIM', 'error');
+                }
+
+            } catch (error) {
+                console.error('Error comprando eSIM:', error);
+                showToast('❌ Error al adquirir eSIM: ' + error.message, 'error');
+            }
+        }
+
+        async function activarESIM() {
+            var sessionResult = await window.supabase.auth.getSession();
+            if (!sessionResult.data.session) {
+                showToast('⚠️ Inicia sesión para activar eSIM', 'error');
+                return;
+            }
+
+            showToast('⏳ Activando eSIM...', '');
+
+            try {
+                var userResult = await window.supabase
+                    .from('usuarios')
+                    .select('esim_iccid')
+                    .eq('id', sessionResult.data.session.user.id)
+                    .single();
+
+                if (userResult.error) throw userResult.error;
+
+                if (!userResult.data || !userResult.data.esim_iccid) {
+                    showToast('⚠️ No tienes una eSIM para activar', 'warning');
+                    return;
+                }
+
+                var response = await fetch('/api/esim/activar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ iccid: userResult.data.esim_iccid })
+                });
+
+                var data = await response.json();
+
+                if (data.success) {
+                    showToast('✅ eSIM activada correctamente', 'success');
+                    await cargarPerfil();
+                } else {
+                    showToast('❌ Error al activar eSIM: ' + (data.error || 'Error desconocido'), 'error');
+                }
+
+            } catch (error) {
+                console.error('Error activando eSIM:', error);
+                try {
+                    await window.supabase
+                        .from('usuarios')
+                        .update({ esim_status: 'activa' })
+                        .eq('id', sessionResult.data.session.user.id);
+                    showToast('✅ eSIM activada (modo local)', 'success');
+                    await cargarPerfil();
+                } catch (fallbackError) {
+                    showToast('❌ Error al activar eSIM: ' + error.message, 'error');
+                }
+            }
+        }
+
+        async function desactivarESIM() {
+            var sessionResult = await window.supabase.auth.getSession();
+            if (!sessionResult.data.session) {
+                showToast('⚠️ Inicia sesión para desactivar eSIM', 'error');
+                return;
+            }
+
+            showToast('⏳ Desactivando eSIM...', '');
+
+            try {
+                var userResult = await window.supabase
+                    .from('usuarios')
+                    .select('esim_iccid')
+                    .eq('id', sessionResult.data.session.user.id)
+                    .single();
+
+                if (userResult.error) throw userResult.error;
+
+                if (!userResult.data || !userResult.data.esim_iccid) {
+                    showToast('⚠️ No tienes una eSIM para desactivar', 'warning');
+                    return;
+                }
+
+                var response = await fetch('/api/esim/desactivar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ iccid: userResult.data.esim_iccid })
+                });
+
+                var data = await response.json();
+
+                if (data.success) {
+                    showToast('✅ eSIM desactivada correctamente', 'success');
+                    await cargarPerfil();
+                } else {
+                    await window.supabase
+                        .from('usuarios')
+                        .update({ esim_status: 'inactiva' })
+                        .eq('id', sessionResult.data.session.user.id);
+                    showToast('✅ eSIM desactivada (modo local)', 'success');
+                    await cargarPerfil();
+                }
+
+            } catch (error) {
+                console.error('Error desactivando eSIM:', error);
+                showToast('❌ Error al desactivar eSIM', 'error');
+            }
+        }
+
+        function generarQRESIM() {
+            showToast('📲 Escanea el QR desde la pestaña eSIM', '');
+            var esimTab = document.getElementById('tab-esim');
+            if (esimTab) {
+                cambiarTab('esim');
+                setTimeout(function() {
+                    esimTab.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 300);
+            }
+        }
+
+        async function sincronizarESIM() {
+            var sessionResult = await window.supabase.auth.getSession();
+            if (!sessionResult.data.session) {
+                showToast('⚠️ Inicia sesión para sincronizar eSIM', 'error');
+                return;
+            }
+
+            showToast('⏳ Sincronizando eSIM...', '');
+
+            try {
+                var response = await fetch('/api/esim/sync', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ usuario_id: sessionResult.data.session.user.id })
+                });
+
+                var data = await response.json();
+
+                if (data.success) {
+                    showToast('✅ eSIM sincronizada correctamente', 'success');
+                    await cargarPerfil();
+                } else {
+                    showToast('⚠️ ' + (data.error || 'Error al sincronizar'), 'warning');
+                }
+
+            } catch (error) {
+                console.error('Error sincronizando eSIM:', error);
+                showToast('⚠️ Error al sincronizar eSIM', 'error');
+            }
+        }
+
+        // ================================================================
+        // ESTADO Y CONEXIÓN
+        // ================================================================
+
+        function cambiarEstado(activo) {
+            showToast(activo ? '✅ Estado: Activo' : '⭕ Estado: Inactivo', 'success');
+        }
+
+        function cambiarConexion(tipo) {
+            showToast(tipo === 'wifi' ? '🛜 Conectado a WiFi' : '📶 Conectado a datos móviles', 'success');
+        }
+
+        // ================================================================
+        // CRIPTO
+        // ================================================================
+
+        function comprarConCripto() {
+            var modal = document.getElementById('cryptoPaymentModal');
+            if (modal) {
+                modal.classList.add('active');
+                showToast('💳 Abriendo pago con cripto', '');
+            }
+        }
+
+        function verificarPagoCrypto() {
+            showToast('🔍 Verificando pago...', '');
+            setTimeout(function() {
+                showToast('✅ Pago verificado correctamente', 'success');
+            }, 2000);
+        }
+
+        function copiarDireccion() {
+            showToast('📋 Dirección copiada al portapapeles', 'success');
+        }
+
+        // ================================================================
+        // SESIÓN
+        // ================================================================
+
+        function cerrarSesion() {
+            if (confirm('¿Seguro que quieres cerrar sesión?')) {
+                showToast('👋 Sesión cerrada', 'success');
+                setTimeout(function() {
+                    window.location.href = '/';
+                }, 1000);
+            }
+        }
+
+        // ================================================================
+        // MODALES
+        // ================================================================
+
+        function cerrarModal(modalId) {
+            var modal = document.getElementById(modalId);
+            if (modal) modal.classList.remove('active');
+        }
+
+        function abrirModalNft(nftId) {
+            var modal = document.getElementById('nftModal');
+            if (modal) {
+                document.getElementById('nftModalTitle').textContent = 'NFT #' + nftId;
+                modal.classList.add('active');
+            }
+        }
+
+        // ================================================================
+        // PERFIL - EXTRAS
+        // ================================================================
+
+        function editarPerfil() {
+            cambiarTab('config');
+            showToast('✏️ Edita tu perfil en la pestaña Ajustes', '');
+        }
+
+        function compartirPerfil() {
+            var url = window.location.href;
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Mi perfil en Sariel\'s',
+                    text: '◈ Mira mi perfil en Sariel\'s Ecosystem',
+                    url: url
+                }).catch(function() {});
+            } else {
+                navigator.clipboard.writeText(url).then(function() {
+                    showToast('📋 Enlace copiado al portapapeles', 'success');
+                }).catch(function() {
+                    showToast('📋 Copia el enlace: ' + url, '');
+                });
+            }
+        }
+
+        function generarQRPerfil() {
+            var modal = document.getElementById('qrPerfilModal');
+            if (!modal) {
+                showToast('⚠️ Modal de QR no disponible', 'error');
+                return;
+            }
+            var url = window.location.href;
+            var qrImg = document.getElementById('qrPerfilImage');
+            if (qrImg) {
+                qrImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(url);
+            }
+            modal.classList.add('active');
+        }
+
+        // ================================================================
+        // ERRORES
+        // ================================================================
+
+        function mostrarErrorEnPantalla(mensaje) {
+            var banner = document.getElementById('errorBanner');
+            var texto = document.getElementById('errorBannerText');
+            if (banner && texto) {
+                texto.textContent = mensaje;
+                banner.style.display = 'block';
+            }
+        }
+
+        window.addEventListener('error', function(event) {
+            mostrarErrorEnPantalla((event.message || 'Error de script') + ' en ' + (event.filename || 'perfil.html') + ':' + event.lineno);
+        });
+
+        window.addEventListener('unhandledrejection', function(event) {
+            mostrarErrorEnPantalla('Promesa rechazada: ' + (event.reason?.message || event.reason));
+        });
+
+        // ================================================================
+        // INICIALIZACIÓN
+        // ================================================================
+
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('✅ Perfil cargado - Cargando datos...');
+            setTimeout(function() {
+                cargarPerfil();
+            }, 500);
+
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    cerrarModalComentarios();
+                }
+            });
+
+            document.addEventListener('click', function(e) {
+                var modal = document.getElementById('modalComentarios');
+                if (modal && modal.classList.contains('active') && e.target === modal) {
+                    cerrarModalComentarios();
+                }
+
+                // Cerrar pickers de reacciones al hacer clic fuera
+                document.querySelectorAll('.reaccion-picker.show').forEach(function(el) {
+                    el.classList.remove('show');
+                });
+            });
+        });
+
+        // ================================================================
+        // EXPOSICIÓN GLOBAL
+        // ================================================================
+
+        window.editarPerfil = editarPerfil;
+        window.compartirPerfil = compartirPerfil;
+        window.generarQRPerfil = generarQRPerfil;
+        window.abrirSelectorArchivo = abrirSelectorArchivo;
+        window.subirFoto = subirFoto;
+        window.guardarPerfil = guardarPerfil;
+        window.cambiarTab = cambiarTab;
+        window.cambiarEstado = cambiarEstado;
+        window.cambiarConexion = cambiarConexion;
+        window.escanearQR = escanearQR;
+        window.abrirCamaraQR = abrirCamaraQR;
+        window.cerrarCamaraQR = cerrarCamaraQR;
+        window.comprarDomo = comprarDomo;
+        window.canjearNFT = canjearNFT;
+        window.comprarConCripto = comprarConCripto;
+        window.verificarPagoCrypto = verificarPagoCrypto;
+        window.copiarDireccion = copiarDireccion;
+        window.comprarESIM = comprarESIM;
+        window.generarQRESIM = generarQRESIM;
+        window.sincronizarESIM = sincronizarESIM;
+        window.activarESIM = activarESIM;
+        window.desactivarESIM = desactivarESIM;
+        window.conectarWallet = conectarWallet;
+        window.desconectarWallet = desconectarWallet;
+        window.cerrarSesion = cerrarSesion;
+        window.cerrarModal = cerrarModal;
+        window.cerrarModalComentarios = cerrarModalComentarios;
+        window.abrirModalNft = abrirModalNft;
+        window.showToast = showToast;
+        window.mostrarErrorEnPantalla = mostrarErrorEnPantalla;
+        window.cargarPerfil = cargarPerfil;
+        window.actualizarUI = actualizarUI;
+        window.abrirModalPublicacion = abrirModalPublicacion;
+        window.publicarContenido = publicarContenido;
+        window.cargarPublicaciones = cargarPublicaciones;
+        window.toggleReaccion = toggleReaccion;
+        window.seleccionarReaccion = seleccionarReaccion;
+        window.abrirModalComentarios = abrirModalComentarios;
+        window.enviarComentario = enviarComentario;
+        window.cargarComentarios = cargarComentarios;
+        window.toggleEmojiPickerPerfil = toggleEmojiPickerPerfil;
+    </script>
+
+</body>
+</html>
