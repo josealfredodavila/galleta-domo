@@ -1,6 +1,6 @@
 <!-- ================================================================
      GRUPOS - SARIEL'S ECOSYSTEM
-     VERSIÓN PRODUCCIÓN - CONECTADO A SUPABASE + LIVE + VIDEOS
+     VERSIÓN COMPLETA - COMUNIDAD + LIVE + MONETIZACIÓN
      ================================================================ -->
 <!DOCTYPE html>
 <html lang="es">
@@ -92,10 +92,10 @@
             margin-bottom: 16px;
         }
         .grupos-header h1 { font-family: 'Orbitron', monospace; color: var(--gold); font-size: 1.2rem; }
-        .grupos-header .filtros { display: flex; gap: 8px; flex-wrap: wrap; }
+        .grupos-header .filtros { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
         .grupos-header .filtros input, .grupos-header .filtros select {
             padding: 6px 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border);
-            border-radius: 20px; color: var(--text-primary); font-size: 0.7rem; outline: none;
+            border-radius: 20px; color: var(--text-primary); font-size: 0.7rem; outline: none; min-width: 120px;
         }
         .grupos-header .filtros input:focus, .grupos-header .filtros select:focus { border-color: var(--gold); }
 
@@ -133,12 +133,8 @@
         .grupo-card .live-badge { font-size: 0.5rem; padding: 2px 10px; border-radius: 12px; background: var(--live-red); color: #fff; animation: pulse-live 2s infinite; }
 
         /* ===== VISTA INTERNA DEL GRUPO ===== */
-        .grupo-interno {
-            display: none;
-        }
-        .grupo-interno.show {
-            display: block;
-        }
+        .grupo-interno { display: none; }
+        .grupo-interno.show { display: block; }
 
         .grupo-header-interno {
             background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-xl);
@@ -160,9 +156,7 @@
         .grupo-header-interno .acciones { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
 
         /* ===== PUBLICACIONES ===== */
-        .publicaciones-container {
-            margin-top: 16px;
-        }
+        .publicaciones-container { margin-top: 16px; }
         .publicacion-card {
             background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius);
             padding: 14px 16px; margin-bottom: 12px;
@@ -175,7 +169,9 @@
         .publicacion-card .contenido { color: var(--text-secondary); font-size: 0.8rem; line-height: 1.6; }
         .publicacion-card .contenido img { max-width: 100%; border-radius: 8px; margin-top: 8px; }
         .publicacion-card .contenido video { max-width: 100%; border-radius: 8px; margin-top: 8px; }
-        .publicacion-card .stats { display: flex; gap: 12px; font-size: 0.6rem; color: var(--text-muted); margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--glass-border); }
+        .publicacion-card .stats { display: flex; gap: 12px; font-size: 0.6rem; color: var(--text-muted); margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--glass-border); flex-wrap: wrap; }
+        .publicacion-card .stats span { cursor: pointer; padding: 4px 8px; border-radius: 12px; transition: var(--transition); }
+        .publicacion-card .stats span:hover { color: var(--gold); background: rgba(212,175,55,0.05); }
 
         .form-publicacion {
             background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius);
@@ -216,6 +212,19 @@
         .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); }
         .empty-state .icon { font-size: 2.5rem; display: block; margin-bottom: 12px; color: var(--gold); opacity: 0.3; }
 
+        /* ===== REGALOS ===== */
+        .gift-options {
+            display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin: 12px 0;
+        }
+        .gift-btn {
+            padding: 10px 16px; border-radius: 12px; border: 1px solid var(--glass-border);
+            background: rgba(0,0,0,0.3); color: var(--text-primary); cursor: pointer;
+            transition: var(--transition); text-align: center; min-width: 70px;
+        }
+        .gift-btn:hover { border-color: var(--gold); transform: scale(1.05); background: rgba(212,175,55,0.1); }
+        .gift-btn .monto { font-weight: 700; color: var(--gold); font-size: 0.9rem; }
+        .gift-btn .label { font-size: 0.5rem; color: var(--text-muted); display: block; }
+
         .footer {
             margin-top: 30px; padding-top: 16px; border-top: 1px solid var(--glass-border);
             display: flex; justify-content: space-between; align-items: center; font-size: 0.7rem;
@@ -231,7 +240,9 @@
             .grupos-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
             .grupo-header-interno .portada { height: 80px; }
             .modal { padding: 16px; }
-            .grupos-header .filtros input, .grupos-header .filtros select { font-size: 0.65rem; padding: 4px 10px; }
+            .grupos-header .filtros input, .grupos-header .filtros select { font-size: 0.65rem; padding: 4px 10px; min-width: 80px; }
+            .grupos-header { flex-direction: column; align-items: stretch; }
+            .grupos-header .filtros { justify-content: center; }
         }
         @media (max-width: 480px) {
             .grupos-grid { grid-template-columns: 1fr; }
@@ -420,6 +431,31 @@
             </div>
         </div>
 
+        <!-- ============================================================ -->
+        <!-- MODAL REGALOS -->
+        <!-- ============================================================ -->
+        <div class="modal-overlay" id="modalRegalos">
+            <div class="modal">
+                <div class="modal-header">
+                    <h2>🎁 Enviar regalo</h2>
+                    <button class="btn-cerrar" onclick="cerrarModalRegalos()">✕</button>
+                </div>
+                <div style="text-align:center;padding:10px 0;">
+                    <p style="color:var(--text-muted);font-size:0.8rem;margin-bottom:12px;">
+                        Apoya a <strong id="giftStreamerName" style="color:var(--gold);">el creador</strong>
+                    </p>
+                    <div class="gift-options" id="giftOptions">
+                        <button class="gift-btn" onclick="enviarRegalo(5)"><span class="monto">$5</span><span class="label">🥉 Bronce</span></button>
+                        <button class="gift-btn" onclick="enviarRegalo(10)"><span class="monto">$10</span><span class="label">🥈 Plata</span></button>
+                        <button class="gift-btn" onclick="enviarRegalo(20)"><span class="monto">$20</span><span class="label">🥇 Oro</span></button>
+                        <button class="gift-btn" onclick="enviarRegalo(50)" style="border-color:var(--bronze);"><span class="monto" style="color:var(--bronze);">$50</span><span class="label" style="color:var(--bronze-light);">🚀 Cohete</span></button>
+                        <button class="gift-btn" onclick="enviarRegalo(100)" style="border-color:var(--esmeralda);"><span class="monto" style="color:var(--esmeralda);">$100</span><span class="label" style="color:var(--esmeralda);">💚 Esmeralda</span></button>
+                    </div>
+                    <div id="giftStatus" style="margin-top:12px;font-size:0.7rem;color:var(--text-muted);">Selecciona un monto para apoyar</div>
+                </div>
+            </div>
+        </div>
+
         <div class="toast" id="toast"></div>
 
         <footer class="footer">
@@ -454,6 +490,7 @@
         var liveActivoEnGrupo = null;
         var soloMisGrupos = false;
         var categoriasCache = [];
+        var publicando = false;
 
         // ===== TOAST =====
         function showToast(msg, type) {
@@ -881,8 +918,21 @@
                         '</div>' +
                         '<div class="contenido">' + contenido + '</div>' +
                         '<div class="stats">' +
-                        '<span>❤️ ' + (p.likes || 0) + '</span>' +
-                        '<span>💬 ' + (p.comentarios || 0) + '</span>' +
+                        '<span onclick="reaccionarPublicacion(\'' + p.id + '\')">❤️ <span id="likes-' + p.id + '">' + (p
+                            .likes || 0) + '</span></span>' +
+                        '<span onclick="toggleComentariosPublicacion(\'' + p.id + '\')">💬 <span id="comentarios-' + p.id +
+                        '">' + (p.comentarios || 0) + '</span></span>' +
+                        '<span onclick="compartirPublicacion(\'' + p.id + '\')">↗ Compartir</span>' +
+                        '</div>' +
+                        '<div class="comentarios-container" id="comentariosContainer-' + p.id +
+                        '" style="display:none;margin-top:8px;">' +
+                        '<div id="comentariosLista-' + p.id + '"></div>' +
+                        '<div style="display:flex;gap:6px;margin-top:6px;">' +
+                        '<input type="text" id="inputComentario-' + p.id +
+                        '" placeholder="Escribe un comentario..." style="flex:1;padding:4px 10px;background:rgba(255,255,255,0.05);border:1px solid var(--glass-border);border-radius:20px;color:var(--text-primary);font-size:0.65rem;outline:none;">' +
+                        '<button onclick="enviarComentarioPublicacion(\'' + p.id +
+                        '\')" style="background:linear-gradient(135deg,var(--gold),var(--gold-dark));color:var(--space);border:none;padding:4px 14px;border-radius:20px;font-weight:700;font-size:0.65rem;cursor:pointer;">Enviar</button>' +
+                        '</div>' +
                         '</div>' +
                         '</div>';
                 }).join('');
@@ -897,6 +947,7 @@
         // PUBLICAR EN GRUPO
         // ================================================================
         async function publicarEnGrupo() {
+            if (publicando) { showToast('⏳ Ya estás publicando...', 'warning'); return; }
             if (!sessionUser) { showToast('⚠️ Inicia sesión para publicar', 'error'); return; }
             if (!grupoActualId) { showToast('⚠️ No hay grupo seleccionado', 'error'); return; }
             if (!esMiembro()) { showToast('⚠️ Debes ser miembro del grupo', 'error'); return; }
@@ -907,6 +958,7 @@
             if (!contenido) { showToast('⚠️ Escribe algo para publicar', 'warning'); return; }
             if (contenido.length > 5000) { showToast('⚠️ El texto es demasiado largo', 'error'); return; }
 
+            publicando = true;
             try {
                 var result = await window.supabase
                     .from('grupos_video_publicaciones')
@@ -929,6 +981,203 @@
             } catch (e) {
                 console.error('Error publicando:', e);
                 showToast('❌ Error al publicar: ' + e.message, 'error');
+            } finally {
+                publicando = false;
+            }
+        }
+
+        // ================================================================
+        // REACCIONAR A PUBLICACIÓN
+        // ================================================================
+        async function reaccionarPublicacion(publicacionId) {
+            if (!sessionUser) { showToast('⚠️ Inicia sesión para reaccionar', 'error'); return; }
+
+            try {
+                // Verificar si ya reaccionó
+                var existing = await window.supabase
+                    .from('grupos_video_reacciones')
+                    .select('id')
+                    .eq('publicacion_id', publicacionId)
+                    .eq('usuario_id', sessionUser.id)
+                    .maybeSingle();
+
+                if (existing.data) {
+                    // Quitar reacción
+                    await window.supabase
+                        .from('grupos_video_reacciones')
+                        .delete()
+                        .eq('id', existing.data.id);
+
+                    // Decrementar contador
+                    var result = await window.supabase
+                        .from('grupos_video_publicaciones')
+                        .update({ likes: window.supabase.raw('likes - 1') })
+                        .eq('id', publicacionId)
+                        .select();
+
+                    if (result.error) throw result.error;
+
+                    var likesSpan = document.getElementById('likes-' + publicacionId);
+                    if (likesSpan) {
+                        var current = parseInt(likesSpan.textContent) || 0;
+                        likesSpan.textContent = Math.max(0, current - 1);
+                    }
+                } else {
+                    // Agregar reacción
+                    await window.supabase
+                        .from('grupos_video_reacciones')
+                        .insert({
+                            publicacion_id: publicacionId,
+                            usuario_id: sessionUser.id,
+                            tipo: 'like'
+                        });
+
+                    // Incrementar contador
+                    var result = await window.supabase
+                        .from('grupos_video_publicaciones')
+                        .update({ likes: window.supabase.raw('likes + 1') })
+                        .eq('id', publicacionId)
+                        .select();
+
+                    if (result.error) throw result.error;
+
+                    var likesSpan2 = document.getElementById('likes-' + publicacionId);
+                    if (likesSpan2) {
+                        var current2 = parseInt(likesSpan2.textContent) || 0;
+                        likesSpan2.textContent = current2 + 1;
+                    }
+                }
+
+            } catch (e) {
+                console.error('Error reaccionando:', e);
+                showToast('❌ Error al reaccionar', 'error');
+            }
+        }
+
+        // ================================================================
+        // COMENTARIOS EN PUBLICACIÓN
+        // ================================================================
+        function toggleComentariosPublicacion(publicacionId) {
+            var container = document.getElementById('comentariosContainer-' + publicacionId);
+            if (!container) return;
+            var isVisible = container.style.display !== 'none';
+            container.style.display = isVisible ? 'none' : 'block';
+            if (!isVisible) {
+                cargarComentariosPublicacion(publicacionId);
+            }
+        }
+
+        async function cargarComentariosPublicacion(publicacionId) {
+            var lista = document.getElementById('comentariosLista-' + publicacionId);
+            if (!lista) return;
+
+            try {
+                var result = await window.supabase
+                    .from('grupos_video_comentarios')
+                    .select(`
+                        *,
+                        usuarios:usuario_id (id, nombre, handle, avatar_url)
+                    `)
+                    .eq('publicacion_id', publicacionId)
+                    .order('created_at', { ascending: true });
+
+                if (result.error) throw result.error;
+
+                var data = result.data || [];
+                if (data.length === 0) {
+                    lista.innerHTML =
+                        '<div style="color:var(--text-muted);font-size:0.65rem;padding:4px 0;">Sin comentarios</div>';
+                    return;
+                }
+
+                lista.innerHTML = data.map(function(c) {
+                    var u = c.usuarios || {};
+                    var avatar = u.avatar_url ? '<img src="' + escapeHTML(u.avatar_url) + '">' : '◈';
+                    return '<div style="display:flex;gap:6px;padding:4px 0;border-bottom:1px solid rgba(212,175,55,0.04);">' +
+                        '<div style="width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,var(--green-deep),var(--gold));display:flex;align-items:center;justify-content:center;font-size:0.5rem;color:#fff;overflow:hidden;flex-shrink:0;">' +
+                        avatar + '</div>' +
+                        '<div style="flex:1;font-size:0.65rem;"><strong style="color:var(--gold);">' + escapeHTML(u
+                            .nombre || 'Usuario') + '</strong> ' + escapeHTML(c.contenido || '') +
+                        '<div style="font-size:0.5rem;color:var(--text-muted);">' + new Date(c.created_at)
+                        .toLocaleString() + '</div></div>' +
+                        '</div>';
+                }).join('');
+
+            } catch (e) {
+                console.error('Error cargando comentarios:', e);
+                lista.innerHTML = '<div style="color:var(--danger);font-size:0.65rem;">Error al cargar comentarios</div>';
+            }
+        }
+
+        async function enviarComentarioPublicacion(publicacionId) {
+            if (!sessionUser) { showToast('⚠️ Inicia sesión para comentar', 'error'); return; }
+
+            var input = document.getElementById('inputComentario-' + publicacionId);
+            var texto = input.value.trim();
+            if (!texto) { showToast('⚠️ Escribe un comentario', 'warning'); return; }
+            if (texto.length > 2000) { showToast('⚠️ El comentario es demasiado largo', 'error'); return; }
+
+            try {
+                var result = await window.supabase
+                    .from('grupos_video_comentarios')
+                    .insert({
+                        publicacion_id: publicacionId,
+                        usuario_id: sessionUser.id,
+                        contenido: texto
+                    })
+                    .select();
+
+                if (result.error) throw result.error;
+
+                input.value = '';
+                showToast('✅ Comentario agregado', 'success');
+
+                // Actualizar contador
+                var result2 = await window.supabase
+                    .from('grupos_video_publicaciones')
+                    .update({ comentarios: window.supabase.raw('comentarios + 1') })
+                    .eq('id', publicacionId)
+                    .select();
+
+                if (!result2.error) {
+                    var countSpan = document.getElementById('comentarios-' + publicacionId);
+                    if (countSpan) {
+                        var current = parseInt(countSpan.textContent) || 0;
+                        countSpan.textContent = current + 1;
+                    }
+                }
+
+                cargarComentariosPublicacion(publicacionId);
+
+            } catch (e) {
+                console.error('Error enviando comentario:', e);
+                showToast('❌ Error al comentar', 'error');
+            }
+        }
+
+        // ================================================================
+        // COMPARTIR PUBLICACIÓN
+        // ================================================================
+        function compartirPublicacion(publicacionId) {
+            var url = window.location.origin + '/features/grupos/grupos.html?publicacion=' + publicacionId;
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Publicación en Sariel\'s',
+                    text: 'Mira esta publicación en el grupo',
+                    url: url
+                }).catch(function() {});
+            } else {
+                navigator.clipboard.writeText(url).then(function() {
+                    showToast('📋 Enlace copiado al portapapeles', 'success');
+                }).catch(function() {
+                    var textarea = document.createElement('textarea');
+                    textarea.value = url;
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textarea);
+                    showToast('📋 Enlace copiado al portapapeles', 'success');
+                });
             }
         }
 
@@ -991,6 +1240,111 @@
                 window.location.href = '/features/live/live.html?transmision=' + liveActivoEnGrupo.id;
             } else {
                 showToast('⚠️ No hay LIVE activo en este grupo', 'warning');
+            }
+        }
+
+        // ================================================================
+        // REGALOS (MONETIZACIÓN) - CON NOWPAYMENTS
+        // ================================================================
+        function abrirModalRegalos(streamerId, streamerNombre) {
+            document.getElementById('giftStreamerName').textContent = streamerNombre || 'el creador';
+            document.getElementById('giftStatus').textContent = 'Selecciona un monto para apoyar';
+            document.getElementById('modalRegalos').classList.add('show');
+        }
+
+        function cerrarModalRegalos() {
+            document.getElementById('modalRegalos').classList.remove('show');
+        }
+
+        async function enviarRegalo(monto) {
+            if (!sessionUser) { showToast('⚠️ Inicia sesión para enviar regalos', 'error'); return; }
+            if (!grupoActualId) { showToast('⚠️ No hay grupo seleccionado', 'error'); return; }
+
+            var statusEl = document.getElementById('giftStatus');
+            statusEl.textContent = '⏳ Procesando pago con NOWPayments...';
+            statusEl.style.color = 'var(--text-secondary)';
+
+            try {
+                // ✅ INICIAR FLUJO DE PAGO CON NOWPAYMENTS (backend)
+                var response = await fetch('/api/payments/gift/create', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + (await getSession())?.access_token || ''
+                    },
+                    body: JSON.stringify({
+                        grupo_id: grupoActualId,
+                        streamer_id: liveActivoEnGrupo ? liveActivoEnGrupo.streamer_id : grupoActual.creador_id,
+                        monto: monto,
+                        moneda: 'USDC'
+                    })
+                });
+
+                var data = await response.json();
+
+                if (!data.success) {
+                    throw new Error(data.error || 'Error creando pago');
+                }
+
+                // Mostrar información de pago
+                statusEl.innerHTML = '✅ Pago iniciado correctamente<br>' +
+                    '💰 Monto: ' + data.monto + ' USDC<br>' +
+                    '📤 Dirección: ' + data.pay_address + '<br>' +
+                    '📌 ID: ' + data.payment_id +
+                    '<button onclick="verificarRegalo(\'' + data.payment_id + '\')" style="margin-top:8px;padding:6px 20px;border-radius:20px;border:none;background:linear-gradient(135deg,var(--gold),var(--gold-dark));color:var(--space);font-weight:700;font-size:0.7rem;cursor:pointer;">✅ Verificar pago</button>';
+
+                statusEl.style.color = 'var(--success)';
+                showToast('✅ Pago iniciado. Realiza la transferencia.', 'success');
+
+            } catch (e) {
+                console.error('Error enviando regalo:', e);
+                statusEl.textContent = '❌ Error: ' + e.message;
+                statusEl.style.color = 'var(--danger)';
+                showToast('❌ Error al procesar regalo', 'error');
+            }
+        }
+
+        async function verificarRegalo(paymentId) {
+            var statusEl = document.getElementById('giftStatus');
+            statusEl.textContent = '⏳ Verificando pago...';
+            statusEl.style.color = 'var(--text-secondary)';
+
+            try {
+                var response = await fetch('/api/payments/gift/status/' + paymentId, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + (await getSession())?.access_token || ''
+                    }
+                });
+
+                var data = await response.json();
+
+                if (!data.success) {
+                    throw new Error(data.error || 'Error verificando pago');
+                }
+
+                if (data.estado === 'finished') {
+                    statusEl.innerHTML = '✅ ¡Regalo enviado con éxito!<br>' +
+                        '🎁 Monto: ' + data.monto + ' USDC<br>' +
+                        '👤 Destinatario: ' + data.destinatario +
+                        '<br><br>💚 ¡Gracias por apoyar a la comunidad!';
+                    statusEl.style.color = 'var(--success)';
+                    showToast('✅ ¡Regalo enviado exitosamente!', 'success');
+                } else if (data.estado === 'pending') {
+                    statusEl.textContent = '⏳ El pago está en proceso. Espera la confirmación...';
+                    statusEl.style.color = 'var(--warning)';
+                    showToast('⏳ Pago en proceso', 'warning');
+                } else {
+                    statusEl.textContent = '⚠️ El pago no fue completado. Estado: ' + data.estado;
+                    statusEl.style.color = 'var(--danger)';
+                    showToast('⚠️ Pago no completado', 'warning');
+                }
+
+            } catch (e) {
+                console.error('Error verificando regalo:', e);
+                statusEl.textContent = '❌ Error al verificar: ' + e.message;
+                statusEl.style.color = 'var(--danger)';
+                showToast('❌ Error al verificar pago', 'error');
             }
         }
 
@@ -1337,7 +1691,7 @@
         }
 
         // ================================================================
-        // SUBIR FOTO (placeholder - integra con Storage)
+        // SUBIR FOTO / VIDEO (placeholder - integra con Storage)
         // ================================================================
         function abrirSubirFoto() {
             showToast('📷 Función de subir foto en desarrollo', 'warning');
@@ -1392,6 +1746,7 @@
                 if (e.key === 'Escape') {
                     cerrarModalCrearGrupo();
                     cerrarModalAdmin();
+                    cerrarModalRegalos();
                 }
             });
 
@@ -1403,6 +1758,18 @@
                     }
                 });
             });
+
+            // Enter para comentar
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    var input = e.target;
+                    if (input.id && input.id.startsWith('inputComentario-')) {
+                        e.preventDefault();
+                        var publicacionId = input.id.replace('inputComentario-', '');
+                        enviarComentarioPublicacion(publicacionId);
+                    }
+                }
+            });
         });
 
         // ================================================================
@@ -1412,6 +1779,10 @@
         window.abrirGrupo = abrirGrupo;
         window.volverALista = volverALista;
         window.publicarEnGrupo = publicarEnGrupo;
+        window.reaccionarPublicacion = reaccionarPublicacion;
+        window.toggleComentariosPublicacion = toggleComentariosPublicacion;
+        window.enviarComentarioPublicacion = enviarComentarioPublicacion;
+        window.compartirPublicacion = compartirPublicacion;
         window.iniciarLiveEnGrupo = iniciarLiveEnGrupo;
         window.verLiveActivo = verLiveActivo;
         window.abrirModalCrearGrupo = abrirModalCrearGrupo;
@@ -1431,6 +1802,10 @@
         window.toggleMisGrupos = toggleMisGrupos;
         window.verTokens = verTokens;
         window.showToast = showToast;
+        window.abrirModalRegalos = abrirModalRegalos;
+        window.cerrarModalRegalos = cerrarModalRegalos;
+        window.enviarRegalo = enviarRegalo;
+        window.verificarRegalo = verificarRegalo;
     </script>
 
 </body>
