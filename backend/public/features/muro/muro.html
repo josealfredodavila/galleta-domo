@@ -1,7 +1,7 @@
 <!-- ================================================================
      MURO - SARIEL'S ECOSYSTEM
      VERSIÓN CORREGIDA - IMÁGENES + EMOJIS FUNCIONANDO
-     CORRECCIÓN QUIRÚRGICA - SOLO FUNCIONES AFECTADAS
+     EMOJIS ACTUALIZADOS (Unicode 17.0 + 18.0 + TODOS)
      ================================================================ -->
 <!DOCTYPE html>
 <html lang="es">
@@ -1145,14 +1145,32 @@
         }
 
         // ================================================================
-        // 🎯 SELECTOR DE EMOJIS - NUEVO (REEMPLAZA ALEATORIO)
+        // 🎯 SELECTOR DE EMOJIS - ACTUALIZADO CON TODOS LOS EMOJIS
         // ================================================================
 
         var emojisDisponibles = [
-            '😊', '🔥', '❤️', '💎', '✨', '🎉', '🚀', '🌟', 
-            '💪', '🤝', '👀', '💯', '🎯', '⭐', '🌈', '⚡',
-            '💫', '🪐', '🌙', '☀️', '🌸', '🌺', '🍀', '🎶',
-            '📌', '🔮', '💜', '🧡', '💛', '💚', '💙', '🖤'
+            // Unicode 17.0 (2025)
+            '🧌', '🫨', '🪭', '🐋', '🧰', '💥',
+            // Unicode 18.0 (2026)
+            '🫩', '👈', '👉', '🦋', '🥒', '🗼', '☄️', '🧽', '🪤', '🩹',
+            // Dinero / Ganancia
+            '💸', '💵', '💴', '💶', '💷', '🪙', '💰', '💳', '💎',
+            // Fuego / Viral
+            '🔥', '⚡', '✨', '🌟', '💫', '🚀', '🪐',
+            // Ojitos / Chisme
+            '👀', '👁️', '👁️‍🗨️', '🤩', '😍', '😳', '🫣',
+            // Manitas / Señalando
+            '👉', '👈', '☝️', '👇', '🫵', '🤏', '✋', '🤚', '👋',
+            // Caritas pa vender
+            '🥹', '🥺', '😍', '🤩', '🤤', '😎', '😏', '🤗', '🫶', '🥰', '😘',
+            // Tiempo / Correle
+            '⏰', '⏳', '⌛', '⏲️', '🚨', '⚠️',
+            // Check / Apartado
+            '✅', '☑️', '✔️', '🔒', '📌', '📍', '📝',
+            // Cajas / Envío
+            '📦', '📤', '📥', '🚚', '🚀', '🏍️', '💨',
+            // Corazones
+            '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '💖', '💝', '💘', '💗'
         ];
 
         function toggleEmojiPicker() {
@@ -1219,10 +1237,7 @@
         }
 
         // ===== OBSOLETO: insertarEmoji() reemplazado por selector =====
-        // La función original insertarEmoji() ya no se usa.
-        // Se mantiene como referencia pero ahora llama al selector.
         function insertarEmoji() {
-            // Redirigir al selector visual
             toggleEmojiPicker();
         }
 
@@ -1260,7 +1275,6 @@
             try {
                 showToast('⏳ Subiendo imagen...', '');
 
-                // ✅ SUBIR DIRECTAMENTE - SIN listBuckets() NI createBucket()
                 var uploadResult = await window.supabase.storage
                     .from('muro-imagenes')
                     .upload(filePath, file, { cacheControl: '3600', upsert: true });
@@ -1276,7 +1290,6 @@
                 var urlData = window.supabase.storage.from('muro-imagenes').getPublicUrl(filePath);
                 var publicUrl = urlData.data.publicUrl;
 
-                // ✅ AHORA TOMA EL TEXTO DEL USUARIO
                 var postContent = document.getElementById('postContent');
                 var contenido = postContent ? postContent.value.trim() : '';
 
@@ -1284,13 +1297,12 @@
                     .from('muro_posts')
                     .insert({
                         usuario_id: sessionUser.id,
-                        contenido: contenido,   // ✅ AHORA GUARDA EL TEXTO
+                        contenido: contenido,
                         imagen_url: publicUrl
                     });
 
                 if (insertResult.error) throw insertResult.error;
 
-                // Limpiar el textarea después de publicar
                 if (postContent) postContent.value = '';
 
                 showToast('✅ Publicación con imagen creada', 'success');
