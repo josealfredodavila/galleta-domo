@@ -579,6 +579,7 @@
         var rolEnGrupo = null;
         var esAdmin = false;
         var esModerador = false;
+        var esCreador = false; // ✅ NUEVA VARIABLE PARA IDENTIFICAR AL CREADOR
         var liveActivoEnGrupo = null;
         var soloMisGrupos = false;
         var categoriasCache = [];
@@ -914,8 +915,16 @@
                 if (!sessionUser) {
                     esAdmin = false;
                     esModerador = false;
+                    esCreador = false;
                     rolEnGrupo = null;
                     return;
+                }
+
+                // ✅ Verificar si es el creador
+                if (grupoActual && grupoActual.creador_id === sessionUser.id) {
+                    esCreador = true;
+                } else {
+                    esCreador = false;
                 }
 
                 var result = await window.supabase
@@ -937,16 +946,22 @@
                 esAdmin = rolEnGrupo === 'administrador';
                 esModerador = rolEnGrupo === 'moderador' || esAdmin;
 
+                // ✅ Si es creador, también es admin para efectos prácticos
+                if (esCreador) {
+                    esAdmin = true;
+                }
+
             } catch (e) {
                 console.error('Error verificando membresía:', e);
                 esAdmin = false;
                 esModerador = false;
+                esCreador = false;
                 rolEnGrupo = null;
             }
         }
 
         function esMiembro() {
-            return rolEnGrupo !== null;
+            return rolEnGrupo !== null || esCreador;
         }
 
         // ================================================================
@@ -1534,7 +1549,7 @@
 
                 miembros.forEach(function(m) {
                     var u = m.usuarios || {};
-                    var esCreador = m.rol === 'administrador';
+                    var esCreadorDelGrupo = m.rol === 'administrador';
                     var esYo = m.usuario_id === sessionUser?.id;
                     var estado = m.estado || 'activo';
 
@@ -1545,13 +1560,13 @@
                     html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--glass-border);">' +
                         '<div>' +
                         '<span style="font-weight:600;">' + escapeHTML(u.nombre || 'Usuario') + '</span>' +
-                        (esCreador ? ' <span style="color:var(--gold);font-size:0.6rem;">👑 Admin</span>' : '') +
+                        (esCreadorDelGrupo ? ' <span style="color:var(--gold);font-size:0.6rem;">👑 Admin</span>' : '') +
                         (m.rol === 'moderador' ? ' <span style="color:var(--cyan);font-size:0.6rem;">🛡️ Mod</span>' :
                             '') +
                         (esYo ? ' <span style="color:var(--text-muted);font-size:0.6rem;">(tú)</span>' : '') +
                         ' <span style="color:' + estadoColor + ';font-size:0.5rem;">● ' + estado + '</span>' +
                         '</div>' +
-                        (esAdmin && !esCreador && !esYo ?
+                        (esAdmin && !esCreadorDelGrupo && !esYo ?
                             '<div style="display:flex;gap:4px;flex-wrap:wrap;">' +
                             (m.rol !== 'moderador' ?
                                 '<button class="btn-outline btn-sm" onclick="asignarModerador(\'' + m.usuario_id +
@@ -1793,7 +1808,7 @@
         }
 
         // ================================================================
-        // 🗑️ ELIMINAR GRUPO - NUEVA FUNCIONALIDAD
+        // 🗑️ ELIMINAR GRUPO - CORREGIDO
         // ================================================================
 
         /**
@@ -1811,15 +1826,9 @@
                 return;
             }
 
-            // Verificar que el usuario sea creador o administrador
-            if (!esAdmin && !esModerador) {
-                showToast('⚠️ No tienes permisos para eliminar este grupo', 'error');
-                return;
-            }
-
-            // Verificar si el usuario es el creador o administrador del grupo
-            // Si es moderador pero no creador, no puede eliminar (solo admin/creador)
-            if (rolEnGrupo !== 'administrador') {
+            // ✅ CORREGIDO: Verificar que el usuario sea creador O administrador
+            // NOTA: esAdmin ya incluye al creador (ver verificarMembresia)
+            if (!esAdmin && !esCreador) {
                 showToast('⚠️ Solo el creador o un administrador puede eliminar el grupo', 'error');
                 return;
             }
@@ -1857,14 +1866,8 @@
                 return;
             }
 
-            // Verificar que el usuario sea creador o administrador
-            if (!esAdmin && !esModerador) {
-                showToast('⚠️ No tienes permisos para eliminar este grupo', 'error');
-                return;
-            }
-
-            // Solo creador o administrador (no moderador) puede eliminar
-            if (rolEnGrupo !== 'administrador') {
+            // ✅ CORREGIDO: Verificar que el usuario sea creador O administrador
+            if (!esAdmin && !esCreador) {
                 showToast('⚠️ Solo el creador o un administrador puede eliminar el grupo', 'error');
                 return;
             }
@@ -1892,10 +1895,10 @@
                     return;
                 }
 
-                // Verificar que el usuario sea el creador del grupo
-                // (ya tenemos el rol de administrador, pero verificamos que sea el creador)
-                if (grupoCheck.data.creador_id !== sessionUser.id) {
-                    showToast('⚠️ Solo el creador del grupo puede eliminarlo', 'error');
+                // ✅ CORREGIDO: Verificar que el usuario sea el creador O administrador
+                // El administrador puede eliminar aunque no sea el creador
+                if (grupoCheck.data.creador_id !== sessionUser.id && !esAdmin) {
+                    showToast('⚠️ No tienes permisos para eliminar este grupo', 'error');
                     return;
                 }
 
@@ -1944,6 +1947,7 @@
                 liveActivoEnGrupo = null;
                 esAdmin = false;
                 esModerador = false;
+                esCreador = false;
                 rolEnGrupo = null;
 
                 // Mostrar mensaje de éxito
