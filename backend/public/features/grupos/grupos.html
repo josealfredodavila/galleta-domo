@@ -1,6 +1,6 @@
 <!-- ================================================================
      GRUPOS - SARIEL'S ECOSYSTEM
-     VERSIÓN COMPLETA - COMUNIDAD + LIVE + MONETIZACIÓN
+     VERSIÓN COMPLETA - CORREGIDO (SIN INSERTAR CATEGORÍAS)
      ================================================================ -->
 <!DOCTYPE html>
 <html lang="es">
@@ -38,6 +38,9 @@
             --purple: #a855f7;
             --pink: #ec4899;
             --live-red: #ff0044;
+            --bronze: #CD7F32;
+            --bronze-light: #D4A574;
+            --esmeralda: #50C878;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -86,7 +89,6 @@
         .toast.warning { border-color: var(--warning); color: var(--warning); }
         .toast.success { border-color: var(--success); color: var(--success); }
 
-        /* ===== GRUPOS ===== */
         .grupos-header {
             display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;
             margin-bottom: 16px;
@@ -132,7 +134,6 @@
         .grupo-card .estado-badge.privado { background: rgba(255,51,102,0.1); color: var(--danger); }
         .grupo-card .live-badge { font-size: 0.5rem; padding: 2px 10px; border-radius: 12px; background: var(--live-red); color: #fff; animation: pulse-live 2s infinite; }
 
-        /* ===== VISTA INTERNA DEL GRUPO ===== */
         .grupo-interno { display: none; }
         .grupo-interno.show { display: block; }
 
@@ -155,7 +156,6 @@
         .grupo-header-interno .info-text .meta { display: flex; gap: 12px; font-size: 0.65rem; color: var(--text-muted); margin-top: 6px; flex-wrap: wrap; }
         .grupo-header-interno .acciones { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
 
-        /* ===== PUBLICACIONES ===== */
         .publicaciones-container { margin-top: 16px; }
         .publicacion-card {
             background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius);
@@ -184,7 +184,6 @@
         .form-publicacion .acciones button:hover { color: var(--gold); background: rgba(212,175,55,0.05); }
         .form-publicacion .acciones .btn-publicar { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); border: none; padding: 6px 20px; border-radius: 20px; font-weight: 700; font-size: 0.7rem; cursor: pointer; }
 
-        /* ===== MODALES ===== */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5,8,15,0.9);
             display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px;
@@ -212,7 +211,6 @@
         .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); }
         .empty-state .icon { font-size: 2.5rem; display: block; margin-bottom: 12px; color: var(--gold); opacity: 0.3; }
 
-        /* ===== REGALOS ===== */
         .gift-options {
             display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin: 12px 0;
         }
@@ -1265,7 +1263,6 @@
             statusEl.style.color = 'var(--text-secondary)';
 
             try {
-                // ✅ INICIAR FLUJO DE PAGO CON NOWPAYMENTS (backend)
                 var response = await fetch('/api/payments/gift/create', {
                     method: 'POST',
                     headers: {
@@ -1286,7 +1283,6 @@
                     throw new Error(data.error || 'Error creando pago');
                 }
 
-                // Mostrar información de pago
                 statusEl.innerHTML = '✅ Pago iniciado correctamente<br>' +
                     '💰 Monto: ' + data.monto + ' USDC<br>' +
                     '📤 Dirección: ' + data.pay_address + '<br>' +
@@ -1361,14 +1357,14 @@
         }
 
         // ================================================================
-        // CREAR GRUPO
+        // CREAR GRUPO - CORREGIDO (SIN INSERTAR CATEGORÍAS)
         // ================================================================
         async function crearGrupo() {
             if (!sessionUser) { showToast('⚠️ Inicia sesión para crear grupo', 'error'); return; }
 
             var nombre = document.getElementById('inputNombreGrupo').value.trim();
             var descripcion = document.getElementById('inputDescripcionGrupo').value.trim();
-            var categoria = document.getElementById('inputCategoriaGrupo').value;
+            var categoriaNombre = document.getElementById('inputCategoriaGrupo').value;
             var ciudad = document.getElementById('inputCiudadGrupo').value.trim();
             var estado = document.getElementById('inputEstadoGrupo').value.trim();
             var pais = document.getElementById('inputPaisGrupo').value.trim();
@@ -1382,27 +1378,45 @@
             btn.textContent = '⏳ Creando...';
 
             try {
-                // Obtener o crear categoría
+                // ✅ BUSCAR categoría existente (NO INSERTAR)
+                var categoriaId = null;
                 var catResult = await window.supabase
                     .from('grupos_video_categorias')
                     .select('id')
-                    .eq('nombre', categoria)
+                    .eq('nombre', categoriaNombre)
                     .maybeSingle();
 
-                var categoriaId = null;
                 if (catResult.data) {
                     categoriaId = catResult.data.id;
                 } else {
-                    var newCat = await window.supabase
+                    // ✅ Si no existe, usar 'General' (ID 1 por defecto)
+                    var defaultCat = await window.supabase
                         .from('grupos_video_categorias')
-                        .insert({ nombre: categoria, activo: true })
-                        .select()
-                        .single();
-                    if (newCat.error) throw newCat.error;
-                    categoriaId = newCat.data.id;
+                        .select('id')
+                        .eq('nombre', 'General')
+                        .maybeSingle();
+
+                    if (defaultCat.data) {
+                        categoriaId = defaultCat.data.id;
+                    } else {
+                        // Fallback extremo: obtener la primera categoría disponible
+                        var anyCat = await window.supabase
+                            .from('grupos_video_categorias')
+                            .select('id')
+                            .limit(1)
+                            .single();
+
+                        if (anyCat.data) {
+                            categoriaId = anyCat.data.id;
+                        } else {
+                            throw new Error('No hay categorías disponibles en la base de datos');
+                        }
+                    }
+
+                    showToast('⚠️ Categoría "' + categoriaNombre + '" no encontrada, usando "General"', 'warning');
                 }
 
-                // Insertar grupo
+                // ✅ Insertar grupo (sin tocar categorías)
                 var groupResult = await window.supabase
                     .from('grupos_video')
                     .insert({
@@ -1424,7 +1438,7 @@
 
                 var grupo = groupResult.data;
 
-                // Insertar creador como administrador
+                // ✅ Insertar creador como administrador
                 var memberResult = await window.supabase
                     .from('grupos_video_miembros')
                     .insert({
