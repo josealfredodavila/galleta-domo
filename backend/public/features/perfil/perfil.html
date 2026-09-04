@@ -431,18 +431,77 @@
             font-size: 0.65rem;
             color: var(--text-muted);
         }
-        .publicacion-item .pub-actions span {
+        .publicacion-item .pub-actions .reaccion-btn {
             cursor: pointer;
             transition: var(--transition);
-            padding: 2px 6px;
+            padding: 4px 8px;
             border-radius: 8px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 1.1rem;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
         }
-        .publicacion-item .pub-actions span:hover {
+        .publicacion-item .pub-actions .reaccion-btn:hover {
             color: var(--gold);
             background: rgba(212, 175, 55, 0.05);
         }
-        .publicacion-item .pub-actions .liked {
-            color: #ff3366;
+        .publicacion-item .pub-actions .reaccion-btn .count {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+        }
+        .publicacion-item .pub-actions .comment-btn {
+            cursor: pointer;
+            transition: var(--transition);
+            padding: 4px 8px;
+            border-radius: 8px;
+            color: var(--text-muted);
+            font-size: 0.65rem;
+        }
+        .publicacion-item .pub-actions .comment-btn:hover {
+            color: var(--gold);
+            background: rgba(212, 175, 55, 0.05);
+        }
+
+        /* ===== SELECTOR DE REACCIONES ===== */
+        .reaccion-picker {
+            display: none;
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(15, 25, 20, 0.95);
+            border: 1px solid var(--glass-border);
+            border-radius: 30px;
+            padding: 6px 12px;
+            z-index: 1000;
+            box-shadow: var(--shadow-gold-strong);
+            backdrop-filter: blur(12px);
+            margin-bottom: 8px;
+            white-space: nowrap;
+        }
+        .reaccion-picker.show {
+            display: flex;
+        }
+        .reaccion-picker button {
+            background: transparent;
+            border: none;
+            font-size: 1.5rem;
+            padding: 4px 6px;
+            cursor: pointer;
+            border-radius: 50%;
+            transition: var(--transition);
+            line-height: 1;
+        }
+        .reaccion-picker button:hover {
+            background: rgba(212, 175, 55, 0.15);
+            transform: scale(1.3);
+        }
+        .reaccion-picker button:active {
+            transform: scale(0.9);
         }
 
         .conexion-section {
@@ -692,6 +751,8 @@
             .perfil-tabs .tab-btn { font-size: 0.6rem; padding: 8px 14px; }
             .main-nav .nav-link { font-size: 0.6rem; padding: 6px 10px; }
             .crypto-controls { flex-direction: column; }
+            .reaccion-picker { left: 50%; transform: translateX(-50%); }
+            .reaccion-picker button { font-size: 1.2rem; padding: 3px 4px; }
         }
     </style>
 </head>
@@ -1094,13 +1155,16 @@
 
     <script>
         // ================================================================
-        // FUNCIONES DE PERFIL - COMPLETO CON LIKES Y COMENTARIOS
+        // FUNCIONES DE PERFIL - CON SISTEMA DE REACCIONES
         // ================================================================
 
         // ===== VARIABLES GLOBALES =====
         var sessionUser = null;
-        var likeCache = new Map();
+        var reaccionCache = new Map();
         var publicacionActivaComentarios = null;
+
+        // ===== EMOJIS DE REACCIONES =====
+        var REACCIONES = ['❤️', '😊', '🔥', '👏', '🎉', '💎', '🤩', '😍', '😂'];
 
         // ===== TOAST =====
         function showToast(msg, type) {
@@ -1280,7 +1344,6 @@
                 picker.style.display = 'none';
                 return;
             }
-            // Llenar la grilla si está vacía
             var grid = document.getElementById('emojiGridPerfil');
             if (grid && grid.children.length === 0) {
                 emojisDisponibles.forEach(function(emoji) {
@@ -1311,7 +1374,6 @@
             input.dispatchEvent(new Event('input', { bubbles: true }));
         }
 
-        // Cerrar selector al hacer clic fuera
         document.addEventListener('click', function(e) {
             var picker = document.getElementById('emojiPickerPerfil');
             var btnEmoji = document.getElementById('btnEmojiPerfil');
@@ -1345,7 +1407,6 @@
                 reader.readAsDataURL(file);
             };
 
-            // Cerrar selector de emojis al abrir el modal
             var picker = document.getElementById('emojiPickerPerfil');
             if (picker) picker.style.display = 'none';
         }
@@ -1420,7 +1481,7 @@
         }
 
         // ================================================================
-        // 📋 CARGAR PUBLICACIONES
+        // 📋 CARGAR PUBLICACIONES CON REACCIONES
         // ================================================================
 
         async function cargarPublicaciones() {
@@ -1451,6 +1512,28 @@
                     return;
                 }
 
+                // Obtener reacciones para todas las publicaciones
+                var reaccionesMap = {};
+                var publicacionIds = data.map(function(p) { return p.id; });
+
+                if (publicacionIds.length > 0) {
+                    var reaccionesResult = await window.supabase
+                        .from('publicaciones_reacciones')
+                        .select('publicacion_id, tipo, usuario_id')
+                        .in('publicacion_id', publicacionIds);
+
+                    if (!reaccionesResult.error) {
+                        reaccionesResult.data.forEach(function(r) {
+                            if (!reaccionesMap[r.publicacion_id]) {
+                                reaccionesMap[r.publicacion_id] = { total: 0, emojis: {}, usuarios: {} };
+                            }
+                            reaccionesMap[r.publicacion_id].total++;
+                            reaccionesMap[r.publicacion_id].emojis[r.tipo] = (reaccionesMap[r.publicacion_id].emojis[r.tipo] || 0) + 1;
+                            reaccionesMap[r.publicacion_id].usuarios[r.usuario_id] = r.tipo;
+                        });
+                    }
+                }
+
                 container.innerHTML = data.map(function(p) {
                     var usuario = p.usuarios || {};
                     var avatar = usuario.avatar_url ? '<img src="' + escapeHTML(usuario.avatar_url) + '">' : '◈';
@@ -1466,6 +1549,20 @@
                     }
                     var contenido = p.contenido ? '<div class="pub-texto">' + escapeHTML(p.contenido) + '</div>' : '';
 
+                    // Obtener reacción del usuario actual
+                    var miReaccion = reaccionesMap[p.id]?.usuarios[sessionUser.id] || null;
+                    var reaccionEmoji = miReaccion || '❤️';
+                    var reaccionTotal = reaccionesMap[p.id]?.total || 0;
+                    var reaccionesEmojis = reaccionesMap[p.id]?.emojis || {};
+
+                    // Mostrar top 3 reacciones
+                    var topReacciones = Object.keys(reaccionesEmojis)
+                        .sort(function(a, b) { return reaccionesEmojis[b] - reaccionesEmojis[a]; })
+                        .slice(0, 3);
+
+                    var reaccionesDisplay = topReacciones.length > 0 ? 
+                        topReacciones.map(function(e) { return e; }).join(' ') + ' ' : '';
+
                     return '<div class="publicacion-item" data-id="' + p.id + '">' +
                         '<div class="pub-header">' +
                         '<div class="avatar-mini">' + avatar + '</div>' +
@@ -1475,13 +1572,20 @@
                         contenido +
                         mediaHtml +
                         '<div class="pub-actions">' +
-                        '<span class="like-btn" data-id="' + p.id + '" onclick="toggleLike(\'' + p.id + '\')">❤️ <span class="likes-count">' + (p.likes || 0) + '</span></span>' +
+                        '<button class="reaccion-btn" onclick="toggleReaccion(\'' + p.id + '\', event)">' +
+                        '<span class="reaccion-emoji">' + reaccionEmoji + '</span>' +
+                        '<span class="count">' + reaccionTotal + '</span>' +
+                        '</button>' +
                         '<span class="comment-btn" onclick="abrirModalComentarios(\'' + p.id + '\')">💬 <span>' + (p.comentarios || 0) + '</span></span>' +
+                        '</div>' +
+                        // Selector de reacciones (flotante)
+                        '<div class="reaccion-picker" id="reaccionPicker-' + p.id + '" style="display:none;position:absolute;bottom:100%;left:50%;transform:translateX(-50%);background:rgba(15,25,20,0.95);border:1px solid var(--glass-border);border-radius:30px;padding:6px 12px;z-index:1000;box-shadow:var(--shadow-gold-strong);backdrop-filter:blur(12px);margin-bottom:8px;white-space:nowrap;">' +
+                        REACCIONES.map(function(r) {
+                            return '<button onclick="seleccionarReaccion(\'' + p.id + '\', \'' + r + '\', event)">' + r + '</button>';
+                        }).join('') +
                         '</div>' +
                         '</div>';
                 }).join('');
-
-                actualizarEstadoLikes();
 
             } catch (error) {
                 console.error('Error cargando publicaciones:', error);
@@ -1490,100 +1594,125 @@
         }
 
         // ================================================================
-        // ❤️ LIKES
+        // ❤️ REACCIONES - NUEVO SISTEMA
         // ================================================================
 
-        async function toggleLike(publicacionId) {
+        function toggleReaccion(publicacionId, event) {
             if (!sessionUser) {
-                showToast('⚠️ Inicia sesión para dar like', 'warning');
+                showToast('⚠️ Inicia sesión para reaccionar', 'warning');
                 return;
             }
 
+            var btn = event.currentTarget;
+            var picker = document.getElementById('reaccionPicker-' + publicacionId);
+            if (!picker) return;
+
+            // Cerrar otros pickers
+            document.querySelectorAll('.reaccion-picker.show').forEach(function(el) {
+                if (el.id !== picker.id) el.classList.remove('show');
+            });
+
+            picker.classList.toggle('show');
+            event.stopPropagation();
+        }
+
+        async function seleccionarReaccion(publicacionId, tipo, event) {
+            if (!sessionUser) {
+                showToast('⚠️ Inicia sesión para reaccionar', 'error');
+                return;
+            }
+
+            var picker = document.getElementById('reaccionPicker-' + publicacionId);
+            if (picker) picker.classList.remove('show');
+
             try {
                 var key = publicacionId + '_' + sessionUser.id;
-                var liked = likeCache.get(key) || false;
+                var reaccionActual = reaccionCache.get(key) || null;
 
-                if (liked) {
+                // Si es la misma reacción, la quitamos (toggle off)
+                if (reaccionActual === tipo) {
                     var deleteResult = await window.supabase
-                        .from('publicaciones_likes')
+                        .from('publicaciones_reacciones')
                         .delete()
                         .eq('publicacion_id', publicacionId)
                         .eq('usuario_id', sessionUser.id);
 
                     if (deleteResult.error) throw deleteResult.error;
 
-                    likeCache.set(key, false);
+                    reaccionCache.set(key, null);
+                    actualizarUIReaccion(publicacionId, null);
 
-                    var likeBtn = document.querySelector('.like-btn[data-id="' + publicacionId + '"]');
-                    if (likeBtn) {
-                        var countSpan = likeBtn.querySelector('.likes-count');
-                        var currentCount = parseInt(countSpan.textContent) || 0;
-                        countSpan.textContent = Math.max(0, currentCount - 1);
-                        likeBtn.classList.remove('liked');
-                        likeBtn.style.color = '';
-                    }
+                    // Si hay like antiguo, lo migramos (opcional)
+                    // await migrarLikeAReaccion(publicacionId, tipo);
 
                 } else {
+                    // Si ya tenía otra reacción, la reemplazamos
+                    if (reaccionActual) {
+                        await window.supabase
+                            .from('publicaciones_reacciones')
+                            .delete()
+                            .eq('publicacion_id', publicacionId)
+                            .eq('usuario_id', sessionUser.id);
+                    }
+
                     var insertResult = await window.supabase
-                        .from('publicaciones_likes')
+                        .from('publicaciones_reacciones')
                         .insert({
                             publicacion_id: publicacionId,
-                            usuario_id: sessionUser.id
+                            usuario_id: sessionUser.id,
+                            tipo: tipo
                         });
 
                     if (insertResult.error) {
                         if (insertResult.error.code === '23505') {
-                            likeCache.set(key, true);
-                            return;
+                            // Si ya existía, hacemos update (DELETE + INSERT)
+                            await window.supabase
+                                .from('publicaciones_reacciones')
+                                .delete()
+                                .eq('publicacion_id', publicacionId)
+                                .eq('usuario_id', sessionUser.id);
+
+                            await window.supabase
+                                .from('publicaciones_reacciones')
+                                .insert({
+                                    publicacion_id: publicacionId,
+                                    usuario_id: sessionUser.id,
+                                    tipo: tipo
+                                });
+                        } else {
+                            throw insertResult.error;
                         }
-                        throw insertResult.error;
                     }
 
-                    likeCache.set(key, true);
-
-                    var likeBtn = document.querySelector('.like-btn[data-id="' + publicacionId + '"]');
-                    if (likeBtn) {
-                        var countSpan = likeBtn.querySelector('.likes-count');
-                        var currentCount = parseInt(countSpan.textContent) || 0;
-                        countSpan.textContent = currentCount + 1;
-                        likeBtn.classList.add('liked');
-                        likeBtn.style.color = '#ff3366';
-                    }
+                    reaccionCache.set(key, tipo);
+                    actualizarUIReaccion(publicacionId, tipo);
                 }
 
+                // Recargar la publicación para actualizar contadores
+                await cargarPublicaciones();
+
             } catch (error) {
-                console.error('Error toggling like:', error);
-                showToast('❌ Error al procesar like', 'error');
+                console.error('Error seleccionando reacción:', error);
+                showToast('❌ Error al procesar reacción: ' + error.message, 'error');
             }
         }
 
-        async function actualizarEstadoLikes() {
-            if (!sessionUser) return;
+        function actualizarUIReaccion(publicacionId, tipo) {
+            var item = document.querySelector('.publicacion-item[data-id="' + publicacionId + '"]');
+            if (!item) return;
 
-            try {
-                var result = await window.supabase
-                    .from('publicaciones_likes')
-                    .select('publicacion_id')
-                    .eq('usuario_id', sessionUser.id);
+            var btn = item.querySelector('.reaccion-btn');
+            var emojiSpan = btn.querySelector('.reaccion-emoji');
+            var countSpan = btn.querySelector('.count');
 
-                if (result.error) throw result.error;
-
-                var likedPosts = result.data || [];
-                likedPosts.forEach(function(item) {
-                    likeCache.set(item.publicacion_id + '_' + sessionUser.id, true);
-                });
-
-                likedPosts.forEach(function(item) {
-                    var likeBtn = document.querySelector('.like-btn[data-id="' + item.publicacion_id + '"]');
-                    if (likeBtn) {
-                        likeBtn.classList.add('liked');
-                        likeBtn.style.color = '#ff3366';
-                    }
-                });
-
-            } catch (error) {
-                console.error('Error actualizando estado de likes:', error);
+            // Actualizar emoji
+            if (tipo) {
+                emojiSpan.textContent = tipo;
+            } else {
+                emojiSpan.textContent = '❤️';
             }
+
+            // Actualizar contador (se recargará con cargarPublicaciones)
         }
 
         // ================================================================
@@ -1697,13 +1826,6 @@
                 showToast('✅ Comentario agregado', 'success');
 
                 cargarComentarios(publicacionActivaComentarios);
-
-                var commentBtn = document.querySelector('.comment-btn[onclick*="' + publicacionActivaComentarios + '"]');
-                if (commentBtn) {
-                    var countSpan = commentBtn.querySelector('span');
-                    var currentCount = parseInt(countSpan.textContent) || 0;
-                    countSpan.textContent = currentCount + 1;
-                }
 
             } catch (error) {
                 console.error('Error enviando comentario:', error);
@@ -2485,6 +2607,11 @@
                 if (modal && modal.classList.contains('active') && e.target === modal) {
                     cerrarModalComentarios();
                 }
+
+                // Cerrar pickers de reacciones al hacer clic fuera
+                document.querySelectorAll('.reaccion-picker.show').forEach(function(el) {
+                    el.classList.remove('show');
+                });
             });
         });
 
@@ -2527,7 +2654,8 @@
         window.abrirModalPublicacion = abrirModalPublicacion;
         window.publicarContenido = publicarContenido;
         window.cargarPublicaciones = cargarPublicaciones;
-        window.toggleLike = toggleLike;
+        window.toggleReaccion = toggleReaccion;
+        window.seleccionarReaccion = seleccionarReaccion;
         window.abrirModalComentarios = abrirModalComentarios;
         window.enviarComentario = enviarComentario;
         window.cargarComentarios = cargarComentarios;
