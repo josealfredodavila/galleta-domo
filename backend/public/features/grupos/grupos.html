@@ -1,6 +1,6 @@
 <!-- ================================================================
      GRUPOS - SARIEL'S ECOSYSTEM
-     VERSIÓN PRODUCCIÓN - CORREGIDO (ESTRUCTURA REAL SUPABASE)
+     VERSIÓN PRODUCCIÓN - CORREGIDO CON ESTRUCTURA REAL SUPABASE
      ================================================================ -->
 <!DOCTYPE html>
 <html lang="es">
@@ -657,7 +657,7 @@
                     return;
                 }
 
-                // Verificar lives activos en paralelo
+                // ✅ Verificar lives activos con estado 'en_vivo' (convención real del ecosistema)
                 var liveMap = {};
                 for (var i = 0; i < grupos.length; i++) {
                     var g = grupos[i];
@@ -665,7 +665,7 @@
                         .from('transmisiones')
                         .select('id, titulo')
                         .eq('grupo_id', g.id)
-                        .eq('estado', 'activa')
+                        .eq('estado', 'en_vivo')
                         .eq('is_live', true)
                         .maybeSingle();
 
@@ -848,7 +848,7 @@
         }
 
         // ================================================================
-        // VERIFICAR LIVE ACTIVO
+        // VERIFICAR LIVE ACTIVO - CON ESTADO 'en_vivo'
         // ================================================================
         async function verificarLiveActivo(grupoId) {
             try {
@@ -856,7 +856,7 @@
                     .from('transmisiones')
                     .select('*')
                     .eq('grupo_id', grupoId)
-                    .eq('estado', 'activa')
+                    .eq('estado', 'en_vivo')
                     .eq('is_live', true)
                     .maybeSingle();
 
@@ -908,6 +908,10 @@
                         contenido += '<br><video src="' + escapeHTML(p.video_url) + '" controls preload="metadata"></video>';
                     }
 
+                    // ✅ USAR likes_count y comentarios_count (columnas REALES)
+                    var likesCount = p.likes_count || 0;
+                    var comentariosCount = p.comentarios_count || 0;
+
                     return '<div class="publicacion-card">' +
                         '<div class="header">' +
                         '<div class="avatar">' + avatar + '</div>' +
@@ -916,10 +920,10 @@
                         '</div>' +
                         '<div class="contenido">' + contenido + '</div>' +
                         '<div class="stats">' +
-                        '<span onclick="reaccionarPublicacion(\'' + p.id + '\')">❤️ <span id="likes-' + p.id + '">' + (p
-                            .likes || 0) + '</span></span>' +
+                        '<span onclick="reaccionarPublicacion(\'' + p.id + '\')">❤️ <span id="likes-' + p.id + '">' +
+                        likesCount + '</span></span>' +
                         '<span onclick="toggleComentariosPublicacion(\'' + p.id + '\')">💬 <span id="comentarios-' + p.id +
-                        '">' + (p.comentarios || 0) + '</span></span>' +
+                        '">' + comentariosCount + '</span></span>' +
                         '<span onclick="compartirPublicacion(\'' + p.id + '\')">↗ Compartir</span>' +
                         '</div>' +
                         '<div class="comentarios-container" id="comentariosContainer-' + p.id +
@@ -985,7 +989,7 @@
         }
 
         // ================================================================
-        // REACCIONAR A PUBLICACIÓN
+        // REACCIONAR A PUBLICACIÓN - SIN raw() (trigger automático)
         // ================================================================
         async function reaccionarPublicacion(publicacionId) {
             if (!sessionUser) { showToast('⚠️ Inicia sesión para reaccionar', 'error'); return; }
@@ -999,30 +1003,25 @@
                     .eq('usuario_id', sessionUser.id)
                     .maybeSingle();
 
+                var likesSpan = document.getElementById('likes-' + publicacionId);
+                var currentLikes = parseInt(likesSpan?.textContent || 0);
+
                 if (existing.data) {
                     // Quitar reacción
-                    await window.supabase
+                    var result = await window.supabase
                         .from('grupos_video_reacciones')
                         .delete()
                         .eq('id', existing.data.id);
 
-                    // Decrementar contador
-                    var result = await window.supabase
-                        .from('grupos_video_publicaciones')
-                        .update({ likes: window.supabase.raw('likes - 1') })
-                        .eq('id', publicacionId)
-                        .select();
-
                     if (result.error) throw result.error;
 
-                    var likesSpan = document.getElementById('likes-' + publicacionId);
+                    // ✅ Actualizar optimistamente (trigger actualiza DB)
                     if (likesSpan) {
-                        var current = parseInt(likesSpan.textContent) || 0;
-                        likesSpan.textContent = Math.max(0, current - 1);
+                        likesSpan.textContent = Math.max(0, currentLikes - 1);
                     }
                 } else {
                     // Agregar reacción
-                    await window.supabase
+                    var result = await window.supabase
                         .from('grupos_video_reacciones')
                         .insert({
                             publicacion_id: publicacionId,
@@ -1030,30 +1029,24 @@
                             tipo: 'like'
                         });
 
-                    // Incrementar contador
-                    var result = await window.supabase
-                        .from('grupos_video_publicaciones')
-                        .update({ likes: window.supabase.raw('likes + 1') })
-                        .eq('id', publicacionId)
-                        .select();
-
                     if (result.error) throw result.error;
 
-                    var likesSpan2 = document.getElementById('likes-' + publicacionId);
-                    if (likesSpan2) {
-                        var current2 = parseInt(likesSpan2.textContent) || 0;
-                        likesSpan2.textContent = current2 + 1;
+                    // ✅ Actualizar optimistamente (trigger actualiza DB)
+                    if (likesSpan) {
+                        likesSpan.textContent = currentLikes + 1;
                     }
                 }
 
             } catch (e) {
                 console.error('Error reaccionando:', e);
                 showToast('❌ Error al reaccionar', 'error');
+                // Recargar para corregir desincronización
+                if (grupoActualId) cargarPublicacionesGrupo(grupoActualId);
             }
         }
 
         // ================================================================
-        // COMENTARIOS EN PUBLICACIÓN
+        // COMENTARIOS EN PUBLICACIÓN - SIN raw() (trigger automático)
         // ================================================================
         function toggleComentariosPublicacion(publicacionId) {
             var container = document.getElementById('comentariosContainer-' + publicacionId);
@@ -1130,19 +1123,11 @@
                 input.value = '';
                 showToast('✅ Comentario agregado', 'success');
 
-                // Actualizar contador
-                var result2 = await window.supabase
-                    .from('grupos_video_publicaciones')
-                    .update({ comentarios: window.supabase.raw('comentarios + 1') })
-                    .eq('id', publicacionId)
-                    .select();
-
-                if (!result2.error) {
-                    var countSpan = document.getElementById('comentarios-' + publicacionId);
-                    if (countSpan) {
-                        var current = parseInt(countSpan.textContent) || 0;
-                        countSpan.textContent = current + 1;
-                    }
+                // ✅ Actualizar optimistamente (trigger actualiza DB)
+                var countSpan = document.getElementById('comentarios-' + publicacionId);
+                if (countSpan) {
+                    var current = parseInt(countSpan.textContent) || 0;
+                    countSpan.textContent = current + 1;
                 }
 
                 cargarComentariosPublicacion(publicacionId);
@@ -1207,7 +1192,7 @@
                         room_name: roomName,
                         titulo: titulo,
                         categoria: 'grupo',
-                        estado: 'activa',
+                        estado: 'en_vivo',
                         is_live: true,
                         fecha_inicio: new Date().toISOString(),
                         viewers_count: 0
@@ -1457,7 +1442,7 @@
                         descripcion: descripcion || null,
                         categoria_id: categoriaId,
                         ciudad: ciudad || null,
-                        estado_region: estadoRegion || null, // ✅ COLUMNA REAL
+                        estado_region: estadoRegion || null,
                         pais: pais || null,
                         visibilidad: visibilidad,
                         modo_ingreso: modoIngreso,
@@ -1481,7 +1466,7 @@
                     .insert({
                         grupo_id: grupo.id,
                         usuario_id: sessionUser.id,
-                        rol: 'administrador', // ✅ ROL REAL
+                        rol: 'administrador',
                         estado: 'activo'
                     });
 
