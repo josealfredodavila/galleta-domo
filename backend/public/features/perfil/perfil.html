@@ -1481,7 +1481,7 @@
         }
 
         // ================================================================
-        // 📋 CARGAR PUBLICACIONES CON REACCIONES
+        // 📋 CARGAR PUBLICACIONES CON REACCIONES - CORREGIDO
         // ================================================================
 
         async function cargarPublicaciones() {
@@ -1492,6 +1492,7 @@
                     return;
                 }
 
+                // ✅ OBTENER PUBLICACIONES DEL USUARIO
                 var result = await window.supabase
                     .from('publicaciones')
                     .select('*, usuarios:usuario_id (id, nombre, handle, avatar_url)')
@@ -1512,9 +1513,9 @@
                     return;
                 }
 
-                // Obtener reacciones para todas las publicaciones
-                var reaccionesMap = {};
+                // ✅ OBTENER REACCIONES DE LAS PUBLICACIONES
                 var publicacionIds = data.map(function(p) { return p.id; });
+                var reaccionesMap = {};
 
                 if (publicacionIds.length > 0) {
                     var reaccionesResult = await window.supabase
@@ -1531,9 +1532,12 @@
                             reaccionesMap[r.publicacion_id].emojis[r.tipo] = (reaccionesMap[r.publicacion_id].emojis[r.tipo] || 0) + 1;
                             reaccionesMap[r.publicacion_id].usuarios[r.usuario_id] = r.tipo;
                         });
+                    } else {
+                        console.error('Error cargando reacciones:', reaccionesResult.error);
                     }
                 }
 
+                // ✅ RENDERIZAR PUBLICACIONES
                 container.innerHTML = data.map(function(p) {
                     var usuario = p.usuarios || {};
                     var avatar = usuario.avatar_url ? '<img src="' + escapeHTML(usuario.avatar_url) + '">' : '◈';
@@ -1549,19 +1553,10 @@
                     }
                     var contenido = p.contenido ? '<div class="pub-texto">' + escapeHTML(p.contenido) + '</div>' : '';
 
-                    // Obtener reacción del usuario actual
+                    // ✅ OBTENER REACCIÓN DEL USUARIO ACTUAL
                     var miReaccion = reaccionesMap[p.id]?.usuarios[sessionUser.id] || null;
                     var reaccionEmoji = miReaccion || '❤️';
                     var reaccionTotal = reaccionesMap[p.id]?.total || 0;
-                    var reaccionesEmojis = reaccionesMap[p.id]?.emojis || {};
-
-                    // Mostrar top 3 reacciones
-                    var topReacciones = Object.keys(reaccionesEmojis)
-                        .sort(function(a, b) { return reaccionesEmojis[b] - reaccionesEmojis[a]; })
-                        .slice(0, 3);
-
-                    var reaccionesDisplay = topReacciones.length > 0 ? 
-                        topReacciones.map(function(e) { return e; }).join(' ') + ' ' : '';
 
                     return '<div class="publicacion-item" data-id="' + p.id + '">' +
                         '<div class="pub-header">' +
@@ -1578,8 +1573,8 @@
                         '</button>' +
                         '<span class="comment-btn" onclick="abrirModalComentarios(\'' + p.id + '\')">💬 <span>' + (p.comentarios || 0) + '</span></span>' +
                         '</div>' +
-                        // Selector de reacciones (flotante)
-                        '<div class="reaccion-picker" id="reaccionPicker-' + p.id + '" style="display:none;position:absolute;bottom:100%;left:50%;transform:translateX(-50%);background:rgba(15,25,20,0.95);border:1px solid var(--glass-border);border-radius:30px;padding:6px 12px;z-index:1000;box-shadow:var(--shadow-gold-strong);backdrop-filter:blur(12px);margin-bottom:8px;white-space:nowrap;">' +
+                        // ✅ SELECTOR DE REACCIONES
+                        '<div class="reaccion-picker" id="reaccionPicker-' + p.id + '">' +
                         REACCIONES.map(function(r) {
                             return '<button onclick="seleccionarReaccion(\'' + p.id + '\', \'' + r + '\', event)">' + r + '</button>';
                         }).join('') +
@@ -1603,7 +1598,6 @@
                 return;
             }
 
-            var btn = event.currentTarget;
             var picker = document.getElementById('reaccionPicker-' + publicacionId);
             if (!picker) return;
 
@@ -1629,7 +1623,7 @@
                 var key = publicacionId + '_' + sessionUser.id;
                 var reaccionActual = reaccionCache.get(key) || null;
 
-                // Si es la misma reacción, la quitamos (toggle off)
+                // ✅ Si es la misma reacción, la quitamos (toggle off)
                 if (reaccionActual === tipo) {
                     var deleteResult = await window.supabase
                         .from('publicaciones_reacciones')
@@ -1642,11 +1636,8 @@
                     reaccionCache.set(key, null);
                     actualizarUIReaccion(publicacionId, null);
 
-                    // Si hay like antiguo, lo migramos (opcional)
-                    // await migrarLikeAReaccion(publicacionId, tipo);
-
                 } else {
-                    // Si ya tenía otra reacción, la reemplazamos
+                    // ✅ Si ya tenía otra reacción, la reemplazamos
                     if (reaccionActual) {
                         await window.supabase
                             .from('publicaciones_reacciones')
@@ -1665,7 +1656,7 @@
 
                     if (insertResult.error) {
                         if (insertResult.error.code === '23505') {
-                            // Si ya existía, hacemos update (DELETE + INSERT)
+                            // Si ya existía, hacemos DELETE + INSERT
                             await window.supabase
                                 .from('publicaciones_reacciones')
                                 .delete()
@@ -1688,7 +1679,7 @@
                     actualizarUIReaccion(publicacionId, tipo);
                 }
 
-                // Recargar la publicación para actualizar contadores
+                // ✅ Recargar publicaciones para actualizar contadores
                 await cargarPublicaciones();
 
             } catch (error) {
@@ -1702,17 +1693,18 @@
             if (!item) return;
 
             var btn = item.querySelector('.reaccion-btn');
+            if (!btn) return;
+
             var emojiSpan = btn.querySelector('.reaccion-emoji');
             var countSpan = btn.querySelector('.count');
 
-            // Actualizar emoji
             if (tipo) {
                 emojiSpan.textContent = tipo;
             } else {
                 emojiSpan.textContent = '❤️';
             }
 
-            // Actualizar contador (se recargará con cargarPublicaciones)
+            // El contador se actualizará con cargarPublicaciones()
         }
 
         // ================================================================
