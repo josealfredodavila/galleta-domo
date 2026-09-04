@@ -1,6 +1,6 @@
 <!-- ================================================================
      GRUPOS - SARIEL'S ECOSYSTEM
-     VERSIÓN PRODUCCIÓN FINAL - CON EMOJIS ACTUALIZADOS
+     VERSIÓN PRODUCCIÓN FINAL - CON SELECTOR DE EMOJIS (COMO EL MURO)
      ================================================================ -->
 <!DOCTYPE html>
 <html lang="es">
@@ -179,10 +179,34 @@
         }
         .form-publicacion textarea { width: 100%; padding: 10px 14px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 10px; color: var(--text-primary); font-size: 0.8rem; resize: vertical; min-height: 60px; outline: none; }
         .form-publicacion textarea:focus { border-color: var(--gold); }
-        .form-publicacion .acciones { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; align-items: center; }
+        .form-publicacion .acciones { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; align-items: center; position: relative; }
         .form-publicacion .acciones button { background: transparent; border: none; color: var(--text-muted); font-size: 0.7rem; cursor: pointer; padding: 4px 12px; border-radius: 12px; transition: var(--transition); }
         .form-publicacion .acciones button:hover { color: var(--gold); background: rgba(212,175,55,0.05); }
         .form-publicacion .acciones .btn-publicar { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); border: none; padding: 6px 20px; border-radius: 20px; font-weight: 700; font-size: 0.7rem; cursor: pointer; }
+
+        /* ===== SELECTOR DE EMOJIS ===== */
+        .emoji-picker {
+            display: none;
+            position: absolute;
+            bottom: 100%;
+            left: 0;
+            background: rgba(15, 25, 20, 0.95);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            padding: 12px;
+            width: 280px;
+            max-width: 90vw;
+            z-index: 1000;
+            box-shadow: var(--shadow-gold-strong);
+            backdrop-filter: blur(12px);
+            margin-bottom: 8px;
+        }
+        .emoji-picker.show { display: block; }
+        .emoji-picker .grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; }
+        .emoji-picker .grid button { background: transparent; border: none; font-size: 1.5rem; padding: 6px 4px; cursor: pointer; border-radius: 8px; transition: var(--transition); line-height: 1; }
+        .emoji-picker .grid button:hover { background: rgba(212, 175, 55, 0.15); transform: scale(1.15); }
+        .emoji-picker .grid button:active { transform: scale(0.9); }
+        .emoji-picker .titulo { color: var(--text-muted); font-size: 0.6rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; text-align: center; font-family: 'Orbitron', monospace; }
 
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5,8,15,0.9);
@@ -241,12 +265,17 @@
             .grupos-header .filtros input, .grupos-header .filtros select { font-size: 0.65rem; padding: 4px 10px; min-width: 80px; }
             .grupos-header { flex-direction: column; align-items: stretch; }
             .grupos-header .filtros { justify-content: center; }
+            .emoji-picker { width: 220px; left: 50%; transform: translateX(-50%); }
+            .emoji-picker .grid { grid-template-columns: repeat(6, 1fr); }
         }
         @media (max-width: 480px) {
             .grupos-grid { grid-template-columns: 1fr; }
             .grupo-header-interno .info-row { flex-direction: column; align-items: center; text-align: center; }
             .grupo-header-interno .acciones { justify-content: center; }
             .form-publicacion .acciones { justify-content: center; }
+            .emoji-picker { width: 180px; }
+            .emoji-picker .grid { grid-template-columns: repeat(5, 1fr); }
+            .emoji-picker .grid button { font-size: 1.2rem; padding: 4px; }
         }
     </style>
 </head>
@@ -338,9 +367,14 @@
             <div class="form-publicacion" id="formPublicacion" style="display:none;">
                 <textarea id="inputPublicacion" placeholder="¿Qué está pasando en el grupo?"></textarea>
                 <div class="acciones">
-                    <button onclick="insertarEmojiGrupo()">😊 Emoji</button>
+                    <button onclick="toggleEmojiPickerGrupo()" id="btnEmojiGrupo">😊 Emoji</button>
                     <button onclick="insertarHashtagGrupo()"># Hashtag</button>
                     <button class="btn-publicar" onclick="publicarEnGrupo()">⟡ Publicar</button>
+                    <!-- ===== SELECTOR DE EMOJIS ===== -->
+                    <div class="emoji-picker" id="emojiPickerGrupo">
+                        <div class="titulo">✦ Elige tu emoji</div>
+                        <div class="grid" id="emojiGridGrupo"></div>
+                    </div>
                 </div>
             </div>
 
@@ -908,7 +942,6 @@
                         contenido += '<br><video src="' + escapeHTML(p.video_url) + '" controls preload="metadata"></video>';
                     }
 
-                    // ✅ USAR likes_count y comentarios_count (columnas REALES)
                     var likesCount = p.likes_count || 0;
                     var comentariosCount = p.comentarios_count || 0;
 
@@ -989,13 +1022,12 @@
         }
 
         // ================================================================
-        // REACCIONAR A PUBLICACIÓN - SIN raw() (trigger automático)
+        // REACCIONAR A PUBLICACIÓN
         // ================================================================
         async function reaccionarPublicacion(publicacionId) {
             if (!sessionUser) { showToast('⚠️ Inicia sesión para reaccionar', 'error'); return; }
 
             try {
-                // Verificar si ya reaccionó
                 var existing = await window.supabase
                     .from('grupos_video_reacciones')
                     .select('id')
@@ -1007,7 +1039,6 @@
                 var currentLikes = parseInt(likesSpan?.textContent || 0);
 
                 if (existing.data) {
-                    // Quitar reacción
                     var result = await window.supabase
                         .from('grupos_video_reacciones')
                         .delete()
@@ -1015,12 +1046,10 @@
 
                     if (result.error) throw result.error;
 
-                    // ✅ Actualizar optimistamente (trigger actualiza DB)
                     if (likesSpan) {
                         likesSpan.textContent = Math.max(0, currentLikes - 1);
                     }
                 } else {
-                    // Agregar reacción
                     var result = await window.supabase
                         .from('grupos_video_reacciones')
                         .insert({
@@ -1031,7 +1060,6 @@
 
                     if (result.error) throw result.error;
 
-                    // ✅ Actualizar optimistamente (trigger actualiza DB)
                     if (likesSpan) {
                         likesSpan.textContent = currentLikes + 1;
                     }
@@ -1040,13 +1068,12 @@
             } catch (e) {
                 console.error('Error reaccionando:', e);
                 showToast('❌ Error al reaccionar', 'error');
-                // Recargar para corregir desincronización
                 if (grupoActualId) cargarPublicacionesGrupo(grupoActualId);
             }
         }
 
         // ================================================================
-        // COMENTARIOS EN PUBLICACIÓN - SIN raw() (trigger automático)
+        // COMENTARIOS EN PUBLICACIÓN
         // ================================================================
         function toggleComentariosPublicacion(publicacionId) {
             var container = document.getElementById('comentariosContainer-' + publicacionId);
@@ -1123,7 +1150,6 @@
                 input.value = '';
                 showToast('✅ Comentario agregado', 'success');
 
-                // ✅ Actualizar optimistamente (trigger actualiza DB)
                 var countSpan = document.getElementById('comentarios-' + publicacionId);
                 if (countSpan) {
                     var current = parseInt(countSpan.textContent) || 0;
@@ -1172,7 +1198,6 @@
             if (!grupoActualId) { showToast('⚠️ No hay grupo seleccionado', 'error'); return; }
             if (!esMiembro()) { showToast('⚠️ Debes ser miembro del grupo', 'error'); return; }
 
-            // Verificar si ya hay live activo
             var liveExistente = await verificarLiveActivo(grupoActualId);
             if (liveExistente) {
                 showToast('⚠️ Ya hay un LIVE activo en este grupo', 'warning');
@@ -1183,7 +1208,6 @@
                 var titulo = prompt('Título del LIVE:', 'Live en ' + (grupoActual.nombre || 'grupo')) || 'Live en grupo';
                 var roomName = 'live-' + sessionUser.id + '-' + Date.now();
 
-                // Crear transmisión con grupo_id
                 var result = await window.supabase
                     .from('transmisiones')
                     .insert({
@@ -1204,7 +1228,6 @@
 
                 showToast('✅ LIVE iniciado! Redirigiendo...', 'success');
 
-                // Redirigir a live.html con la transmisión
                 setTimeout(function() {
                     window.location.href = '/features/live/live.html?transmision=' + result.data.id;
                 }, 1500);
@@ -1369,7 +1392,6 @@
             btn.textContent = '⏳ Creando...';
 
             try {
-                // ✅ BUSCAR categoría existente (NUNCA INSERTAR)
                 var categoriaId = null;
                 var catResult = await window.supabase
                     .from('grupos_video_categorias')
@@ -1380,17 +1402,14 @@
                 if (catResult.data && catResult.data.id) {
                     categoriaId = catResult.data.id;
                 } else {
-                    // ✅ Usar 'General' (UUID fijo: 2822d03e-c8aa-4e65-a537-736dd432ed36)
                     categoriaId = '2822d03e-c8aa-4e65-a537-736dd432ed36';
                     showToast('⚠️ Categoría "' + categoriaNombre + '" no encontrada, usando "General"', 'warning');
                 }
 
-                // ✅ Validar que categoriaId NO sea null
                 if (!categoriaId) {
                     throw new Error('No se pudo obtener un ID de categoría válido');
                 }
 
-                // ✅ Insertar grupo SOLAMENTE (el trigger agrega al creador como admin)
                 var groupResult = await window.supabase
                     .from('grupos_video')
                     .insert({
@@ -1420,7 +1439,6 @@
                 showToast('✅ Grupo "' + nombre + '" creado', 'success');
                 cerrarModalCrearGrupo();
 
-                // Resetear form
                 document.getElementById('inputNombreGrupo').value = '';
                 document.getElementById('inputDescripcionGrupo').value = '';
                 document.getElementById('inputCiudadGrupo').value = '';
@@ -1450,7 +1468,6 @@
             container.innerHTML = '<div class="empty-state"><span class="icon">⏳</span><h3>Cargando miembros...</h3></div>';
 
             try {
-                // Cargar miembros
                 var membersResult = await window.supabase
                     .from('grupos_video_miembros')
                     .select(`
@@ -1464,7 +1481,6 @@
 
                 var miembros = membersResult.data || [];
 
-                // Cargar solicitudes pendientes
                 var requestsResult = await window.supabase
                     .from('grupos_video_solicitudes')
                     .select(`
@@ -1480,7 +1496,6 @@
 
                 var html = '';
 
-                // Solicitudes pendientes
                 if (solicitudes.length > 0) {
                     html += '<h4 style="color:var(--gold);font-size:0.8rem;margin-top:12px;">📨 Solicitudes pendientes</h4>';
                     solicitudes.forEach(function(s) {
@@ -1492,13 +1507,12 @@
                             '<button class="btn-gold btn-sm" onclick="aceptarSolicitud(\'' + s.id +
                             '\')">✅ Aceptar</button> ' +
                             '<button class="btn-danger btn-sm" onclick="rechazarSolicitud(\'' + s.id +
-                            '\")">❌ Rechazar</button>' +
+                            '\')">❌ Rechazar</button>' +
                             '</div>' +
                             '</div>';
                     });
                 }
 
-                // Miembros
                 html += '<h4 style="color:var(--gold);font-size:0.8rem;margin-top:12px;">👤 Miembros (' + miembros.length +
                     ')</h4>';
                 miembros.forEach(function(m) {
@@ -1648,46 +1662,80 @@
         }
 
         // ================================================================
-        // 🎯 INSERTAR EMOJI - LISTA ACTUALIZADA CON TODOS LOS EMOJIS
+        // 🎯 SELECTOR DE EMOJIS - ACTUALIZADO CON TODOS LOS EMOJIS
         // ================================================================
-        function insertarEmojiGrupo() {
+
+        var emojisDisponibles = [
+            // Unicode 17.0 (2025)
+            '🧌', '🫨', '🪭', '🐋', '🧰', '💥',
+            // Unicode 18.0 (2026)
+            '🫩', '👈', '👉', '🦋', '🥒', '🗼', '☄️', '🧽', '🪤', '🩹',
+            // Dinero / Ganancia
+            '💸', '💵', '💴', '💶', '💷', '🪙', '💰', '💳', '💎',
+            // Fuego / Viral
+            '🔥', '⚡', '✨', '🌟', '💫', '🚀', '🪐',
+            // Ojitos / Chisme
+            '👀', '👁️', '👁️‍🗨️', '🤩', '😍', '😳', '🫣',
+            // Manitas / Señalando
+            '👉', '👈', '☝️', '👇', '🫵', '🤏', '✋', '🤚', '👋',
+            // Caritas pa vender
+            '🥹', '🥺', '😍', '🤩', '🤤', '😎', '😏', '🤗', '🫶', '🥰', '😘',
+            // Tiempo / Correle
+            '⏰', '⏳', '⌛', '⏲️', '🚨', '⚠️',
+            // Check / Apartado
+            '✅', '☑️', '✔️', '🔒', '📌', '📍', '📝',
+            // Cajas / Envío
+            '📦', '📤', '📥', '🚚', '🚀', '🏍️', '💨',
+            // Corazones
+            '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '💖', '💝', '💘', '💗'
+        ];
+
+        function toggleEmojiPickerGrupo() {
+            var picker = document.getElementById('emojiPickerGrupo');
+            if (!picker) return;
+            if (picker.classList.contains('show')) {
+                picker.classList.remove('show');
+                return;
+            }
+            // Llenar la grilla si está vacía
+            var grid = document.getElementById('emojiGridGrupo');
+            if (grid && grid.children.length === 0) {
+                emojisDisponibles.forEach(function(emoji) {
+                    var btn = document.createElement('button');
+                    btn.textContent = emoji;
+                    btn.setAttribute('data-emoji', emoji);
+                    btn.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        insertarEmojiSeleccionadoGrupo(emoji);
+                        picker.classList.remove('show');
+                    });
+                    grid.appendChild(btn);
+                });
+            }
+            picker.classList.add('show');
+        }
+
+        function insertarEmojiSeleccionadoGrupo(emoji) {
             var input = document.getElementById('inputPublicacion');
             if (!input) return;
-
-            // ✅ LISTA COMPLETA CON EMOJIS NUEVOS
-            var emojis = [
-                // Unicode 17.0 (2025)
-                '🧌', '🫨', '🪭', '🐋', '🧰', '💥',
-                // Unicode 18.0 (2026)
-                '🫩', '👈', '👉', '🦋', '🥒', '🗼', '☄️', '🧽', '🪤', '🩹',
-                // Dinero / Ganancia
-                '💸', '💵', '💴', '💶', '💷', '🪙', '💰', '💳', '💎',
-                // Fuego / Viral
-                '🔥', '⚡', '✨', '🌟', '💫', '🚀', '🪐',
-                // Ojitos / Chisme
-                '👀', '👁️', '👁️‍🗨️', '🤩', '😍', '😳', '🫣',
-                // Manitas / Señalando
-                '👉', '👈', '☝️', '👇', '🫵', '🤏', '✋', '🤚', '👋',
-                // Caritas pa vender
-                '🥹', '🥺', '😍', '🤩', '🤤', '😎', '😏', '🤗', '🫶', '🥰', '😘',
-                // Tiempo / Correle
-                '⏰', '⏳', '⌛', '⏲️', '🚨', '⚠️',
-                // Check / Apartado
-                '✅', '☑️', '✔️', '🔒', '📌', '📍', '📝',
-                // Cajas / Envío
-                '📦', '📤', '📥', '🚚', '🚀', '🏍️', '💨',
-                // Corazones
-                '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '💖', '💝', '💘', '💗'
-            ];
-
-            var emoji = emojis[Math.floor(Math.random() * emojis.length)];
             var start = input.selectionStart || 0;
             var end = input.selectionEnd || 0;
             var texto = input.value;
             input.value = texto.substring(0, start) + emoji + texto.substring(end);
             input.focus();
-            input.selectionStart = input.selectionEnd = start + emoji.length;
+            var newPos = start + emoji.length;
+            input.selectionStart = input.selectionEnd = newPos;
+            input.dispatchEvent(new Event('input', { bubbles: true }));
         }
+
+        // Función legacy para compatibilidad (redirige al selector)
+        function insertarEmojiGrupo() {
+            toggleEmojiPickerGrupo();
+        }
+
+        // ================================================================
+        // FUNCIONES DE UTILIDAD
+        // ================================================================
 
         function insertarHashtagGrupo() {
             var input = document.getElementById('inputPublicacion');
@@ -1806,6 +1854,7 @@
         window.expulsarMiembro = expulsarMiembro;
         window.abrirFormPublicacion = abrirFormPublicacion;
         window.insertarEmojiGrupo = insertarEmojiGrupo;
+        window.toggleEmojiPickerGrupo = toggleEmojiPickerGrupo;
         window.insertarHashtagGrupo = insertarHashtagGrupo;
         window.abrirSubirFoto = abrirSubirFoto;
         window.abrirSubirVideo = abrirSubirVideo;
