@@ -1,6 +1,6 @@
 <!-- ================================================================
      GRUPOS - SARIEL'S ECOSYSTEM
-     VERSIÓN PRODUCCIÓN - CON FINALIZAR LIVE DESDE EL GRUPO
+     VERSIÓN PRODUCCIÓN - COMPLETA CON ADMIN Y SUBIDA DE ARCHIVOS
      ================================================================ -->
 <!DOCTYPE html>
 <html lang="es">
@@ -355,8 +355,8 @@
                 </div>
                 <div class="acciones" id="grupoAcciones">
                     <button class="btn-gold btn-sm" onclick="abrirFormPublicacion()">✏️ Publicar</button>
-                    <button class="btn-outline btn-sm" onclick="abrirSubirFoto()">📷 Foto</button>
-                    <button class="btn-outline btn-sm" onclick="abrirSubirVideo()">🎥 Video</button>
+                    <button class="btn-outline btn-sm" onclick="subirFotoGrupo()" id="btnSubirFoto">📷 Foto</button>
+                    <button class="btn-outline btn-sm" onclick="subirVideoGrupo()" id="btnSubirVideo">🎥 Video</button>
                     <button class="btn-live btn-sm" onclick="iniciarLiveEnGrupo()" id="btnIniciarLive">🔴 Iniciar LIVE</button>
                     <button class="btn-danger btn-sm" onclick="verLiveActivo()" id="btnVerLive" style="display:none;">📺 VER LIVE</button>
                     <button class="btn-danger btn-sm" onclick="finalizarLiveGrupo()" id="btnFinalizarLive" style="display:none;">⏹ Finalizar LIVE</button>
@@ -450,7 +450,7 @@
         </div>
 
         <!-- ============================================================ -->
-        <!-- MODAL ADMINISTRAR GRUPO -->
+        <!-- MODAL ADMINISTRAR GRUPO - COMPLETO -->
         <!-- ============================================================ -->
         <div class="modal-overlay" id="modalAdminGrupo">
             <div class="modal">
@@ -459,7 +459,13 @@
                     <button class="btn-cerrar" onclick="cerrarModalAdmin()">✕</button>
                 </div>
                 <div id="adminContenido">
-                    <div class="empty-state"><span class="icon">⚙️</span><h3>Cargando...</h3></div>
+                    <div class="empty-state"><span class="icon">⏳</span><h3>Cargando...</h3></div>
+                </div>
+                <div style="margin-top:16px; display:flex; gap:8px; flex-wrap:wrap;">
+                    <button class="btn-gold btn-sm" onclick="cargarAdminMiembros()" style="flex:1;">👤 Miembros</button>
+                    <button class="btn-gold btn-sm" onclick="cargarAdminPublicaciones()" style="flex:1;">📝 Publicaciones</button>
+                    <button class="btn-gold btn-sm" onclick="cargarAdminSolicitudes()" style="flex:1;">📨 Solicitudes</button>
+                    <button class="btn-gold btn-sm" onclick="cargarAdminEditar()" style="flex:1;">✏️ Editar grupo</button>
                 </div>
             </div>
         </div>
@@ -692,7 +698,7 @@
                     return;
                 }
 
-                // ✅ Verificar lives activos con estado 'en_vivo' (convención real del ecosistema)
+                // ✅ Verificar lives activos con estado 'en_vivo'
                 var liveMap = {};
                 for (var i = 0; i < grupos.length; i++) {
                     var g = grupos[i];
@@ -807,7 +813,7 @@
 
                 // ✅ Mostrar acciones según rol y estado del LIVE
                 var btnAdmin = document.getElementById('btnAdminGrupo');
-                if (esAdmin) {
+                if (esAdmin || esModerador) {
                     btnAdmin.style.display = 'inline-block';
                 } else {
                     btnAdmin.style.display = 'none';
@@ -821,7 +827,6 @@
                     btnVerLive.style.display = 'inline-block';
                     document.getElementById('grupoLiveBadge').style.display = 'inline';
                     
-                    // ✅ Mostrar "Finalizar LIVE" solo si el usuario es el streamer
                     if (sessionUser && liveActivoEnGrupo.streamer_id === sessionUser.id) {
                         btnFinalizarLive.style.display = 'inline-block';
                         btnLive.style.display = 'none';
@@ -891,7 +896,7 @@
         }
 
         // ================================================================
-        // VERIFICAR LIVE ACTIVO - CON ESTADO 'en_vivo'
+        // VERIFICAR LIVE ACTIVO
         // ================================================================
         async function verificarLiveActivo(grupoId) {
             try {
@@ -1028,6 +1033,126 @@
             } finally {
                 publicando = false;
             }
+        }
+
+        // ================================================================
+        // 📷 SUBIR FOTO EN GRUPO - REAL
+        // ================================================================
+        async function subirFotoGrupo() {
+            if (!sessionUser) { showToast('⚠️ Inicia sesión', 'error'); return; }
+            if (!grupoActualId) { showToast('⚠️ No hay grupo seleccionado', 'error'); return; }
+            if (!esMiembro()) { showToast('⚠️ Debes ser miembro del grupo', 'error'); return; }
+
+            var input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = async function(e) {
+                var file = e.target.files[0];
+                if (!file) return;
+
+                if (file.size > 10 * 1024 * 1024) {
+                    showToast('⚠️ La imagen no puede superar los 10MB', 'error');
+                    return;
+                }
+
+                showToast('⏳ Subiendo imagen...', '');
+
+                try {
+                    var fileExt = file.name.split('.').pop();
+                    var filePath = grupoActualId + '/' + sessionUser.id + '/' + Date.now() + '.' + fileExt;
+
+                    var uploadResult = await window.supabase.storage
+                        .from('grupos-publicaciones')
+                        .upload(filePath, file, { cacheControl: '3600', upsert: true });
+
+                    if (uploadResult.error) throw uploadResult.error;
+
+                    var urlData = window.supabase.storage.from('grupos-publicaciones').getPublicUrl(filePath);
+                    var publicUrl = urlData.data.publicUrl;
+
+                    var result = await window.supabase
+                        .from('grupos_video_publicaciones')
+                        .insert({
+                            grupo_id: grupoActualId,
+                            usuario_id: sessionUser.id,
+                            imagen_url: publicUrl,
+                            tipo: 'imagen',
+                            estado: 'publicado'
+                        })
+                        .select()
+                        .single();
+
+                    if (result.error) throw result.error;
+
+                    showToast('✅ Foto publicada', 'success');
+                    await cargarPublicacionesGrupo(grupoActualId);
+
+                } catch (error) {
+                    console.error('Error subiendo foto:', error);
+                    showToast('❌ Error al subir foto: ' + error.message, 'error');
+                }
+            };
+            input.click();
+        }
+
+        // ================================================================
+        // 🎥 SUBIR VIDEO EN GRUPO - REAL
+        // ================================================================
+        async function subirVideoGrupo() {
+            if (!sessionUser) { showToast('⚠️ Inicia sesión', 'error'); return; }
+            if (!grupoActualId) { showToast('⚠️ No hay grupo seleccionado', 'error'); return; }
+            if (!esMiembro()) { showToast('⚠️ Debes ser miembro del grupo', 'error'); return; }
+
+            var input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'video/*';
+            input.onchange = async function(e) {
+                var file = e.target.files[0];
+                if (!file) return;
+
+                if (file.size > 100 * 1024 * 1024) {
+                    showToast('⚠️ El video no puede superar los 100MB', 'error');
+                    return;
+                }
+
+                showToast('⏳ Subiendo video...', '');
+
+                try {
+                    var fileExt = file.name.split('.').pop();
+                    var filePath = grupoActualId + '/' + sessionUser.id + '/' + Date.now() + '.' + fileExt;
+
+                    var uploadResult = await window.supabase.storage
+                        .from('grupos-publicaciones')
+                        .upload(filePath, file, { cacheControl: '3600', upsert: true });
+
+                    if (uploadResult.error) throw uploadResult.error;
+
+                    var urlData = window.supabase.storage.from('grupos-publicaciones').getPublicUrl(filePath);
+                    var publicUrl = urlData.data.publicUrl;
+
+                    var result = await window.supabase
+                        .from('grupos_video_publicaciones')
+                        .insert({
+                            grupo_id: grupoActualId,
+                            usuario_id: sessionUser.id,
+                            video_url: publicUrl,
+                            tipo: 'video',
+                            estado: 'publicado'
+                        })
+                        .select()
+                        .single();
+
+                    if (result.error) throw result.error;
+
+                    showToast('✅ Video publicado', 'success');
+                    await cargarPublicacionesGrupo(grupoActualId);
+
+                } catch (error) {
+                    console.error('Error subiendo video:', error);
+                    showToast('❌ Error al subir video: ' + error.message, 'error');
+                }
+            };
+            input.click();
         }
 
         // ================================================================
@@ -1248,7 +1373,7 @@
         }
 
         // ================================================================
-        // 🆕 FINALIZAR LIVE DESDE EL GRUPO
+        // FINALIZAR LIVE DESDE EL GRUPO
         // ================================================================
         async function finalizarLiveGrupo() {
             if (!sessionUser) {
@@ -1260,7 +1385,6 @@
                 return;
             }
 
-            // ✅ Verificar que el usuario sea el streamer
             if (liveActivoEnGrupo.streamer_id !== sessionUser.id) {
                 showToast('⚠️ Solo el streamer puede finalizar el LIVE', 'error');
                 return;
@@ -1271,7 +1395,6 @@
             showToast('⏳ Finalizando LIVE...', '');
 
             try {
-                // ✅ Usar la RPC que ya existe en Supabase
                 const { data, error } = await supabase.rpc('finalizar_transmision', {
                     p_transmision_id: liveActivoEnGrupo.id
                 });
@@ -1280,14 +1403,12 @@
 
                 showToast('✅ LIVE finalizado', 'success');
 
-                // ✅ Actualizar estado local
                 liveActivoEnGrupo = null;
                 document.getElementById('grupoLiveBadge').style.display = 'none';
                 document.getElementById('btnVerLive').style.display = 'none';
                 document.getElementById('btnFinalizarLive').style.display = 'none';
                 document.getElementById('btnIniciarLive').style.display = 'inline-block';
 
-                // ✅ Recargar publicaciones y estado del grupo
                 await cargarPublicacionesGrupo(grupoActualId);
                 await cargarGrupos();
 
@@ -1305,6 +1426,505 @@
                 window.location.href = '/features/live/live.html?transmision=' + liveActivoEnGrupo.id;
             } else {
                 showToast('⚠️ No hay LIVE activo en este grupo', 'warning');
+            }
+        }
+
+        // ================================================================
+        // ADMINISTRAR GRUPO - COMPLETO
+        // ================================================================
+        async function abrirAdminGrupo() {
+            if (!esAdmin && !esModerador) {
+                showToast('⚠️ No tienes permisos de administrador', 'error');
+                return;
+            }
+            if (!grupoActualId) {
+                showToast('⚠️ No hay grupo seleccionado', 'error');
+                return;
+            }
+
+            document.getElementById('modalAdminGrupo').classList.add('show');
+            // Cargar miembros por defecto
+            await cargarAdminMiembros();
+        }
+
+        function cerrarModalAdmin() {
+            document.getElementById('modalAdminGrupo').classList.remove('show');
+        }
+
+        // ===== ADMIN: MIEMBROS =====
+        async function cargarAdminMiembros() {
+            var container = document.getElementById('adminContenido');
+            container.innerHTML = '<div class="empty-state"><span class="icon">⏳</span><h3>Cargando miembros...</h3></div>';
+
+            try {
+                var result = await window.supabase
+                    .from('grupos_video_miembros')
+                    .select(`
+                        *,
+                        usuarios:usuario_id (id, nombre, handle, avatar_url)
+                    `)
+                    .eq('grupo_id', grupoActualId)
+                    .order('created_at', { ascending: true });
+
+                if (result.error) throw result.error;
+
+                var miembros = result.data || [];
+
+                if (miembros.length === 0) {
+                    container.innerHTML = '<div class="empty-state"><span class="icon">👤</span><h3>Sin miembros</h3></div>';
+                    return;
+                }
+
+                var html = '<h4 style="color:var(--gold);font-size:0.8rem;margin-bottom:12px;">👤 Miembros (' + miembros.length +
+                    ')</h4>';
+
+                miembros.forEach(function(m) {
+                    var u = m.usuarios || {};
+                    var esCreador = m.rol === 'administrador';
+                    var esYo = m.usuario_id === sessionUser?.id;
+                    var estado = m.estado || 'activo';
+
+                    var estadoColor = estado === 'activo' ? 'var(--success)' :
+                        estado === 'bloqueado' ? 'var(--danger)' :
+                        'var(--warning)';
+
+                    html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--glass-border);">' +
+                        '<div>' +
+                        '<span style="font-weight:600;">' + escapeHTML(u.nombre || 'Usuario') + '</span>' +
+                        (esCreador ? ' <span style="color:var(--gold);font-size:0.6rem;">👑 Admin</span>' : '') +
+                        (m.rol === 'moderador' ? ' <span style="color:var(--cyan);font-size:0.6rem;">🛡️ Mod</span>' :
+                            '') +
+                        (esYo ? ' <span style="color:var(--text-muted);font-size:0.6rem;">(tú)</span>' : '') +
+                        ' <span style="color:' + estadoColor + ';font-size:0.5rem;">● ' + estado + '</span>' +
+                        '</div>' +
+                        (esAdmin && !esCreador && !esYo ?
+                            '<div style="display:flex;gap:4px;flex-wrap:wrap;">' +
+                            (m.rol !== 'moderador' ?
+                                '<button class="btn-outline btn-sm" onclick="asignarModerador(\'' + m.usuario_id +
+                                '\')">🛡️ Mod</button> ' : '') +
+                            (m.rol === 'moderador' ?
+                                '<button class="btn-outline btn-sm" onclick="quitarModerador(\'' + m.usuario_id +
+                                '\')">🔽 Quitar Mod</button> ' : '') +
+                            (estado === 'activo' ?
+                                '<button class="btn-danger btn-sm" onclick="expulsarMiembro(\'' + m.usuario_id +
+                                '\')">🗑️ Expulsar</button> ' : '') +
+                            (estado === 'activo' ?
+                                '<button class="btn-danger btn-sm" onclick="bloquearMiembro(\'' + m.usuario_id +
+                                '\')">🚫 Bloquear</button>' : '') +
+                            '</div>' :
+                            '') +
+                        '</div>';
+                });
+
+                container.innerHTML = html;
+
+            } catch (e) {
+                console.error('Error cargando miembros admin:', e);
+                container.innerHTML =
+                '<div class="empty-state"><span class="icon">❌</span><h3>Error cargando miembros</h3></div>';
+            }
+        }
+
+        // ===== ADMIN: PUBLICACIONES =====
+        async function cargarAdminPublicaciones() {
+            var container = document.getElementById('adminContenido');
+            container.innerHTML = '<div class="empty-state"><span class="icon">⏳</span><h3>Cargando publicaciones...</h3></div>';
+
+            try {
+                var result = await window.supabase
+                    .from('grupos_video_publicaciones')
+                    .select(`
+                        *,
+                        usuarios:usuario_id (id, nombre, handle, avatar_url)
+                    `)
+                    .eq('grupo_id', grupoActualId)
+                    .order('created_at', { ascending: false });
+
+                if (result.error) throw result.error;
+
+                var publicaciones = result.data || [];
+
+                if (publicaciones.length === 0) {
+                    container.innerHTML =
+                        '<div class="empty-state"><span class="icon">📝</span><h3>Sin publicaciones</h3></div>';
+                    return;
+                }
+
+                var html = '<h4 style="color:var(--gold);font-size:0.8rem;margin-bottom:12px;">📝 Publicaciones (' +
+                    publicaciones.length + ')</h4>';
+
+                publicaciones.forEach(function(p) {
+                    var u = p.usuarios || {};
+                    var estado = p.estado || 'publicado';
+                    var estadoColor = estado === 'publicado' ? 'var(--success)' :
+                        estado === 'oculto' ? 'var(--warning)' :
+                        'var(--danger)';
+
+                    var contenido = escapeHTML(p.contenido || '');
+                    if (p.imagen_url) {
+                        contenido +=
+                            '<br><img src="' + escapeHTML(p.imagen_url) +
+                            '" style="max-width:100px;border-radius:8px;margin-top:4px;" />';
+                    }
+                    if (p.video_url) {
+                        contenido +=
+                            '<br><video src="' + escapeHTML(p.video_url) +
+                            '" style="max-width:100px;border-radius:8px;margin-top:4px;" controls></video>';
+                    }
+
+                    html += '<div style="padding:8px 0;border-bottom:1px solid var(--glass-border);">' +
+                        '<div style="font-weight:600;font-size:0.75rem;">' + escapeHTML(u.nombre || 'Usuario') +
+                        ' <span style="color:' + estadoColor + ';font-size:0.5rem;">● ' + estado + '</span></div>' +
+                        '<div style="font-size:0.7rem;color:var(--text-secondary);">' + contenido + '</div>' +
+                        '<div style="display:flex;gap:4px;margin-top:4px;flex-wrap:wrap;">' +
+                        (estado === 'publicado' && (esAdmin || esModerador) ?
+                            '<button class="btn-outline btn-sm" onclick="ocultarPublicacion(\'' + p.id +
+                            '\')">🙈 Ocultar</button>' :
+                            '') +
+                        (estado === 'oculto' && (esAdmin || esModerador) ?
+                            '<button class="btn-outline btn-sm" onclick="mostrarPublicacion(\'' + p.id +
+                            '\')">👁️ Mostrar</button>' :
+                            '') +
+                        ((esAdmin || esModerador) ?
+                            '<button class="btn-danger btn-sm" onclick="eliminarPublicacion(\'' + p.id +
+                            '\')">🗑️ Eliminar</button>' :
+                            '') +
+                        '</div>' +
+                        '</div>';
+                });
+
+                container.innerHTML = html;
+
+            } catch (e) {
+                console.error('Error cargando publicaciones admin:', e);
+                container.innerHTML =
+                    '<div class="empty-state"><span class="icon">❌</span><h3>Error cargando publicaciones</h3></div>';
+            }
+        }
+
+        // ===== ADMIN: SOLICITUDES =====
+        async function cargarAdminSolicitudes() {
+            var container = document.getElementById('adminContenido');
+            container.innerHTML = '<div class="empty-state"><span class="icon">⏳</span><h3>Cargando solicitudes...</h3></div>';
+
+            try {
+                var result = await window.supabase
+                    .from('grupos_video_solicitudes')
+                    .select(`
+                        *,
+                        usuarios:usuario_id (id, nombre, handle, avatar_url)
+                    `)
+                    .eq('grupo_id', grupoActualId)
+                    .eq('estado', 'pendiente')
+                    .order('created_at', { ascending: true });
+
+                if (result.error) throw result.error;
+
+                var solicitudes = result.data || [];
+
+                if (solicitudes.length === 0) {
+                    container.innerHTML =
+                        '<div class="empty-state"><span class="icon">📨</span><h3>Sin solicitudes pendientes</h3></div>';
+                    return;
+                }
+
+                var html = '<h4 style="color:var(--gold);font-size:0.8rem;margin-bottom:12px;">📨 Solicitudes pendientes (' +
+                    solicitudes.length + ')</h4>';
+
+                solicitudes.forEach(function(s) {
+                    var u = s.usuarios || {};
+                    html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--glass-border);">' +
+                        '<div><span style="font-weight:600;">' + escapeHTML(u.nombre || 'Usuario') +
+                        '</span><br><span style="font-size:0.6rem;color:var(--text-muted);">' + new Date(s
+                            .created_at).toLocaleString() + '</span></div>' +
+                        '<div style="display:flex;gap:4px;">' +
+                        '<button class="btn-gold btn-sm" onclick="aceptarSolicitud(\'' + s.id +
+                        '\')">✅ Aceptar</button>' +
+                        '<button class="btn-danger btn-sm" onclick="rechazarSolicitud(\'' + s.id +
+                        '\')">❌ Rechazar</button>' +
+                        '</div>' +
+                        '</div>';
+                });
+
+                container.innerHTML = html;
+
+            } catch (e) {
+                console.error('Error cargando solicitudes admin:', e);
+                container.innerHTML =
+                    '<div class="empty-state"><span class="icon">❌</span><h3>Error cargando solicitudes</h3></div>';
+            }
+        }
+
+        // ===== ADMIN: EDITAR GRUPO =====
+        async function cargarAdminEditar() {
+            var container = document.getElementById('adminContenido');
+            container.innerHTML = '<div class="empty-state"><span class="icon">⏳</span><h3>Cargando datos del grupo...</h3></div>';
+
+            try {
+                var result = await window.supabase
+                    .from('grupos_video')
+                    .select('*')
+                    .eq('id', grupoActualId)
+                    .single();
+
+                if (result.error) throw result.error;
+
+                var g = result.data;
+
+                var html = '<h4 style="color:var(--gold);font-size:0.8rem;margin-bottom:12px;">✏️ Editar grupo</h4>' +
+                    '<div class="form-group"><label>Nombre</label><input type="text" id="editGrupoNombre" value="' +
+                    escapeHTML(g.nombre || '') + '" /></div>' +
+                    '<div class="form-group"><label>Descripción</label><textarea id="editGrupoDescripcion" rows="2">' +
+                    escapeHTML(g.descripcion || '') + '</textarea></div>' +
+                    '<div class="form-group"><label>Ciudad</label><input type="text" id="editGrupoCiudad" value="' +
+                    escapeHTML(g.ciudad || '') + '" /></div>' +
+                    '<div class="form-group"><label>Visibilidad</label><select id="editGrupoVisibilidad">' +
+                    '<option value="publico"' + (g.visibilidad === 'publico' ? ' selected' : '') + '>Público</option>' +
+                    '<option value="privado"' + (g.visibilidad === 'privado' ? ' selected' : '') + '>Privado</option>' +
+                    '</select></div>' +
+                    '<div class="form-group"><label>Modo ingreso</label><select id="editGrupoModoIngreso">' +
+                    '<option value="abierto"' + (g.modo_ingreso === 'abierto' ? ' selected' : '') + '>Abierto</option>' +
+                    '<option value="solicitud"' + (g.modo_ingreso === 'solicitud' ? ' selected' : '') +
+                    '>Solicitud</option>' +
+                    '<option value="invitacion"' + (g.modo_ingreso === 'invitacion' ? ' selected' : '') +
+                    '>Invitación</option>' +
+                    '</select></div>' +
+                    '<button class="btn-gold" style="width:100%;justify-content:center;padding:10px;" onclick="guardarEdicionGrupo()">💾 Guardar cambios</button>';
+
+                container.innerHTML = html;
+
+            } catch (e) {
+                console.error('Error cargando edición:', e);
+                container.innerHTML =
+                    '<div class="empty-state"><span class="icon">❌</span><h3>Error cargando datos del grupo</h3></div>';
+            }
+        }
+
+        async function guardarEdicionGrupo() {
+            var nombre = document.getElementById('editGrupoNombre')?.value?.trim();
+            var descripcion = document.getElementById('editGrupoDescripcion')?.value?.trim();
+            var ciudad = document.getElementById('editGrupoCiudad')?.value?.trim();
+            var visibilidad = document.getElementById('editGrupoVisibilidad')?.value;
+            var modoIngreso = document.getElementById('editGrupoModoIngreso')?.value;
+
+            if (!nombre) { showToast('⚠️ El nombre es requerido', 'warning'); return; }
+
+            showToast('⏳ Guardando cambios...', '');
+
+            try {
+                var result = await window.supabase
+                    .from('grupos_video')
+                    .update({
+                        nombre: nombre,
+                        descripcion: descripcion || null,
+                        ciudad: ciudad || null,
+                        visibilidad: visibilidad,
+                        modo_ingreso: modoIngreso
+                    })
+                    .eq('id', grupoActualId)
+                    .select()
+                    .single();
+
+                if (result.error) throw result.error;
+
+                showToast('✅ Grupo actualizado', 'success');
+                cerrarModalAdmin();
+                await abrirGrupo(grupoActualId);
+                await cargarGrupos();
+
+            } catch (e) {
+                console.error('Error guardando edición:', e);
+                showToast('❌ Error al guardar: ' + e.message, 'error');
+            }
+        }
+
+        // ================================================================
+        // FUNCIONES DE ADMIN - USANDO RPC
+        // ================================================================
+
+        async function aceptarSolicitud(solicitudId) {
+            try {
+                var result = await window.supabase.rpc('aceptar_solicitud_grupo', {
+                    p_solicitud_id: solicitudId
+                });
+
+                if (result.error) throw result.error;
+
+                showToast('✅ Solicitud aceptada', 'success');
+                await cargarAdminSolicitudes();
+                await cargarPublicacionesGrupo(grupoActualId);
+
+            } catch (e) {
+                console.error('Error aceptando solicitud:', e);
+                showToast('❌ Error al aceptar solicitud: ' + e.message, 'error');
+            }
+        }
+
+        async function rechazarSolicitud(solicitudId) {
+            try {
+                var motivo = prompt('Motivo del rechazo:', '');
+                var result = await window.supabase.rpc('rechazar_solicitud_grupo', {
+                    p_solicitud_id: solicitudId,
+                    p_motivo: motivo || 'Rechazado por el administrador'
+                });
+
+                if (result.error) throw result.error;
+
+                showToast('❌ Solicitud rechazada', 'success');
+                await cargarAdminSolicitudes();
+
+            } catch (e) {
+                console.error('Error rechazando solicitud:', e);
+                showToast('❌ Error al rechazar solicitud: ' + e.message, 'error');
+            }
+        }
+
+        async function asignarModerador(usuarioId) {
+            if (!confirm('¿Asignar como moderador a este usuario?')) return;
+
+            try {
+                var result = await window.supabase.rpc('asignar_moderador_grupo', {
+                    p_grupo_id: grupoActualId,
+                    p_usuario_id: usuarioId
+                });
+
+                if (result.error) throw result.error;
+
+                showToast('✅ Moderador asignado', 'success');
+                await cargarAdminMiembros();
+
+            } catch (e) {
+                console.error('Error asignando moderador:', e);
+                showToast('❌ Error al asignar moderador: ' + e.message, 'error');
+            }
+        }
+
+        async function quitarModerador(usuarioId) {
+            if (!confirm('¿Quitar moderador a este usuario?')) return;
+
+            try {
+                var result = await window.supabase.rpc('quitar_moderador_grupo', {
+                    p_grupo_id: grupoActualId,
+                    p_usuario_id: usuarioId
+                });
+
+                if (result.error) throw result.error;
+
+                showToast('✅ Moderador removido', 'success');
+                await cargarAdminMiembros();
+
+            } catch (e) {
+                console.error('Error quitando moderador:', e);
+                showToast('❌ Error al quitar moderador: ' + e.message, 'error');
+            }
+        }
+
+        async function expulsarMiembro(usuarioId) {
+            if (!confirm('¿Expulsar a este miembro del grupo?')) return;
+
+            var motivo = prompt('Motivo de expulsión:', '');
+            if (motivo === null) return;
+
+            try {
+                var result = await window.supabase.rpc('expulsar_miembro_grupo', {
+                    p_grupo_id: grupoActualId,
+                    p_usuario_id: usuarioId,
+                    p_motivo: motivo || 'Expulsado por el administrador'
+                });
+
+                if (result.error) throw result.error;
+
+                showToast('🗑️ Miembro expulsado', 'success');
+                await cargarAdminMiembros();
+
+            } catch (e) {
+                console.error('Error expulsando miembro:', e);
+                showToast('❌ Error al expulsar: ' + e.message, 'error');
+            }
+        }
+
+        async function bloquearMiembro(usuarioId) {
+            if (!confirm('¿Bloquear a este miembro del grupo?')) return;
+
+            var motivo = prompt('Motivo de bloqueo:', '');
+            if (motivo === null) return;
+
+            try {
+                var result = await window.supabase.rpc('bloquear_miembro_grupo', {
+                    p_grupo_id: grupoActualId,
+                    p_usuario_id: usuarioId,
+                    p_motivo: motivo || 'Bloqueado por el administrador'
+                });
+
+                if (result.error) throw result.error;
+
+                showToast('🚫 Miembro bloqueado', 'success');
+                await cargarAdminMiembros();
+
+            } catch (e) {
+                console.error('Error bloqueando miembro:', e);
+                showToast('❌ Error al bloquear: ' + e.message, 'error');
+            }
+        }
+
+        async function ocultarPublicacion(publicacionId) {
+            var motivo = prompt('Motivo para ocultar:', 'Contenido inapropiado');
+            if (motivo === null) return;
+
+            try {
+                var result = await window.supabase.rpc('ocultar_publicacion_grupo', {
+                    p_publicacion_id: publicacionId,
+                    p_motivo: motivo || 'Ocultado por moderación'
+                });
+
+                if (result.error) throw result.error;
+
+                showToast('🙈 Publicación oculta', 'success');
+                await cargarAdminPublicaciones();
+
+            } catch (e) {
+                console.error('Error ocultando publicación:', e);
+                showToast('❌ Error al ocultar: ' + e.message, 'error');
+            }
+        }
+
+        async function mostrarPublicacion(publicacionId) {
+            try {
+                var result = await window.supabase.rpc('mostrar_publicacion_grupo', {
+                    p_publicacion_id: publicacionId
+                });
+
+                if (result.error) throw result.error;
+
+                showToast('👁️ Publicación visible', 'success');
+                await cargarAdminPublicaciones();
+
+            } catch (e) {
+                console.error('Error mostrando publicación:', e);
+                showToast('❌ Error al mostrar: ' + e.message, 'error');
+            }
+        }
+
+        async function eliminarPublicacion(publicacionId) {
+            if (!confirm('¿Eliminar esta publicación definitivamente?')) return;
+
+            var motivo = prompt('Motivo para eliminar:', 'Contenido inapropiado');
+            if (motivo === null) return;
+
+            try {
+                var result = await window.supabase.rpc('eliminar_publicacion_grupo', {
+                    p_publicacion_id: publicacionId,
+                    p_motivo: motivo || 'Eliminado por moderación'
+                });
+
+                if (result.error) throw result.error;
+
+                showToast('🗑️ Publicación eliminada', 'success');
+                await cargarAdminPublicaciones();
+
+            } catch (e) {
+                console.error('Error eliminando publicación:', e);
+                showToast('❌ Error al eliminar: ' + e.message, 'error');
             }
         }
 
@@ -1424,7 +2044,7 @@
         }
 
         // ================================================================
-        // CREAR GRUPO - VERSIÓN FINAL (SIN INSERT MANUAL EN MIEMBROS)
+        // CREAR GRUPO
         // ================================================================
         async function crearGrupo() {
             if (!sessionUser) {
@@ -1493,7 +2113,6 @@
 
                 var grupo = groupResult.data;
                 console.log('✅ Grupo creado:', grupo);
-                console.log('✅ Trigger agregó automáticamente al creador como administrador');
 
                 showToast('✅ Grupo "' + nombre + '" creado', 'success');
                 cerrarModalCrearGrupo();
@@ -1516,197 +2135,6 @@
         }
 
         // ================================================================
-        // ADMINISTRAR GRUPO
-        // ================================================================
-        async function abrirAdminGrupo() {
-            if (!esAdmin) { showToast('⚠️ No tienes permisos de administrador', 'error'); return; }
-            if (!grupoActualId) { showToast('⚠️ No hay grupo seleccionado', 'error'); return; }
-
-            document.getElementById('modalAdminGrupo').classList.add('show');
-            var container = document.getElementById('adminContenido');
-            container.innerHTML = '<div class="empty-state"><span class="icon">⏳</span><h3>Cargando miembros...</h3></div>';
-
-            try {
-                var membersResult = await window.supabase
-                    .from('grupos_video_miembros')
-                    .select(`
-                        *,
-                        usuarios:usuario_id (id, nombre, handle, avatar_url)
-                    `)
-                    .eq('grupo_id', grupoActualId)
-                    .order('created_at', { ascending: true });
-
-                if (membersResult.error) throw membersResult.error;
-
-                var miembros = membersResult.data || [];
-
-                var requestsResult = await window.supabase
-                    .from('grupos_video_solicitudes')
-                    .select(`
-                        *,
-                        usuarios:usuario_id (id, nombre, handle, avatar_url)
-                    `)
-                    .eq('grupo_id', grupoActualId)
-                    .eq('estado', 'pendiente')
-                    .order('created_at', { ascending: true });
-
-                if (requestsResult.error) throw requestsResult.error;
-                var solicitudes = requestsResult.data || [];
-
-                var html = '';
-
-                if (solicitudes.length > 0) {
-                    html += '<h4 style="color:var(--gold);font-size:0.8rem;margin-top:12px;">📨 Solicitudes pendientes</h4>';
-                    solicitudes.forEach(function(s) {
-                        var u = s.usuarios || {};
-                        html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--glass-border);">' +
-                            '<span>' + escapeHTML(u.nombre || 'Usuario') + ' @' + escapeHTML(u.handle || '') +
-                            '</span>' +
-                            '<div>' +
-                            '<button class="btn-gold btn-sm" onclick="aceptarSolicitud(\'' + s.id +
-                            '\')">✅ Aceptar</button> ' +
-                            '<button class="btn-danger btn-sm" onclick="rechazarSolicitud(\'' + s.id +
-                            '\')">❌ Rechazar</button>' +
-                            '</div>' +
-                            '</div>';
-                    });
-                }
-
-                html += '<h4 style="color:var(--gold);font-size:0.8rem;margin-top:12px;">👤 Miembros (' + miembros.length +
-                    ')</h4>';
-                miembros.forEach(function(m) {
-                    var u = m.usuarios || {};
-                    var esCreador = m.rol === 'administrador';
-                    var esYo = m.usuario_id === sessionUser?.id;
-
-                    html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--glass-border);">' +
-                        '<span>' + escapeHTML(u.nombre || 'Usuario') +
-                        (esCreador ? ' <span style="color:var(--gold);font-size:0.6rem;">👑 Admin</span>' : '') +
-                        (m.rol === 'moderador' ? ' <span style="color:var(--cyan);font-size:0.6rem;">🛡️ Mod</span>' :
-                            '') +
-                        (esYo ? ' <span style="color:var(--text-muted);font-size:0.6rem;">(tú)</span>' : '') +
-                        '</span>' +
-                        (esAdmin && !esCreador && !esYo ?
-                            '<div>' +
-                            (m.rol !== 'moderador' ?
-                                '<button class="btn-outline btn-sm" onclick="asignarModerador(\'' + m.usuario_id +
-                                '\')">🛡️ Moderador</button> ' : '') +
-                            '<button class="btn-danger btn-sm" onclick="expulsarMiembro(\'' + m.usuario_id +
-                            '\')">🗑️ Expulsar</button>' +
-                            '</div>' :
-                            '') +
-                        '</div>';
-                });
-
-                container.innerHTML = html;
-
-            } catch (e) {
-                console.error('Error cargando admin:', e);
-                container.innerHTML = '<div class="empty-state"><span class="icon">❌</span><h3>Error cargando administración</h3></div>';
-            }
-        }
-
-        function cerrarModalAdmin() {
-            document.getElementById('modalAdminGrupo').classList.remove('show');
-        }
-
-        // ================================================================
-        // FUNCIONES DE ADMIN
-        // ================================================================
-
-        async function aceptarSolicitud(solicitudId) {
-            try {
-                var result = await window.supabase
-                    .from('grupos_video_solicitudes')
-                    .update({ estado: 'aceptada' })
-                    .eq('id', solicitudId)
-                    .select()
-                    .single();
-
-                if (result.error) throw result.error;
-
-                var solicitud = result.data;
-
-                await window.supabase
-                    .from('grupos_video_miembros')
-                    .insert({
-                        grupo_id: solicitud.grupo_id,
-                        usuario_id: solicitud.usuario_id,
-                        rol: 'miembro',
-                        estado: 'activo'
-                    });
-
-                showToast('✅ Solicitud aceptada', 'success');
-                abrirAdminGrupo();
-                cargarPublicacionesGrupo(grupoActualId);
-
-            } catch (e) {
-                console.error('Error aceptando solicitud:', e);
-                showToast('❌ Error al aceptar solicitud', 'error');
-            }
-        }
-
-        async function rechazarSolicitud(solicitudId) {
-            try {
-                var result = await window.supabase
-                    .from('grupos_video_solicitudes')
-                    .update({ estado: 'rechazada' })
-                    .eq('id', solicitudId);
-
-                if (result.error) throw result.error;
-
-                showToast('❌ Solicitud rechazada', 'success');
-                abrirAdminGrupo();
-
-            } catch (e) {
-                console.error('Error rechazando solicitud:', e);
-                showToast('❌ Error al rechazar solicitud', 'error');
-            }
-        }
-
-        async function asignarModerador(usuarioId) {
-            if (!confirm('¿Asignar como moderador a este usuario?')) return;
-
-            try {
-                var result = await window.supabase
-                    .from('grupos_video_miembros')
-                    .update({ rol: 'moderador' })
-                    .eq('grupo_id', grupoActualId)
-                    .eq('usuario_id', usuarioId);
-
-                if (result.error) throw result.error;
-
-                showToast('✅ Moderador asignado', 'success');
-                abrirAdminGrupo();
-
-            } catch (e) {
-                console.error('Error asignando moderador:', e);
-                showToast('❌ Error al asignar moderador', 'error');
-            }
-        }
-
-        async function expulsarMiembro(usuarioId) {
-            if (!confirm('¿Expulsar a este miembro del grupo?')) return;
-
-            try {
-                var result = await window.supabase
-                    .from('grupos_video_miembros')
-                    .delete()
-                    .eq('grupo_id', grupoActualId)
-                    .eq('usuario_id', usuarioId);
-
-                if (result.error) throw result.error;
-
-                showToast('🗑️ Miembro expulsado', 'success');
-                abrirAdminGrupo();
-
-            } catch (e) {
-                console.error('Error expulsando miembro:', e);
-                showToast('❌ Error al expulsar miembro', 'error');
-            }
-        }
-
-        // ================================================================
         // FUNCIONES DE UTILIDAD PARA PUBLICACIONES
         // ================================================================
 
@@ -1721,31 +2149,20 @@
         }
 
         // ================================================================
-        // 🎯 SELECTOR DE EMOJIS - ACTUALIZADO CON TODOS LOS EMOJIS
+        // 🎯 SELECTOR DE EMOJIS
         // ================================================================
 
         var emojisDisponibles = [
-            // Unicode 17.0 (2025)
             '🧌', '🫨', '🪭', '🐋', '🧰', '💥',
-            // Unicode 18.0 (2026)
             '🫩', '👈', '👉', '🦋', '🥒', '🗼', '☄️', '🧽', '🪤', '🩹',
-            // Dinero / Ganancia
             '💸', '💵', '💴', '💶', '💷', '🪙', '💰', '💳', '💎',
-            // Fuego / Viral
             '🔥', '⚡', '✨', '🌟', '💫', '🚀', '🪐',
-            // Ojitos / Chisme
             '👀', '👁️', '👁️‍🗨️', '🤩', '😍', '😳', '🫣',
-            // Manitas / Señalando
             '👉', '👈', '☝️', '👇', '🫵', '🤏', '✋', '🤚', '👋',
-            // Caritas pa vender
             '🥹', '🥺', '😍', '🤩', '🤤', '😎', '😏', '🤗', '🫶', '🥰', '😘',
-            // Tiempo / Correle
             '⏰', '⏳', '⌛', '⏲️', '🚨', '⚠️',
-            // Check / Apartado
             '✅', '☑️', '✔️', '🔒', '📌', '📍', '📝',
-            // Cajas / Envío
             '📦', '📤', '📥', '🚚', '🚀', '🏍️', '💨',
-            // Corazones
             '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '💖', '💝', '💘', '💗'
         ];
 
@@ -1756,7 +2173,6 @@
                 picker.classList.remove('show');
                 return;
             }
-            // Llenar la grilla si está vacía
             var grid = document.getElementById('emojiGridGrupo');
             if (grid && grid.children.length === 0) {
                 emojisDisponibles.forEach(function(emoji) {
@@ -1787,7 +2203,6 @@
             input.dispatchEvent(new Event('input', { bubbles: true }));
         }
 
-        // Función legacy para compatibilidad (redirige al selector)
         function insertarEmojiGrupo() {
             toggleEmojiPickerGrupo();
         }
@@ -1805,17 +2220,6 @@
             input.value = texto.substring(0, start) + '#' + texto.substring(end);
             input.focus();
             input.selectionStart = input.selectionEnd = start + 1;
-        }
-
-        // ================================================================
-        // SUBIR FOTO / VIDEO (placeholder - integra con Storage)
-        // ================================================================
-        function abrirSubirFoto() {
-            showToast('📷 Función de subir foto en desarrollo', 'warning');
-        }
-
-        function abrirSubirVideo() {
-            showToast('🎥 Función de subir video en desarrollo', 'warning');
         }
 
         // ================================================================
@@ -1858,7 +2262,6 @@
                 cargarGrupos();
             });
 
-            // Cerrar modales con ESC
             document.addEventListener('keydown', function(e) {
                 if (e.key === 'Escape') {
                     cerrarModalCrearGrupo();
@@ -1867,7 +2270,6 @@
                 }
             });
 
-            // Cerrar modales al hacer clic fuera
             document.querySelectorAll('.modal-overlay').forEach(function(modal) {
                 modal.addEventListener('click', function(e) {
                     if (e.target === this) {
@@ -1876,7 +2278,6 @@
                 });
             });
 
-            // Enter para comentar
             document.addEventListener('keydown', function(e) {
                 if (e.key === 'Enter') {
                     var input = e.target;
@@ -1896,6 +2297,8 @@
         window.abrirGrupo = abrirGrupo;
         window.volverALista = volverALista;
         window.publicarEnGrupo = publicarEnGrupo;
+        window.subirFotoGrupo = subirFotoGrupo;
+        window.subirVideoGrupo = subirVideoGrupo;
         window.reaccionarPublicacion = reaccionarPublicacion;
         window.toggleComentariosPublicacion = toggleComentariosPublicacion;
         window.enviarComentarioPublicacion = enviarComentarioPublicacion;
@@ -1908,16 +2311,24 @@
         window.crearGrupo = crearGrupo;
         window.abrirAdminGrupo = abrirAdminGrupo;
         window.cerrarModalAdmin = cerrarModalAdmin;
+        window.cargarAdminMiembros = cargarAdminMiembros;
+        window.cargarAdminPublicaciones = cargarAdminPublicaciones;
+        window.cargarAdminSolicitudes = cargarAdminSolicitudes;
+        window.cargarAdminEditar = cargarAdminEditar;
+        window.guardarEdicionGrupo = guardarEdicionGrupo;
         window.aceptarSolicitud = aceptarSolicitud;
         window.rechazarSolicitud = rechazarSolicitud;
         window.asignarModerador = asignarModerador;
+        window.quitarModerador = quitarModerador;
         window.expulsarMiembro = expulsarMiembro;
+        window.bloquearMiembro = bloquearMiembro;
+        window.ocultarPublicacion = ocultarPublicacion;
+        window.mostrarPublicacion = mostrarPublicacion;
+        window.eliminarPublicacion = eliminarPublicacion;
         window.abrirFormPublicacion = abrirFormPublicacion;
         window.insertarEmojiGrupo = insertarEmojiGrupo;
         window.toggleEmojiPickerGrupo = toggleEmojiPickerGrupo;
         window.insertarHashtagGrupo = insertarHashtagGrupo;
-        window.abrirSubirFoto = abrirSubirFoto;
-        window.abrirSubirVideo = abrirSubirVideo;
         window.toggleMisGrupos = toggleMisGrupos;
         window.verTokens = verTokens;
         window.showToast = showToast;
@@ -1926,6 +2337,5 @@
         window.enviarRegalo = enviarRegalo;
         window.verificarRegalo = verificarRegalo;
     </script>
-
 </body>
 </html>
