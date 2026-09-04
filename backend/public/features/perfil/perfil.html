@@ -8,9 +8,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
     
     <style>
-        /* ================================================================
-           PERFIL - TODOS LOS ESTILOS
-           ================================================================ */
         :root {
             --gold: #D4AF37;
             --gold-dark: #b8923a;
@@ -804,7 +801,7 @@
             </div>
 
             <!-- ================================================================ -->
-            <!-- TAB ACTIVIDAD - CORREGIDO CON PUBLICACIONES -->
+            <!-- TAB ACTIVIDAD - CON PUBLICACIONES -->
             <!-- ================================================================ -->
             <div id="tab-actividad" class="tab-content active">
                 <div class="panel">
@@ -1015,6 +1012,9 @@
 
     <div class="toast" id="toast"></div>
 
+    <!-- ================================================================ -->
+    <!-- MODALES EXISTENTES -->
+    <!-- ================================================================ -->
     <div class="modal-overlay" id="nftModal">
         <div class="modal-content">
             <button class="close-btn" onclick="cerrarModal('nftModal')">✕</button>
@@ -1073,6 +1073,10 @@
         // FUNCIONES DE PERFIL
         // ================================================================
 
+        // ===== VARIABLES GLOBALES =====
+        var sessionUser = null;
+        var likeCache = new Map();
+
         // ===== TOAST =====
         function showToast(msg, type) {
             var t = document.getElementById('toast');
@@ -1092,6 +1096,14 @@
             t._timeout = setTimeout(function() { t.classList.remove('show'); }, 3500);
         }
 
+        // ===== ESCAPE HTML =====
+        function escapeHTML(texto) {
+            if (!texto) return '';
+            var div = document.createElement('div');
+            div.textContent = texto;
+            return div.innerHTML;
+        }
+
         // ===== CAMBIAR TAB =====
         function cambiarTab(tab) {
             var contents = document.querySelectorAll('.tab-content');
@@ -1108,7 +1120,10 @@
             if (tabBtn) tabBtn.classList.add('active');
         }
 
-        // ===== CARGAR PERFIL =====
+        // ================================================================
+        // CARGAR PERFIL
+        // ================================================================
+
         async function cargarPerfil() {
             try {
                 if (typeof window.supabase === 'undefined') {
@@ -1124,10 +1139,12 @@
                     return;
                 }
 
+                sessionUser = sessionResult.data.session.user;
+
                 var userResult = await window.supabase
                     .from('usuarios')
                     .select('*')
-                    .eq('id', sessionResult.data.session.user.id)
+                    .eq('id', sessionUser.id)
                     .single();
 
                 if (userResult.error) throw userResult.error;
@@ -1202,7 +1219,7 @@
         }
 
         // ================================================================
-        // 📸 PUBLICACIONES - CORREGIDO (usuario_id eliminado)
+        // 📸 PUBLICACIONES
         // ================================================================
 
         // ===== ABRIR MODAL DE PUBLICACIÓN =====
@@ -1231,7 +1248,7 @@
             };
         }
 
-        // ===== PUBLICAR CONTENIDO - CORREGIDO (STORAGE PATH FIX) =====
+        // ===== PUBLICAR CONTENIDO =====
         async function publicarContenido() {
             var texto = document.getElementById('pubTexto').value.trim();
             var fileInput = document.getElementById('pubArchivo');
@@ -1246,7 +1263,6 @@
             var sessionResult = await window.supabase.auth.getSession();
             if (sessionResult.error || !sessionResult.data.session) {
                 status.textContent = '⚠️ Inicia sesión para publicar';
-                console.error('❌ Error de sesión:', sessionResult.error);
                 return;
             }
 
@@ -1262,24 +1278,19 @@
                 if (fileInput.files.length > 0) {
                     var file = fileInput.files[0];
                     var fileExt = file.name.split('.').pop();
-                    // ✅ CORREGIDO: Path correcto para Storage RLS (sin carpeta "publicaciones/")
                     var filePath = userId + '/' + Date.now() + '.' + fileExt;
 
                     var uploadResult = await window.supabase.storage
                         .from('publicaciones')
                         .upload(filePath, file, { cacheControl: '3600', upsert: true });
 
-                    if (uploadResult.error) {
-                        console.error('❌ Error subiendo archivo:', uploadResult.error);
-                        throw uploadResult.error;
-                    }
+                    if (uploadResult.error) throw uploadResult.error;
 
                     var urlData = window.supabase.storage.from('publicaciones').getPublicUrl(filePath);
                     mediaUrl = urlData.data.publicUrl;
                     mediaType = file.type.startsWith('image/') ? 'imagen' : 'video';
                 }
 
-                // ✅ INSERT en publicaciones (usuario_id lo asigna DEFAULT auth.uid())
                 var insertResult = await window.supabase
                     .from('publicaciones')
                     .insert({
@@ -1289,10 +1300,7 @@
                         estado: 'publicado'
                     });
 
-                if (insertResult.error) {
-                    console.error('❌ Error insert:', insertResult.error);
-                    throw insertResult.error;
-                }
+                if (insertResult.error) throw insertResult.error;
 
                 status.textContent = '✅ Publicación creada!';
                 showToast('📸 Publicación subida correctamente', 'success');
@@ -1310,7 +1318,10 @@
             }
         }
 
-        // ===== CARGAR PUBLICACIONES DEL USUARIO =====
+        // ================================================================
+        // 📋 CARGAR PUBLICACIONES
+        // ================================================================
+
         async function cargarPublicaciones() {
             try {
                 var sessionResult = await window.supabase.auth.getSession();
@@ -1354,7 +1365,7 @@
                     }
                     var contenido = p.contenido ? '<div class="pub-texto">' + escapeHTML(p.contenido) + '</div>' : '';
 
-                    return '<div class="publicacion-item">' +
+                    return '<div class="publicacion-item" data-id="' + p.id + '">' +
                         '<div class="pub-header">' +
                         '<div class="avatar-mini">' + avatar + '</div>' +
                         '<span class="pub-nombre">' + nombre + '</span>' +
@@ -1363,11 +1374,14 @@
                         contenido +
                         mediaHtml +
                         '<div class="pub-actions">' +
-                        '<span>❤️ <span>' + (p.likes || 0) + '</span></span>' +
-                        '<span>💬 <span>' + (p.comentarios || 0) + '</span></span>' +
+                        '<span class="like-btn" data-id="' + p.id + '" onclick="toggleLike(\'' + p.id + '\')">❤️ <span class="likes-count">' + (p.likes || 0) + '</span></span>' +
+                        '<span class="comment-btn" onclick="abrirModalComentarios(\'' + p.id + '\')">💬 <span>' + (p.comentarios || 0) + '</span></span>' +
                         '</div>' +
                         '</div>';
                 }).join('');
+
+                // Actualizar estado de likes después de renderizar
+                actualizarEstadoLikes();
 
             } catch (error) {
                 console.error('Error cargando publicaciones:', error);
@@ -1375,7 +1389,244 @@
             }
         }
 
-        // ===== SUBIR FOTO =====
+        // ================================================================
+        // ❤️ LIKES - FUNCIONES DE INTERACCIÓN
+        // ================================================================
+
+        async function toggleLike(publicacionId) {
+            if (!sessionUser) {
+                showToast('⚠️ Inicia sesión para dar like', 'warning');
+                return;
+            }
+
+            try {
+                var key = publicacionId + '_' + sessionUser.id;
+
+                // Verificar si ya dio like
+                var liked = likeCache.get(key) || false;
+
+                if (liked) {
+                    // QUITAR LIKE
+                    var deleteResult = await window.supabase
+                        .from('publicaciones_likes')
+                        .delete()
+                        .eq('publicacion_id', publicacionId)
+                        .eq('usuario_id', sessionUser.id);
+
+                    if (deleteResult.error) throw deleteResult.error;
+
+                    likeCache.set(key, false);
+
+                    // Actualizar UI
+                    var likeBtn = document.querySelector('.like-btn[data-id="' + publicacionId + '"]');
+                    if (likeBtn) {
+                        var countSpan = likeBtn.querySelector('.likes-count');
+                        var currentCount = parseInt(countSpan.textContent) || 0;
+                        countSpan.textContent = Math.max(0, currentCount - 1);
+                        likeBtn.style.color = '';
+                    }
+
+                } else {
+                    // DAR LIKE
+                    var insertResult = await window.supabase
+                        .from('publicaciones_likes')
+                        .insert({
+                            publicacion_id: publicacionId,
+                            usuario_id: sessionUser.id
+                        });
+
+                    if (insertResult.error) {
+                        // Si es error de duplicado, ignorar
+                        if (insertResult.error.code === '23505') {
+                            likeCache.set(key, true);
+                            return;
+                        }
+                        throw insertResult.error;
+                    }
+
+                    likeCache.set(key, true);
+
+                    // Actualizar UI
+                    var likeBtn = document.querySelector('.like-btn[data-id="' + publicacionId + '"]');
+                    if (likeBtn) {
+                        var countSpan = likeBtn.querySelector('.likes-count');
+                        var currentCount = parseInt(countSpan.textContent) || 0;
+                        countSpan.textContent = currentCount + 1;
+                        likeBtn.style.color = '#ff3366';
+                    }
+                }
+
+            } catch (error) {
+                console.error('Error toggling like:', error);
+                showToast('❌ Error al procesar like', 'error');
+            }
+        }
+
+        // ===== ACTUALIZAR ESTADO DE LIKES AL CARGAR =====
+        async function actualizarEstadoLikes() {
+            if (!sessionUser) return;
+
+            try {
+                var result = await window.supabase
+                    .from('publicaciones_likes')
+                    .select('publicacion_id')
+                    .eq('usuario_id', sessionUser.id);
+
+                if (result.error) throw result.error;
+
+                var likedPosts = result.data || [];
+                likedPosts.forEach(function(item) {
+                    likeCache.set(item.publicacion_id + '_' + sessionUser.id, true);
+                });
+
+                // Aplicar estilos a los botones
+                likedPosts.forEach(function(item) {
+                    var likeBtn = document.querySelector('.like-btn[data-id="' + item.publicacion_id + '"]');
+                    if (likeBtn) {
+                        likeBtn.style.color = '#ff3366';
+                    }
+                });
+
+            } catch (error) {
+                console.error('Error actualizando estado de likes:', error);
+            }
+        }
+
+        // ================================================================
+        // 💬 COMENTARIOS - FUNCIONES DE INTERACCIÓN
+        // ================================================================
+
+        // Variable para almacenar el ID de la publicación activa en comentarios
+        var publicacionActivaComentarios = null;
+
+        function abrirModalComentarios(publicacionId) {
+            publicacionActivaComentarios = publicacionId;
+
+            // Crear modal dinámico si no existe
+            var modal = document.getElementById('modalComentarios');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'modalComentarios';
+                modal.className = 'modal-overlay';
+                modal.innerHTML = `
+                    <div class="modal-content" style="max-width:500px;text-align:left;">
+                        <button class="close-btn" onclick="cerrarModalComentarios()">✕</button>
+                        <h2 style="text-align:center;">💬 Comentarios</h2>
+                        <div id="comentariosList" style="max-height:300px;overflow-y:auto;margin:12px 0;">
+                            <div style="color:var(--text-muted);text-align:center;padding:20px;">Cargando comentarios...</div>
+                        </div>
+                        <div style="display:flex;gap:8px;margin-top:8px;">
+                            <input type="text" id="inputComentario" placeholder="Escribe un comentario..." style="flex:1;padding:8px 14px;background:rgba(0,0,0,0.25);border:1px solid var(--glass-border);border-radius:10px;color:var(--text-primary);font-size:0.85rem;outline:none;">
+                            <button class="btn btn-gold" onclick="enviarComentario()" style="padding:8px 16px;">Enviar</button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+            }
+
+            modal.classList.add('active');
+            cargarComentarios(publicacionId);
+        }
+
+        function cerrarModalComentarios() {
+            var modal = document.getElementById('modalComentarios');
+            if (modal) modal.classList.remove('active');
+            publicacionActivaComentarios = null;
+        }
+
+        async function cargarComentarios(publicacionId) {
+            try {
+                var result = await window.supabase
+                    .from('publicaciones_comentarios')
+                    .select('*, usuarios:usuario_id (id, nombre, handle, avatar_url)')
+                    .eq('publicacion_id', publicacionId)
+                    .order('created_at', { ascending: true });
+
+                if (result.error) throw result.error;
+
+                var container = document.getElementById('comentariosList');
+                var data = result.data || [];
+
+                if (data.length === 0) {
+                    container.innerHTML = '<div style="color:var(--text-muted);text-align:center;padding:20px;">Sin comentarios. Sé el primero.</div>';
+                    return;
+                }
+
+                container.innerHTML = data.map(function(c) {
+                    var u = c.usuarios || {};
+                    var avatar = u.avatar_url ? '<img src="' + escapeHTML(u.avatar_url) + '" style="width:100%;height:100%;object-fit:cover;">' : '◈';
+                    var nombre = escapeHTML(u.nombre || 'Usuario');
+                    var fecha = new Date(c.created_at).toLocaleString();
+                    return '<div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid rgba(212,175,55,0.04);">' +
+                        '<div style="width:28px;height:28px;border-radius:50%;overflow:hidden;background:linear-gradient(135deg,var(--green-deep),var(--gold));display:flex;align-items:center;justify-content:center;font-size:0.6rem;color:white;flex-shrink:0;">' + avatar + '</div>' +
+                        '<div style="flex:1;">' +
+                        '<strong style="color:var(--gold);font-size:0.75rem;">' + nombre + '</strong>' +
+                        '<span style="font-size:0.6rem;color:var(--text-muted);margin-left:6px;">' + fecha + '</span>' +
+                        '<div style="font-size:0.8rem;color:var(--text-secondary);">' + escapeHTML(c.contenido) + '</div>' +
+                        '</div>' +
+                        '</div>';
+                }).join('');
+
+            } catch (error) {
+                console.error('Error cargando comentarios:', error);
+                document.getElementById('comentariosList').innerHTML = '<div style="color:var(--danger);text-align:center;padding:20px;">Error al cargar comentarios</div>';
+            }
+        }
+
+        async function enviarComentario() {
+            var input = document.getElementById('inputComentario');
+            var texto = input.value.trim();
+
+            if (!texto) {
+                showToast('⚠️ Escribe un comentario', 'warning');
+                return;
+            }
+
+            if (!sessionUser) {
+                showToast('⚠️ Inicia sesión para comentar', 'error');
+                return;
+            }
+
+            if (!publicacionActivaComentarios) {
+                showToast('⚠️ No hay publicación seleccionada', 'error');
+                return;
+            }
+
+            try {
+                var result = await window.supabase
+                    .from('publicaciones_comentarios')
+                    .insert({
+                        publicacion_id: publicacionActivaComentarios,
+                        usuario_id: sessionUser.id,
+                        contenido: texto
+                    });
+
+                if (result.error) throw result.error;
+
+                input.value = '';
+                showToast('✅ Comentario agregado', 'success');
+
+                // Recargar comentarios
+                cargarComentarios(publicacionActivaComentarios);
+
+                // Actualizar contador en la publicación
+                var commentBtn = document.querySelector('.comment-btn[onclick*="' + publicacionActivaComentarios + '"]');
+                if (commentBtn) {
+                    var countSpan = commentBtn.querySelector('span');
+                    var currentCount = parseInt(countSpan.textContent) || 0;
+                    countSpan.textContent = currentCount + 1;
+                }
+
+            } catch (error) {
+                console.error('Error enviando comentario:', error);
+                showToast('❌ Error al enviar comentario: ' + error.message, 'error');
+            }
+        }
+
+        // ================================================================
+        // SUBIR FOTO
+        // ================================================================
+
         function abrirSelectorArchivo() {
             var input = document.getElementById('fileInput');
             if (input) input.click();
@@ -1444,18 +1695,9 @@
         }
 
         // ================================================================
-        // ESCAPE HTML
-        // ================================================================
-        function escapeHTML(texto) {
-            if (!texto) return '';
-            var div = document.createElement('div');
-            div.textContent = texto;
-            return div.innerHTML;
-        }
-
-        // ================================================================
         // GUARDAR PERFIL
         // ================================================================
+
         async function guardarPerfil() {
             var nombre = document.getElementById('editNombre')?.value?.trim();
             var handle = document.getElementById('editHandle')?.value?.trim().replace('@', '');
@@ -1493,6 +1735,7 @@
         // ================================================================
         // WALLET
         // ================================================================
+
         async function conectarWallet() {
             if (typeof window.ethereum === 'undefined') {
                 showToast('⚠️ Instala MetaMask para continuar', 'warning');
@@ -1559,6 +1802,7 @@
         // ================================================================
         // COMPRAR DOMO / CANJEAR NFT
         // ================================================================
+
         async function comprarDomo(cantidad) {
             var sessionResult = await window.supabase.auth.getSession();
             if (!sessionResult.data.session) {
@@ -1609,6 +1853,7 @@
         // ================================================================
         // QR
         // ================================================================
+
         async function escanearQR() {
             var input = document.getElementById('qrInput');
             if (!input) return;
@@ -1815,6 +2060,7 @@
         // ================================================================
         // eSIM
         // ================================================================
+
         async function comprarESIM(cantidad) {
             var sessionResult = await window.supabase.auth.getSession();
             if (!sessionResult.data.session) {
@@ -2007,6 +2253,7 @@
         // ================================================================
         // ESTADO Y CONEXIÓN
         // ================================================================
+
         function cambiarEstado(activo) {
             showToast(activo ? '✅ Estado: Activo' : '⭕ Estado: Inactivo', 'success');
         }
@@ -2018,6 +2265,7 @@
         // ================================================================
         // CRIPTO
         // ================================================================
+
         function comprarConCripto() {
             var modal = document.getElementById('cryptoPaymentModal');
             if (modal) {
@@ -2040,6 +2288,7 @@
         // ================================================================
         // SESIÓN
         // ================================================================
+
         function cerrarSesion() {
             if (confirm('¿Seguro que quieres cerrar sesión?')) {
                 showToast('👋 Sesión cerrada', 'success');
@@ -2052,6 +2301,7 @@
         // ================================================================
         // MODALES
         // ================================================================
+
         function cerrarModal(modalId) {
             var modal = document.getElementById(modalId);
             if (modal) modal.classList.remove('active');
@@ -2068,6 +2318,7 @@
         // ================================================================
         // PERFIL - EXTRAS
         // ================================================================
+
         function editarPerfil() {
             cambiarTab('config');
             showToast('✏️ Edita tu perfil en la pestaña Ajustes', '');
@@ -2107,6 +2358,7 @@
         // ================================================================
         // ERRORES
         // ================================================================
+
         function mostrarErrorEnPantalla(mensaje) {
             var banner = document.getElementById('errorBanner');
             var texto = document.getElementById('errorBannerText');
@@ -2127,16 +2379,33 @@
         // ================================================================
         // INICIALIZACIÓN
         // ================================================================
+
         document.addEventListener('DOMContentLoaded', function() {
             console.log('✅ Perfil cargado - Cargando datos...');
             setTimeout(function() {
                 cargarPerfil();
             }, 500);
+
+            // Cerrar modal de comentarios con ESC
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    cerrarModalComentarios();
+                }
+            });
+
+            // Cerrar modal de comentarios al hacer clic fuera
+            document.addEventListener('click', function(e) {
+                var modal = document.getElementById('modalComentarios');
+                if (modal && modal.classList.contains('active') && e.target === modal) {
+                    cerrarModalComentarios();
+                }
+            });
         });
 
         // ================================================================
         // EXPOSICIÓN GLOBAL
         // ================================================================
+
         window.editarPerfil = editarPerfil;
         window.compartirPerfil = compartirPerfil;
         window.generarQRPerfil = generarQRPerfil;
@@ -2163,6 +2432,7 @@
         window.desconectarWallet = desconectarWallet;
         window.cerrarSesion = cerrarSesion;
         window.cerrarModal = cerrarModal;
+        window.cerrarModalComentarios = cerrarModalComentarios;
         window.abrirModalNft = abrirModalNft;
         window.showToast = showToast;
         window.mostrarErrorEnPantalla = mostrarErrorEnPantalla;
@@ -2171,6 +2441,10 @@
         window.abrirModalPublicacion = abrirModalPublicacion;
         window.publicarContenido = publicarContenido;
         window.cargarPublicaciones = cargarPublicaciones;
+        window.toggleLike = toggleLike;
+        window.abrirModalComentarios = abrirModalComentarios;
+        window.enviarComentario = enviarComentario;
+        window.cargarComentarios = cargarComentarios;
     </script>
 
 </body>
