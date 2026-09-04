@@ -1,6 +1,6 @@
 <!-- ================================================================
      GRUPOS - SARIEL'S ECOSYSTEM
-     VERSIÓN PRODUCCIÓN - CORREGIDO CON ESTRUCTURA REAL SUPABASE
+     VERSIÓN PRODUCCIÓN - CORREGIDO (SIN INSERT MANUAL EN MIEMBROS)
      ================================================================ -->
 <!DOCTYPE html>
 <html lang="es">
@@ -1342,7 +1342,7 @@
         }
 
         // ================================================================
-        // CREAR GRUPO - CORREGIDO CON ESTRUCTURA REAL DE SUPABASE
+        // CREAR GRUPO - CORREGIDO (SIN INSERT MANUAL EN MIEMBROS)
         // ================================================================
         async function crearGrupo() {
             if (!sessionUser) {
@@ -1435,6 +1435,7 @@
                 console.log('📝 Insertando grupo con categoria_id:', categoriaId);
 
                 // ✅ 2. Insertar grupo con columnas REALES
+                // ✅ EL TRIGGER AGREGA AL CREADOR COMO ADMIN AUTOMÁTICAMENTE
                 var groupResult = await window.supabase
                     .from('grupos_video')
                     .insert({
@@ -1459,23 +1460,7 @@
 
                 var grupo = groupResult.data;
                 console.log('✅ Grupo creado:', grupo);
-
-                // ✅ 3. Insertar creador como administrador
-                var memberResult = await window.supabase
-                    .from('grupos_video_miembros')
-                    .insert({
-                        grupo_id: grupo.id,
-                        usuario_id: sessionUser.id,
-                        rol: 'administrador',
-                        estado: 'activo'
-                    });
-
-                if (memberResult.error) {
-                    console.error('❌ Error en INSERT miembro:', memberResult.error);
-                    throw memberResult.error;
-                }
-
-                console.log('✅ Miembro administrador creado');
+                console.log('✅ Trigger agregó automáticamente al creador como administrador');
 
                 showToast('✅ Grupo "' + nombre + '" creado', 'success');
                 cerrarModalCrearGrupo();
