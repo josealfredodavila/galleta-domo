@@ -231,6 +231,26 @@
         }
         .modal .btn-guardar { width: 100%; padding: 10px; border-radius: 30px; border: none; background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); font-weight: 700; font-size: 0.85rem; cursor: pointer; }
         .modal .btn-guardar:hover { transform: scale(1.02); }
+        .modal .btn-eliminar-grupo {
+            width: 100%; padding: 10px; border-radius: 30px; border: none;
+            background: rgba(255, 51, 102, 0.1); color: var(--danger);
+            border: 1px solid rgba(255, 51, 102, 0.2);
+            font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: var(--transition);
+            margin-top: 8px;
+        }
+        .modal .btn-eliminar-grupo:hover {
+            background: rgba(255, 51, 102, 0.2);
+            transform: scale(1.02);
+        }
+        .modal .btn-confirmar-eliminar {
+            width: 100%; padding: 10px; border-radius: 30px; border: none;
+            background: var(--danger); color: #fff;
+            font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: var(--transition);
+        }
+        .modal .btn-confirmar-eliminar:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 30px rgba(255, 51, 102, 0.3);
+        }
 
         .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); }
         .empty-state .icon { font-size: 2.5rem; display: block; margin-bottom: 12px; color: var(--gold); opacity: 0.3; }
@@ -467,6 +487,39 @@
                     <button class="btn-gold btn-sm" onclick="cargarAdminSolicitudes()" style="flex:1;">📨 Solicitudes</button>
                     <button class="btn-gold btn-sm" onclick="cargarAdminEditar()" style="flex:1;">✏️ Editar grupo</button>
                 </div>
+                <!-- ===== BOTÓN ELIMINAR GRUPO ===== -->
+                <div style="margin-top:16px; border-top:1px solid var(--glass-border); padding-top:16px;">
+                    <button class="btn-eliminar-grupo" onclick="mostrarConfirmacionEliminarGrupo()">🗑️ Eliminar grupo</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- MODAL CONFIRMAR ELIMINAR GRUPO -->
+        <!-- ============================================================ -->
+        <div class="modal-overlay" id="modalConfirmarEliminarGrupo">
+            <div class="modal">
+                <div class="modal-header">
+                    <h2 style="color:var(--danger);">⚠️ Eliminar grupo</h2>
+                    <button class="btn-cerrar" onclick="cerrarConfirmacionEliminarGrupo()">✕</button>
+                </div>
+                <div style="padding:12px 0;">
+                    <p style="color:var(--text-secondary); font-size:0.9rem; margin-bottom:12px;">
+                        ¿Eliminar este grupo?
+                    </p>
+                    <p style="color:var(--danger); font-size:0.85rem; font-weight:600; margin-bottom:8px;">
+                        ⚠️ Esta acción es permanente.
+                    </p>
+                    <p style="color:var(--text-muted); font-size:0.8rem; margin-bottom:16px;">
+                        Se eliminarán el grupo y su contenido asociado (publicaciones, comentarios, miembros, etc.).
+                        Esta acción no se puede deshacer.
+                    </p>
+                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                        <button class="btn-outline" onclick="cerrarConfirmacionEliminarGrupo()" style="flex:1; text-align:center;">Cancelar</button>
+                        <button class="btn-confirmar-eliminar" onclick="ejecutarEliminarGrupo()" style="flex:1; text-align:center;">🗑️ Eliminar grupo</button>
+                    </div>
+                    <div id="eliminarGrupoStatus" style="margin-top:12px; font-size:0.75rem; color:var(--text-muted); text-align:center;"></div>
+                </div>
             </div>
         </div>
 
@@ -530,6 +583,7 @@
         var soloMisGrupos = false;
         var categoriasCache = [];
         var publicando = false;
+        var eliminandoGrupo = false;
 
         // ===== TOAST =====
         function showToast(msg, type) {
@@ -1739,6 +1793,196 @@
         }
 
         // ================================================================
+        // 🗑️ ELIMINAR GRUPO - NUEVA FUNCIONALIDAD
+        // ================================================================
+
+        /**
+         * Muestra el modal de confirmación para eliminar el grupo.
+         * Solo visible para creador o administrador.
+         */
+        function mostrarConfirmacionEliminarGrupo() {
+            // Verificar permisos (doble verificación)
+            if (!sessionUser) {
+                showToast('⚠️ Inicia sesión para eliminar el grupo', 'error');
+                return;
+            }
+            if (!grupoActualId) {
+                showToast('⚠️ No hay grupo seleccionado', 'error');
+                return;
+            }
+
+            // Verificar que el usuario sea creador o administrador
+            if (!esAdmin && !esModerador) {
+                showToast('⚠️ No tienes permisos para eliminar este grupo', 'error');
+                return;
+            }
+
+            // Verificar si el usuario es el creador o administrador del grupo
+            // Si es moderador pero no creador, no puede eliminar (solo admin/creador)
+            if (rolEnGrupo !== 'administrador') {
+                showToast('⚠️ Solo el creador o un administrador puede eliminar el grupo', 'error');
+                return;
+            }
+
+            // Mostrar modal de confirmación
+            document.getElementById('modalConfirmarEliminarGrupo').classList.add('show');
+            document.getElementById('eliminarGrupoStatus').textContent = '';
+        }
+
+        /**
+         * Cierra el modal de confirmación de eliminación.
+         */
+        function cerrarConfirmacionEliminarGrupo() {
+            document.getElementById('modalConfirmarEliminarGrupo').classList.remove('show');
+            document.getElementById('eliminarGrupoStatus').textContent = '';
+        }
+
+        /**
+         * Ejecuta la eliminación real del grupo después de la confirmación.
+         * Verifica permisos nuevamente antes de ejecutar el DELETE.
+         */
+        async function ejecutarEliminarGrupo() {
+            if (eliminandoGrupo) {
+                showToast('⏳ Ya se está eliminando el grupo...', 'warning');
+                return;
+            }
+
+            // Verificar nuevamente permisos antes de ejecutar
+            if (!sessionUser) {
+                showToast('⚠️ Inicia sesión para eliminar el grupo', 'error');
+                return;
+            }
+            if (!grupoActualId) {
+                showToast('⚠️ No hay grupo seleccionado', 'error');
+                return;
+            }
+
+            // Verificar que el usuario sea creador o administrador
+            if (!esAdmin && !esModerador) {
+                showToast('⚠️ No tienes permisos para eliminar este grupo', 'error');
+                return;
+            }
+
+            // Solo creador o administrador (no moderador) puede eliminar
+            if (rolEnGrupo !== 'administrador') {
+                showToast('⚠️ Solo el creador o un administrador puede eliminar el grupo', 'error');
+                return;
+            }
+
+            // Obtener el grupo actual para verificar que existe
+            var grupoId = grupoActualId;
+            var nombreGrupo = grupoActual?.nombre || 'Grupo';
+
+            // Verificar que el grupo existe y el usuario tiene permisos
+            try {
+                var grupoCheck = await window.supabase
+                    .from('grupos_video')
+                    .select('id, creador_id')
+                    .eq('id', grupoId)
+                    .single();
+
+                if (grupoCheck.error) {
+                    console.error('❌ Error verificando grupo:', grupoCheck.error);
+                    showToast('❌ Error al verificar el grupo: ' + grupoCheck.error.message, 'error');
+                    return;
+                }
+
+                if (!grupoCheck.data) {
+                    showToast('❌ El grupo no existe', 'error');
+                    return;
+                }
+
+                // Verificar que el usuario sea el creador del grupo
+                // (ya tenemos el rol de administrador, pero verificamos que sea el creador)
+                if (grupoCheck.data.creador_id !== sessionUser.id) {
+                    showToast('⚠️ Solo el creador del grupo puede eliminarlo', 'error');
+                    return;
+                }
+
+            } catch (e) {
+                console.error('❌ Error verificando grupo:', e);
+                showToast('❌ Error al verificar permisos: ' + e.message, 'error');
+                return;
+            }
+
+            // Confirmar eliminación
+            eliminandoGrupo = true;
+            var statusEl = document.getElementById('eliminarGrupoStatus');
+            statusEl.textContent = '⏳ Eliminando grupo...';
+            statusEl.style.color = 'var(--text-secondary)';
+
+            try {
+                // Ejecutar DELETE en Supabase
+                // ON DELETE CASCADE se encargará de eliminar los datos relacionados
+                console.log('🗑️ Eliminando grupo:', grupoId, nombreGrupo);
+
+                var result = await window.supabase
+                    .from('grupos_video')
+                    .delete()
+                    .eq('id', grupoId);
+
+                // Verificar si hubo error
+                if (result.error) {
+                    console.error('❌ Error eliminando grupo:', result.error);
+                    throw result.error;
+                }
+
+                // Verificar que se eliminó correctamente
+                console.log('✅ Grupo eliminado correctamente:', result);
+
+                // Cerrar modales
+                cerrarConfirmacionEliminarGrupo();
+                cerrarModalAdmin();
+
+                // Cerrar vista interna del grupo
+                document.getElementById('vistaGrupo').classList.remove('show');
+                document.getElementById('vistaLista').style.display = 'block';
+
+                // Limpiar variables
+                grupoActual = null;
+                grupoActualId = null;
+                liveActivoEnGrupo = null;
+                esAdmin = false;
+                esModerador = false;
+                rolEnGrupo = null;
+
+                // Mostrar mensaje de éxito
+                showToast('✅ Grupo "' + nombreGrupo + '" eliminado correctamente.', 'success');
+
+                // Actualizar lista de grupos
+                await cargarGrupos();
+
+            } catch (e) {
+                console.error('❌ Error en ejecutarEliminarGrupo:', e);
+
+                // Mostrar error específico
+                var errorMsg = 'Error al eliminar el grupo: ';
+                if (e.code === '42501') {
+                    errorMsg += 'Permiso denegado (RLS). Verifica que tienes permisos para eliminar este grupo.';
+                    console.error('🔒 Error de RLS / Permiso denegado');
+                } else if (e.code === '23503') {
+                    errorMsg += 'Error de clave foránea. Verifica que no haya datos dependientes.';
+                    console.error('🔗 Error de foreign key');
+                } else if (e.code === '42501' && e.message?.includes('row-level security')) {
+                    errorMsg += 'La política de seguridad RLS bloqueó la eliminación.';
+                    console.error('🛡️ Error RLS: new row violates row-level security policy');
+                } else if (e.code === 'PGRST301') {
+                    errorMsg += 'Error de autenticación. Vuelve a iniciar sesión.';
+                    console.error('🔑 Error JWT/Session');
+                } else {
+                    errorMsg += e.message || e.toString() || 'Error desconocido';
+                }
+
+                statusEl.textContent = '❌ ' + errorMsg;
+                statusEl.style.color = 'var(--danger)';
+                showToast('❌ ' + errorMsg, 'error');
+
+            } finally {
+                eliminandoGrupo = false;
+            }
+        }
+
+        // ================================================================
         // FUNCIONES DE ADMIN - USANDO RPC
         // ================================================================
 
@@ -2267,6 +2511,7 @@
                     cerrarModalCrearGrupo();
                     cerrarModalAdmin();
                     cerrarModalRegalos();
+                    cerrarConfirmacionEliminarGrupo();
                 }
             });
 
@@ -2336,6 +2581,9 @@
         window.cerrarModalRegalos = cerrarModalRegalos;
         window.enviarRegalo = enviarRegalo;
         window.verificarRegalo = verificarRegalo;
+        window.mostrarConfirmacionEliminarGrupo = mostrarConfirmacionEliminarGrupo;
+        window.cerrarConfirmacionEliminarGrupo = cerrarConfirmacionEliminarGrupo;
+        window.ejecutarEliminarGrupo = ejecutarEliminarGrupo;
     </script>
 </body>
 </html>
