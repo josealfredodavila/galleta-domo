@@ -1,6 +1,7 @@
 <!-- ================================================================
      MURO - SARIEL'S ECOSYSTEM
-     VERSIÓN CORREGIDA - IMÁGENES FUNCIONANDO
+     VERSIÓN CORREGIDA - IMÁGENES + EMOJIS FUNCIONANDO
+     CORRECCIÓN QUIRÚRGICA - SOLO FUNCIONES AFECTADAS
      ================================================================ -->
 <!DOCTYPE html>
 <html lang="es">
@@ -113,11 +114,64 @@
         .post-form textarea { width: 100% !important; box-sizing: border-box !important; padding: 12px 14px; background: rgba(5,8,15,0.7) !important; border: 1px solid rgba(212,175,55,0.2) !important; border-radius: 12px; color: #fff !important; font-size: 0.9rem; resize: none; min-height: 80px; outline: none; }
         .post-form textarea:focus { border-color: #D4AF37 !important; box-shadow: 0 0 12px rgba(212,175,55,0.2); }
         .post-form .form-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; gap: 10px; flex-wrap: wrap; }
-        .post-form .form-actions .tools { display: flex; gap: 4px; flex-wrap: wrap; }
+        .post-form .form-actions .tools { display: flex; gap: 4px; flex-wrap: wrap; position: relative; }
         .post-form .form-actions .tools button { background: transparent; border: none; color: var(--text-muted); font-size: 0.65rem; cursor: pointer; padding: 4px 8px; border-radius: 12px; }
         .post-form .form-actions .tools button:hover { color: var(--gold); background: rgba(212,175,55,0.05); }
         .post-form .form-actions .tools button.venta { color: var(--gold); border: 1px solid rgba(212,175,55,0.2); }
         .post-form .form-actions .tools button.venta:hover { background: rgba(212,175,55,0.1); }
+        
+        /* ===== SELECTOR DE EMOJIS ===== */
+        .emoji-picker {
+            display: none;
+            position: absolute;
+            bottom: 100%;
+            left: 0;
+            background: rgba(15, 25, 20, 0.95);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            padding: 12px;
+            width: 280px;
+            max-width: 90vw;
+            z-index: 1000;
+            box-shadow: var(--shadow-gold-strong);
+            backdrop-filter: blur(12px);
+            margin-bottom: 8px;
+        }
+        .emoji-picker.show {
+            display: block;
+        }
+        .emoji-picker .grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 4px;
+        }
+        .emoji-picker .grid button {
+            background: transparent;
+            border: none;
+            font-size: 1.5rem;
+            padding: 6px 4px;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: var(--transition);
+            line-height: 1;
+        }
+        .emoji-picker .grid button:hover {
+            background: rgba(212, 175, 55, 0.15);
+            transform: scale(1.15);
+        }
+        .emoji-picker .grid button:active {
+            transform: scale(0.9);
+        }
+        .emoji-picker .titulo {
+            color: var(--text-muted);
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+            text-align: center;
+            font-family: 'Orbitron', monospace;
+        }
+        
         .btn-publicar { background: linear-gradient(135deg, #D4AF37, #b8923a) !important; color: #05080f !important; border: none !important; padding: 10px 24px !important; border-radius: 30px !important; font-family: 'Orbitron', monospace !important; font-weight: 700 !important; font-size: 0.8rem !important; cursor: pointer; }
         .btn-publicar:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(212,175,55,0.4); }
 
@@ -237,11 +291,16 @@
             .post-form .form-actions { flex-direction: column; }
             .post-form .form-actions .tools { width: 100%; justify-content: center; }
             .btn-publicar { width: 100%; justify-content: center; }
+            .emoji-picker { width: 220px; left: 50%; transform: translateX(-50%); }
+            .emoji-picker .grid { grid-template-columns: repeat(6, 1fr); }
         }
         @media (max-width: 480px) {
             .post-card .post-header { flex-wrap: wrap; }
             .post-card .post-actions-header { margin-left: auto; }
             .modal { padding: 20px; }
+            .emoji-picker { width: 180px; }
+            .emoji-picker .grid { grid-template-columns: repeat(5, 1fr); }
+            .emoji-picker .grid button { font-size: 1.2rem; padding: 4px; }
         }
     </style>
 </head>
@@ -318,9 +377,14 @@
             <div class="form-actions">
                 <div class="tools">
                     <button onclick="insertarHashtag()"># Hashtag</button>
-                    <button onclick="insertarEmoji()">😊 Emoji</button>
+                    <button onclick="toggleEmojiPicker()" id="btnEmoji">😊 Emoji</button>
                     <button onclick="abrirSelectorImagen()">🖼️ Imagen</button>
                     <button class="venta" onclick="abrirModalVenta()">💰 Vender tokens</button>
+                    <!-- ===== SELECTOR DE EMOJIS ===== -->
+                    <div class="emoji-picker" id="emojiPicker">
+                        <div class="titulo">✦ Elige tu emoji</div>
+                        <div class="grid" id="emojiGrid"></div>
+                    </div>
                 </div>
                 <button class="btn-publicar" id="btnPublicar">⟡ Publicar</button>
             </div>
@@ -1106,6 +1170,66 @@
             finally { btn.disabled = false; btn.textContent = '✅ Verificar Pago'; }
         }
 
+        // ================================================================
+        // 🎯 SELECTOR DE EMOJIS - NUEVO (REEMPLAZA ALEATORIO)
+        // ================================================================
+
+        var emojisDisponibles = [
+            '😊', '🔥', '❤️', '💎', '✨', '🎉', '🚀', '🌟', 
+            '💪', '🤝', '👀', '💯', '🎯', '⭐', '🌈', '⚡',
+            '💫', '🪐', '🌙', '☀️', '🌸', '🌺', '🍀', '🎶',
+            '📌', '🔮', '💜', '🧡', '💛', '💚', '💙', '🖤'
+        ];
+
+        function toggleEmojiPicker() {
+            var picker = document.getElementById('emojiPicker');
+            if (!picker) return;
+            if (picker.classList.contains('show')) {
+                picker.classList.remove('show');
+                return;
+            }
+            // Llenar la grilla si está vacía
+            var grid = document.getElementById('emojiGrid');
+            if (grid && grid.children.length === 0) {
+                emojisDisponibles.forEach(function(emoji) {
+                    var btn = document.createElement('button');
+                    btn.textContent = emoji;
+                    btn.setAttribute('data-emoji', emoji);
+                    btn.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        insertarEmojiSeleccionado(emoji);
+                        picker.classList.remove('show');
+                    });
+                    grid.appendChild(btn);
+                });
+            }
+            picker.classList.add('show');
+        }
+
+        function insertarEmojiSeleccionado(emoji) {
+            var input = document.getElementById('postContent');
+            if (!input) return;
+            var start = input.selectionStart || 0;
+            var end = input.selectionEnd || 0;
+            var texto = input.value;
+            input.value = texto.substring(0, start) + emoji + texto.substring(end);
+            input.focus();
+            var newPos = start + emoji.length;
+            input.selectionStart = input.selectionEnd = newPos;
+            // Disparar evento input para actualizar cualquier contador si existe
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+
+        // Cerrar selector al hacer clic fuera
+        document.addEventListener('click', function(e) {
+            var picker = document.getElementById('emojiPicker');
+            var btnEmoji = document.getElementById('btnEmoji');
+            if (!picker || !btnEmoji) return;
+            if (!picker.contains(e.target) && !btnEmoji.contains(e.target)) {
+                picker.classList.remove('show');
+            }
+        });
+
         // ===== FUNCIONES DE UTILIDAD =====
         function verTokens() { window.location.href = '/features/perfil/perfil.html'; }
 
@@ -1120,17 +1244,12 @@
             input.selectionStart = input.selectionEnd = start + 1;
         }
 
+        // ===== OBSOLETO: insertarEmoji() reemplazado por selector =====
+        // La función original insertarEmoji() ya no se usa.
+        // Se mantiene como referencia pero ahora llama al selector.
         function insertarEmoji() {
-            var input = document.getElementById('postContent');
-            if (!input) return;
-            var start = input.selectionStart || 0;
-            var end = input.selectionEnd || 0;
-            var texto = input.value;
-            var emojis = ['😊', '🔥', '❤️', '💎', '✨', '🎉', '🚀', '🌟', '💪', '🤝'];
-            var emoji = emojis[Math.floor(Math.random() * emojis.length)];
-            input.value = texto.substring(0, start) + emoji + texto.substring(end);
-            input.focus();
-            input.selectionStart = input.selectionEnd = start + emoji.length;
+            // Redirigir al selector visual
+            toggleEmojiPicker();
         }
 
         function abrirSelectorImagen() {
@@ -1183,17 +1302,24 @@
                 var urlData = window.supabase.storage.from('muro-imagenes').getPublicUrl(filePath);
                 var publicUrl = urlData.data.publicUrl;
 
+                // ✅ AHORA TOMA EL TEXTO DEL USUARIO
+                var postContent = document.getElementById('postContent');
+                var contenido = postContent ? postContent.value.trim() : '';
+
                 var insertResult = await window.supabase
                     .from('muro_posts')
                     .insert({
                         usuario_id: sessionUser.id,
-                        contenido: '',
+                        contenido: contenido,   // ✅ AHORA GUARDA EL TEXTO
                         imagen_url: publicUrl
                     });
 
                 if (insertResult.error) throw insertResult.error;
 
-                showToast('✅ Imagen publicada correctamente', 'success');
+                // Limpiar el textarea después de publicar
+                if (postContent) postContent.value = '';
+
+                showToast('✅ Publicación con imagen creada', 'success');
                 event.target.value = '';
                 cargarPublicaciones();
 
@@ -1319,6 +1445,7 @@
         window.abrirSelectorImagen = abrirSelectorImagen;
         window.insertarHashtag = insertarHashtag;
         window.insertarEmoji = insertarEmoji;
+        window.toggleEmojiPicker = toggleEmojiPicker;
         window.verTokens = verTokens;
         window.showToast = showToast;
         window.abrirModalVenta = abrirModalVenta;
