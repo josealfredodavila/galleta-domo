@@ -1,7 +1,6 @@
 <!-- ================================================================
      MURO - SARIEL'S ECOSYSTEM
-     VERSIÓN CORREGIDA - IMÁGENES + EMOJIS FUNCIONANDO
-     CORRECCIÓN QUIRÚRGICA - SOLO FUNCIONES AFECTADAS
+     VERSIÓN PRODUCCIÓN - PAGOS REALES CON NOWPAYMENTS
      ================================================================ -->
 <!DOCTYPE html>
 <html lang="es">
@@ -137,40 +136,12 @@
             backdrop-filter: blur(12px);
             margin-bottom: 8px;
         }
-        .emoji-picker.show {
-            display: block;
-        }
-        .emoji-picker .grid {
-            display: grid;
-            grid-template-columns: repeat(8, 1fr);
-            gap: 4px;
-        }
-        .emoji-picker .grid button {
-            background: transparent;
-            border: none;
-            font-size: 1.5rem;
-            padding: 6px 4px;
-            cursor: pointer;
-            border-radius: 8px;
-            transition: var(--transition);
-            line-height: 1;
-        }
-        .emoji-picker .grid button:hover {
-            background: rgba(212, 175, 55, 0.15);
-            transform: scale(1.15);
-        }
-        .emoji-picker .grid button:active {
-            transform: scale(0.9);
-        }
-        .emoji-picker .titulo {
-            color: var(--text-muted);
-            font-size: 0.6rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 8px;
-            text-align: center;
-            font-family: 'Orbitron', monospace;
-        }
+        .emoji-picker.show { display: block; }
+        .emoji-picker .grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; }
+        .emoji-picker .grid button { background: transparent; border: none; font-size: 1.5rem; padding: 6px 4px; cursor: pointer; border-radius: 8px; transition: var(--transition); line-height: 1; }
+        .emoji-picker .grid button:hover { background: rgba(212, 175, 55, 0.15); transform: scale(1.15); }
+        .emoji-picker .grid button:active { transform: scale(0.9); }
+        .emoji-picker .titulo { color: var(--text-muted); font-size: 0.6rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; text-align: center; font-family: 'Orbitron', monospace; }
         
         .btn-publicar { background: linear-gradient(135deg, #D4AF37, #b8923a) !important; color: #05080f !important; border: none !important; padding: 10px 24px !important; border-radius: 30px !important; font-family: 'Orbitron', monospace !important; font-weight: 700 !important; font-size: 0.8rem !important; cursor: pointer; }
         .btn-publicar:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(212,175,55,0.4); }
@@ -339,7 +310,7 @@
         <div class="valor-mercado" id="valorMercado">
             <div class="info">
                 <div class="titulo">◈ Valor de Mercado Sariel's</div>
-                <div class="precio" id="precioToken">4.50 <span class="moneda">MXN</span></div>
+                <div class="precio" id="precioToken">6.25 <span class="moneda">MXN</span></div>
                 <div class="detalles">
                     <span>◈ Oferta: <strong id="ofertaTotal">0</strong> tokens</span>
                     <span>◉ Demanda: <strong id="demandaTotal">0</strong></span>
@@ -421,7 +392,7 @@
             </div>
             <div class="form-group">
                 <label>Precio por token (MXN)</label>
-                <input type="number" id="inputPrecioToken" min="1" step="0.1" value="4.50" />
+                <input type="number" id="inputPrecioToken" min="1" step="0.01" value="6.25" />
                 <div style="font-size:0.55rem;color:var(--text-muted);margin-top:4px;">💳 El comprador pagará con USDT/USDC vía NOWPayments</div>
             </div>
             <button class="btn-guardar" id="btnPublicarVenta">◆ Publicar venta</button>
@@ -442,18 +413,18 @@
                         Confirmas la compra de 
                         <strong style="color:var(--gold);" id="confirmCantidad">1</strong> 
                         token(s) a 
-                        <strong style="color:var(--gold);" id="confirmPrecio">4.50 MXN</strong>
+                        <strong style="color:var(--gold);" id="confirmPrecio">6.25 MXN</strong>
                     </p>
                     <div class="detalle-pago">
                         <div class="label">💳 Total en MXN</div>
-                        <div class="valor" id="confirmTotal">4.50 MXN</div>
+                        <div class="valor" id="confirmTotal">6.25 MXN</div>
                     </div>
                     <div class="detalle-pago">
                         <div class="label">💳 Total en USDT</div>
-                        <div class="valor" id="confirmTotalFinal">0.23 USDT</div>
+                        <div class="valor" id="confirmTotalFinal">0.31 USDT</div>
                     </div>
                     <div class="detalle-pago" style="border-color:rgba(247,212,74,0.2);">
-                        <div class="label">🔶 Comisión de plataforma (2%)</div>
+                        <div class="label">🔶 Comisión de plataforma (1%)</div>
                         <div class="valor comision" id="confirmComision">0.00 USDT</div>
                     </div>
                     <div style="display:flex;gap:10px;margin-top:12px;">
@@ -498,17 +469,10 @@
     <!-- ============================================================ -->
     <!-- BANNER DE ERRORES VISIBLES EN PANTALLA                       -->
     <!-- ============================================================ -->
-    <div id="errorBanner" style="
-        display:none; position:fixed; top:0; left:0; right:0; z-index:99999;
-        background:#ff3366; color:#fff; padding:12px 16px; font-family:monospace;
-        font-size:0.75rem; word-break:break-word; box-shadow:0 4px 20px rgba(0,0,0,0.4);
-    ">
+    <div id="errorBanner" style="display:none; position:fixed; top:0; left:0; right:0; z-index:99999; background:#ff3366; color:#fff; padding:12px 16px; font-family:monospace; font-size:0.75rem; word-break:break-word; box-shadow:0 4px 20px rgba(0,0,0,0.4);">
         <strong>⚠️ Error detectado:</strong>
         <span id="errorBannerText"></span>
-        <button onclick="document.getElementById('errorBanner').style.display='none'"
-            style="float:right; background:none; border:1px solid #fff; color:#fff; border-radius:6px; padding:2px 10px; cursor:pointer;">
-            Cerrar
-        </button>
+        <button onclick="document.getElementById('errorBanner').style.display='none'" style="float:right; background:none; border:1px solid #fff; color:#fff; border-radius:6px; padding:2px 10px; cursor:pointer;">Cerrar</button>
     </div>
 
     <script>
@@ -521,18 +485,16 @@
             }
         }
 
-        window.addEventListener('error', function (event) {
-            mostrarErrorEnPantalla(
-                (event.message || 'Error desconocido') +
-                ' — línea ' + event.lineno + ' de ' + (event.filename || 'este archivo')
-            );
+        window.addEventListener('error', function(event) {
+            mostrarErrorEnPantalla((event.message || 'Error desconocido') + ' — línea ' + event.lineno + ' de ' + (event.filename ||
+                'este archivo'));
         });
 
-        window.addEventListener('unhandledrejection', function (event) {
+        window.addEventListener('unhandledrejection', function(event) {
             mostrarErrorEnPantalla('Promesa rechazada: ' + (event.reason?.message || event.reason));
         });
 
-        window.addEventListener('load', function () {
+        window.addEventListener('load', function() {
             if (typeof window.supabase === 'undefined') {
                 mostrarErrorEnPantalla(
                     'No se pudo cargar la conexión a la base de datos (Supabase). ' +
@@ -543,7 +505,8 @@
     </script>
 
     <!-- ===== SCRIPTS - ORDEN CORRECTO ===== -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js">
+    </script>
     <script src="/app.js"></script>
     <script>
         // ================================================================
@@ -556,11 +519,13 @@
         var POSTS_PER_PAGE = 10;
         var isLoading = false;
         var hasMorePosts = true;
-        var precioActual = 4.50;
+        var precioActual = 6.25; // ✅ VALOR BASE CORRECTO
         var publicando = false;
         var muroChannel = null;
         var isRealtimeProcessing = false;
         var likeCache = new Map();
+        var pollingInterval = null;
+        var pollingTimeout = null;
 
         // ===== TOAST =====
         function showToast(mensaje, tipo) {
@@ -655,7 +620,7 @@
                 var data = result.data;
                 if (data && data.length > 0) {
                     var precios = data[0];
-                    precioActual = precios.precio_actual || 4.50;
+                    precioActual = precios.precio_actual || 6.25;
                     var precioToken = document.getElementById('precioToken');
                     var ofertaTotalEl = document.getElementById('ofertaTotal');
                     var demandaTotalEl = document.getElementById('demandaTotal');
@@ -665,14 +630,13 @@
                     if (demandaTotalEl) demandaTotalEl.textContent = precios.demanda_total || 0;
                     if (tendenciaValor) {
                         var diff = precioActual - (precios.precio_base || precioActual);
-                        if (diff > 0) { tendenciaValor.textContent = '📈 ALZA'; tendenciaValor.style.color = 'var(--success)'; }
-                        else if (diff < 0) { tendenciaValor.textContent = '📉 BAJA'; tendenciaValor.style.color = 'var(--danger)'; }
-                        else { tendenciaValor.textContent = '➡️ ESTABLE'; tendenciaValor.style.color = 'var(--text-muted)'; }
+                        if (diff > 0) { tendenciaValor.textContent = '📈 ALZA';
+                            tendenciaValor.style.color = 'var(--success)'; } else if (diff < 0) { tendenciaValor
+                                .textContent = '📉 BAJA';
+                            tendenciaValor.style.color = 'var(--danger)'; } else { tendenciaValor.textContent =
+                                '➡️ ESTABLE';
+                            tendenciaValor.style.color = 'var(--text-muted)'; }
                     }
-                    var precioSugerido = document.getElementById('precioSugerido');
-                    if (precioSugerido) precioSugerido.textContent = precioActual.toFixed(2);
-                    var precioUsdt = document.getElementById('precioUsdtSugerido');
-                    if (precioUsdt) precioUsdt.textContent = '≈ $' + (precioActual / 20).toFixed(2) + ' USDT';
                     return precios;
                 }
             } catch (e) { console.error('Error cargando precios:', e); }
@@ -689,15 +653,41 @@
             var nombre = escapeHTML(usuario.nombre || 'Explorador');
             var handle = escapeHTML(usuario.handle || 'explorador');
             var likesCount = (post.muro_likes && post.muro_likes[0]) ? post.muro_likes[0].count || 0 : 0;
-            var comentariosCount = (post.muro_comentarios && post.muro_comentarios[0]) ? post.muro_comentarios[0].count || 0 : 0;
+            var comentariosCount = (post.muro_comentarios && post.muro_comentarios[0]) ? post.muro_comentarios[0].count ||
+            0 : 0;
             var contenidoSanitizado = sanitizarHTML(post.contenido || '');
             var seccionVenta = '';
             if (post.cantidad_venta && post.cantidad_venta > 0 && post.precio_venta) {
                 var precioPorToken = (post.precio_venta / post.cantidad_venta).toFixed(2);
-                seccionVenta = '<div class="post-venta"><div><span style="font-size:0.7rem;color:var(--text-muted);">💎 Venta de tokens</span><div style="font-weight:600;color:var(--gold);">' + post.cantidad_venta + ' tokens · $' + precioPorToken + ' c/u</div><div style="font-size:0.65rem;color:var(--text-muted);">Total: $' + post.precio_venta.toFixed(2) + ' MXN</div></div><button class="btn-comprar" onclick="abrirModalCompra(\'' + post.id + '\')">Comprar</button></div>';
+                seccionVenta = '<div class="post-venta"><div><span style="font-size:0.7rem;color:var(--text-muted);">💎 Venta de tokens</span><div style="font-weight:600;color:var(--gold);">' +
+                    post.cantidad_venta + ' tokens · $' + precioPorToken + ' c/u</div><div style="font-size:0.65rem;color:var(--text-muted);">Total: $' +
+                    post.precio_venta.toFixed(2) + ' MXN</div></div><button class="btn-comprar" onclick="abrirModalCompra(\'' +
+                    post.id + '\')">Comprar</button></div>';
             }
             var fecha = new Date(post.created_at).toLocaleString();
-            div.innerHTML = '<div class="post-header"><div class="post-avatar">' + avatar + '</div><div><div class="post-author">' + nombre + ' <span class="badge-verificado">✦ Verificado</span></div><div class="post-date">' + fecha + '</div></div><div class="post-actions-header">' + (post.usuario_id === sessionUser?.id ? '<button class="btn-delete" onclick="eliminarPublicacion(\'' + post.id + '\')" title="Eliminar">🗑️</button>' : '<button class="btn-report" onclick="reportarPublicacion(\'' + post.id + '\')" title="Reportar">🚩</button>') + '<button class="btn-share" onclick="compartirPublicacion(\'' + post.id + '\')" title="Compartir">📤</button></div></div><div class="post-content">' + contenidoSanitizado + '</div>' + (post.imagen_url ? '<img src="' + escapeHTML(post.imagen_url) + '" style="width:100%; border-radius:12px; margin-top:12px;" />' : '') + seccionVenta + '<div class="post-stats"><span class="like-btn" onclick="toggleLike(\'' + post.id + '\')" data-liked="false">❤️ <span class="count">' + likesCount + '</span></span><span onclick="toggleComentarios(\'' + post.id + '\')">💬 <span class="count">' + comentariosCount + '</span></span>' + (post.cantidad_venta ? '<span style="color:var(--gold);font-size:0.7rem;">💎 ' + post.cantidad_venta + ' tokens en venta</span>' : '') + '</div><div class="post-comentarios" id="comentarios-' + post.id + '" style="display:none;"><div class="comentarios-lista" id="comentarios-lista-' + post.id + '"></div><div class="input-comentario"><input type="text" id="input-comentario-' + post.id + '" placeholder="Escribe un comentario..." /><button onclick="enviarComentario(\'' + post.id + '\')">Enviar</button></div></div>';
+            div.innerHTML =
+                '<div class="post-header"><div class="post-avatar">' + avatar + '</div><div><div class="post-author">' +
+                nombre + ' <span class="badge-verificado">✦ Verificado</span></div><div class="post-date">' + fecha +
+                '</div></div><div class="post-actions-header">' + (post.usuario_id === sessionUser?.id ?
+                    '<button class="btn-delete" onclick="eliminarPublicacion(\'' + post.id +
+                    '\')" title="Eliminar">🗑️</button>' :
+                    '<button class="btn-report" onclick="reportarPublicacion(\'' + post.id +
+                    '\')" title="Reportar">🚩</button>') +
+                '<button class="btn-share" onclick="compartirPublicacion(\'' + post.id +
+                '\')" title="Compartir">📤</button></div></div><div class="post-content">' + contenidoSanitizado +
+                '</div>' + (post.imagen_url ? '<img src="' + escapeHTML(post.imagen_url) +
+                '" style="width:100%; border-radius:12px; margin-top:12px;" />' : '') + seccionVenta +
+                '<div class="post-stats"><span class="like-btn" onclick="toggleLike(\'' + post.id +
+                '\')" data-liked="false">❤️ <span class="count">' + likesCount +
+                '</span></span><span onclick="toggleComentarios(\'' + post.id + '\')">💬 <span class="count">' +
+                comentariosCount + '</span></span>' + (post.cantidad_venta ?
+                    '<span style="color:var(--gold);font-size:0.7rem;">💎 ' + post.cantidad_venta +
+                    ' tokens en venta</span>' : '') +
+                '</div><div class="post-comentarios" id="comentarios-' + post.id +
+                '" style="display:none;"><div class="comentarios-lista" id="comentarios-lista-' + post.id +
+                '"></div><div class="input-comentario"><input type="text" id="input-comentario-' + post.id +
+                '" placeholder="Escribe un comentario..." /><button onclick="enviarComentario(\'' + post.id +
+                '\')">Enviar</button></div></div>';
             if (sessionUser) {
                 verificarLike(post.id).then(function(liked) {
                     var likeBtn = div.querySelector('.like-btn');
@@ -714,7 +704,8 @@
         function sanitizarHTML(texto) {
             if (!texto) return '';
             var sanitizado = escapeHTML(texto);
-            sanitizado = sanitizado.replace(/#(\w+)/g, '<a href="#" class="hashtag" onclick="buscarHashtag(\'$1\');return false;">#$1</a>');
+            sanitizado = sanitizado.replace(/#(\w+)/g,
+                '<a href="#" class="hashtag" onclick="buscarHashtag(\'$1\');return false;">#$1</a>');
             sanitizado = sanitizado.replace(/@(\w+)/g, '<a href="/perfil/$1" class="mencion">@$1</a>');
             return sanitizado;
         }
@@ -754,18 +745,26 @@
                         .eq('usuario_id', sessionUser.id);
                     if (result.error) throw result.error;
                     likeCache.set(cacheKey, false);
-                    if (countSpan) { var current = parseInt(countSpan.textContent); countSpan.textContent = Math.max(0, current - 1); }
-                    if (likeBtn) { likeBtn.dataset.liked = 'false'; likeBtn.innerHTML = '❤️ <span class="count">' + (countSpan ? countSpan.textContent : 0) + '</span>'; }
+                    if (countSpan) { var current = parseInt(countSpan.textContent);
+                        countSpan.textContent = Math.max(0, current - 1); }
+                    if (likeBtn) { likeBtn.dataset.liked = 'false';
+                        likeBtn.innerHTML = '❤️ <span class="count">' + (countSpan ? countSpan.textContent : 0) +
+                            '</span>'; }
                 } else {
                     var result2 = await window.supabase
                         .from('muro_likes')
                         .insert({ post_id: postId, usuario_id: sessionUser.id });
-                    if (result2.error) { if (result2.error.code === '23505') { showToast('⚠️ Ya diste like a este post', 'warning'); return; } throw result2.error; }
+                    if (result2.error) { if (result2.error.code === '23505') { showToast('⚠️ Ya diste like a este post',
+                                'warning'); return; } throw result2.error; }
                     likeCache.set(cacheKey, true);
-                    if (countSpan) { var current2 = parseInt(countSpan.textContent); countSpan.textContent = current2 + 1; }
-                    if (likeBtn) { likeBtn.dataset.liked = 'true'; likeBtn.innerHTML = '❤️ <span class="count">' + (countSpan ? countSpan.textContent : 0) + '</span>'; }
+                    if (countSpan) { var current2 = parseInt(countSpan.textContent);
+                        countSpan.textContent = current2 + 1; }
+                    if (likeBtn) { likeBtn.dataset.liked = 'true';
+                        likeBtn.innerHTML = '❤️ <span class="count">' + (countSpan ? countSpan.textContent : 0) +
+                            '</span>'; }
                 }
-            } catch (e) { console.error('Error toggling like:', e); showToast('❌ Error al procesar like', 'error'); }
+            } catch (e) { console.error('Error toggling like:', e);
+                showToast('❌ Error al procesar like', 'error'); }
         }
 
         // ===== TOGGLE COMENTARIOS =====
@@ -796,16 +795,24 @@
                 if (result.error) throw result.error;
                 var data = result.data;
                 if (!data || data.length === 0) {
-                    lista.innerHTML = '<div style="color:var(--text-muted);font-size:0.7rem;padding:8px 0;">Sin comentarios. Sé el primero.</div>';
+                    lista.innerHTML =
+                        '<div style="color:var(--text-muted);font-size:0.7rem;padding:8px 0;">Sin comentarios. Sé el primero.</div>';
                     return;
                 }
                 lista.innerHTML = data.map(function(c) {
-                    var avatar = (c.usuarios && c.usuarios.avatar_url) ? '<img src="' + escapeHTML(c.usuarios.avatar_url) + '">' : '◈';
+                    var avatar = (c.usuarios && c.usuarios.avatar_url) ? '<img src="' + escapeHTML(c.usuarios
+                        .avatar_url) + '">' : '◈';
                     var nombre = escapeHTML((c.usuarios && c.usuarios.nombre) || 'Usuario');
                     var esPropietario = c.usuario_id === sessionUser?.id;
-                    return '<div class="comentario"><div class="avatar">' + avatar + '</div><div class="texto"><strong>' + nombre + '</strong> ' + sanitizarHTML(c.contenido || '') + '<div class="fecha">' + new Date(c.created_at).toLocaleString() + '</div>' + (esPropietario ? '<button class="btn-eliminar-comentario" onclick="eliminarComentario(\'' + c.id + '\')">✕ Eliminar</button>' : '') + '</div></div>';
+                    return '<div class="comentario"><div class="avatar">' + avatar +
+                        '</div><div class="texto"><strong>' + nombre + '</strong> ' + sanitizarHTML(c.contenido ||
+                        '') + '<div class="fecha">' + new Date(c.created_at).toLocaleString() + '</div>' + (
+                        esPropietario ?
+                        '<button class="btn-eliminar-comentario" onclick="eliminarComentario(\'' + c.id +
+                        '\')">✕ Eliminar</button>' : '') + '</div></div>';
                 }).join('');
-            } catch (e) { console.error('Error cargando comentarios:', e); lista.innerHTML = '<div style="color:var(--danger);font-size:0.7rem;">Error al cargar comentarios</div>'; }
+            } catch (e) { console.error('Error cargando comentarios:', e);
+                lista.innerHTML = '<div style="color:var(--danger);font-size:0.7rem;">Error al cargar comentarios</div>'; }
         }
 
         // ===== ENVIAR COMENTARIO =====
@@ -814,7 +821,8 @@
             if (!input) return;
             var texto = input.value.trim();
             if (!texto) { showToast('⚠️ Escribe un comentario', 'error'); return; }
-            if (texto.length > 2000) { showToast('⚠️ El comentario es demasiado largo (máx 2000 caracteres)', 'error'); return; }
+            if (texto.length > 2000) { showToast('⚠️ El comentario es demasiado largo (máx 2000 caracteres)',
+                'error'); return; }
             if (!sessionUser) { showToast('⚠️ Inicia sesión para comentar', 'error'); return; }
             try {
                 var result = await window.supabase
@@ -825,8 +833,10 @@
                 showToast('✅ Comentario agregado', 'success');
                 cargarComentarios(postId);
                 var countSpan = document.querySelector('[data-post-id="' + postId + '"] .post-stats span:last-child .count');
-                if (countSpan) { var current = parseInt(countSpan.textContent); countSpan.textContent = current + 1; }
-            } catch (e) { console.error('Error enviando comentario:', e); showToast('❌ Error al comentar', 'error'); }
+                if (countSpan) { var current = parseInt(countSpan.textContent);
+                    countSpan.textContent = current + 1; }
+            } catch (e) { console.error('Error enviando comentario:', e);
+                showToast('❌ Error al comentar', 'error'); }
         }
 
         // ===== ELIMINAR COMENTARIO =====
@@ -843,7 +853,8 @@
                 showToast('🗑️ Comentario eliminado', 'success');
                 var postId = document.querySelector('[data-comentario-id="' + comentarioId + '"]')?.dataset.postId;
                 if (postId) cargarComentarios(postId);
-            } catch (e) { console.error('Error eliminando comentario:', e); showToast('❌ Error al eliminar comentario', 'error'); }
+            } catch (e) { console.error('Error eliminando comentario:', e);
+                showToast('❌ Error al eliminar comentario', 'error'); }
         }
 
         // ===== ELIMINAR PUBLICACIÓN =====
@@ -860,14 +871,16 @@
                 showToast('🗑️ Publicación eliminada', 'success');
                 var postCard = document.querySelector('[data-post-id="' + postId + '"]');
                 if (postCard) postCard.remove();
-            } catch (e) { console.error('Error eliminando publicación:', e); showToast('❌ Error al eliminar publicación', 'error'); }
+            } catch (e) { console.error('Error eliminando publicación:', e);
+                showToast('❌ Error al eliminar publicación', 'error'); }
         }
 
         // ===== CARGAR PUBLICACIONES =====
         async function cargarPublicaciones(reset) {
             if (reset === undefined) reset = true;
             if (isLoading) return;
-            if (reset) { currentPage = 0; hasMorePosts = true; var fc = document.getElementById('feedContainer'); if (fc) fc.innerHTML = ''; }
+            if (reset) { currentPage = 0;
+                hasMorePosts = true; var fc = document.getElementById('feedContainer'); if (fc) fc.innerHTML = ''; }
             if (!hasMorePosts) return;
             isLoading = true;
             var feedContainer = document.getElementById('feedContainer');
@@ -876,7 +889,9 @@
                 var to = from + POSTS_PER_PAGE - 1;
                 var result = await window.supabase
                     .from('muro_posts')
-                    .select('*, usuarios:usuario_id (id, nombre, handle, avatar_url), muro_likes(count), muro_comentarios(count)')
+                    .select(
+                        '*, usuarios:usuario_id (id, nombre, handle, avatar_url), muro_likes(count), muro_comentarios(count)'
+                        )
                     .order('created_at', { ascending: false })
                     .range(from, to);
                 if (result.error) throw result.error;
@@ -884,7 +899,8 @@
                 if (!data || data.length === 0) {
                     hasMorePosts = false;
                     if (currentPage === 0 && feedContainer) {
-                        feedContainer.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3>Sin publicaciones</h3><p>Sé el primero en compartir algo.</p></div>';
+                        feedContainer.innerHTML =
+                            '<div class="empty-state"><span class="icon">◈</span><h3>Sin publicaciones</h3><p>Sé el primero en compartir algo.</p></div>';
                     }
                     isLoading = false;
                     return;
@@ -905,8 +921,8 @@
                         observer.observe(lastPost);
                     }
                 }
-            } catch (e) { console.error('Error cargando publicaciones:', e); showToast('❌ Error al cargar publicaciones', 'error'); }
-            finally { isLoading = false; }
+            } catch (e) { console.error('Error cargando publicaciones:', e);
+                showToast('❌ Error al cargar publicaciones', 'error'); } finally { isLoading = false; }
         }
 
         // ===== PUBLICAR =====
@@ -916,7 +932,8 @@
             var btnPublicar = document.getElementById('btnPublicar');
             var contenido = postContent ? postContent.value.trim() : '';
             if (!contenido) { showToast('⚠️ Escribe algo para publicar', 'error'); return; }
-            if (contenido.length > 5000) { showToast('⚠️ El texto es demasiado largo (máx 5000 caracteres)', 'error'); return; }
+            if (contenido.length > 5000) { showToast('⚠️ El texto es demasiado largo (máx 5000 caracteres)',
+                'error'); return; }
             if (!sessionUser) { showToast('⚠️ Inicia sesión para publicar', 'error'); return; }
             publicando = true;
             btnPublicar.disabled = true;
@@ -934,15 +951,18 @@
                 currentPage = 0;
                 hasMorePosts = true;
                 await cargarPublicaciones();
-            } catch (e) { console.error('Error al publicar:', e); showToast('❌ Error al publicar: ' + e.message, 'error'); }
-            finally { publicando = false; btnPublicar.disabled = false; btnPublicar.textContent = '⟡ Publicar'; }
+            } catch (e) { console.error('Error al publicar:', e);
+                showToast('❌ Error al publicar: ' + e.message, 'error'); } finally { publicando = false;
+                btnPublicar.disabled = false;
+                btnPublicar.textContent = '⟡ Publicar'; }
         }
 
         // ===== COMPARTIR PUBLICACIÓN =====
         function compartirPublicacion(postId) {
             var url = window.location.origin + '/features/muro/muro.html?post=' + postId;
             if (navigator.share) {
-                navigator.share({ title: 'Publicación en Sariel\'s', text: 'Mira esta publicación en el Muro de Sariel\'s', url: url }).catch(function() {});
+                navigator.share({ title: 'Publicación en Sariel\'s', text: 'Mira esta publicación en el Muro de Sariel\'s',
+                    url: url }).catch(function() {});
             } else {
                 navigator.clipboard.writeText(url).then(function() {
                     showToast('📋 Enlace copiado al portapapeles', 'success');
@@ -967,19 +987,25 @@
                 var result = await window.supabase
                     .from('muro_reportes')
                     .insert({ post_id: postId, usuario_id: sessionUser.id, motivo: motivo });
-                if (result.error) { if (result.error.code === '42P01') { showToast('⚠️ La tabla de reportes no está configurada. Contacta al administrador.', 'warning'); return; } throw result.error; }
+                if (result.error) { if (result.error.code === '42P01') { showToast(
+                            '⚠️ La tabla de reportes no está configurada. Contacta al administrador.',
+                            'warning'); return; } throw result.error; }
                 showToast('🚩 Reporte enviado', 'success');
-            } catch (e) { console.error('Error reportando:', e); showToast('❌ Error al reportar', 'error'); }
+            } catch (e) { console.error('Error reportando:', e);
+                showToast('❌ Error al reportar', 'error'); }
         }
 
         // ===== BUSCAR HASHTAG =====
         async function buscarHashtag(tag) {
-            if (!tag) { var input = document.getElementById('searchHashtag'); if (input) tag = input.value.trim().replace('#', ''); }
+            if (!tag) { var input = document.getElementById('searchHashtag'); if (input) tag = input.value.trim().replace(
+                    '#', ''); }
             if (!tag) { showToast('⚠️ Escribe un hashtag para buscar', 'warning'); return; }
             try {
                 var result = await window.supabase
                     .from('muro_posts')
-                    .select('*, usuarios:usuario_id (id, nombre, handle, avatar_url), muro_likes(count), muro_comentarios(count)')
+                    .select(
+                        '*, usuarios:usuario_id (id, nombre, handle, avatar_url), muro_likes(count), muro_comentarios(count)'
+                        )
                     .ilike('contenido', '%#' + tag + '%')
                     .order('created_at', { ascending: false })
                     .limit(50);
@@ -988,22 +1014,30 @@
                 var feedContainer = document.getElementById('feedContainer');
                 feedContainer.innerHTML = '';
                 if (!data || data.length === 0) {
-                    feedContainer.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3>#' + tag + '</h3><p>No se encontraron publicaciones con este hashtag</p><button class="btn-gold" onclick="cargarPublicaciones()" style="margin-top:12px;padding:8px 24px;border-radius:30px;border:none;background:linear-gradient(135deg,var(--gold),var(--gold-dark));color:var(--space);font-weight:600;cursor:pointer;">Volver al feed</button></div>';
+                    feedContainer.innerHTML =
+                        '<div class="empty-state"><span class="icon">◈</span><h3>#' + tag +
+                        '</h3><p>No se encontraron publicaciones con este hashtag</p><button class="btn-gold" onclick="cargarPublicaciones()" style="margin-top:12px;padding:8px 24px;border-radius:30px;border:none;background:linear-gradient(135deg,var(--gold),var(--gold-dark));color:var(--space);font-weight:600;cursor:pointer;">Volver al feed</button></div>';
                     return;
                 }
                 var header = document.createElement('div');
                 header.style.cssText = 'padding:12px 0;border-bottom:1px solid var(--glass-border);margin-bottom:16px;';
-                header.innerHTML = '<h3 style="font-family:Orbitron,monospace;color:var(--gold);font-size:0.9rem;">#' + tag + ' · ' + data.length + ' publicaciones</h3><button onclick="cargarPublicaciones()" style="background:transparent;border:none;color:var(--text-muted);font-size:0.7rem;cursor:pointer;">← Volver al feed</button>';
+                header.innerHTML = '<h3 style="font-family:Orbitron,monospace;color:var(--gold);font-size:0.9rem;">#' +
+                    tag + ' · ' + data.length +
+                    ' publicaciones</h3><button onclick="cargarPublicaciones()" style="background:transparent;border:none;color:var(--text-muted);font-size:0.7rem;cursor:pointer;">← Volver al feed</button>';
                 feedContainer.appendChild(header);
                 data.forEach(function(post) {
                     var postElement = renderizarPost(post);
                     feedContainer.appendChild(postElement);
                 });
                 showToast('🔍 Encontradas ' + data.length + ' publicaciones con #' + tag, 'success');
-            } catch (e) { console.error('Error buscando hashtag:', e); showToast('❌ Error al buscar hashtag', 'error'); }
+            } catch (e) { console.error('Error buscando hashtag:', e);
+                showToast('❌ Error al buscar hashtag', 'error'); }
         }
 
-        // ===== FUNCIONES DE VENTA =====
+        // ================================================================
+        // 🎯 FUNCIONES DE VENTA - CORREGIDAS PARA PRODUCCIÓN REAL
+        // ================================================================
+
         function abrirModalVenta() {
             var modal = document.getElementById('modalVender');
             if (modal) {
@@ -1026,45 +1060,90 @@
             var btn = document.getElementById('btnPublicarVenta');
             var cantidad = parseInt(cantidadInput ? cantidadInput.value : 0);
             var precio = parseFloat(precioInput ? precioInput.value : 0);
-            if (!cantidad || cantidad <= 0) { showToast('⚠️ Ingresa una cantidad válida', 'error'); if (cantidadInput) cantidadInput.focus(); return; }
+            if (!cantidad || cantidad <= 0) { showToast('⚠️ Ingresa una cantidad válida', 'error'); if (cantidadInput)
+                    cantidadInput.focus(); return; }
             if (cantidad > 100) { showToast('⚠️ Máximo 100 tokens por venta', 'error'); return; }
-            if (!precio || precio <= 0) { showToast('⚠️ Ingresa un precio válido', 'error'); if (precioInput) precioInput.focus(); return; }
+            if (!precio || precio <= 0) { showToast('⚠️ Ingresa un precio válido', 'error'); if (precioInput)
+                    precioInput.focus(); return; }
             if (!sessionUser) { showToast('⚠️ Inicia sesión para publicar venta', 'error'); return; }
             btn.disabled = true;
             btn.textContent = '⏳ Publicando...';
             try {
-                var userResult = await window.supabase.from('usuarios').select('tokens').eq('id', sessionUser.id).single();
+                var userResult = await window.supabase.from('usuarios').select('tokens').eq('id', sessionUser.id)
+                    .single();
                 if (userResult.error) throw userResult.error;
-                if (userResult.data.tokens < cantidad) { showToast('⚠️ No tienes suficientes tokens. Disponibles: ' + userResult.data.tokens, 'error'); btn.disabled = false; btn.textContent = '◆ Publicar venta'; return; }
+                if (userResult.data.tokens < cantidad) { showToast('⚠️ No tienes suficientes tokens. Disponibles: ' +
+                        userResult.data.tokens, 'error');
+                    btn.disabled = false;
+                    btn.textContent = '◆ Publicar venta'; return; }
                 var result = await window.supabase
                     .from('muro_posts')
-                    .insert({ usuario_id: sessionUser.id, contenido: '💎 Venta de ' + cantidad + ' tokens a $' + precio.toFixed(2) + ' c/u', cantidad_venta: cantidad, precio_venta: precio * cantidad });
+                    .insert({ usuario_id: sessionUser.id, contenido: '💎 Venta de ' + cantidad +
+                            ' tokens a $' + precio.toFixed(2) + ' c/u', cantidad_venta: cantidad,
+                        precio_venta: precio * cantidad });
                 if (result.error) throw result.error;
                 showToast('✅ Venta publicada correctamente', 'success');
                 cerrarModalVenta();
                 cargarPublicaciones();
-            } catch (e) { console.error('Error publicando venta:', e); showToast('❌ Error al publicar venta: ' + e.message, 'error'); }
-            finally { btn.disabled = false; btn.textContent = '◆ Publicar venta'; }
+            } catch (e) { console.error('Error publicando venta:', e);
+                showToast('❌ Error al publicar venta: ' + e.message, 'error'); } finally { btn.disabled = false;
+                btn.textContent = '◆ Publicar venta'; }
         }
 
+        // ✅ CORREGIDA: Lee datos del post correctamente
         function abrirModalCompra(postId) {
             var postCard = document.querySelector('[data-post-id="' + postId + '"]');
-            if (!postCard) { showToast('❌ Publicación no encontrada', 'error'); return; }
+            if (!postCard) {
+                showToast('❌ Publicación no encontrada', 'error');
+                return;
+            }
+
             var ventaInfo = postCard.querySelector('.post-venta');
-            if (!ventaInfo) { showToast('❌ Esta publicación no tiene tokens en venta', 'error'); return; }
+            if (!ventaInfo) {
+                showToast('❌ Esta publicación no tiene tokens en venta', 'error');
+                return;
+            }
+
             var modal = document.getElementById('modalConfirmarCompra');
-            if (!modal) { showToast('❌ Modal no encontrado', 'error'); return; }
-            var textoVenta = ventaInfo.querySelector('div')?.textContent || '';
-            var matches = textoVenta.match(/(\d+)\s*tokens.*\$\s*([\d.]+)/);
-            if (!matches) { showToast('❌ No se pudo leer la información de venta', 'error'); return; }
-            var cantidad = parseInt(matches[1]);
-            var precioTotal = parseFloat(matches[2]);
+            if (!modal) {
+                showToast('❌ Modal no encontrado', 'error');
+                return;
+            }
+
+            // Extraer datos del post
+            var cantidadSpan = ventaInfo.querySelector('div div:nth-child(2)');
+            var totalSpan = ventaInfo.querySelector('div div:nth-child(3)');
+
+            if (!cantidadSpan || !totalSpan) {
+                showToast('❌ No se pudo leer la información de venta', 'error');
+                return;
+            }
+
+            var cantidadTexto = cantidadSpan.textContent || '';
+            var totalTexto = totalSpan.textContent || '';
+
+            var cantidadMatch = cantidadTexto.match(/(\d+)/);
+            var totalMatch = totalTexto.match(/\$([\d.]+)/);
+
+            if (!cantidadMatch || !totalMatch) {
+                showToast('❌ No se pudo leer la información de venta', 'error');
+                return;
+            }
+
+            var cantidad = parseInt(cantidadMatch[1]);
+            var precioTotal = parseFloat(totalMatch[1]);
+            var precioPorToken = precioTotal / cantidad;
+
+            // Mostrar en modal
             document.getElementById('confirmCantidad').textContent = cantidad;
-            document.getElementById('confirmPrecio').textContent = '$' + precioTotal.toFixed(2) + ' MXN';
+            document.getElementById('confirmPrecio').textContent = '$' + precioPorToken.toFixed(2) + ' MXN';
             document.getElementById('confirmTotal').textContent = '$' + precioTotal.toFixed(2) + ' MXN';
-            var usdtTotal = precioTotal / 20;
-            document.getElementById('confirmTotalFinal').textContent = usdtTotal.toFixed(2) + ' USDT';
-            document.getElementById('confirmComision').textContent = (usdtTotal * 0.02).toFixed(2) + ' USDT';
+
+            // Estimado en USDT (el backend calculará el real)
+            var usdtEstimado = precioTotal / 20;
+            document.getElementById('confirmTotalFinal').textContent = usdtEstimado.toFixed(2) + ' USDT';
+            document.getElementById('confirmComision').textContent = (usdtEstimado * 0.01).toFixed(2) + ' USDT';
+
             modal.dataset.postId = postId;
             modal.classList.add('show');
         }
@@ -1074,42 +1153,282 @@
             if (modal) modal.classList.remove('show');
         }
 
+        // ✅ CORREGIDA: Llama al backend REAL, no simula
         async function confirmarCompraCrypto() {
             var modal = document.getElementById('modalConfirmarCompra');
             var postId = modal ? modal.dataset.postId : null;
-            if (!postId) { showToast('❌ No hay publicación seleccionada', 'error'); return; }
-            if (!sessionUser) { showToast('⚠️ Inicia sesión para comprar', 'error'); return; }
+
+            if (!postId) {
+                showToast('❌ No hay publicación seleccionada', 'error');
+                return;
+            }
+
+            if (!sessionUser) {
+                showToast('⚠️ Inicia sesión para comprar', 'error');
+                return;
+            }
+
+            // Obtener cantidad del modal
+            var cantidadEl = document.getElementById('confirmCantidad');
+            var cantidad = parseInt(cantidadEl?.textContent || '0');
+
+            if (cantidad <= 0) {
+                showToast('❌ Cantidad inválida', 'error');
+                return;
+            }
+
             try {
-                var postResult = await window.supabase.from('muro_posts').select('id, usuario_id, cantidad_venta, precio_venta').eq('id', postId).single();
-                if (postResult.error) throw postResult.error;
-                var post = postResult.data;
-                if (!post) { showToast('❌ Publicación no encontrada', 'error'); return; }
-                if (post.usuario_id === sessionUser.id) { showToast('⚠️ No puedes comprar tus propios tokens', 'error'); return; }
-                if (post.cantidad_venta <= 0) { showToast('⚠️ Estos tokens ya fueron vendidos', 'error'); return; }
-                var comision = post.precio_venta * 0.02;
-                var montoRecibido = post.precio_venta - comision;
-                var precioUsdt = post.precio_venta / 20;
-                var insertResult = await window.supabase
-                    .from('muro_ventas_tokens')
-                    .insert({ post_id: post.id, vendedor_id: post.usuario_id, comprador_id: sessionUser.id, cantidad: post.cantidad_venta, precio_mxn: post.precio_venta, precio_usdt: precioUsdt, comision_plataforma: comision, monto_recibido: montoRecibido, estado: 'pendiente' });
-                if (insertResult.error) throw insertResult.error;
-                showToast('✅ Orden de compra creada. Procede al pago.', 'success');
+                showToast('⏳ Creando orden de compra...', '');
+
+                var response = await fetch('/api/payments/muro/create', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + (await getSession())?.access_token || ''
+                    },
+                    body: JSON.stringify({
+                        postId: parseInt(postId),
+                        cantidad: cantidad
+                    })
+                });
+
+                var data = await response.json();
+
+                if (!data.success) {
+                    throw new Error(data.error || 'Error creando orden');
+                }
+
+                var pago = data.data;
+
+                showToast('✅ Orden creada. Procede al pago.', 'success');
                 cerrarModalConfirmacion();
+
                 var pagoModal = document.getElementById('cryptoPaymentModal');
                 if (pagoModal) {
                     pagoModal.classList.add('show');
-                    var address = '0x' + Array.from({length: 40}, function() { return Math.floor(Math.random() * 16).toString(16); }).join('');
-                    document.getElementById('cryptoAddress').textContent = address;
-                    document.getElementById('cryptoMonto').textContent = precioUsdt.toFixed(2);
+                    pagoModal.dataset.ventaId = pago.venta_id;
+
+                    document.getElementById('cryptoAddress').textContent = pago.pay_address || 'Cargando...';
+                    document.getElementById('cryptoMonto').textContent = pago.pay_amount || '0.00';
                     document.getElementById('cryptoStatus').textContent = '⏳ Esperando confirmación de pago...';
+                    document.getElementById('cryptoStatus').style.color = 'var(--text-secondary)';
+
                     var qrImg = document.getElementById('cryptoQR');
-                    if (qrImg) { qrImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(address); }
-                    pagoModal.dataset.ventaId = post.id;
+                    if (qrImg && pago.pay_address) {
+                        qrImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(
+                            pago.pay_address);
+                    }
+
+                    // Iniciar polling automático
+                    iniciarPollingPago(pago.venta_id);
                 }
-            } catch (e) { console.error('Error confirmando compra:', e); showToast('❌ Error al confirmar compra: ' + e.message, 'error'); }
+
+            } catch (error) {
+                console.error('Error confirmando compra:', error);
+                showToast('❌ Error: ' + error.message, 'error');
+            }
         }
 
+        // ✅ NUEVA: Polling automático cada 3 segundos
+        function iniciarPollingPago(ventaId) {
+            // Limpiar polling anterior
+            if (pollingInterval) {
+                clearInterval(pollingInterval);
+                pollingInterval = null;
+            }
+            if (pollingTimeout) {
+                clearTimeout(pollingTimeout);
+                pollingTimeout = null;
+            }
+
+            var intentos = 0;
+            var MAX_INTENTOS = 60; // 60 * 3s = 3 minutos
+
+            pollingInterval = setInterval(async function() {
+                intentos++;
+
+                try {
+                    var response = await fetch('/api/payments/muro/status/' + ventaId, {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': 'Bearer ' + (await getSession())?.access_token || ''
+                        }
+                    });
+
+                    var data = await response.json();
+
+                    if (data.success && data.data) {
+                        var estado = data.data.estado;
+
+                        if (estado === 'pagado' || estado === 'completado') {
+                            // Pago confirmado
+                            clearInterval(pollingInterval);
+                            pollingInterval = null;
+
+                            var statusEl = document.getElementById('cryptoStatus');
+                            if (statusEl) {
+                                statusEl.textContent = '✅ ¡Pago confirmado! Tokens transferidos.';
+                                statusEl.style.color = 'var(--success)';
+                            }
+
+                            showToast('✅ ¡Compra completada exitosamente!', 'success');
+
+                            setTimeout(function() {
+                                cerrarModalPago();
+                                cargarPublicaciones();
+                                cargarPreciosMercado();
+                                cargarUsuarioActual();
+                            }, 2000);
+
+                            return;
+                        }
+
+                        if (estado === 'cancelado') {
+                            // Pago cancelado
+                            clearInterval(pollingInterval);
+                            pollingInterval = null;
+
+                            var statusEl = document.getElementById('cryptoStatus');
+                            if (statusEl) {
+                                statusEl.textContent = '❌ El pago fue cancelado';
+                                statusEl.style.color = 'var(--danger)';
+                            }
+                            showToast('❌ El pago fue cancelado', 'error');
+                            return;
+                        }
+                    }
+
+                    // Aún en proceso
+                    if (intentos % 5 === 0) {
+                        var statusEl = document.getElementById('cryptoStatus');
+                        if (statusEl) {
+                            statusEl.textContent = '⏳ Esperando confirmación... (' + (intentos * 3) + 's)';
+                        }
+                    }
+
+                } catch (error) {
+                    console.warn('Polling error:', error);
+                }
+
+                // Timeout
+                if (intentos >= MAX_INTENTOS) {
+                    clearInterval(pollingInterval);
+                    pollingInterval = null;
+
+                    var statusEl = document.getElementById('cryptoStatus');
+                    if (statusEl) {
+                        statusEl.textContent =
+                            '⏳ El pago está tomando más tiempo de lo esperado. Usa "Verificar pago" manualmente.';
+                        statusEl.style.color = 'var(--warning)';
+                    }
+                    showToast('⏳ Tiempo de espera agotado. Verifica manualmente.', 'warning');
+                }
+
+            }, 3000);
+
+            // Timeout global (5 minutos)
+            pollingTimeout = setTimeout(function() {
+                if (pollingInterval) {
+                    clearInterval(pollingInterval);
+                    pollingInterval = null;
+                }
+                var statusEl = document.getElementById('cryptoStatus');
+                if (statusEl) {
+                    statusEl.textContent = '⏳ Tiempo de espera agotado. Usa "Verificar pago" manualmente.';
+                    statusEl.style.color = 'var(--warning)';
+                }
+            }, 300000);
+        }
+
+        // ✅ CORREGIDA: Consulta estado REAL a NOWPayments
+        async function verificarPagoCrypto() {
+            var btn = document.getElementById('btnVerificarPago');
+            var statusEl = document.getElementById('cryptoStatus');
+            var modal = document.getElementById('cryptoPaymentModal');
+            var ventaId = modal ? modal.dataset.ventaId : null;
+
+            if (!ventaId) {
+                showToast('❌ No hay venta para verificar', 'error');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = '⏳ Verificando...';
+            statusEl.textContent = '⏳ Consultando estado del pago...';
+            statusEl.style.color = 'var(--text-secondary)';
+
+            try {
+                var response = await fetch('/api/payments/muro/status/' + ventaId, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + (await getSession())?.access_token || ''
+                    }
+                });
+
+                var data = await response.json();
+
+                if (!data.success) {
+                    throw new Error(data.error || 'Error consultando pago');
+                }
+
+                var estado = data.data?.estado || 'desconocido';
+                var nowpaymentsStatus = data.data?.nowpayments_status || 'unknown';
+
+                if (estado === 'pagado' || estado === 'completado') {
+                    statusEl.textContent = '✅ ¡Pago confirmado! Tokens transferidos.';
+                    statusEl.style.color = 'var(--success)';
+                    showToast('✅ ¡Compra completada exitosamente!', 'success');
+
+                    // Detener polling
+                    if (pollingInterval) {
+                        clearInterval(pollingInterval);
+                        pollingInterval = null;
+                    }
+
+                    setTimeout(function() {
+                        cerrarModalPago();
+                        cargarPublicaciones();
+                        cargarPreciosMercado();
+                        cargarUsuarioActual();
+                    }, 2000);
+
+                } else if (estado === 'cancelado' || nowpaymentsStatus === 'failed' || nowpaymentsStatus === 'expired' ||
+                    nowpaymentsStatus === 'refunded') {
+                    statusEl.textContent = '❌ El pago no fue completado. Estado: ' + nowpaymentsStatus;
+                    statusEl.style.color = 'var(--danger)';
+                    showToast('❌ El pago no se completó', 'error');
+
+                } else {
+                    var mensaje = '⏳ Pago en proceso. Estado: ' + nowpaymentsStatus;
+                    if (data.data?.precio_usdt) {
+                        mensaje += ' | Monto: ' + data.data.precio_usdt + ' USDT';
+                    }
+                    statusEl.textContent = mensaje;
+                    statusEl.style.color = 'var(--text-secondary)';
+                    showToast('⏳ Aún no se confirma el pago', 'warning');
+                }
+
+            } catch (error) {
+                console.error('Error verificando pago:', error);
+                statusEl.textContent = '❌ Error: ' + error.message;
+                statusEl.style.color = 'var(--danger)';
+                showToast('❌ Error al verificar pago', 'error');
+            }
+
+            btn.disabled = false;
+            btn.textContent = '✅ Verificar Pago';
+        }
+
+        // ✅ CORREGIDA: Limpia polling al cerrar
         function cerrarModalPago() {
+            if (pollingInterval) {
+                clearInterval(pollingInterval);
+                pollingInterval = null;
+            }
+            if (pollingTimeout) {
+                clearTimeout(pollingTimeout);
+                pollingTimeout = null;
+            }
             var modal = document.getElementById('cryptoPaymentModal');
             if (modal) modal.classList.remove('show');
         }
@@ -1133,49 +1452,12 @@
             }
         }
 
-        async function verificarPagoCrypto() {
-            var btn = document.getElementById('btnVerificarPago');
-            var statusEl = document.getElementById('cryptoStatus');
-            var modal = document.getElementById('cryptoPaymentModal');
-            var postId = modal ? modal.dataset.ventaId : null;
-            if (!postId) { showToast('❌ No hay venta para verificar', 'error'); return; }
-            btn.disabled = true;
-            btn.textContent = '⏳ Verificando...';
-            statusEl.textContent = '⏳ Verificando pago en blockchain...';
-            statusEl.style.color = 'var(--text-secondary)';
-            try {
-                await new Promise(function(resolve) { setTimeout(resolve, 2000); });
-                var result = await window.supabase
-                    .from('muro_ventas_tokens')
-                    .update({ estado: 'pagado' })
-                    .eq('post_id', postId)
-                    .eq('comprador_id', sessionUser ? sessionUser.id : null)
-                    .eq('estado', 'pendiente');
-                if (result.error) throw result.error;
-                await window.supabase.from('muro_posts').update({ cantidad_venta: 0 }).eq('id', postId);
-                statusEl.textContent = '✅ ¡Pago verificado! Tokens transferidos.';
-                statusEl.style.color = 'var(--success)';
-                showToast('✅ ¡Compra completada exitosamente!', 'success');
-                setTimeout(function() {
-                    cerrarModalPago();
-                    cargarPublicaciones();
-                    cargarPreciosMercado();
-                }, 2000);
-            } catch (e) {
-                console.error('Error verificando pago:', e);
-                statusEl.textContent = '❌ Error al verificar pago';
-                statusEl.style.color = 'var(--danger)';
-                showToast('❌ Error al verificar pago', 'error');
-            }
-            finally { btn.disabled = false; btn.textContent = '✅ Verificar Pago'; }
-        }
-
         // ================================================================
-        // 🎯 SELECTOR DE EMOJIS - NUEVO (REEMPLAZA ALEATORIO)
+        // 🎯 SELECTOR DE EMOJIS
         // ================================================================
 
         var emojisDisponibles = [
-            '😊', '🔥', '❤️', '💎', '✨', '🎉', '🚀', '🌟', 
+            '😊', '🔥', '❤️', '💎', '✨', '🎉', '🚀', '🌟',
             '💪', '🤝', '👀', '💯', '🎯', '⭐', '🌈', '⚡',
             '💫', '🪐', '🌙', '☀️', '🌸', '🌺', '🍀', '🎶',
             '📌', '🔮', '💜', '🧡', '💛', '💚', '💙', '🖤'
@@ -1188,7 +1470,6 @@
                 picker.classList.remove('show');
                 return;
             }
-            // Llenar la grilla si está vacía
             var grid = document.getElementById('emojiGrid');
             if (grid && grid.children.length === 0) {
                 emojisDisponibles.forEach(function(emoji) {
@@ -1216,11 +1497,9 @@
             input.focus();
             var newPos = start + emoji.length;
             input.selectionStart = input.selectionEnd = newPos;
-            // Disparar evento input para actualizar cualquier contador si existe
             input.dispatchEvent(new Event('input', { bubbles: true }));
         }
 
-        // Cerrar selector al hacer clic fuera
         document.addEventListener('click', function(e) {
             var picker = document.getElementById('emojiPicker');
             var btnEmoji = document.getElementById('btnEmoji');
@@ -1244,11 +1523,7 @@
             input.selectionStart = input.selectionEnd = start + 1;
         }
 
-        // ===== OBSOLETO: insertarEmoji() reemplazado por selector =====
-        // La función original insertarEmoji() ya no se usa.
-        // Se mantiene como referencia pero ahora llama al selector.
         function insertarEmoji() {
-            // Redirigir al selector visual
             toggleEmojiPicker();
         }
 
@@ -1258,7 +1533,7 @@
         }
 
         // ================================================================
-        // 📷 SUBIR IMAGEN AL MURO - CORREGIDO (SIN CREAR BUCKET)
+        // 📷 SUBIR IMAGEN AL MURO
         // ================================================================
 
         async function subirImagenMuro(event) {
@@ -1286,14 +1561,14 @@
             try {
                 showToast('⏳ Subiendo imagen...', '');
 
-                // ✅ SUBIR DIRECTAMENTE - SIN listBuckets() NI createBucket()
                 var uploadResult = await window.supabase.storage
                     .from('muro-imagenes')
                     .upload(filePath, file, { cacheControl: '3600', upsert: true });
 
                 if (uploadResult.error) {
                     if (uploadResult.error.message && uploadResult.error.message.includes('bucket not found')) {
-                        showToast('⚠️ El almacenamiento de imágenes no está configurado. Contacta al administrador.', 'error');
+                        showToast('⚠️ El almacenamiento de imágenes no está configurado. Contacta al administrador.',
+                            'error');
                         return;
                     }
                     throw uploadResult.error;
@@ -1302,7 +1577,6 @@
                 var urlData = window.supabase.storage.from('muro-imagenes').getPublicUrl(filePath);
                 var publicUrl = urlData.data.publicUrl;
 
-                // ✅ AHORA TOMA EL TEXTO DEL USUARIO
                 var postContent = document.getElementById('postContent');
                 var contenido = postContent ? postContent.value.trim() : '';
 
@@ -1310,13 +1584,12 @@
                     .from('muro_posts')
                     .insert({
                         usuario_id: sessionUser.id,
-                        contenido: contenido,   // ✅ AHORA GUARDA EL TEXTO
+                        contenido: contenido,
                         imagen_url: publicUrl
                     });
 
                 if (insertResult.error) throw insertResult.error;
 
-                // Limpiar el textarea después de publicar
                 if (postContent) postContent.value = '';
 
                 showToast('✅ Publicación con imagen creada', 'success');
@@ -1351,26 +1624,35 @@
                                 showToast('📢 Nueva publicación en el Muro', 'success');
                             }
                         }
-                    } catch (e) { console.error('Error en Realtime INSERT:', e); }
-                    finally { isRealtimeProcessing = false; }
+                    } catch (e) { console.error('Error en Realtime INSERT:', e); } finally { isRealtimeProcessing =
+                            false; }
                 })
                 .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'muro_comentarios' }, function() {
                     try {
-                        document.querySelectorAll('.post-comentarios[style*="display: block"]').forEach(function(el) {
+                        document.querySelectorAll('.post-comentarios[style*="display: block"]').forEach(function(
+                        el) {
                             var postId = el.id.replace('comentarios-', '');
                             cargarComentarios(postId);
                         });
                     } catch (e) { console.error('Error en Realtime comentarios:', e); }
                 })
                 .subscribe(function(status) {
-                    if (status === 'SUBSCRIBED') { console.log('✅ Muro Realtime conectado'); }
-                    else if (status === 'CHANNEL_ERROR') { console.error('❌ Error en Realtime:', status); }
+                    if (status === 'SUBSCRIBED') { console.log('✅ Muro Realtime conectado'); } else if (status ===
+                        'CHANNEL_ERROR') { console.error('❌ Error en Realtime:', status); }
                 });
             return muroChannel;
         }
 
         // ===== LIMPIEZA =====
         function limpiarRecursosMuro() {
+            if (pollingInterval) {
+                clearInterval(pollingInterval);
+                pollingInterval = null;
+            }
+            if (pollingTimeout) {
+                clearTimeout(pollingTimeout);
+                pollingTimeout = null;
+            }
             if (muroChannel) {
                 try { window.supabase.removeChannel(muroChannel); } catch (e) {}
                 muroChannel = null;
@@ -1401,7 +1683,8 @@
             var searchInput = document.getElementById('searchHashtag');
             if (searchInput) {
                 searchInput.addEventListener('keypress', function(e) {
-                    if (e.key === 'Enter') { e.preventDefault(); buscarHashtag(); }
+                    if (e.key === 'Enter') { e.preventDefault();
+                        buscarHashtag(); }
                 });
             }
             document.addEventListener('keypress', function(e) {
