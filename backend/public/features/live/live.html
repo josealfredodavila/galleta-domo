@@ -1,7 +1,7 @@
 <!-- ================================================================
      LIVE - SARIEL'S ECOSYSTEM
      VERSIÓN FUNCIONAL - CONEXIÓN REAL CON SUPABASE + LIVEKIT
-     CORREGIDO: FINALIZAR TRANSMISIÓN DESDE GRUPOS
+     CORREGIDO: FINALIZAR TRANSMISIÓN VÍA RPC
      ================================================================ -->
 <!DOCTYPE html>
 <html lang="es">
@@ -419,7 +419,7 @@
 /* ================================================================
    LIVE - SARIEL'S ECOSYSTEM
    VERSIÓN FUNCIONAL - CONEXIÓN REAL CON SUPABASE + LIVEKIT
-   CORREGIDO: FINALIZAR TRANSMISIÓN DESDE GRUPOS
+   CORREGIDO: FINALIZAR TRANSMISIÓN VÍA RPC
    ================================================================ */
 
 // ================================================================
@@ -658,7 +658,7 @@ async function iniciarTransmision() {
 }
 
 // ================================================================
-// ✋ FINALIZAR TRANSMISIÓN - CORREGIDO
+// ✋ FINALIZAR TRANSMISIÓN - CORREGIDO CON RPC
 // ================================================================
 async function finalizarTransmision() {
     try {
@@ -670,39 +670,41 @@ async function finalizarTransmision() {
             return;
         }
 
+        // ✅ Verificar que el usuario sea el streamer (seguridad)
+        if (currentUser) {
+            // Si currentStream no está cargado, obtenerlo
+            if (!currentStream || currentStream.id !== streamId) {
+                const { data: stream, error: loadError } = await supabase
+                    .from('transmisiones')
+                    .select('streamer_id, estado')
+                    .eq('id', streamId)
+                    .maybeSingle();
+
+                if (loadError) throw loadError;
+                if (!stream) {
+                    showToast('❌ Transmisión no encontrada', 'error');
+                    return;
+                }
+                if (stream.streamer_id !== currentUser.id) {
+                    showToast('⚠️ Solo el streamer puede finalizar la transmisión', 'error');
+                    return;
+                }
+                if (stream.estado === 'finalizada') {
+                    showToast('⚠️ Esta transmisión ya finalizó', 'warning');
+                    return;
+                }
+                currentStream = stream;
+            } else if (currentStream.streamer_id !== currentUser.id) {
+                showToast('⚠️ Solo el streamer puede finalizar la transmisión', 'error');
+                return;
+            }
+        }
+
         if (!confirm('¿Seguro que quieres finalizar la transmisión?')) return;
 
         showToast('⏳ Finalizando transmisión...', '', 3000);
 
-        // Si currentStream no está cargado, recuperar la transmisión directamente
-        // usando el ID recibido en ?transmision=ID
-        if (!currentStream || currentStream.id !== streamId) {
-            const { data: stream, error: loadError } = await supabase
-                .from('transmisiones')
-                .select('id, fecha_inicio, streamer_id, estado, is_live')
-                .eq('id', streamId)
-                .maybeSingle();
-
-            if (loadError) throw loadError;
-            if (!stream) throw new Error('No se encontró la transmisión en Supabase.');
-            currentStream = stream;
-        }
-
-        // ✅ Verificar que el usuario sea el streamer (seguridad)
-        if (currentUser && currentStream.streamer_id !== currentUser.id) {
-            showToast('⚠️ Solo el streamer puede finalizar la transmisión', 'error');
-            return;
-        }
-
-        const fechaInicio = currentStream.fecha_inicio ? new Date(currentStream.fecha_inicio) : null;
-        const fechaFin = new Date();
-        const duracion = fechaInicio && !Number.isNaN(fechaInicio.getTime())
-            ? Math.max(0, Math.floor((fechaFin.getTime() - fechaInicio.getTime()) / 1000))
-            : 0;
-
-        console.log('⏱️ Duración de la transmisión:', duracion, 'segundos');
-
-        // Detener medios locales
+        // ✅ 1. Detener medios locales
         const video = document.getElementById('liveVideo');
         if (video && video.srcObject) {
             video.srcObject.getTracks().forEach(track => track.stop());
@@ -720,26 +722,7 @@ async function finalizarTransmision() {
             gameScreenTrack = null;
         }
 
-        // ✅ Cierre definitivo en Supabase
-        const { data: updatedStream, error } = await supabase
-            .from('transmisiones')
-            .update({
-                estado: 'finalizada',
-                is_live: false,
-                fecha_fin: fechaFin.toISOString(),
-                duracion: duracion,
-                viewers_count: espectadores
-            })
-            .eq('id', streamId)
-            .select('id, estado, is_live, fecha_inicio, fecha_fin, duracion');
-
-        if (error) throw error;
-        if (!updatedStream || updatedStream.length === 0) {
-            throw new Error('Supabase no actualizó ninguna transmisión. Verifica las políticas RLS.');
-        }
-
-        console.log('✅ Transmisión finalizada en Supabase:', updatedStream[0]);
-
+        // ✅ 2. Desconectar LiveKit
         if (liveKitRoom) {
             try {
                 await liveKitRoom.disconnect();
@@ -750,6 +733,31 @@ async function finalizarTransmision() {
             liveKitRoom = null;
         }
 
+        // ✅ 3. LLAMAR A LA RPC DE SUPABASE (YA CORREGIDA)
+        console.log('📡 Finalizando transmisión con RPC:', streamId);
+        const { data, error } = await supabase.rpc('finalizar_transmision', {
+            p_transmision_id: streamId
+        });
+
+        if (error) {
+            console.error('❌ Error en RPC finalizar_transmision:', error);
+            // Fallback: UPDATE directo si la RPC falla
+            console.warn('⚠️ Usando UPDATE directo como fallback');
+            const fechaFin = new Date().toISOString();
+            const { error: updateError } = await supabase
+                .from('transmisiones')
+                .update({
+                    estado: 'finalizada',
+                    is_live: false,
+                    fecha_fin: fechaFin
+                })
+                .eq('id', streamId);
+            if (updateError) throw updateError;
+        } else {
+            console.log('✅ RPC finalizar_transmision ejecutada:', data);
+        }
+
+        // ✅ 4. Limpiar estado
         if (streamInterval) {
             clearInterval(streamInterval);
             streamInterval = null;
@@ -769,16 +777,21 @@ async function finalizarTransmision() {
 
         showToast('✅ Transmisión finalizada', 'success');
 
-        // ✅ Redirigir al grupo si venía de ahí
+        // ✅ 5. Redirigir al grupo si venía de ahí
         const referrer = document.referrer;
         if (referrer && referrer.includes('/features/grupos/grupos.html')) {
             setTimeout(() => {
                 window.location.href = referrer;
             }, 1500);
+        } else {
+            // Si no viene de grupos, ir al muro
+            setTimeout(() => {
+                window.location.href = '/features/muro/muro.html';
+            }, 1500);
         }
 
     } catch (error) {
-        console.error('Error finalizando transmisión:', error);
+        console.error('❌ Error finalizando transmisión:', error);
         showToast('❌ Error al finalizar: ' + error.message, 'error');
     }
 }
