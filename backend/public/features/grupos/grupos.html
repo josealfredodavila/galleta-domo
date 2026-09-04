@@ -1,6 +1,6 @@
 <!-- ================================================================
      GRUPOS - SARIEL'S ECOSYSTEM
-     VERSIÓN COMPLETA - CORREGIDO (SIN INSERTAR CATEGORÍAS)
+     VERSIÓN PRODUCCIÓN - CORREGIDO (ESTRUCTURA REAL SUPABASE)
      ================================================================ -->
 <!DOCTYPE html>
 <html lang="es">
@@ -1357,66 +1357,99 @@
         }
 
         // ================================================================
-        // CREAR GRUPO - CORREGIDO (SIN INSERTAR CATEGORÍAS)
+        // CREAR GRUPO - CORREGIDO CON ESTRUCTURA REAL DE SUPABASE
         // ================================================================
         async function crearGrupo() {
-            if (!sessionUser) { showToast('⚠️ Inicia sesión para crear grupo', 'error'); return; }
+            if (!sessionUser) {
+                showToast('⚠️ Inicia sesión para crear grupo', 'error');
+                return;
+            }
 
             var nombre = document.getElementById('inputNombreGrupo').value.trim();
             var descripcion = document.getElementById('inputDescripcionGrupo').value.trim();
             var categoriaNombre = document.getElementById('inputCategoriaGrupo').value;
             var ciudad = document.getElementById('inputCiudadGrupo').value.trim();
-            var estado = document.getElementById('inputEstadoGrupo').value.trim();
+            var estadoRegion = document.getElementById('inputEstadoGrupo').value.trim();
             var pais = document.getElementById('inputPaisGrupo').value.trim();
             var visibilidad = document.getElementById('inputVisibilidadGrupo').value;
             var modoIngreso = document.getElementById('inputModoIngresoGrupo').value;
 
-            if (!nombre) { showToast('⚠️ El nombre es requerido', 'warning'); return; }
+            if (!nombre) {
+                showToast('⚠️ El nombre es requerido', 'warning');
+                return;
+            }
 
             var btn = document.getElementById('btnCrearGrupo');
             btn.disabled = true;
             btn.textContent = '⏳ Creando...';
 
             try {
-                // ✅ BUSCAR categoría existente (NO INSERTAR)
+                console.log('📝 Iniciando creación de grupo...');
+                console.log('📊 Datos del formulario:', {
+                    nombre,
+                    descripcion,
+                    categoriaNombre,
+                    ciudad,
+                    estadoRegion,
+                    pais,
+                    visibilidad,
+                    modoIngreso
+                });
+
+                // ✅ 1. BUSCAR categoría existente (NUNCA INSERTAR)
                 var categoriaId = null;
                 var catResult = await window.supabase
                     .from('grupos_video_categorias')
-                    .select('id')
+                    .select('id, nombre')
                     .eq('nombre', categoriaNombre)
                     .maybeSingle();
 
-                if (catResult.data) {
+                console.log('🔍 Búsqueda de categoría:', categoriaNombre);
+                console.log('📊 Resultado:', catResult);
+
+                if (catResult.data && catResult.data.id) {
                     categoriaId = catResult.data.id;
+                    console.log('✅ Categoría encontrada ID:', categoriaId);
                 } else {
-                    // ✅ Si no existe, usar 'General' (ID 1 por defecto)
+                    // ✅ Fallback: buscar 'General'
+                    console.log('⚠️ Categoría no encontrada, buscando "General"...');
                     var defaultCat = await window.supabase
                         .from('grupos_video_categorias')
                         .select('id')
                         .eq('nombre', 'General')
                         .maybeSingle();
 
-                    if (defaultCat.data) {
+                    if (defaultCat.data && defaultCat.data.id) {
                         categoriaId = defaultCat.data.id;
+                        console.log('✅ "General" encontrada ID:', categoriaId);
+                        showToast('⚠️ Categoría "' + categoriaNombre + '" no encontrada, usando "General"', 'warning');
                     } else {
-                        // Fallback extremo: obtener la primera categoría disponible
+                        // ✅ Último fallback: obtener cualquier categoría
+                        console.log('⚠️ "General" no encontrada, buscando cualquier categoría...');
                         var anyCat = await window.supabase
                             .from('grupos_video_categorias')
                             .select('id')
                             .limit(1)
-                            .single();
+                            .maybeSingle();
 
-                        if (anyCat.data) {
+                        if (anyCat.data && anyCat.data.id) {
                             categoriaId = anyCat.data.id;
+                            console.log('✅ Categoría alternativa ID:', categoriaId);
+                            showToast('⚠️ Usando categoría predeterminada', 'warning');
                         } else {
                             throw new Error('No hay categorías disponibles en la base de datos');
                         }
                     }
-
-                    showToast('⚠️ Categoría "' + categoriaNombre + '" no encontrada, usando "General"', 'warning');
                 }
 
-                // ✅ Insertar grupo (sin tocar categorías)
+                // ✅ Validar que categoriaId NO sea null
+                if (!categoriaId) {
+                    throw new Error('No se pudo obtener un ID de categoría válido');
+                }
+
+                console.log('📝 Insertando grupo con categoria_id:', categoriaId);
+
+                // ✅ 2. Insertar grupo con columnas REALES
                 var groupResult = await window.supabase
                     .from('grupos_video')
                     .insert({
@@ -1424,7 +1457,7 @@
                         descripcion: descripcion || null,
                         categoria_id: categoriaId,
                         ciudad: ciudad || null,
-                        estado: estado || null,
+                        estado_region: estadoRegion || null, // ✅ COLUMNA REAL
                         pais: pais || null,
                         visibilidad: visibilidad,
                         modo_ingreso: modoIngreso,
@@ -1434,21 +1467,30 @@
                     .select()
                     .single();
 
-                if (groupResult.error) throw groupResult.error;
+                if (groupResult.error) {
+                    console.error('❌ Error en INSERT grupo:', groupResult.error);
+                    throw groupResult.error;
+                }
 
                 var grupo = groupResult.data;
+                console.log('✅ Grupo creado:', grupo);
 
-                // ✅ Insertar creador como administrador
+                // ✅ 3. Insertar creador como administrador
                 var memberResult = await window.supabase
                     .from('grupos_video_miembros')
                     .insert({
                         grupo_id: grupo.id,
                         usuario_id: sessionUser.id,
-                        rol: 'administrador',
+                        rol: 'administrador', // ✅ ROL REAL
                         estado: 'activo'
                     });
 
-                if (memberResult.error) throw memberResult.error;
+                if (memberResult.error) {
+                    console.error('❌ Error en INSERT miembro:', memberResult.error);
+                    throw memberResult.error;
+                }
+
+                console.log('✅ Miembro administrador creado');
 
                 showToast('✅ Grupo "' + nombre + '" creado', 'success');
                 cerrarModalCrearGrupo();
@@ -1463,7 +1505,8 @@
                 cargarGrupos();
 
             } catch (e) {
-                console.error('Error creando grupo:', e);
+                console.error('❌ Error creando grupo:', e);
+                console.error('❌ Detalles:', e.message, e.details, e.hint);
                 showToast('❌ Error al crear grupo: ' + e.message, 'error');
             } finally {
                 btn.disabled = false;
