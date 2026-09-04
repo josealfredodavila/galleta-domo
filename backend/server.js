@@ -155,8 +155,9 @@ const apiLimiter = rateLimit({
     message: { success: false, error: 'Demasiadas peticiones' }
 });
 
+// ✅ CORREGIDO: ahora usa /webhook/ en lugar de /webhooks/
 app.use('/api/', (req, res, next) => {
-    if (req.path.startsWith('/webhooks/')) return next();
+    if (req.path.startsWith('/webhook/')) return next();
     return apiLimiter(req, res, next);
 });
 
@@ -210,6 +211,15 @@ app.use('/internet', express.static(path.join(__dirname, 'public', 'features', '
    ================================================================ */
 const authRoutes = require('./routes/auth');
 app.use('/api/auth', authRoutes);
+
+/* ================================================================
+   ✅ RUTAS DE PAGOS Y WEBHOOK - NUEVAS
+   ================================================================ */
+const paymentsRoutes = require('./routes/payments');
+const webhooksRoutes = require('./routes/webhooks');
+
+app.use('/api/payments', paymentsRoutes);
+app.use('/api/webhook', webhooksRoutes);
 
 /* ================================================================
    RUTAS HTML - COMPLETAS (TODAS LAS RUTAS)
@@ -312,8 +322,8 @@ app.get('/live-terminos', (req, res) => {
    ================================================================ */
 
 app.get('*', (req, res, next) => {
-    // Excluir rutas de API y archivos estáticos
-    if (req.path.startsWith('/api/') || req.path.startsWith('/webhooks/')) {
+    // Excluir rutas de API y webhooks
+    if (req.path.startsWith('/api/') || req.path.startsWith('/webhook/')) {
         return next();
     }
     // Verificar si la ruta corresponde a un archivo con extensión
@@ -1367,6 +1377,8 @@ app.listen(PORT, '0.0.0.0', () => {
     console.log(`📱 Telnyx: ${process.env.TELNYX_API_KEY ? '✅ Configurado' : '❌ No configurado'}`);
     console.log(`💳 NOWPayments: ${process.env.NOWPAYMENTS_API_KEY ? '✅ Configurado' : '❌ No configurado'}`);
     console.log(`🔐 Auth router: ✅ Montado en /api/auth`);
+    console.log(`💳 Payments router: ✅ Montado en /api/payments`);
+    console.log(`📡 Webhook router: ✅ Montado en /api/webhook`);
     console.log(`📂 Rutas de features: ✅ /muro, /perfil, /live, /videos, /mensajes, /internet`);
     console.log('========================================');
 });
