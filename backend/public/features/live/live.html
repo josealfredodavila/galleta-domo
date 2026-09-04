@@ -1,13 +1,13 @@
 <!-- ================================================================
      LIVE - SARIEL'S ECOSYSTEM
-     VERSIÓN FINAL - CÁMARA ↔ PANTALLA CON TRACKS SEPARADOS
-     CORREGIDO: BOTÓN FINALIZAR FUNCIONANDO
+     VERSIÓN FUNCIONAL - CONEXIÓN REAL CON SUPABASE + LIVEKIT
+     CORREGIDO: FINALIZAR TRANSMISIÓN DESDE GRUPOS
      ================================================================ -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>◉ Live · Sariel's</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
@@ -37,7 +37,6 @@
             --bronze-light: #D4A574;
             --bronze-dark: #8B5A2B;
             --esmeralda: #50C878;
-            --warning: #ffaa00;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -98,11 +97,22 @@
         .btn-danger:hover { background: rgba(255, 51, 102, 0.2); }
         .btn-sm { padding: 4px 12px; font-size: 0.65rem; }
         .btn-donacion {
-            padding: 8px 12px; border-radius: 12px; border: 1px solid var(--glass-border);
-            background: rgba(0,0,0,0.3); color: var(--text-primary); cursor: pointer;
-            transition: var(--transition); font-size: 0.65rem; text-align: center; min-width: 60px;
+            padding: 8px 12px;
+            border-radius: 12px;
+            border: 1px solid var(--glass-border);
+            background: rgba(0,0,0,0.3);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: var(--transition);
+            font-size: 0.65rem;
+            text-align: center;
+            min-width: 60px;
         }
-        .btn-donacion:hover { border-color: var(--gold); transform: scale(1.05); background: rgba(212, 175, 55, 0.1); }
+        .btn-donacion:hover {
+            border-color: var(--gold);
+            transform: scale(1.05);
+            background: rgba(212, 175, 55, 0.1);
+        }
         .btn-donacion .monto { font-weight: 700; color: var(--gold); }
         .btn-donacion .label { font-size: 0.5rem; color: var(--text-muted); display: block; }
 
@@ -133,8 +143,16 @@
         .live-video-container .live-controls button.end { color: var(--danger); font-size: 0.8rem; padding: 4px 12px; border-radius: 20px; }
 
         .donacion-overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none; z-index: 20; display: flex; align-items: center; justify-content: center;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .live-chat-container {
@@ -166,6 +184,7 @@
         }
         .live-chat-container .chat-input input:focus { border-color: var(--gold); }
         .live-chat-container .chat-input button { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); border: none; padding: 6px 16px; border-radius: 20px; font-weight: 700; cursor: pointer; transition: var(--transition); }
+        .live-chat-container .chat-input button:hover { transform: scale(1.05); }
 
         .donaciones-rapidas {
             display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; justify-content: center;
@@ -212,6 +231,10 @@
             80% { transform: rotateY(360deg) scale(1); opacity: 1; }
             100% { transform: rotateY(720deg) scale(0.8); opacity: 0; }
         }
+        @keyframes brillo {
+            0%, 100% { text-shadow: 0 0 20px currentColor; }
+            50% { text-shadow: 0 0 60px currentColor, 0 0 100px currentColor; }
+        }
         @keyframes coheteVuelo {
             0% { transform: translateX(-200%) rotate(-45deg); opacity: 0; }
             30% { transform: translateX(0%) rotate(0deg); opacity: 1; }
@@ -225,115 +248,26 @@
             100% { transform: rotate(1080deg) scale(0.5); opacity: 0; }
         }
 
+        /* 🎮 Selector de juegos */
         .btn-game { color: #fff !important; background: rgba(80, 200, 120, 0.12) !important; border: 1px solid rgba(80, 200, 120, 0.45) !important; }
         .btn-game:hover { color: var(--gold) !important; border-color: var(--gold) !important; background: rgba(212, 175, 55, 0.14) !important; }
-        
-        .game-config-backdrop {
-            position: fixed; inset: 0; z-index: 10000; display: none; align-items: center; justify-content: center;
-            padding: 20px; background: rgba(0,0,0,.85); backdrop-filter: blur(10px);
-        }
-        .game-config-backdrop.show { display: flex; }
-        
-        .game-config-modal {
-            width: min(680px, 100%); max-height: min(88vh, 720px); overflow-y: auto;
-            background: linear-gradient(160deg, rgba(15,45,26,.98), rgba(5,8,15,.98));
-            border: 1px solid var(--gold); border-radius: 22px; padding: 28px;
-            box-shadow: 0 20px 70px rgba(0,0,0,.55), var(--shadow-gold);
-        }
-        .game-config-modal .modal-header {
-            display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 18px;
-        }
-        .game-config-modal .modal-header .kicker {
-            color: var(--gold); font: 700 .55rem 'Orbitron', monospace; letter-spacing: 2px; margin-bottom: 5px;
-        }
-        .game-config-modal .modal-header h2 {
-            color: var(--text-primary); font: 700 1.05rem 'Orbitron', monospace;
-        }
-        .game-config-modal .modal-close {
-            border: 0; background: transparent; color: var(--text-muted); font-size: 1.8rem; line-height: 1; cursor: pointer;
-        }
-        .game-config-modal .modal-close:hover { color: var(--gold); }
-
-        .game-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-            gap: 10px;
-            margin: 16px 0;
-        }
-        .game-option {
-            padding: 14px 10px;
-            border-radius: 14px;
-            background: rgba(255,255,255,.05);
-            border: 1px solid var(--glass-border);
-            color: var(--text-primary);
-            cursor: pointer;
-            transition: var(--transition);
-            font-size: 0.8rem;
-            text-align: center;
-            font-weight: 600;
-        }
-        .game-option:hover {
-            border-color: var(--gold);
-            background: rgba(212,175,55,.12);
-            transform: scale(1.02);
-        }
-        
-        .game-config-modal .config-group {
-            margin-bottom: 16px;
-        }
-        .game-config-modal .config-group label {
-            display: block; color: var(--text-secondary); font-size: .7rem; font-weight: 600; margin-bottom: 6px;
-        }
-        .game-config-modal .config-group select,
-        .game-config-modal .config-group input[type="text"] {
-            width: 100%; padding: 10px 14px; border-radius: 12px;
-            border: 1px solid var(--glass-border); background: rgba(255,255,255,.05);
-            color: var(--text-primary); font-size: .85rem; outline: none;
-        }
-        .game-config-modal .config-group select:focus,
-        .game-config-modal .config-group input[type="text"]:focus {
-            border-color: var(--gold);
-        }
-        .game-config-modal .config-group .toggle-row {
-            display: flex; align-items: center; gap: 12px; padding: 8px 12px;
-            border-radius: 10px; background: rgba(255,255,255,.03); border: 1px solid var(--glass-border);
-        }
-        .game-config-modal .config-group .toggle-row label { margin: 0; cursor: pointer; }
-        .game-config-modal .config-group .toggle-row input[type="checkbox"] {
-            width: 18px; height: 18px; accent-color: var(--gold); cursor: pointer;
-        }
-        .game-config-modal .config-group .calidad-opciones {
-            display: flex; gap: 8px; flex-wrap: wrap;
-        }
-        .game-config-modal .config-group .calidad-btn {
-            padding: 6px 18px; border-radius: 20px; border: 1px solid var(--glass-border);
-            background: transparent; color: var(--text-muted); cursor: pointer; transition: var(--transition);
-            font-size: .7rem; font-weight: 600;
-        }
-        .game-config-modal .config-group .calidad-btn:hover {
-            border-color: var(--gold); color: var(--gold);
-        }
-        .game-config-modal .config-group .calidad-btn.active {
-            border-color: var(--gold); background: rgba(212,175,55,.12); color: var(--gold);
-        }
-        
-        .game-config-modal .btn-iniciar-juego {
-            width: 100%; padding: 14px; border-radius: 30px; border: none;
-            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
-            color: var(--space); font-family: 'Orbitron', monospace; font-weight: 700;
-            font-size: .95rem; cursor: pointer; transition: var(--transition);
-        }
-        .game-config-modal .btn-iniciar-juego:hover {
-            transform: scale(1.02); box-shadow: var(--shadow-gold);
-        }
-        .game-config-modal .btn-iniciar-juego:disabled {
-            opacity: 0.5; cursor: not-allowed; transform: none;
-        }
-        
-        .game-config-modal .help-text {
-            margin-top: 12px; color: var(--text-muted); font-size: .6rem; text-align: center; line-height: 1.6;
-        }
-        .game-config-modal .help-text .icon { color: var(--gold); }
+        .game-modal-backdrop { position: fixed; inset: 0; z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px; background: rgba(0,0,0,.78); backdrop-filter: blur(8px); }
+        .game-modal { width: min(680px, 100%); max-height: min(88vh, 720px); overflow-y: auto; background: linear-gradient(160deg, rgba(15,45,26,.98), rgba(5,8,15,.98)); border: 1px solid var(--gold); border-radius: 22px; padding: 22px; box-shadow: 0 20px 70px rgba(0,0,0,.55), var(--shadow-gold); }
+        .game-modal-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
+        .game-modal-kicker { color: var(--gold); font: 700 .55rem 'Orbitron', monospace; letter-spacing: 2px; margin-bottom: 5px; }
+        .game-modal h2 { color: var(--text-primary); font: 700 1.05rem 'Orbitron', monospace; }
+        .game-modal-close { border: 0; background: transparent; color: var(--text-muted); font-size: 1.8rem; line-height: 1; cursor: pointer; }
+        .game-modal-close:hover { color: var(--gold); }
+        .game-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; }
+        .game-option { padding: 13px 12px; border-radius: 13px; border: 1px solid var(--glass-border); background: rgba(0,0,0,.28); color: var(--text-primary); cursor: pointer; font: 600 .72rem 'Inter', sans-serif; text-align: left; transition: var(--transition); }
+        .game-option:hover, .game-option:focus-visible { border-color: var(--gold); color: var(--gold); transform: translateY(-1px); outline: none; }
+        .game-option-other { border-color: rgba(212,175,55,.35); }
+        .otro-juego-wrap { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--glass-border); }
+        .otro-juego-wrap label { display: block; color: var(--text-secondary); font-size: .65rem; margin-bottom: 7px; }
+        .otro-juego-row { display: flex; gap: 8px; }
+        .otro-juego-row input { flex: 1; min-width: 0; padding: 10px 13px; border-radius: 20px; border: 1px solid var(--glass-border); background: rgba(255,255,255,.05); color: var(--text-primary); outline: none; }
+        .otro-juego-row input:focus { border-color: var(--gold); }
+        .game-modal-help { margin-top: 14px; color: var(--text-muted); font-size: .58rem; line-height: 1.5; }
 
         @media (max-width: 768px) {
             .live-video-container { height: 50vh; min-height: 300px; }
@@ -341,16 +275,11 @@
             .main-nav .nav-link { font-size: 0.6rem; padding: 6px 10px; }
             .live-controls { gap: 8px; flex-wrap: wrap; justify-content: center; }
             .live-controls button { font-size: 0.9rem !important; }
-            .game-config-modal { padding: 20px; }
-            .game-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
         }
         @media (max-width: 480px) {
             .live-video-container { height: 40vh; min-height: 250px; }
             .streams-list { grid-template-columns: 1fr 1fr; }
             .donaciones-rapidas .btn-donacion { min-width: 50px; padding: 6px 8px; font-size: 0.55rem; }
-            .game-config-modal .config-group .toggle-row { flex-wrap: wrap; }
-            .game-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
-            .game-option { font-size: 0.65rem; padding: 10px 6px; }
         }
     </style>
 </head>
@@ -377,6 +306,7 @@
             <a href="/features/live/live.html" class="nav-link active live">◉ Live</a>
             <a href="/features/internet/internet.html" class="nav-link">◈ Internet</a>
             <a href="/features/videos/videos.html" class="nav-link">🎬 Videos</a>
+            <a href="/features/grupos/grupos.html" class="nav-link">👥 Grupos</a>
         </nav>
 
         <div class="live-container">
@@ -389,7 +319,7 @@
                 </h1>
                 <div class="live-actions">
                     <button class="btn btn-gold btn-sm" onclick="iniciarTransmision()">◉ Iniciar live</button>
-                    <button class="btn btn-outline btn-sm" onclick="cargarTransmisionesActivas()">◈ Ver todas</button>
+                    <button class="btn btn-outline btn-sm" onclick="verTodasLasTransmisiones()">◈ Ver todas</button>
                     <button class="btn btn-outline btn-sm" onclick="cargarEstadisticas()">📊 Estadísticas</button>
                 </div>
             </div>
@@ -412,11 +342,26 @@
             </div>
 
             <div class="donaciones-rapidas">
-                <button class="btn-donacion" onclick="enviarDonacion(5)"><span class="monto">$5</span><span class="label">🥈 Plata</span></button>
-                <button class="btn-donacion" onclick="enviarDonacion(10)"><span class="monto">$10</span><span class="label">🥉 Bronce</span></button>
-                <button class="btn-donacion" onclick="enviarDonacion(20)"><span class="monto">$20</span><span class="label">🥇 Oro</span></button>
-                <button class="btn-donacion" onclick="enviarDonacion(50)" style="border-color:var(--bronze);"><span class="monto" style="color:var(--bronze);">$50</span><span class="label" style="color:var(--bronze-light);">🚀 Cohete</span></button>
-                <button class="btn-donacion" onclick="enviarDonacion(100)" style="border-color:var(--esmeralda);"><span class="monto" style="color:var(--esmeralda);">$100</span><span class="label" style="color:var(--esmeralda);">💚 Esmeralda</span></button>
+                <button class="btn-donacion" onclick="enviarDonacion(5)">
+                    <span class="monto">$5</span>
+                    <span class="label">🥈 Plata</span>
+                </button>
+                <button class="btn-donacion" onclick="enviarDonacion(10)">
+                    <span class="monto">$10</span>
+                    <span class="label">🥉 Bronce</span>
+                </button>
+                <button class="btn-donacion" onclick="enviarDonacion(20)">
+                    <span class="monto">$20</span>
+                    <span class="label">🥇 Oro</span>
+                </button>
+                <button class="btn-donacion" onclick="enviarDonacion(50)" style="border-color:var(--bronze);">
+                    <span class="monto" style="color:var(--bronze);">$50</span>
+                    <span class="label" style="color:var(--bronze-light);">🚀 Cohete</span>
+                </button>
+                <button class="btn-donacion" onclick="enviarDonacion(100)" style="border-color:var(--esmeralda);">
+                    <span class="monto" style="color:var(--esmeralda);">$100</span>
+                    <span class="label" style="color:var(--esmeralda);">💚 Esmeralda</span>
+                </button>
             </div>
 
             <div class="live-chat-container">
@@ -440,7 +385,9 @@
                 </div>
             </div>
 
-            <h3 style="font-family:'Orbitron',monospace;color:var(--gold);font-size:0.85rem;margin:16px 0 8px;">◈ Transmisiones activas</h3>
+            <h3 style="font-family:'Orbitron',monospace;color:var(--gold);font-size:0.85rem;margin:16px 0 8px;">
+                ◈ Transmisiones activas
+            </h3>
             <div class="streams-list" id="streamsList">
                 <div class="empty-state" style="grid-column:1/-1;padding:20px;">
                     <span class="icon">◉</span>
@@ -466,1180 +413,1414 @@
 
     <div class="toast" id="toast"></div>
 
-    <div id="errorBanner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:99999;background:#ff3366;color:#fff;padding:12px 16px;font-family:monospace;font-size:0.75rem;word-break:break-word;">
-        <strong>⚠️ Error detectado:</strong>
-        <span id="errorBannerText"></span>
-        <button onclick="document.getElementById('errorBanner').style.display='none'" style="float:right;background:none;border:1px solid #fff;color:#fff;border-radius:6px;padding:2px 10px;cursor:pointer;">Cerrar</button>
-    </div>
-
-    <!-- ================================================================ -->
-    <!-- SCRIPTS -->
-    <!-- ================================================================ -->
-
-    <script src="https://cdn.jsdelivr.net/npm/livekit-client/dist/livekit-client.umd.min.js"></script>
+    <!-- ✅ SOLO SUPABASE - SIN WEB3 -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-    <script src="/app.js"></script>
-
     <script>
-        // ================================================================
-        // LIVE - TODAS LAS FUNCIONES
-        // ================================================================
-
-        var LIVEKIT_CONFIG = { url: 'wss://csariels-domo-57ujk04t.livekit.cloud' };
-
-        var DONACIONES = {
-            5: { nombre: 'Cubo Plata', emoji: '🥈', color: '#C0C0C0', duracion: 3000, efecto: 'cubo_plata' },
-            10: { nombre: 'Cubo Bronce', emoji: '🥉', color: '#CD7F32', duracion: 4000, efecto: 'cubo_bronce' },
-            20: { nombre: 'Cubo Oro', emoji: '🥇', color: '#D4AF37', duracion: 5000, efecto: 'cubo_oro' },
-            50: { nombre: 'Cohete Bronce', emoji: '🚀', color: '#CD7F32', duracion: 6000, efecto: 'cohete_explosion' },
-            100: { nombre: 'Cohete Esmeralda', emoji: '💚', color: '#50C878', duracion: 8000, efecto: 'cohete_esmeralda' }
-        };
-
-        var PALABRAS_PROHIBIDAS = ['puta', 'verga', 'mierda', 'pendejo', 'chingar', 'chingada', 'cabron', 'cabrón', 'pinche', 'wey', 'güey', 'culero', 'puto', 'maricon', 'maricón', 'joto', 'negro', 'indio', 'naco', 'naca', 'sudaca', 'matar', 'mata', 'asesinar', 'suicidio', 'violar', 'droga', 'cocaína', 'marihuana', 'perico', 'cristal', 'cerveza', 'tequila', 'whisky', 'ron', 'vodka', 'fuck', 'shit', 'bitch', 'asshole', 'motherfucker'];
-
-        var currentUser = null;
-        var currentStream = null;
-        var currentStreamId = null;
-        var liveKitRoom = null;
-        var isLive = false;
-        var isMuted = false;
-        var isVoiceActive = false;
-        var streamInterval = null;
-        var channelChat = null;
-        var espectadores = 0;
-        var localStream = null;
-        var gameStream = null;
-        var juegoSeleccionado = null;
-        var juegosCache = null;
-
-        // ✅ TRACKS SEPARADOS
-        var currentVideoTrack = null;
-        var currentMicTrack = null;
-        var currentScreenAudioTrack = null;
-        var isScreenSharing = false;
-
-        function showToast(msg, type) {
-            try {
-                if (typeof window.showToast === 'function') { window.showToast(msg, type); return; }
-                var t = document.getElementById('toast');
-                if (!t) { t = document.createElement('div'); t.id = 'toast'; t.className = 'toast'; document.body.appendChild(t); }
-                t.textContent = msg;
-                t.className = 'toast show';
-                if (type === 'error') t.classList.add('error');
-                else if (type === 'warning') t.classList.add('warning');
-                else if (type === 'success') t.classList.add('success');
-                else t.classList.remove('error', 'warning', 'success');
-                clearTimeout(t._timeout);
-                t._timeout = setTimeout(function() { t.classList.remove('show'); }, 3500);
-            } catch (e) { console.warn('Toast error:', e); }
-        }
-
-        function escapeHTML(texto) {
-            if (!texto) return '';
-            var div = document.createElement('div');
-            div.textContent = texto;
-            return div.innerHTML;
-        }
-
-        async function getSession() {
-            try {
-                if (typeof window.supabase === 'undefined') { console.warn('Supabase no disponible'); return null; }
-                var r = await window.supabase.auth.getSession();
-                return r.data.session;
-            } catch (e) { console.error('Error sesión:', e); return null; }
-        }
-
-        async function obtenerTokenLiveKit(roomName, participantName, role) {
-            role = role || 'subscriber';
-            try {
-                var session = await getSession();
-                if (!session) throw new Error('No autenticado');
-                var response = await fetch('/api/token?room=' + encodeURIComponent(roomName) + '&role=' + role, {
-                    headers: { 'Authorization': 'Bearer ' + session.access_token }
-                });
-                if (!response.ok) {
-                    var error = await response.json();
-                    throw new Error(error.error || 'Error al obtener token');
-                }
-                var data = await response.json();
-                return data.token;
-            } catch (e) {
-                console.error('Error obteniendo token LiveKit:', e);
-                throw e;
-            }
-        }
-
-        // ================================================================
-        // 🎮 JUEGOS - SELECTOR
-        // ================================================================
-
-        async function abrirSelectorJuego() {
-            try {
-                if (!juegosCache) {
-                    var result = await window.supabase
-                        .from('juegos')
-                        .select('id, nombre, package_name, categoria, icono')
-                        .eq('activo', true)
-                        .order('nombre', { ascending: true });
-
-                    if (result.error) throw result.error;
-                    juegosCache = result.data || [];
-                }
-
-                if (juegosCache.length === 0) {
-                    showToast('⚠️ No hay juegos disponibles', 'warning');
-                    return;
-                }
-
-                var modal = document.createElement('div');
-                modal.className = 'game-config-backdrop';
-                modal.id = 'gameSelectorModal';
-                modal.style.display = 'flex';
-
-                var gameOptions = '';
-                for (var i = 0; i < juegosCache.length; i++) {
-                    var juego = juegosCache[i];
-                    var juegoStr = JSON.stringify(juego).replace(/"/g, '&quot;');
-                    gameOptions += '<button class="game-option" onclick="seleccionarJuego(' + juegoStr + ')">🎮 ' + escapeHTML(juego.nombre) + '</button>';
-                }
-
-                modal.innerHTML = 
-                    '<div class="game-config-modal">' +
-                    '<div class="modal-header">' +
-                    '<div><div class="kicker">🎮 TRANSMITIR JUEGO</div><h2>Elige tu juego</h2></div>' +
-                    '<button class="modal-close" onclick="cerrarSelectorJuego()">✕</button>' +
-                    '</div>' +
-                    '<div class="game-grid">' + gameOptions + '</div>' +
-                    '<div class="help-text">' +
-                    '📱 Android: Abre la app Sariel\'s para transmitir desde tu juego instalado.<br>' +
-                    '🖥️ PC: Comparte tu pantalla y transmite desde el navegador.' +
-                    '</div>' +
-                    '</div>';
-
-                document.body.appendChild(modal);
-
-                modal.addEventListener('click', function(e) {
-                    if (e.target === this) { cerrarSelectorJuego(); }
-                });
-
-            } catch (e) {
-                console.error('Error cargando juegos:', e);
-                showToast('❌ Error al cargar juegos', 'error');
-            }
-        }
-
-        function cerrarSelectorJuego() {
-            var modal = document.getElementById('gameSelectorModal');
-            if (modal) modal.remove();
-        }
-
-        async function seleccionarJuego(juego) {
-            cerrarSelectorJuego();
-
-            if (!juego.package_name) {
-                showToast('⚠️ Este juego no tiene package_name configurado', 'warning');
-                return;
-            }
-
-            juegoSeleccionado = juego;
-            showToast('🎮 Iniciando transmisión de ' + juego.nombre + '...', '');
-            await iniciarTransmisionJuego(juego);
-        }
-
-        // ================================================================
-        // 🚀 INICIAR TRANSMISIÓN DE JUEGO
-        // ================================================================
-
-        async function iniciarTransmisionJuego(juego) {
-            try {
-                var isAndroid = /android/i.test(navigator.userAgent);
-                
-                if (isAndroid) {
-                    var packageName = juego.package_name;
-                    if (!packageName) {
-                        showToast('⚠️ Este juego no tiene package_name configurado', 'error');
-                        return;
-                    }
-                    
-                    var deepLink = 'sariels://stream?juego_id=' + encodeURIComponent(juego.id) + 
-                                   '&package_name=' + encodeURIComponent(packageName) + 
-                                   '&nombre=' + encodeURIComponent(juego.nombre);
-                    
-                    showToast('📱 Abriendo ' + juego.nombre + ' en la app...', '');
-                    window.location.href = deepLink;
-                    
-                    setTimeout(function() {
-                        showToast('⚠️ ¿Tienes instalada la app Sariel\'s?', 'warning');
-                    }, 3000);
-                    
-                } else {
-                    await iniciarTransmisionJuegoWeb(juego);
-                }
-            } catch (e) {
-                console.error('Error:', e);
-                showToast('❌ Error al abrir la app', 'error');
-            }
-        }
-
-        // ================================================================
-        // 🖥️ TRANSMISIÓN WEB (PC)
-        // ================================================================
-
-        async function iniciarTransmisionJuegoWeb(juego) {
-            try {
-                var session = await getSession();
-                if (!session) {
-                    showToast('⚠️ Inicia sesión para transmitir', 'error');
-                    return;
-                }
-                currentUser = session.user;
-
-                if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
-                    showToast('⚠️ Tu navegador no soporta compartir pantalla. Usa Chrome.', 'error');
-                    return;
-                }
-
-                var screenStream = null;
-                try {
-                    var constraints = { video: { width: 1920, height: 1080 } };
-                    try { constraints.audio = true; } catch (e) {}
-                    screenStream = await navigator.mediaDevices.getDisplayMedia(constraints);
-                } catch (displayError) {
-                    console.error('Error capturando pantalla:', displayError);
-                    if (displayError.name === 'NotAllowedError' || displayError.name === 'PermissionDeniedError') {
-                        showToast('⚠️ Permiso denegado para compartir pantalla', 'error');
-                    } else {
-                        showToast('❌ Error al compartir pantalla: ' + displayError.message, 'error');
-                    }
-                    return;
-                }
-
-                if (!screenStream) {
-                    showToast('❌ No se pudo obtener la pantalla', 'error');
-                    return;
-                }
-
-                var titulo = '🎮 Jugando ' + juego.nombre;
-                var roomName = 'live-' + session.user.id + '-' + Date.now();
-
-                var result = await window.supabase.rpc('crear_transmision', {
-                    p_titulo: titulo,
-                    p_categoria: 'gaming',
-                    p_room_name: roomName
-                });
-
-                if (result.error) throw result.error;
-
-                currentStream = result.data;
-                currentStreamId = result.data.id;
-                isLive = true;
-                document.getElementById('viewersCount').textContent = '0 espectadores';
-                gameStream = screenStream;
-
-                var video = document.getElementById('liveVideo');
-                if (video) {
-                    video.srcObject = screenStream;
-                    video.muted = true;
-                    video.onloadedmetadata = function() { video.play().catch(function() {}); };
-                    setTimeout(function() { if (video.paused) { video.play().catch(function() {}); } }, 1000);
-                    document.getElementById('playBtn').textContent = '⏸';
-                    showToast('🖥️ Pantalla compartida', 'success');
-                }
-
-                try {
-                    if (typeof window.livekitClient !== 'undefined') {
-                        showToast('🔗 Conectando a LiveKit...', '');
-                        var token = await obtenerTokenLiveKit(
-                            currentStream.room_name,
-                            currentUser.user_metadata?.nombre || currentUser.email || 'streamer',
-                            'publisher'
-                        );
-                        liveKitRoom = new window.livekitClient.Room();
-                        await liveKitRoom.connect(LIVEKIT_CONFIG.url, token);
-
-                        var videoTrack = screenStream.getVideoTracks()[0];
-                        if (videoTrack) {
-                            await liveKitRoom.localParticipant.publishTrack(videoTrack);
-                            currentVideoTrack = videoTrack;
-                        }
-
-                        var audioTrack = screenStream.getAudioTracks()[0];
-                        if (audioTrack) {
-                            try {
-                                await liveKitRoom.localParticipant.publishTrack(audioTrack);
-                                currentScreenAudioTrack = audioTrack;
-                            } catch (e) { console.warn('No se pudo publicar audio de pantalla:', e); }
-                        }
-
-                        showToast('✅ Conectado a LiveKit', 'success');
-                    }
-                } catch (e) {
-                    console.warn('LiveKit error:', e);
-                    showToast('⚠️ LiveKit no disponible - modo local', 'warning');
-                }
-
-                try {
-                    var micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    if (liveKitRoom && micStream) {
-                        var micTrack = micStream.getAudioTracks()[0];
-                        if (micTrack) {
-                            await liveKitRoom.localParticipant.publishTrack(micTrack);
-                            currentMicTrack = micTrack;
-                        }
-                    }
-                    showToast('🎤 Micrófono activado', 'success');
-                } catch (micError) {
-                    console.warn('Error activando micrófono:', micError);
-                }
-
-                suscribirseAlChat();
-                cargarTransmisionesActivas();
-                showToast('🎮 ¡Transmisión de ' + juego.nombre + ' iniciada!', 'success');
-
-            } catch (e) {
-                console.error('Error iniciando transmisión de juego:', e);
-                showToast('❌ Error al iniciar: ' + e.message, 'error');
-                limpiarRecursosLive();
-            }
-        }
-
-        // ================================================================
-        // 🎥 INICIAR TRANSMISIÓN NORMAL
-        // ================================================================
-
-        async function iniciarTransmision() {
-            try {
-                var session = await getSession();
-                if (!session) {
-                    showToast('⚠️ Inicia sesión para transmitir', 'error');
-                    return;
-                }
-                currentUser = session.user;
-
-                showToast('⏳ Iniciando transmisión...', '');
-
-                var titulo = prompt('Título de tu transmisión:', 'Mi live en Sariel\'s') || 'Live en Sariel\'s';
-                var categoria = prompt('Categoría:', 'general') || 'general';
-
-                var roomName = 'live-' + currentUser.id + '-' + Date.now();
-
-                var result = await window.supabase.rpc('crear_transmision', {
-                    p_titulo: titulo,
-                    p_categoria: categoria,
-                    p_room_name: roomName
-                });
-
-                if (result.error) throw result.error;
-
-                currentStream = result.data;
-                currentStreamId = result.data.id;
-                isLive = true;
-                document.getElementById('viewersCount').textContent = '0 espectadores';
-
-                try {
-                    showToast('📷 Activando cámara...', '');
-                    var constraints = {
-                        video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
-                        audio: { echoCancellation: true, noiseSuppression: true }
-                    };
-                    if (/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)) {
-                        constraints.video.facingMode = 'environment';
-                    }
-
-                    var stream = await navigator.mediaDevices.getUserMedia(constraints);
-                    localStream = stream;
-
-                    var video = document.getElementById('liveVideo');
-                    if (video) {
-                        video.srcObject = stream;
-                        video.muted = true;
-                        video.onloadedmetadata = function() { video.play().catch(function() {}); };
-                        setTimeout(function() { if (video.paused) { video.play().catch(function() {}); } }, 1000);
-                        document.getElementById('playBtn').textContent = '⏸';
-                        showToast('📷 Cámara activada', 'success');
-                    }
-
-                    if (liveKitRoom) {
-                        var videoTrack = stream.getVideoTracks()[0];
-                        if (videoTrack) {
-                            await liveKitRoom.localParticipant.publishTrack(videoTrack);
-                            currentVideoTrack = videoTrack;
-                        }
-                        var audioTrack = stream.getAudioTracks()[0];
-                        if (audioTrack) {
-                            await liveKitRoom.localParticipant.publishTrack(audioTrack);
-                            currentMicTrack = audioTrack;
-                        }
-                    }
-
-                } catch (cameraError) {
-                    console.error('Error accediendo a cámara:', cameraError);
-                    showToast('⚠️ No se pudo acceder a la cámara', 'error');
-                    try {
-                        var audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                        localStream = audioStream;
-                        showToast('🎤 Solo audio activado', 'warning');
-                        if (liveKitRoom) {
-                            var audioTrack = audioStream.getAudioTracks()[0];
-                            if (audioTrack) {
-                                await liveKitRoom.localParticipant.publishTrack(audioTrack);
-                                currentMicTrack = audioTrack;
-                            }
-                        }
-                    } catch (audioError) {
-                        showToast('⚠️ No se pudo acceder a audio', 'error');
-                    }
-                }
-
-                try {
-                    if (typeof window.livekitClient !== 'undefined') {
-                        showToast('🔗 Conectando a LiveKit...', '');
-                        var token = await obtenerTokenLiveKit(
-                            currentStream.room_name,
-                            currentUser.user_metadata?.nombre || currentUser.email || 'streamer',
-                            'publisher'
-                        );
-                        liveKitRoom = new window.livekitClient.Room();
-                        await liveKitRoom.connect(LIVEKIT_CONFIG.url, token);
-
-                        if (localStream) {
-                            var videoTrack = localStream.getVideoTracks()[0];
-                            if (videoTrack) {
-                                await liveKitRoom.localParticipant.publishTrack(videoTrack);
-                                currentVideoTrack = videoTrack;
-                            }
-                            var audioTrack = localStream.getAudioTracks()[0];
-                            if (audioTrack) {
-                                await liveKitRoom.localParticipant.publishTrack(audioTrack);
-                                currentMicTrack = audioTrack;
-                            }
-                        }
-
-                        liveKitRoom.on('participantConnected', function() {
-                            espectadores++;
-                            document.getElementById('viewersCount').textContent = espectadores + ' espectadores';
-                        });
-
-                        liveKitRoom.on('participantDisconnected', function() {
-                            espectadores = Math.max(0, espectadores - 1);
-                            document.getElementById('viewersCount').textContent = espectadores + ' espectadores';
-                        });
-
-                        showToast('✅ Conectado a LiveKit', 'success');
-                    }
-                } catch (e) {
-                    console.warn('LiveKit error:', e);
-                    showToast('⚠️ LiveKit no disponible - modo local', 'warning');
-                }
-
-                suscribirseAlChat();
-                cargarTransmisionesActivas();
-                showToast('🎥 ¡Transmisión iniciada!', 'success');
-
-            } catch (e) {
-                console.error('Error iniciando transmisión:', e);
-                showToast('❌ Error al iniciar: ' + e.message, 'error');
-                limpiarRecursosLive();
-            }
-        }
-
-        // ================================================================
-        // ✋ FINALIZAR TRANSMISIÓN - CORREGIDO CON LOGS
-        // ================================================================
-
-        async function finalizarTransmision() {
-            try {
-                console.log('🛑 Intentando finalizar transmisión...');
-                console.log('📊 currentStream:', currentStream);
-                console.log('📊 currentStreamId:', currentStreamId);
-
-                // Verificar si hay transmisión activa
-                if (!currentStream && !currentStreamId) {
-                    showToast('⚠️ No hay transmisión activa', 'error');
-                    console.warn('⚠️ No hay transmisión activa (currentStream y currentStreamId son null)');
-                    return;
-                }
-
-                // Obtener el ID disponible
-                var id = currentStreamId || (currentStream ? currentStream.id : null);
-
-                if (!id) {
-                    showToast('⚠️ No se pudo encontrar el ID de la transmisión', 'error');
-                    console.error('❌ ID no encontrado');
-                    return;
-                }
-
-                console.log('✅ ID encontrado:', id);
-
-                if (!confirm('¿Seguro que quieres finalizar la transmisión?')) {
-                    console.log('❌ Cancelado por el usuario');
-                    return;
-                }
-
-                showToast('⏳ Finalizando transmisión...', '');
-
-                var fechaFin = new Date().toISOString();
-                console.log('📝 Fecha fin:', fechaFin);
-
-                // Calcular duración si existe fecha_inicio
-                var duracion = 0;
-                if (currentStream && currentStream.fecha_inicio) {
-                    duracion = Math.floor((new Date() - new Date(currentStream.fecha_inicio)) / 1000);
-                    console.log('⏱️ Duración calculada:', duracion, 'segundos');
-                } else {
-                    console.warn('⚠️ No se pudo calcular duración, fecha_inicio no disponible');
-                }
-
-                console.log('📝 Actualizando transmisión ID:', id);
-                console.log('📝 Datos a actualizar:', {
-                    estado: 'finalizada',
-                    fecha_fin: fechaFin,
-                    duracion: duracion
-                });
-
-                var result = await window.supabase
-                    .from('transmisiones')
-                    .update({
-                        estado: 'finalizada',
-                        fecha_fin: fechaFin,
-                        duracion: duracion
-                    })
-                    .eq('id', id)
-                    .select()
-                    .single();
-
-                if (result.error) {
-                    console.error('❌ Error en UPDATE:', result.error);
-                    throw result.error;
-                }
-
-                console.log('✅ Transmisión finalizada:', result.data);
-
-                showToast('✅ Transmisión finalizada - Duración: ' + Math.floor(duracion / 60) + ' min', 'success');
-
-            } catch (e) {
-                console.error('❌ Error finalizando transmisión:', e);
-                showToast('❌ Error al finalizar: ' + e.message, 'error');
-            } finally {
-                limpiarRecursosLive();
-                cargarTransmisionesActivas();
-            }
-        }
-
-        // ================================================================
-        // 🧹 LIMPIEZA
-        // ================================================================
-
-        function limpiarRecursosLive() {
-            if (localStream) {
-                try { localStream.getTracks().forEach(function(t) { t.stop(); }); } catch (e) {}
-                localStream = null;
-            }
-            if (gameStream) {
-                try { gameStream.getTracks().forEach(function(t) { t.stop(); }); } catch (e) {}
-                gameStream = null;
-            }
-            var video = document.getElementById('liveVideo');
-            if (video) {
-                try {
-                    if (video.srcObject) {
-                        if (video.srcObject.getTracks) {
-                            video.srcObject.getTracks().forEach(function(t) { t.stop(); });
-                        }
-                        video.srcObject = null;
-                    }
-                    video.pause();
-                    video.src = '';
-                } catch (e) {}
-            }
-            if (liveKitRoom) {
-                try { liveKitRoom.disconnect(); } catch (e) {}
-                liveKitRoom = null;
-            }
-            if (channelChat) {
-                try { window.supabase.removeChannel(channelChat); } catch (e) {}
-                channelChat = null;
-            }
-            if (streamInterval) {
-                clearInterval(streamInterval);
-                streamInterval = null;
-            }
-            isLive = false;
-            currentStream = null;
-            currentStreamId = null;
-            juegoSeleccionado = null;
-            espectadores = 0;
-            isScreenSharing = false;
-            currentVideoTrack = null;
-            currentMicTrack = null;
-            currentScreenAudioTrack = null;
-            var viewersEl = document.getElementById('viewersCount');
-            if (viewersEl) viewersEl.textContent = '0 espectadores';
-        }
-
-        // ================================================================
-        // 📺 UNIRSE A TRANSMISIÓN
-        // ================================================================
-
-        async function unirseATransmision(streamId) {
-            try {
-                var session = await getSession();
-                if (!session) {
-                    showToast('⚠️ Inicia sesión para ver transmisiones', 'error');
-                    return;
-                }
-
-                showToast('⏳ Uniéndose a la transmisión...', '');
-
-                var result = await window.supabase
-                    .from('transmisiones')
-                    .select('*, usuarios(id, nombre, avatar_url)')
-                    .eq('id', streamId)
-                    .single();
-
-                if (result.error) throw result.error;
-
-                currentStream = result.data;
-                currentStreamId = result.data.id;
-
-                try {
-                    if (typeof window.livekitClient !== 'undefined') {
-                        liveKitRoom = new window.livekitClient.Room();
-                        var token = await obtenerTokenLiveKit(
-                            currentStream.room_name,
-                            session.user.user_metadata?.nombre || session.user.email || 'espectador',
-                            'subscriber'
-                        );
-                        await liveKitRoom.connect(LIVEKIT_CONFIG.url, token);
-                        liveKitRoom.on('trackSubscribed', function(track) {
-                            if (track.kind === 'video') {
-                                var video = document.getElementById('liveVideo');
-                                if (video) {
-                                    track.attach(video);
-                                    video.play().catch(function() {});
-                                }
-                            }
-                        });
-                        showToast('📺 Conectado a la transmisión', 'success');
-                    }
-                } catch (e) {
-                    console.warn('LiveKit no disponible:', e);
-                    showToast('⚠️ Modo solo chat - sin video', 'warning');
-                }
-
-                suscribirseAlChat();
-                showToast('📺 Viendo: ' + (currentStream.titulo || 'Live'), 'success');
-
-            } catch (e) {
-                console.error('Error uniéndose:', e);
-                showToast('❌ Error al unirse', 'error');
-            }
-        }
-
-        // ================================================================
-        // 💬 CHAT
-        // ================================================================
-
-        function suscribirseAlChat() {
-            if (!currentStream) return;
-            if (channelChat) {
-                try { window.supabase.removeChannel(channelChat); } catch (e) {}
-                channelChat = null;
-            }
-
-            channelChat = window.supabase
-                .channel('live-' + currentStream.id)
-                .on('postgres_changes', {
-                    event: 'INSERT',
-                    schema: 'public',
-                    table: 'mensajes_live',
-                    filter: 'transmision_id=eq.' + currentStream.id
-                }, function(payload) {
-                    agregarMensajeAlChat(payload.new);
-                })
-                .subscribe(function(status) {
-                    if (status === 'SUBSCRIBED') {
-                        console.log('✅ Chat Realtime conectado');
-                    } else if (status === 'CHANNEL_ERROR') {
-                        console.warn('⚠️ Error en Realtime, reintentando...');
-                        setTimeout(function() {
-                            if (currentStream) suscribirseAlChat();
-                        }, 3000);
-                    }
-                });
-        }
-
-        async function enviarMensaje() {
-            var input = document.getElementById('chatInput');
-            var mensaje = input.value.trim();
-
-            if (!mensaje) {
-                showToast('⚠️ Escribe un mensaje', 'warning');
-                return;
-            }
-
-            var session = await getSession();
-            if (!session) {
-                showToast('⚠️ Inicia sesión para chatear', 'error');
-                return;
-            }
-
-            if (!currentStream) {
-                showToast('⚠️ No hay transmisión activa', 'error');
-                return;
-            }
-
-            var textoLower = mensaje.toLowerCase();
-            for (var i = 0; i < PALABRAS_PROHIBIDAS.length; i++) {
-                if (textoLower.indexOf(PALABRAS_PROHIBIDAS[i]) !== -1) {
-                    showToast('⚠️ Contiene lenguaje inapropiado', 'warning');
-                    input.value = '';
-                    return;
-                }
-            }
-
-            try {
-                var result = await window.supabase
-                    .from('mensajes_live')
-                    .insert({
-                        transmision_id: currentStream.id,
-                        usuario_id: session.user.id,
-                        mensaje: mensaje,
-                        nombre_usuario: session.user.user_metadata?.nombre || 'Explorador',
-                        creado_en: new Date().toISOString()
-                    })
-                    .select()
-                    .single();
-
-                if (result.error) throw result.error;
-
-                input.value = '';
-                input.focus();
-
-                var countEl = document.getElementById('chatCount');
-                if (countEl) {
-                    var currentCount = parseInt(countEl.textContent) || 0;
-                    countEl.textContent = (currentCount + 1) + ' mensajes';
-                }
-
-            } catch (e) {
-                console.error('Error enviando mensaje:', e);
-                showToast('❌ Error al enviar mensaje: ' + e.message, 'error');
-            }
-        }
-
-        function agregarMensajeAlChat(mensaje) {
-            var container = document.getElementById('chatMessages');
-            if (!container) return;
-
-            var div = document.createElement('div');
-            div.className = 'chat-msg';
-
-            var avatar = mensaje.nombre_usuario ? mensaje.nombre_usuario.charAt(0).toUpperCase() : '◈';
-
-            div.innerHTML = '<div class="avatar">' + avatar + '</div>' +
-                '<div class="msg">' +
-                '<span class="name">' + escapeHTML(mensaje.nombre_usuario || 'Explorador') + '</span>' +
-                '<span class="time">' + new Date(mensaje.creado_en || mensaje.created_at).toLocaleTimeString() + '</span>' +
-                '<div class="text">' + escapeHTML(mensaje.mensaje) + '</div>' +
-                '</div>';
-
-            container.appendChild(div);
-            container.scrollTop = container.scrollHeight;
-
-            var countEl = document.getElementById('chatCount');
-            if (countEl) {
-                var messages = container.querySelectorAll('.chat-msg').length;
-                countEl.textContent = messages + ' mensajes';
-            }
-        }
-
-        // ================================================================
-        // 💰 DONACIONES - CORREGIDO
-        // ================================================================
-
-        async function enviarDonacion(monto) {
-            try {
-                var session = await getSession();
-                if (!session) { showToast('⚠️ Inicia sesión para donar', 'error'); return; }
-                if (!currentStream) { showToast('⚠️ No hay transmisión activa', 'error'); return; }
-                var donacion = DONACIONES[monto];
-                if (!donacion) { showToast('⚠️ Monto no válido', 'error'); return; }
-                showToast('⏳ Procesando donación de $' + monto + ' USD...', '');
-                var idempotencyKey = 'donacion_' + session.user.id + '_' + currentStream.id + '_' + Date.now();
-                
-                var result = await window.supabase.from('live_donaciones').insert({
-                    transmision_id: currentStream.id,
-                    donante_id: session.user.id,
-                    streamer_id: currentStream.streamer_id,
-                    usuario_id: session.user.id,
-                    monto_usd: monto,
-                    tipo_donacion: donacion.efecto,
-                    efecto_mostrado: true,
-                    idempotency_key: idempotencyKey,
-                    estado: 'completado'
-                }).select().single();
-                
-                if (result.error) throw result.error;
-                mostrarEfectoDonacion(monto, donacion, session.user);
-                var mensajeDonacion = {
-                    nombre_usuario: session.user.user_metadata?.nombre || 'Explorador',
-                    mensaje: '🎉 ¡Donó $' + monto + ' USD (' + donacion.nombre + ')!',
-                    creado_en: new Date().toISOString()
-                };
-                agregarMensajeAlChat(mensajeDonacion);
-                showToast('🎉 ¡' + donacion.nombre + ' recibido!', 'success');
-            } catch (e) {
-                console.error('Error en donación:', e);
-                showToast('❌ Error al procesar donación: ' + e.message, 'error');
-            }
-        }
-
-        function mostrarEfectoDonacion(monto, donacion, usuario) {
-            var container = document.getElementById('liveVideoContainer');
-            if (!container) return;
-            var overlays = container.querySelectorAll('.donacion-overlay');
-            overlays.forEach(function(el) { el.remove(); });
-            var overlay = document.createElement('div');
-            overlay.className = 'donacion-overlay';
-            overlay.style.animation = 'fadeInOut ' + donacion.duracion + 'ms ease forwards';
-            var nombre = escapeHTML(usuario.user_metadata?.nombre || 'Alguien');
-            var contenido = '';
-            switch (donacion.efecto) {
-                case 'cubo_plata':
-                    contenido = '<div style="background:linear-gradient(135deg,#E8E8E8,#C0C0C0);border-radius:8px;padding:30px;font-size:4rem;box-shadow:0 0 50px rgba(192,192,192,0.5);animation:cuboGirar 3s ease;text-align:center;"><div>🥈</div><div style="font-size:1rem;color:#C0C0C0;margin-top:10px;">' + nombre + ' donó $' + monto + '</div><div style="font-size:0.7rem;color:#C0C0C0;">Cubo de Plata</div></div>';
-                    break;
-                case 'cubo_bronce':
-                    contenido = '<div style="background:linear-gradient(135deg,#D4A574,#CD7F32);border-radius:8px;padding:30px;font-size:5rem;box-shadow:0 0 60px rgba(205,127,50,0.6);animation:cuboGirar 4s ease;text-align:center;"><div>🥉</div><div style="font-size:1.2rem;color:#CD7F32;margin-top:10px;">' + nombre + ' donó $' + monto + '</div><div style="font-size:0.8rem;color:#CD7F32;">Cubo de Bronce</div></div>';
-                    break;
-                case 'cubo_oro':
-                    contenido = '<div style="background:linear-gradient(135deg,#F0D060,#D4AF37);border-radius:8px;padding:30px;font-size:6rem;box-shadow:0 0 80px rgba(212,175,55,0.7);animation:cuboGirar 5s ease;text-align:center;"><div>🥇</div><div style="font-size:1.5rem;color:#D4AF37;margin-top:10px;text-shadow:0 0 20px rgba(212,175,55,0.5);">' + nombre + ' donó $' + monto + '</div><div style="font-size:1rem;color:#D4AF37;">Cubo de Oro</div></div>';
-                    break;
-                case 'cohete_explosion':
-                    contenido = '<div style="animation:coheteGirar 4s ease;text-align:center;"><div style="font-size:8rem;animation:coheteVuelo 3s ease;">🚀</div><div style="font-size:1.5rem;color:#CD7F32;margin-top:10px;text-shadow:0 0 40px rgba(205,127,50,0.8);">' + nombre + ' donó $' + monto + '</div><div style="font-size:1rem;color:#CD7F32;">🚀 Cohete Bronce</div></div>';
-                    break;
-                case 'cohete_esmeralda':
-                    contenido = '<div style="animation:coheteGirar 6s ease;text-align:center;"><div style="font-size:10rem;animation:coheteVuelo 4s ease;filter:drop-shadow(0 0 50px rgba(80,200,120,0.8));">🚀</div><div style="font-size:2rem;color:#50C878;margin-top:10px;text-shadow:0 0 60px rgba(80,200,120,0.9);">' + nombre + ' donó $' + monto + '</div><div style="font-size:1.2rem;color:#50C878;">💚 Cohete Esmeralda</div></div>';
-                    break;
-            }
-            overlay.innerHTML = contenido;
-            container.appendChild(overlay);
-            setTimeout(function() { if (overlay.parentNode) overlay.remove(); }, donacion.duracion + 500);
-        }
-
-        // ================================================================
-        // 🎮 CONTROLES
-        // ================================================================
-
-        function togglePlay() {
-            var video = document.getElementById('liveVideo');
-            if (!video) return;
-            if (video.paused) {
-                video.play().then(function() { document.getElementById('playBtn').textContent = '⏸'; })
-                    .catch(function(e) { console.warn('Autoplay bloqueado:', e); showToast('⚠️ Presiona play manualmente', 'warning'); });
-            } else {
-                video.pause();
-                document.getElementById('playBtn').textContent = '▶';
-            }
-        }
-
-        function toggleMute() {
-            var video = document.getElementById('liveVideo');
-            if (!video) return;
-            isMuted = !isMuted;
-            video.muted = isMuted;
-            var btn = document.getElementById('muteBtn');
-            if (isMuted) { btn.textContent = '🔇'; btn.classList.add('muted'); } 
-            else { btn.textContent = '🔊'; btn.classList.remove('muted'); }
-        }
-
-        // ================================================================
-        // 🖥️ CAPTURAR PANTALLA - CORREGIDO CON TRACKS SEPARADOS
-        // ================================================================
-
-        async function capturarPantalla() {
-            if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
-                showToast('⚠️ Tu navegador no soporta compartir pantalla', 'error');
-                return;
-            }
-            
-            if (!liveKitRoom) {
-                showToast('⚠️ Debes iniciar una transmisión primero', 'error');
-                return;
-            }
-
-            if (isScreenSharing) {
-                showToast('⚠️ Ya estás compartiendo pantalla', 'warning');
-                return;
-            }
-            
-            try {
-                showToast('🖥️ Solicitando compartir pantalla...', '');
-                var screenStream = await navigator.mediaDevices.getDisplayMedia({ 
-                    video: true, 
-                    audio: true 
-                });
-                
-                var video = document.getElementById('liveVideo');
-                if (video) {
-                    video.srcObject = screenStream;
-                    video.play().catch(function(e) {});
-                }
-                
-                // ✅ 1. REMOVER TRACK DE CÁMARA (solo video, NO el micrófono)
-                if (currentVideoTrack && liveKitRoom) {
-                    try {
-                        await liveKitRoom.localParticipant.unpublishTrack(currentVideoTrack);
-                        console.log('📷 Track de cámara removido');
-                    } catch (e) {
-                        console.warn('Error removiendo track de cámara:', e);
-                    }
-                    currentVideoTrack = null;
-                }
-                
-                // ✅ 2. PUBLICAR TRACK DE PANTALLA
-                var videoTrack = screenStream.getVideoTracks()[0];
-                if (videoTrack && liveKitRoom) {
-                    await liveKitRoom.localParticipant.publishTrack(videoTrack);
-                    currentVideoTrack = videoTrack;
-                    isScreenSharing = true;
-                    console.log('🖥️ Track de pantalla publicado');
-                }
-                
-                // ✅ 3. PUBLICAR AUDIO DE PANTALLA (si existe)
-                var audioTrack = screenStream.getAudioTracks()[0];
-                if (audioTrack && liveKitRoom) {
-                    try {
-                        if (currentScreenAudioTrack) {
-                            try {
-                                await liveKitRoom.localParticipant.unpublishTrack(currentScreenAudioTrack);
-                            } catch (e) {}
-                            currentScreenAudioTrack = null;
-                        }
-                        await liveKitRoom.localParticipant.publishTrack(audioTrack);
-                        currentScreenAudioTrack = audioTrack;
-                        console.log('🔊 Audio de pantalla publicado');
-                    } catch (e) {
-                        console.warn('No se pudo publicar audio de pantalla:', e);
-                    }
-                }
-                
-                showToast('🖥️ Pantalla compartida en vivo', 'success');
-                
-                // ✅ 4. CUANDO EL USUARIO DETIENE DESDE EL NAVEGADOR
-                screenStream.getVideoTracks()[0].onended = function() {
-                    console.log('🛑 Captura de pantalla detenida por el usuario');
-                    restaurarCamara();
-                };
-                
-            } catch (e) {
-                console.error('Error capturando pantalla:', e);
-                showToast('❌ Error al compartir pantalla: ' + e.message, 'error');
-            }
-        }
-
-        // ================================================================
-        // 📷 RESTAURAR CÁMARA - CORREGIDO SIN DUPLICAR MICRÓFONO
-        // ================================================================
-
-        async function restaurarCamara() {
-            try {
-                showToast('📷 Restaurando cámara...', '');
-                
-                if (!liveKitRoom) {
-                    showToast('⚠️ No hay conexión LiveKit activa', 'error');
-                    return;
-                }
-                
-                if (currentVideoTrack && isScreenSharing) {
-                    try {
-                        await liveKitRoom.localParticipant.unpublishTrack(currentVideoTrack);
-                        console.log('🖥️ Track de pantalla removido');
-                    } catch (e) {
-                        console.warn('Error removiendo track de pantalla:', e);
-                    }
-                    currentVideoTrack = null;
-                    isScreenSharing = false;
-                }
-                
-                if (currentScreenAudioTrack) {
-                    try {
-                        await liveKitRoom.localParticipant.unpublishTrack(currentScreenAudioTrack);
-                        console.log('🔊 Audio de pantalla removido');
-                    } catch (e) {
-                        console.warn('Error removiendo audio de pantalla:', e);
-                    }
-                    currentScreenAudioTrack = null;
-                }
-                
-                var cameraStream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: 'user', width: 1280, height: 720 }
-                });
-                
-                var video = document.getElementById('liveVideo');
-                if (video) {
-                    video.srcObject = cameraStream;
-                    video.play().catch(function(e) {});
-                }
-                
-                var videoTrack = cameraStream.getVideoTracks()[0];
-                if (videoTrack && liveKitRoom) {
-                    await liveKitRoom.localParticipant.publishTrack(videoTrack);
-                    currentVideoTrack = videoTrack;
-                    console.log('📷 Track de cámara publicado');
-                }
-                
-                if (!currentMicTrack) {
-                    try {
-                        var micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                        var micTrack = micStream.getAudioTracks()[0];
-                        if (micTrack && liveKitRoom) {
-                            await liveKitRoom.localParticipant.publishTrack(micTrack);
-                            currentMicTrack = micTrack;
-                            console.log('🎤 Micrófono restaurado');
-                        }
-                    } catch (e) {
-                        console.warn('No se pudo restaurar micrófono:', e);
-                    }
-                } else {
-                    console.log('🎤 Micrófono ya está activo, no se duplica');
-                }
-                
-                showToast('📷 Cámara restaurada', 'success');
-                
-            } catch (e) {
-                console.error('Error restaurando cámara:', e);
-                showToast('⚠️ No se pudo restaurar la cámara: ' + e.message, 'error');
-            }
-        }
-
-        function toggleVoice() {
-            isVoiceActive = !isVoiceActive;
-            var btn = document.getElementById('voiceBtn');
-            if (isVoiceActive) {
-                btn.textContent = '🔊';
-                btn.classList.add('voice-active');
-                var utterance = new SpeechSynthesisUtterance('Bienvenidos al Live de Sariel\'s');
-                utterance.lang = 'es-ES';
-                utterance.rate = 0.9;
-                window.speechSynthesis.speak(utterance);
-            } else {
-                btn.textContent = '🔈';
-                btn.classList.remove('voice-active');
-                window.speechSynthesis.cancel();
-            }
-        }
-
-        // ================================================================
-        // 📋 LISTA DE TRANSMISIONES ACTIVAS
-        // ================================================================
-
-        async function cargarTransmisionesActivas() {
-            try {
-                var result = await window.supabase
-                    .from('transmisiones')
-                    .select('*, usuarios(id, nombre, avatar_url)')
-                    .eq('estado', 'activa')
-                    .order('fecha_inicio', { ascending: false });
-
-                if (result.error) throw result.error;
-
-                var container = document.getElementById('streamsList');
-                var streams = result.data || [];
-
-                if (streams.length === 0) {
-                    container.innerHTML = '<div class="empty-state" style="grid-column:1/-1;padding:20px;"><span class="icon">◉</span><h3>Sin transmisiones activas</h3><p>Sé el primero en iniciar una transmisión</p></div>';
-                    return;
-                }
-
-                var html = '';
-                for (var i = 0; i < streams.length; i++) {
-                    var stream = streams[i];
-                    var usuario = stream.usuarios || {};
-                    html += '<div class="stream-card" onclick="unirseATransmision(\'' + stream.id + '\')">' +
-                        '<div class="stream-thumb"><span style="font-size:2rem;">◉</span><span class="live-badge">🔴 EN VIVO</span></div>' +
-                        '<div class="stream-name">' + escapeHTML(stream.titulo || 'Live') + '</div>' +
-                        '<div class="stream-host">' + escapeHTML(usuario.nombre || 'Streamer') + ' · ' + (stream.viewers_count || 0) + ' espectadores</div>' +
-                        '<div style="font-size:0.55rem;color:var(--text-muted);margin-top:4px;">' + escapeHTML(stream.categoria || 'General') + ' · ' + new Date(stream.fecha_inicio).toLocaleTimeString() + '</div>' +
-                        '</div>';
-                }
-                container.innerHTML = html;
-
-            } catch (e) {
-                console.error('Error cargando transmisiones:', e);
-            }
-        }
-
-        // ================================================================
-        // 📊 ESTADÍSTICAS
-        // ================================================================
-
-        async function cargarEstadisticas() {
-            try {
-                var session = await getSession();
-                if (!session) { showToast('⚠️ Inicia sesión para ver estadísticas', 'error'); return; }
-                var result = await window.supabase.from('transmisiones').select('*').eq('streamer_id', session.user.id).order('fecha_inicio', { ascending: false });
-                if (result.error) throw result.error;
-                var data = result.data || [];
-                if (data.length === 0) { showToast('📊 Sin estadísticas aún', 'warning'); return; }
-                var totalStreams = data.length;
-                var totalHoras = 0;
-                var totalEspectadores = 0;
-                for (var i = 0; i < data.length; i++) {
-                    var s = data[i];
-                    if (s.fecha_inicio && s.fecha_fin) {
-                        var diff = (new Date(s.fecha_fin) - new Date(s.fecha_inicio)) / 1000;
-                        totalHoras += diff > 0 ? diff : 0;
-                    }
-                    totalEspectadores += s.viewers_count || 0;
-                }
-                totalHoras = totalHoras / 3600;
-                showToast('📊 Transmisiones: ' + totalStreams + ' | Horas: ' + totalHoras.toFixed(1) + 'h | Espectadores: ' + totalEspectadores, 'success');
-            } catch (e) {
-                console.error('Error cargando estadísticas:', e);
-                showToast('❌ Error cargando estadísticas', 'error');
-            }
-        }
-
-        // ================================================================
-        // 🚀 INICIALIZACIÓN
-        // ================================================================
-
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('◈ Sariel\'s - Live');
-            console.log('📡 LiveKit URL:', LIVEKIT_CONFIG.url);
-            getSession().then(function(session) { if (session) { currentUser = session.user; } });
-            cargarTransmisionesActivas();
-            setInterval(cargarTransmisionesActivas, 30000);
-            var chatInput = document.getElementById('chatInput');
-            if (chatInput) {
-                chatInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') { enviarMensaje(); } });
+/* ================================================================
+   LIVE - SARIEL'S ECOSYSTEM
+   VERSIÓN FUNCIONAL - CONEXIÓN REAL CON SUPABASE + LIVEKIT
+   CORREGIDO: FINALIZAR TRANSMISIÓN DESDE GRUPOS
+   ================================================================ */
+
+// ================================================================
+// CONFIGURACIÓN SUPABASE
+// ================================================================
+const supabase = window.supabase.createClient(
+    'https://zultnlogdoajehbswlih.supabase.co',
+    'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
+);
+
+// ================================================================
+// CONFIGURACIÓN LIVEKIT - SIN SECRETOS
+// ================================================================
+const LIVEKIT_CONFIG = {
+    url: 'wss://csariels-domo-57ujk04t.livekit.cloud'
+};
+
+// ================================================================
+// CONFIGURACIÓN DONACIONES
+// ================================================================
+const DONACIONES = {
+    5: { nombre: 'Cubo Plata', emoji: '🥈', color: '#C0C0C0', duracion: 3000, efecto: 'cubo_plata' },
+    10: { nombre: 'Cubo Bronce', emoji: '🥉', color: '#CD7F32', duracion: 4000, efecto: 'cubo_bronce' },
+    20: { nombre: 'Cubo Oro', emoji: '🥇', color: '#D4AF37', duracion: 5000, efecto: 'cubo_oro' },
+    50: { nombre: 'Cohete Bronce', emoji: '🚀', color: '#CD7F32', duracion: 6000, efecto: 'cohete_explosion' },
+    100: { nombre: 'Cohete Esmeralda', emoji: '💚', color: '#50C878', duracion: 8000, efecto: 'cohete_esmeralda' }
+};
+
+// ================================================================
+// PALABRAS PROHIBIDAS
+// ================================================================
+const PALABRAS_PROHIBIDAS = [
+    'puta', 'verga', 'mierda', 'pendejo', 'chingar', 'chingada',
+    'cabron', 'cabrón', 'pinche', 'wey', 'güey', 'culero',
+    'puto', 'maricon', 'maricón', 'joto',
+    'negro', 'indio', 'naco', 'naca', 'sudaca',
+    'matar', 'mata', 'asesinar', 'suicidio', 'violar',
+    'droga', 'cocaína', 'marihuana', 'perico', 'cristal',
+    'cerveza', 'tequila', 'whisky', 'ron', 'vodka',
+    'fuck', 'shit', 'bitch', 'asshole', 'motherfucker'
+];
+
+// ================================================================
+// ESTADO GLOBAL
+// ================================================================
+let currentUser = null;
+let currentStream = null;
+let liveKitRoom = null;
+let isLive = false;
+let isMuted = false;
+let isVoiceActive = false;
+let streamInterval = null;
+let channelChat = null;
+let espectadores = 0;
+let localStream = null;
+let gameScreenStream = null;
+let gameScreenTrack = null;
+let currentStreamId = null;
+let transmisionParamId = null;
+let juegoSeleccionado = null;
+
+// ================================================================
+// TOAST
+// ================================================================
+function showToast(msg, type = '', duration = 3500) {
+    let t = document.getElementById('toast');
+    if (!t) {
+        t = document.createElement('div');
+        t.id = 'toast';
+        t.className = 'toast';
+        document.body.appendChild(t);
+    }
+    t.textContent = msg;
+    t.className = 'toast show';
+    if (type === 'error') t.classList.add('error');
+    else if (type === 'warning') t.classList.add('warning');
+    else if (type === 'success') t.classList.add('success');
+    else t.classList.remove('error', 'warning', 'success');
+    clearTimeout(t._timeout);
+    t._timeout = setTimeout(() => t.classList.remove('show'), duration);
+}
+
+// ================================================================
+// OBTENER SESIÓN
+// ================================================================
+async function getSession() {
+    const { data: { session } } = await supabase.auth.getSession();
+    return session;
+}
+
+// ================================================================
+// OBTENER TOKEN LIVEKIT DEL BACKEND
+// ================================================================
+async function obtenerTokenLiveKit(roomName, participantName) {
+    try {
+        const session = await getSession();
+        if (!session) throw new Error('No autenticado');
+
+        const response = await fetch(`/api/token?room=${encodeURIComponent(roomName)}`, {
+            headers: {
+                'Authorization': `Bearer ${session.access_token}`
             }
         });
 
-        // ================================================================
-        // EXPOSICIÓN GLOBAL
-        // ================================================================
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Error al obtener token');
+        }
 
-        window.iniciarTransmision = iniciarTransmision;
-        window.finalizarTransmision = finalizarTransmision;
-        window.unirseATransmision = unirseATransmision;
-        window.enviarMensaje = enviarMensaje;
-        window.enviarDonacion = enviarDonacion;
-        window.togglePlay = togglePlay;
-        window.toggleMute = toggleMute;
-        window.capturarPantalla = capturarPantalla;
-        window.toggleVoice = toggleVoice;
-        window.cargarEstadisticas = cargarEstadisticas;
-        window.cargarTransmisionesActivas = cargarTransmisionesActivas;
-        window.showToast = showToast;
-        window.limpiarRecursosLive = limpiarRecursosLive;
-        window.abrirSelectorJuego = abrirSelectorJuego;
-        window.cerrarSelectorJuego = cerrarSelectorJuego;
-        window.seleccionarJuego = seleccionarJuego;
-        window.iniciarTransmisionJuego = iniciarTransmisionJuego;
-        window.restaurarCamara = restaurarCamara;
-    </script>
+        const data = await response.json();
+        return data.token;
+    } catch (error) {
+        console.error('Error obteniendo token LiveKit:', error);
+        throw error;
+    }
+}
 
+// ================================================================
+// 🎥 INICIAR TRANSMISIÓN
+// ================================================================
+async function iniciarTransmision() {
+    try {
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ Inicia sesión para transmitir', 'error');
+            return;
+        }
+        currentUser = session.user;
+
+        // Verificar transmisión activa
+        const { data: streamActivo, error: checkError } = await supabase
+            .from('transmisiones')
+            .select('id')
+            .eq('streamer_id', currentUser.id)
+            .eq('estado', 'activa')
+            .maybeSingle();
+
+        if (checkError) throw checkError;
+        if (streamActivo) {
+            showToast('⚠️ Ya tienes una transmisión activa', 'warning');
+            return;
+        }
+
+        showToast('⏳ Iniciando transmisión...', '', 3000);
+
+        // Obtener cámara y micrófono
+        localStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'user', width: 1280, height: 720 },
+            audio: true
+        });
+
+        const video = document.getElementById('liveVideo');
+        if (video) {
+            video.srcObject = localStream;
+            await video.play();
+        }
+
+        const titulo = prompt('Título de tu transmisión:', 'Mi live en Sariel\'s') || 'Live en Sariel\'s';
+        const categoria = prompt('Categoría:', 'Charla') || 'Charla';
+
+        const roomName = `live-${currentUser.id}-${Date.now()}`;
+
+        // Crear transmisión en Supabase
+        const { data: streamData, error: streamError } = await supabase
+            .from('transmisiones')
+            .insert({
+                streamer_id: currentUser.id,
+                titulo: titulo,
+                categoria: categoria,
+                estado: 'activa',
+                fecha_inicio: new Date().toISOString(),
+                room_name: roomName,
+                viewers_count: 0
+            })
+            .select()
+            .single();
+
+        if (streamError) throw streamError;
+
+        currentStream = streamData;
+        currentStreamId = streamData.id;
+
+        // CONEXIÓN LIVEKIT
+        try {
+            showToast('🔗 Conectando a LiveKit...', '', 2000);
+
+            const { Room } = await import('https://cdn.jsdelivr.net/npm/livekit-client@1/dist/index.js');
+
+            liveKitRoom = new Room();
+
+            const token = await obtenerTokenLiveKit(
+                currentStream.room_name,
+                currentUser.user_metadata?.nombre || currentUser.email || 'streamer'
+            );
+
+            await liveKitRoom.connect(LIVEKIT_CONFIG.url, token);
+
+            // Publicar video
+            await liveKitRoom.localParticipant.setCameraEnabled(true);
+            await liveKitRoom.localParticipant.setMicrophoneEnabled(true);
+
+            showToast('✅ Conectado a LiveKit', 'success');
+
+            liveKitRoom.on('participantConnected', (participant) => {
+                espectadores++;
+                document.getElementById('viewersCount').textContent = `${espectadores} espectadores`;
+            });
+
+            liveKitRoom.on('participantDisconnected', () => {
+                espectadores = Math.max(0, espectadores - 1);
+                document.getElementById('viewersCount').textContent = `${espectadores} espectadores`;
+            });
+
+        } catch (e) {
+            console.warn('LiveKit no disponible, modo local:', e);
+            showToast('⚠️ Modo local - sin transmisión en vivo', 'warning');
+        }
+
+        isLive = true;
+        document.getElementById('viewersCount').textContent = '0 espectadores';
+
+        iniciarContadorEspectadores();
+        suscribirseAlChat();
+        await notificarSeguidores();
+
+        showToast('🎥 ¡Transmisión iniciada!', 'success', 4000);
+
+    } catch (error) {
+        console.error('Error iniciando transmisión:', error);
+        showToast('❌ Error al iniciar: ' + error.message, 'error');
+        if (localStream) {
+            localStream.getTracks().forEach(t => t.stop());
+            localStream = null;
+        }
+    }
+}
+
+// ================================================================
+// ✋ FINALIZAR TRANSMISIÓN - CORREGIDO
+// ================================================================
+async function finalizarTransmision() {
+    try {
+        // ✅ PRIORIDAD: 1. ID de la URL, 2. currentStreamId, 3. currentStream.id
+        const streamId = transmisionParamId || currentStreamId || currentStream?.id;
+
+        if (!streamId) {
+            showToast('⚠️ No se encontró el ID de la transmisión', 'error');
+            return;
+        }
+
+        if (!confirm('¿Seguro que quieres finalizar la transmisión?')) return;
+
+        showToast('⏳ Finalizando transmisión...', '', 3000);
+
+        // Si currentStream no está cargado, recuperar la transmisión directamente
+        // usando el ID recibido en ?transmision=ID
+        if (!currentStream || currentStream.id !== streamId) {
+            const { data: stream, error: loadError } = await supabase
+                .from('transmisiones')
+                .select('id, fecha_inicio, streamer_id, estado, is_live')
+                .eq('id', streamId)
+                .maybeSingle();
+
+            if (loadError) throw loadError;
+            if (!stream) throw new Error('No se encontró la transmisión en Supabase.');
+            currentStream = stream;
+        }
+
+        // ✅ Verificar que el usuario sea el streamer (seguridad)
+        if (currentUser && currentStream.streamer_id !== currentUser.id) {
+            showToast('⚠️ Solo el streamer puede finalizar la transmisión', 'error');
+            return;
+        }
+
+        const fechaInicio = currentStream.fecha_inicio ? new Date(currentStream.fecha_inicio) : null;
+        const fechaFin = new Date();
+        const duracion = fechaInicio && !Number.isNaN(fechaInicio.getTime())
+            ? Math.max(0, Math.floor((fechaFin.getTime() - fechaInicio.getTime()) / 1000))
+            : 0;
+
+        console.log('⏱️ Duración de la transmisión:', duracion, 'segundos');
+
+        // Detener medios locales
+        const video = document.getElementById('liveVideo');
+        if (video && video.srcObject) {
+            video.srcObject.getTracks().forEach(track => track.stop());
+            video.srcObject = null;
+        }
+
+        if (localStream) {
+            localStream.getTracks().forEach(t => t.stop());
+            localStream = null;
+        }
+
+        if (gameScreenStream) {
+            gameScreenStream.getTracks().forEach(t => t.stop());
+            gameScreenStream = null;
+            gameScreenTrack = null;
+        }
+
+        // ✅ Cierre definitivo en Supabase
+        const { data: updatedStream, error } = await supabase
+            .from('transmisiones')
+            .update({
+                estado: 'finalizada',
+                is_live: false,
+                fecha_fin: fechaFin.toISOString(),
+                duracion: duracion,
+                viewers_count: espectadores
+            })
+            .eq('id', streamId)
+            .select('id, estado, is_live, fecha_inicio, fecha_fin, duracion');
+
+        if (error) throw error;
+        if (!updatedStream || updatedStream.length === 0) {
+            throw new Error('Supabase no actualizó ninguna transmisión. Verifica las políticas RLS.');
+        }
+
+        console.log('✅ Transmisión finalizada en Supabase:', updatedStream[0]);
+
+        if (liveKitRoom) {
+            try {
+                await liveKitRoom.disconnect();
+                console.log('✅ LiveKit desconectado');
+            } catch (lkError) {
+                console.warn('Error desconectando LiveKit:', lkError);
+            }
+            liveKitRoom = null;
+        }
+
+        if (streamInterval) {
+            clearInterval(streamInterval);
+            streamInterval = null;
+        }
+
+        if (channelChat) {
+            supabase.removeChannel(channelChat);
+            channelChat = null;
+        }
+
+        isLive = false;
+        currentStream = null;
+        currentStreamId = null;
+        transmisionParamId = null;
+        juegoSeleccionado = null;
+        document.getElementById('viewersCount').textContent = '0 espectadores';
+
+        showToast('✅ Transmisión finalizada', 'success');
+
+        // ✅ Redirigir al grupo si venía de ahí
+        const referrer = document.referrer;
+        if (referrer && referrer.includes('/features/grupos/grupos.html')) {
+            setTimeout(() => {
+                window.location.href = referrer;
+            }, 1500);
+        }
+
+    } catch (error) {
+        console.error('Error finalizando transmisión:', error);
+        showToast('❌ Error al finalizar: ' + error.message, 'error');
+    }
+}
+
+// ================================================================
+// 📺 UNIRSE A TRANSMISIÓN
+// ================================================================
+async function unirseATransmision(streamId) {
+    try {
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ Inicia sesión para ver transmisiones', 'error');
+            return;
+        }
+
+        showToast('⏳ Uniéndose a la transmisión...', '', 2000);
+
+        const { data: stream, error } = await supabase
+            .from('transmisiones')
+            .select('*, usuarios(id, nombre, avatar_url)')
+            .eq('id', streamId)
+            .single();
+
+        if (error) throw error;
+
+        currentStream = stream;
+        currentStreamId = stream.id;
+
+        try {
+            const { Room } = await import('https://cdn.jsdelivr.net/npm/livekit-client@1/dist/index.js');
+
+            liveKitRoom = new Room();
+
+            const token = await obtenerTokenLiveKit(
+                stream.room_name,
+                session.user.user_metadata?.nombre || session.user.email || 'espectador'
+            );
+
+            await liveKitRoom.connect(LIVEKIT_CONFIG.url, token);
+
+            liveKitRoom.on('trackSubscribed', (track, publication, participant) => {
+                if (track.kind === 'video') {
+                    const video = document.getElementById('liveVideo');
+                    if (video) {
+                        track.attach(video);
+                    }
+                }
+            });
+
+            showToast('📺 Conectado a la transmisión', 'success');
+
+        } catch (e) {
+            console.warn('LiveKit no disponible, modo solo chat:', e);
+            showToast('⚠️ Modo solo chat - sin video', 'warning');
+        }
+
+        suscribirseAlChat();
+
+        const overlay = document.querySelector('.live-overlay .text');
+        if (overlay) overlay.textContent = stream.titulo || 'EN VIVO';
+
+        showToast(`📺 Viendo: ${stream.titulo || 'Live'}`, 'success');
+
+    } catch (error) {
+        console.error('Error uniéndose:', error);
+        showToast('❌ Error al unirse', 'error');
+    }
+}
+
+// ================================================================
+// 💬 CHAT
+// ================================================================
+
+function suscribirseAlChat() {
+    if (!currentStream) return;
+
+    if (channelChat) {
+        supabase.removeChannel(channelChat);
+    }
+
+    channelChat = supabase
+        .channel(`live-${currentStream.id}`)
+        .on('postgres_changes', {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'mensajes_live',
+            filter: `transmision_id=eq.${currentStream.id}`
+        }, (payload) => {
+            agregarMensajeAlChat(payload.new);
+        })
+        .subscribe();
+}
+
+async function enviarMensaje() {
+    const input = document.getElementById('chatInput');
+    const mensaje = input.value.trim();
+
+    if (!mensaje) {
+        showToast('⚠️ Escribe un mensaje', 'warning');
+        return;
+    }
+
+    const session = await getSession();
+    if (!session) {
+        showToast('⚠️ Inicia sesión para chatear', 'error');
+        return;
+    }
+
+    if (!currentStream) {
+        showToast('⚠️ No hay transmisión activa', 'error');
+        return;
+    }
+
+    const moderationResult = verificarContenido(mensaje);
+
+    if (moderationResult.prohibido) {
+        showToast(`⚠️ ${moderationResult.razon}`, 'warning');
+        input.value = '';
+        return;
+    }
+
+    try {
+        const { error } = await supabase
+            .from('mensajes_live')
+            .insert({
+                transmision_id: currentStream.id,
+                usuario_id: session.user.id,
+                mensaje: mensaje,
+                nombre_usuario: session.user.user_metadata?.nombre || 'Explorador'
+            });
+
+        if (error) throw error;
+
+        input.value = '';
+        input.focus();
+
+    } catch (error) {
+        console.error('Error enviando mensaje:', error);
+        showToast('❌ Error al enviar mensaje', 'error');
+    }
+}
+
+function agregarMensajeAlChat(mensaje) {
+    const container = document.getElementById('chatMessages');
+    if (!container) return;
+
+    const div = document.createElement('div');
+    div.className = 'chat-msg';
+
+    const avatar = mensaje.nombre_usuario ? mensaje.nombre_usuario.charAt(0).toUpperCase() : '◈';
+
+    div.innerHTML = `
+        <div class="avatar">${avatar}</div>
+        <div class="msg">
+            <span class="name">${escapeHTML(mensaje.nombre_usuario || 'Explorador')}</span>
+            <span class="time">${new Date(mensaje.created_at).toLocaleTimeString()}</span>
+            <div class="text">${escapeHTML(mensaje.mensaje)}</div>
+        </div>
+    `;
+
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+
+    const countEl = document.getElementById('chatCount');
+    if (countEl) {
+        const messages = container.querySelectorAll('.chat-msg').length;
+        countEl.textContent = `${messages} mensajes`;
+    }
+}
+
+// ================================================================
+// 🛡️ MODERACIÓN
+// ================================================================
+
+function verificarContenido(texto) {
+    const textoLower = texto.toLowerCase();
+
+    for (const palabra of PALABRAS_PROHIBIDAS) {
+        if (textoLower.includes(palabra)) {
+            return { prohibido: true, razon: `Contiene lenguaje inapropiado` };
+        }
+    }
+
+    if (/(acoso|bullying|hostigamiento|amenaza)/i.test(texto)) {
+        return { prohibido: true, razon: 'Contenido de acoso detectado' };
+    }
+
+    const palabras = texto.split(' ');
+    const repetidas = palabras.filter((p, i) => palabras.indexOf(p) !== i);
+    if (repetidas.length > 5) {
+        return { prohibido: true, razon: 'Posible spam detectado' };
+    }
+
+    return { prohibido: false };
+}
+
+function escapeHTML(texto) {
+    const div = document.createElement('div');
+    div.textContent = texto;
+    return div.innerHTML;
+}
+
+// ================================================================
+// 💰 DONACIONES
+// ================================================================
+
+async function enviarDonacion(monto) {
+    try {
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ Inicia sesión para donar', 'error');
+            return;
+        }
+
+        if (!currentStream) {
+            showToast('⚠️ No hay transmisión activa', 'error');
+            return;
+        }
+
+        const donacion = DONACIONES[monto];
+        if (!donacion) {
+            showToast('⚠️ Monto no válido', 'error');
+            return;
+        }
+
+        showToast(`⏳ Procesando donación de $${monto} USD...`, '', 3000);
+
+        const { data, error } = await supabase
+            .from('live_donaciones')
+            .insert({
+                transmision_id: currentStream.id,
+                donante_id: session.user.id,
+                streamer_id: currentStream.streamer_id,
+                monto_usd: monto,
+                tipo_donacion: donacion.nombre,
+                efecto_mostrado: false
+            })
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        mostrarEfectoDonacion(monto, donacion, session.user);
+
+        const mensajeDonacion = {
+            nombre_usuario: session.user.user_metadata?.nombre || 'Explorador',
+            mensaje: `🎉 ¡Donó $${monto} USD (${donacion.nombre})!`,
+            created_at: new Date().toISOString()
+        };
+        agregarMensajeAlChat(mensajeDonacion);
+
+        const { data: streamData, error: streamError } = await supabase
+            .from('transmisiones')
+            .select('donaciones_totales')
+            .eq('id', currentStream.id)
+            .single();
+
+        if (!streamError && streamData) {
+            const nuevasDonaciones = (streamData.donaciones_totales || 0) + monto;
+            await supabase
+                .from('transmisiones')
+                .update({ donaciones_totales: nuevasDonaciones })
+                .eq('id', currentStreamId || currentStream.id);
+        }
+
+        showToast(`🎉 ¡${donacion.nombre} recibido!`, 'success', 5000);
+
+    } catch (error) {
+        console.error('Error en donación:', error);
+        showToast('❌ Error al procesar donación: ' + error.message, 'error');
+    }
+}
+
+// ================================================================
+// 🎨 EFECTOS VISUALES
+// ================================================================
+
+function mostrarEfectoDonacion(monto, donacion, usuario) {
+    const container = document.getElementById('liveVideoContainer');
+    if (!container) return;
+
+    const overlay = document.createElement('div');
+    overlay.className = 'donacion-overlay';
+    overlay.style.animation = `fadeInOut ${donacion.duracion}ms ease forwards`;
+
+    const nombre = usuario.user_metadata?.nombre || 'Alguien';
+
+    let contenido = '';
+    switch (donacion.efecto) {
+        case 'cubo_plata':
+            contenido = `
+                <div style="background:linear-gradient(135deg,#E8E8E8,#C0C0C0);border-radius:8px;padding:30px;font-size:4rem;box-shadow:0 0 50px rgba(192,192,192,0.5);animation:cuboGirar 3s ease;text-align:center;">
+                    <div>🥈</div>
+                    <div style="font-size:1rem;color:#C0C0C0;margin-top:10px;">${nombre} donó $${monto}</div>
+                    <div style="font-size:0.7rem;color:#C0C0C0;">Cubo de Plata</div>
+                </div>
+            `;
+            break;
+        case 'cubo_bronce':
+            contenido = `
+                <div style="background:linear-gradient(135deg,#D4A574,#CD7F32);border-radius:8px;padding:30px;font-size:5rem;box-shadow:0 0 60px rgba(205,127,50,0.6);animation:cuboGirar 4s ease;text-align:center;">
+                    <div>🥉</div>
+                    <div style="font-size:1.2rem;color:#CD7F32;margin-top:10px;">${nombre} donó $${monto}</div>
+                    <div style="font-size:0.8rem;color:#CD7F32;">Cubo de Bronce</div>
+                </div>
+            `;
+            break;
+        case 'cubo_oro':
+            contenido = `
+                <div style="background:linear-gradient(135deg,#F0D060,#D4AF37);border-radius:8px;padding:30px;font-size:6rem;box-shadow:0 0 80px rgba(212,175,55,0.7);animation:cuboGirar 5s ease;text-align:center;">
+                    <div>🥇</div>
+                    <div style="font-size:1.5rem;color:#D4AF37;margin-top:10px;text-shadow:0 0 20px rgba(212,175,55,0.5);">${nombre} donó $${monto}</div>
+                    <div style="font-size:1rem;color:#D4AF37;">Cubo de Oro</div>
+                </div>
+            `;
+            break;
+        case 'cohete_explosion':
+            contenido = `
+                <div style="animation:coheteGirar 4s ease;text-align:center;">
+                    <div style="font-size:8rem;animation:coheteVuelo 3s ease;">🚀</div>
+                    <div style="font-size:1.5rem;color:#CD7F32;margin-top:10px;text-shadow:0 0 40px rgba(205,127,50,0.8);">${nombre} donó $${monto}</div>
+                    <div style="font-size:1rem;color:#CD7F32;">🚀 Cohete Bronce</div>
+                </div>
+            `;
+            break;
+        case 'cohete_esmeralda':
+            contenido = `
+                <div style="animation:coheteGirar 6s ease;text-align:center;">
+                    <div style="font-size:10rem;animation:coheteVuelo 4s ease;filter:drop-shadow(0 0 50px rgba(80,200,120,0.8));">🚀</div>
+                    <div style="font-size:2rem;color:#50C878;margin-top:10px;text-shadow:0 0 60px rgba(80,200,120,0.9);">${nombre} donó $${monto}</div>
+                    <div style="font-size:1.2rem;color:#50C878;">💚 Cohete Esmeralda</div>
+                </div>
+            `;
+            break;
+    }
+
+    overlay.innerHTML = contenido;
+    container.appendChild(overlay);
+
+    setTimeout(() => {
+        if (overlay.parentNode) overlay.remove();
+    }, donacion.duracion + 500);
+}
+
+// ================================================================
+// 🔄 CONTADOR DE ESPECTADORES
+// ================================================================
+
+function iniciarContadorEspectadores() {
+    if (streamInterval) clearInterval(streamInterval);
+
+    streamInterval = setInterval(async () => {
+        if (!currentStream) return;
+
+        await supabase
+            .from('transmisiones')
+            .update({ viewers_count: espectadores })
+            .eq('id', currentStreamId || currentStream.id);
+    }, 10000);
+}
+
+// ================================================================
+// 👥 SEGUIDORES
+// ================================================================
+
+async function seguirStreamer(streamerId) {
+    try {
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ Inicia sesión para seguir', 'error');
+            return;
+        }
+
+        if (session.user.id === streamerId) {
+            showToast('⚠️ No puedes seguirte a ti mismo', 'warning');
+            return;
+        }
+
+        const { error } = await supabase
+            .from('live_seguidores')
+            .insert({
+                streamer_id: streamerId,
+                seguidor_id: session.user.id
+            });
+
+        if (error) {
+            if (error.code === '23505') {
+                showToast('⚠️ Ya sigues a este streamer', 'warning');
+                return;
+            }
+            throw error;
+        }
+
+        showToast('✅ Ahora sigues a este streamer', 'success');
+
+    } catch (error) {
+        console.error('Error siguiendo:', error);
+        showToast('❌ Error al seguir', 'error');
+    }
+}
+
+async function getSeguidores(streamerId) {
+    try {
+        const { data, error } = await supabase
+            .from('live_seguidores')
+            .select('seguidor_id', { count: 'exact' })
+            .eq('streamer_id', streamerId);
+
+        if (error) throw error;
+        return data.length;
+
+    } catch (error) {
+        console.error('Error obteniendo seguidores:', error);
+        return 0;
+    }
+}
+
+// ================================================================
+// 🔔 NOTIFICACIONES A SEGUIDORES
+// ================================================================
+
+async function notificarSeguidores() {
+    try {
+        if (!currentStream || !currentUser) return;
+
+        const { data: seguidores } = await supabase
+            .from('live_seguidores')
+            .select('seguidor_id')
+            .eq('streamer_id', currentUser.id);
+
+        if (!seguidores || seguidores.length === 0) return;
+
+        for (const s of seguidores) {
+            await supabase
+                .from('notificaciones')
+                .insert({
+                    user_id: s.seguidor_id,
+                    tipo: 'live',
+                    mensaje: `🔴 ${currentUser.user_metadata?.nombre || 'Un streamer'} ha iniciado una transmisión: "${currentStream.titulo}"`,
+                    emisor_id: currentUser.id,
+                    leida: false,
+                    fecha: new Date().toISOString()
+                });
+        }
+
+        showToast(`🔔 Notificados ${seguidores.length} seguidores`, 'success');
+
+    } catch (error) {
+        console.error('Error notificando seguidores:', error);
+    }
+}
+
+// ================================================================
+// 📋 LISTA DE TRANSMISIONES ACTIVAS
+// ================================================================
+
+async function cargarTransmisionesActivas() {
+    try {
+        const { data, error } = await supabase
+            .from('transmisiones')
+            .select(`
+                *,
+                usuarios(id, nombre, avatar_url)
+            `)
+            .eq('estado', 'activa')
+            .order('fecha_inicio', { ascending: false });
+
+        if (error) throw error;
+
+        renderizarTransmisiones(data);
+
+    } catch (error) {
+        console.error('Error cargando transmisiones:', error);
+    }
+}
+
+function renderizarTransmisiones(streams) {
+    const container = document.getElementById('streamsList');
+    if (!container) return;
+
+    if (!streams || streams.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state" style="grid-column:1/-1;padding:20px;">
+                <span class="icon">◉</span>
+                <h3>Sin transmisiones activas</h3>
+                <p>Sé el primero en iniciar una transmisión</p>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = streams.map(stream => `
+        <div class="stream-card" onclick="unirseATransmision('${stream.id}')">
+            <div class="stream-thumb">
+                <span style="font-size:2rem;">◉</span>
+                <span class="live-badge">🔴 EN VIVO</span>
+            </div>
+            <div class="stream-name">${escapeHTML(stream.titulo || 'Live')}</div>
+            <div class="stream-host">
+                ${stream.usuarios?.nombre || 'Streamer'} · ${stream.viewers_count || 0} espectadores
+            </div>
+            <div style="font-size:0.55rem;color:var(--text-muted);margin-top:4px;">
+                ${stream.categoria || 'General'} · ${new Date(stream.fecha_inicio).toLocaleTimeString()}
+            </div>
+        </div>
+    `).join('');
+}
+
+// ================================================================
+// 🎮 CONTROLES
+// ================================================================
+
+function togglePlay() {
+    const video = document.getElementById('liveVideo');
+    if (!video) return;
+
+    if (video.paused) {
+        video.play();
+        document.getElementById('playBtn').textContent = '⏸';
+    } else {
+        video.pause();
+        document.getElementById('playBtn').textContent = '▶';
+    }
+}
+
+function toggleMute() {
+    const video = document.getElementById('liveVideo');
+    if (!video) return;
+
+    isMuted = !isMuted;
+    video.muted = isMuted;
+
+    const btn = document.getElementById('muteBtn');
+    if (isMuted) {
+        btn.textContent = '🔇';
+        btn.classList.add('muted');
+    } else {
+        btn.textContent = '🔊';
+        btn.classList.remove('muted');
+    }
+}
+
+async function capturarPantalla() {
+    try {
+        const screenStream = await navigator.mediaDevices.getDisplayMedia({
+            video: true,
+            audio: true
+        });
+
+        const video = document.getElementById('liveVideo');
+        if (video) {
+            video.srcObject = screenStream;
+            video.play();
+        }
+
+        showToast('🖥️ Compartiendo pantalla', 'success');
+
+        screenStream.getVideoTracks()[0].onended = () => {
+            restaurarCamara();
+        };
+
+    } catch (error) {
+        console.error('Error capturando pantalla:', error);
+        showToast('❌ Error al compartir pantalla', 'error');
+    }
+}
+
+async function restaurarCamara() {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'user', width: 1280, height: 720 },
+            audio: true
+        });
+
+        const video = document.getElementById('liveVideo');
+        if (video) {
+            video.srcObject = stream;
+            video.play();
+        }
+
+    } catch (error) {
+        console.error('Error restaurando cámara:', error);
+    }
+}
+
+function toggleVoice() {
+    isVoiceActive = !isVoiceActive;
+    const btn = document.getElementById('voiceBtn');
+
+    if (isVoiceActive) {
+        btn.textContent = '🔊';
+        btn.classList.add('voice-active');
+        const msg = 'Bienvenidos al Live de Sariel\'s';
+        const utterance = new SpeechSynthesisUtterance(msg);
+        utterance.lang = 'es-ES';
+        utterance.rate = 0.9;
+        window.speechSynthesis.speak(utterance);
+    } else {
+        btn.textContent = '🔈';
+        btn.classList.remove('voice-active');
+        window.speechSynthesis.cancel();
+    }
+}
+
+function verTodasLasTransmisiones() {
+    cargarTransmisionesActivas();
+    showToast('📺 Cargando transmisiones activas...', '', 2000);
+}
+
+// ================================================================
+// 🎮 TRANSMISIÓN DE JUEGO
+// ================================================================
+let juegosDisponibles = [];
+
+function esIOS() {
+    return /iPad|iPhone|iPod/i.test(navigator.userAgent) ||
+        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+
+function soportaCompartirPantalla() {
+    return !!(navigator.mediaDevices && typeof navigator.mediaDevices.getDisplayMedia === 'function');
+}
+
+function cerrarSelectorJuego() {
+    const modal = document.getElementById('gameSelectorModal');
+    if (modal) modal.remove();
+}
+
+async function abrirSelectorJuego() {
+    if (document.getElementById('gameSelectorModal')) return;
+
+    const modal = document.createElement('div');
+    modal.id = 'gameSelectorModal';
+    modal.className = 'game-modal-backdrop';
+    modal.innerHTML = `
+        <div class="game-modal" role="dialog" aria-modal="true" aria-labelledby="gameModalTitle">
+            <div class="game-modal-header">
+                <div>
+                    <div class="game-modal-kicker">SARIEL'S · LIVE</div>
+                    <h2 id="gameModalTitle">🎮 ¿Qué juego vas a transmitir?</h2>
+                </div>
+                <button type="button" class="game-modal-close" aria-label="Cerrar" onclick="cerrarSelectorJuego()">×</button>
+            </div>
+            <div class="game-grid" id="gameGrid">
+                <div style="grid-column:1/-1;padding:20px;text-align:center;">⏳ Cargando juegos...</div>
+            </div>
+            <div id="otroJuegoWrap" class="otro-juego-wrap" hidden>
+                <label for="otroJuegoInput">Nombre del juego</label>
+                <div class="otro-juego-row">
+                    <input id="otroJuegoInput" maxlength="80" autocomplete="off" placeholder="Ej. Apex Legends" />
+                    <button type="button" class="btn btn-gold btn-sm" onclick="confirmarOtroJuego()">Continuar</button>
+                </div>
+            </div>
+            <p class="game-modal-help">Después de elegirlo se abrirá el selector de pantalla del navegador.</p>
+        </div>
+    `;
+    modal.addEventListener('click', (event) => {
+        if (event.target === modal) cerrarSelectorJuego();
+    });
+    document.body.appendChild(modal);
+
+    try {
+        const { data, error } = await supabase
+            .from('juegos')
+            .select('id, nombre, package_name, activo')
+            .eq('activo', true)
+            .order('nombre');
+        if (error) throw error;
+        juegosDisponibles = data || [];
+
+        const grid = document.getElementById('gameGrid');
+        if (!grid) return;
+        grid.innerHTML = '';
+
+        juegosDisponibles.forEach((juego) => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'game-option';
+            button.textContent = `🎮 ${juego.nombre}`;
+            button.addEventListener('click', () => seleccionarJuego(juego));
+            grid.appendChild(button);
+        });
+
+        const other = document.createElement('button');
+        other.type = 'button';
+        other.className = 'game-option game-option-other';
+        other.textContent = '✏️ Otro';
+        other.addEventListener('click', mostrarOtroJuego);
+        grid.appendChild(other);
+    } catch (error) {
+        console.error('Error cargando juegos:', error);
+        const grid = document.getElementById('gameGrid');
+        if (grid) grid.innerHTML = '<div style="grid-column:1/-1;padding:20px;text-align:center;">❌ No se pudieron cargar los juegos.</div>';
+        showToast('❌ Error cargando juegos: ' + (error?.message || error), 'error', 5000);
+    }
+
+    setTimeout(() => {
+        const input = document.getElementById('otroJuegoInput');
+        if (input) input.addEventListener('keydown', e => {
+            if (e.key === 'Enter') confirmarOtroJuego();
+            if (e.key === 'Escape') cerrarSelectorJuego();
+        });
+    }, 0);
+}
+
+function mostrarOtroJuego() {
+    const wrap = document.getElementById('otroJuegoWrap');
+    if (!wrap) return;
+    wrap.hidden = false;
+    const input = document.getElementById('otroJuegoInput');
+    if (input) {
+        input.focus();
+        input.select();
+    }
+}
+
+function confirmarOtroJuego() {
+    const input = document.getElementById('otroJuegoInput');
+    const nombre = (input?.value || '').trim();
+    if (!nombre) {
+        showToast('⚠️ Escribe el nombre del juego', 'warning');
+        input?.focus();
+        return;
+    }
+    seleccionarJuego({ id: null, nombre, package_name: null, activo: true });
+}
+
+async function seleccionarJuego(juego) {
+    if (!juego || typeof juego !== 'object') {
+        juego = { id: null, nombre: String(juego || '').trim(), package_name: null, activo: true };
+    }
+    if (!juego.nombre) {
+        showToast('⚠️ Juego no válido', 'warning');
+        return;
+    }
+    juegoSeleccionado = juego;
+    cerrarSelectorJuego();
+    await iniciarTransmisionJuego(juego);
+}
+
+async function iniciarTransmisionJuego(juego) {
+    try {
+        const nombreJuego = juego?.nombre || 'Juego';
+        const packageName = juego?.package_name || null;
+
+        if (esIOS()) {
+            showToast('Compartir pantalla no disponible en iOS. Usa una PC con Chrome.', 'warning', 6000);
+            return;
+        }
+        if (!soportaCompartirPantalla()) {
+            showToast('⚠️ Tu navegador no soporta compartir pantalla. Usa Chrome en Android o PC.', 'error', 6000);
+            return;
+        }
+
+        showToast('🖥️ Elige la pantalla o ventana del juego...', '', 5000);
+
+        gameScreenStream = await navigator.mediaDevices.getDisplayMedia({
+            video: { frameRate: { ideal: 30, max: 60 } },
+            audio: true
+        });
+
+        const session = await getSession();
+        if (!session) {
+            gameScreenStream.getTracks().forEach(track => track.stop());
+            gameScreenStream = null;
+            showToast('⚠️ Inicia sesión para transmitir', 'error');
+            return;
+        }
+        currentUser = session.user;
+
+        const { data: streamActivo, error: checkError } = await supabase
+            .from('transmisiones')
+            .select('id')
+            .eq('streamer_id', currentUser.id)
+            .eq('estado', 'activa')
+            .maybeSingle();
+        if (checkError) throw checkError;
+        if (streamActivo) {
+            gameScreenStream.getTracks().forEach(track => track.stop());
+            gameScreenStream = null;
+            showToast('⚠️ Ya tienes una transmisión activa', 'warning');
+            return;
+        }
+
+        gameScreenTrack = gameScreenStream.getVideoTracks()[0] || null;
+        if (!gameScreenTrack) throw new Error('No se obtuvo la pista de video de la pantalla.');
+
+        const roomName = `live-${currentUser.id}-${Date.now()}`;
+        const titulo = `🎮 Jugando ${nombreJuego}`;
+
+        const { data: rpcData, error: rpcError } = await supabase.rpc('crear_transmision', {
+            p_titulo: titulo,
+            p_categoria: 'gaming',
+            p_room_name: roomName
+        });
+        if (rpcError) throw rpcError;
+
+        const streamData = Array.isArray(rpcData) ? rpcData[0] : rpcData;
+        if (!streamData?.id) throw new Error('Supabase no devolvió el ID de la transmisión.');
+
+        currentStream = streamData;
+        currentStreamId = streamData.id;
+        if (!currentStream.room_name) currentStream.room_name = roomName;
+
+        juegoSeleccionado = {
+            id: juego?.id || null,
+            nombre: nombreJuego,
+            package_name: packageName,
+            activo: juego?.activo !== false
+        };
+        console.log('🎮 Juego seleccionado:', juegoSeleccionado);
+        console.log('📡 Transmisión creada:', { id: currentStreamId, room_name: currentStream.room_name });
+
+        const video = document.getElementById('liveVideo');
+        if (video) {
+            video.srcObject = gameScreenStream;
+            video.muted = true;
+            await video.play().catch(() => {});
+        }
+
+        try {
+            showToast('🔗 Conectando el juego a LiveKit...', '', 3000);
+            const { Room, LocalVideoTrack, LocalAudioTrack } = await import('https://cdn.jsdelivr.net/npm/livekit-client@1/dist/index.js');
+            liveKitRoom = new Room();
+
+            const token = await obtenerTokenLiveKit(
+                currentStream.room_name,
+                currentUser.user_metadata?.nombre || currentUser.email || 'streamer'
+            );
+            if (!token) throw new Error('El backend no devolvió un token LiveKit.');
+
+            await liveKitRoom.connect(LIVEKIT_CONFIG.url, token);
+
+            await liveKitRoom.localParticipant.publishTrack(
+                new LocalVideoTrack(gameScreenTrack),
+                { name: 'game-screen', source: 'screen_share' }
+            );
+
+            const screenAudioTrack = gameScreenStream.getAudioTracks()[0];
+            if (screenAudioTrack && LocalAudioTrack) {
+                await liveKitRoom.localParticipant.publishTrack(
+                    new LocalAudioTrack(screenAudioTrack),
+                    { name: 'game-audio', source: 'screen_share_audio' }
+                );
+            }
+
+            await liveKitRoom.localParticipant.setMicrophoneEnabled(true);
+
+            liveKitRoom.on('participantConnected', () => {
+                espectadores++;
+                const count = document.getElementById('viewersCount');
+                if (count) count.textContent = `${espectadores} espectadores`;
+            });
+            liveKitRoom.on('participantDisconnected', () => {
+                espectadores = Math.max(0, espectadores - 1);
+                const count = document.getElementById('viewersCount');
+                if (count) count.textContent = `${espectadores} espectadores`;
+            });
+
+            showToast(`🎮 ¡Transmitiendo ${nombreJuego}!`, 'success', 4000);
+        } catch (liveKitError) {
+            console.error('Error conectando juego a LiveKit:', liveKitError);
+            try {
+                await supabase
+                    .from('transmisiones')
+                    .update({ estado: 'finalizada', fecha_fin: new Date().toISOString() })
+                    .eq('id', currentStreamId)
+                    .eq('streamer_id', currentUser.id);
+            } catch (cleanupError) {
+                console.warn('No se pudo cerrar la transmisión fallida:', cleanupError);
+            }
+            throw new Error('No se pudo conectar el juego a LiveKit: ' + (liveKitError?.message || liveKitError));
+        }
+
+        isLive = true;
+        espectadores = 0;
+        const viewers = document.getElementById('viewersCount');
+        if (viewers) viewers.textContent = '0 espectadores';
+        const overlay = document.querySelector('.live-overlay .text');
+        if (overlay) overlay.textContent = titulo;
+
+        iniciarContadorEspectadores();
+        suscribirseAlChat();
+        await notificarSeguidores();
+
+        gameScreenTrack.onended = async () => {
+            if (isLive && currentStreamId) {
+                showToast('🖥️ Se detuvo el compartir pantalla.', 'warning');
+                try { await finalizarTransmision(); } catch (_) {}
+            }
+        };
+
+    } catch (error) {
+        console.error('Error iniciando transmisión de juego:', error);
+        showToast('❌ ' + (error?.message || 'No se pudo iniciar la transmisión de juego'), 'error', 6000);
+
+        if (gameScreenStream) {
+            gameScreenStream.getTracks().forEach(track => track.stop());
+            gameScreenStream = null;
+        }
+        gameScreenTrack = null;
+        if (liveKitRoom) {
+            try { await liveKitRoom.disconnect(); } catch (_) {}
+            liveKitRoom = null;
+        }
+        currentStream = null;
+        currentStreamId = null;
+        isLive = false;
+    }
+}
+
+// ================================================================
+// 📊 ESTADÍSTICAS
+// ================================================================
+
+async function cargarEstadisticas() {
+    try {
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ Inicia sesión para ver estadísticas', 'error');
+            return;
+        }
+
+        const { data, error } = await supabase
+            .from('transmisiones')
+            .select('*')
+            .eq('streamer_id', session.user.id)
+            .order('fecha_inicio', { ascending: false });
+
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+            showToast('📊 Sin estadísticas aún', 'warning');
+            return;
+        }
+
+        const totalStreams = data.length;
+        const totalHoras = data.reduce((acc, s) => {
+            if (s.fecha_inicio && s.fecha_fin) {
+                const diff = (new Date(s.fecha_fin) - new Date(s.fecha_inicio)) / 1000;
+                return acc + (diff > 0 ? diff : 0);
+            }
+            return acc;
+        }, 0) / 3600;
+        const totalEspectadores = data.reduce((acc, s) => acc + (s.viewers_count || 0), 0);
+        const totalDonaciones = data.reduce((acc, s) => acc + (s.donaciones_totales || 0), 0);
+
+        showToast(`
+            📊 Estadísticas:
+            Transmisiones: ${totalStreams}
+            Horas: ${totalHoras.toFixed(1)}h
+            Espectadores: ${totalEspectadores}
+            Donaciones: $${totalDonaciones.toFixed(2)} USD
+        `, 'success', 6000);
+
+    } catch (error) {
+        console.error('Error cargando estadísticas:', error);
+        showToast('❌ Error cargando estadísticas', 'error');
+    }
+}
+
+// ================================================================
+// 🚀 INICIALIZACIÓN
+// ================================================================
+
+document.addEventListener('DOMContentLoaded', async function() {
+    const session = await getSession();
+    if (session) {
+        currentUser = session.user;
+    } else {
+        showToast('⚠️ Inicia sesión para transmitir y chatear', 'warning');
+    }
+
+    // ✅ Cuando grupos.html abre este módulo con ?transmision=ID
+    const params = new URLSearchParams(window.location.search);
+    transmisionParamId = params.get('transmision');
+    if (transmisionParamId) {
+        currentStreamId = transmisionParamId;
+        console.log('📡 Transmisión recibida desde URL:', transmisionParamId);
+
+        try {
+            const { data: stream, error: streamError } = await supabase
+                .from('transmisiones')
+                .select('*')
+                .eq('id', transmisionParamId)
+                .single();
+
+            if (streamError) throw streamError;
+
+            currentStream = stream;
+            currentStreamId = stream.id;
+
+            const overlay = document.querySelector('.live-overlay .text');
+            if (overlay) overlay.textContent = stream.titulo || 'EN VIVO';
+
+            console.log('✅ Transmisión cargada desde URL:', stream.id);
+        } catch (streamError) {
+            console.error('❌ Error cargando transmisión desde URL:', streamError);
+            showToast('❌ No se pudo cargar la transmisión', 'error');
+        }
+    }
+
+    cargarTransmisionesActivas();
+    setInterval(cargarTransmisionesActivas, 30000);
+
+    const chatInput = document.getElementById('chatInput');
+    if (chatInput) {
+        chatInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                enviarMensaje();
+            }
+        });
+    }
+
+    console.log('◈ Sariel\'s - Live');
+    console.log('📡 LiveKit URL:', LIVEKIT_CONFIG.url);
+});
+
+// ================================================================
+// 📤 EXPOSICIÓN DE FUNCIONES GLOBALES
+// ================================================================
+
+window.iniciarTransmision = iniciarTransmision;
+window.finalizarTransmision = finalizarTransmision;
+window.verTodasLasTransmisiones = verTodasLasTransmisiones;
+window.unirseATransmision = unirseATransmision;
+window.enviarMensaje = enviarMensaje;
+window.enviarDonacion = enviarDonacion;
+window.togglePlay = togglePlay;
+window.toggleMute = toggleMute;
+window.capturarPantalla = capturarPantalla;
+window.iniciarTransmisionJuego = iniciarTransmisionJuego;
+window.abrirSelectorJuego = abrirSelectorJuego;
+window.seleccionarJuego = seleccionarJuego;
+window.mostrarOtroJuego = mostrarOtroJuego;
+window.confirmarOtroJuego = confirmarOtroJuego;
+window.cerrarSelectorJuego = cerrarSelectorJuego;
+window.toggleVoice = toggleVoice;
+window.seguirStreamer = seguirStreamer;
+window.getSeguidores = getSeguidores;
+window.cargarEstadisticas = cargarEstadisticas;
+window.showToast = showToast;
+</script>
 </body>
 </html>
