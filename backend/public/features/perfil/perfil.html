@@ -365,9 +365,6 @@
         .panel-badge { font-size: 0.6rem; background: rgba(212, 175, 55, 0.12); color: var(--gold); padding: 2px 12px; border-radius: 20px; font-weight: 600; text-transform: uppercase; border: 1px solid rgba(212, 175, 55, 0.08); }
         .panel-body { padding: 18px; }
 
-        /* ================================================================
-           PUBLICACIONES - ESTILOS NUEVOS
-           ================================================================ */
         .publicacion-item {
             background: rgba(0,0,0,0.2);
             border: 1px solid var(--glass-border);
@@ -437,9 +434,15 @@
         .publicacion-item .pub-actions span {
             cursor: pointer;
             transition: var(--transition);
+            padding: 2px 6px;
+            border-radius: 8px;
         }
         .publicacion-item .pub-actions span:hover {
             color: var(--gold);
+            background: rgba(212, 175, 55, 0.05);
+        }
+        .publicacion-item .pub-actions .liked {
+            color: #ff3366;
         }
 
         .conexion-section {
@@ -800,9 +803,6 @@
                 <button class="tab-btn" onclick="cambiarTab('config')">◆ Ajustes</button>
             </div>
 
-            <!-- ================================================================ -->
-            <!-- TAB ACTIVIDAD - CON PUBLICACIONES -->
-            <!-- ================================================================ -->
             <div id="tab-actividad" class="tab-content active">
                 <div class="panel">
                     <div class="panel-header">
@@ -1010,6 +1010,23 @@
         </div>
     </div>
 
+    <!-- ================================================================ -->
+    <!-- MODAL DE COMENTARIOS -->
+    <!-- ================================================================ -->
+    <div class="modal-overlay" id="modalComentarios">
+        <div class="modal-content" style="max-width:500px;text-align:left;">
+            <button class="close-btn" onclick="cerrarModalComentarios()">✕</button>
+            <h2 style="text-align:center;">💬 Comentarios</h2>
+            <div id="comentariosList" style="max-height:300px;overflow-y:auto;margin:12px 0;">
+                <div style="color:var(--text-muted);text-align:center;padding:20px;">Cargando comentarios...</div>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:8px;">
+                <input type="text" id="inputComentario" placeholder="Escribe un comentario..." style="flex:1;padding:8px 14px;background:rgba(0,0,0,0.25);border:1px solid var(--glass-border);border-radius:10px;color:var(--text-primary);font-size:0.85rem;outline:none;">
+                <button class="btn btn-gold" onclick="enviarComentario()" style="padding:8px 16px;">Enviar</button>
+            </div>
+        </div>
+    </div>
+
     <div class="toast" id="toast"></div>
 
     <!-- ================================================================ -->
@@ -1070,12 +1087,13 @@
 
     <script>
         // ================================================================
-        // FUNCIONES DE PERFIL
+        // FUNCIONES DE PERFIL - COMPLETO CON LIKES Y COMENTARIOS
         // ================================================================
 
         // ===== VARIABLES GLOBALES =====
         var sessionUser = null;
         var likeCache = new Map();
+        var publicacionActivaComentarios = null;
 
         // ===== TOAST =====
         function showToast(msg, type) {
@@ -1222,7 +1240,6 @@
         // 📸 PUBLICACIONES
         // ================================================================
 
-        // ===== ABRIR MODAL DE PUBLICACIÓN =====
         function abrirModalPublicacion() {
             document.getElementById('pubTexto').value = '';
             document.getElementById('pubArchivo').value = '';
@@ -1248,7 +1265,6 @@
             };
         }
 
-        // ===== PUBLICAR CONTENIDO =====
         async function publicarContenido() {
             var texto = document.getElementById('pubTexto').value.trim();
             var fileInput = document.getElementById('pubArchivo');
@@ -1380,7 +1396,6 @@
                         '</div>';
                 }).join('');
 
-                // Actualizar estado de likes después de renderizar
                 actualizarEstadoLikes();
 
             } catch (error) {
@@ -1390,7 +1405,7 @@
         }
 
         // ================================================================
-        // ❤️ LIKES - FUNCIONES DE INTERACCIÓN
+        // ❤️ LIKES
         // ================================================================
 
         async function toggleLike(publicacionId) {
@@ -1401,12 +1416,9 @@
 
             try {
                 var key = publicacionId + '_' + sessionUser.id;
-
-                // Verificar si ya dio like
                 var liked = likeCache.get(key) || false;
 
                 if (liked) {
-                    // QUITAR LIKE
                     var deleteResult = await window.supabase
                         .from('publicaciones_likes')
                         .delete()
@@ -1417,17 +1429,16 @@
 
                     likeCache.set(key, false);
 
-                    // Actualizar UI
                     var likeBtn = document.querySelector('.like-btn[data-id="' + publicacionId + '"]');
                     if (likeBtn) {
                         var countSpan = likeBtn.querySelector('.likes-count');
                         var currentCount = parseInt(countSpan.textContent) || 0;
                         countSpan.textContent = Math.max(0, currentCount - 1);
+                        likeBtn.classList.remove('liked');
                         likeBtn.style.color = '';
                     }
 
                 } else {
-                    // DAR LIKE
                     var insertResult = await window.supabase
                         .from('publicaciones_likes')
                         .insert({
@@ -1436,7 +1447,6 @@
                         });
 
                     if (insertResult.error) {
-                        // Si es error de duplicado, ignorar
                         if (insertResult.error.code === '23505') {
                             likeCache.set(key, true);
                             return;
@@ -1446,12 +1456,12 @@
 
                     likeCache.set(key, true);
 
-                    // Actualizar UI
                     var likeBtn = document.querySelector('.like-btn[data-id="' + publicacionId + '"]');
                     if (likeBtn) {
                         var countSpan = likeBtn.querySelector('.likes-count');
                         var currentCount = parseInt(countSpan.textContent) || 0;
                         countSpan.textContent = currentCount + 1;
+                        likeBtn.classList.add('liked');
                         likeBtn.style.color = '#ff3366';
                     }
                 }
@@ -1462,7 +1472,6 @@
             }
         }
 
-        // ===== ACTUALIZAR ESTADO DE LIKES AL CARGAR =====
         async function actualizarEstadoLikes() {
             if (!sessionUser) return;
 
@@ -1479,10 +1488,10 @@
                     likeCache.set(item.publicacion_id + '_' + sessionUser.id, true);
                 });
 
-                // Aplicar estilos a los botones
                 likedPosts.forEach(function(item) {
                     var likeBtn = document.querySelector('.like-btn[data-id="' + item.publicacion_id + '"]');
                     if (likeBtn) {
+                        likeBtn.classList.add('liked');
                         likeBtn.style.color = '#ff3366';
                     }
                 });
@@ -1493,16 +1502,12 @@
         }
 
         // ================================================================
-        // 💬 COMENTARIOS - FUNCIONES DE INTERACCIÓN
+        // 💬 COMENTARIOS
         // ================================================================
-
-        // Variable para almacenar el ID de la publicación activa en comentarios
-        var publicacionActivaComentarios = null;
 
         function abrirModalComentarios(publicacionId) {
             publicacionActivaComentarios = publicacionId;
 
-            // Crear modal dinámico si no existe
             var modal = document.getElementById('modalComentarios');
             if (!modal) {
                 modal = document.createElement('div');
@@ -1606,10 +1611,8 @@
                 input.value = '';
                 showToast('✅ Comentario agregado', 'success');
 
-                // Recargar comentarios
                 cargarComentarios(publicacionActivaComentarios);
 
-                // Actualizar contador en la publicación
                 var commentBtn = document.querySelector('.comment-btn[onclick*="' + publicacionActivaComentarios + '"]');
                 if (commentBtn) {
                     var countSpan = commentBtn.querySelector('span');
@@ -2386,14 +2389,12 @@
                 cargarPerfil();
             }, 500);
 
-            // Cerrar modal de comentarios con ESC
             document.addEventListener('keydown', function(e) {
                 if (e.key === 'Escape') {
                     cerrarModalComentarios();
                 }
             });
 
-            // Cerrar modal de comentarios al hacer clic fuera
             document.addEventListener('click', function(e) {
                 var modal = document.getElementById('modalComentarios');
                 if (modal && modal.classList.contains('active') && e.target === modal) {
