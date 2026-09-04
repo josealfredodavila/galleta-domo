@@ -1,6 +1,6 @@
 <!-- ================================================================
      MURO - SARIEL'S ECOSYSTEM
-     VERSIÓN CORREGIDA - CON RUTAS Y SCRIPTS ALINEADOS
+     VERSIÓN CORREGIDA - IMÁGENES FUNCIONANDO
      ================================================================ -->
 <!DOCTYPE html>
 <html lang="es">
@@ -1138,35 +1138,69 @@
             if (input) input.click();
         }
 
+        // ================================================================
+        // 📷 SUBIR IMAGEN AL MURO - CORREGIDO (SIN CREAR BUCKET)
+        // ================================================================
+
         async function subirImagenMuro(event) {
             var file = event.target.files[0];
             if (!file) return;
-            if (!sessionUser) { showToast('⚠️ Inicia sesión para subir imagen', 'error'); return; }
-            if (!file.type.startsWith('image/')) { showToast('❌ Solo se permiten imágenes', 'error'); return; }
-            if (file.size > 5 * 1024 * 1024) { showToast('❌ La imagen no puede superar los 5MB', 'error'); return; }
+
+            if (!sessionUser) {
+                showToast('⚠️ Inicia sesión para subir imagen', 'error');
+                return;
+            }
+
+            if (!file.type.startsWith('image/')) {
+                showToast('❌ Solo se permiten imágenes', 'error');
+                return;
+            }
+
+            if (file.size > 5 * 1024 * 1024) {
+                showToast('❌ La imagen no puede superar los 5MB', 'error');
+                return;
+            }
+
             var fileExt = file.name.split('.').pop();
             var filePath = sessionUser.id + '/' + Date.now() + '.' + fileExt;
+
             try {
                 showToast('⏳ Subiendo imagen...', '');
-                var bucketsResult = await window.supabase.storage.listBuckets();
-                if (bucketsResult.error) throw bucketsResult.error;
-                var bucketExists = bucketsResult.data.some(function(b) { return b.name === 'muro-imagenes'; });
-                if (!bucketExists) {
-                    var createResult = await window.supabase.storage.createBucket('muro-imagenes', { public: true });
-                    if (createResult.error) { console.error('Error creando bucket:', createResult.error); showToast('⚠️ El almacenamiento no está configurado. Contacta al administrador.', 'warning'); return; }
+
+                // ✅ SUBIR DIRECTAMENTE - SIN listBuckets() NI createBucket()
+                var uploadResult = await window.supabase.storage
+                    .from('muro-imagenes')
+                    .upload(filePath, file, { cacheControl: '3600', upsert: true });
+
+                if (uploadResult.error) {
+                    if (uploadResult.error.message && uploadResult.error.message.includes('bucket not found')) {
+                        showToast('⚠️ El almacenamiento de imágenes no está configurado. Contacta al administrador.', 'error');
+                        return;
+                    }
+                    throw uploadResult.error;
                 }
-                var uploadResult = await window.supabase.storage.from('muro-imagenes').upload(filePath, file, { upsert: true });
-                if (uploadResult.error) throw uploadResult.error;
+
                 var urlData = window.supabase.storage.from('muro-imagenes').getPublicUrl(filePath);
                 var publicUrl = urlData.data.publicUrl;
+
                 var insertResult = await window.supabase
                     .from('muro_posts')
-                    .insert({ usuario_id: sessionUser.id, contenido: '', imagen_url: publicUrl });
+                    .insert({
+                        usuario_id: sessionUser.id,
+                        contenido: '',
+                        imagen_url: publicUrl
+                    });
+
                 if (insertResult.error) throw insertResult.error;
-                showToast('✅ Imagen subida correctamente', 'success');
+
+                showToast('✅ Imagen publicada correctamente', 'success');
                 event.target.value = '';
                 cargarPublicaciones();
-            } catch (e) { console.error('Error subiendo imagen:', e); showToast('❌ Error al subir imagen: ' + e.message, 'error'); }
+
+            } catch (e) {
+                console.error('Error subiendo imagen:', e);
+                showToast('❌ Error al subir imagen: ' + e.message, 'error');
+            }
         }
 
         // ===== SUSCRIBIRSE A REALTIME =====
