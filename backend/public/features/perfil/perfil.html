@@ -1481,7 +1481,7 @@
         }
 
         // ================================================================
-        // 📋 CARGAR PUBLICACIONES CON REACCIONES - CORREGIDO
+        // 📋 CARGAR PUBLICACIONES CON REACCIONES
         // ================================================================
 
         async function cargarPublicaciones() {
@@ -1492,7 +1492,6 @@
                     return;
                 }
 
-                // ✅ OBTENER PUBLICACIONES DEL USUARIO
                 var result = await window.supabase
                     .from('publicaciones')
                     .select('*, usuarios:usuario_id (id, nombre, handle, avatar_url)')
@@ -1513,9 +1512,9 @@
                     return;
                 }
 
-                // ✅ OBTENER REACCIONES DE LAS PUBLICACIONES
-                var publicacionIds = data.map(function(p) { return p.id; });
+                // Obtener reacciones para todas las publicaciones
                 var reaccionesMap = {};
+                var publicacionIds = data.map(function(p) { return p.id; });
 
                 if (publicacionIds.length > 0) {
                     var reaccionesResult = await window.supabase
@@ -1537,7 +1536,6 @@
                     }
                 }
 
-                // ✅ RENDERIZAR PUBLICACIONES
                 container.innerHTML = data.map(function(p) {
                     var usuario = p.usuarios || {};
                     var avatar = usuario.avatar_url ? '<img src="' + escapeHTML(usuario.avatar_url) + '">' : '◈';
@@ -1553,11 +1551,12 @@
                     }
                     var contenido = p.contenido ? '<div class="pub-texto">' + escapeHTML(p.contenido) + '</div>' : '';
 
-                    // ✅ OBTENER REACCIÓN DEL USUARIO ACTUAL
+                    // Obtener reacción del usuario actual
                     var miReaccion = reaccionesMap[p.id]?.usuarios[sessionUser.id] || null;
                     var reaccionEmoji = miReaccion || '❤️';
                     var reaccionTotal = reaccionesMap[p.id]?.total || 0;
 
+                    // ✅ BOTÓN CON data-id PARA MEJOR IDENTIFICACIÓN
                     return '<div class="publicacion-item" data-id="' + p.id + '">' +
                         '<div class="pub-header">' +
                         '<div class="avatar-mini">' + avatar + '</div>' +
@@ -1567,13 +1566,12 @@
                         contenido +
                         mediaHtml +
                         '<div class="pub-actions">' +
-                        '<button class="reaccion-btn" onclick="toggleReaccion(\'' + p.id + '\', event)">' +
+                        '<button class="reaccion-btn" data-id="' + p.id + '" onclick="toggleReaccion(\'' + p.id + '\', event)">' +
                         '<span class="reaccion-emoji">' + reaccionEmoji + '</span>' +
                         '<span class="count">' + reaccionTotal + '</span>' +
                         '</button>' +
                         '<span class="comment-btn" onclick="abrirModalComentarios(\'' + p.id + '\')">💬 <span>' + (p.comentarios || 0) + '</span></span>' +
                         '</div>' +
-                        // ✅ SELECTOR DE REACCIONES
                         '<div class="reaccion-picker" id="reaccionPicker-' + p.id + '">' +
                         REACCIONES.map(function(r) {
                             return '<button onclick="seleccionarReaccion(\'' + p.id + '\', \'' + r + '\', event)">' + r + '</button>';
@@ -1592,18 +1590,30 @@
         // ❤️ REACCIONES - NUEVO SISTEMA
         // ================================================================
 
+        // ✅ CORREGIDO: Busca el picker RELATIVO al botón clickeado
         function toggleReaccion(publicacionId, event) {
             if (!sessionUser) {
                 showToast('⚠️ Inicia sesión para reaccionar', 'warning');
                 return;
             }
 
-            var picker = document.getElementById('reaccionPicker-' + publicacionId);
-            if (!picker) return;
+            // ✅ Buscar el picker RELATIVO al botón clickeado
+            var btn = event.currentTarget;
+            var item = btn.closest('.publicacion-item');
+            if (!item) {
+                console.error('No se encontró el contenedor de la publicación');
+                return;
+            }
+
+            var picker = item.querySelector('.reaccion-picker');
+            if (!picker) {
+                console.error('No se encontró el selector de reacciones para la publicación:', publicacionId);
+                return;
+            }
 
             // Cerrar otros pickers
             document.querySelectorAll('.reaccion-picker.show').forEach(function(el) {
-                if (el.id !== picker.id) el.classList.remove('show');
+                if (el !== picker) el.classList.remove('show');
             });
 
             picker.classList.toggle('show');
