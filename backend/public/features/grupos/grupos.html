@@ -1,6 +1,6 @@
 <!-- ================================================================
      GRUPOS - SARIEL'S ECOSYSTEM
-     VERSIÓN PRODUCCIÓN FINAL - CON SELECTOR DE EMOJIS (COMO EL MURO)
+     VERSIÓN PRODUCCIÓN - CON FINALIZAR LIVE DESDE EL GRUPO
      ================================================================ -->
 <!DOCTYPE html>
 <html lang="es">
@@ -359,6 +359,7 @@
                     <button class="btn-outline btn-sm" onclick="abrirSubirVideo()">🎥 Video</button>
                     <button class="btn-live btn-sm" onclick="iniciarLiveEnGrupo()" id="btnIniciarLive">🔴 Iniciar LIVE</button>
                     <button class="btn-danger btn-sm" onclick="verLiveActivo()" id="btnVerLive" style="display:none;">📺 VER LIVE</button>
+                    <button class="btn-danger btn-sm" onclick="finalizarLiveGrupo()" id="btnFinalizarLive" style="display:none;">⏹ Finalizar LIVE</button>
                     <button class="btn-outline btn-sm" onclick="abrirAdminGrupo()" id="btnAdminGrupo" style="display:none;">⚙️ Administrar</button>
                 </div>
             </div>
@@ -804,7 +805,7 @@
                     portadaEl.textContent = '◈';
                 }
 
-                // Mostrar acciones según rol
+                // ✅ Mostrar acciones según rol y estado del LIVE
                 var btnAdmin = document.getElementById('btnAdminGrupo');
                 if (esAdmin) {
                     btnAdmin.style.display = 'inline-block';
@@ -812,21 +813,29 @@
                     btnAdmin.style.display = 'none';
                 }
 
-                // Mostrar botón Live
                 var btnLive = document.getElementById('btnIniciarLive');
                 var btnVerLive = document.getElementById('btnVerLive');
-                if (esMiembro()) {
-                    btnLive.style.display = 'inline-block';
-                } else {
-                    btnLive.style.display = 'none';
-                }
+                var btnFinalizarLive = document.getElementById('btnFinalizarLive');
 
                 if (liveActivoEnGrupo) {
                     btnVerLive.style.display = 'inline-block';
                     document.getElementById('grupoLiveBadge').style.display = 'inline';
+                    
+                    // ✅ Mostrar "Finalizar LIVE" solo si el usuario es el streamer
+                    if (sessionUser && liveActivoEnGrupo.streamer_id === sessionUser.id) {
+                        btnFinalizarLive.style.display = 'inline-block';
+                        btnLive.style.display = 'none';
+                    } else {
+                        btnFinalizarLive.style.display = 'none';
+                        btnLive.style.display = 'none';
+                    }
                 } else {
                     btnVerLive.style.display = 'none';
                     document.getElementById('grupoLiveBadge').style.display = 'none';
+                    btnFinalizarLive.style.display = 'none';
+                    if (esMiembro()) {
+                        btnLive.style.display = 'inline-block';
+                    }
                 }
 
                 // Cargar publicaciones
@@ -1235,6 +1244,56 @@
             } catch (e) {
                 console.error('Error iniciando live:', e);
                 showToast('❌ Error al iniciar LIVE: ' + e.message, 'error');
+            }
+        }
+
+        // ================================================================
+        // 🆕 FINALIZAR LIVE DESDE EL GRUPO
+        // ================================================================
+        async function finalizarLiveGrupo() {
+            if (!sessionUser) {
+                showToast('⚠️ Inicia sesión', 'error');
+                return;
+            }
+            if (!liveActivoEnGrupo) {
+                showToast('⚠️ No hay LIVE activo', 'error');
+                return;
+            }
+
+            // ✅ Verificar que el usuario sea el streamer
+            if (liveActivoEnGrupo.streamer_id !== sessionUser.id) {
+                showToast('⚠️ Solo el streamer puede finalizar el LIVE', 'error');
+                return;
+            }
+
+            if (!confirm('¿Seguro que quieres finalizar el LIVE?')) return;
+
+            showToast('⏳ Finalizando LIVE...', '');
+
+            try {
+                // ✅ Usar la RPC que ya existe en Supabase
+                const { data, error } = await supabase.rpc('finalizar_transmision', {
+                    p_transmision_id: liveActivoEnGrupo.id
+                });
+
+                if (error) throw error;
+
+                showToast('✅ LIVE finalizado', 'success');
+
+                // ✅ Actualizar estado local
+                liveActivoEnGrupo = null;
+                document.getElementById('grupoLiveBadge').style.display = 'none';
+                document.getElementById('btnVerLive').style.display = 'none';
+                document.getElementById('btnFinalizarLive').style.display = 'none';
+                document.getElementById('btnIniciarLive').style.display = 'inline-block';
+
+                // ✅ Recargar publicaciones y estado del grupo
+                await cargarPublicacionesGrupo(grupoActualId);
+                await cargarGrupos();
+
+            } catch (e) {
+                console.error('❌ Error finalizando LIVE:', e);
+                showToast('❌ Error al finalizar LIVE: ' + e.message, 'error');
             }
         }
 
@@ -1843,6 +1902,7 @@
         window.compartirPublicacion = compartirPublicacion;
         window.iniciarLiveEnGrupo = iniciarLiveEnGrupo;
         window.verLiveActivo = verLiveActivo;
+        window.finalizarLiveGrupo = finalizarLiveGrupo;
         window.abrirModalCrearGrupo = abrirModalCrearGrupo;
         window.cerrarModalCrearGrupo = cerrarModalCrearGrupo;
         window.crearGrupo = crearGrupo;
