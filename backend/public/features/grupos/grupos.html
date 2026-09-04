@@ -1,6 +1,6 @@
 <!-- ================================================================
      GRUPOS - SARIEL'S ECOSYSTEM
-     VERSIÓN PRODUCCIÓN FINAL - SIN INSERT MANUAL EN MIEMBROS
+     VERSIÓN PRODUCCIÓN FINAL - CON EMOJIS ACTUALIZADOS
      ================================================================ -->
 <!DOCTYPE html>
 <html lang="es">
@@ -1647,10 +1647,39 @@
             }
         }
 
+        // ================================================================
+        // 🎯 INSERTAR EMOJI - LISTA ACTUALIZADA CON TODOS LOS EMOJIS
+        // ================================================================
         function insertarEmojiGrupo() {
             var input = document.getElementById('inputPublicacion');
             if (!input) return;
-            var emojis = ['😊', '🔥', '❤️', '💎', '✨', '🎉', '🚀', '🌟', '💪', '🤝', '👀', '💯', '🎯', '⭐', '🌈', '⚡'];
+
+            // ✅ LISTA COMPLETA CON EMOJIS NUEVOS
+            var emojis = [
+                // Unicode 17.0 (2025)
+                '🧌', '🫨', '🪭', '🐋', '🧰', '💥',
+                // Unicode 18.0 (2026)
+                '🫩', '👈', '👉', '🦋', '🥒', '🗼', '☄️', '🧽', '🪤', '🩹',
+                // Dinero / Ganancia
+                '💸', '💵', '💴', '💶', '💷', '🪙', '💰', '💳', '💎',
+                // Fuego / Viral
+                '🔥', '⚡', '✨', '🌟', '💫', '🚀', '🪐',
+                // Ojitos / Chisme
+                '👀', '👁️', '👁️‍🗨️', '🤩', '😍', '😳', '🫣',
+                // Manitas / Señalando
+                '👉', '👈', '☝️', '👇', '🫵', '🤏', '✋', '🤚', '👋',
+                // Caritas pa vender
+                '🥹', '🥺', '😍', '🤩', '🤤', '😎', '😏', '🤗', '🫶', '🥰', '😘',
+                // Tiempo / Correle
+                '⏰', '⏳', '⌛', '⏲️', '🚨', '⚠️',
+                // Check / Apartado
+                '✅', '☑️', '✔️', '🔒', '📌', '📍', '📝',
+                // Cajas / Envío
+                '📦', '📤', '📥', '🚚', '🚀', '🏍️', '💨',
+                // Corazones
+                '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '💖', '💝', '💘', '💗'
+            ];
+
             var emoji = emojis[Math.floor(Math.random() * emojis.length)];
             var start = input.selectionStart || 0;
             var end = input.selectionEnd || 0;
