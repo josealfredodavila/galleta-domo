@@ -12,7 +12,7 @@
     <!-- Carga de Supabase SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-    <!-- CÓDIGO JAVASCRIPT UNIFICADO -->
+    <!-- CÓDIGO JAVASCRIPT UNIFICADO Y CORREGIDO -->
     <script type="module">
         let sessionUser = null;
         let membresiaActual = null;
@@ -38,40 +38,65 @@
             t._timeout = setTimeout(() => t.classList.remove('show'), 3500);
         }
 
-        // ===== INICIALIZACIÓN =====
+        // ================================================================
+        // INICIALIZACIÓN Y AUTENTICACIÓN
+        // ================================================================
+
         async function initPerfil() {
             try {
+                console.log('🔄 Verificando sesión en Supabase...');
                 const sessionResult = await window.supabase.auth.getSession();
 
-                if (sessionResult.error || !sessionResult.data?.session) {
-                    document.getElementById('perfilNombre').innerHTML = 'Inicia sesión';
-                    document.getElementById('perfilHandle').textContent = '@invitado';
+                if (sessionResult.error) {
+                    console.error('❌ Error al obtener sesión:', sessionResult.error);
+                    showToast('⚠️ Error de autenticación', 'error');
+                    return;
+                }
+
+                if (!sessionResult.data || !sessionResult.data.session) {
+                    console.warn('⚠️ No hay sesión activa');
+                    const nombreEl = document.getElementById('perfilNombre');
+                    if (nombreEl) nombreEl.innerHTML = 'Inicia sesión';
+                    
+                    const handleEl = document.getElementById('perfilHandle');
+                    if (handleEl) handleEl.textContent = '@invitado';
+
+                    const bioEl = document.getElementById('perfilBio');
+                    if (bioEl) bioEl.textContent = 'Inicia sesión para ver tu perfil.';
+                    
                     renderMembresiaFree();
                     return;
                 }
 
                 sessionUser = sessionResult.data.session.user;
+                console.log('🔐 Usuario autenticado:', sessionUser.id);
 
-                // Ejecución independiente con try/catch para evitar bloqueos
+                // Ejecutar cargas de forma independiente para evitar bloqueos
                 cargarPerfilData();
                 cargarMembresia();
                 cargarPublicaciones();
                 cargarEmojis();
 
             } catch (error) {
-                console.error('Error inicializando perfil:', error);
+                console.error('❌ Error grave en initPerfil:', error);
                 showToast('❌ Error inicializando el perfil', 'error');
             }
         }
 
-        // ===== CARGAR PERFIL =====
+        // ================================================================
+        // 1. CARGAR PERFIL (RPC Y TABLA USUARIOS)
+        // ================================================================
+
         async function cargarPerfilData() {
             try {
+                console.log('👤 Cargando información del perfil...');
+                
                 const { data: rpcData, error: rpcError } = await window.supabase.rpc('obtener_mi_perfil');
 
                 if (!rpcError && rpcData) {
                     perfilUsuario = Array.isArray(rpcData) ? rpcData[0] : rpcData;
                 } else {
+                    console.warn('⚠️ Falló RPC obtener_mi_perfil(), consultando tabla usuarios:', rpcError);
                     const { data: tableData, error: tableError } = await window.supabase
                         .from('usuarios')
                         .select('*')
@@ -82,41 +107,107 @@
                     perfilUsuario = tableData;
                 }
 
-                if (perfilUsuario) actualizarUI(perfilUsuario);
+                if (perfilUsuario) {
+                    actualizarUI(perfilUsuario);
+                    actualizarEstadisticas(perfilUsuario);
+                }
             } catch (error) {
-                console.error('Error al cargar perfil:', error);
+                console.error('❌ Error al cargar perfil:', error);
+                showToast('❌ Error al cargar datos del perfil', 'error');
             }
         }
 
         function actualizarUI(data) {
             const nombreEl = document.getElementById('perfilNombre');
-            if (nombreEl) nombreEl.innerHTML = data.nombre || 'Usuario';
+            if (nombreEl) {
+                const verificado = data.verificado ? ' <span class="verified">✦ VERIFICADO</span>' : '';
+                nombreEl.innerHTML = (data.nombre || 'Usuario') + verificado;
+            }
 
             const handleEl = document.getElementById('perfilHandle');
-            if (handleEl) handleEl.textContent = '@' + (data.handle || 'usuario');
+            if (handleEl) {
+                handleEl.textContent = '@' + (data.handle || 'usuario');
+            }
 
             const bioEl = document.getElementById('perfilBio');
-            if (bioEl) bioEl.textContent = data.bio || 'Sin biografía';
+            if (bioEl) {
+                bioEl.textContent = data.bio || 'Sin biografía';
+            }
+
+            const avatarEl = document.getElementById('perfilAvatar');
+            if (avatarEl) {
+                if (data.avatar_url && data.avatar_url.trim() !== '') {
+                    avatarEl.innerHTML = `
+                        <img src="${data.avatar_url}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;"/>
+                        <button class="edit-badge" onclick="abrirSelectorArchivo()" title="Cambiar foto de perfil">✎</button>
+                    `;
+                } else {
+                    avatarEl.innerHTML = `
+                        ◈
+                        <button class="edit-badge" onclick="abrirSelectorArchivo()" title="Cambiar foto de perfil">✎</button>
+                    `;
+                }
+            }
+
+            const editNombre = document.getElementById('editNombre');
+            const editHandle = document.getElementById('editHandle');
+            const editBio = document.getElementById('editBio');
+            if (editNombre) editNombre.value = data.nombre || '';
+            if (editHandle) editHandle.value = data.handle || '';
+            if (editBio) editBio.value = data.bio || '';
         }
 
-        // ===== CARGAR MEMBRESÍA =====
+        function actualizarEstadisticas(data) {
+            const statTokens = document.getElementById('statTokens');
+            const statNFTS = document.getElementById('statNFTS');
+            const statSeguidores = document.getElementById('statSeguidores');
+            const statSiguiendo = document.getElementById('statSiguiendo');
+
+            if (statTokens) statTokens.textContent = data.tokens || 0;
+            if (statNFTS) statNFTS.textContent = data.nfts_count || 0;
+            if (statSeguidores) statSeguidores.textContent = data.seguidores_count || 0;
+            if (statSiguiendo) statSiguiendo.textContent = data.siguiendo_count || 0;
+
+            const tokenTotal = document.getElementById('tokenTotal');
+            const tokenDisponibles = document.getElementById('tokenDisponibles');
+            if (tokenTotal) tokenTotal.textContent = data.tokens || 0;
+            if (tokenDisponibles) tokenDisponibles.textContent = data.tokens_para_canje || data.tokens || 0;
+        }
+
+        // ================================================================
+        // 2. CARGAR MEMBRESÍA
+        // ================================================================
+
         async function cargarMembresia() {
             try {
-                if (!sessionUser) return renderMembresiaFree();
-
-                const { data, error } = await window.supabase.rpc('obtener_membresia_usuario', {
-                    p_usuario_id: sessionUser.id
-                });
-
-                const membData = Array.isArray(data) ? data[0] : data;
-
-                if (error || !membData || !membData.activa) {
+                if (!sessionUser) {
                     renderMembresiaFree();
                     return;
                 }
 
+                console.log('✦ Obteniendo membresía RPC...');
+                const { data, error } = await window.supabase.rpc('obtener_membresia_usuario', {
+                    p_usuario_id: sessionUser.id
+                });
+
+                if (error) {
+                    console.error('❌ Error RPC obtener_membresia_usuario:', error);
+                    renderMembresiaFree();
+                    return;
+                }
+
+                const membData = Array.isArray(data) ? data[0] : data;
+
+                if (!membData || !membData.activa) {
+                    renderMembresiaFree();
+                    return;
+                }
+
+                membresiaActual = membData;
                 renderMembresiaActiva(membData);
+
             } catch (error) {
+                console.error('❌ Error inesperado cargando membresía:', error);
                 renderMembresiaFree();
             }
         }
@@ -125,9 +216,15 @@
             const container = document.getElementById('membresiaContainer');
             if (!container) return;
             container.innerHTML = `
-                <div style="padding:15px; border:1px solid var(--glass-border); border-radius:12px;">
-                    <h4>Plan Gratuito (FREE)</h4>
-                    <p>Sin suscripción activa.</p>
+                <div style="padding:15px; background:rgba(255,255,255,0.02); border-radius:12px; border:1px solid var(--glass-border);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                        <h4 style="color:var(--text-primary); font-family:'Orbitron',sans-serif; margin:0;">Plan Gratuito (FREE)</h4>
+                        <span class="badge" style="border-color:var(--text-muted); color:var(--text-muted);">Sin suscripción</span>
+                    </div>
+                    <p style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:12px;">
+                        Actualmente no tienes una membresía activa. Actualiza a Sariel's Pro para desbloquear almacenamiento ampliado y beneficios Web3.
+                    </p>
+                    <button class="btn btn-gold btn-sm" onclick="showToast('Módulo de actualización en mantenimiento', 'warning')">⚡ Obtener Membresía</button>
                 </div>
             `;
         }
@@ -135,47 +232,353 @@
         function renderMembresiaActiva(m) {
             const container = document.getElementById('membresiaContainer');
             if (!container) return;
+            const mb = m.plan_limite_storage_bytes ? (m.plan_limite_storage_bytes / (1024 * 1024)).toFixed(0) : '0';
             container.innerHTML = `
-                <div style="padding:15px; border:1px solid var(--gold); border-radius:12px;">
-                    <h4 style="color:var(--gold);">${m.plan_nombre || 'Plan Activo'}</h4>
-                    <p>● ACTIVA</p>
+                <div style="padding:15px; background:rgba(212,175,55,0.05); border-radius:12px; border:1px solid var(--gold);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                        <h4 style="color:var(--gold); font-family:'Orbitron',sans-serif; margin:0;">${m.plan_nombre || 'Plan Activo'}</h4>
+                        <span class="badge gold">● ACTIVA</span>
+                    </div>
+                    <div style="font-size:0.8rem; color:var(--text-secondary); display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                        <div><strong>Almacenamiento:</strong> ${mb} MB</div>
+                        <div><strong>Conservación:</strong> ${m.plan_conservacion_dias || '--'} días</div>
+                        <div><strong>Días Restantes:</strong> ${m.dias_restantes ?? '--'}</div>
+                        <div><strong>Vence:</strong> ${m.vence_at ? new Date(m.vence_at).toLocaleDateString() : 'N/A'}</div>
+                    </div>
                 </div>
             `;
         }
 
-        // ===== CARGAR PUBLICACIONES =====
+        // ================================================================
+        // 3. CARGAR Y GESTIONAR PUBLICACIONES
+        // ================================================================
+
         async function cargarPublicaciones() {
             const container = document.getElementById('postsList');
-            if (!container || !sessionUser) return;
+            if (!container) return;
 
             try {
+                if (!sessionUser) return;
+
+                console.log('📝 Cargando publicaciones de usuario:', sessionUser.id);
                 const { data, error } = await window.supabase
                     .from('publicaciones')
                     .select('*')
                     .eq('usuario_id', sessionUser.id)
                     .order('created_at', { ascending: false });
 
-                if (error || !data || data.length === 0) {
-                    container.innerHTML = `<div class="empty-state">Sin publicaciones</div>`;
+                if (error) {
+                    console.error('❌ Error cargando publicaciones:', error);
+                    container.innerHTML = `<div class="empty-state"><h4>Error al cargar publicaciones</h4></div>`;
                     return;
                 }
 
-                container.innerHTML = data.map(p => `
-                    <div class="publicacion-item">
-                        <p>${p.contenido || ''}</p>
-                    </div>
-                `).join('');
+                const publicaciones = data || [];
+                const countEl = document.getElementById('postsCount');
+                if (countEl) countEl.textContent = publicaciones.length;
+
+                if (publicaciones.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <span class="icon">📝</span>
+                            <h4>Sin publicaciones</h4>
+                            <p>Crea tu primera publicación desde el botón "Nueva Publicación".</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const nombreUsuario = perfilUsuario?.nombre || 'Usuario';
+                const avatarUsuario = perfilUsuario?.avatar_url 
+                    ? `<img src="${perfilUsuario.avatar_url}" style="width:100%;height:100%;object-fit:cover;">` 
+                    : '◈';
+
+                container.innerHTML = publicaciones.map(p => {
+                    const fecha = p.created_at ? new Date(p.created_at).toLocaleString() : '';
+                    let mediaHtml = '';
+
+                    if (p.media_url) {
+                        if (p.media_type === 'video') {
+                            mediaHtml = `<video src="${p.media_url}" class="pub-media" controls preload="metadata"></video>`;
+                        } else {
+                            mediaHtml = `<img src="${p.media_url}" class="pub-media" loading="lazy" alt="Foto" onerror="this.style.display='none'" />`;
+                        }
+                    }
+
+                    const contenido = p.contenido ? `<div class="pub-texto">${p.contenido}</div>` : '';
+
+                    return `
+                        <div class="publicacion-item" data-id="${p.id}">
+                            <div class="pub-header">
+                                <div class="avatar-mini">${avatarUsuario}</div>
+                                <span class="pub-nombre">${nombreUsuario}</span>
+                                <span class="pub-fecha">${fecha}</span>
+                            </div>
+                            ${contenido}
+                            ${mediaHtml}
+                            <div class="pub-actions">
+                                <button class="reaccion-btn" onclick="togglePicker('${p.id}')">
+                                    👍 <span class="count" id="react-count-${p.id}">0</span>
+                                </button>
+                                <button class="comment-btn" onclick="abrirModalComentarios('${p.id}')">💬 Comentarios</button>
+                                <button class="delete-btn" onclick="eliminarPublicacion('${p.id}')">🗑️ Eliminar</button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
             } catch (error) {
-                console.error('Error cargando publicaciones:', error);
+                console.error('❌ Error en cargarPublicaciones:', error);
             }
         }
 
-        async function cargarEmojis() {}
+        async function publicarContenido() {
+            const textoEl = document.getElementById('pubTexto');
+            const archivoEl = document.getElementById('pubArchivo');
+            const statusEl = document.getElementById('pubStatus');
+            const btn = document.getElementById('btnPublicar');
 
-        // ===== NAVEGACIÓN Y EXPOSICIÓN GLOBAL (EVENTOS ONCLICK) =====
+            const texto = textoEl?.value.trim() || '';
+            const archivo = archivoEl?.files[0];
+
+            if (!texto && !archivo) {
+                showToast('Escribe algo o selecciona una foto/video', 'warning');
+                return;
+            }
+
+            try {
+                if (btn) btn.disabled = true;
+                if (statusEl) statusEl.textContent = 'Subiendo publicación...';
+
+                let mediaUrl = null;
+                let mediaType = null;
+
+                if (archivo) {
+                    const ext = archivo.name.split('.').pop();
+                    const filePath = `${sessionUser.id}/${Date.now()}.${ext}`;
+                    const { data: uploadData, error: uploadError } = await window.supabase.storage
+                        .from('publicaciones')
+                        .upload(filePath, archivo);
+
+                    if (uploadError) throw uploadError;
+
+                    const { data: publicUrlData } = window.supabase.storage
+                        .from('publicaciones')
+                        .getPublicUrl(filePath);
+
+                    mediaUrl = publicUrlData.publicUrl;
+                    mediaType = archivo.type.startsWith('video') ? 'video' : 'imagen';
+                }
+
+                const { error: insertError } = await window.supabase
+                    .from('publicaciones')
+                    .insert({
+                        usuario_id: sessionUser.id,
+                        contenido: texto,
+                        media_url: mediaUrl,
+                        media_type: mediaType,
+                        estado: 'publicado'
+                    });
+
+                if (insertError) throw insertError;
+
+                showToast('🚀 Publicación creada', 'success');
+                if (textoEl) textoEl.value = '';
+                if (archivoEl) archivoEl.value = '';
+                cerrarModal('publicacionModal');
+                cargarPublicaciones();
+
+            } catch (error) {
+                console.error('❌ Error al publicar:', error);
+                showToast('❌ Error al guardar publicación', 'error');
+            } finally {
+                if (btn) btn.disabled = false;
+                if (statusEl) statusEl.textContent = '';
+            }
+        }
+
+        async function eliminarPublicacion(id) {
+            if (!confirm('¿Deseas eliminar esta publicación?')) return;
+            try {
+                const { error } = await window.supabase
+                    .from('publicaciones')
+                    .delete()
+                    .eq('id', id)
+                    .eq('usuario_id', sessionUser.id);
+
+                if (error) throw error;
+                showToast('Publicación eliminada', 'success');
+                cargarPublicaciones();
+            } catch (error) {
+                console.error('❌ Error al eliminar:', error);
+                showToast('❌ No se pudo eliminar', 'error');
+            }
+        }
+
+        // ================================================================
+        // 4. REACCIONES Y COMENTARIOS
+        // ================================================================
+
+        async function cargarEmojis() {
+            try {
+                const { data, error } = await window.supabase
+                    .from('reacciones_emojis')
+                    .select('*');
+
+                if (!error && data) {
+                    window.EMOJIS_DISPONIBLES = data;
+                }
+            } catch (error) {
+                console.warn('⚠️ No se pudieron cargar los emojis:', error);
+            }
+        }
+
+        async function abrirModalComentarios(pubId) {
+            pubSeleccionadaParaComentarios = pubId;
+            const modal = document.getElementById('modalComentarios');
+            const list = document.getElementById('comentariosList');
+            if (modal) modal.classList.add('active');
+            if (list) list.innerHTML = '<div style="color:var(--text-muted);text-align:center;padding:20px;">Cargando comentarios...</div>';
+
+            try {
+                const { data, error } = await window.supabase
+                    .from('publicaciones_comentarios')
+                    .select('*, usuarios(nombre, avatar_url)')
+                    .eq('publicacion_id', pubId)
+                    .order('created_at', { ascending: true });
+
+                if (error) throw error;
+
+                if (!data || data.length === 0) {
+                    list.innerHTML = '<div style="color:var(--text-muted);text-align:center;padding:20px;">Sin comentarios aún.</div>';
+                    return;
+                }
+
+                list.innerHTML = data.map(c => `
+                    <div style="padding:8px 0; border-bottom:1px solid var(--glass-border); font-size:0.8rem;">
+                        <strong>${c.usuarios?.nombre || 'Usuario'}:</strong> ${c.comentario}
+                    </div>
+                `).join('');
+
+            } catch (error) {
+                console.error('❌ Error cargando comentarios:', error);
+                list.innerHTML = '<div style="color:var(--danger);text-align:center;padding:20px;">Error al cargar comentarios.</div>';
+            }
+        }
+
+        async function enviarComentario() {
+            const input = document.getElementById('inputComentario');
+            const comentario = input?.value.trim();
+            if (!comentario || !pubSeleccionadaParaComentarios) return;
+
+            try {
+                const { error } = await window.supabase
+                    .from('publicaciones_comentarios')
+                    .insert({
+                        publicacion_id: pubSeleccionadaParaComentarios,
+                        usuario_id: sessionUser.id,
+                        comentario: comentario
+                    });
+
+                if (error) throw error;
+                input.value = '';
+                abrirModalComentarios(pubSeleccionadaParaComentarios);
+            } catch (error) {
+                console.error('❌ Error enviando comentario:', error);
+                showToast('Error al enviar comentario', 'error');
+            }
+        }
+
+        function cerrarModalComentarios() {
+            const modal = document.getElementById('modalComentarios');
+            if (modal) modal.classList.remove('active');
+            pubSeleccionadaParaComentarios = null;
+        }
+
+        // ================================================================
+        // 5. EDICIÓN DE PERFIL Y ARCHIVOS
+        // ================================================================
+
+        async function guardarPerfil() {
+            const nombre = document.getElementById('editNombre')?.value.trim();
+            const handle = document.getElementById('editHandle')?.value.trim();
+            const bio = document.getElementById('editBio')?.value.trim();
+
+            try {
+                const { error } = await window.supabase.rpc('actualizar_perfil', {
+                    p_nombre: nombre,
+                    p_handle: handle,
+                    p_bio: bio
+                });
+
+                if (error) {
+                    const { error: updateError } = await window.supabase
+                        .from('usuarios')
+                        .update({ nombre, handle, bio })
+                        .eq('id', sessionUser.id);
+
+                    if (updateError) throw updateError;
+                }
+
+                showToast('Perfil actualizado correctamente', 'success');
+                cargarPerfilData();
+            } catch (error) {
+                console.error('❌ Error guardando perfil:', error);
+                showToast('Error al actualizar el perfil', 'error');
+            }
+        }
+
+        function abrirSelectorArchivo() {
+            document.getElementById('fileInput')?.click();
+        }
+
+        async function subirFoto(event) {
+            const file = event.target.files[0];
+            if (!file || !sessionUser) return;
+
+            try {
+                showToast('Subiendo foto de perfil...', 'info');
+                const ext = file.name.split('.').pop();
+                const path = `avatars/${sessionUser.id}_${Date.now()}.${ext}`;
+
+                const { error: uploadError } = await window.supabase.storage
+                    .from('perfiles')
+                    .upload(path, file);
+
+                if (uploadError) throw uploadError;
+
+                const { data: urlData } = window.supabase.storage
+                    .from('perfiles')
+                    .getPublicUrl(path);
+
+                const avatarUrl = urlData.publicUrl;
+
+                await window.supabase
+                    .from('usuarios')
+                    .update({ avatar_url: avatarUrl })
+                    .eq('id', sessionUser.id);
+
+                showToast('Foto de perfil actualizada', 'success');
+                cargarPerfilData();
+            } catch (error) {
+                console.error('❌ Error subiendo avatar:', error);
+                showToast('Error al subir la imagen', 'error');
+            }
+        }
+
+        // ================================================================
+        // NAVEGACIÓN Y MODALES
+        // ================================================================
+
         function cambiarTab(tabId) {
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            document.getElementById('tab-' + tabId)?.classList.add('active');
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+            const activeBtn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.getAttribute('onclick')?.includes(tabId));
+            if (activeBtn) activeBtn.classList.add('active');
+
+            const activeTab = document.getElementById('tab-' + tabId);
+            if (activeTab) activeTab.classList.add('active');
         }
 
         function abrirModalPublicacion() {
@@ -186,12 +589,33 @@
             document.getElementById(id)?.classList.remove('active');
         }
 
-        // EXPORTACIÓN A WINDOW
+        async function cerrarSesion() {
+            await window.supabase.auth.signOut();
+            window.location.href = '/';
+        }
+
+        // ================================================================
+        // EXPOSICIÓN GLOBAL PARA MANEJADORES INLINE (ONCLICK)
+        // ================================================================
+
         window.cambiarTab = cambiarTab;
         window.abrirModalPublicacion = abrirModalPublicacion;
         window.cerrarModal = cerrarModal;
-        window.guardarPerfil = () => showToast('Guardando...', 'info');
+        window.publicarContenido = publicarContenido;
+        window.eliminarPublicacion = eliminarPublicacion;
+        window.abrirModalComentarios = abrirModalComentarios;
+        window.enviarComentario = enviarComentario;
+        window.cerrarModalComentarios = cerrarModalComentarios;
+        window.guardarPerfil = guardarPerfil;
+        window.abrirSelectorArchivo = abrirSelectorArchivo;
+        window.subirFoto = subirFoto;
+        window.cerrarSesion = cerrarSesion;
+        window.togglePicker = (id) => console.log('Picker reaccion:', id);
+        window.editarPerfil = () => cambiarTab('config');
+        window.compartirPerfil = () => showToast('Enlace de perfil copiado', 'success');
+        window.generarQRPerfil = () => document.getElementById('qrPerfilModal')?.classList.add('active');
 
+        // Iniciar al cargar el DOM
         document.addEventListener('DOMContentLoaded', initPerfil);
     </script>
 </body>
