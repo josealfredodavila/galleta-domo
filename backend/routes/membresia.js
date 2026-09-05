@@ -5,7 +5,7 @@
 const express = require('express');
 const router = express.Router();
 const { supabaseAdmin } = require('../config/supabase.js');
-const { verificarAutenticacion } = require('../middleware/auth.js');
+const { verificarToken } = require('../middleware/auth.js');
 const crypto = require('crypto');
 
 // ===== CONFIGURACIÓN =====
@@ -17,10 +17,10 @@ const SITE_URL = process.env.SITE_URL || 'https://sariels.xyz';
 // POST /api/payments/membresia/create
 // ================================================================
 
-router.post('/create', verificarAutenticacion, async (req, res) => {
+router.post('/create', verificarToken, async (req, res) => {
     try {
         const { privacy_version, renovar } = req.body;
-        const usuario_id = req.user.id;
+        const usuario_id = req.usuario.id;
 
         // 1. Obtener usuario
         const { data: usuario, error: userError } = await supabaseAdmin
@@ -124,9 +124,9 @@ router.post('/create', verificarAutenticacion, async (req, res) => {
 // GET /api/payments/membresia/status
 // ================================================================
 
-router.get('/status', verificarAutenticacion, async (req, res) => {
+router.get('/status', verificarToken, async (req, res) => {
     try {
-        const usuario_id = req.user.id;
+        const usuario_id = req.usuario.id;
 
         // Usar la función RPC existente
         const { data, error } = await supabaseAdmin
