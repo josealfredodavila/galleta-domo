@@ -433,6 +433,7 @@
             color: var(--text-muted);
             align-items: center;
             position: relative;
+            flex-wrap: wrap;
         }
         .publicacion-item .pub-actions .reaccion-btn {
             cursor: pointer;
@@ -481,6 +482,20 @@
             color: var(--gold);
             background: rgba(212, 175, 55, 0.05);
         }
+        .publicacion-item .pub-actions .delete-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 0.7rem;
+            padding: 4px 8px;
+            border-radius: 8px;
+            transition: var(--transition);
+        }
+        .publicacion-item .pub-actions .delete-btn:hover {
+            color: var(--danger);
+            background: rgba(255, 51, 102, 0.1);
+        }
 
         .reaccion-picker {
             display: none;
@@ -500,6 +515,9 @@
         }
         .reaccion-picker.show {
             display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            max-width: 300px;
         }
         .reaccion-picker button {
             background: transparent;
@@ -1176,9 +1194,7 @@
         var sessionUser = null;
         var reaccionCache = new Map();
         var publicacionActivaComentarios = null;
-
-        // ===== EMOJIS DE REACCIONES =====
-        var REACCIONES = ['❤️', '😊', '🔥', '👏', '🎉', '💎', '🤩', '😍', '😂'];
+        var REACCIONES = ['❤️', '😊', '🔥', '👏', '🎉', '💎', '🤩', '😍', '😂']; // Fallback
 
         // ===== TOAST =====
         function showToast(msg, type) {
@@ -1224,6 +1240,30 @@
         }
 
         // ================================================================
+        // 🎯 CARGAR EMOJIS DESDE SUPABASE - NUEVA FUNCIÓN
+        // ================================================================
+
+        async function cargarEmojisReaccion() {
+            try {
+                // ✅ USAR RPC REAL: obtener_emojis_reaccion()
+                var result = await window.supabase.rpc('obtener_emojis_reaccion');
+                if (result.error) throw result.error;
+                
+                if (result.data && result.data.length > 0) {
+                    REACCIONES = result.data.map(function(e) { return e.codigo; });
+                    console.log('✅ Emojis cargados desde Supabase:', REACCIONES);
+                } else {
+                    console.warn('⚠️ No se encontraron emojis en la base de datos, usando fallback');
+                }
+            } catch (error) {
+                console.error('❌ Error cargando emojis:', error);
+                // Fallback a emojis hardcodeados si falla la consulta
+                REACCIONES = ['❤️', '😊', '🔥', '👏', '🎉', '💎', '🤩', '😍', '😂'];
+                console.log('📌 Usando emojis de fallback:', REACCIONES);
+            }
+        }
+
+        // ================================================================
         // CARGAR PERFIL - USANDO RPC REAL
         // ================================================================
 
@@ -1244,11 +1284,13 @@
 
                 sessionUser = sessionResult.data.session.user;
 
+                // ✅ Cargar emojis desde Supabase
+                await cargarEmojisReaccion();
+
                 // ✅ USAR RPC REAL: obtener_mi_perfil()
                 var userResult = await window.supabase.rpc('obtener_mi_perfil');
 
                 if (userResult.error) {
-                    // Fallback a SELECT directo si la RPC no existe
                     console.warn('RPC obtener_mi_perfil no disponible, usando SELECT directo');
                     var fallbackResult = await window.supabase
                         .from('usuarios')
@@ -1299,7 +1341,6 @@
             var tokenTotal = document.getElementById('tokenTotal');
             if (tokenTotal) tokenTotal.textContent = data.tokens || 0;
 
-            // ✅ Usar tokens_para_canje para el progreso
             var progressFill = document.getElementById('progressFill');
             var progressText = document.getElementById('progressText');
             if (progressFill && progressText) {
@@ -1308,7 +1349,6 @@
                 progressFill.style.width = (progreso / 12 * 100) + '%';
                 progressText.textContent = progreso + ' / 12';
 
-                // Habilitar/deshabilitar botón de canje
                 var canjearBtn = document.getElementById('canjearNft');
                 if (canjearBtn) {
                     if (tokensParaCanje >= 12 && !data.nft_canjeado) {
@@ -1508,7 +1548,7 @@
         }
 
         // ================================================================
-        // 📋 CARGAR PUBLICACIONES CON REACCIONES MEJORADO
+        // 📋 CARGAR PUBLICACIONES CON REACCIONES Y ELIMINAR
         // ================================================================
 
         async function cargarPublicaciones() {
@@ -1581,6 +1621,7 @@
                     var reaccionEmoji = miReaccion || '❤️';
                     var reaccionTotal = reaccionesMap[p.id]?.total || 0;
 
+                    // ✅ AGREGAR BOTÓN DE ELIMINAR
                     return '<div class="publicacion-item" data-id="' + p.id + '">' +
                         '<div class="pub-header">' +
                         '<div class="avatar-mini">' + avatar + '</div>' +
@@ -1596,6 +1637,7 @@
                         '<span class="arrow" id="arrow-' + p.id + '">▼</span>' +
                         '</button>' +
                         '<span class="comment-btn" onclick="abrirModalComentarios(\'' + p.id + '\')">💬 <span>' + (p.comentarios || 0) + '</span></span>' +
+                        '<button class="delete-btn" onclick="eliminarPublicacion(\'' + p.id + '\')" title="Eliminar publicación">🗑️</button>' +
                         '</div>' +
                         '<div class="reaccion-picker" id="reaccionPicker-' + p.id + '">' +
                         REACCIONES.map(function(r) {
@@ -1608,6 +1650,81 @@
             } catch (error) {
                 console.error('Error cargando publicaciones:', error);
                 document.getElementById('postsList').innerHTML = '<div class="empty-state"><span class="icon">⚠️</span><h4>Error al cargar</h4><p>Intenta recargar la página.</p></div>';
+            }
+        }
+
+        // ================================================================
+        // 🗑️ ELIMINAR PUBLICACIÓN CON ARCHIVO REAL
+        // ================================================================
+
+        async function eliminarPublicacion(publicacionId) {
+            if (!sessionUser) {
+                showToast('⚠️ Inicia sesión para eliminar', 'error');
+                return;
+            }
+
+            if (!confirm('¿Eliminar esta publicación permanentemente? También se eliminará el archivo asociado.')) {
+                return;
+            }
+
+            showToast('⏳ Eliminando publicación...', '');
+
+            try {
+                // Primero obtener la publicación para saber si tiene archivo
+                var pubResult = await window.supabase
+                    .from('publicaciones')
+                    .select('media_url, usuario_id')
+                    .eq('id', publicacionId)
+                    .eq('usuario_id', sessionUser.id)
+                    .single();
+
+                if (pubResult.error) throw pubResult.error;
+
+                var publicacion = pubResult.data;
+
+                // Si tiene archivo multimedia, eliminarlo del storage
+                if (publicacion.media_url) {
+                    try {
+                        // Extraer la ruta del archivo de la URL
+                        var filePath = publicacion.media_url;
+                        // Buscar el path después de 'publicaciones/'
+                        var match = filePath.match(/\/publicaciones\/(.+)$/);
+                        if (match && match[1]) {
+                            var storagePath = match[1];
+                            console.log('🗑️ Eliminando archivo de storage:', storagePath);
+                            
+                            var deleteStorageResult = await window.supabase.storage
+                                .from('publicaciones')
+                                .remove([storagePath]);
+                                
+                            if (deleteStorageResult.error) {
+                                console.warn('⚠️ Error al eliminar archivo de storage:', deleteStorageResult.error);
+                                // Continuamos con la eliminación de la publicación aunque falle el storage
+                            }
+                        }
+                    } catch (storageError) {
+                        console.warn('⚠️ Error al eliminar archivo de storage:', storageError);
+                        // Continuamos con la eliminación de la publicación
+                    }
+                }
+
+                // Eliminar la publicación de la base de datos
+                var deleteResult = await window.supabase
+                    .from('publicaciones')
+                    .delete()
+                    .eq('id', publicacionId)
+                    .eq('usuario_id', sessionUser.id);
+
+                if (deleteResult.error) throw deleteResult.error;
+
+                showToast('✅ Publicación eliminada correctamente', 'success');
+                
+                // Recargar publicaciones
+                await cargarPublicaciones();
+
+            } catch (error) {
+                console.error('❌ Error eliminando publicación:', error);
+                showToast('❌ Error al eliminar publicación: ' + error.message, 'error');
             }
         }
 
@@ -1964,7 +2081,6 @@
             showToast('⏳ Guardando perfil...', '');
 
             try {
-                // ✅ USAR RPC REAL: actualizar_perfil
                 var result = await window.supabase.rpc('actualizar_perfil', {
                     p_nombre: nombre,
                     p_handle: handle,
@@ -2004,7 +2120,6 @@
 
                 showToast('⏳ Vinculando wallet...', '');
 
-                // ✅ USAR RPC REAL: vincular_wallet
                 var result = await window.supabase.rpc('vincular_wallet', {
                     p_wallet_address: address,
                     p_chain_id: chainId,
@@ -2033,7 +2148,6 @@
             showToast('⏳ Desconectando wallet...', '');
 
             try {
-                // ✅ USAR RPC REAL: desvincular_wallet
                 var result = await window.supabase.rpc('desvincular_wallet');
                 if (result.error) throw result.error;
 
@@ -2065,7 +2179,6 @@
             showToast('⏳ Procesando compra de Domo...', '');
 
             try {
-                // ✅ USAR RPC REAL: comprar_domo
                 var result = await window.supabase.rpc('comprar_domo', {
                     p_cantidad: cantidad || 1
                 });
@@ -2091,7 +2204,6 @@
             showToast('⏳ Canjeando NFT...', '');
 
             try {
-                // ✅ USAR RPC REAL: canjear_nft
                 var result = await window.supabase.rpc('canjear_nft');
                 if (result.error) throw result.error;
 
@@ -2127,7 +2239,6 @@
             showToast('⏳ Validando QR...', '');
 
             try {
-                // ✅ USAR RPC REAL: registrar_escaneo_domo
                 var result = await window.supabase.rpc('registrar_escaneo_domo', {
                     p_codigo: codigo
                 });
@@ -2323,13 +2434,11 @@
             }
 
             try {
-                // ✅ USAR RPC REAL: obtener_estado_esim
                 var result = await window.supabase.rpc('obtener_estado_esim', {
                     p_usuario_id: sessionUser.id
                 });
 
                 if (result.error) {
-                    // Si la RPC no existe, mostrar estado pendiente
                     console.warn('RPC obtener_estado_esim no disponible');
                     document.getElementById('esimStatus').textContent = '⏳ Pendiente de activación';
                     return;
@@ -2447,7 +2556,6 @@
                 var plan = planesResult.data[0];
                 var idempotencyKey = 'esim_' + sessionResult.data.session.user.id + '_' + Date.now();
 
-                // ✅ USAR RPC REAL: crear_orden_esim
                 var result = await window.supabase.rpc('crear_orden_esim', {
                     p_plan_id: plan.id,
                     p_idempotency_key: idempotencyKey
@@ -2479,13 +2587,11 @@
             showToast('⏳ Sincronizando eSIM...', '');
 
             try {
-                // ✅ USAR RPC REAL: sincronizar_esim
                 var result = await window.supabase.rpc('sincronizar_esim', {
                     p_usuario_id: sessionResult.data.session.user.id
                 });
 
                 if (result.error) {
-                    // Si la RPC no existe, recargar estado
                     console.warn('RPC sincronizar_esim no disponible');
                     await cargarEstadoESIM();
                     showToast('⚠️ Estado actualizado', '');
@@ -2552,13 +2658,8 @@
                     return;
                 }
 
-                // ⚠️ IMPORTANTE: NO SIMULAR ACTIVACIÓN
-                // En producción real, aquí iría llamada al proveedor
-                // Por ahora, mostramos mensaje de que la activación es real
-                
                 showToast('⏳ La activación se procesará con el proveedor real', '');
                 
-                // Solo actualizamos el estado a "pendiente" si no existe
                 var updateResult = await window.supabase
                     .from('ordenes_esim')
                     .update({ 
@@ -2602,9 +2703,6 @@
                     showToast('⚠️ No tienes una eSIM activa para desactivar', 'warning');
                     return;
                 }
-
-                // ⚠️ IMPORTANTE: NO SIMULAR DESACTIVACIÓN
-                // En producción real, aquí iría llamada al proveedor
 
                 var updateResult = await window.supabase
                     .from('ordenes_esim')
@@ -2695,7 +2793,6 @@
             showToast('⏳ Actualizando estado...', '');
 
             try {
-                // ✅ USAR RPC REAL: cambiar_estado
                 var result = await window.supabase.rpc('cambiar_estado', {
                     p_online: activo
                 });
@@ -2900,6 +2997,8 @@
         window.toggleEmojiPickerPerfil = toggleEmojiPickerPerfil;
         window.cargarEstadoESIM = cargarEstadoESIM;
         window.cargarNFTs = cargarNFTs;
+        window.eliminarPublicacion = eliminarPublicacion;
+        window.cargarEmojisReaccion = cargarEmojisReaccion;
     </script>
 
 </body>
