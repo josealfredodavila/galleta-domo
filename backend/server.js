@@ -155,7 +155,6 @@ const apiLimiter = rateLimit({
     message: { success: false, error: 'Demasiadas peticiones' }
 });
 
-// ✅ CORREGIDO: ahora usa /webhook/ en lugar de /webhooks/
 app.use('/api/', (req, res, next) => {
     if (req.path.startsWith('/webhook/')) return next();
     return apiLimiter(req, res, next);
@@ -213,13 +212,15 @@ const authRoutes = require('./routes/auth');
 app.use('/api/auth', authRoutes);
 
 /* ================================================================
-   ✅ RUTAS DE PAGOS Y WEBHOOK - NUEVAS
+   ✅ RUTAS DE PAGOS Y WEBHOOK
    ================================================================ */
 const paymentsRoutes = require('./routes/payments');
 const webhooksRoutes = require('./routes/webhooks');
+const membresiaRoutes = require('./routes/membresia');
 
 app.use('/api/payments', paymentsRoutes);
 app.use('/api/webhook', webhooksRoutes);
+app.use('/api/payments/membresia', membresiaRoutes);
 
 /* ================================================================
    RUTAS HTML - COMPLETAS (TODAS LAS RUTAS)
@@ -1379,6 +1380,7 @@ app.listen(PORT, '0.0.0.0', () => {
     console.log(`🔐 Auth router: ✅ Montado en /api/auth`);
     console.log(`💳 Payments router: ✅ Montado en /api/payments`);
     console.log(`📡 Webhook router: ✅ Montado en /api/webhook`);
+    console.log(`✨ Membresía router: ✅ Montado en /api/payments/membresia`);
     console.log(`📂 Rutas de features: ✅ /muro, /perfil, /live, /videos, /mensajes, /internet`);
     console.log('========================================');
 });
