@@ -38,14 +38,15 @@ if (!IPN_SECRET) {
 // ================================================================
 
 function esPagoFinalizado(status) {
-    return status === 'finished';
+    return status === 'finished' || status === 'confirmed';
 }
 
 function esPagoCancelado(status) {
     return [
         'failed',
         'refunded',
-        'expired'
+        'expired',
+        'canceled'
     ].includes(status);
 }
 
@@ -54,9 +55,106 @@ function esPagoEnProceso(status) {
         'waiting',
         'confirming',
         'sending',
-        'partially_paid',
-        'confirmed'
+        'partially_paid'
     ].includes(status);
+}
+
+// ================================================================
+// PROCESAR WEBHOOK DE MEMBRESÍA PRO
+// ================================================================
+
+async function procesarWebhookMembresia(payload) {
+    try {
+        const {
+            order_id,
+            payment_id,
+            payment_status,
+            price_amount,
+            pay_address,
+            pay_currency
+        } = payload;
+
+        logger.info(`📩 Webhook membresía recibido:`, {
+            order_id,
+            payment_status
+        });
+
+        if (!order_id) {
+            logger.warn('⚠️ Webhook membresía: falta order_id');
+            return { success: false, error: 'Falta order_id' };
+        }
+
+        // Buscar el pago en la base de datos
+        const { data: pago, error: pagoError } = await supabaseAdmin
+            .from('pagos_membresia')
+            .select('id, usuario_id, estado')
+            .eq('order_id', order_id)
+            .single();
+
+        if (pagoError || !pago) {
+            logger.warn(`❌ Pago de membresía no encontrado: ${order_id}`);
+            return { success: false, error: 'Pago no encontrado', order_id };
+        }
+
+        // IDEMPOTENCIA: si ya está confirmado, ignorar
+        if (pago.estado === 'confirmado' || pago.estado === 'completado') {
+            logger.info(`ℹ️ Pago de membresía ya confirmado, ignorando: ${order_id}`);
+            return { success: true, message: 'Ya confirmado' };
+        }
+
+        // Actualizar estado del pago
+        await supabaseAdmin
+            .from('pagos_membresia')
+            .update({
+                estado: payment_status || pago.estado,
+                datos_webhook: payload,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', pago.id);
+
+        // Si el pago está confirmado, activar la membresía
+        if (esPagoFinalizado(payment_status)) {
+            logger.info(`✅ Pago de membresía confirmado: ${order_id}`);
+
+            const result = await supabaseAdmin.rpc('activar_membresia_pro', {
+                p_usuario_id: pago.usuario_id,
+                p_order_id: order_id,
+                p_payment_id: payment_id || `webhook-${Date.now()}`,
+                p_monto_mxn: price_amount || 20,
+                p_pay_address: pay_address || null,
+                p_privacy_version: '1.0'
+            });
+
+            if (result.error) {
+                logger.error(`❌ Error activando membresía:`, result.error);
+                return { success: false, error: result.error.message, order_id };
+            }
+
+            logger.info(`✅ Membresía activada correctamente para: ${pago.usuario_id}`);
+            return { success: true, data: result.data, order_id };
+        }
+
+        // Si el pago fue cancelado
+        if (esPagoCancelado(payment_status)) {
+            logger.warn(`⚠️ Pago de membresía cancelado: ${order_id} - ${payment_status}`);
+            await supabaseAdmin
+                .from('pagos_membresia')
+                .update({
+                    estado: 'cancelado',
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', pago.id);
+            return { success: true, message: 'Pago cancelado', order_id };
+        }
+
+        // Estado en proceso
+        logger.info(`⏳ Pago de membresía en proceso: ${order_id} - ${payment_status}`);
+        return { success: true, message: 'Estado actualizado', order_id };
+
+    } catch (error) {
+        logger.error(`❌ Error procesando webhook membresía:`, error);
+        return { success: false, error: error.message };
+    }
 }
 
 // ================================================================
@@ -110,7 +208,8 @@ router.post(
             const payload = req.body;
 
             const firmaRecibida =
-                req.headers['x-nowpayments-sig'];
+                req.headers['x-nowpayments-sig'] ||
+                req.headers['x-signature'];
 
             if (
                 !payload ||
@@ -188,6 +287,16 @@ router.post(
                 payload.data?.pay_currency ||
                 null;
 
+            const priceAmount =
+                payload.price_amount ||
+                payload.data?.price_amount ||
+                null;
+
+            const payAddress =
+                payload.pay_address ||
+                payload.data?.pay_address ||
+                null;
+
             if (!ordenId) {
 
                 logger.warn(
@@ -206,6 +315,37 @@ router.post(
                 `payment_id=${paymentId || 'N/A'} | ` +
                 `status=${paymentStatus || 'N/A'}`
             );
+
+            // ====================================================
+            // MEMBRESÍA PRO
+            // ====================================================
+
+            if (
+                typeof ordenId === 'string' &&
+                ordenId.startsWith('PRO-')
+            ) {
+
+                const result = await procesarWebhookMembresia({
+                    order_id: ordenId,
+                    payment_id: paymentId,
+                    payment_status: paymentStatus,
+                    price_amount: priceAmount || payAmount || 20,
+                    pay_address: payAddress,
+                    pay_currency: payCurrency
+                });
+
+                if (result.success) {
+                    return res.status(200).json({
+                        success: true,
+                        message: result.message || 'Procesado correctamente'
+                    });
+                } else {
+                    return res.status(500).json({
+                        success: false,
+                        error: result.error || 'Error procesando membresía'
+                    });
+                }
+            }
 
             // ====================================================
             // MURO - VENTA DE TOKENS
@@ -412,17 +552,6 @@ router.post(
 
                     // --------------------------------------------
                     // LIQUIDACIÓN ATÓMICA
-                    // --------------------------------------------
-                    //
-                    // IMPORTANTE:
-                    //
-                    // Node.js NO modifica directamente:
-                    //
-                    // - saldo de tokens
-                    // - inventario
-                    // - cantidad disponible
-                    //
-                    // Todo eso lo realiza la RPC.
                     // --------------------------------------------
 
                     const {
