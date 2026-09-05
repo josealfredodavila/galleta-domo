@@ -1,5 +1,6 @@
 // ================================================================
 // PERFIL.JS - SARIEL'S ECOSYSTEM
+// VERSIÓN CORREGIDA - CON DIAGNÓSTICO DE CHATGPT
 // ================================================================
 
 // ===== VARIABLES GLOBALES =====
@@ -39,6 +40,8 @@ async function cargarPerfil() {
 
         sessionUser = sessionResult.data.session.user;
 
+        console.log('✅ Usuario autenticado:', sessionUser.id);
+
         // Cargar datos de usuario
         const userResult = await window.supabase
             .from('usuarios')
@@ -55,7 +58,7 @@ async function cargarPerfil() {
         // Cargar publicaciones
         await cargarPublicaciones();
 
-        // Verificar estado de pago (después de regresar de NOWPayments)
+        // Verificar estado de pago
         verificarEstadoPago();
 
     } catch (error) {
@@ -65,47 +68,181 @@ async function cargarPerfil() {
 }
 
 // ================================================================
-// MEMBRESÍA PRO
+// 📋 CARGAR PUBLICACIONES - CORREGIDO (SIN JOIN)
 // ================================================================
 
-async function cargarMembresia() {
-    if (!sessionUser) return;
-
+async function cargarPublicaciones() {
     try {
-        const container = document.getElementById('membresiaContainer');
-        if (!container) return;
+        if (!sessionUser) {
+            console.warn('⚠️ No hay sesión para cargar publicaciones');
+            return;
+        }
 
-        // Usar RPC existente
-        const { data, error } = await window.supabase.rpc('obtener_membresia_usuario', {
-            p_usuario_id: sessionUser.id
-        });
+        console.log('📝 Cargando publicaciones para:', sessionUser.id);
+
+        // ✅ CORREGIDO: SELECT directo sin JOIN innecesario
+        const { data, error } = await window.supabase
+            .from('publicaciones')
+            .select('*')
+            .eq('usuario_id', sessionUser.id)
+            .eq('estado', 'publicado')
+            .order('created_at', { ascending: false });
 
         if (error) {
-            console.warn('⚠️ RPC obtener_membresia_usuario no disponible:', error);
-            // Mostrar estado por defecto
+            console.error('❌ Error Supabase publicaciones:', error);
+            throw error;
+        }
+
+        const container = document.getElementById('postsList');
+        if (!container) {
+            console.warn('⚠️ No se encontró postsList');
+            return;
+        }
+
+        const publicaciones = data || [];
+
+        console.log(`📝 Publicaciones encontradas: ${publicaciones.length}`);
+
+        const countEl = document.getElementById('postsCount');
+        if (countEl) countEl.textContent = publicaciones.length;
+
+        if (publicaciones.length === 0) {
             container.innerHTML = `
-                <div style="display:flex;flex-direction:column;gap:12px;">
-                    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
-                        <div>
-                            <span style="font-size:0.8rem;color:var(--text-secondary);">Plan actual:</span>
-                            <span style="font-weight:700;color:var(--text-primary);">Gratis</span>
-                        </div>
-                        <span style="font-size:0.6rem;color:var(--text-muted);">1 GB · 90 días</span>
-                    </div>
-                    <div style="background:rgba(212,175,55,0.05);border:1px solid var(--gold);border-radius:12px;padding:14px;text-align:center;">
-                        <div style="font-family:'Orbitron',monospace;font-size:1.2rem;color:var(--gold);font-weight:700;">✦ Sariel's Pro</div>
-                        <div style="font-size:0.8rem;color:var(--text-secondary);margin:4px 0;">$20 MXN / 30 días</div>
-                        <div style="font-size:0.6rem;color:var(--text-muted);margin-bottom:10px;">Conservación ampliada · 5 GB</div>
-                        <button class="btn btn-gold" onclick="contratarPro()" style="width:100%;justify-content:center;padding:10px;">
-                            🚀 Contratar Pro por $20 MXN
-                        </button>
-                    </div>
+                <div class="empty-state">
+                    <span class="icon">📝</span>
+                    <h4>Sin publicaciones</h4>
+                    <p>Crea tu primera publicación.</p>
                 </div>
             `;
             return;
         }
 
-        if (!data || data.plan_nombre === 'Gratis' || data.plan_nombre === null) {
+        container.innerHTML = publicaciones.map(p => {
+            const fecha = p.created_at
+                ? new Date(p.created_at).toLocaleString()
+                : '';
+
+            let mediaHtml = '';
+
+            if (p.media_url) {
+                if (p.media_type === 'imagen') {
+                    mediaHtml = `
+                        <img
+                            src="${p.media_url}"
+                            class="pub-media"
+                            loading="lazy"
+                            alt="Publicación"
+                        />
+                    `;
+                } else if (p.media_type === 'video') {
+                    mediaHtml = `
+                        <video
+                            src="${p.media_url}"
+                            class="pub-media"
+                            controls
+                            preload="metadata"
+                        ></video>
+                    `;
+                }
+            }
+
+            const contenido = p.contenido
+                ? `<div class="pub-texto">${p.contenido}</div>`
+                : '';
+
+            return `
+                <div class="publicacion-item" data-id="${p.id}">
+                    <div class="pub-header">
+                        <div class="avatar-mini">◈</div>
+                        <span class="pub-nombre">Usuario</span>
+                        <span class="pub-fecha">${fecha}</span>
+                    </div>
+
+                    ${contenido}
+                    ${mediaHtml}
+
+                    <div class="pub-actions">
+                        <button
+                            class="reaccion-btn"
+                            onclick="toggleReaccion('${p.id}', event)"
+                        >
+                            <span class="reaccion-emoji">❤️</span>
+                            <span class="count">${p.likes || 0}</span>
+                        </button>
+
+                        <span
+                            class="comment-btn"
+                            onclick="abrirModalComentarios('${p.id}')"
+                        >
+                            💬 <span>${p.comentarios || 0}</span>
+                        </span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+    } catch (error) {
+        console.error('❌ Error cargando publicaciones:', error);
+
+        const container = document.getElementById('postsList');
+
+        if (container) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <span class="icon">⚠️</span>
+                    <h4>No se pudieron cargar las publicaciones</h4>
+                    <p>Intenta nuevamente.</p>
+                </div>
+            `;
+        }
+
+        showToast('❌ Error al cargar publicaciones', 'error');
+    }
+}
+
+// ================================================================
+// ✦ CARGAR MEMBRESÍA - CORREGIDO (ARRAY vs OBJETO)
+// ================================================================
+
+async function cargarMembresia() {
+    if (!sessionUser) {
+        console.warn('⚠️ No hay sesión para cargar membresía');
+        return;
+    }
+
+    try {
+        const container = document.getElementById('membresiaContainer');
+        if (!container) {
+            console.warn('⚠️ No se encontró membresiaContainer');
+            return;
+        }
+
+        console.log('✦ Cargando membresía para:', sessionUser.id);
+
+        // ✅ CORREGIDO: RPC con tratamiento de array
+        const { data, error } = await window.supabase.rpc(
+            'obtener_membresia_usuario',
+            {
+                p_usuario_id: sessionUser.id
+            }
+        );
+
+        if (error) {
+            console.error('❌ Error RPC membresía:', error);
+            throw error;
+        }
+
+        // ✅ CORREGIDO: La RPC devuelve un TABLE (arreglo)
+        const membresia = Array.isArray(data) ? data[0] : data;
+
+        console.log('✦ Datos de membresía:', membresia);
+
+        // ✅ CORREGIDO: Verificar correctamente
+        if (
+            !membresia ||
+            membresia.plan_nombre === 'Gratis' ||
+            membresia.plan_id === 'free'
+        ) {
             // MOSTRAR PLAN GRATIS
             container.innerHTML = `
                 <div style="display:flex;flex-direction:column;gap:12px;">
@@ -129,17 +266,17 @@ async function cargarMembresia() {
             return;
         }
 
-        const esActiva = data.activa || false;
-        const diasRestantes = data.dias_restantes || 0;
-        const venceAt = data.vence_at ? new Date(data.vence_at).toLocaleDateString() : '--';
-
         // MOSTRAR PLAN PRO
+        const esActiva = membresia.activa || false;
+        const diasRestantes = membresia.dias_restantes || 0;
+        const venceAt = membresia.vence_at ? new Date(membresia.vence_at).toLocaleDateString() : '--';
+
         container.innerHTML = `
             <div style="display:flex;flex-direction:column;gap:12px;">
                 <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
                     <div>
                         <span style="font-size:0.8rem;color:var(--text-secondary);">Plan actual:</span>
-                        <span style="font-weight:700;color:var(--gold);">✦ ${data.plan_nombre || 'Pro'}</span>
+                        <span style="font-weight:700;color:var(--gold);">✦ ${membresia.plan_nombre || 'Pro'}</span>
                     </div>
                     <span style="font-size:0.6rem;color:${esActiva ? 'var(--success)' : 'var(--text-muted)'};">
                         ${esActiva ? '✅ Activa' : '⏳ Inactiva'}
@@ -176,10 +313,25 @@ async function cargarMembresia() {
             </div>
         `;
 
-        membresiaActual = data;
+        membresiaActual = membresia;
 
     } catch (error) {
         console.error('❌ Error cargando membresía:', error);
+
+        const container = document.getElementById('membresiaContainer');
+
+        if (container) {
+            container.innerHTML = `
+                <div style="text-align:center;padding:16px;color:var(--text-muted);">
+                    ⚠️ No se pudo cargar la membresía.
+                    <br>
+                    <button class="btn btn-outline btn-sm" onclick="cargarMembresia()" style="margin-top:8px;">
+                        🔄 Reintentar
+                    </button>
+                </div>
+            `;
+        }
+
         showToast('❌ Error al cargar membresía', 'error');
     }
 }
@@ -194,7 +346,6 @@ window.contratarPro = async function() {
         return;
     }
 
-    // Mostrar modal de aviso de privacidad
     mostrarModalPrivacidad('contratar');
 };
 
@@ -216,7 +367,6 @@ window.renovarPro = async function() {
 // ================================================================
 
 function mostrarModalPrivacidad(accion) {
-    // Crear modal si no existe
     let modal = document.getElementById('modalPrivacidad');
     if (!modal) {
         modal = document.createElement('div');
@@ -248,7 +398,6 @@ function mostrarModalPrivacidad(accion) {
         `;
         document.body.appendChild(modal);
 
-        // Habilitar botón cuando se acepte
         document.getElementById('aceptaPrivacidad').addEventListener('change', function() {
             const btn = document.getElementById('btnContinuarPago');
             if (this.checked) {
@@ -261,7 +410,6 @@ function mostrarModalPrivacidad(accion) {
         });
     }
 
-    // Guardar acción
     modal.dataset.accion = accion || 'contratar';
     modal.classList.add('active');
 }
@@ -327,7 +475,6 @@ async function ejecutarContratacion() {
 
         showToast('✅ Orden creada. Redirigiendo al pago...', 'success');
 
-        // Guardar para verificación
         sessionStorage.setItem('pro_order_id', data.order_id);
 
         if (data.payment_url) {
@@ -402,74 +549,6 @@ function verificarEstadoPago() {
 }
 
 // ================================================================
-// CARGAR PUBLICACIONES
-// ================================================================
-
-async function cargarPublicaciones() {
-    try {
-        if (!sessionUser) return;
-
-        const result = await window.supabase
-            .from('publicaciones')
-            .select('*, usuarios:usuario_id (id, nombre, handle, avatar_url)')
-            .eq('usuario_id', sessionUser.id)
-            .eq('estado', 'publicado')
-            .order('created_at', { ascending: false });
-
-        if (result.error) throw result.error;
-
-        const container = document.getElementById('postsList');
-        const data = result.data || [];
-        const countEl = document.getElementById('postsCount');
-
-        if (countEl) countEl.textContent = data.length;
-
-        if (data.length === 0) {
-            container.innerHTML = '<div class="empty-state"><span class="icon">📝</span><h4>Sin publicaciones</h4><p>Crea tu primera publicación.</p></div>';
-            return;
-        }
-
-        container.innerHTML = data.map(p => {
-            const usuario = p.usuarios || {};
-            const avatar = usuario.avatar_url ? `<img src="${usuario.avatar_url}">` : '◈';
-            const nombre = usuario.nombre || 'Usuario';
-            const fecha = new Date(p.created_at).toLocaleString();
-            let mediaHtml = '';
-            if (p.media_url) {
-                if (p.media_type === 'imagen') {
-                    mediaHtml = `<img src="${p.media_url}" class="pub-media" />`;
-                } else if (p.media_type === 'video') {
-                    mediaHtml = `<video src="${p.media_url}" class="pub-media" controls></video>`;
-                }
-            }
-            const contenido = p.contenido ? `<div class="pub-texto">${p.contenido}</div>` : '';
-
-            return `
-                <div class="publicacion-item" data-id="${p.id}">
-                    <div class="pub-header">
-                        <div class="avatar-mini">${avatar}</div>
-                        <span class="pub-nombre">${nombre}</span>
-                        <span class="pub-fecha">${fecha}</span>
-                    </div>
-                    ${contenido}
-                    ${mediaHtml}
-                    <div class="pub-actions">
-                        <button class="reaccion-btn" onclick="toggleReaccion('${p.id}', event)">
-                            <span class="reaccion-emoji">❤️</span>
-                            <span class="count">${p.likes || 0}</span>
-                        </button>
-                        <span class="comment-btn" onclick="abrirModalComentarios('${p.id}')">💬 <span>${p.comentarios || 0}</span></span>
-                    </div>
-                </div>
-            `;
-        }).join('');
-
-    } catch (error) {
-        console.error('Error cargando publicaciones:', error);
-    }
-}
-
-// ================================================================
 // ACTUALIZAR UI
 // ================================================================
 
@@ -501,7 +580,7 @@ function actualizarUI(data) {
 }
 
 // ================================================================
-// TOGGLE REACCION
+// TOGGLE REACCION (PLACEHOLDER)
 // ================================================================
 
 window.toggleReaccion = function(publicacionId, event) {
@@ -509,7 +588,7 @@ window.toggleReaccion = function(publicacionId, event) {
 };
 
 // ================================================================
-// ABRIR MODAL COMENTARIOS
+// ABRIR MODAL COMENTARIOS (PLACEHOLDER)
 // ================================================================
 
 window.abrirModalComentarios = function(publicacionId) {
@@ -521,6 +600,7 @@ window.abrirModalComentarios = function(publicacionId) {
 // ================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('✅ perfil.js cargado');
     cargarPerfil();
 });
 
@@ -530,8 +610,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
 window.cargarPerfil = cargarPerfil;
 window.cargarMembresia = cargarMembresia;
+window.cargarPublicaciones = cargarPublicaciones;
 window.contratarPro = window.contratarPro;
 window.renovarPro = window.renovarPro;
 window.showToast = showToast;
 window.cerrarModalPrivacidad = window.cerrarModalPrivacidad;
 window.procesarContratacion = window.procesarContratacion;
+window.toggleReaccion = window.toggleReaccion;
+window.abrirModalComentarios = window.abrirModalComentarios;
