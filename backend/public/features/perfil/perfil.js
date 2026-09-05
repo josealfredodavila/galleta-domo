@@ -1,11 +1,12 @@
 // ================================================================
 // PERFIL.JS - SARIEL'S ECOSYSTEM
-// VERSIÓN CORREGIDA - CON DIAGNÓSTICO DE CHATGPT
+// VERSIÓN FINAL CORREGIDA - PRODUCCIÓN REAL
 // ================================================================
 
 // ===== VARIABLES GLOBALES =====
 let sessionUser = null;
 let membresiaActual = null;
+let perfilUsuario = null;
 
 // ===== TOAST =====
 function showToast(msg, type) {
@@ -32,43 +33,142 @@ function showToast(msg, type) {
 
 async function cargarPerfil() {
     try {
+        console.log('🔄 Iniciando cargarPerfil()...');
+
         const sessionResult = await window.supabase.auth.getSession();
-        if (sessionResult.error || !sessionResult.data.session) {
+        console.log('📡 Session result:', sessionResult);
+
+        if (sessionResult.error) {
+            console.error('❌ Error de sesión:', sessionResult.error);
+            showToast('⚠️ Error de autenticación', 'error');
+            return;
+        }
+
+        if (!sessionResult.data.session) {
+            console.warn('⚠️ No hay sesión activa');
             document.getElementById('perfilNombre').innerHTML = 'Inicia sesión';
+            document.getElementById('perfilHandle').textContent = '@usuario';
+            document.getElementById('perfilBio').textContent = 'Inicia sesión para ver tu perfil';
             return;
         }
 
         sessionUser = sessionResult.data.session.user;
+        console.log('🔐 sessionUser.id:', sessionUser.id);
 
-        console.log('✅ Usuario autenticado:', sessionUser.id);
-
-        // Cargar datos de usuario
+        // Cargar datos del usuario
         const userResult = await window.supabase
             .from('usuarios')
             .select('*')
             .eq('id', sessionUser.id)
             .single();
 
-        if (userResult.error) throw userResult.error;
-        actualizarUI(userResult.data);
+        if (userResult.error) {
+            console.error('❌ Error cargando usuario:', userResult.error);
+            showToast('❌ Error al cargar datos de usuario', 'error');
+            return;
+        }
 
-        // Cargar membresía
-        await cargarMembresia();
+        if (!userResult.data) {
+            console.warn('⚠️ No se encontraron datos del usuario');
+            return;
+        }
+
+        perfilUsuario = userResult.data;
+        console.log('✅ Datos de usuario cargados:', perfilUsuario);
+        actualizarUI(perfilUsuario);
 
         // Cargar publicaciones
+        console.log('📝 Cargando publicaciones...');
         await cargarPublicaciones();
+
+        // Cargar membresía
+        console.log('✦ Cargando membresía...');
+        await cargarMembresia();
 
         // Verificar estado de pago
         verificarEstadoPago();
 
+        showToast('✅ ¡Bienvenido ' + (perfilUsuario.nombre || 'Usuario') + '!', 'success');
+
     } catch (error) {
         console.error('❌ Error en cargarPerfil:', error);
-        showToast('❌ Error al cargar perfil', 'error');
+        showToast('❌ Error al cargar perfil: ' + error.message, 'error');
     }
 }
 
 // ================================================================
-// 📋 CARGAR PUBLICACIONES - CORREGIDO (SIN JOIN)
+// ACTUALIZAR UI
+// ================================================================
+
+function actualizarUI(data) {
+    if (!data) {
+        console.warn('⚠️ No hay datos para actualizar UI');
+        return;
+    }
+
+    console.log('🎨 Actualizando UI con:', data);
+
+    const nombreEl = document.getElementById('perfilNombre');
+    if (nombreEl) {
+        const verificado = data.verificado ? ' <span class="verified">✦ VERIFICADO</span>' : '';
+        nombreEl.innerHTML = (data.nombre || 'Usuario') + verificado;
+    }
+
+    const handleEl = document.getElementById('perfilHandle');
+    if (handleEl) {
+        handleEl.textContent = '@' + (data.handle || 'usuario');
+    }
+
+    const bioEl = document.getElementById('perfilBio');
+    if (bioEl) {
+        bioEl.textContent = data.bio || 'Sin biografía';
+    }
+
+    const avatarEl = document.getElementById('perfilAvatar');
+    if (avatarEl) {
+        if (data.avatar_url && data.avatar_url.trim() !== '') {
+            console.log('🖼️ Cargando avatar:', data.avatar_url);
+            avatarEl.innerHTML = `<img src="${data.avatar_url}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;"/>`;
+        } else {
+            console.log('🖼️ No hay avatar, usando por defecto');
+            avatarEl.textContent = '◈';
+        }
+    }
+
+    const statTokens = document.getElementById('statTokens');
+    if (statTokens) {
+        statTokens.textContent = data.tokens || 0;
+    }
+
+    const tokenTotal = document.getElementById('tokenTotal');
+    if (tokenTotal) {
+        tokenTotal.textContent = data.tokens || 0;
+    }
+
+    const estadoBadge = document.getElementById('estadoBadge');
+    const estadoTexto = document.getElementById('estadoTexto');
+    if (estadoBadge && estadoTexto) {
+        if (data.online) {
+            estadoBadge.textContent = '🟢';
+            estadoTexto.textContent = 'Activo ahora';
+            estadoTexto.style.color = 'var(--success)';
+        } else {
+            estadoBadge.textContent = '⭕';
+            estadoTexto.textContent = 'Inactivo';
+            estadoTexto.style.color = 'var(--text-muted)';
+        }
+    }
+
+    const editNombre = document.getElementById('editNombre');
+    const editHandle = document.getElementById('editHandle');
+    const editBio = document.getElementById('editBio');
+    if (editNombre) editNombre.value = data.nombre || '';
+    if (editHandle) editHandle.value = data.handle || '';
+    if (editBio) editBio.value = data.bio || '';
+}
+
+// ================================================================
+// 📋 CARGAR PUBLICACIONES - CON NOMBRE DEL USUARIO
 // ================================================================
 
 async function cargarPublicaciones() {
@@ -78,9 +178,9 @@ async function cargarPublicaciones() {
             return;
         }
 
-        console.log('📝 Cargando publicaciones para:', sessionUser.id);
+        console.log('🔐 sessionUser.id para publicaciones:', sessionUser.id);
 
-        // ✅ CORREGIDO: SELECT directo sin JOIN innecesario
+        // Consulta principal - SIN JOIN
         const { data, error } = await window.supabase
             .from('publicaciones')
             .select('*')
@@ -93,6 +193,9 @@ async function cargarPublicaciones() {
             throw error;
         }
 
+        console.log('📝 publicaciones data:', data);
+        console.log('📝 cantidad de publicaciones:', data ? data.length : 0);
+
         const container = document.getElementById('postsList');
         if (!container) {
             console.warn('⚠️ No se encontró postsList');
@@ -100,8 +203,6 @@ async function cargarPublicaciones() {
         }
 
         const publicaciones = data || [];
-
-        console.log(`📝 Publicaciones encontradas: ${publicaciones.length}`);
 
         const countEl = document.getElementById('postsCount');
         if (countEl) countEl.textContent = publicaciones.length;
@@ -111,10 +212,40 @@ async function cargarPublicaciones() {
                 <div class="empty-state">
                     <span class="icon">📝</span>
                     <h4>Sin publicaciones</h4>
-                    <p>Crea tu primera publicación.</p>
+                    <p>Crea tu primera publicación desde el botón "Nueva Publicación".</p>
                 </div>
             `;
+            console.log('📝 No hay publicaciones para mostrar');
             return;
+        }
+
+        // Obtener el nombre del usuario para mostrar en las publicaciones
+        let nombreUsuario = 'Usuario';
+        let avatarUsuario = '◈';
+
+        if (perfilUsuario) {
+            nombreUsuario = perfilUsuario.nombre || 'Usuario';
+            avatarUsuario = perfilUsuario.avatar_url 
+                ? `<img src="${perfilUsuario.avatar_url}" style="width:100%;height:100%;object-fit:cover;">` 
+                : '◈';
+        } else {
+            // Fallback: consultar el usuario si no está en memoria
+            try {
+                const userResult = await window.supabase
+                    .from('usuarios')
+                    .select('nombre, avatar_url')
+                    .eq('id', sessionUser.id)
+                    .single();
+
+                if (userResult.data) {
+                    nombreUsuario = userResult.data.nombre || 'Usuario';
+                    avatarUsuario = userResult.data.avatar_url 
+                        ? `<img src="${userResult.data.avatar_url}" style="width:100%;height:100%;object-fit:cover;">` 
+                        : '◈';
+                }
+            } catch (e) {
+                console.warn('⚠️ No se pudo obtener nombre del usuario:', e);
+            }
         }
 
         container.innerHTML = publicaciones.map(p => {
@@ -132,6 +263,7 @@ async function cargarPublicaciones() {
                             class="pub-media"
                             loading="lazy"
                             alt="Publicación"
+                            onerror="this.style.display='none'"
                         />
                     `;
                 } else if (p.media_type === 'video') {
@@ -153,27 +285,18 @@ async function cargarPublicaciones() {
             return `
                 <div class="publicacion-item" data-id="${p.id}">
                     <div class="pub-header">
-                        <div class="avatar-mini">◈</div>
-                        <span class="pub-nombre">Usuario</span>
+                        <div class="avatar-mini">${avatarUsuario}</div>
+                        <span class="pub-nombre">${nombreUsuario}</span>
                         <span class="pub-fecha">${fecha}</span>
                     </div>
-
                     ${contenido}
                     ${mediaHtml}
-
                     <div class="pub-actions">
-                        <button
-                            class="reaccion-btn"
-                            onclick="toggleReaccion('${p.id}', event)"
-                        >
+                        <button class="reaccion-btn" onclick="toggleReaccion('${p.id}', event)">
                             <span class="reaccion-emoji">❤️</span>
                             <span class="count">${p.likes || 0}</span>
                         </button>
-
-                        <span
-                            class="comment-btn"
-                            onclick="abrirModalComentarios('${p.id}')"
-                        >
+                        <span class="comment-btn" onclick="abrirModalComentarios('${p.id}')">
                             💬 <span>${p.comentarios || 0}</span>
                         </span>
                     </div>
@@ -181,17 +304,18 @@ async function cargarPublicaciones() {
             `;
         }).join('');
 
+        console.log('✅ Publicaciones renderizadas correctamente');
+
     } catch (error) {
         console.error('❌ Error cargando publicaciones:', error);
 
         const container = document.getElementById('postsList');
-
         if (container) {
             container.innerHTML = `
                 <div class="empty-state">
                     <span class="icon">⚠️</span>
-                    <h4>No se pudieron cargar las publicaciones</h4>
-                    <p>Intenta nuevamente.</p>
+                    <h4>Error al cargar publicaciones</h4>
+                    <p>${error.message || 'Intenta nuevamente.'}</p>
                 </div>
             `;
         }
@@ -201,7 +325,7 @@ async function cargarPublicaciones() {
 }
 
 // ================================================================
-// ✦ CARGAR MEMBRESÍA - CORREGIDO (ARRAY vs OBJETO)
+// ✦ CARGAR MEMBRESÍA - CORREGIDO
 // ================================================================
 
 async function cargarMembresia() {
@@ -217,9 +341,9 @@ async function cargarMembresia() {
             return;
         }
 
-        console.log('✦ Cargando membresía para:', sessionUser.id);
+        console.log('✦ Cargando membresía para usuario:', sessionUser.id);
 
-        // ✅ CORREGIDO: RPC con tratamiento de array
+        // ✅ RPC con tratamiento correcto (devuelve TABLE/array)
         const { data, error } = await window.supabase.rpc(
             'obtener_membresia_usuario',
             {
@@ -232,18 +356,19 @@ async function cargarMembresia() {
             throw error;
         }
 
-        // ✅ CORREGIDO: La RPC devuelve un TABLE (arreglo)
+        console.log('✦ Datos RPC membresía (raw):', data);
+
+        // ✅ CORRECCIÓN: La RPC devuelve un array
         const membresia = Array.isArray(data) ? data[0] : data;
 
-        console.log('✦ Datos de membresía:', membresia);
+        console.log('✦ Membresía procesada:', membresia);
 
-        // ✅ CORREGIDO: Verificar correctamente
-        if (
-            !membresia ||
-            membresia.plan_nombre === 'Gratis' ||
-            membresia.plan_id === 'free'
-        ) {
-            // MOSTRAR PLAN GRATIS
+        // ✅ Validación correcta con plan_id explícito
+        const planId = membresia?.plan_id || 'free';
+
+        // Caso 1: Sin membresía o plan Gratis
+        if (!membresia || planId === 'free') {
+            console.log('✦ Usuario tiene plan GRATIS (plan_id: free)');
             container.innerHTML = `
                 <div style="display:flex;flex-direction:column;gap:12px;">
                     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
@@ -266,60 +391,91 @@ async function cargarMembresia() {
             return;
         }
 
-        // MOSTRAR PLAN PRO
-        const esActiva = membresia.activa || false;
-        const diasRestantes = membresia.dias_restantes || 0;
-        const venceAt = membresia.vence_at ? new Date(membresia.vence_at).toLocaleDateString() : '--';
+        // Caso 2: Plan Pro
+        if (planId === 'pro') {
+            console.log('✦ Usuario tiene plan PRO (plan_id: pro)');
 
-        container.innerHTML = `
-            <div style="display:flex;flex-direction:column;gap:12px;">
-                <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
-                    <div>
-                        <span style="font-size:0.8rem;color:var(--text-secondary);">Plan actual:</span>
-                        <span style="font-weight:700;color:var(--gold);">✦ ${membresia.plan_nombre || 'Pro'}</span>
-                    </div>
-                    <span style="font-size:0.6rem;color:${esActiva ? 'var(--success)' : 'var(--text-muted)'};">
-                        ${esActiva ? '✅ Activa' : '⏳ Inactiva'}
-                    </span>
-                </div>
-                ${esActiva ? `
-                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:8px;">
-                        <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;text-align:center;">
-                            <div style="font-size:1.2rem;font-weight:700;color:var(--gold);">${diasRestantes}</div>
-                            <div style="font-size:0.5rem;color:var(--text-muted);">DÍAS RESTANTES</div>
+            const esActiva = membresia.activa || false;
+            const diasRestantes = membresia.dias_restantes || 0;
+            const venceAt = membresia.vence_at ? new Date(membresia.vence_at).toLocaleDateString() : '--';
+            const planNombre = membresia.plan_nombre || 'Pro';
+
+            if (esActiva) {
+                // PRO ACTIVA
+                container.innerHTML = `
+                    <div style="display:flex;flex-direction:column;gap:12px;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+                            <div>
+                                <span style="font-size:0.8rem;color:var(--text-secondary);">Plan actual:</span>
+                                <span style="font-weight:700;color:var(--gold);">✦ ${planNombre}</span>
+                            </div>
+                            <span style="font-size:0.6rem;color:var(--success);">✅ Activa</span>
                         </div>
-                        <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;text-align:center;">
-                            <div style="font-size:0.8rem;color:var(--text-secondary);">${venceAt}</div>
-                            <div style="font-size:0.5rem;color:var(--text-muted);">VENCE EL</div>
+                        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:8px;">
+                            <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;text-align:center;">
+                                <div style="font-size:1.2rem;font-weight:700;color:var(--gold);">${diasRestantes}</div>
+                                <div style="font-size:0.5rem;color:var(--text-muted);">DÍAS RESTANTES</div>
+                            </div>
+                            <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;text-align:center;">
+                                <div style="font-size:0.8rem;color:var(--text-secondary);">${venceAt}</div>
+                                <div style="font-size:0.5rem;color:var(--text-muted);">VENCE EL</div>
+                            </div>
+                            <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;text-align:center;">
+                                <div style="font-size:0.8rem;color:var(--text-secondary);">5 GB</div>
+                                <div style="font-size:0.5rem;color:var(--text-muted);">ALMACENAMIENTO</div>
+                            </div>
                         </div>
-                        <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;text-align:center;">
-                            <div style="font-size:0.8rem;color:var(--text-secondary);">5 GB</div>
-                            <div style="font-size:0.5rem;color:var(--text-muted);">ALMACENAMIENTO</div>
-                        </div>
-                    </div>
-                    <button class="btn btn-outline" onclick="renovarPro()" style="width:100%;justify-content:center;padding:10px;">
-                        🔄 Renovar Pro por $20 MXN
-                    </button>
-                ` : `
-                    <div style="background:rgba(212,175,55,0.05);border:1px solid var(--gold);border-radius:12px;padding:14px;text-align:center;">
-                        <div style="font-family:'Orbitron',monospace;font-size:1.2rem;color:var(--gold);font-weight:700;">✦ Sariel's Pro</div>
-                        <div style="font-size:0.8rem;color:var(--text-secondary);margin:4px 0;">$20 MXN / 30 días</div>
-                        <div style="font-size:0.6rem;color:var(--text-muted);margin-bottom:10px;">Conservación ampliada · 5 GB</div>
-                        <button class="btn btn-gold" onclick="contratarPro()" style="width:100%;justify-content:center;padding:10px;">
-                            🚀 Contratar Pro por $20 MXN
+                        <button class="btn btn-outline" onclick="renovarPro()" style="width:100%;justify-content:center;padding:10px;">
+                            🔄 Renovar Pro por $20 MXN
                         </button>
                     </div>
-                `}
+                `;
+            } else {
+                // PRO INACTIVA/VENCIDA
+                container.innerHTML = `
+                    <div style="display:flex;flex-direction:column;gap:12px;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+                            <div>
+                                <span style="font-size:0.8rem;color:var(--text-secondary);">Plan actual:</span>
+                                <span style="font-weight:700;color:var(--gold);">✦ ${planNombre}</span>
+                            </div>
+                            <span style="font-size:0.6rem;color:var(--text-muted);">⏳ Inactiva</span>
+                        </div>
+                        <div style="background:rgba(212,175,55,0.05);border:1px solid var(--gold);border-radius:12px;padding:14px;text-align:center;">
+                            <div style="font-family:'Orbitron',monospace;font-size:1.2rem;color:var(--gold);font-weight:700;">✦ Sariel's Pro</div>
+                            <div style="font-size:0.8rem;color:var(--text-secondary);margin:4px 0;">$20 MXN / 30 días</div>
+                            <div style="font-size:0.6rem;color:var(--text-muted);margin-bottom:10px;">Conservación ampliada · 5 GB</div>
+                            <button class="btn btn-gold" onclick="contratarPro()" style="width:100%;justify-content:center;padding:10px;">
+                                🚀 Contratar Pro por $20 MXN
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+
+            membresiaActual = membresia;
+            console.log('✅ Membresía renderizada correctamente');
+            return;
+        }
+
+        // Caso 3: plan_id desconocido (error controlado)
+        console.warn('⚠️ plan_id desconocido:', planId);
+        container.innerHTML = `
+            <div style="text-align:center;padding:16px;color:var(--text-muted);">
+                ⚠️ Estado de membresía desconocido.
+                <br>
+                <span style="font-size:0.6rem;">plan_id: ${planId}</span>
+                <br>
+                <button class="btn btn-outline btn-sm" onclick="cargarMembresia()" style="margin-top:8px;">
+                    🔄 Reintentar
+                </button>
             </div>
         `;
-
-        membresiaActual = membresia;
 
     } catch (error) {
         console.error('❌ Error cargando membresía:', error);
 
         const container = document.getElementById('membresiaContainer');
-
         if (container) {
             container.innerHTML = `
                 <div style="text-align:center;padding:16px;color:var(--text-muted);">
@@ -328,11 +484,13 @@ async function cargarMembresia() {
                     <button class="btn btn-outline btn-sm" onclick="cargarMembresia()" style="margin-top:8px;">
                         🔄 Reintentar
                     </button>
+                    <br>
+                    <span style="font-size:0.6rem;color:var(--text-muted);">Error: ${error.message || 'Error desconocido'}</span>
                 </div>
             `;
         }
 
-        showToast('❌ Error al cargar membresía', 'error');
+        showToast('❌ Error al cargar membresía: ' + error.message, 'error');
     }
 }
 
@@ -549,37 +707,6 @@ function verificarEstadoPago() {
 }
 
 // ================================================================
-// ACTUALIZAR UI
-// ================================================================
-
-function actualizarUI(data) {
-    if (!data) return;
-
-    const nombreEl = document.getElementById('perfilNombre');
-    if (nombreEl) {
-        const verificado = data.verificado ? ' <span class="verified">✦ VERIFICADO</span>' : '';
-        nombreEl.innerHTML = (data.nombre || 'Usuario') + verificado;
-    }
-
-    const handleEl = document.getElementById('perfilHandle');
-    if (handleEl) handleEl.textContent = '@' + (data.handle || 'usuario');
-
-    const bioEl = document.getElementById('perfilBio');
-    if (bioEl) bioEl.textContent = data.bio || 'Sin biografía';
-
-    const avatarEl = document.getElementById('perfilAvatar');
-    if (avatarEl && data.avatar_url) {
-        avatarEl.innerHTML = `<img src="${data.avatar_url}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;"/>`;
-    }
-
-    const statTokens = document.getElementById('statTokens');
-    if (statTokens) statTokens.textContent = data.tokens || 0;
-
-    const tokenTotal = document.getElementById('tokenTotal');
-    if (tokenTotal) tokenTotal.textContent = data.tokens || 0;
-}
-
-// ================================================================
 // TOGGLE REACCION (PLACEHOLDER)
 // ================================================================
 
@@ -601,6 +728,7 @@ window.abrirModalComentarios = function(publicacionId) {
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log('✅ perfil.js cargado');
+    console.log('🔍 Supabase disponible:', typeof window.supabase !== 'undefined');
     cargarPerfil();
 });
 
@@ -609,8 +737,8 @@ document.addEventListener('DOMContentLoaded', () => {
 // ================================================================
 
 window.cargarPerfil = cargarPerfil;
-window.cargarMembresia = cargarMembresia;
 window.cargarPublicaciones = cargarPublicaciones;
+window.cargarMembresia = cargarMembresia;
 window.contratarPro = window.contratarPro;
 window.renovarPro = window.renovarPro;
 window.showToast = showToast;
@@ -618,3 +746,4 @@ window.cerrarModalPrivacidad = window.cerrarModalPrivacidad;
 window.procesarContratacion = window.procesarContratacion;
 window.toggleReaccion = window.toggleReaccion;
 window.abrirModalComentarios = window.abrirModalComentarios;
+window.actualizarUI = actualizarUI;
