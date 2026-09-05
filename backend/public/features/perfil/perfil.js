@@ -1,6 +1,6 @@
 // ================================================================
 // PERFIL.JS - SARIEL'S ECOSYSTEM
-// VERSIÓN CORREGIDA - CON REACCIONES Y EMOJIS
+// VERSIÓN CORREGIDA - CON REACCIONES Y COMENTARIOS FUNCIONALES
 // ================================================================
 
 // ===== VARIABLES GLOBALES =====
@@ -65,15 +65,9 @@ async function cargarPerfil() {
         console.log('✅ Datos de usuario cargados');
         actualizarUI(perfilUsuario);
 
-        // Cargar emojis
         await cargarEmojis();
-
-        // Cargar publicaciones
         await cargarPublicaciones();
-
-        // Cargar membresía
         await cargarMembresia();
-
         verificarEstadoPago();
 
         showToast('✅ ¡Bienvenido ' + (perfilUsuario.nombre || 'Usuario') + '!', 'success');
@@ -163,7 +157,7 @@ function actualizarUI(data) {
 }
 
 // ================================================================
-// 📋 CARGAR PUBLICACIONES - CON REACCIONES Y EMOJIS
+// 📋 CARGAR PUBLICACIONES CON REACCIONES
 // ================================================================
 
 async function cargarPublicaciones() {
@@ -213,7 +207,7 @@ async function cargarPublicaciones() {
             ? `<img src="${perfilUsuario.avatar_url}" style="width:100%;height:100%;object-fit:cover;">` 
             : '◈';
 
-        // Obtener reacciones para todas las publicaciones
+        // Obtener reacciones
         const reaccionesMap = {};
         const publicacionIds = publicaciones.map(p => p.id);
 
@@ -249,12 +243,10 @@ async function cargarPublicaciones() {
 
             const contenido = p.contenido ? `<div class="pub-texto">${p.contenido}</div>` : '';
 
-            // Obtener reacción del usuario actual
             const miReaccion = reaccionesMap[p.id]?.usuarios[sessionUser.id] || null;
             const reaccionEmoji = miReaccion || '❤️';
             const reaccionTotal = reaccionesMap[p.id]?.total || 0;
 
-            // ✅ HTML COMPLETO CON REACCIONES Y EMOJIS
             return `
                 <div class="publicacion-item" data-id="${p.id}">
                     <div class="pub-header">
@@ -316,7 +308,6 @@ function toggleReaccion(publicacionId, event) {
     const picker = item.querySelector('.reaccion-picker');
     if (!picker) return;
 
-    // Cerrar otros pickers
     document.querySelectorAll('.reaccion-picker.show').forEach(el => {
         if (el !== picker) el.classList.remove('show');
         const arrow = document.querySelector('#arrow-' + el.id.replace('reaccionPicker-', ''));
@@ -381,6 +372,132 @@ async function seleccionarReaccion(publicacionId, tipo, event) {
 }
 
 // ================================================================
+// 💬 COMENTARIOS - CORREGIDO
+// ================================================================
+
+async function abrirModalComentarios(publicacionId) {
+    if (!sessionUser) {
+        showToast('⚠️ Inicia sesión para comentar', 'error');
+        return;
+    }
+
+    // Crear modal si no existe
+    let modal = document.getElementById('modalComentarios');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'modalComentarios';
+        modal.className = 'modal-overlay';
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width:500px;text-align:left;">
+                <button class="close-btn" onclick="cerrarModalComentarios()">✕</button>
+                <h2 style="text-align:center;">💬 Comentarios</h2>
+                <div id="comentariosList" style="max-height:300px;overflow-y:auto;margin:12px 0;">
+                    <div style="color:var(--text-muted);text-align:center;padding:20px;">Cargando comentarios...</div>
+                </div>
+                <div style="display:flex;gap:8px;margin-top:8px;">
+                    <input type="text" id="inputComentario" placeholder="Escribe un comentario..." style="flex:1;padding:8px 14px;background:rgba(0,0,0,0.25);border:1px solid var(--glass-border);border-radius:10px;color:var(--text-primary);font-size:0.85rem;outline:none;">
+                    <button class="btn btn-gold" onclick="enviarComentario()" style="padding:8px 16px;">Enviar</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+
+    modal.classList.add('active');
+    modal.dataset.publicacionId = publicacionId;
+
+    // Cargar comentarios
+    await cargarComentarios(publicacionId);
+}
+
+async function cargarComentarios(publicacionId) {
+    try {
+        const { data, error } = await window.supabase
+            .from('publicaciones_comentarios')
+            .select('*, usuarios:usuario_id (id, nombre, handle, avatar_url)')
+            .eq('publicacion_id', publicacionId)
+            .order('created_at', { ascending: true });
+
+        if (error) throw error;
+
+        const container = document.getElementById('comentariosList');
+        if (!container) return;
+
+        if (!data || data.length === 0) {
+            container.innerHTML = '<div style="color:var(--text-muted);text-align:center;padding:20px;">Sin comentarios. Sé el primero.</div>';
+            return;
+        }
+
+        container.innerHTML = data.map(c => {
+            const u = c.usuarios || {};
+            const avatar = u.avatar_url ? `<img src="${u.avatar_url}" style="width:100%;height:100%;object-fit:cover;">` : '◈';
+            const nombre = u.nombre || 'Usuario';
+            const fecha = new Date(c.created_at).toLocaleString();
+            return `
+                <div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid rgba(212,175,55,0.04);">
+                    <div style="width:28px;height:28px;border-radius:50%;overflow:hidden;background:linear-gradient(135deg,var(--green-deep),var(--gold));display:flex;align-items:center;justify-content:center;font-size:0.6rem;color:white;flex-shrink:0;">${avatar}</div>
+                    <div style="flex:1;">
+                        <strong style="color:var(--gold);font-size:0.75rem;">${nombre}</strong>
+                        <span style="font-size:0.6rem;color:var(--text-muted);margin-left:6px;">${fecha}</span>
+                        <div style="font-size:0.8rem;color:var(--text-secondary);">${c.contenido}</div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+    } catch (error) {
+        console.error('Error cargando comentarios:', error);
+        const container = document.getElementById('comentariosList');
+        if (container) {
+            container.innerHTML = '<div style="color:var(--danger);text-align:center;padding:20px;">Error al cargar comentarios</div>';
+        }
+    }
+}
+
+async function enviarComentario() {
+    const input = document.getElementById('inputComentario');
+    const texto = input.value.trim();
+
+    if (!texto) {
+        showToast('⚠️ Escribe un comentario', 'warning');
+        return;
+    }
+
+    if (!sessionUser) {
+        showToast('⚠️ Inicia sesión para comentar', 'error');
+        return;
+    }
+
+    const modal = document.getElementById('modalComentarios');
+    const publicacionId = modal?.dataset?.publicacionId;
+
+    if (!publicacionId) {
+        showToast('⚠️ No hay publicación seleccionada', 'error');
+        return;
+    }
+
+    try {
+        const { error } = await window.supabase
+            .from('publicaciones_comentarios')
+            .insert({
+                publicacion_id: publicacionId,
+                usuario_id: sessionUser.id,
+                contenido: texto
+            });
+
+        if (error) throw error;
+
+        input.value = '';
+        showToast('✅ Comentario agregado', 'success');
+        await cargarComentarios(publicacionId);
+
+    } catch (error) {
+        console.error('Error enviando comentario:', error);
+        showToast('❌ Error al enviar comentario: ' + error.message, 'error');
+    }
+}
+
+// ================================================================
 // 🗑️ ELIMINAR PUBLICACIÓN
 // ================================================================
 
@@ -424,23 +541,6 @@ async function eliminarPublicacion(publicacionId) {
         console.error('Error eliminando publicación:', error);
         showToast('❌ Error al eliminar publicación', 'error');
     }
-}
-
-// ================================================================
-// 💬 COMENTARIOS
-// ================================================================
-
-function abrirModalComentarios(publicacionId) {
-    showToast('💬 Comentarios próximamente', '');
-}
-
-function enviarComentario() {
-    showToast('💬 Comentario enviado', 'success');
-}
-
-function cerrarModalComentarios() {
-    const modal = document.getElementById('modalComentarios');
-    if (modal) modal.classList.remove('active');
 }
 
 // ================================================================
@@ -805,7 +905,7 @@ function verificarEstadoPago() {
 }
 
 // ================================================================
-// FUNCIONES PARA ONCLICK DEL HTML - TODAS GLOBALES
+// FUNCIONES PARA ONCLICK DEL HTML
 // ================================================================
 
 function cambiarTab(tab) {
@@ -1244,21 +1344,6 @@ function cerrarSesion() {
 }
 
 // ================================================================
-// INICIALIZACIÓN
-// ================================================================
-
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('✅ perfil.js cargado (versión con reacciones)');
-    console.log('🔍 Supabase disponible:', typeof window.supabase !== 'undefined');
-    if (typeof window.supabase !== 'undefined') {
-        cargarPerfil();
-    } else {
-        console.error('❌ Supabase no está disponible');
-        showToast('❌ Error: Supabase no está disponible', 'error');
-    }
-});
-
-// ================================================================
 // EXPOSICIÓN GLOBAL
 // ================================================================
 
@@ -1295,8 +1380,6 @@ window.abrirModalNft = abrirModalNft;
 window.abrirModalPublicacion = abrirModalPublicacion;
 window.publicarContenido = publicarContenido;
 window.toggleEmojiPickerPerfil = toggleEmojiPickerPerfil;
-window.enviarComentario = enviarComentario;
-window.cerrarModalComentarios = cerrarModalComentarios;
 window.cerrarSesion = cerrarSesion;
 window.contratarPro = contratarPro;
 window.renovarPro = renovarPro;
@@ -1306,7 +1389,23 @@ window.procesarContratacion = procesarContratacion;
 window.toggleReaccion = toggleReaccion;
 window.seleccionarReaccion = seleccionarReaccion;
 window.abrirModalComentarios = abrirModalComentarios;
+window.cargarComentarios = cargarComentarios;
+window.enviarComentario = enviarComentario;
 window.eliminarPublicacion = eliminarPublicacion;
 window.showToast = showToast;
 
 console.log('✅ Todas las funciones expuestas globalmente');
+
+// ================================================================
+// INICIALIZACIÓN
+// ================================================================
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('✅ perfil.js cargado');
+    if (typeof window.supabase !== 'undefined') {
+        cargarPerfil();
+    } else {
+        console.error('❌ Supabase no está disponible');
+        showToast('❌ Error: Supabase no está disponible', 'error');
+    }
+});
