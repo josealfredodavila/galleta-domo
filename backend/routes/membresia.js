@@ -213,7 +213,6 @@ router.get('/status', verificarAutenticacion, async (req, res) => {
 
         console.log('📊 Consultando membresía para:', usuario_id);
 
-        // ✅ LLAMADA CORRECTA A LA RPC
         const { data, error } = await supabaseAdmin
             .rpc('obtener_membresia_usuario', {
                 p_usuario_id: usuario_id
