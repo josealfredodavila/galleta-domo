@@ -5,7 +5,6 @@
 
 const express = require('express');
 const router = express.Router();
-const crypto = require('crypto');
 
 // ===== CONFIGURACIÓN =====
 const NOWPAYMENTS_API_KEY = process.env.NOWPAYMENTS_API_KEY;
@@ -23,7 +22,10 @@ const supabaseAdmin = SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY
     })
     : null;
 
-// ===== MIDDLEWARE DE AUTENTICACIÓN =====
+// ================================================================
+// MIDDLEWARE DE AUTENTICACIÓN
+// ================================================================
+
 async function verificarAutenticacion(req, res, next) {
     try {
         const authHeader = req.headers.authorization;
@@ -211,6 +213,7 @@ router.get('/status', verificarAutenticacion, async (req, res) => {
 
         console.log('📊 Consultando membresía para:', usuario_id);
 
+        // ✅ LLAMADA CORRECTA A LA RPC
         const { data, error } = await supabaseAdmin
             .rpc('obtener_membresia_usuario', {
                 p_usuario_id: usuario_id
