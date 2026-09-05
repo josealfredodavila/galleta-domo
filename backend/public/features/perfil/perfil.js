@@ -738,7 +738,7 @@ function renovarPro() {
 }
 
 // ================================================================
-// MODAL DE PRIVACIDAD
+// MODAL DE PRIVACIDAD - ACTUALIZADO CON AVISO COMPLETO
 // ================================================================
 
 function mostrarModalPrivacidad(accion) {
@@ -751,13 +751,17 @@ function mostrarModalPrivacidad(accion) {
             <div class="modal-content" style="max-width:520px;text-align:left;">
                 <button class="close-btn" onclick="cerrarModalPrivacidad()">✕</button>
                 <h2 style="text-align:center;color:var(--gold);">📋 AVISO DE PRIVACIDAD</h2>
-                <div style="font-size:0.8rem;color:var(--text-secondary);margin:12px 0;line-height:1.6;max-height:200px;overflow-y:auto;padding:8px 4px;">
+                <div style="font-size:0.8rem;color:var(--text-secondary);margin:12px 0;line-height:1.6;max-height:250px;overflow-y:auto;padding:8px 4px;">
                     <p style="margin-bottom:10px;">Al contratar Sariel's Pro, tus datos de cuenta, perfil y contenido podrán ser tratados para prestar el servicio, conservar tu contenido conforme al plan contratado, procesar pagos, mantener la seguridad y cumplir obligaciones legales.</p>
-                    <p style="margin-bottom:10px;"><strong>Sariel's Pro</strong></p>
-                    <p style="margin-bottom:4px;">💰 $20 MXN / 30 días</p>
+                    <p style="margin-bottom:10px;"><strong>✦ Sariel's Pro - $20 MXN / 30 días</strong></p>
                     <p style="margin-bottom:4px;">💾 5 GB de almacenamiento</p>
                     <p style="margin-bottom:10px;">♻️ Conservación ampliada mientras Pro esté activa</p>
-                    <p style="font-size:0.7rem;color:var(--text-muted);">Consulta el aviso de privacidad integral para conocer tus derechos y mecanismos de atención.</p>
+                    <p style="margin-bottom:10px;font-size:0.75rem;color:var(--text-muted);border-top:1px solid var(--glass-border);padding-top:10px;">
+                        ⚠️ Puedes cancelar cuando quieras y borrar tu contenido en cualquier momento desde tu cuenta. 
+                        Si no renuevas tu membresía Pro, tu contenido se conservará por <strong>15 días</strong> adicionales 
+                        y luego será eliminado de forma permanente.
+                    </p>
+                    <p style="font-size:0.7rem;color:var(--text-muted);margin-top:6px;">Consulta el aviso de privacidad integral para conocer tus derechos y mecanismos de atención.</p>
                 </div>
                 <div style="display:flex;align-items:center;gap:10px;margin:12px 0;">
                     <input type="checkbox" id="aceptaPrivacidad" style="width:18px;height:18px;accent-color:var(--gold);">
