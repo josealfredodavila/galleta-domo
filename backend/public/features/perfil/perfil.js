@@ -1,1217 +1,513 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>◈ Perfil · Sariel's</title>
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
-    
-    <style>
-        :root {
-            --gold: #D4AF37;
-            --gold-dark: #b8923a;
-            --gold-light: #e8c84a;
-            --gold-bright: #f0d060;
-            --green-deep: #0F2D1A;
-            --green-mid: #1a4a2a;
-            --green-bright: #2a6a3a;
-            --space: #05080f;
-            --text-primary: #f0f4f8;
-            --text-secondary: #c0d8e8;
-            --text-muted: #8aa8b8;
-            --glass-bg: rgba(15, 45, 26, 0.55);
-            --glass-border: rgba(212, 175, 55, 0.15);
-            --shadow-gold: 0 8px 32px rgba(212, 175, 55, 0.25);
-            --shadow-gold-strong: 0 0 60px rgba(212, 175, 55, 0.15);
-            --radius: 16px;
-            --radius-xl: 24px;
-            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            --success: #00d68f;
-            --danger: #ff3366;
-            --warning: #f7d44a;
-            --cyan: #00e5ff;
-            --purple: #a855f7;
-            --pink: #ec4899;
-            --bronze: #CD7F32;
-            --bronze-light: #D4A574;
-            --bronze-dark: #8B5A2B;
-            --bg-card: rgba(15, 45, 26, 0.4);
-            --bg-dark: rgba(5, 8, 15, 0.8);
-            --border-color: rgba(212, 175, 55, 0.08);
+// ================================================================
+// PERFIL.JS - SARIEL'S ECOSYSTEM
+// ================================================================
+
+// ===== VARIABLES GLOBALES =====
+let sessionUser = null;
+let membresiaActual = null;
+
+// ===== TOAST =====
+function showToast(msg, type) {
+    let t = document.getElementById('toast');
+    if (!t) {
+        t = document.createElement('div');
+        t.id = 'toast';
+        t.className = 'toast';
+        document.body.appendChild(t);
+    }
+    t.textContent = msg;
+    t.className = 'toast show';
+    if (type === 'error') t.classList.add('error');
+    else if (type === 'warning') t.classList.add('warning');
+    else if (type === 'success') t.classList.add('success');
+    else t.classList.remove('error', 'warning', 'success');
+    clearTimeout(t._timeout);
+    t._timeout = setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+// ================================================================
+// CARGAR PERFIL
+// ================================================================
+
+async function cargarPerfil() {
+    try {
+        const sessionResult = await window.supabase.auth.getSession();
+        if (sessionResult.error || !sessionResult.data.session) {
+            document.getElementById('perfilNombre').innerHTML = 'Inicia sesión';
+            return;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        sessionUser = sessionResult.data.session.user;
 
-        body {
-            background: var(--space);
-            color: var(--text-primary);
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            min-height: 100vh;
-            line-height: 1.6;
-            background-image: 
-                radial-gradient(ellipse at 20% 50%, rgba(26, 74, 42, 0.4) 0%, transparent 60%),
-                radial-gradient(ellipse at 80% 50%, rgba(212, 175, 55, 0.08) 0%, transparent 60%);
-            padding: 0;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-        }
+        // Cargar datos de usuario
+        const userResult = await window.supabase
+            .from('usuarios')
+            .select('*')
+            .eq('id', sessionUser.id)
+            .single();
 
-        #stars-canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 0;
-            pointer-events: none;
-        }
+        if (userResult.error) throw userResult.error;
+        actualizarUI(userResult.data);
 
-        .nebula {
-            position: fixed;
-            border-radius: 50%;
-            filter: blur(120px);
-            opacity: 0.12;
-            pointer-events: none;
-            z-index: 0;
-            animation: nebula-drift 25s ease-in-out infinite alternate;
-        }
-        .nebula-1 { width: 700px; height: 700px; background: var(--green-bright); top: -15%; right: -15%; }
-        .nebula-2 { width: 600px; height: 600px; background: var(--gold-light); bottom: -15%; left: -15%; animation-delay: -8s; opacity: 0.06; }
-        .nebula-3 { width: 500px; height: 500px; background: var(--purple); top: 50%; left: 50%; transform: translate(-50%, -50%); animation-delay: -15s; opacity: 0.04; }
+        // Cargar membresía
+        await cargarMembresia();
 
-        @keyframes nebula-drift {
-            0% { transform: translate(0, 0) scale(1); }
-            100% { transform: translate(40px, -30px) scale(1.15); }
-        }
+        // Cargar publicaciones
+        await cargarPublicaciones();
 
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: var(--space); }
-        ::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 2px; }
+    } catch (error) {
+        console.error('❌ Error en cargarPerfil:', error);
+        showToast('❌ Error al cargar perfil', 'error');
+    }
+}
 
-        .app {
-            position: relative;
-            z-index: 1;
-            max-width: 1100px;
-            margin: 0 auto;
-            padding: 16px 20px 30px;
-        }
+// ================================================================
+// MEMBRESÍA PRO
+// ================================================================
 
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 0 14px;
-            border-bottom: 1px solid var(--glass-border);
-            flex-wrap: wrap;
-            gap: 10px;
-            background: rgba(5, 8, 15, 0.92);
-            border-radius: var(--radius) var(--radius) 0 0;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-        .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
-        .logo-hex { font-size: 1.8rem; color: var(--gold); font-weight: 800; font-family: 'Orbitron', monospace; text-shadow: 0 0 30px rgba(212, 175, 55, 0.3); animation: glow-pulse 3s ease-in-out infinite; }
-        @keyframes glow-pulse {
-            0%, 100% { text-shadow: 0 0 30px rgba(212, 175, 55, 0.3); }
-            50% { text-shadow: 0 0 60px rgba(212, 175, 55, 0.6); }
-        }
-        .logo-text { font-family: 'Orbitron', monospace; font-size: 1.2rem; font-weight: 700; color: var(--text-primary); letter-spacing: 2px; }
-        .logo-text span { color: var(--gold); }
-        .logo-badge { font-size: 0.45rem; background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: var(--space); padding: 2px 10px; border-radius: 20px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
-        .network-badge { display: flex; align-items: center; gap: 6px; font-size: 0.6rem; color: var(--gold); background: rgba(212, 175, 55, 0.1); padding: 4px 12px; border-radius: 20px; border: 1px solid rgba(212, 175, 55, 0.15); }
-        .network-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); animation: pulse-dot 2s infinite; }
-        @keyframes pulse-dot {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.3; transform: scale(0.8); }
+async function cargarMembresia() {
+    if (!sessionUser) return;
+
+    try {
+        const container = document.getElementById('membresiaContainer');
+        if (!container) return;
+
+        // Usar RPC existente
+        const { data, error } = await window.supabase.rpc('obtener_membresia_usuario', {
+            p_usuario_id: sessionUser.id
+        });
+
+        if (error) throw error;
+
+        if (!data || data.plan_nombre === 'Gratis') {
+            // MOSTRAR PLAN GRATIS
+            container.innerHTML = `
+                <div style="display:flex;flex-direction:column;gap:12px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+                        <div>
+                            <span style="font-size:0.8rem;color:var(--text-secondary);">Plan actual:</span>
+                            <span style="font-weight:700;color:var(--text-primary);">Gratis</span>
+                        </div>
+                        <span style="font-size:0.6rem;color:var(--text-muted);">1 GB · 90 días</span>
+                    </div>
+                    <div style="background:rgba(212,175,55,0.05);border:1px solid var(--gold);border-radius:12px;padding:14px;text-align:center;">
+                        <div style="font-family:'Orbitron',monospace;font-size:1.2rem;color:var(--gold);font-weight:700;">✦ Sariel's Pro</div>
+                        <div style="font-size:0.8rem;color:var(--text-secondary);margin:4px 0;">$20 MXN / 30 días</div>
+                        <div style="font-size:0.6rem;color:var(--text-muted);margin-bottom:10px;">Conservación ampliada · 5 GB</div>
+                        <button class="btn btn-gold" onclick="contratarPro()" style="width:100%;justify-content:center;padding:10px;">
+                            🚀 Contratar Pro por $20 MXN
+                        </button>
+                    </div>
+                </div>
+            `;
+            return;
         }
 
-        .main-nav {
-            display: flex;
-            gap: 4px;
-            background: rgba(15, 45, 26, 0.3);
-            border-radius: var(--radius);
-            padding: 4px;
-            border: 1px solid var(--glass-border);
-            margin: 16px 0 20px;
-            overflow-x: auto;
-        }
-        .main-nav .nav-link {
-            padding: 8px 16px;
-            border-radius: 12px;
-            color: var(--text-muted);
-            text-decoration: none;
-            font-size: 0.7rem;
-            font-weight: 500;
-            transition: var(--transition);
-            white-space: nowrap;
-            position: relative;
-        }
-        .main-nav .nav-link::after {
-            content: '';
-            position: absolute;
-            bottom: 2px;
-            left: 50%;
-            width: 0;
-            height: 2px;
-            background: var(--gold);
-            transition: var(--transition);
-            transform: translateX(-50%);
-        }
-        .main-nav .nav-link:hover::after, .main-nav .nav-link.active::after { width: 60%; }
-        .main-nav .nav-link:hover { color: var(--text-primary); background: rgba(212, 175, 55, 0.05); }
-        .main-nav .nav-link.active { background: rgba(212, 175, 55, 0.12); color: var(--gold); }
-        .main-nav .nav-link.live { color: var(--danger); }
+        const esActiva = data.activa;
+        const diasRestantes = data.dias_restantes || 0;
+        const venceAt = data.vence_at ? new Date(data.vence_at).toLocaleDateString() : '--';
 
-        .perfil-container { max-width: 1100px; margin: 0 auto; }
+        // MOSTRAR PLAN PRO
+        container.innerHTML = `
+            <div style="display:flex;flex-direction:column;gap:12px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+                    <div>
+                        <span style="font-size:0.8rem;color:var(--text-secondary);">Plan actual:</span>
+                        <span style="font-weight:700;color:var(--gold);">✦ ${data.plan_nombre}</span>
+                    </div>
+                    <span style="font-size:0.6rem;color:${esActiva ? 'var(--success)' : 'var(--text-muted)'};">
+                        ${esActiva ? '✅ Activa' : '⏳ Inactiva'}
+                    </span>
+                </div>
+                ${esActiva ? `
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:8px;">
+                        <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;text-align:center;">
+                            <div style="font-size:1.2rem;font-weight:700;color:var(--gold);">${diasRestantes}</div>
+                            <div style="font-size:0.5rem;color:var(--text-muted);">DÍAS RESTANTES</div>
+                        </div>
+                        <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;text-align:center;">
+                            <div style="font-size:0.8rem;color:var(--text-secondary);">${venceAt}</div>
+                            <div style="font-size:0.5rem;color:var(--text-muted);">VENCE EL</div>
+                        </div>
+                        <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;text-align:center;">
+                            <div style="font-size:0.8rem;color:var(--text-secondary);">5 GB</div>
+                            <div style="font-size:0.5rem;color:var(--text-muted);">ALMACENAMIENTO</div>
+                        </div>
+                    </div>
+                    <button class="btn btn-outline" onclick="renovarPro()" style="width:100%;justify-content:center;padding:10px;">
+                        🔄 Renovar Pro por $20 MXN
+                    </button>
+                ` : `
+                    <div style="background:rgba(212,175,55,0.05);border:1px solid var(--gold);border-radius:12px;padding:14px;text-align:center;">
+                        <div style="font-family:'Orbitron',monospace;font-size:1.2rem;color:var(--gold);font-weight:700;">✦ Sariel's Pro</div>
+                        <div style="font-size:0.8rem;color:var(--text-secondary);margin:4px 0;">$20 MXN / 30 días</div>
+                        <div style="font-size:0.6rem;color:var(--text-muted);margin-bottom:10px;">Conservación ampliada · 5 GB</div>
+                        <button class="btn btn-gold" onclick="contratarPro()" style="width:100%;justify-content:center;padding:10px;">
+                            🚀 Contratar Pro por $20 MXN
+                        </button>
+                    </div>
+                `}
+            </div>
+        `;
 
-        .perfil-header {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius-xl);
-            padding: 24px 28px;
-            margin-bottom: 24px;
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            display: flex;
-            align-items: center;
-            gap: 24px;
-            flex-wrap: wrap;
-            position: relative;
-            overflow: hidden;
-        }
-        .perfil-header::before {
-            content: '';
-            position: absolute;
-            top: -2px; left: -2px; right: -2px; bottom: -2px;
-            background: linear-gradient(135deg, var(--gold), var(--green-deep), var(--gold));
-            background-size: 300% 300%;
-            border-radius: var(--radius-xl);
-            z-index: -1;
-            opacity: 0.1;
-            animation: border-flow 6s ease-in-out infinite;
-        }
-        @keyframes border-flow {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
+        membresiaActual = data;
 
-        .perfil-header .avatar-container { position: relative; flex-shrink: 0; }
-        .perfil-header .avatar {
-            width: 90px;
-            height: 90px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--green-deep), var(--gold));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2.4rem;
-            font-weight: 700;
-            color: white;
-            overflow: hidden;
-            border: 3px solid var(--gold);
-            box-shadow: 0 0 40px rgba(212, 175, 55, 0.15);
-            font-family: 'Orbitron', monospace;
-        }
-        .perfil-header .avatar img { width: 100%; height: 100%; object-fit: cover; }
-        .perfil-header .avatar .edit-badge {
-            position: absolute;
-            bottom: 4px;
-            right: 4px;
-            background: var(--gold);
-            border-radius: 50%;
-            width: 28px;
-            height: 28px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.65rem;
-            color: var(--space);
-            border: 2px solid var(--space);
-            cursor: pointer;
-            transition: var(--transition);
-            box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
-        }
+    } catch (error) {
+        console.error('❌ Error cargando membresía:', error);
+        showToast('❌ Error al cargar membresía', 'error');
+    }
+}
 
-        .perfil-header .info { flex: 1; min-width: 200px; }
-        .perfil-header .info .nombre {
-            font-family: 'Orbitron', monospace;
-            font-size: 1.4rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, var(--gold), var(--text-primary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-        .perfil-header .info .nombre .verified {
-            font-size: 0.5rem;
-            background: rgba(212, 175, 55, 0.15);
-            color: var(--gold);
-            padding: 2px 12px;
-            border-radius: 12px;
-            font-family: 'Orbitron', monospace;
-            border: 1px solid rgba(212, 175, 55, 0.1);
-            -webkit-text-fill-color: var(--gold);
-        }
-        .perfil-header .info .handle { font-size: 0.85rem; color: var(--text-muted); letter-spacing: 0.5px; }
-        .perfil-header .info .bio { font-size: 0.9rem; color: var(--text-secondary); margin-top: 6px; max-width: 500px; line-height: 1.5; }
-        .perfil-header .info .badges { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
-        .perfil-header .info .badges .badge {
-            font-size: 0.55rem;
-            padding: 3px 14px;
-            border-radius: 20px;
-            font-family: 'Orbitron', monospace;
-            border: 1px solid var(--glass-border);
-            color: var(--text-muted);
-            background: rgba(255, 255, 255, 0.03);
-        }
-        .perfil-header .info .badges .badge.gold { border-color: var(--gold); color: var(--gold); background: rgba(212, 175, 55, 0.05); }
-        .perfil-header .info .badges .badge.success { border-color: var(--success); color: var(--success); background: rgba(0, 214, 143, 0.05); }
+// ================================================================
+// CONTRATAR PRO
+// ================================================================
 
-        .perfil-header .stats { display: flex; gap: 24px; flex-wrap: wrap; margin-left: auto; }
-        .perfil-header .stats .stat { text-align: center; }
-        .perfil-header .stats .stat .number {
-            font-family: 'Orbitron', monospace;
-            font-size: 1.2rem;
-            font-weight: 700;
-            color: var(--gold);
-            text-shadow: 0 0 20px rgba(212, 175, 55, 0.05);
-        }
-        .perfil-header .stats .stat .label { font-size: 0.55rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-family: 'Orbitron', monospace; }
-        .perfil-header .acciones { display: flex; gap: 8px; flex-wrap: wrap; margin-left: 10px; }
+window.contratarPro = async function() {
+    if (!sessionUser) {
+        showToast('⚠️ Inicia sesión para contratar Pro', 'error');
+        return;
+    }
 
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 8px 20px;
-            border-radius: 30px;
-            font-size: 0.7rem;
-            font-weight: 600;
-            border: none;
-            cursor: pointer;
-            transition: var(--transition);
-            font-family: 'Inter', sans-serif;
-        }
-        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
-        .btn-gold { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); box-shadow: 0 4px 20px rgba(212, 175, 55, 0.2); }
-        .btn-gold:hover:not(:disabled) { transform: translateY(-2px); box-shadow: var(--shadow-gold); }
-        .btn-outline { background: transparent; color: var(--text-secondary); border: 1px solid var(--glass-border); }
-        .btn-outline:hover:not(:disabled) { border-color: var(--gold); color: var(--gold); box-shadow: 0 0 20px rgba(212, 175, 55, 0.1); }
-        .btn-sm { padding: 4px 12px; font-size: 0.65rem; }
-        .btn-danger { background: rgba(255, 51, 102, 0.1); color: var(--danger); border: 1px solid rgba(255, 51, 102, 0.2); }
-        .btn-danger:hover:not(:disabled) { background: rgba(255, 51, 102, 0.2); }
-        .btn-crypto { background: linear-gradient(135deg, #00ff88, #00b894); color: var(--space); box-shadow: 0 4px 20px rgba(0, 255, 136, 0.2); }
-        .btn-crypto:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 0 40px rgba(0, 255, 136, 0.3); }
-        .btn-wallet { background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: #fff; box-shadow: 0 4px 20px rgba(139, 92, 246, 0.2); }
-        .btn-wallet:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 0 40px rgba(139, 92, 246, 0.3); }
-        .btn-video { background: linear-gradient(135deg, #ff6b6b, #ee5a24); color: #fff; box-shadow: 0 4px 20px rgba(238, 90, 36, 0.2); }
-        .btn-video:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 0 40px rgba(238, 90, 36, 0.3); }
+    // Mostrar modal de aviso de privacidad
+    mostrarModalPrivacidad('contratar');
+};
 
-        .perfil-tabs {
-            display: flex;
-            gap: 4px;
-            background: var(--glass-bg);
-            border-radius: var(--radius);
-            padding: 4px;
-            border: 1px solid var(--glass-border);
-            margin-bottom: 20px;
-            overflow-x: auto;
-        }
-        .perfil-tabs .tab-btn {
-            padding: 10px 20px;
-            border: none;
-            background: transparent;
-            color: var(--text-muted);
-            font-family: 'Inter', sans-serif;
-            font-size: 0.7rem;
-            font-weight: 600;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: var(--transition);
-            white-space: nowrap;
-        }
-        .perfil-tabs .tab-btn.active { background: rgba(212, 175, 55, 0.12); color: var(--gold); box-shadow: 0 0 20px rgba(212, 175, 55, 0.05); }
+// ================================================================
+// RENOVAR PRO
+// ================================================================
 
-        .tab-content { display: none; animation: fadeIn 0.3s ease; }
-        .tab-content.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+window.renovarPro = async function() {
+    if (!sessionUser) {
+        showToast('⚠️ Inicia sesión para renovar Pro', 'error');
+        return;
+    }
 
-        .panel {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius);
-            overflow: hidden;
-            backdrop-filter: blur(10px);
-            transition: var(--transition);
-            margin-bottom: 16px;
-        }
-        .panel-header {
-            padding: 14px 18px;
-            border-bottom: 1px solid var(--glass-border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: rgba(212, 175, 55, 0.03);
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-        .panel-header h3 { font-size: 0.85rem; font-weight: 600; color: var(--gold); }
-        .panel-badge { font-size: 0.6rem; background: rgba(212, 175, 55, 0.12); color: var(--gold); padding: 2px 12px; border-radius: 20px; font-weight: 600; text-transform: uppercase; border: 1px solid rgba(212, 175, 55, 0.08); }
-        .panel-body { padding: 18px; }
+    mostrarModalPrivacidad('renovar');
+};
 
-        /* ===== SECCIÓN DE CONEXIÓN ===== */
-        .conexion-section {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius);
-            padding: 15px;
-            margin-top: 15px;
-        }
-        .conexion-section .conexion-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-        .conexion-section .conexion-info { display: flex; align-items: center; gap: 10px; }
-        .conexion-section .conexion-info .status { font-weight: 600; font-size: 0.9rem; }
-        .conexion-section .conexion-info .velocidad { color: var(--text-muted); font-size: 0.7rem; }
-        .conexion-section .conexion-info .señal { font-size: 0.7rem; }
-        .conexion-buttons { display: flex; gap: 8px; }
-        .conexion-buttons .btn-conexion {
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-size: 0.65rem;
-            font-weight: 600;
-            border: 1px solid var(--glass-border);
-            background: transparent;
-            color: var(--text-muted);
-            cursor: pointer;
-            transition: var(--transition);
-        }
-        .conexion-buttons .btn-conexion:hover { border-color: var(--gold); color: var(--gold); }
-        .conexion-buttons .btn-conexion.active { border-color: var(--gold); background: rgba(212, 175, 55, 0.15); color: var(--gold); }
-        .conexion-buttons .btn-conexion.wifi.active { border-color: var(--success); background: rgba(0, 214, 143, 0.1); color: var(--success); }
-        .conexion-buttons .btn-conexion.datos.active { border-color: var(--cyan); background: rgba(0, 229, 255, 0.1); color: var(--cyan); }
+// ================================================================
+// MODAL DE PRIVACIDAD
+// ================================================================
 
-        /* ===== SECCIÓN DE ESTADO ===== */
-        .estado-section {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius);
-            padding: 15px;
-            margin-top: 15px;
-        }
-        .estado-section .estado-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
-        .estado-section .estado-info { display: flex; align-items: center; gap: 10px; }
-        .estado-section .estado-info .badge { font-size: 1.2rem; }
-        .estado-section .estado-info .texto { font-weight: 600; }
-        .estado-section .estado-info .amigos-online { font-size: 0.6rem; color: var(--text-muted); }
-        .estado-buttons { display: flex; gap: 8px; }
-        .estado-buttons .btn-estado {
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.6rem;
-            font-weight: 600;
-            border: 1px solid var(--glass-border);
-            background: transparent;
-            color: var(--text-muted);
-            cursor: pointer;
-            transition: var(--transition);
-        }
-        .estado-buttons .btn-estado:hover { border-color: var(--gold); color: var(--gold); }
-        .estado-buttons .btn-estado.online { border-color: var(--success); color: var(--success); }
-        .estado-buttons .btn-estado.online:hover { background: rgba(0, 214, 143, 0.1); }
-        .estado-buttons .btn-estado.offline { border-color: var(--text-muted); color: var(--text-muted); }
-        .estado-buttons .btn-estado.offline:hover { background: rgba(255, 255, 255, 0.05); }
-
-        /* ===== SOLICITUDES Y AMIGOS ===== */
-        #solicitudesSection { margin-top: 10px; padding: 10px 0; }
-        #solicitudesSection h4 { color: var(--gold); font-size: 0.85rem; margin-bottom: 8px; }
-
-        #amigosContainer {
-            margin-top: 10px;
-            max-height: 300px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-        #amigosContainer .amigo-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 8px 12px;
-            border-radius: 10px;
-            border: 1px solid var(--glass-border);
-            transition: var(--transition);
-        }
-        #amigosContainer .amigo-item:hover { background: rgba(212, 175, 55, 0.05); }
-        #amigosContainer .amigo-item .avatar-mini {
-            width: 32px; height: 32px; border-radius: 50%; overflow: hidden;
-            border: 2px solid var(--text-muted); flex-shrink: 0;
-            display: flex; align-items: center; justify-content: center; font-size: 0.8rem; background: var(--bg-card);
-        }
-        #amigosContainer .amigo-item.online .avatar-mini { border-color: var(--success); }
-        #amigosContainer .amigo-item .avatar-mini img { width: 100%; height: 100%; object-fit: cover; }
-        #amigosContainer .amigo-item .info { flex: 1; min-width: 0; }
-        #amigosContainer .amigo-item .info .nombre { font-weight: 600; font-size: 0.8rem; }
-        #amigosContainer .amigo-item .info .estado { font-size: 0.6rem; color: var(--text-muted); }
-
-        .nft-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-            gap: 14px;
-        }
-        .nft-card {
-            background: rgba(0,0,0,0.3);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius);
-            padding: 12px;
-            text-align: center;
-            transition: var(--transition);
-        }
-        .nft-card:hover { border-color: var(--gold); transform: translateY(-3px); }
-        .nft-card img { width: 100%; height: 120px; object-fit: cover; border-radius: 10px; margin-bottom: 8px; }
-        .nft-card .title { font-family: 'Orbitron', monospace; font-size: 0.75rem; color: var(--gold); font-weight: 700; }
-        .nft-card .meta { font-size: 0.6rem; color: var(--text-muted); margin-top: 4px; }
-
-        .token-status { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; }
-        .token-status .item { background: rgba(0, 0, 0, 0.2); border: 1px solid var(--glass-border); border-radius: 12px; padding: 14px; text-align: center; transition: var(--transition); }
-        .token-status .item:hover { border-color: var(--gold); transform: translateY(-2px); }
-        .token-status .item .value { font-family: 'Orbitron', monospace; font-size: 1.3rem; font-weight: 700; color: var(--gold); }
-        .token-status .item .label { font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-family: 'Orbitron', monospace; }
-
-        .progress-bar-container { margin-top: 16px; }
-        .progress-bar-container .bar { width: 100%; height: 8px; background: rgba(255, 255, 255, 0.05); border-radius: 10px; overflow: hidden; }
-        .progress-bar-container .bar .fill { height: 100%; background: linear-gradient(90deg, var(--gold), var(--gold-light)); border-radius: 10px; transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1); }
-        .progress-bar-container .label { display: flex; justify-content: space-between; font-size: 0.6rem; color: var(--text-muted); margin-top: 4px; font-family: 'Orbitron', monospace; }
-
-        .config-group { margin-bottom: 16px; }
-        .config-group label { display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px; font-weight: 500; letter-spacing: 0.3px; }
-        .config-group input, .config-group textarea {
-            width: 100%;
-            padding: 10px 14px;
-            background: rgba(0, 0, 0, 0.25);
-            border: 1px solid var(--glass-border);
-            border-radius: 10px;
-            color: var(--text-primary);
-            font-size: 0.9rem;
-            outline: none;
-            transition: var(--transition);
-            font-family: 'Inter', sans-serif;
-        }
-        .config-group input:focus, .config-group textarea:focus { border-color: var(--gold); box-shadow: 0 0 30px rgba(212, 175, 55, 0.05); background: rgba(0, 0, 0, 0.35); }
-        .config-group textarea { resize: vertical; min-height: 80px; }
-        .config-group .hint { font-size: 0.6rem; color: var(--text-muted); margin-top: 4px; }
-
-        .empty-state { text-align: center; padding: 30px 20px; color: var(--text-muted); }
-        .empty-state .icon { font-size: 2.2rem; display: block; margin-bottom: 8px; font-family: 'Orbitron', monospace; color: var(--gold); opacity: 0.4; }
-        .empty-state h4 { font-family: 'Orbitron', monospace; color: var(--text-secondary); font-size: 0.9rem; font-weight: 500; }
-
-        .toast {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            background: var(--green-deep);
-            border: 1px solid var(--gold);
-            color: var(--gold);
-            padding: 12px 24px;
-            border-radius: 12px;
-            font-size: 0.8rem;
-            font-weight: 500;
-            box-shadow: var(--shadow-gold-strong);
-            transform: translateY(100px);
-            opacity: 0;
-            transition: all 0.4s ease;
-            z-index: 9999;
-            max-width: 400px;
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-        }
-        .toast.show { transform: translateY(0); opacity: 1; }
-        .toast.error { border-color: var(--danger); color: var(--danger); }
-        .toast.warning { border-color: var(--warning); color: var(--warning); }
-        .toast.success { border-color: var(--success); color: var(--success); }
-
-        .footer { margin-top: 30px; padding-top: 16px; border-top: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; font-size: 0.7rem; color: var(--text-muted); padding-bottom: 8px; letter-spacing: 0.3px; }
-        .footer .brand { color: var(--gold); font-weight: 600; letter-spacing: 1px; }
-        .footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
-        .footer-links a { color: var(--text-muted); text-decoration: none; transition: var(--transition); }
-        .footer-links a:hover { color: var(--gold); }
-
-        /* MODALES */
-        .modal-overlay {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0, 0, 0, 0.85);
-            backdrop-filter: blur(12px);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-            animation: fadeIn 0.3s ease-out;
-        }
-        .modal-overlay.active { display: flex; }
-        .modal-content {
-            background: linear-gradient(135deg, var(--bg-card), var(--bg-dark));
-            border: 2px solid var(--gold);
-            border-radius: 20px;
-            padding: 24px;
-            max-width: 480px;
-            width: 90%;
-            text-align: center;
-            position: relative;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-        .modal-content .close-btn {
-            position: absolute;
-            top: 12px;
-            right: 15px;
-            background: transparent;
-            border: none;
-            color: var(--text-muted);
-            font-size: 1.4rem;
-            cursor: pointer;
-            transition: var(--transition);
-        }
-        .modal-content .close-btn:hover { color: var(--text-primary); transform: rotate(90deg); }
-        .modal-content h2 { color: var(--gold); font-family: 'Orbitron', monospace; font-size: 1.2rem; margin-bottom: 10px; }
-        .modal-content .subtitle { color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 16px; }
-        .modal-content .qr-container { background: white; border-radius: 12px; padding: 15px; margin: 10px 0; display: inline-block; }
-        .modal-content .qr-container img { max-width: 180px; width: 100%; }
-        .modal-content .address-box { background: var(--bg-dark); border-radius: 10px; padding: 12px; margin: 10px 0; word-break: break-all; }
-        .modal-content .address-box .label { font-size: 0.6rem; color: var(--text-muted); }
-        .modal-content .address-box .address { font-family: monospace; font-size: 0.75rem; color: var(--gold); margin-top: 4px; }
-        .modal-content .actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 16px; }
-
-        .crypto-controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-        .crypto-controls .qty-group {
-            display: flex; align-items: center; gap: 10px;
-            background: rgba(0, 0, 0, 0.2); padding: 4px 12px; border-radius: 30px; border: 1px solid var(--glass-border);
-        }
-        .crypto-controls .qty-group .qty-btn {
-            width: 28px; height: 28px; border-radius: 50%; border: none; background: transparent;
-            color: var(--text-primary); font-size: 1.1rem; cursor: pointer; transition: var(--transition);
-        }
-        .crypto-controls .qty-group .qty-btn:hover { background: rgba(212, 175, 55, 0.1); }
-        .crypto-controls .qty-group .qty-value { font-family: 'Orbitron', monospace; font-size: 1rem; font-weight: 600; color: var(--gold); min-width: 20px; text-align: center; }
-        .crypto-total { font-family: 'Orbitron', monospace; font-size: 1.2rem; color: var(--gold); font-weight: 700; }
-
-        #qrReaderContainer { display: none; margin-top: 10px; text-align: center; }
-
-        @media (max-width: 768px) {
-            .app { padding: 12px 14px; }
-            .perfil-header { flex-direction: column; text-align: center; padding: 20px; }
-            .perfil-header .stats { margin-left: 0; justify-content: center; width: 100%; }
-            .perfil-header .acciones { margin-left: 0; justify-content: center; width: 100%; }
-            .perfil-tabs .tab-btn { font-size: 0.6rem; padding: 8px 14px; }
-            .main-nav .nav-link { font-size: 0.6rem; padding: 6px 10px; }
-            .crypto-controls { flex-direction: column; }
-        }
-    </style>
-</head>
-<body>
-
-    <canvas id="stars-canvas"></canvas>
-    <div class="nebula nebula-1"></div>
-    <div class="nebula nebula-2"></div>
-    <div class="nebula nebula-3"></div>
-
-    <div class="app">
-
-        <!-- HEADER PRINCIPAL -->
-        <header class="header">
-            <a href="/" class="logo">
-                <span class="logo-hex">◈</span>
-                <span class="logo-text">Sariel<span>'s</span></span>
-                <span class="logo-badge">✦ WEB3</span>
-            </a>
-            <div class="header-actions" style="display:flex;gap:8px;align-items:center;">
-                <button class="btn-video" onclick="window.location.href='/videos/videos.html'" style="padding:4px 12px;border-radius:20px;border:none;font-size:0.7rem;cursor:pointer;font-weight:600;" aria-label="Ir a Videos">
-                    🎬 Videos
+function mostrarModalPrivacidad(accion) {
+    // Crear modal si no existe
+    let modal = document.getElementById('modalPrivacidad');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'modalPrivacidad';
+        modal.className = 'modal-overlay';
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width:520px;text-align:left;">
+                <button class="close-btn" onclick="cerrarModalPrivacidad()">✕</button>
+                <h2 style="text-align:center;color:var(--gold);">📋 AVISO DE PRIVACIDAD</h2>
+                <div style="font-size:0.8rem;color:var(--text-secondary);margin:12px 0;line-height:1.6;max-height:200px;overflow-y:auto;padding:8px 4px;">
+                    <p style="margin-bottom:10px;">Al contratar Sariel's Pro, tus datos de cuenta, perfil y contenido podrán ser tratados para prestar el servicio, conservar tu contenido conforme al plan contratado, procesar pagos, mantener la seguridad y cumplir obligaciones legales.</p>
+                    <p style="margin-bottom:10px;"><strong>Sariel's Pro</strong></p>
+                    <p style="margin-bottom:4px;">💰 $20 MXN / 30 días</p>
+                    <p style="margin-bottom:4px;">💾 5 GB de almacenamiento</p>
+                    <p style="margin-bottom:10px;">♻️ Conservación ampliada mientras Pro esté activa</p>
+                    <p style="font-size:0.7rem;color:var(--text-muted);">Consulta el aviso de privacidad integral para conocer tus derechos y mecanismos de atención.</p>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;margin:12px 0;">
+                    <input type="checkbox" id="aceptaPrivacidad" style="width:18px;height:18px;accent-color:var(--gold);">
+                    <label for="aceptaPrivacidad" style="font-size:0.75rem;color:var(--text-secondary);">
+                        He leído y acepto el aviso de privacidad
+                    </label>
+                </div>
+                <button id="btnContinuarPago" class="btn btn-gold" style="width:100%;justify-content:center;padding:12px;opacity:0.5;pointer-events:none;" onclick="procesarContratacion()">
+                    ${accion === 'renovar' ? '🔄 Renovar Pro' : '🚀 Continuar al pago'}
                 </button>
-                <button onclick="window.location.href='/muro/muro.html'" style="background:transparent;border:none;color:var(--text-muted);font-size:1.2rem;cursor:pointer;" aria-label="Ir al Muro">◇</button>
-                <span class="network-badge"><span class="dot"></span> Polygon</span>
+                <div id="privacidadStatus" style="margin-top:8px;font-size:0.7rem;color:var(--text-muted);text-align:center;"></div>
             </div>
-        </header>
+        `;
+        document.body.appendChild(modal);
 
-        <!-- NAVEGACIÓN GENERAL -->
-        <nav class="main-nav" aria-label="Navegación principal">
-            <a href="/" class="nav-link">⌂ Inicio</a>
-            <a href="/muro/muro.html" class="nav-link">◇ Muro</a>
-            <a href="/perfil/perfil.html" class="nav-link active">◆ Perfil</a>
-            <a href="/mensajes/mensajes.html" class="nav-link">◈ Mensajes</a>
-            <a href="/live/live.html" class="nav-link live">◉ Live</a>
-            <a href="/videos/videos.html" class="nav-link">🎬 Videos</a>
-        </nav>
-
-        <div class="perfil-container">
-
-            <!-- ===== PERFIL HEADER (DATOS E IDENTIDAD) ===== -->
-            <div class="perfil-header" id="perfilHeader">
-                <div class="avatar-container">
-                    <div class="avatar" id="perfilAvatar">
-                        ◈
-                        <button class="edit-badge" onclick="abrirSelectorArchivo()" title="Cambiar foto de perfil" aria-label="Cambiar foto de perfil">✎</button>
-                    </div>
-                    <input type="file" id="fileInput" accept="image/*" style="display:none;" onchange="subirFoto(event)" />
-                </div>
-                <div class="info">
-                    <div class="nombre" id="perfilNombre">
-                        Cargando...
-                        <span class="verified">✦ VERIFICADO</span>
-                    </div>
-                    <div class="handle" id="perfilHandle">@cargando</div>
-                    <div class="bio" id="perfilBio">Cargando información del usuario...</div>
-                    <div class="badges">
-                        <span class="badge gold">✦ MIEMBRO</span>
-                        <span class="badge success">● ACTIVO</span>
-                        <span class="badge">◈ WEB3</span>
-                        <span class="badge" id="nivelUsuario" style="border-color:var(--purple);color:var(--purple);background:rgba(168,85,247,0.05);">🌱 Explorador</span>
-                    </div>
-                </div>
-                <div class="stats">
-                    <div class="stat">
-                        <div class="number" id="statTokens">0</div>
-                        <div class="label">◈ Tokens</div>
-                    </div>
-                    <div class="stat">
-                        <div class="number" id="statNFTS">0</div>
-                        <div class="label">◈ NFTs</div>
-                    </div>
-                    <div class="stat">
-                        <div class="number" id="statSeguidores">0</div>
-                        <div class="label">◈ Seguidores</div>
-                    </div>
-                    <div class="stat">
-                        <div class="number" id="statSiguiendo">0</div>
-                        <div class="label">◈ Siguiendo</div>
-                    </div>
-                </div>
-                <div class="acciones">
-                    <button class="btn btn-gold btn-sm" id="btnEditarPerfil" onclick="editarPerfil()">✎ Editar perfil</button>
-                    <button class="btn btn-outline btn-sm" id="btnCompartirPerfil" onclick="compartirPerfil()">◈ Compartir</button>
-                    <button class="btn btn-outline btn-sm" id="btnQRPerfil" onclick="generarQRPerfil()">📱 QR</button>
-                </div>
-            </div>
-
-            <!-- ===== SECCIÓN DE ESTADO Y SOCIAL ===== -->
-            <div class="estado-section">
-                <div class="estado-header">
-                    <div class="estado-info">
-                        <span class="badge" id="estadoBadge">🟢</span>
-                        <span class="texto" id="estadoTexto" style="color:var(--success);">Activo ahora</span>
-                        <span class="amigos-online">· <span id="amigosEnLineaContador">0</span> amigos en línea</span>
-                    </div>
-                    <div class="estado-buttons">
-                        <button class="btn-estado online" id="btnEstadoActivo" onclick="cambiarEstado(true)">🟢 Activo</button>
-                        <button class="btn-estado offline" id="btnEstadoInactivo" onclick="cambiarEstado(false)">⭕ Inactivo</button>
-                    </div>
-                </div>
-
-                <!-- SOLICITUDES PENDIENTES -->
-                <div id="solicitudesSection">
-                    <h4 style="margin-top:12px;">📨 Solicitudes de Amistad <span id="solicitudesContador" style="font-size:0.7rem;color:var(--warning);">0</span></h4>
-                    <div id="solicitudesContainer" style="max-height: 200px; overflow-y: auto;">
-                        <div style="text-align:center; padding:10px; color:var(--text-muted); font-size:0.75rem;">
-                            Cargando solicitudes...
-                        </div>
-                    </div>
-                </div>
-
-                <!-- LISTA DE AMIGOS -->
-                <div id="amigosContainer"></div>
-            </div>
-
-            <!-- ===== SECCIÓN DE CONEXIÓN (WiFi/Datos) ===== -->
-            <div class="conexion-section">
-                <div class="conexion-header">
-                    <div class="conexion-info">
-                        <span class="status" id="conexionStatus">🛜 WiFi</span>
-                        <span class="velocidad" id="conexionVelocidad">-- Mbps</span>
-                        <span class="señal" id="conexionSeñal" style="color:var(--success);">████</span>
-                    </div>
-                    <div class="conexion-buttons">
-                        <button class="btn-conexion wifi active" id="btnWifi" onclick="cambiarConexion('wifi')">🛜 WiFi</button>
-                        <button class="btn-conexion datos" id="btnDatos" onclick="cambiarConexion('datos')">📶 Datos</button>
-                    </div>
-                </div>
-                <div style="font-size:0.6rem;color:var(--text-muted);margin-top:6px;">
-                    Conexión actual: <span id="conexionTipo">🛜 WiFi</span>
-                    · Operador: <span id="conexionOperador">Sariel's Net</span>
-                </div>
-            </div>
-
-            <!-- ===== TABS PRINCIPALES ===== -->
-            <div class="perfil-tabs" role="tablist">
-                <button class="tab-btn active" id="tabBtnActividad" onclick="cambiarTab('actividad')">◈ Actividad</button>
-                <button class="tab-btn" id="tabBtnTokens" onclick="cambiarTab('tokens')">⟡ E.S.TOKS</button>
-                <button class="tab-btn" id="tabBtnNfts" onclick="cambiarTab('nfts')">🎨 NFTs</button>
-                <button class="tab-btn" id="tabBtnEsim" onclick="cambiarTab('esim')">📱 eSIM</button>
-                <button class="tab-btn" id="tabBtnQr" onclick="cambiarTab('qr')">📷 Escanear QR</button>
-                <button class="tab-btn" id="tabBtnConfig" onclick="cambiarTab('config')">◆ Ajustes</button>
-            </div>
-
-            <!-- ===== TAB: ACTIVIDAD ===== -->
-            <div id="tab-actividad" class="tab-content active">
-                <div class="panel">
-                    <div class="panel-header">
-                        <h3>◈ Última actividad</h3>
-                        <span class="panel-badge">En vivo</span>
-                    </div>
-                    <div class="panel-body" id="actividadList">
-                        <div class="empty-state">
-                            <span class="icon">◈</span>
-                            <h4>Sin actividad reciente</h4>
-                            <p>Interactúa en la comunidad para generar actividad.</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="panel">
-                    <div class="panel-header">
-                        <h3>◈ Mis Publicaciones</h3>
-                        <span class="panel-badge" id="postsCount">0</span>
-                    </div>
-                    <div class="panel-body" id="postsList">
-                        <div class="empty-state">
-                            <span class="icon">◈</span>
-                            <h4>Sin publicaciones</h4>
-                            <p>Crea tu primera publicación desde el Muro.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ===== TAB: E.S.TOKS ===== -->
-            <div id="tab-tokens" class="tab-content">
-                <div class="panel">
-                    <div class="panel-header">
-                        <h3>⟡ Balance E.S.TOKS & Domos</h3>
-                        <span class="panel-badge">Ecosistema</span>
-                    </div>
-                    <div class="panel-body">
-                        <div class="token-status">
-                            <div class="item">
-                                <div class="value" id="tokenTotal">0</div>
-                                <div class="label">◈ Balance Tokens</div>
-                            </div>
-                            <div class="item">
-                                <div class="value" id="tokenDisponibles">0</div>
-                                <div class="label">◈ Disponibles</div>
-                            </div>
-                            <div class="item">
-                                <div class="value" id="tokenVendidos">0</div>
-                                <div class="label">◈ Domos Leídos</div>
-                            </div>
-                            <div class="item">
-                                <div class="value" id="tokenNFTs">0</div>
-                                <div class="label">◈ NFTs Desbloqueados</div>
-                            </div>
-                        </div>
-
-                        <div class="progress-bar-container">
-                            <div class="bar">
-                                <div class="fill" id="progressFill" style="width: 0%;"></div>
-                            </div>
-                            <div class="label">
-                                <span>Progreso meta 12 E.S.TOKS</span>
-                                <span id="progressText">0 / 12</span>
-                            </div>
-                        </div>
-
-                        <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;">
-                            <button class="btn btn-gold" style="flex:1;justify-content:center;padding:10px;" id="btnComprarDomo" onclick="comprarDomo(1)">
-                                ⟡ Registrar Domo • $75 MXN
-                            </button>
-                            <button class="btn btn-gold" style="flex:1;justify-content:center;padding:10px;" id="canjearNft" onclick="canjearNFT()" disabled>
-                                🔒 CANJEAR NFT (Requiere 12 Tokens)
-                            </button>
-                        </div>
-
-                        <!-- COMPRAR CON CRIPTO -->
-                        <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--glass-border);">
-                            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
-                                <span style="font-size:0.8rem;color:var(--gold);font-weight:600;">💳 Obtención vía Cripto</span>
-                                <span style="font-size:0.6rem;color:var(--text-muted);">USDT / USDC · Red TRC-20</span>
-                            </div>
-                            <div class="crypto-controls">
-                                <div class="qty-group">
-                                    <button class="qty-btn" id="cryptoDecreaseQty" aria-label="Reducir cantidad">−</button>
-                                    <span class="qty-value" id="cryptoQuantity">1</span>
-                                    <button class="qty-btn" id="cryptoIncreaseQty" aria-label="Aumentar cantidad">+</button>
-                                </div>
-                                <div style="flex:1;text-align:center;">
-                                    <span class="crypto-total" id="cryptoTotal">$4.59 USDT</span>
-                                </div>
-                            </div>
-                            <button class="btn btn-crypto" style="width:100%;justify-content:center;margin-top:10px;padding:10px;" id="btnPagarCripto" onclick="comprarConCripto()">
-                                💳 Pagar con USDT/USDC
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="panel">
-                    <div class="panel-header">
-                        <h3>◈ Historial de E.S.TOKS y Domos</h3>
-                        <span class="panel-badge" id="historialCount">0</span>
-                    </div>
-                    <div class="panel-body" id="historialList">
-                        <div class="empty-state">
-                            <span class="icon">◈</span>
-                            <h4>Sin registros</h4>
-                            <p>Registra o escanea Domos para acumular tu historial.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ===== TAB: NFTs (CONMEMORATIVOS) ===== -->
-            <div id="tab-nfts" class="tab-content">
-                <div class="panel">
-                    <div class="panel-header">
-                        <h3>🎨 Galería de NFTs Conmemorativos</h3>
-                        <span class="panel-badge">Sariel's Collection</span>
-                    </div>
-                    <div class="panel-body">
-                        <div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:14px;">
-                            ⓘ Los NFTs de Sariel's son activos digitales conmemorativos e intransferibles emitidos al completar metas dentro de la red.
-                        </div>
-                        <div id="nftGalleryContainer" class="nft-grid">
-                            <div class="empty-state" style="grid-column:1/-1;">
-                                <span class="icon">🎨</span>
-                                <h4>No posees NFTs conmemorativos</h4>
-                                <p>Reúne 12 E.S.TOKS para canjear tu primer NFT conmemorativo.</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ===== TAB: eSIM / CONECTIVIDAD ===== -->
-            <div id="tab-esim" class="tab-content">
-                <div class="panel">
-                    <div class="panel-header">
-                        <h3>📱 Estado de eSIM</h3>
-                        <span class="panel-badge">Telnyx Mobile</span>
-                    </div>
-                    <div class="panel-body">
-                        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));gap:10px;">
-                            <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;border:1px solid var(--glass-border);">
-                                <span style="color:var(--text-muted);font-size:0.6rem;">ESTADO ACTIVACIÓN</span>
-                                <div id="esimStatus" style="font-weight:600;font-size:0.85rem;">⏳ No asignada</div>
-                            </div>
-                            <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;border:1px solid var(--glass-border);">
-                                <span style="color:var(--text-muted);font-size:0.6rem;">DATOS CONSUMIDOS</span>
-                                <div id="esimDataUsed" style="font-weight:600;font-size:0.85rem;">-- GB</div>
-                            </div>
-                            <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;border:1px solid var(--glass-border);">
-                                <span style="color:var(--text-muted);font-size:0.6rem;">LÍMITE DEL PLAN</span>
-                                <div id="esimDataLimit" style="font-weight:600;font-size:0.85rem;">-- GB</div>
-                            </div>
-                            <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;border:1px solid var(--glass-border);">
-                                <span style="color:var(--text-muted);font-size:0.6rem;">DATOS RESTANTES</span>
-                                <div id="esimDataRestante" style="font-weight:600;font-size:0.85rem;color:var(--success);">-- GB</div>
-                            </div>
-                        </div>
-
-                        <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;border:1px solid var(--glass-border);margin-top:10px;">
-                            <span style="color:var(--text-muted);font-size:0.6rem;">ICCID IDENTIFICADOR</span>
-                            <div id="esimIccid" style="font-weight:600;font-size:0.8rem;font-family:monospace;">--</div>
-                        </div>
-
-                        <div style="margin-top:12px;">
-                            <div style="background:rgba(0,0,0,0.2);border-radius:10px;height:8px;overflow:hidden;">
-                                <div id="esimDataProgress" style="height:100%;width:0%;background:var(--success);transition:width 0.8s;"></div>
-                            </div>
-                        </div>
-
-                        <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;">
-                            <button class="btn btn-gold" style="flex:1;justify-content:center;padding:10px;" id="btnComprarESIM" onclick="comprarESIM(1)">
-                                📱 Adquirir eSIM
-                            </button>
-                            <button class="btn btn-outline" style="flex:1;justify-content:center;padding:10px;" id="btnQrEsim" onclick="generarQRESIM()">
-                                📲 Obtener QR
-                            </button>
-                            <button class="btn btn-outline" style="flex:1;justify-content:center;padding:10px;" id="btnSincronizarEsim" onclick="sincronizarESIM()">
-                                🔄 Sincronizar
-                            </button>
-                        </div>
-
-                        <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
-                            <button class="btn btn-outline btn-sm" id="btnActivarESIM" onclick="activarESIM()" style="border-color:var(--success);color:var(--success);">
-                                ✅ Activar eSIM
-                            </button>
-                            <button class="btn btn-danger btn-sm" id="btnDesactivarESIM" onclick="desactivarESIM()">
-                                ⛔ Desactivar eSIM
-                            </button>
-                        </div>
-
-                        <div style="margin-top:10px;font-size:0.6rem;color:var(--text-muted);">
-                            APN Requerido: <span id="esimApn" style="font-family:monospace;color:var(--text-secondary);">data00.telnyx</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ===== TAB: ESCANEAR QR ===== -->
-            <div id="tab-qr" class="tab-content">
-                <div class="panel">
-                    <div class="panel-header">
-                        <h3>📱 Escaneo e Ingreso de QR Domo</h3>
-                        <span class="panel-badge">Validación Real</span>
-                    </div>
-                    <div class="panel-body">
-                        <form id="formIngresoQR" onsubmit="event.preventDefault(); escanearQR();" class="config-group">
-                            <label for="qrInput">Código del QR (Escanea o ingresa manualmente)</label>
-                            <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                                <input type="text" id="qrInput" placeholder="Ej: DOMO-2026-X89A12" required
-                                       style="flex:1;padding:10px 14px;background:rgba(0,0,0,0.3);border:1px solid var(--glass-border);border-radius:10px;color:var(--text-primary);font-size:0.85rem;outline:none;">
-                                <button type="submit" class="btn btn-gold" id="btnEscanearQR">
-                                    🔍 Validar Código
-                                </button>
-                            </div>
-                            <div class="hint">⚡ Ingresa el identificador único del Domo físico para acumular 1 E.S.TOK real.</div>
-                        </form>
-
-                        <button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:8px;padding:10px;" id="btnAbrirCamaraQR" onclick="abrirCamaraQR()">
-                            📷 Abrir Cámara del Dispositivo
-                        </button>
-
-                        <div id="qrReaderContainer">
-                            <video id="qrVideo" playsinline style="width:100%;max-width:300px;border-radius:10px;background:black;"></video>
-                            <canvas id="qrCanvas" style="display:none;"></canvas>
-                            <div style="margin-top:8px;">
-                                <button class="btn btn-danger btn-sm" onclick="cerrarCamaraQR()">
-                                    ✕ Cerrar cámara
-                                </button>
-                            </div>
-                            <div id="qrCamaraStatus" style="font-size:0.7rem;color:var(--text-muted);margin-top:4px;">Iniciando cámara...</div>
-                        </div>
-
-                        <div id="qrStatus" style="margin-top:12px;font-size:0.8rem;color:var(--text-muted);min-height:24px;text-align:center;"></div>
-
-                        <div style="margin-top:16px;border-top:1px solid var(--glass-border);padding-top:12px;">
-                            <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.7rem;color:var(--text-muted);">
-                                <span>📋 Escaneos Confirmados</span>
-                                <span id="qrHistorialCount">0</span>
-                            </div>
-                            <div id="qrHistorialList" style="margin-top:8px;">
-                                <div class="empty-state" style="padding:10px;">
-                                    <span class="icon" style="font-size:1.5rem;">◈</span>
-                                    <p style="font-size:0.7rem;">Sin escaneos registrados aún.</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ===== TAB: CONFIGURACIÓN Y PERFIL ===== -->
-            <div id="tab-config" class="tab-content">
-                <div class="panel">
-                    <div class="panel-header">
-                        <h3>◆ Perfil e Información</h3>
-                        <span class="panel-badge">Editar</span>
-                    </div>
-                    <div class="panel-body">
-                        <form id="formPerfil" onsubmit="event.preventDefault(); guardarPerfil();">
-                            <div class="config-group">
-                                <label for="editNombre">Nombre de Usuario</label>
-                                <input type="text" id="editNombre" required />
-                            </div>
-                            <div class="config-group">
-                                <label for="editHandle">Handle / Apodo (@)</label>
-                                <input type="text" id="editHandle" required />
-                            </div>
-                            <div class="config-group">
-                                <label for="editBio">Biografía</label>
-                                <textarea id="editBio" rows="3"></textarea>
-                            </div>
-                            <div class="config-group">
-                                <label>Imagen de Perfil</label>
-                                <button type="button" class="btn btn-outline" style="width:100%;" onclick="abrirSelectorArchivo()">📸 Subir nueva foto</button>
-                            </div>
-                            <button type="submit" class="btn btn-gold" style="width:100%;justify-content:center;padding:10px;" id="btnGuardarPerfil">
-                                ◆ Guardar Cambios
-                            </button>
-                        </form>
-                    </div>
-                </div>
-
-                <div class="panel">
-                    <div class="panel-header">
-                        <h3>◆ Seguridad y Wallet Web3</h3>
-                        <span class="panel-badge">Conexión</span>
-                    </div>
-                    <div class="panel-body">
-                        <div class="config-group">
-                            <label>Dirección Wallet Conectada</label>
-                            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px;">
-                                <span id="walletDisplay" style="font-family:monospace;font-size:0.85rem;color:var(--text-secondary);">⚠️ No conectada</span>
-                                <button type="button" class="btn btn-wallet btn-sm" onclick="conectarWallet()" id="btnConectarWallet">
-                                    ◈ Conectar Wallet
-                                </button>
-                                <button type="button" class="btn btn-danger btn-sm" onclick="desconectarWallet()" style="display:none;" id="btnDesconectarWallet">
-                                    ✕ Desconectar
-                                </button>
-                            </div>
-                            <div class="hint">Red Actual: <span id="walletRed">Polygon Mainnet</span></div>
-                        </div>
-                        <button type="button" class="btn btn-danger" style="width:100%;justify-content:center;padding:10px;margin-top:12px;" id="btnCerrarSesion" onclick="cerrarSesion()">
-                            ✕ Cerrar Sesión
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-
-        <!-- FOOTER -->
-        <footer class="footer">
-            <span><span class="brand">◈ Sariel's</span> · Red Social WEB3</span>
-            <div class="footer-links">
-                <a href="/terminos">Términos</a>
-                <a href="/privacidad">Privacidad</a>
-                <a href="/cookies">Cookies</a>
-                <span style="opacity:0.4;">⚡ Powered by Polygon</span>
-            </div>
-        </footer>
-
-    </div>
-
-    <div class="toast" id="toast"></div>
-
-    <!-- ===== MODAL DETALLE NFT ===== -->
-    <div class="modal-overlay" id="nftModal">
-        <div class="modal-content">
-            <button class="close-btn" onclick="cerrarModal('nftModal')">✕</button>
-            <h2 id="nftModalTitle">NFT Conmemorativo</h2>
-            <div style="margin: 15px 0;">
-                <img id="nftModalImage" src="" alt="NFT Preview" style="max-width:200px;width:100%;border-radius:12px;border:1px solid var(--gold);" />
-            </div>
-            <p id="nftModalDescription" class="subtitle" style="font-size:0.8rem;"></p>
-            <div class="address-box">
-                <div class="label">Domo de Origen / Transacción</div>
-                <div class="address" id="nftModalDomo">--</div>
-            </div>
-            <div class="address-box">
-                <div class="label">Fecha de Obtención</div>
-                <div class="address" id="nftModalFecha">--</div>
-            </div>
-            <div class="actions">
-                <button class="btn btn-outline btn-sm" onclick="cerrarModal('nftModal')">Cerrar</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- ===== MODAL PAGO CRIPTO ===== -->
-    <div class="modal-overlay" id="cryptoPaymentModal">
-        <div class="modal-content">
-            <button class="close-btn" onclick="cerrarModal('cryptoPaymentModal')">✕</button>
-            <h2>💳 Pagar con Cripto</h2>
-            <p class="subtitle">Escanea el QR o copia la dirección oficial de depósito</p>
-            
-            <div class="qr-container">
-                <img id="cryptoQR" src="" alt="QR de pago" />
-            </div>
-
-            <div class="address-box">
-                <div class="label">📤 Dirección TRC-20 de pago</div>
-                <div class="address" id="cryptoAddress">Cargando dirección...</div>
-            </div>
-
-            <div class="amount">
-                <span id="cryptoMonto">0.00</span> <span id="cryptoMoneda">USDT</span>
-            </div>
-
-            <div class="actions">
-                <button class="btn btn-outline btn-sm" onclick="copiarDireccion()">📋 Copiar dirección</button>
-                <button class="btn btn-gold btn-sm" id="btnVerificarPago" onclick="verificarPagoCrypto()">✅ Verificar depósito</button>
-                <button class="btn btn-outline btn-sm" onclick="cerrarModal('cryptoPaymentModal')">Cancelar</button>
-            </div>
-
-            <div class="status" id="cryptoStatus">⏳ Esperando confirmación en la red...</div>
-        </div>
-    </div>
-
-    <!-- MODAL VISTA QR PERFIL -->
-    <div class="modal-overlay" id="qrPerfilModal">
-        <div class="modal-content">
-            <button class="close-btn" onclick="cerrarModal('qrPerfilModal')">✕</button>
-            <h2>📱 Mi QR de Perfil</h2>
-            <p class="subtitle">Muestra este código para que te agreguen rápidamente</p>
-            <div class="qr-container">
-                <img id="qrPerfilImage" src="" alt="QR Perfil" />
-            </div>
-            <div class="actions">
-                <button class="btn btn-outline btn-sm" onclick="cerrarModal('qrPerfilModal')">Cerrar</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- NOTIFICADOR DE ERRORES SCRIPT -->
-    <div id="errorBanner" style="display:none; position:fixed; top:0; left:0; right:0; z-index:99999; background:#ff3366; color:#fff; padding:12px 16px; font-family:monospace; font-size:0.75rem; word-break:break-word;">
-        <strong>⚠️ Error detectado:</strong>
-        <span id="errorBannerText"></span>
-        <button onclick="document.getElementById('errorBanner').style.display='none'" style="float:right; background:none; border:1px solid #fff; color:#fff; border-radius:6px; padding:2px 10px; cursor:pointer;">Cerrar</button>
-    </div>
-
-    <script>
-        function mostrarErrorEnPantalla(mensaje) {
-            const banner = document.getElementById('errorBanner');
-            const texto = document.getElementById('errorBannerText');
-            if (banner && texto) {
-                texto.textContent = mensaje;
-                banner.style.display = 'block';
+        // Habilitar botón cuando se acepte
+        document.getElementById('aceptaPrivacidad').addEventListener('change', function() {
+            const btn = document.getElementById('btnContinuarPago');
+            if (this.checked) {
+                btn.style.opacity = '1';
+                btn.style.pointerEvents = 'auto';
+            } else {
+                btn.style.opacity = '0.5';
+                btn.style.pointerEvents = 'none';
             }
+        });
+    }
+
+    // Guardar acción
+    modal.dataset.accion = accion || 'contratar';
+    modal.classList.add('active');
+}
+
+window.cerrarModalPrivacidad = function() {
+    const modal = document.getElementById('modalPrivacidad');
+    if (modal) modal.classList.remove('active');
+    document.getElementById('aceptaPrivacidad').checked = false;
+    const btn = document.getElementById('btnContinuarPago');
+    btn.style.opacity = '0.5';
+    btn.style.pointerEvents = 'none';
+    document.getElementById('privacidadStatus').textContent = '';
+};
+
+window.procesarContratacion = function() {
+    const modal = document.getElementById('modalPrivacidad');
+    const accion = modal.dataset.accion || 'contratar';
+    const acepta = document.getElementById('aceptaPrivacidad').checked;
+    const status = document.getElementById('privacidadStatus');
+
+    if (!acepta) {
+        status.textContent = '⚠️ Debes aceptar el aviso de privacidad';
+        status.style.color = 'var(--danger)';
+        return;
+    }
+
+    cerrarModalPrivacidad();
+
+    if (accion === 'renovar') {
+        ejecutarRenovacion();
+    } else {
+        ejecutarContratacion();
+    }
+};
+
+// ================================================================
+// EJECUTAR CONTRATACIÓN
+// ================================================================
+
+async function ejecutarContratacion() {
+    showToast('⏳ Creando orden de pago...', '');
+
+    try {
+        const session = await window.supabase.auth.getSession();
+        const token = session.data.session?.access_token;
+
+        const response = await fetch('/api/payments/membresia/create', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                privacy_version: '1.0'
+            })
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+            throw new Error(data.error || 'Error al crear la orden');
         }
 
-        window.addEventListener('error', function (event) {
-            mostrarErrorEnPantalla((event.message || 'Error de script') + ' en ' + (event.filename || 'perfil.html') + ':' + event.lineno);
+        showToast('✅ Orden creada. Redirigiendo al pago...', 'success');
+
+        // Guardar para verificación
+        sessionStorage.setItem('pro_order_id', data.order_id);
+
+        if (data.payment_url) {
+            window.location.href = data.payment_url;
+        } else {
+            showToast('📋 Pago pendiente. Revisa tu correo.', '');
+        }
+
+    } catch (error) {
+        console.error('❌ Error contratando Pro:', error);
+        showToast('❌ Error: ' + error.message, 'error');
+    }
+}
+
+// ================================================================
+// EJECUTAR RENOVACIÓN
+// ================================================================
+
+async function ejecutarRenovacion() {
+    showToast('⏳ Creando orden de renovación...', '');
+
+    try {
+        const session = await window.supabase.auth.getSession();
+        const token = session.data.session?.access_token;
+
+        const response = await fetch('/api/payments/membresia/create', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                renovar: true,
+                privacy_version: '1.0'
+            })
         });
 
-        window.addEventListener('unhandledrejection', function (event) {
-            mostrarErrorEnPantalla('Promesa rechazada: ' + (event.reason?.message || event.reason));
-        });
+        const data = await response.json();
 
-        // MANEJO SEGURO DE CLOSING DE MODALES (CLIC FUERA / ESCAPE)
-        document.querySelectorAll('.modal-overlay').forEach(modal => {
-            modal.addEventListener('click', function(e) {
-                if (e.target === this) {
-                    this.classList.remove('active');
+        if (!data.success) {
+            throw new Error(data.error || 'Error al crear la orden');
+        }
+
+        showToast('✅ Orden de renovación creada. Redirigiendo...', 'success');
+
+        sessionStorage.setItem('pro_order_id', data.order_id);
+
+        if (data.payment_url) {
+            window.location.href = data.payment_url;
+        }
+
+    } catch (error) {
+        console.error('❌ Error renovando Pro:', error);
+        showToast('❌ Error: ' + error.message, 'error');
+    }
+}
+
+// ================================================================
+// VERIFICAR ESTADO DESPUÉS DE PAGO
+// ================================================================
+
+function verificarEstadoPago() {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('payment') === 'success') {
+        showToast('⏳ Procesando pago...', '');
+        setTimeout(() => {
+            cargarMembresia();
+            showToast('✅ Pago procesado correctamente', 'success');
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }, 2000);
+    }
+}
+
+// ================================================================
+// CARGAR PUBLICACIONES
+// ================================================================
+
+async function cargarPublicaciones() {
+    try {
+        if (!sessionUser) return;
+
+        const result = await window.supabase
+            .from('publicaciones')
+            .select('*, usuarios:usuario_id (id, nombre, handle, avatar_url)')
+            .eq('usuario_id', sessionUser.id)
+            .eq('estado', 'publicado')
+            .order('created_at', { ascending: false });
+
+        if (result.error) throw result.error;
+
+        const container = document.getElementById('postsList');
+        const data = result.data || [];
+        const countEl = document.getElementById('postsCount');
+
+        if (countEl) countEl.textContent = data.length;
+
+        if (data.length === 0) {
+            container.innerHTML = '<div class="empty-state"><span class="icon">📝</span><h4>Sin publicaciones</h4><p>Crea tu primera publicación.</p></div>';
+            return;
+        }
+
+        container.innerHTML = data.map(p => {
+            const usuario = p.usuarios || {};
+            const avatar = usuario.avatar_url ? `<img src="${usuario.avatar_url}">` : '◈';
+            const nombre = usuario.nombre || 'Usuario';
+            const fecha = new Date(p.created_at).toLocaleString();
+            let mediaHtml = '';
+            if (p.media_url) {
+                if (p.media_type === 'imagen') {
+                    mediaHtml = `<img src="${p.media_url}" class="pub-media" />`;
+                } else if (p.media_type === 'video') {
+                    mediaHtml = `<video src="${p.media_url}" class="pub-media" controls></video>`;
                 }
-            });
-        });
-
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                document.querySelectorAll('.modal-overlay.active').forEach(modal => {
-                    modal.classList.remove('active');
-                });
             }
-        });
+            const contenido = p.contenido ? `<div class="pub-texto">${p.contenido}</div>` : '';
 
-        function cerrarModal(modalId) {
-            const modal = document.getElementById(modalId);
-            if (modal) modal.classList.remove('active');
-        }
-    </script>
+            return `
+                <div class="publicacion-item" data-id="${p.id}">
+                    <div class="pub-header">
+                        <div class="avatar-mini">${avatar}</div>
+                        <span class="pub-nombre">${nombre}</span>
+                        <span class="pub-fecha">${fecha}</span>
+                    </div>
+                    ${contenido}
+                    ${mediaHtml}
+                    <div class="pub-actions">
+                        <button class="reaccion-btn" onclick="toggleReaccion('${p.id}', event)">
+                            <span class="reaccion-emoji">❤️</span>
+                            <span class="count">${p.likes || 0}</span>
+                        </button>
+                        <span class="comment-btn" onclick="abrirModalComentarios('${p.id}')">💬 <span>${p.comentarios || 0}</span></span>
+                    </div>
+                </div>
+            `;
+        }).join('');
 
-    <!-- DEPENDENCIAS CORE -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-    <script src="/app.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
-    <script src="/features/perfil/perfil.js"></script>
-</body>
-</html>
+    } catch (error) {
+        console.error('Error cargando publicaciones:', error);
+    }
+}
+
+// ================================================================
+// ACTUALIZAR UI
+// ================================================================
+
+function actualizarUI(data) {
+    if (!data) return;
+
+    const nombreEl = document.getElementById('perfilNombre');
+    if (nombreEl) {
+        const verificado = data.verificado ? ' <span class="verified">✦ VERIFICADO</span>' : '';
+        nombreEl.innerHTML = (data.nombre || 'Usuario') + verificado;
+    }
+
+    const handleEl = document.getElementById('perfilHandle');
+    if (handleEl) handleEl.textContent = '@' + (data.handle || 'usuario');
+
+    const bioEl = document.getElementById('perfilBio');
+    if (bioEl) bioEl.textContent = data.bio || 'Sin biografía';
+
+    const avatarEl = document.getElementById('perfilAvatar');
+    if (avatarEl && data.avatar_url) {
+        avatarEl.innerHTML = `<img src="${data.avatar_url}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;"/>`;
+    }
+
+    const statTokens = document.getElementById('statTokens');
+    if (statTokens) statTokens.textContent = data.tokens || 0;
+
+    const tokenTotal = document.getElementById('tokenTotal');
+    if (tokenTotal) tokenTotal.textContent = data.tokens || 0;
+}
+
+// ================================================================
+// TOGGLE REACCION
+// ================================================================
+
+window.toggleReaccion = function(publicacionId, event) {
+    // Placeholder - implementar después
+    showToast('❤️ Reacción agregada', 'success');
+};
+
+// ================================================================
+// ABRIR MODAL COMENTARIOS
+// ================================================================
+
+window.abrirModalComentarios = function(publicacionId) {
+    showToast('💬 Comentarios próximamente', '');
+};
+
+// ================================================================
+// INICIALIZACIÓN
+// ================================================================
+
+document.addEventListener('DOMContentLoaded', () => {
+    cargarPerfil();
+    verificarEstadoPago();
+});
+
+// ================================================================
+// EXPOSICIÓN GLOBAL
+// ================================================================
+
+window.cargarPerfil = cargarPerfil;
+window.cargarMembresia = cargarMembresia;
+window.contratarPro = window.contratarPro;
+window.renovarPro = window.renovarPro;
+window.showToast = showToast;
+window.cerrarModalPrivacidad = window.cerrarModalPrivacidad;
+window.procesarContratacion = window.procesarContratacion;
