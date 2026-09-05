@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>◈ Eliminar Cuenta · Sariel's</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --gold-cosmic: #D4AF37;
+            --gold-dim: rgba(212, 168, 87, 0.25);
+            --text-primary: #FFFFFF;
+            --text-secondary: #E2E8F0;
+            --text-muted: #94A3B8;
+            --space-deep: #05080f;
+            --radius: 16px;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: var(--space-deep);
+            color: var(--text-primary);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            min-height: 100vh;
+            line-height: 1.6;
+            padding: 0;
+        }
+        .terminos-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 24px;
+            background: rgba(15, 45, 26, 0.4);
+            border: 1px solid var(--gold-dim);
+            border-radius: var(--radius);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
+        }
+        .terminos-container h1 {
+            font-family: 'Orbitron', monospace;
+            font-size: 2rem;
+            color: var(--gold-cosmic);
+            text-align: center;
+            margin-bottom: 8px;
+        }
+        .terminos-container .fecha {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-bottom: 30px;
+            border-bottom: 1px solid var(--gold-dim);
+            padding-bottom: 20px;
+        }
+        .terminos-container h2 {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.2rem;
+            color: var(--gold-cosmic);
+            margin-top: 30px;
+            margin-bottom: 12px;
+            border-left: 4px solid var(--gold-cosmic);
+            padding-left: 14px;
+        }
+        .terminos-container p {
+            color: var(--text-secondary);
+            line-height: 1.7;
+            margin-bottom: 12px;
+            font-size: 0.95rem;
+        }
+        .terminos-container ul {
+            list-style: none;
+            padding-left: 10px;
+            margin: 12px 0 18px 0;
+        }
+        .terminos-container ul li {
+            padding: 6px 0 6px 28px;
+            position: relative;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+        .terminos-container ul li::before {
+            content: "✦";
+            color: var(--gold-cosmic);
+            position: absolute;
+            left: 4px;
+            font-size: 0.8rem;
+            top: 8px;
+        }
+        .terminos-container .art {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(212, 168, 87, 0.25);
+            border-left: 4px solid var(--gold-cosmic);
+            padding: 16px 20px;
+            border-radius: 10px;
+            margin: 18px 0;
+        }
+        .terminos-container .art p { color: #F8FAFC !important; }
+        .terminos-container .art strong { color: #FFE066 !important; font-weight: 700; }
+        .terminos-container .divisor {
+            border: none;
+            border-top: 1px solid rgba(212, 168, 87, 0.12);
+            margin: 40px 0 20px 0;
+        }
+        .terminos-container .footer-tyc {
+            text-align: center;
+            margin-top: 45px;
+            padding-top: 25px;
+            border-top: 1px solid rgba(212, 168, 87, 0.1);
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+        .btn-volver {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 12px 32px;
+            background: linear-gradient(135deg, var(--gold-cosmic), #b8923a);
+            color: #0a0c10;
+            font-weight: 700;
+            text-decoration: none;
+            border-radius: 40px;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            font-family: 'Orbitron', monospace;
+        }
+        .btn-volver:hover {
+            transform: scale(1.03);
+            box-shadow: 0 0 30px rgba(212, 168, 87, 0.25);
+        }
+        .text-center { text-align: center; }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0 16px;
+            border-bottom: 2px solid var(--gold-dim);
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 10px;
+            backdrop-filter: blur(10px);
+            position: relative;
+            max-width: 900px;
+            margin-left: auto;
+            margin-right: auto;
+            padding-left: 20px;
+            padding-right: 20px;
+        }
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--gold-cosmic), var(--gold-cosmic), transparent);
+            opacity: 0.4;
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+        }
+        .logo-icon { font-size: 2rem; filter: drop-shadow(0 0 20px rgba(212, 168, 87, 0.2)); }
+        .logo-text {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.3rem;
+            font-weight: 900;
+            letter-spacing: 2px;
+            background: linear-gradient(135deg, var(--gold-cosmic), #b8923a);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .logo-badge {
+            font-size: 0.5rem;
+            background: linear-gradient(135deg, var(--gold-cosmic), #b8923a);
+            color: #0a0c10;
+            padding: 2px 12px;
+            border-radius: 20px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .header-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .network-badge {
+            font-size: 0.7rem;
+            color: var(--gold-cosmic);
+            background: rgba(212, 168, 87, 0.1);
+            padding: 4px 14px;
+            border-radius: 20px;
+            border: 1px solid rgba(212, 168, 87, 0.2);
+        }
+        #stars-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+        .nebula {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(120px);
+            opacity: 0.10;
+            pointer-events: none;
+            z-index: 0;
+            animation: nebula-drift 25s ease-in-out infinite alternate;
+        }
+        .nebula-1 { width: 700px; height: 700px; background: #0B3D2E; top: -15%; right: -15%; }
+        .nebula-2 { width: 600px; height: 600px; background: var(--gold-cosmic); bottom: -15%; left: -15%; animation-delay: -8s; opacity: 0.05; }
+        .nebula-3 { width: 500px; height: 500px; background: #00e5ff; top: 50%; left: 50%; transform: translate(-50%, -50%); animation-delay: -15s; opacity: 0.04; }
+        @keyframes nebula-drift {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(40px, -30px) scale(1.15); }
+        }
+        .container { max-width: 900px; margin: 0 auto; padding: 0 20px; }
+        .main { position: relative; z-index: 1; }
+    </style>
+</head>
+<body>
+    <canvas id="stars-canvas"></canvas>
+    <div class="nebula nebula-1"></div>
+    <div class="nebula nebula-2"></div>
+    <div class="nebula nebula-3"></div>
+
+    <div id="app">
+        <header class="header">
+            <div class="header-content" style="display:flex;justify-content:space-between;align-items:center;width:100%;flex-wrap:wrap;gap:10px;">
+                <a href="/" class="logo">
+                    <span class="logo-icon"><span style="font-size:2rem;color:var(--gold-cosmic);">◈</span></span>
+                    <span class="logo-text">Sariel's</span>
+                    <span class="logo-badge">✦ WEB3</span>
+                </a>
+                <div class="header-info">
+                    <span class="network-badge">🟢 Polygon</span>
+                </div>
+            </div>
+        </header>
+
+        <main class="main">
+            <div class="container">
+                <div class="terminos-container">
+
+                    <h1>🗑️ Eliminación de Cuenta y Datos</h1>
+                    <div class="fecha">📅 Última actualización: 10 de agosto de 2026</div>
+
+                    <div class="art" style="background:rgba(212,168,87,0.08);border-color:var(--gold-cosmic);text-align:center;">
+                        <p style="font-weight:600;color:var(--gold-cosmic) !important;">
+                            ⚡ En cumplimiento con Google Play y la LFPDPPP, ponemos a tu disposición este mecanismo para solicitar la eliminación de tus datos.
+                        </p>
+                    </div>
+
+                    <h2>📘 1. ¿Qué datos eliminamos?</h2>
+                    <div class="art">
+                        <p><strong>Eliminamos de nuestras bases de datos centralizadas:</strong></p>
+                        <ul>
+                            <li>Correo electrónico</li>
+                            <li>Nombre completo</li>
+                            <li>Número de teléfono</li>
+                            <li>Dirección de wallet vinculada</li>
+                            <li>Historial de compras y transacciones</li>
+                            <li>Perfil y configuración de usuario</li>
+                        </ul>
+                        <p><strong>NO podemos eliminar:</strong></p>
+                        <ul>
+                            <li>Registros en la blockchain de Polygon (transacciones, minteos, burns)</li>
+                            <li>Los tokens ES.stoks y NFTs Domo (son públicos e inmutables)</li>
+                        </ul>
+                    </div>
+
+                    <h2>📗 2. ¿Cómo solicitar la eliminación?</h2>
+                    <div class="art">
+                        <p><strong>Opción 1 - Dentro de la app:</strong></p>
+                        <ul>
+                            <li>Ve a "Configuración" → "Eliminar cuenta"</li>
+                            <li>Confirma tu identidad</li>
+                            <li>Tu cuenta será eliminada en <strong>15 días hábiles</strong></li>
+                        </ul>
+                        <p><strong>Opción 2 - Por correo electrónico:</strong></p>
+                        <ul>
+                            <li>Envía un correo a: <strong>csarielscontacto@gmail.com</strong></li>
+                            <li>Asunto: <strong>"SOLICITUD DE ELIMINACIÓN DE CUENTA"</strong></li>
+                            <li>Adjunta tu identificación oficial (INE o Pasaporte)</li>
+                            <li>Incluye la dirección de tu wallet</li>
+                        </ul>
+                    </div>
+
+                    <h2>📙 3. Plazos y confirmación</h2>
+                    <div class="art">
+                        <p><strong>3.1. Plazo:</strong> Completaremos la eliminación en un plazo máximo de <strong>15 días hábiles</strong> desde la recepción de la solicitud.</p>
+                        <p><strong>3.2. Confirmación:</strong> Recibirás un correo electrónico confirmando que tus datos han sido eliminados de nuestras bases de datos.</p>
+                        <p><strong>3.3. Datos en Blockchain:</strong> Los registros en la red Polygon <strong>permanecerán públicos</strong> por la naturaleza descentralizada de la red. Sariel's no tiene capacidad para eliminarlos.</p>
+                    </div>
+
+                    <h2>📕 4. Contacto</h2>
+                    <div class="art">
+                        <p><strong>Correo electrónico:</strong> csarielscontacto@gmail.com</p>
+                        <p><strong>Dirección postal:</strong> Puebla, México.</p>
+                    </div>
+
+                    <hr class="divisor" />
+
+                    <div class="footer-tyc">
+                        <p>© <strong>Sariel's</strong>. Todos los derechos reservados. Puebla, México 🇲🇽</p>
+                    </div>
+
+                    <div class="text-center">
+                        <a href="/" class="btn-volver">← Volver a la plataforma</a>
+                    </div>
+
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const btnVolver = document.querySelector('.btn-volver');
+            btnVolver.addEventListener('click', function(e) {
+                // Redirige a la página principal
+                window.location.href = '/';
+            });
+        });
+    </script>
+</body>
+</html>
