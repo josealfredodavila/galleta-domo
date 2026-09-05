@@ -44,6 +44,7 @@ async function procesarWebhookMembresia(payload) {
         if (payment_status === 'finished' || payment_status === 'confirmed') {
             console.log(`✅ Pago de membresía confirmado: ${order_id}`);
 
+            // ✅ LLAMADA CORRECTA A LA RPC CON 6 PARÁMETROS
             const result = await supabaseAdmin.rpc('activar_membresia_pro', {
                 p_usuario_id: pago.usuario_id,
                 p_order_id: order_id,
