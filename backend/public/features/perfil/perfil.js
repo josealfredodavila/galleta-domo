@@ -55,6 +55,9 @@ async function cargarPerfil() {
         // Cargar publicaciones
         await cargarPublicaciones();
 
+        // Verificar estado de pago (después de regresar de NOWPayments)
+        verificarEstadoPago();
+
     } catch (error) {
         console.error('❌ Error en cargarPerfil:', error);
         showToast('❌ Error al cargar perfil', 'error');
@@ -77,9 +80,32 @@ async function cargarMembresia() {
             p_usuario_id: sessionUser.id
         });
 
-        if (error) throw error;
+        if (error) {
+            console.warn('⚠️ RPC obtener_membresia_usuario no disponible:', error);
+            // Mostrar estado por defecto
+            container.innerHTML = `
+                <div style="display:flex;flex-direction:column;gap:12px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+                        <div>
+                            <span style="font-size:0.8rem;color:var(--text-secondary);">Plan actual:</span>
+                            <span style="font-weight:700;color:var(--text-primary);">Gratis</span>
+                        </div>
+                        <span style="font-size:0.6rem;color:var(--text-muted);">1 GB · 90 días</span>
+                    </div>
+                    <div style="background:rgba(212,175,55,0.05);border:1px solid var(--gold);border-radius:12px;padding:14px;text-align:center;">
+                        <div style="font-family:'Orbitron',monospace;font-size:1.2rem;color:var(--gold);font-weight:700;">✦ Sariel's Pro</div>
+                        <div style="font-size:0.8rem;color:var(--text-secondary);margin:4px 0;">$20 MXN / 30 días</div>
+                        <div style="font-size:0.6rem;color:var(--text-muted);margin-bottom:10px;">Conservación ampliada · 5 GB</div>
+                        <button class="btn btn-gold" onclick="contratarPro()" style="width:100%;justify-content:center;padding:10px;">
+                            🚀 Contratar Pro por $20 MXN
+                        </button>
+                    </div>
+                </div>
+            `;
+            return;
+        }
 
-        if (!data || data.plan_nombre === 'Gratis') {
+        if (!data || data.plan_nombre === 'Gratis' || data.plan_nombre === null) {
             // MOSTRAR PLAN GRATIS
             container.innerHTML = `
                 <div style="display:flex;flex-direction:column;gap:12px;">
@@ -103,7 +129,7 @@ async function cargarMembresia() {
             return;
         }
 
-        const esActiva = data.activa;
+        const esActiva = data.activa || false;
         const diasRestantes = data.dias_restantes || 0;
         const venceAt = data.vence_at ? new Date(data.vence_at).toLocaleDateString() : '--';
 
@@ -113,7 +139,7 @@ async function cargarMembresia() {
                 <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
                     <div>
                         <span style="font-size:0.8rem;color:var(--text-secondary);">Plan actual:</span>
-                        <span style="font-weight:700;color:var(--gold);">✦ ${data.plan_nombre}</span>
+                        <span style="font-weight:700;color:var(--gold);">✦ ${data.plan_nombre || 'Pro'}</span>
                     </div>
                     <span style="font-size:0.6rem;color:${esActiva ? 'var(--success)' : 'var(--text-muted)'};">
                         ${esActiva ? '✅ Activa' : '⏳ Inactiva'}
@@ -479,7 +505,6 @@ function actualizarUI(data) {
 // ================================================================
 
 window.toggleReaccion = function(publicacionId, event) {
-    // Placeholder - implementar después
     showToast('❤️ Reacción agregada', 'success');
 };
 
@@ -497,7 +522,6 @@ window.abrirModalComentarios = function(publicacionId) {
 
 document.addEventListener('DOMContentLoaded', () => {
     cargarPerfil();
-    verificarEstadoPago();
 });
 
 // ================================================================
