@@ -1,6 +1,6 @@
 // ================================================================
 // PERFIL.JS - SARIEL'S ECOSYSTEM
-// VERSIÓN CORREGIDA - CON REACCIONES Y COMENTARIOS FUNCIONALES
+// VERSIÓN CORREGIDA - PUBLICAR TEXTO Y EMOJIS FUNCIONALES
 // ================================================================
 
 // ===== VARIABLES GLOBALES =====
@@ -157,7 +157,7 @@ function actualizarUI(data) {
 }
 
 // ================================================================
-// 📋 CARGAR PUBLICACIONES CON REACCIONES
+// 📋 CARGAR PUBLICACIONES
 // ================================================================
 
 async function cargarPublicaciones() {
@@ -336,23 +336,32 @@ async function seleccionarReaccion(publicacionId, tipo, event) {
 
     try {
         const key = publicacionId + '_' + sessionUser.id;
-        const reaccionActual = localStorage.getItem('reaccion_' + key);
 
-        if (reaccionActual === tipo) {
+        // Verificar si ya existe reacción
+        const { data: existing } = await window.supabase
+            .from('publicaciones_reacciones')
+            .select('tipo')
+            .eq('publicacion_id', publicacionId)
+            .eq('usuario_id', sessionUser.id)
+            .maybeSingle();
+
+        if (existing && existing.tipo === tipo) {
+            // Quitar reacción
             await window.supabase
                 .from('publicaciones_reacciones')
                 .delete()
                 .eq('publicacion_id', publicacionId)
                 .eq('usuario_id', sessionUser.id);
-            localStorage.removeItem('reaccion_' + key);
         } else {
-            if (reaccionActual) {
+            // Eliminar reacción anterior si existe
+            if (existing) {
                 await window.supabase
                     .from('publicaciones_reacciones')
                     .delete()
                     .eq('publicacion_id', publicacionId)
                     .eq('usuario_id', sessionUser.id);
             }
+            // Insertar nueva reacción
             await window.supabase
                 .from('publicaciones_reacciones')
                 .insert({
@@ -360,7 +369,6 @@ async function seleccionarReaccion(publicacionId, tipo, event) {
                     usuario_id: sessionUser.id,
                     tipo: tipo
                 });
-            localStorage.setItem('reaccion_' + key, tipo);
         }
 
         await cargarPublicaciones();
@@ -372,7 +380,7 @@ async function seleccionarReaccion(publicacionId, tipo, event) {
 }
 
 // ================================================================
-// 💬 COMENTARIOS - CORREGIDO
+// 💬 COMENTARIOS
 // ================================================================
 
 async function abrirModalComentarios(publicacionId) {
@@ -381,7 +389,6 @@ async function abrirModalComentarios(publicacionId) {
         return;
     }
 
-    // Crear modal si no existe
     let modal = document.getElementById('modalComentarios');
     if (!modal) {
         modal = document.createElement('div');
@@ -406,7 +413,6 @@ async function abrirModalComentarios(publicacionId) {
     modal.classList.add('active');
     modal.dataset.publicacionId = publicacionId;
 
-    // Cargar comentarios
     await cargarComentarios(publicacionId);
 }
 
@@ -495,6 +501,11 @@ async function enviarComentario() {
         console.error('Error enviando comentario:', error);
         showToast('❌ Error al enviar comentario: ' + error.message, 'error');
     }
+}
+
+function cerrarModalComentarios() {
+    const modal = document.getElementById('modalComentarios');
+    if (modal) modal.classList.remove('active');
 }
 
 // ================================================================
@@ -1344,6 +1355,20 @@ function cerrarSesion() {
 }
 
 // ================================================================
+// INICIALIZACIÓN
+// ================================================================
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('✅ perfil.js cargado (versión corregida)');
+    if (typeof window.supabase !== 'undefined') {
+        cargarPerfil();
+    } else {
+        console.error('❌ Supabase no está disponible');
+        showToast('❌ Error: Supabase no está disponible', 'error');
+    }
+});
+
+// ================================================================
 // EXPOSICIÓN GLOBAL
 // ================================================================
 
@@ -1391,21 +1416,8 @@ window.seleccionarReaccion = seleccionarReaccion;
 window.abrirModalComentarios = abrirModalComentarios;
 window.cargarComentarios = cargarComentarios;
 window.enviarComentario = enviarComentario;
+window.cerrarModalComentarios = cerrarModalComentarios;
 window.eliminarPublicacion = eliminarPublicacion;
 window.showToast = showToast;
 
 console.log('✅ Todas las funciones expuestas globalmente');
-
-// ================================================================
-// INICIALIZACIÓN
-// ================================================================
-
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('✅ perfil.js cargado');
-    if (typeof window.supabase !== 'undefined') {
-        cargarPerfil();
-    } else {
-        console.error('❌ Supabase no está disponible');
-        showToast('❌ Error: Supabase no está disponible', 'error');
-    }
-});
