@@ -1,6 +1,6 @@
 // ================================================================
 // PERFIL.JS - SARIEL'S ECOSYSTEM
-// VERSIÓN CORREGIDA - PUBLICAR TEXTO Y EMOJIS FUNCIONALES
+// VERSIÓN CORREGIDA - EMOJIS Y COMENTARIOS FUNCIONALES
 // ================================================================
 
 // ===== VARIABLES GLOBALES =====
@@ -79,7 +79,7 @@ async function cargarPerfil() {
 }
 
 // ================================================================
-// 😊 CARGAR EMOJIS
+// 😊 CARGAR EMOJIS DESDE SUPABASE
 // ================================================================
 
 async function cargarEmojis() {
@@ -157,7 +157,7 @@ function actualizarUI(data) {
 }
 
 // ================================================================
-// 📋 CARGAR PUBLICACIONES
+// 📋 CARGAR PUBLICACIONES CON REACCIONES Y COMENTARIOS
 // ================================================================
 
 async function cargarPublicaciones() {
@@ -335,9 +335,6 @@ async function seleccionarReaccion(publicacionId, tipo, event) {
     }
 
     try {
-        const key = publicacionId + '_' + sessionUser.id;
-
-        // Verificar si ya existe reacción
         const { data: existing } = await window.supabase
             .from('publicaciones_reacciones')
             .select('tipo')
@@ -346,14 +343,12 @@ async function seleccionarReaccion(publicacionId, tipo, event) {
             .maybeSingle();
 
         if (existing && existing.tipo === tipo) {
-            // Quitar reacción
             await window.supabase
                 .from('publicaciones_reacciones')
                 .delete()
                 .eq('publicacion_id', publicacionId)
                 .eq('usuario_id', sessionUser.id);
         } else {
-            // Eliminar reacción anterior si existe
             if (existing) {
                 await window.supabase
                     .from('publicaciones_reacciones')
@@ -361,7 +356,6 @@ async function seleccionarReaccion(publicacionId, tipo, event) {
                     .eq('publicacion_id', publicacionId)
                     .eq('usuario_id', sessionUser.id);
             }
-            // Insertar nueva reacción
             await window.supabase
                 .from('publicaciones_reacciones')
                 .insert({
