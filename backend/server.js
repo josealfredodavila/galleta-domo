@@ -179,7 +179,6 @@ app.use(express.urlencoded({
    ARCHIVOS ESTÁTICOS - ✅ CORREGIDO PARA RAILWAY
    ================================================================ */
 
-// ✅ CORREGIDO: Railway tiene los archivos en la raíz, no en backend/
 const publicPath = path.join(__dirname, 'public');
 
 if (fs.existsSync(publicPath)) {
