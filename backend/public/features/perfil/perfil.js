@@ -1,6 +1,6 @@
 // ================================================================
 // PERFIL.JS - SARIEL'S ECOSYSTEM
-// VERSIÓN CORREGIDA - COMPATIBLE CON SUPABASE REAL
+// VERSIÓN DEFINITIVA - SIN MÓDULOS (SCRIPT NORMAL)
 // ================================================================
 
 // ===== VARIABLES GLOBALES =====
@@ -35,7 +35,6 @@ async function cargarPerfil() {
     try {
         console.log('🔄 cargarPerfil() iniciado...');
 
-        // 1. Obtener usuario autenticado
         const { data: { user }, error: userError } = await window.supabase.auth.getUser();
 
         if (userError || !user) {
@@ -49,7 +48,6 @@ async function cargarPerfil() {
         sessionUser = user;
         console.log('🔐 Usuario autenticado:', sessionUser.id);
 
-        // 2. Cargar datos del usuario
         const { data: userData, error: userDataError } = await window.supabase
             .from('usuarios')
             .select('*')
@@ -66,13 +64,8 @@ async function cargarPerfil() {
         console.log('✅ Datos de usuario cargados');
         actualizarUI(perfilUsuario);
 
-        // 3. Cargar publicaciones
         await cargarPublicaciones();
-
-        // 4. Cargar membresía (con manejo de error)
         await cargarMembresia();
-
-        // 5. Verificar estado de pago
         verificarEstadoPago();
 
         showToast('✅ ¡Bienvenido ' + (perfilUsuario.nombre || 'Usuario') + '!', 'success');
@@ -216,11 +209,11 @@ async function cargarPublicaciones() {
                     ${contenido}
                     ${mediaHtml}
                     <div class="pub-actions">
-                        <button class="reaccion-btn" onclick="window.toggleReaccion('${p.id}', event)">
+                        <button class="reaccion-btn" onclick="toggleReaccion('${p.id}', event)">
                             <span class="reaccion-emoji">❤️</span>
                             <span class="count">${p.likes || 0}</span>
                         </button>
-                        <span class="comment-btn" onclick="window.abrirModalComentarios('${p.id}')">
+                        <span class="comment-btn" onclick="abrirModalComentarios('${p.id}')">
                             💬 <span>${p.comentarios || 0}</span>
                         </span>
                     </div>
@@ -244,7 +237,7 @@ async function cargarPublicaciones() {
 }
 
 // ================================================================
-// ✦ CARGAR MEMBRESÍA - CORREGIDO
+// ✦ CARGAR MEMBRESÍA
 // ================================================================
 
 async function cargarMembresia() {
@@ -254,7 +247,6 @@ async function cargarMembresia() {
         return;
     }
 
-    // Mostrar estado "cargando"
     container.innerHTML = `
         <div class="empty-state">
             <span class="icon">⏳</span>
@@ -275,8 +267,6 @@ async function cargarMembresia() {
     try {
         console.log('✦ Cargando membresía para:', sessionUser.id);
 
-        // ✅ RPC real: obtener_membresia_usuario(p_usuario_id uuid)
-        // Devuelve TABLE, Supabase JS entrega { data, error } con data = ARRAY
         const { data, error } = await window.supabase.rpc(
             'obtener_membresia_usuario',
             { p_usuario_id: sessionUser.id }
@@ -289,7 +279,6 @@ async function cargarMembresia() {
 
         console.log('✦ Datos RPC membresía (raw):', data);
 
-        // ✅ CORRECCIÓN: data es un ARRAY, usar data[0]
         if (!data || data.length === 0) {
             console.warn('⚠️ No se recibieron datos de membresía');
             mostrarMembresiaGratis(container);
@@ -315,7 +304,6 @@ async function cargarMembresia() {
             return;
         }
 
-        // plan_id desconocido
         console.warn('⚠️ plan_id desconocido:', planId);
         container.innerHTML = `
             <div style="text-align:center;padding:16px;color:var(--text-muted);">
@@ -323,7 +311,7 @@ async function cargarMembresia() {
                 <br>
                 <span style="font-size:0.6rem;">plan_id: ${planId}</span>
                 <br>
-                <button class="btn btn-outline btn-sm" onclick="window.cargarMembresia()" style="margin-top:8px;">
+                <button class="btn btn-outline btn-sm" onclick="cargarMembresia()" style="margin-top:8px;">
                     🔄 Reintentar
                 </button>
             </div>
@@ -335,7 +323,7 @@ async function cargarMembresia() {
             <div style="text-align:center;padding:16px;color:var(--text-muted);">
                 ⚠️ No se pudo cargar la membresía.
                 <br>
-                <button class="btn btn-outline btn-sm" onclick="window.cargarMembresia()" style="margin-top:8px;">
+                <button class="btn btn-outline btn-sm" onclick="cargarMembresia()" style="margin-top:8px;">
                     🔄 Reintentar
                 </button>
                 <br>
@@ -345,8 +333,6 @@ async function cargarMembresia() {
         showToast('❌ Error al cargar membresía', 'error');
     }
 }
-
-// ===== FUNCIONES AUXILIARES DE MEMBRESÍA =====
 
 function mostrarMembresiaGratis(container) {
     container.innerHTML = `
@@ -362,7 +348,7 @@ function mostrarMembresiaGratis(container) {
                 <div style="font-family:'Orbitron',monospace;font-size:1.2rem;color:var(--gold);font-weight:700;">✦ Sariel's Pro</div>
                 <div style="font-size:0.8rem;color:var(--text-secondary);margin:4px 0;">$20 MXN / 30 días</div>
                 <div style="font-size:0.6rem;color:var(--text-muted);margin-bottom:10px;">Conservación ampliada · 5 GB</div>
-                <button class="btn btn-gold" onclick="window.contratarPro()" style="width:100%;justify-content:center;padding:10px;">
+                <button class="btn btn-gold" onclick="contratarPro()" style="width:100%;justify-content:center;padding:10px;">
                     🚀 Contratar Pro por $20 MXN
                 </button>
             </div>
@@ -399,7 +385,7 @@ function mostrarMembresiaPro(container, membresia, esActiva) {
                         <div style="font-size:0.5rem;color:var(--text-muted);">ALMACENAMIENTO</div>
                     </div>
                 </div>
-                <button class="btn btn-outline" onclick="window.renovarPro()" style="width:100%;justify-content:center;padding:10px;">
+                <button class="btn btn-outline" onclick="renovarPro()" style="width:100%;justify-content:center;padding:10px;">
                     🔄 Renovar Pro por $20 MXN
                 </button>
             </div>
@@ -418,7 +404,7 @@ function mostrarMembresiaPro(container, membresia, esActiva) {
                     <div style="font-family:'Orbitron',monospace;font-size:1.2rem;color:var(--gold);font-weight:700;">✦ Sariel's Pro</div>
                     <div style="font-size:0.8rem;color:var(--text-secondary);margin:4px 0;">$20 MXN / 30 días</div>
                     <div style="font-size:0.6rem;color:var(--text-muted);margin-bottom:10px;">Conservación ampliada · 5 GB</div>
-                    <button class="btn btn-gold" onclick="window.contratarPro()" style="width:100%;justify-content:center;padding:10px;">
+                    <button class="btn btn-gold" onclick="contratarPro()" style="width:100%;justify-content:center;padding:10px;">
                         🚀 Contratar Pro por $20 MXN
                     </button>
                 </div>
@@ -431,25 +417,25 @@ function mostrarMembresiaPro(container, membresia, esActiva) {
 // CONTRATAR PRO
 // ================================================================
 
-window.contratarPro = async function() {
+function contratarPro() {
     if (!sessionUser) {
         showToast('⚠️ Inicia sesión para contratar Pro', 'error');
         return;
     }
     mostrarModalPrivacidad('contratar');
-};
+}
 
 // ================================================================
 // RENOVAR PRO
 // ================================================================
 
-window.renovarPro = async function() {
+function renovarPro() {
     if (!sessionUser) {
         showToast('⚠️ Inicia sesión para renovar Pro', 'error');
         return;
     }
     mostrarModalPrivacidad('renovar');
-};
+}
 
 // ================================================================
 // MODAL DE PRIVACIDAD
@@ -463,7 +449,7 @@ function mostrarModalPrivacidad(accion) {
         modal.className = 'modal-overlay';
         modal.innerHTML = `
             <div class="modal-content" style="max-width:520px;text-align:left;">
-                <button class="close-btn" onclick="window.cerrarModalPrivacidad()">✕</button>
+                <button class="close-btn" onclick="cerrarModalPrivacidad()">✕</button>
                 <h2 style="text-align:center;color:var(--gold);">📋 AVISO DE PRIVACIDAD</h2>
                 <div style="font-size:0.8rem;color:var(--text-secondary);margin:12px 0;line-height:1.6;max-height:200px;overflow-y:auto;padding:8px 4px;">
                     <p style="margin-bottom:10px;">Al contratar Sariel's Pro, tus datos de cuenta, perfil y contenido podrán ser tratados para prestar el servicio, conservar tu contenido conforme al plan contratado, procesar pagos, mantener la seguridad y cumplir obligaciones legales.</p>
@@ -479,7 +465,7 @@ function mostrarModalPrivacidad(accion) {
                         He leído y acepto el aviso de privacidad
                     </label>
                 </div>
-                <button id="btnContinuarPago" class="btn btn-gold" style="width:100%;justify-content:center;padding:12px;opacity:0.5;pointer-events:none;" onclick="window.procesarContratacion()">
+                <button id="btnContinuarPago" class="btn btn-gold" style="width:100%;justify-content:center;padding:12px;opacity:0.5;pointer-events:none;" onclick="procesarContratacion()">
                     ${accion === 'renovar' ? '🔄 Renovar Pro' : '🚀 Continuar al pago'}
                 </button>
                 <div id="privacidadStatus" style="margin-top:8px;font-size:0.7rem;color:var(--text-muted);text-align:center;"></div>
@@ -503,7 +489,7 @@ function mostrarModalPrivacidad(accion) {
     modal.classList.add('active');
 }
 
-window.cerrarModalPrivacidad = function() {
+function cerrarModalPrivacidad() {
     const modal = document.getElementById('modalPrivacidad');
     if (modal) modal.classList.remove('active');
     document.getElementById('aceptaPrivacidad').checked = false;
@@ -511,9 +497,9 @@ window.cerrarModalPrivacidad = function() {
     btn.style.opacity = '0.5';
     btn.style.pointerEvents = 'none';
     document.getElementById('privacidadStatus').textContent = '';
-};
+}
 
-window.procesarContratacion = function() {
+function procesarContratacion() {
     const modal = document.getElementById('modalPrivacidad');
     const accion = modal.dataset.accion || 'contratar';
     const acepta = document.getElementById('aceptaPrivacidad').checked;
@@ -525,14 +511,14 @@ window.procesarContratacion = function() {
         return;
     }
 
-    window.cerrarModalPrivacidad();
+    cerrarModalPrivacidad();
 
     if (accion === 'renovar') {
         ejecutarRenovacion();
     } else {
         ejecutarContratacion();
     }
-};
+}
 
 // ================================================================
 // EJECUTAR CONTRATACIÓN
@@ -628,7 +614,7 @@ function verificarEstadoPago() {
     if (urlParams.get('payment') === 'success') {
         showToast('⏳ Procesando pago...', '');
         setTimeout(() => {
-            window.cargarMembresia();
+            cargarMembresia();
             showToast('✅ Pago procesado correctamente', 'success');
             window.history.replaceState({}, document.title, window.location.pathname);
         }, 2000);
@@ -659,41 +645,41 @@ async function cargarEmojis() {
 // TOGGLE REACCION (PLACEHOLDER)
 // ================================================================
 
-window.toggleReaccion = function(publicacionId, event) {
+function toggleReaccion(publicacionId, event) {
     showToast('❤️ Reacción agregada', 'success');
-};
+}
 
 // ================================================================
 // ABRIR MODAL COMENTARIOS (PLACEHOLDER)
 // ================================================================
 
-window.abrirModalComentarios = function(publicacionId) {
+function abrirModalComentarios(publicacionId) {
     showToast('💬 Comentarios próximamente', '');
-};
+}
 
 // ================================================================
 // ================================================================
-// FUNCIONES EXPUESTAS PARA ONCLICK DEL HTML
+// FUNCIONES PARA ONCLICK DEL HTML - TODAS GLOBALES
 // ================================================================
 // ================================================================
 
 // ===== TABS =====
-window.cambiarTab = function(tab) {
+function cambiarTab(tab) {
     document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
     const tabContent = document.getElementById('tab-' + tab);
     if (tabContent) tabContent.classList.add('active');
     const tabBtn = document.querySelector('.tab-btn[onclick*="' + tab + '"]');
     if (tabBtn) tabBtn.classList.add('active');
-};
+}
 
 // ===== PERFIL =====
-window.editarPerfil = function() {
-    window.cambiarTab('config');
+function editarPerfil() {
+    cambiarTab('config');
     showToast('✏️ Edita tu perfil en la pestaña Ajustes', '');
-};
+}
 
-window.compartirPerfil = function() {
+function compartirPerfil() {
     const url = window.location.href;
     if (navigator.share) {
         navigator.share({ title: 'Mi perfil en Sariel\'s', text: '◈ Mira mi perfil en Sariel\'s Ecosystem', url: url })
@@ -702,9 +688,9 @@ window.compartirPerfil = function() {
         navigator.clipboard.writeText(url).then(() => showToast('📋 Enlace copiado', 'success'))
             .catch(() => showToast('📋 Copia el enlace: ' + url, ''));
     }
-};
+}
 
-window.generarQRPerfil = function() {
+function generarQRPerfil() {
     const modal = document.getElementById('qrPerfilModal');
     if (!modal) { showToast('⚠️ Modal de QR no disponible', 'error'); return; }
     const url = window.location.href;
@@ -713,14 +699,14 @@ window.generarQRPerfil = function() {
         qrImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(url);
     }
     modal.classList.add('active');
-};
+}
 
-window.abrirSelectorArchivo = function() {
+function abrirSelectorArchivo() {
     const input = document.getElementById('fileInput');
     if (input) input.click();
-};
+}
 
-window.subirFoto = async function(event) {
+async function subirFoto(event) {
     const file = event.target.files[0];
     if (!file) { showToast('⚠️ No se seleccionó ningún archivo', 'warning'); return; }
     if (!file.type.startsWith('image/')) { showToast('⚠️ Solo se permiten imágenes', 'error'); return; }
@@ -744,14 +730,14 @@ window.subirFoto = async function(event) {
         const avatarEl = document.getElementById('perfilAvatar');
         if (avatarEl) avatarEl.innerHTML = `<img src="${avatarUrl}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;"/>`;
         showToast('✅ Foto de perfil actualizada', 'success');
-        await window.cargarPerfil();
+        await cargarPerfil();
     } catch (error) {
         console.error('Error subiendo foto:', error);
         showToast('❌ Error al subir foto: ' + error.message, 'error');
     }
-};
+}
 
-window.guardarPerfil = async function() {
+async function guardarPerfil() {
     const nombre = document.getElementById('editNombre')?.value?.trim();
     const handle = document.getElementById('editHandle')?.value?.trim().replace('@', '');
     const bio = document.getElementById('editBio')?.value?.trim();
@@ -768,34 +754,34 @@ window.guardarPerfil = async function() {
         });
         if (result.error) throw result.error;
         showToast('✅ Perfil actualizado correctamente', 'success');
-        await window.cargarPerfil();
+        await cargarPerfil();
     } catch (error) {
         console.error('Error guardando perfil:', error);
         showToast('❌ Error al guardar perfil: ' + error.message, 'error');
     }
-};
+}
 
 // ===== ESTADO =====
-window.cambiarEstado = async function(activo) {
+async function cambiarEstado(activo) {
     if (!sessionUser) { showToast('⚠️ Inicia sesión', 'error'); return; }
     showToast('⏳ Actualizando estado...', '');
     try {
         const result = await window.supabase.rpc('cambiar_estado', { p_online: activo });
         if (result.error) throw result.error;
         showToast(activo ? '✅ Estado: Activo' : '⭕ Estado: Inactivo', 'success');
-        await window.cargarPerfil();
+        await cargarPerfil();
     } catch (error) {
         console.error('Error cambiando estado:', error);
         showToast('❌ Error al cambiar estado', 'error');
     }
-};
+}
 
-window.cambiarConexion = function(tipo) {
+function cambiarConexion(tipo) {
     showToast(tipo === 'wifi' ? '🛜 Conectado a WiFi' : '📶 Conectado a datos móviles', 'success');
-};
+}
 
 // ===== TOKENS =====
-window.comprarDomo = async function(cantidad) {
+async function comprarDomo(cantidad) {
     const sessionResult = await window.supabase.auth.getSession();
     if (!sessionResult.data.session) { showToast('⚠️ Inicia sesión para comprar', 'error'); return; }
     showToast('⏳ Procesando compra de Domo...', '');
@@ -803,14 +789,14 @@ window.comprarDomo = async function(cantidad) {
         const result = await window.supabase.rpc('comprar_domo', { p_cantidad: cantidad || 1 });
         if (result.error) throw result.error;
         showToast('✅ Domo registrado correctamente', 'success');
-        await window.cargarPerfil();
+        await cargarPerfil();
     } catch (error) {
         console.error('Error comprando Domo:', error);
         showToast('❌ Error al comprar Domo: ' + error.message, 'error');
     }
-};
+}
 
-window.canjearNFT = async function() {
+async function canjearNFT() {
     const sessionResult = await window.supabase.auth.getSession();
     if (!sessionResult.data.session) { showToast('⚠️ Inicia sesión para canjear NFT', 'error'); return; }
     showToast('⏳ Canjeando NFT...', '');
@@ -818,31 +804,31 @@ window.canjearNFT = async function() {
         const result = await window.supabase.rpc('canjear_nft');
         if (result.error) throw result.error;
         showToast('🎉 NFT canjeado exitosamente', 'success');
-        await window.cargarPerfil();
+        await cargarPerfil();
     } catch (error) {
         console.error('Error canjeando NFT:', error);
         showToast('❌ Error al canjear NFT: ' + error.message, 'error');
     }
-};
+}
 
 // ===== CRIPTO =====
-window.comprarConCripto = function() {
+function comprarConCripto() {
     const modal = document.getElementById('cryptoPaymentModal');
     if (modal) modal.classList.add('active');
     showToast('💳 Abriendo pago con cripto', '');
-};
+}
 
-window.verificarPagoCrypto = function() {
+function verificarPagoCrypto() {
     showToast('🔍 Verificando pago...', '');
     setTimeout(() => showToast('✅ Pago verificado correctamente', 'success'), 2000);
-};
+}
 
-window.copiarDireccion = function() {
+function copiarDireccion() {
     showToast('📋 Dirección copiada al portapapeles', 'success');
-};
+}
 
 // ===== WALLET =====
-window.conectarWallet = async function() {
+async function conectarWallet() {
     if (typeof window.ethereum === 'undefined') {
         showToast('⚠️ Instala MetaMask para continuar', 'warning');
         if (confirm('¿Quieres ir a descargar MetaMask?')) {
@@ -872,9 +858,9 @@ window.conectarWallet = async function() {
         console.error('Error conectando wallet:', error);
         showToast('❌ Error al conectar wallet: ' + error.message, 'error');
     }
-};
+}
 
-window.desconectarWallet = async function() {
+async function desconectarWallet() {
     if (!confirm('¿Seguro que quieres desconectar tu wallet?')) return;
     showToast('⏳ Desconectando wallet...', '');
     try {
@@ -890,10 +876,10 @@ window.desconectarWallet = async function() {
         console.error('Error desconectando wallet:', error);
         showToast('❌ Error al desconectar wallet', 'error');
     }
-};
+}
 
 // ===== eSIM =====
-window.comprarESIM = async function(cantidad) {
+async function comprarESIM(cantidad) {
     const sessionResult = await window.supabase.auth.getSession();
     if (!sessionResult.data.session) { showToast('⚠️ Inicia sesión para adquirir eSIM', 'error'); return; }
     showToast('⏳ Procesando adquisición de eSIM...', '');
@@ -910,7 +896,7 @@ window.comprarESIM = async function(cantidad) {
         if (result.error) throw result.error;
         if (result.data && result.data.success) {
             showToast('✅ Orden eSIM creada correctamente', 'success');
-            await window.cargarPerfil();
+            await cargarPerfil();
         } else {
             showToast('❌ Error al crear orden eSIM', 'error');
         }
@@ -918,9 +904,9 @@ window.comprarESIM = async function(cantidad) {
         console.error('Error comprando eSIM:', error);
         showToast('❌ Error al adquirir eSIM: ' + error.message, 'error');
     }
-};
+}
 
-window.activarESIM = async function() {
+async function activarESIM() {
     showToast('⏳ Activando eSIM...', '');
     const sessionResult = await window.supabase.auth.getSession();
     if (!sessionResult.data.session) { showToast('⚠️ Inicia sesión para activar eSIM', 'error'); return; }
@@ -928,17 +914,16 @@ window.activarESIM = async function() {
         const userResult = await window.supabase.from('usuarios').select('esim_iccid').eq('id', sessionResult.data.session.user.id).single();
         if (userResult.error) throw userResult.error;
         if (!userResult.data || !userResult.data.esim_iccid) { showToast('⚠️ No tienes una eSIM para activar', 'warning'); return; }
-        // En producción real, aquí iría llamada al proveedor
         await window.supabase.from('usuarios').update({ esim_status: 'activa' }).eq('id', sessionResult.data.session.user.id);
         showToast('✅ eSIM activada', 'success');
-        await window.cargarPerfil();
+        await cargarPerfil();
     } catch (error) {
         console.error('Error activando eSIM:', error);
         showToast('❌ Error al activar eSIM', 'error');
     }
-};
+}
 
-window.desactivarESIM = async function() {
+async function desactivarESIM() {
     if (!confirm('¿Seguro que quieres desactivar tu eSIM?')) return;
     showToast('⏳ Desactivando eSIM...', '');
     const sessionResult = await window.supabase.auth.getSession();
@@ -946,36 +931,36 @@ window.desactivarESIM = async function() {
     try {
         await window.supabase.from('usuarios').update({ esim_status: 'inactiva', esim_iccid: null }).eq('id', sessionResult.data.session.user.id);
         showToast('✅ eSIM desactivada', 'success');
-        await window.cargarPerfil();
+        await cargarPerfil();
     } catch (error) {
         console.error('Error desactivando eSIM:', error);
         showToast('❌ Error al desactivar eSIM', 'error');
     }
-};
+}
 
-window.generarQRESIM = function() {
+function generarQRESIM() {
     showToast('📲 Escanea el QR desde la pestaña eSIM', '');
-    window.cambiarTab('esim');
+    cambiarTab('esim');
     setTimeout(() => {
         document.getElementById('tab-esim')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 300);
-};
+}
 
-window.sincronizarESIM = async function() {
+async function sincronizarESIM() {
     showToast('⏳ Sincronizando eSIM...', '');
     const sessionResult = await window.supabase.auth.getSession();
     if (!sessionResult.data.session) { showToast('⚠️ Inicia sesión para sincronizar eSIM', 'error'); return; }
     try {
         showToast('✅ eSIM sincronizada', 'success');
-        await window.cargarPerfil();
+        await cargarPerfil();
     } catch (error) {
         console.error('Error sincronizando eSIM:', error);
         showToast('⚠️ Error al sincronizar eSIM', 'error');
     }
-};
+}
 
 // ===== QR =====
-window.escanearQR = async function() {
+async function escanearQR() {
     const input = document.getElementById('qrInput');
     if (!input) return;
     const codigo = input.value.trim();
@@ -989,7 +974,7 @@ window.escanearQR = async function() {
         if (result.data && result.data.ok) {
             showToast('🎉 QR escaneado correctamente! +1 E.S.TOK', 'success');
             input.value = '';
-            await window.cargarPerfil();
+            await cargarPerfil();
         } else {
             showToast('❌ QR inválido o ya utilizado', 'error');
         }
@@ -997,33 +982,32 @@ window.escanearQR = async function() {
         console.error('Error escaneando QR:', error);
         showToast('❌ Error al escanear QR: ' + error.message, 'error');
     }
-};
+}
 
-window.abrirCamaraQR = function() {
+function abrirCamaraQR() {
     showToast('📷 Abriendo cámara...', '');
-    // Placeholder - implementación real en perfil.html
-};
+}
 
-window.cerrarCamaraQR = function() {
+function cerrarCamaraQR() {
     showToast('📷 Cámara cerrada', '');
-};
+}
 
 // ===== MODALES =====
-window.cerrarModal = function(modalId) {
+function cerrarModal(modalId) {
     const modal = document.getElementById(modalId);
     if (modal) modal.classList.remove('active');
-};
+}
 
-window.abrirModalNft = function(nftId) {
+function abrirModalNft(nftId) {
     const modal = document.getElementById('nftModal');
     if (modal) {
         document.getElementById('nftModalTitle').textContent = 'NFT #' + nftId;
         modal.classList.add('active');
     }
-};
+}
 
 // ===== PUBLICACIONES =====
-window.abrirModalPublicacion = function() {
+function abrirModalPublicacion() {
     const modal = document.getElementById('publicacionModal');
     if (!modal) return;
     document.getElementById('pubTexto').value = '';
@@ -1048,9 +1032,9 @@ window.abrirModalPublicacion = function() {
         };
         reader.readAsDataURL(file);
     };
-};
+}
 
-window.publicarContenido = async function() {
+async function publicarContenido() {
     const texto = document.getElementById('pubTexto').value.trim();
     const fileInput = document.getElementById('pubArchivo');
     const btn = document.getElementById('btnPublicar');
@@ -1098,8 +1082,8 @@ window.publicarContenido = async function() {
 
         status.textContent = '✅ Publicación creada!';
         showToast('📸 Publicación subida correctamente', 'success');
-        window.cerrarModal('publicacionModal');
-        await window.cargarPublicaciones();
+        cerrarModal('publicacionModal');
+        await cargarPublicaciones();
 
     } catch (error) {
         console.error('Error publicando:', error);
@@ -1109,39 +1093,111 @@ window.publicarContenido = async function() {
         btn.disabled = false;
         btn.textContent = '🚀 Publicar';
     }
-};
+}
 
-window.toggleEmojiPickerPerfil = function() {
+function toggleEmojiPickerPerfil() {
     const picker = document.getElementById('emojiPickerPerfil');
     if (!picker) return;
     picker.style.display = picker.style.display === 'block' ? 'none' : 'block';
-};
+}
+
+// ===== COMENTARIOS =====
+function enviarComentario() {
+    showToast('💬 Comentario enviado', 'success');
+}
+
+function cerrarModalComentarios() {
+    const modal = document.getElementById('modalComentarios');
+    if (modal) modal.classList.remove('active');
+}
 
 // ===== SESIÓN =====
-window.cerrarSesion = function() {
+function cerrarSesion() {
     if (confirm('¿Seguro que quieres cerrar sesión?')) {
         showToast('👋 Sesión cerrada', 'success');
         setTimeout(() => { window.location.href = '/'; }, 1000);
     }
-};
+}
 
 // ================================================================
 // INICIALIZACIÓN - AUTO-EJECUTAR
 // ================================================================
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('✅ perfil.js cargado (versión corregida)');
+    console.log('✅ perfil.js cargado (versión definitiva - sin módulos)');
     console.log('🔍 Supabase disponible:', typeof window.supabase !== 'undefined');
-    cargarPerfil();
+    
+    if (typeof window.supabase !== 'undefined') {
+        cargarPerfil();
+    } else {
+        console.error('❌ Supabase no está disponible');
+        showToast('❌ Error: Supabase no está disponible', 'error');
+    }
 });
 
 // ================================================================
-// EXPOSICIÓN GLOBAL - TODAS LAS FUNCIONES USADAS EN HTML
+// EXPOSICIÓN GLOBAL - PARA QUE EL HTML LOS ENCUENTRE
 // ================================================================
+
+// Todas las funciones ya están en el ámbito global (no son módulo)
+// Pero por si acaso, las asignamos explícitamente a window
 
 window.cargarPerfil = cargarPerfil;
 window.cargarPublicaciones = cargarPublicaciones;
 window.cargarMembresia = cargarMembresia;
 window.cargarEmojis = cargarEmojis;
+
+window.cambiarTab = cambiarTab;
+window.editarPerfil = editarPerfil;
+window.compartirPerfil = compartirPerfil;
+window.generarQRPerfil = generarQRPerfil;
+window.abrirSelectorArchivo = abrirSelectorArchivo;
+window.subirFoto = subirFoto;
+window.guardarPerfil = guardarPerfil;
+
+window.cambiarEstado = cambiarEstado;
+window.cambiarConexion = cambiarConexion;
+
+window.comprarDomo = comprarDomo;
+window.canjearNFT = canjearNFT;
+
+window.comprarConCripto = comprarConCripto;
+window.verificarPagoCrypto = verificarPagoCrypto;
+window.copiarDireccion = copiarDireccion;
+
+window.conectarWallet = conectarWallet;
+window.desconectarWallet = desconectarWallet;
+
+window.comprarESIM = comprarESIM;
+window.activarESIM = activarESIM;
+window.desactivarESIM = desactivarESIM;
+window.generarQRESIM = generarQRESIM;
+window.sincronizarESIM = sincronizarESIM;
+
+window.escanearQR = escanearQR;
+window.abrirCamaraQR = abrirCamaraQR;
+window.cerrarCamaraQR = cerrarCamaraQR;
+
+window.cerrarModal = cerrarModal;
+window.abrirModalNft = abrirModalNft;
+
+window.abrirModalPublicacion = abrirModalPublicacion;
+window.publicarContenido = publicarContenido;
+window.toggleEmojiPickerPerfil = toggleEmojiPickerPerfil;
+
+window.enviarComentario = enviarComentario;
+window.cerrarModalComentarios = cerrarModalComentarios;
+
+window.cerrarSesion = cerrarSesion;
+
+window.contratarPro = contratarPro;
+window.renovarPro = renovarPro;
+window.mostrarModalPrivacidad = mostrarModalPrivacidad;
+window.cerrarModalPrivacidad = cerrarModalPrivacidad;
+window.procesarContratacion = procesarContratacion;
+
+window.toggleReaccion = toggleReaccion;
+window.abrirModalComentarios = abrirModalComentarios;
+window.showToast = showToast;
 
 console.log('✅ Todas las funciones expuestas globalmente');
