@@ -1,6 +1,6 @@
 /* ================================================================
    SERVER.JS - SARIEL'S ECOSYSTEM
-   VERSIÓN CORREGIDA - CON RUTAS DE MEMBRESÍA
+   VERSIÓN CORREGIDA PARA RAILWAY (SIN PREFIJO backend/)
    ================================================================ */
 
 const express = require('express');
@@ -176,48 +176,49 @@ app.use(express.urlencoded({
 }));
 
 /* ================================================================
-   ARCHIVOS ESTÁTICOS
+   ARCHIVOS ESTÁTICOS - ✅ CORREGIDO PARA RAILWAY
    ================================================================ */
 
-const publicPath = path.join(__dirname, 'backend', 'public');
+// ✅ CORREGIDO: Railway tiene los archivos en la raíz, no en backend/
+const publicPath = path.join(__dirname, 'public');
+
 if (fs.existsSync(publicPath)) {
     app.use(express.static(publicPath));
     console.log('✅ Sirviendo archivos estáticos desde:', publicPath);
 } else {
     console.warn('⚠️ No se encontró la carpeta public/:', publicPath);
+    console.log('📁 Archivos en /app:', fs.readdirSync(__dirname).join(', '));
 }
 
 /* ================================================================
    RUTAS DE FEATURES - REDIRECCIÓN LIMPIA
    ================================================================ */
-app.use('/live', express.static(path.join(__dirname, 'backend', 'public', 'features', 'live')));
-app.use('/videos', express.static(path.join(__dirname, 'backend', 'public', 'features', 'videos')));
-app.use('/muro', express.static(path.join(__dirname, 'backend', 'public', 'features', 'muro')));
-app.use('/perfil', express.static(path.join(__dirname, 'backend', 'public', 'features', 'perfil')));
-app.use('/mensajes', express.static(path.join(__dirname, 'backend', 'public', 'features', 'mensajes')));
-app.use('/internet', express.static(path.join(__dirname, 'backend', 'public', 'features', 'internet')));
+app.use('/live', express.static(path.join(__dirname, 'public', 'features', 'live')));
+app.use('/videos', express.static(path.join(__dirname, 'public', 'features', 'videos')));
+app.use('/muro', express.static(path.join(__dirname, 'public', 'features', 'muro')));
+app.use('/perfil', express.static(path.join(__dirname, 'public', 'features', 'perfil')));
+app.use('/mensajes', express.static(path.join(__dirname, 'public', 'features', 'mensajes')));
+app.use('/internet', express.static(path.join(__dirname, 'public', 'features', 'internet')));
 
 /* ================================================================
-   RUTAS DE AUTENTICACIÓN - MONTAJE
+   RUTAS DE AUTENTICACIÓN - ✅ CORREGIDO PARA RAILWAY
    ================================================================ */
-const authRoutes = require('./backend/routes/auth');
+const authRoutes = require('./routes/auth');
 app.use('/api/auth', authRoutes);
 
 /* ================================================================
-   ✅ RUTAS DE PAGOS Y WEBHOOK - CORREGIDAS
+   RUTAS DE PAGOS Y WEBHOOK - ✅ CORREGIDO PARA RAILWAY
    ================================================================ */
-const paymentsRoutes = require('./backend/routes/payments');
-const webhooksRoutes = require('./backend/routes/webhooks');
+const paymentsRoutes = require('./routes/payments');
+const webhooksRoutes = require('./routes/webhooks');
 
 app.use('/api/payments', paymentsRoutes);
 app.use('/api/webhook', webhooksRoutes);
 
 /* ================================================================
-   ✅ RUTA DE MEMBRESÍA - NUEVA Y CORREGIDA
+   RUTA DE MEMBRESÍA - ✅ CORREGIDO PARA RAILWAY
    ================================================================ */
-const membresiaRoutes = require('./backend/routes/membresia');
-
-// ✅ RUTA EXACTA: /api/payments/membresia/create
+const membresiaRoutes = require('./routes/membresia');
 app.use('/api/payments/membresia', membresiaRoutes);
 
 /* ================================================================
@@ -226,94 +227,94 @@ app.use('/api/payments/membresia', membresiaRoutes);
 
 // ===== RUTA PRINCIPAL =====
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'backend', 'public', 'index.html'));
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // ===== FEATURES - RUTAS DIRECTAS =====
 app.get('/features/muro/muro.html', (req, res) => {
-    res.sendFile(path.join(__dirname, 'backend', 'public', 'features', 'muro', 'muro.html'));
+    res.sendFile(path.join(__dirname, 'public', 'features', 'muro', 'muro.html'));
 });
 
 app.get('/features/perfil/perfil.html', (req, res) => {
-    res.sendFile(path.join(__dirname, 'backend', 'public', 'features', 'perfil', 'perfil.html'));
+    res.sendFile(path.join(__dirname, 'public', 'features', 'perfil', 'perfil.html'));
 });
 
 app.get('/features/mensajes/mensajes.html', (req, res) => {
-    res.sendFile(path.join(__dirname, 'backend', 'public', 'features', 'mensajes', 'mensajes.html'));
+    res.sendFile(path.join(__dirname, 'public', 'features', 'mensajes', 'mensajes.html'));
 });
 
 app.get('/features/mensajes/contactos.html', (req, res) => {
-    res.sendFile(path.join(__dirname, 'backend', 'public', 'features', 'mensajes', 'contactos.html'));
+    res.sendFile(path.join(__dirname, 'public', 'features', 'mensajes', 'contactos.html'));
 });
 
 app.get('/features/live/live.html', (req, res) => {
-    res.sendFile(path.join(__dirname, 'backend', 'public', 'features', 'live', 'live.html'));
+    res.sendFile(path.join(__dirname, 'public', 'features', 'live', 'live.html'));
 });
 
 app.get('/features/internet/internet.html', (req, res) => {
-    res.sendFile(path.join(__dirname, 'backend', 'public', 'features', 'internet', 'internet.html'));
+    res.sendFile(path.join(__dirname, 'public', 'features', 'internet', 'internet.html'));
 });
 
 app.get('/features/videos/videos.html', (req, res) => {
-    res.sendFile(path.join(__dirname, 'backend', 'public', 'features', 'videos', 'videos.html'));
+    res.sendFile(path.join(__dirname, 'public', 'features', 'videos', 'videos.html'));
 });
 
 // ===== RUTAS AMIGABLES =====
 app.get('/muro', (req, res) => {
-    res.sendFile(path.join(__dirname, 'backend', 'public', 'features', 'muro', 'muro.html'));
+    res.sendFile(path.join(__dirname, 'public', 'features', 'muro', 'muro.html'));
 });
 
 app.get('/perfil', (req, res) => {
-    res.sendFile(path.join(__dirname, 'backend', 'public', 'features', 'perfil', 'perfil.html'));
+    res.sendFile(path.join(__dirname, 'public', 'features', 'perfil', 'perfil.html'));
 });
 
 app.get('/mensajes', (req, res) => {
-    res.sendFile(path.join(__dirname, 'backend', 'public', 'features', 'mensajes', 'mensajes.html'));
+    res.sendFile(path.join(__dirname, 'public', 'features', 'mensajes', 'mensajes.html'));
 });
 
 app.get('/contactos', (req, res) => {
-    res.sendFile(path.join(__dirname, 'backend', 'public', 'features', 'mensajes', 'contactos.html'));
+    res.sendFile(path.join(__dirname, 'public', 'features', 'mensajes', 'contactos.html'));
 });
 
 app.get('/live', (req, res) => {
-    res.sendFile(path.join(__dirname, 'backend', 'public', 'features', 'live', 'live.html'));
+    res.sendFile(path.join(__dirname, 'public', 'features', 'live', 'live.html'));
 });
 
 app.get('/internet', (req, res) => {
-    res.sendFile(path.join(__dirname, 'backend', 'public', 'features', 'internet', 'internet.html'));
+    res.sendFile(path.join(__dirname, 'public', 'features', 'internet', 'internet.html'));
 });
 
 app.get('/videos', (req, res) => {
-    res.sendFile(path.join(__dirname, 'backend', 'public', 'features', 'videos', 'videos.html'));
+    res.sendFile(path.join(__dirname, 'public', 'features', 'videos', 'videos.html'));
 });
 
 // ===== OTRAS RUTAS =====
 app.get('/admin.html', (req, res) => {
-    res.sendFile(path.join(__dirname, 'backend', 'public', 'admin.html'));
+    res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
 app.get('/qr', (req, res) => {
-    res.sendFile(path.join(__dirname, 'backend', 'public', 'qr-generator.html'));
+    res.sendFile(path.join(__dirname, 'public', 'qr-generator.html'));
 });
 
 app.get('/actualizar-contrasena', (req, res) => {
-    res.sendFile(path.join(__dirname, 'backend', 'public', 'actualizar-contrasena.html'));
+    res.sendFile(path.join(__dirname, 'public', 'actualizar-contrasena.html'));
 });
 
 app.get('/terminos', (req, res) => {
-    res.sendFile(path.join(__dirname, 'backend', 'public', 'terminos.html'));
+    res.sendFile(path.join(__dirname, 'public', 'terminos.html'));
 });
 
 app.get('/privacidad', (req, res) => {
-    res.sendFile(path.join(__dirname, 'backend', 'public', 'privacidad.html'));
+    res.sendFile(path.join(__dirname, 'public', 'privacidad.html'));
 });
 
 app.get('/cookies', (req, res) => {
-    res.sendFile(path.join(__dirname, 'backend', 'public', 'cookies.html'));
+    res.sendFile(path.join(__dirname, 'public', 'cookies.html'));
 });
 
 app.get('/live-terminos', (req, res) => {
-    res.sendFile(path.join(__dirname, 'backend', 'public', 'live-terminos.html'));
+    res.sendFile(path.join(__dirname, 'public', 'live-terminos.html'));
 });
 
 /* ================================================================
@@ -327,7 +328,7 @@ app.get('*', (req, res, next) => {
     if (path.extname(req.path) !== '') {
         return next();
     }
-    const indexPath = path.join(__dirname, 'backend', 'public', 'index.html');
+    const indexPath = path.join(__dirname, 'public', 'index.html');
     if (fs.existsSync(indexPath)) {
         res.sendFile(indexPath);
     } else {
