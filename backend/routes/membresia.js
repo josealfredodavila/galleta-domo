@@ -1,6 +1,6 @@
 // ================================================================
 // MEMBRESIA.JS - SARIEL'S ECOSYSTEM
-// RUTAS DE MEMBRESÍA PRO - AUDITADO Y CORREGIDO
+// VERSIÓN SIMPLIFICADA - CON VERIFICACIÓN DE SUPABASE
 // ================================================================
 
 const express = require('express');
@@ -13,25 +13,16 @@ const SITE_URL = process.env.SITE_URL || 'https://sariels.xyz';
 
 console.log('🔑 NOWPAYMENTS_API_KEY:', NOWPAYMENTS_API_KEY ? '✅ Definida' : '❌ NO DEFINIDA');
 console.log('🌐 SITE_URL:', SITE_URL);
-console.log('🔐 SUPABASE_URL:', process.env.SUPABASE_URL ? '✅ Definida' : '❌ NO DEFINIDA');
-console.log('🔐 SUPABASE_SERVICE_ROLE_KEY:', process.env.SUPABASE_SERVICE_ROLE_KEY ? '✅ Definida' : '❌ NO DEFINIDA');
 
 // ===== SUPABASE ADMIN =====
-// ✅ CORREGIDO: Verificación más robusta
 let supabaseAdmin = null;
 
 try {
     const supabaseConfig = require('../config/supabase');
-    supabaseAdmin = supabaseConfig.supabaseAdmin || null;
-    
-    if (!supabaseAdmin) {
-        console.error('❌ supabaseAdmin no está disponible - verifica SUPABASE_SERVICE_ROLE_KEY');
-        console.log('💡 Si estás en Railway, verifica que la variable de entorno esté configurada correctamente.');
-    } else {
-        console.log('✅ supabaseAdmin cargado correctamente');
-    }
+    supabaseAdmin = supabaseConfig.supabaseAdmin;
+    console.log('✅ supabaseAdmin cargado:', supabaseAdmin ? '✅ Disponible' : '❌ NO DISPONIBLE');
 } catch (error) {
-    console.error('❌ Error cargando supabaseAdmin:', error.message);
+    console.error('❌ Error cargando config/supabase.js:', error.message);
 }
 
 // ================================================================
@@ -41,7 +32,6 @@ try {
 async function verificarAutenticacion(req, res, next) {
     try {
         const authHeader = req.headers.authorization;
-        console.log('🔐 Auth Header recibido:', authHeader ? '✅ Sí' : '❌ No');
 
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
             return res.status(401).json({ success: false, error: 'No autenticado: token requerido' });
@@ -69,7 +59,6 @@ async function verificarAutenticacion(req, res, next) {
             return res.status(401).json({ success: false, error: 'Token inválido' });
         }
 
-        console.log('👤 Usuario autenticado:', user.id);
         req.user = user;
         next();
 
@@ -92,16 +81,16 @@ router.post('/create', verificarAutenticacion, async (req, res) => {
 
         console.log('👤 Usuario ID:', usuario_id);
 
-        // 1. Verificar Supabase
+        // 🔴 VERIFICACIÓN CRÍTICA
         if (!supabaseAdmin) {
-            console.error('❌ supabaseAdmin no disponible - no se puede continuar');
+            console.error('❌ supabaseAdmin NO DISPONIBLE');
             return res.status(500).json({ 
                 success: false, 
-                error: 'Servicio no configurado: falta SUPABASE_SERVICE_ROLE_KEY' 
+                error: 'Error de configuración: supabaseAdmin no disponible. Verifica SUPABASE_SERVICE_ROLE_KEY en Railway.' 
             });
         }
 
-        // 2. Obtener usuario
+        // Obtener usuario
         const { data: usuario, error: userError } = await supabaseAdmin
             .from('usuarios')
             .select('id, email, nombre')
@@ -115,7 +104,7 @@ router.post('/create', verificarAutenticacion, async (req, res) => {
 
         console.log('👤 Usuario encontrado:', usuario.email);
 
-        // 3. Obtener plan Pro desde la base de datos
+        // Obtener plan Pro
         const { data: plan, error: planError } = await supabaseAdmin
             .from('planes_membresia')
             .select('id, nombre, precio_mxn, intervalo_dias')
@@ -130,17 +119,17 @@ router.post('/create', verificarAutenticacion, async (req, res) => {
 
         console.log('✅ Plan encontrado:', plan.nombre, '$' + plan.precio_mxn);
 
-        // 4. Verificar NOWPayments
+        // Verificar NOWPayments
         if (!NOWPAYMENTS_API_KEY) {
             console.error('❌ NOWPAYMENTS_API_KEY no configurada');
             return res.status(500).json({ success: false, error: 'Servicio de pagos no configurado' });
         }
 
-        // 5. Generar order_id
+        // Generar order_id
         const orderId = `PRO-${Date.now()}-${usuario_id.slice(0, 8)}`;
         console.log('📦 Order ID generado:', orderId);
 
-        // 6. Crear pago en NOWPayments
+        // Crear pago en NOWPayments
         const paymentData = {
             price_amount: parseFloat(plan.precio_mxn),
             price_currency: 'MXN',
@@ -152,48 +141,21 @@ router.post('/create', verificarAutenticacion, async (req, res) => {
             cancel_url: `${SITE_URL}/features/perfil/perfil.html?payment=cancel`
         };
 
-        console.log('📤 Enviando a NOWPayments:', JSON.stringify(paymentData, null, 2));
+        console.log('📤 Enviando a NOWPayments...');
 
-        // ✅ CORREGIDO: Agregar timeout y mejor manejo de errores
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 30000); // 30 segundos
+        const nowpaymentsResponse = await fetch(`${NOWPAYMENTS_API_URL}/payment`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': NOWPAYMENTS_API_KEY
+            },
+            body: JSON.stringify(paymentData)
+        });
 
-        let nowpaymentsResponse;
-        let nowpaymentsData;
-
-        try {
-            nowpaymentsResponse = await fetch(`${NOWPAYMENTS_API_URL}/payment`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-api-key': NOWPAYMENTS_API_KEY
-                },
-                body: JSON.stringify(paymentData),
-                signal: controller.signal
-            });
-
-            clearTimeout(timeout);
-            nowpaymentsData = await nowpaymentsResponse.json();
-
-        } catch (fetchError) {
-            clearTimeout(timeout);
-            console.error('❌ Error en fetch a NOWPayments:', fetchError.message);
-            
-            if (fetchError.name === 'AbortError') {
-                return res.status(504).json({ 
-                    success: false, 
-                    error: 'Timeout al conectar con el servicio de pagos' 
-                });
-            }
-            
-            return res.status(500).json({
-                success: false,
-                error: 'Error al conectar con el servicio de pagos: ' + fetchError.message
-            });
-        }
+        const nowpaymentsData = await nowpaymentsResponse.json();
 
         if (!nowpaymentsResponse.ok) {
-            console.error('❌ Error en NOWPayments (status ' + nowpaymentsResponse.status + '):', nowpaymentsData);
+            console.error('❌ Error en NOWPayments:', nowpaymentsData);
             return res.status(500).json({
                 success: false,
                 error: nowpaymentsData.message || 'Error al crear pago en NOWPayments'
@@ -203,7 +165,7 @@ router.post('/create', verificarAutenticacion, async (req, res) => {
         console.log('✅ Pago creado en NOWPayments:', nowpaymentsData.payment_id);
         console.log('🔗 URL de pago:', nowpaymentsData.invoice_url);
 
-        // 7. Guardar pago en Supabase
+        // Guardar pago en Supabase
         const { data: pago, error: pagoError } = await supabaseAdmin
             .from('pagos_membresia')
             .insert({
@@ -228,7 +190,6 @@ router.post('/create', verificarAutenticacion, async (req, res) => {
 
         console.log('✅ Pago guardado en Supabase:', pago.id);
 
-        // 8. Responder al frontend
         res.json({
             success: true,
             order_id: orderId,
@@ -241,12 +202,9 @@ router.post('/create', verificarAutenticacion, async (req, res) => {
 
     } catch (error) {
         console.error('❌ Error en /membresia/create:', error);
-        console.error('📋 Stack:', error.stack);
         res.status(500).json({
             success: false,
-            error: process.env.NODE_ENV === 'production'
-                ? 'Error interno del servidor'
-                : error.message
+            error: 'Error interno del servidor'
         });
     }
 });
