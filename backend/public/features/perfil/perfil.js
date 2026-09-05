@@ -1,6 +1,6 @@
 // ================================================================
 // PERFIL.JS - SARIEL'S ECOSYSTEM
-// VERSIÓN FINAL CORREGIDA - PRODUCCIÓN REAL
+// VERSIÓN AUDITADA - ESTRUCTURA REAL DE SUPABASE
 // ================================================================
 
 // ===== VARIABLES GLOBALES =====
@@ -55,7 +55,7 @@ async function cargarPerfil() {
         sessionUser = sessionResult.data.session.user;
         console.log('🔐 sessionUser.id:', sessionUser.id);
 
-        // Cargar datos del usuario
+        // ✅ Usar la tabla real: usuarios
         const userResult = await window.supabase
             .from('usuarios')
             .select('*')
@@ -84,6 +84,10 @@ async function cargarPerfil() {
         // Cargar membresía
         console.log('✦ Cargando membresía...');
         await cargarMembresia();
+
+        // Cargar emojis de reacción
+        console.log('😊 Cargando emojis...');
+        await cargarEmojis();
 
         // Verificar estado de pago
         verificarEstadoPago();
@@ -124,6 +128,7 @@ function actualizarUI(data) {
         bioEl.textContent = data.bio || 'Sin biografía';
     }
 
+    // ✅ Tabla real: usuarios tiene avatar_url
     const avatarEl = document.getElementById('perfilAvatar');
     if (avatarEl) {
         if (data.avatar_url && data.avatar_url.trim() !== '') {
@@ -131,10 +136,11 @@ function actualizarUI(data) {
             avatarEl.innerHTML = `<img src="${data.avatar_url}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;"/>`;
         } else {
             console.log('🖼️ No hay avatar, usando por defecto');
-            avatarEl.textContent = '◈';
+            avatarEl.innerHTML = '◈';
         }
     }
 
+    // ✅ Columnas reales: tokens
     const statTokens = document.getElementById('statTokens');
     if (statTokens) {
         statTokens.textContent = data.tokens || 0;
@@ -168,7 +174,34 @@ function actualizarUI(data) {
 }
 
 // ================================================================
-// 📋 CARGAR PUBLICACIONES - CON NOMBRE DEL USUARIO
+// 😊 CARGAR EMOJIS DESDE SUPABASE
+// ================================================================
+
+async function cargarEmojis() {
+    try {
+        // ✅ RPC real: obtener_emojis_reaccion()
+        const { data, error } = await window.supabase.rpc('obtener_emojis_reaccion');
+
+        if (error) {
+            console.warn('⚠️ Error cargando emojis:', error);
+            return;
+        }
+
+        if (data && data.length > 0) {
+            console.log('😊 Emojis cargados:', data);
+            // Guardar emojis globalmente para usar en reacciones
+            window.EMOJIS_DISPONIBLES = data;
+        } else {
+            console.warn('⚠️ No se encontraron emojis en la tabla reacciones_emojis');
+        }
+
+    } catch (error) {
+        console.error('❌ Error cargando emojis:', error);
+    }
+}
+
+// ================================================================
+// 📋 CARGAR PUBLICACIONES
 // ================================================================
 
 async function cargarPublicaciones() {
@@ -180,7 +213,7 @@ async function cargarPublicaciones() {
 
         console.log('🔐 sessionUser.id para publicaciones:', sessionUser.id);
 
-        // Consulta principal - SIN JOIN
+        // ✅ Tabla real: publicaciones
         const { data, error } = await window.supabase
             .from('publicaciones')
             .select('*')
@@ -219,7 +252,7 @@ async function cargarPublicaciones() {
             return;
         }
 
-        // Obtener el nombre del usuario para mostrar en las publicaciones
+        // Obtener nombre y avatar del usuario
         let nombreUsuario = 'Usuario';
         let avatarUsuario = '◈';
 
@@ -228,24 +261,6 @@ async function cargarPublicaciones() {
             avatarUsuario = perfilUsuario.avatar_url 
                 ? `<img src="${perfilUsuario.avatar_url}" style="width:100%;height:100%;object-fit:cover;">` 
                 : '◈';
-        } else {
-            // Fallback: consultar el usuario si no está en memoria
-            try {
-                const userResult = await window.supabase
-                    .from('usuarios')
-                    .select('nombre, avatar_url')
-                    .eq('id', sessionUser.id)
-                    .single();
-
-                if (userResult.data) {
-                    nombreUsuario = userResult.data.nombre || 'Usuario';
-                    avatarUsuario = userResult.data.avatar_url 
-                        ? `<img src="${userResult.data.avatar_url}" style="width:100%;height:100%;object-fit:cover;">` 
-                        : '◈';
-                }
-            } catch (e) {
-                console.warn('⚠️ No se pudo obtener nombre del usuario:', e);
-            }
         }
 
         container.innerHTML = publicaciones.map(p => {
@@ -325,7 +340,7 @@ async function cargarPublicaciones() {
 }
 
 // ================================================================
-// ✦ CARGAR MEMBRESÍA - CORREGIDO
+// ✦ CARGAR MEMBRESÍA - AUDITADO
 // ================================================================
 
 async function cargarMembresia() {
@@ -343,7 +358,9 @@ async function cargarMembresia() {
 
         console.log('✦ Cargando membresía para usuario:', sessionUser.id);
 
-        // ✅ RPC con tratamiento correcto (devuelve TABLE/array)
+        // ✅ RPC real: obtener_membresia_usuario(p_usuario_id uuid)
+        // Devuelve TABLE con: id, plan_id, plan_nombre, plan_limite_storage_bytes,
+        // plan_conservacion_dias, estado, inicio_at, vence_at, dias_restantes, activa
         const { data, error } = await window.supabase.rpc(
             'obtener_membresia_usuario',
             {
@@ -358,16 +375,16 @@ async function cargarMembresia() {
 
         console.log('✦ Datos RPC membresía (raw):', data);
 
-        // ✅ CORRECCIÓN: La RPC devuelve un array
+        // ✅ CORRECCIÓN: La RPC devuelve un TABLE (arreglo)
+        // La función devuelve automáticamente el plan 'free' si no tiene membresía
         const membresia = Array.isArray(data) ? data[0] : data;
 
         console.log('✦ Membresía procesada:', membresia);
 
-        // ✅ Validación correcta con plan_id explícito
+        // ✅ Validación con plan_id REAL (free o pro)
         const planId = membresia?.plan_id || 'free';
 
-        // Caso 1: Sin membresía o plan Gratis
-        if (!membresia || planId === 'free') {
+        if (planId === 'free') {
             console.log('✦ Usuario tiene plan GRATIS (plan_id: free)');
             container.innerHTML = `
                 <div style="display:flex;flex-direction:column;gap:12px;">
@@ -391,7 +408,6 @@ async function cargarMembresia() {
             return;
         }
 
-        // Caso 2: Plan Pro
         if (planId === 'pro') {
             console.log('✦ Usuario tiene plan PRO (plan_id: pro)');
 
@@ -458,7 +474,7 @@ async function cargarMembresia() {
             return;
         }
 
-        // Caso 3: plan_id desconocido (error controlado)
+        // plan_id desconocido (error controlado)
         console.warn('⚠️ plan_id desconocido:', planId);
         container.innerHTML = `
             <div style="text-align:center;padding:16px;color:var(--text-muted);">
@@ -747,3 +763,4 @@ window.procesarContratacion = window.procesarContratacion;
 window.toggleReaccion = window.toggleReaccion;
 window.abrirModalComentarios = window.abrirModalComentarios;
 window.actualizarUI = actualizarUI;
+window.cargarEmojis = cargarEmojis;
