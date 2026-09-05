@@ -5,7 +5,7 @@
 const express = require('express');
 const router = express.Router();
 const { supabaseAdmin } = require('../config/supabase.js');
-const { verificarToken } = require('../middleware/auth.js');
+const { verificarAutenticacion } = require('../middleware/auth.js');
 const crypto = require('crypto');
 
 // ===== CONFIGURACIÓN =====
@@ -17,9 +17,9 @@ const SITE_URL = process.env.SITE_URL || 'https://sariels.xyz';
 // POST /api/payments/membresia/create
 // ================================================================
 
-router.post('/create', verificarToken, async (req, res) => {
+router.post('/create', verificarAutenticacion, async (req, res) => {
     try {
-        const { privacy_version } = req.body;
+        const { privacy_version, renovar } = req.body;
         const usuario_id = req.user.id;
 
         // 1. Obtener usuario
@@ -56,7 +56,7 @@ router.post('/create', verificarToken, async (req, res) => {
             pay_currency: 'USDT',
             order_id: orderId,
             order_description: `Membresía Sariel's Pro - ${usuario.email}`,
-            ipn_callback_url: `${SITE_URL}/api/webhooks/nowpayments`,
+            ipn_callback_url: `${SITE_URL}/api/webhook/nowpayments`,
             success_url: `${SITE_URL}/features/perfil/perfil.html?payment=success`,
             cancel_url: `${SITE_URL}/features/perfil/perfil.html?payment=cancel`
         };
@@ -124,7 +124,7 @@ router.post('/create', verificarToken, async (req, res) => {
 // GET /api/payments/membresia/status
 // ================================================================
 
-router.get('/status', verificarToken, async (req, res) => {
+router.get('/status', verificarAutenticacion, async (req, res) => {
     try {
         const usuario_id = req.user.id;
 
