@@ -1,6 +1,6 @@
 // ================================================================
 // MEMBRESIA.JS - SARIEL'S ECOSYSTEM
-// RUTAS DE MEMBRESÍA PRO
+// RUTAS DE MEMBRESÍA PRO - AUDITADO Y CORREGIDO
 // ================================================================
 
 const express = require('express');
@@ -11,16 +11,28 @@ const NOWPAYMENTS_API_KEY = process.env.NOWPAYMENTS_API_KEY;
 const NOWPAYMENTS_API_URL = 'https://api.nowpayments.io/v1';
 const SITE_URL = process.env.SITE_URL || 'https://sariels.xyz';
 
-// ===== SUPABASE ADMIN =====
-const { createClient } = require('@supabase/supabase-js');
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+console.log('🔑 NOWPAYMENTS_API_KEY:', NOWPAYMENTS_API_KEY ? '✅ Definida' : '❌ NO DEFINIDA');
+console.log('🌐 SITE_URL:', SITE_URL);
+console.log('🔐 SUPABASE_URL:', process.env.SUPABASE_URL ? '✅ Definida' : '❌ NO DEFINIDA');
+console.log('🔐 SUPABASE_SERVICE_ROLE_KEY:', process.env.SUPABASE_SERVICE_ROLE_KEY ? '✅ Definida' : '❌ NO DEFINIDA');
 
-const supabaseAdmin = SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY
-    ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-        auth: { autoRefreshToken: false, persistSession: false }
-    })
-    : null;
+// ===== SUPABASE ADMIN =====
+// ✅ CORREGIDO: Verificación más robusta
+let supabaseAdmin = null;
+
+try {
+    const supabaseConfig = require('../config/supabase');
+    supabaseAdmin = supabaseConfig.supabaseAdmin || null;
+    
+    if (!supabaseAdmin) {
+        console.error('❌ supabaseAdmin no está disponible - verifica SUPABASE_SERVICE_ROLE_KEY');
+        console.log('💡 Si estás en Railway, verifica que la variable de entorno esté configurada correctamente.');
+    } else {
+        console.log('✅ supabaseAdmin cargado correctamente');
+    }
+} catch (error) {
+    console.error('❌ Error cargando supabaseAdmin:', error.message);
+}
 
 // ================================================================
 // MIDDLEWARE DE AUTENTICACIÓN
@@ -29,6 +41,8 @@ const supabaseAdmin = SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY
 async function verificarAutenticacion(req, res, next) {
     try {
         const authHeader = req.headers.authorization;
+        console.log('🔐 Auth Header recibido:', authHeader ? '✅ Sí' : '❌ No');
+
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
             return res.status(401).json({ success: false, error: 'No autenticado: token requerido' });
         }
@@ -55,6 +69,7 @@ async function verificarAutenticacion(req, res, next) {
             return res.status(401).json({ success: false, error: 'Token inválido' });
         }
 
+        console.log('👤 Usuario autenticado:', user.id);
         req.user = user;
         next();
 
@@ -75,12 +90,15 @@ router.post('/create', verificarAutenticacion, async (req, res) => {
         const { privacy_version } = req.body;
         const usuario_id = req.user.id;
 
-        console.log('👤 Usuario:', usuario_id);
+        console.log('👤 Usuario ID:', usuario_id);
 
         // 1. Verificar Supabase
         if (!supabaseAdmin) {
-            console.error('❌ Supabase Admin no configurado');
-            return res.status(500).json({ success: false, error: 'Servicio no configurado' });
+            console.error('❌ supabaseAdmin no disponible - no se puede continuar');
+            return res.status(500).json({ 
+                success: false, 
+                error: 'Servicio no configurado: falta SUPABASE_SERVICE_ROLE_KEY' 
+            });
         }
 
         // 2. Obtener usuario
@@ -101,13 +119,13 @@ router.post('/create', verificarAutenticacion, async (req, res) => {
         const { data: plan, error: planError } = await supabaseAdmin
             .from('planes_membresia')
             .select('id, nombre, precio_mxn, intervalo_dias')
-            .eq('nombre', 'Pro')
+            .eq('id', 'pro')
             .eq('activo', true)
             .single();
 
         if (planError || !plan) {
             console.error('❌ Plan Pro no encontrado:', planError);
-            return res.status(404).json({ success: false, error: 'Plan no disponible' });
+            return res.status(404).json({ success: false, error: 'Plan Pro no disponible' });
         }
 
         console.log('✅ Plan encontrado:', plan.nombre, '$' + plan.precio_mxn);
@@ -120,6 +138,7 @@ router.post('/create', verificarAutenticacion, async (req, res) => {
 
         // 5. Generar order_id
         const orderId = `PRO-${Date.now()}-${usuario_id.slice(0, 8)}`;
+        console.log('📦 Order ID generado:', orderId);
 
         // 6. Crear pago en NOWPayments
         const paymentData = {
@@ -133,21 +152,48 @@ router.post('/create', verificarAutenticacion, async (req, res) => {
             cancel_url: `${SITE_URL}/features/perfil/perfil.html?payment=cancel`
         };
 
-        console.log('📤 Creando pago en NOWPayments:', paymentData);
+        console.log('📤 Enviando a NOWPayments:', JSON.stringify(paymentData, null, 2));
 
-        const nowpaymentsResponse = await fetch(`${NOWPAYMENTS_API_URL}/payment`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-api-key': NOWPAYMENTS_API_KEY
-            },
-            body: JSON.stringify(paymentData)
-        });
+        // ✅ CORREGIDO: Agregar timeout y mejor manejo de errores
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 30000); // 30 segundos
 
-        const nowpaymentsData = await nowpaymentsResponse.json();
+        let nowpaymentsResponse;
+        let nowpaymentsData;
+
+        try {
+            nowpaymentsResponse = await fetch(`${NOWPAYMENTS_API_URL}/payment`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-api-key': NOWPAYMENTS_API_KEY
+                },
+                body: JSON.stringify(paymentData),
+                signal: controller.signal
+            });
+
+            clearTimeout(timeout);
+            nowpaymentsData = await nowpaymentsResponse.json();
+
+        } catch (fetchError) {
+            clearTimeout(timeout);
+            console.error('❌ Error en fetch a NOWPayments:', fetchError.message);
+            
+            if (fetchError.name === 'AbortError') {
+                return res.status(504).json({ 
+                    success: false, 
+                    error: 'Timeout al conectar con el servicio de pagos' 
+                });
+            }
+            
+            return res.status(500).json({
+                success: false,
+                error: 'Error al conectar con el servicio de pagos: ' + fetchError.message
+            });
+        }
 
         if (!nowpaymentsResponse.ok) {
-            console.error('❌ Error en NOWPayments:', nowpaymentsData);
+            console.error('❌ Error en NOWPayments (status ' + nowpaymentsResponse.status + '):', nowpaymentsData);
             return res.status(500).json({
                 success: false,
                 error: nowpaymentsData.message || 'Error al crear pago en NOWPayments'
@@ -155,6 +201,7 @@ router.post('/create', verificarAutenticacion, async (req, res) => {
         }
 
         console.log('✅ Pago creado en NOWPayments:', nowpaymentsData.payment_id);
+        console.log('🔗 URL de pago:', nowpaymentsData.invoice_url);
 
         // 7. Guardar pago en Supabase
         const { data: pago, error: pagoError } = await supabaseAdmin
@@ -194,6 +241,7 @@ router.post('/create', verificarAutenticacion, async (req, res) => {
 
     } catch (error) {
         console.error('❌ Error en /membresia/create:', error);
+        console.error('📋 Stack:', error.stack);
         res.status(500).json({
             success: false,
             error: process.env.NODE_ENV === 'production'
@@ -212,6 +260,11 @@ router.get('/status', verificarAutenticacion, async (req, res) => {
         const usuario_id = req.user.id;
 
         console.log('📊 Consultando membresía para:', usuario_id);
+
+        if (!supabaseAdmin) {
+            console.error('❌ supabaseAdmin no disponible');
+            return res.status(500).json({ success: false, error: 'Servicio no configurado' });
+        }
 
         const { data, error } = await supabaseAdmin
             .rpc('obtener_membresia_usuario', {
