@@ -1,12 +1,13 @@
 // ================================================================
 // PERFIL.JS - SARIEL'S ECOSYSTEM
-// VERSIÓN DEFINITIVA - SIN MÓDULOS (SCRIPT NORMAL)
+// VERSIÓN CORREGIDA - CON REACCIONES Y EMOJIS
 // ================================================================
 
 // ===== VARIABLES GLOBALES =====
 let sessionUser = null;
 let perfilUsuario = null;
 let membresiaActual = null;
+let REACCIONES = ['❤️', '😊', '🔥', '👏', '🎉', '💎', '🤩', '😍', '😂'];
 
 // ===== TOAST =====
 function showToast(msg, type) {
@@ -64,8 +65,15 @@ async function cargarPerfil() {
         console.log('✅ Datos de usuario cargados');
         actualizarUI(perfilUsuario);
 
+        // Cargar emojis
+        await cargarEmojis();
+
+        // Cargar publicaciones
         await cargarPublicaciones();
+
+        // Cargar membresía
         await cargarMembresia();
+
         verificarEstadoPago();
 
         showToast('✅ ¡Bienvenido ' + (perfilUsuario.nombre || 'Usuario') + '!', 'success');
@@ -73,6 +81,26 @@ async function cargarPerfil() {
     } catch (error) {
         console.error('❌ Error en cargarPerfil:', error);
         showToast('❌ Error al cargar perfil: ' + error.message, 'error');
+    }
+}
+
+// ================================================================
+// 😊 CARGAR EMOJIS
+// ================================================================
+
+async function cargarEmojis() {
+    try {
+        const { data, error } = await window.supabase.rpc('obtener_emojis_reaccion');
+        if (error) {
+            console.warn('⚠️ Error cargando emojis:', error);
+            return;
+        }
+        if (data && data.length > 0) {
+            REACCIONES = data.map(e => e.codigo);
+            console.log('😊 Emojis cargados:', REACCIONES);
+        }
+    } catch (error) {
+        console.error('❌ Error cargando emojis:', error);
     }
 }
 
@@ -135,7 +163,7 @@ function actualizarUI(data) {
 }
 
 // ================================================================
-// 📋 CARGAR PUBLICACIONES
+// 📋 CARGAR PUBLICACIONES - CON REACCIONES Y EMOJIS
 // ================================================================
 
 async function cargarPublicaciones() {
@@ -185,6 +213,28 @@ async function cargarPublicaciones() {
             ? `<img src="${perfilUsuario.avatar_url}" style="width:100%;height:100%;object-fit:cover;">` 
             : '◈';
 
+        // Obtener reacciones para todas las publicaciones
+        const reaccionesMap = {};
+        const publicacionIds = publicaciones.map(p => p.id);
+
+        if (publicacionIds.length > 0) {
+            const reaccionesResult = await window.supabase
+                .from('publicaciones_reacciones')
+                .select('publicacion_id, tipo, usuario_id')
+                .in('publicacion_id', publicacionIds);
+
+            if (!reaccionesResult.error) {
+                reaccionesResult.data.forEach(r => {
+                    if (!reaccionesMap[r.publicacion_id]) {
+                        reaccionesMap[r.publicacion_id] = { total: 0, emojis: {}, usuarios: {} };
+                    }
+                    reaccionesMap[r.publicacion_id].total++;
+                    reaccionesMap[r.publicacion_id].emojis[r.tipo] = (reaccionesMap[r.publicacion_id].emojis[r.tipo] || 0) + 1;
+                    reaccionesMap[r.publicacion_id].usuarios[r.usuario_id] = r.tipo;
+                });
+            }
+        }
+
         container.innerHTML = publicaciones.map(p => {
             const fecha = p.created_at ? new Date(p.created_at).toLocaleString() : '';
             let mediaHtml = '';
@@ -199,6 +249,12 @@ async function cargarPublicaciones() {
 
             const contenido = p.contenido ? `<div class="pub-texto">${p.contenido}</div>` : '';
 
+            // Obtener reacción del usuario actual
+            const miReaccion = reaccionesMap[p.id]?.usuarios[sessionUser.id] || null;
+            const reaccionEmoji = miReaccion || '❤️';
+            const reaccionTotal = reaccionesMap[p.id]?.total || 0;
+
+            // ✅ HTML COMPLETO CON REACCIONES Y EMOJIS
             return `
                 <div class="publicacion-item" data-id="${p.id}">
                     <div class="pub-header">
@@ -209,17 +265,24 @@ async function cargarPublicaciones() {
                     ${contenido}
                     ${mediaHtml}
                     <div class="pub-actions">
-                        <button class="reaccion-btn" onclick="toggleReaccion('${p.id}', event)">
-                            <span class="reaccion-emoji">❤️</span>
-                            <span class="count">${p.likes || 0}</span>
+                        <button class="reaccion-btn" data-id="${p.id}" onclick="toggleReaccion('${p.id}', event)">
+                            <span class="reaccion-emoji">${reaccionEmoji}</span>
+                            <span class="count">${reaccionTotal}</span>
+                            <span class="arrow" id="arrow-${p.id}">▼</span>
                         </button>
                         <span class="comment-btn" onclick="abrirModalComentarios('${p.id}')">
                             💬 <span>${p.comentarios || 0}</span>
                         </span>
+                        <button class="delete-btn" onclick="eliminarPublicacion('${p.id}')" title="Eliminar publicación">🗑️</button>
+                    </div>
+                    <div class="reaccion-picker" id="reaccionPicker-${p.id}">
+                        ${REACCIONES.map(r => `<button onclick="seleccionarReaccion('${p.id}', '${r}', event)">${r}</button>`).join('')}
                     </div>
                 </div>
             `;
         }).join('');
+
+        console.log('✅ Publicaciones renderizadas con reacciones');
 
     } catch (error) {
         console.error('❌ Error cargando publicaciones:', error);
@@ -237,15 +300,156 @@ async function cargarPublicaciones() {
 }
 
 // ================================================================
+// ❤️ REACCIONES
+// ================================================================
+
+function toggleReaccion(publicacionId, event) {
+    if (!sessionUser) {
+        showToast('⚠️ Inicia sesión para reaccionar', 'warning');
+        return;
+    }
+
+    const btn = event.currentTarget;
+    const item = btn.closest('.publicacion-item');
+    if (!item) return;
+
+    const picker = item.querySelector('.reaccion-picker');
+    if (!picker) return;
+
+    // Cerrar otros pickers
+    document.querySelectorAll('.reaccion-picker.show').forEach(el => {
+        if (el !== picker) el.classList.remove('show');
+        const arrow = document.querySelector('#arrow-' + el.id.replace('reaccionPicker-', ''));
+        if (arrow) arrow.classList.remove('open');
+    });
+
+    picker.classList.toggle('show');
+    const arrow = document.getElementById('arrow-' + publicacionId);
+    if (arrow) arrow.classList.toggle('open');
+
+    event.stopPropagation();
+}
+
+async function seleccionarReaccion(publicacionId, tipo, event) {
+    if (!sessionUser) {
+        showToast('⚠️ Inicia sesión para reaccionar', 'error');
+        return;
+    }
+
+    const picker = document.getElementById('reaccionPicker-' + publicacionId);
+    if (picker) {
+        picker.classList.remove('show');
+        const arrow = document.getElementById('arrow-' + publicacionId);
+        if (arrow) arrow.classList.remove('open');
+    }
+
+    try {
+        const key = publicacionId + '_' + sessionUser.id;
+        const reaccionActual = localStorage.getItem('reaccion_' + key);
+
+        if (reaccionActual === tipo) {
+            await window.supabase
+                .from('publicaciones_reacciones')
+                .delete()
+                .eq('publicacion_id', publicacionId)
+                .eq('usuario_id', sessionUser.id);
+            localStorage.removeItem('reaccion_' + key);
+        } else {
+            if (reaccionActual) {
+                await window.supabase
+                    .from('publicaciones_reacciones')
+                    .delete()
+                    .eq('publicacion_id', publicacionId)
+                    .eq('usuario_id', sessionUser.id);
+            }
+            await window.supabase
+                .from('publicaciones_reacciones')
+                .insert({
+                    publicacion_id: publicacionId,
+                    usuario_id: sessionUser.id,
+                    tipo: tipo
+                });
+            localStorage.setItem('reaccion_' + key, tipo);
+        }
+
+        await cargarPublicaciones();
+
+    } catch (error) {
+        console.error('Error seleccionando reacción:', error);
+        showToast('❌ Error al procesar reacción', 'error');
+    }
+}
+
+// ================================================================
+// 🗑️ ELIMINAR PUBLICACIÓN
+// ================================================================
+
+async function eliminarPublicacion(publicacionId) {
+    if (!sessionUser) {
+        showToast('⚠️ Inicia sesión para eliminar', 'error');
+        return;
+    }
+
+    if (!confirm('¿Eliminar esta publicación permanentemente?')) return;
+
+    showToast('⏳ Eliminando publicación...', '');
+
+    try {
+        const { data: pub, error: pubError } = await window.supabase
+            .from('publicaciones')
+            .select('media_url')
+            .eq('id', publicacionId)
+            .eq('usuario_id', sessionUser.id)
+            .single();
+
+        if (pubError) throw pubError;
+
+        if (pub?.media_url) {
+            const match = pub.media_url.match(/\/publicaciones\/(.+)$/);
+            if (match && match[1]) {
+                await window.supabase.storage.from('publicaciones').remove([match[1]]);
+            }
+        }
+
+        await window.supabase
+            .from('publicaciones')
+            .delete()
+            .eq('id', publicacionId)
+            .eq('usuario_id', sessionUser.id);
+
+        showToast('✅ Publicación eliminada', 'success');
+        await cargarPublicaciones();
+
+    } catch (error) {
+        console.error('Error eliminando publicación:', error);
+        showToast('❌ Error al eliminar publicación', 'error');
+    }
+}
+
+// ================================================================
+// 💬 COMENTARIOS
+// ================================================================
+
+function abrirModalComentarios(publicacionId) {
+    showToast('💬 Comentarios próximamente', '');
+}
+
+function enviarComentario() {
+    showToast('💬 Comentario enviado', 'success');
+}
+
+function cerrarModalComentarios() {
+    const modal = document.getElementById('modalComentarios');
+    if (modal) modal.classList.remove('active');
+}
+
+// ================================================================
 // ✦ CARGAR MEMBRESÍA
 // ================================================================
 
 async function cargarMembresia() {
     const container = document.getElementById('membresiaContainer');
-    if (!container) {
-        console.warn('⚠️ No se encontró membresiaContainer');
-        return;
-    }
+    if (!container) return;
 
     container.innerHTML = `
         <div class="empty-state">
@@ -255,7 +459,6 @@ async function cargarMembresia() {
     `;
 
     if (!sessionUser) {
-        console.warn('⚠️ No hay sesión para cargar membresía');
         container.innerHTML = `
             <div style="text-align:center;padding:16px;color:var(--text-muted);">
                 ⚠️ Inicia sesión para ver tu membresía.
@@ -280,7 +483,6 @@ async function cargarMembresia() {
         console.log('✦ Datos RPC membresía (raw):', data);
 
         if (!data || data.length === 0) {
-            console.warn('⚠️ No se recibieron datos de membresía');
             mostrarMembresiaGratis(container);
             return;
         }
@@ -291,20 +493,17 @@ async function cargarMembresia() {
         const planId = membresia?.plan_id || 'free';
 
         if (planId === 'free') {
-            console.log('✦ Plan: GRATIS');
             mostrarMembresiaGratis(container);
             return;
         }
 
         if (planId === 'pro') {
-            console.log('✦ Plan: PRO');
             const esActiva = membresia.activa || false;
             mostrarMembresiaPro(container, membresia, esActiva);
             membresiaActual = membresia;
             return;
         }
 
-        console.warn('⚠️ plan_id desconocido:', planId);
         container.innerHTML = `
             <div style="text-align:center;padding:16px;color:var(--text-muted);">
                 ⚠️ Estado de membresía desconocido.
@@ -425,10 +624,6 @@ function contratarPro() {
     mostrarModalPrivacidad('contratar');
 }
 
-// ================================================================
-// RENOVAR PRO
-// ================================================================
-
 function renovarPro() {
     if (!sessionUser) {
         showToast('⚠️ Inicia sesión para renovar Pro', 'error');
@@ -520,10 +715,6 @@ function procesarContratacion() {
     }
 }
 
-// ================================================================
-// EJECUTAR CONTRATACIÓN
-// ================================================================
-
 async function ejecutarContratacion() {
     showToast('⏳ Creando orden de pago...', '');
 
@@ -561,10 +752,6 @@ async function ejecutarContratacion() {
         showToast('❌ Error: ' + error.message, 'error');
     }
 }
-
-// ================================================================
-// EJECUTAR RENOVACIÓN
-// ================================================================
 
 async function ejecutarRenovacion() {
     showToast('⏳ Creando orden de renovación...', '');
@@ -605,10 +792,6 @@ async function ejecutarRenovacion() {
     }
 }
 
-// ================================================================
-// VERIFICAR ESTADO DESPUÉS DE PAGO
-// ================================================================
-
 function verificarEstadoPago() {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('payment') === 'success') {
@@ -622,48 +805,9 @@ function verificarEstadoPago() {
 }
 
 // ================================================================
-// 😊 EMOJIS DE REACCIÓN
-// ================================================================
-
-async function cargarEmojis() {
-    try {
-        const { data, error } = await window.supabase.rpc('obtener_emojis_reaccion');
-        if (error) {
-            console.warn('⚠️ Error cargando emojis:', error);
-            return;
-        }
-        if (data && data.length > 0) {
-            console.log('😊 Emojis cargados:', data.length);
-            window.EMOJIS_DISPONIBLES = data;
-        }
-    } catch (error) {
-        console.error('❌ Error cargando emojis:', error);
-    }
-}
-
-// ================================================================
-// TOGGLE REACCION (PLACEHOLDER)
-// ================================================================
-
-function toggleReaccion(publicacionId, event) {
-    showToast('❤️ Reacción agregada', 'success');
-}
-
-// ================================================================
-// ABRIR MODAL COMENTARIOS (PLACEHOLDER)
-// ================================================================
-
-function abrirModalComentarios(publicacionId) {
-    showToast('💬 Comentarios próximamente', '');
-}
-
-// ================================================================
-// ================================================================
 // FUNCIONES PARA ONCLICK DEL HTML - TODAS GLOBALES
 // ================================================================
-// ================================================================
 
-// ===== TABS =====
 function cambiarTab(tab) {
     document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
@@ -673,7 +817,6 @@ function cambiarTab(tab) {
     if (tabBtn) tabBtn.classList.add('active');
 }
 
-// ===== PERFIL =====
 function editarPerfil() {
     cambiarTab('config');
     showToast('✏️ Edita tu perfil en la pestaña Ajustes', '');
@@ -761,7 +904,6 @@ async function guardarPerfil() {
     }
 }
 
-// ===== ESTADO =====
 async function cambiarEstado(activo) {
     if (!sessionUser) { showToast('⚠️ Inicia sesión', 'error'); return; }
     showToast('⏳ Actualizando estado...', '');
@@ -780,7 +922,6 @@ function cambiarConexion(tipo) {
     showToast(tipo === 'wifi' ? '🛜 Conectado a WiFi' : '📶 Conectado a datos móviles', 'success');
 }
 
-// ===== TOKENS =====
 async function comprarDomo(cantidad) {
     const sessionResult = await window.supabase.auth.getSession();
     if (!sessionResult.data.session) { showToast('⚠️ Inicia sesión para comprar', 'error'); return; }
@@ -811,7 +952,6 @@ async function canjearNFT() {
     }
 }
 
-// ===== CRIPTO =====
 function comprarConCripto() {
     const modal = document.getElementById('cryptoPaymentModal');
     if (modal) modal.classList.add('active');
@@ -827,7 +967,6 @@ function copiarDireccion() {
     showToast('📋 Dirección copiada al portapapeles', 'success');
 }
 
-// ===== WALLET =====
 async function conectarWallet() {
     if (typeof window.ethereum === 'undefined') {
         showToast('⚠️ Instala MetaMask para continuar', 'warning');
@@ -878,7 +1017,6 @@ async function desconectarWallet() {
     }
 }
 
-// ===== eSIM =====
 async function comprarESIM(cantidad) {
     const sessionResult = await window.supabase.auth.getSession();
     if (!sessionResult.data.session) { showToast('⚠️ Inicia sesión para adquirir eSIM', 'error'); return; }
@@ -959,7 +1097,6 @@ async function sincronizarESIM() {
     }
 }
 
-// ===== QR =====
 async function escanearQR() {
     const input = document.getElementById('qrInput');
     if (!input) return;
@@ -992,7 +1129,6 @@ function cerrarCamaraQR() {
     showToast('📷 Cámara cerrada', '');
 }
 
-// ===== MODALES =====
 function cerrarModal(modalId) {
     const modal = document.getElementById(modalId);
     if (modal) modal.classList.remove('active');
@@ -1006,7 +1142,6 @@ function abrirModalNft(nftId) {
     }
 }
 
-// ===== PUBLICACIONES =====
 function abrirModalPublicacion() {
     const modal = document.getElementById('publicacionModal');
     if (!modal) return;
@@ -1101,17 +1236,6 @@ function toggleEmojiPickerPerfil() {
     picker.style.display = picker.style.display === 'block' ? 'none' : 'block';
 }
 
-// ===== COMENTARIOS =====
-function enviarComentario() {
-    showToast('💬 Comentario enviado', 'success');
-}
-
-function cerrarModalComentarios() {
-    const modal = document.getElementById('modalComentarios');
-    if (modal) modal.classList.remove('active');
-}
-
-// ===== SESIÓN =====
 function cerrarSesion() {
     if (confirm('¿Seguro que quieres cerrar sesión?')) {
         showToast('👋 Sesión cerrada', 'success');
@@ -1120,13 +1244,12 @@ function cerrarSesion() {
 }
 
 // ================================================================
-// INICIALIZACIÓN - AUTO-EJECUTAR
+// INICIALIZACIÓN
 // ================================================================
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('✅ perfil.js cargado (versión definitiva - sin módulos)');
+    console.log('✅ perfil.js cargado (versión con reacciones)');
     console.log('🔍 Supabase disponible:', typeof window.supabase !== 'undefined');
-    
     if (typeof window.supabase !== 'undefined') {
         cargarPerfil();
     } else {
@@ -1136,17 +1259,13 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // ================================================================
-// EXPOSICIÓN GLOBAL - PARA QUE EL HTML LOS ENCUENTRE
+// EXPOSICIÓN GLOBAL
 // ================================================================
-
-// Todas las funciones ya están en el ámbito global (no son módulo)
-// Pero por si acaso, las asignamos explícitamente a window
 
 window.cargarPerfil = cargarPerfil;
 window.cargarPublicaciones = cargarPublicaciones;
 window.cargarMembresia = cargarMembresia;
 window.cargarEmojis = cargarEmojis;
-
 window.cambiarTab = cambiarTab;
 window.editarPerfil = editarPerfil;
 window.compartirPerfil = compartirPerfil;
@@ -1154,50 +1273,40 @@ window.generarQRPerfil = generarQRPerfil;
 window.abrirSelectorArchivo = abrirSelectorArchivo;
 window.subirFoto = subirFoto;
 window.guardarPerfil = guardarPerfil;
-
 window.cambiarEstado = cambiarEstado;
 window.cambiarConexion = cambiarConexion;
-
 window.comprarDomo = comprarDomo;
 window.canjearNFT = canjearNFT;
-
 window.comprarConCripto = comprarConCripto;
 window.verificarPagoCrypto = verificarPagoCrypto;
 window.copiarDireccion = copiarDireccion;
-
 window.conectarWallet = conectarWallet;
 window.desconectarWallet = desconectarWallet;
-
 window.comprarESIM = comprarESIM;
 window.activarESIM = activarESIM;
 window.desactivarESIM = desactivarESIM;
 window.generarQRESIM = generarQRESIM;
 window.sincronizarESIM = sincronizarESIM;
-
 window.escanearQR = escanearQR;
 window.abrirCamaraQR = abrirCamaraQR;
 window.cerrarCamaraQR = cerrarCamaraQR;
-
 window.cerrarModal = cerrarModal;
 window.abrirModalNft = abrirModalNft;
-
 window.abrirModalPublicacion = abrirModalPublicacion;
 window.publicarContenido = publicarContenido;
 window.toggleEmojiPickerPerfil = toggleEmojiPickerPerfil;
-
 window.enviarComentario = enviarComentario;
 window.cerrarModalComentarios = cerrarModalComentarios;
-
 window.cerrarSesion = cerrarSesion;
-
 window.contratarPro = contratarPro;
 window.renovarPro = renovarPro;
 window.mostrarModalPrivacidad = mostrarModalPrivacidad;
 window.cerrarModalPrivacidad = cerrarModalPrivacidad;
 window.procesarContratacion = procesarContratacion;
-
 window.toggleReaccion = toggleReaccion;
+window.seleccionarReaccion = seleccionarReaccion;
 window.abrirModalComentarios = abrirModalComentarios;
+window.eliminarPublicacion = eliminarPublicacion;
 window.showToast = showToast;
 
 console.log('✅ Todas las funciones expuestas globalmente');
