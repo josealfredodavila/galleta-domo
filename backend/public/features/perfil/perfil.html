@@ -1,622 +1,1216 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sariel's - Perfil</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>◈ Perfil · Sariel's</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --gold: #D4AF37;
+            --gold-dark: #b8923a;
+            --gold-light: #e8c84a;
+            --gold-bright: #f0d060;
+            --green-deep: #0F2D1A;
+            --green-mid: #1a4a2a;
+            --green-bright: #2a6a3a;
+            --space: #05080f;
+            --text-primary: #f0f4f8;
+            --text-secondary: #c0d8e8;
+            --text-muted: #8aa8b8;
+            --glass-bg: rgba(15, 45, 26, 0.55);
+            --glass-border: rgba(212, 175, 55, 0.15);
+            --shadow-gold: 0 8px 32px rgba(212, 175, 55, 0.25);
+            --shadow-gold-strong: 0 0 60px rgba(212, 175, 55, 0.15);
+            --radius: 16px;
+            --radius-xl: 24px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --success: #00d68f;
+            --danger: #ff3366;
+            --warning: #f7d44a;
+            --cyan: #00e5ff;
+            --purple: #a855f7;
+            --pink: #ec4899;
+            --bronze: #CD7F32;
+            --bronze-light: #D4A574;
+            --bronze-dark: #8B5A2B;
+            --bg-card: rgba(15, 45, 26, 0.4);
+            --bg-dark: rgba(5, 8, 15, 0.8);
+            --border-color: rgba(212, 175, 55, 0.08);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: var(--space);
+            color: var(--text-primary);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            min-height: 100vh;
+            line-height: 1.6;
+            background-image: 
+                radial-gradient(ellipse at 20% 50%, rgba(26, 74, 42, 0.4) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 50%, rgba(212, 175, 55, 0.08) 0%, transparent 60%);
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        #stars-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .nebula {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(120px);
+            opacity: 0.12;
+            pointer-events: none;
+            z-index: 0;
+            animation: nebula-drift 25s ease-in-out infinite alternate;
+        }
+        .nebula-1 { width: 700px; height: 700px; background: var(--green-bright); top: -15%; right: -15%; }
+        .nebula-2 { width: 600px; height: 600px; background: var(--gold-light); bottom: -15%; left: -15%; animation-delay: -8s; opacity: 0.06; }
+        .nebula-3 { width: 500px; height: 500px; background: var(--purple); top: 50%; left: 50%; transform: translate(-50%, -50%); animation-delay: -15s; opacity: 0.04; }
+
+        @keyframes nebula-drift {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(40px, -30px) scale(1.15); }
+        }
+
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: var(--space); }
+        ::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 2px; }
+
+        .app {
+            position: relative;
+            z-index: 1;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 16px 20px 30px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0 14px;
+            border-bottom: 1px solid var(--glass-border);
+            flex-wrap: wrap;
+            gap: 10px;
+            background: rgba(5, 8, 15, 0.92);
+            border-radius: var(--radius) var(--radius) 0 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+        .logo-hex { font-size: 1.8rem; color: var(--gold); font-weight: 800; font-family: 'Orbitron', monospace; text-shadow: 0 0 30px rgba(212, 175, 55, 0.3); animation: glow-pulse 3s ease-in-out infinite; }
+        @keyframes glow-pulse {
+            0%, 100% { text-shadow: 0 0 30px rgba(212, 175, 55, 0.3); }
+            50% { text-shadow: 0 0 60px rgba(212, 175, 55, 0.6); }
+        }
+        .logo-text { font-family: 'Orbitron', monospace; font-size: 1.2rem; font-weight: 700; color: var(--text-primary); letter-spacing: 2px; }
+        .logo-text span { color: var(--gold); }
+        .logo-badge { font-size: 0.45rem; background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: var(--space); padding: 2px 10px; border-radius: 20px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
+        .network-badge { display: flex; align-items: center; gap: 6px; font-size: 0.6rem; color: var(--gold); background: rgba(212, 175, 55, 0.1); padding: 4px 12px; border-radius: 20px; border: 1px solid rgba(212, 175, 55, 0.15); }
+        .network-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); animation: pulse-dot 2s infinite; }
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.3; transform: scale(0.8); }
+        }
+
+        .main-nav {
+            display: flex;
+            gap: 4px;
+            background: rgba(15, 45, 26, 0.3);
+            border-radius: var(--radius);
+            padding: 4px;
+            border: 1px solid var(--glass-border);
+            margin: 16px 0 20px;
+            overflow-x: auto;
+        }
+        .main-nav .nav-link {
+            padding: 8px 16px;
+            border-radius: 12px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.7rem;
+            font-weight: 500;
+            transition: var(--transition);
+            white-space: nowrap;
+            position: relative;
+        }
+        .main-nav .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: 2px;
+            left: 50%;
+            width: 0;
+            height: 2px;
+            background: var(--gold);
+            transition: var(--transition);
+            transform: translateX(-50%);
+        }
+        .main-nav .nav-link:hover::after, .main-nav .nav-link.active::after { width: 60%; }
+        .main-nav .nav-link:hover { color: var(--text-primary); background: rgba(212, 175, 55, 0.05); }
+        .main-nav .nav-link.active { background: rgba(212, 175, 55, 0.12); color: var(--gold); }
+        .main-nav .nav-link.live { color: var(--danger); }
+
+        .perfil-container { max-width: 1100px; margin: 0 auto; }
+
+        .perfil-header {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-xl);
+            padding: 24px 28px;
+            margin-bottom: 24px;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            flex-wrap: wrap;
+            position: relative;
+            overflow: hidden;
+        }
+        .perfil-header::before {
+            content: '';
+            position: absolute;
+            top: -2px; left: -2px; right: -2px; bottom: -2px;
+            background: linear-gradient(135deg, var(--gold), var(--green-deep), var(--gold));
+            background-size: 300% 300%;
+            border-radius: var(--radius-xl);
+            z-index: -1;
+            opacity: 0.1;
+            animation: border-flow 6s ease-in-out infinite;
+        }
+        @keyframes border-flow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .perfil-header .avatar-container { position: relative; flex-shrink: 0; }
+        .perfil-header .avatar {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--green-deep), var(--gold));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.4rem;
+            font-weight: 700;
+            color: white;
+            overflow: hidden;
+            border: 3px solid var(--gold);
+            box-shadow: 0 0 40px rgba(212, 175, 55, 0.15);
+            font-family: 'Orbitron', monospace;
+        }
+        .perfil-header .avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .perfil-header .avatar .edit-badge {
+            position: absolute;
+            bottom: 4px;
+            right: 4px;
+            background: var(--gold);
+            border-radius: 50%;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.65rem;
+            color: var(--space);
+            border: 2px solid var(--space);
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+        }
+
+        .perfil-header .info { flex: 1; min-width: 200px; }
+        .perfil-header .info .nombre {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.4rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--gold), var(--text-primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .perfil-header .info .nombre .verified {
+            font-size: 0.5rem;
+            background: rgba(212, 175, 55, 0.15);
+            color: var(--gold);
+            padding: 2px 12px;
+            border-radius: 12px;
+            font-family: 'Orbitron', monospace;
+            border: 1px solid rgba(212, 175, 55, 0.1);
+            -webkit-text-fill-color: var(--gold);
+        }
+        .perfil-header .info .handle { font-size: 0.85rem; color: var(--text-muted); letter-spacing: 0.5px; }
+        .perfil-header .info .bio { font-size: 0.9rem; color: var(--text-secondary); margin-top: 6px; max-width: 500px; line-height: 1.5; }
+        .perfil-header .info .badges { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+        .perfil-header .info .badges .badge {
+            font-size: 0.55rem;
+            padding: 3px 14px;
+            border-radius: 20px;
+            font-family: 'Orbitron', monospace;
+            border: 1px solid var(--glass-border);
+            color: var(--text-muted);
+            background: rgba(255, 255, 255, 0.03);
+        }
+        .perfil-header .info .badges .badge.gold { border-color: var(--gold); color: var(--gold); background: rgba(212, 175, 55, 0.05); }
+        .perfil-header .info .badges .badge.success { border-color: var(--success); color: var(--success); background: rgba(0, 214, 143, 0.05); }
+
+        .perfil-header .stats { display: flex; gap: 24px; flex-wrap: wrap; margin-left: auto; }
+        .perfil-header .stats .stat { text-align: center; }
+        .perfil-header .stats .stat .number {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--gold);
+            text-shadow: 0 0 20px rgba(212, 175, 55, 0.05);
+        }
+        .perfil-header .stats .stat .label { font-size: 0.55rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-family: 'Orbitron', monospace; }
+        .perfil-header .acciones { display: flex; gap: 8px; flex-wrap: wrap; margin-left: 10px; }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 20px;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: var(--transition);
+            font-family: 'Inter', sans-serif;
+        }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+        .btn-gold { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); box-shadow: 0 4px 20px rgba(212, 175, 55, 0.2); }
+        .btn-gold:hover:not(:disabled) { transform: translateY(-2px); box-shadow: var(--shadow-gold); }
+        .btn-outline { background: transparent; color: var(--text-secondary); border: 1px solid var(--glass-border); }
+        .btn-outline:hover:not(:disabled) { border-color: var(--gold); color: var(--gold); box-shadow: 0 0 20px rgba(212, 175, 55, 0.1); }
+        .btn-sm { padding: 4px 12px; font-size: 0.65rem; }
+        .btn-danger { background: rgba(255, 51, 102, 0.1); color: var(--danger); border: 1px solid rgba(255, 51, 102, 0.2); }
+        .btn-danger:hover:not(:disabled) { background: rgba(255, 51, 102, 0.2); }
+        .btn-crypto { background: linear-gradient(135deg, #00ff88, #00b894); color: var(--space); box-shadow: 0 4px 20px rgba(0, 255, 136, 0.2); }
+        .btn-crypto:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 0 40px rgba(0, 255, 136, 0.3); }
+        .btn-wallet { background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: #fff; box-shadow: 0 4px 20px rgba(139, 92, 246, 0.2); }
+        .btn-wallet:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 0 40px rgba(139, 92, 246, 0.3); }
+        .btn-video { background: linear-gradient(135deg, #ff6b6b, #ee5a24); color: #fff; box-shadow: 0 4px 20px rgba(238, 90, 36, 0.2); }
+        .btn-video:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 0 40px rgba(238, 90, 36, 0.3); }
+
+        .perfil-tabs {
+            display: flex;
+            gap: 4px;
+            background: var(--glass-bg);
+            border-radius: var(--radius);
+            padding: 4px;
+            border: 1px solid var(--glass-border);
+            margin-bottom: 20px;
+            overflow-x: auto;
+        }
+        .perfil-tabs .tab-btn {
+            padding: 10px 20px;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.7rem;
+            font-weight: 600;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: var(--transition);
+            white-space: nowrap;
+        }
+        .perfil-tabs .tab-btn.active { background: rgba(212, 175, 55, 0.12); color: var(--gold); box-shadow: 0 0 20px rgba(212, 175, 55, 0.05); }
+
+        .tab-content { display: none; animation: fadeIn 0.3s ease; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .panel {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            transition: var(--transition);
+            margin-bottom: 16px;
+        }
+        .panel-header {
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(212, 175, 55, 0.03);
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .panel-header h3 { font-size: 0.85rem; font-weight: 600; color: var(--gold); }
+        .panel-badge { font-size: 0.6rem; background: rgba(212, 175, 55, 0.12); color: var(--gold); padding: 2px 12px; border-radius: 20px; font-weight: 600; text-transform: uppercase; border: 1px solid rgba(212, 175, 55, 0.08); }
+        .panel-body { padding: 18px; }
+
+        .publicacion-item {
+            background: rgba(0,0,0,0.2);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            padding: 12px 14px;
+            margin-bottom: 10px;
+            transition: var(--transition);
+            position: relative;
+            overflow: visible;
+            z-index: 1;
+        }
+        .publicacion-item:hover {
+            border-color: rgba(212, 175, 55, 0.2);
+        }
+        .publicacion-item .pub-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 6px;
+        }
+        .publicacion-item .pub-header .avatar-mini {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--green-deep), var(--gold));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.6rem;
+            color: white;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        .publicacion-item .pub-header .avatar-mini img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .publicacion-item .pub-header .pub-nombre {
+            font-weight: 600;
+            font-size: 0.8rem;
+            color: var(--text-primary);
+        }
+        .publicacion-item .pub-header .pub-fecha {
+            font-size: 0.55rem;
+            color: var(--text-muted);
+            margin-left: auto;
+        }
+        .publicacion-item .pub-texto {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+        .publicacion-item .pub-media {
+            width: 100%;
+            border-radius: 10px;
+            overflow: hidden;
+            max-height: 300px;
+            object-fit: cover;
+            background: var(--space);
+        }
+        .publicacion-item .pub-actions {
+            display: flex;
+            gap: 16px;
+            margin-top: 8px;
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            align-items: center;
+            position: relative;
+            z-index: 10;
+            flex-wrap: wrap;
+        }
+        .publicacion-item .pub-actions .reaccion-btn {
+            cursor: pointer;
+            transition: var(--transition);
+            padding: 4px 8px;
+            border-radius: 8px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 1.1rem;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+        }
+        .publicacion-item .pub-actions .reaccion-btn:hover {
+            color: var(--gold);
+            background: rgba(212, 175, 55, 0.05);
+        }
+        .publicacion-item .pub-actions .reaccion-btn .count {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+        }
+        .publicacion-item .pub-actions .reaccion-btn .arrow {
+            font-size: 0.55rem;
+            color: var(--text-muted);
+            transition: var(--transition);
+            margin-left: 2px;
+        }
+        .publicacion-item .pub-actions .reaccion-btn .arrow.open {
+            transform: rotate(180deg);
+            color: var(--gold);
+        }
+        .publicacion-item .pub-actions .reaccion-btn:hover .arrow {
+            color: var(--gold);
+        }
+        .publicacion-item .pub-actions .comment-btn {
+            cursor: pointer;
+            transition: var(--transition);
+            padding: 4px 8px;
+            border-radius: 8px;
+            color: var(--text-muted);
+            font-size: 0.65rem;
+        }
+        .publicacion-item .pub-actions .comment-btn:hover {
+            color: var(--gold);
+            background: rgba(212, 175, 55, 0.05);
+        }
+        .publicacion-item .pub-actions .delete-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 0.7rem;
+            padding: 4px 8px;
+            border-radius: 8px;
+            transition: var(--transition);
+        }
+        .publicacion-item .pub-actions .delete-btn:hover {
+            color: var(--danger);
+            background: rgba(255, 51, 102, 0.1);
+        }
+
+        .reaccion-picker {
+            display: none;
+            position: absolute;
+            bottom: calc(100% + 10px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(15, 25, 20, 0.98);
+            border: 1px solid rgba(212, 175, 55, 0.25);
+            border-radius: 30px;
+            padding: 8px 14px;
+            z-index: 9999;
+            box-shadow: 0 0 60px rgba(212, 175, 55, 0.15), 0 0 120px rgba(0,0,0,0.9);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            margin-bottom: 0;
+            white-space: nowrap;
+            min-width: 200px;
+            justify-content: center;
+        }
+        .reaccion-picker.show {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2px;
+        }
+        .reaccion-picker button {
+            background: transparent;
+            border: none;
+            font-size: 1.6rem;
+            padding: 4px 6px;
+            cursor: pointer;
+            border-radius: 50%;
+            transition: var(--transition);
+            line-height: 1;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .reaccion-picker button:hover {
+            background: rgba(212, 175, 55, 0.2);
+            transform: scale(1.3);
+        }
+        .reaccion-picker button:active {
+            transform: scale(0.9);
+        }
+
+        .conexion-section {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            padding: 15px;
+            margin-top: 15px;
+        }
+        .conexion-section .conexion-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .conexion-section .conexion-info { display: flex; align-items: center; gap: 10px; }
+        .conexion-section .conexion-info .status { font-weight: 600; font-size: 0.9rem; }
+        .conexion-section .conexion-info .velocidad { color: var(--text-muted); font-size: 0.7rem; }
+        .conexion-section .conexion-info .señal { font-size: 0.7rem; }
+        .conexion-buttons { display: flex; gap: 8px; }
+        .conexion-buttons .btn-conexion {
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            border: 1px solid var(--glass-border);
+            background: transparent;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .conexion-buttons .btn-conexion:hover { border-color: var(--gold); color: var(--gold); }
+        .conexion-buttons .btn-conexion.active { border-color: var(--gold); background: rgba(212, 175, 55, 0.15); color: var(--gold); }
+        .conexion-buttons .btn-conexion.wifi.active { border-color: var(--success); background: rgba(0, 214, 143, 0.1); color: var(--success); }
+        .conexion-buttons .btn-conexion.datos.active { border-color: var(--cyan); background: rgba(0, 229, 255, 0.1); color: var(--cyan); }
+
+        .estado-section {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            padding: 15px;
+            margin-top: 15px;
+        }
+        .estado-section .estado-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .estado-section .estado-info { display: flex; align-items: center; gap: 10px; }
+        .estado-section .estado-info .badge { font-size: 1.2rem; }
+        .estado-section .estado-info .texto { font-weight: 600; }
+        .estado-section .estado-info .amigos-online { font-size: 0.6rem; color: var(--text-muted); }
+        .estado-buttons { display: flex; gap: 8px; }
+        .estado-buttons .btn-estado {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.6rem;
+            font-weight: 600;
+            border: 1px solid var(--glass-border);
+            background: transparent;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .estado-buttons .btn-estado:hover { border-color: var(--gold); color: var(--gold); }
+        .estado-buttons .btn-estado.online { border-color: var(--success); color: var(--success); }
+        .estado-buttons .btn-estado.online:hover { background: rgba(0, 214, 143, 0.1); }
+        .estado-buttons .btn-estado.offline { border-color: var(--text-muted); color: var(--text-muted); }
+        .estado-buttons .btn-estado.offline:hover { background: rgba(255, 255, 255, 0.05); }
+
+        #solicitudesSection { margin-top: 10px; padding: 10px 0; }
+        #solicitudesSection h4 { color: var(--gold); font-size: 0.85rem; margin-bottom: 8px; }
+
+        #amigosContainer {
+            margin-top: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        #amigosContainer .amigo-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            border-radius: 10px;
+            border: 1px solid var(--glass-border);
+            transition: var(--transition);
+        }
+        #amigosContainer .amigo-item:hover { background: rgba(212, 175, 55, 0.05); }
+        #amigosContainer .amigo-item .avatar-mini {
+            width: 32px; height: 32px; border-radius: 50%; overflow: hidden;
+            border: 2px solid var(--text-muted); flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center; font-size: 0.8rem; background: var(--bg-card);
+        }
+        #amigosContainer .amigo-item.online .avatar-mini { border-color: var(--success); }
+        #amigosContainer .amigo-item .avatar-mini img { width: 100%; height: 100%; object-fit: cover; }
+        #amigosContainer .amigo-item .info { flex: 1; min-width: 0; }
+        #amigosContainer .amigo-item .info .nombre { font-weight: 600; font-size: 0.8rem; }
+        #amigosContainer .amigo-item .info .estado { font-size: 0.6rem; color: var(--text-muted); }
+
+        .nft-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 14px;
+        }
+        .nft-card {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            padding: 12px;
+            text-align: center;
+            transition: var(--transition);
+        }
+        .nft-card:hover { border-color: var(--gold); transform: translateY(-3px); }
+        .nft-card img { width: 100%; height: 120px; object-fit: cover; border-radius: 10px; margin-bottom: 8px; }
+        .nft-card .title { font-family: 'Orbitron', monospace; font-size: 0.75rem; color: var(--gold); font-weight: 700; }
+        .nft-card .meta { font-size: 0.6rem; color: var(--text-muted); margin-top: 4px; }
+
+        .token-status { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; }
+        .token-status .item { background: rgba(0, 0, 0, 0.2); border: 1px solid var(--glass-border); border-radius: 12px; padding: 14px; text-align: center; transition: var(--transition); }
+        .token-status .item:hover { border-color: var(--gold); transform: translateY(-2px); }
+        .token-status .item .value { font-family: 'Orbitron', monospace; font-size: 1.3rem; font-weight: 700; color: var(--gold); }
+        .token-status .item .label { font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-family: 'Orbitron', monospace; }
+
+        .progress-bar-container { margin-top: 16px; }
+        .progress-bar-container .bar { width: 100%; height: 8px; background: rgba(255, 255, 255, 0.05); border-radius: 10px; overflow: hidden; }
+        .progress-bar-container .bar .fill { height: 100%; background: linear-gradient(90deg, var(--gold), var(--gold-light)); border-radius: 10px; transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1); }
+        .progress-bar-container .label { display: flex; justify-content: space-between; font-size: 0.6rem; color: var(--text-muted); margin-top: 4px; font-family: 'Orbitron', monospace; }
+
+        .config-group { margin-bottom: 16px; }
+        .config-group label { display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px; font-weight: 500; letter-spacing: 0.3px; }
+        .config-group input, .config-group textarea {
+            width: 100%;
+            padding: 10px 14px;
+            background: rgba(0, 0, 0, 0.25);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            outline: none;
+            transition: var(--transition);
+            font-family: 'Inter', sans-serif;
+        }
+        .config-group input:focus, .config-group textarea:focus { border-color: var(--gold); box-shadow: 0 0 30px rgba(212, 175, 55, 0.05); background: rgba(0, 0, 0, 0.35); }
+        .config-group textarea { resize: vertical; min-height: 80px; }
+        .config-group .hint { font-size: 0.6rem; color: var(--text-muted); margin-top: 4px; }
+
+        .empty-state { text-align: center; padding: 30px 20px; color: var(--text-muted); }
+        .empty-state .icon { font-size: 2.2rem; display: block; margin-bottom: 8px; font-family: 'Orbitron', monospace; color: var(--gold); opacity: 0.4; }
+        .empty-state h4 { font-family: 'Orbitron', monospace; color: var(--text-secondary); font-size: 0.9rem; font-weight: 500; }
+
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: var(--green-deep);
+            border: 1px solid var(--gold);
+            color: var(--gold);
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            box-shadow: var(--shadow-gold-strong);
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.4s ease;
+            z-index: 9999;
+            max-width: 400px;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.error { border-color: var(--danger); color: var(--danger); }
+        .toast.warning { border-color: var(--warning); color: var(--warning); }
+        .toast.success { border-color: var(--success); color: var(--success); }
+
+        .footer { margin-top: 30px; padding-top: 16px; border-top: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; font-size: 0.7rem; color: var(--text-muted); padding-bottom: 8px; letter-spacing: 0.3px; }
+        .footer .brand { color: var(--gold); font-weight: 600; letter-spacing: 1px; }
+        .footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
+        .footer-links a { color: var(--text-muted); text-decoration: none; transition: var(--transition); }
+        .footer-links a:hover { color: var(--gold); }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(12px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            animation: fadeIn 0.3s ease-out;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal-content {
+            background: linear-gradient(135deg, var(--bg-card), var(--bg-dark));
+            border: 2px solid var(--gold);
+            border-radius: 20px;
+            padding: 24px;
+            max-width: 480px;
+            width: 90%;
+            text-align: center;
+            position: relative;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal-content .close-btn {
+            position: absolute;
+            top: 12px;
+            right: 15px;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.4rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .modal-content .close-btn:hover { color: var(--text-primary); transform: rotate(90deg); }
+        .modal-content h2 { color: var(--gold); font-family: 'Orbitron', monospace; font-size: 1.2rem; margin-bottom: 10px; }
+        .modal-content .subtitle { color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 16px; }
+        .modal-content .qr-container { background: white; border-radius: 12px; padding: 15px; margin: 10px 0; display: inline-block; }
+        .modal-content .qr-container img { max-width: 180px; width: 100%; }
+        .modal-content .address-box { background: var(--bg-dark); border-radius: 10px; padding: 12px; margin: 10px 0; word-break: break-all; }
+        .modal-content .address-box .label { font-size: 0.6rem; color: var(--text-muted); }
+        .modal-content .address-box .address { font-family: monospace; font-size: 0.75rem; color: var(--gold); margin-top: 4px; }
+        .modal-content .actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 16px; }
+
+        .crypto-controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+        .crypto-controls .qty-group {
+            display: flex; align-items: center; gap: 10px;
+            background: rgba(0, 0, 0, 0.2); padding: 4px 12px; border-radius: 30px; border: 1px solid var(--glass-border);
+        }
+        .crypto-controls .qty-group .qty-btn {
+            width: 28px; height: 28px; border-radius: 50%; border: none; background: transparent;
+            color: var(--text-primary); font-size: 1.1rem; cursor: pointer; transition: var(--transition);
+        }
+        .crypto-controls .qty-group .qty-btn:hover { background: rgba(212, 175, 55, 0.1); }
+        .crypto-controls .qty-group .qty-value { font-family: 'Orbitron', monospace; font-size: 1rem; font-weight: 600; color: var(--gold); min-width: 20px; text-align: center; }
+        .crypto-total { font-family: 'Orbitron', monospace; font-size: 1.2rem; color: var(--gold); font-weight: 700; }
+
+        #qrReaderContainer { display: none; margin-top: 10px; text-align: center; }
+
+        @media (max-width: 768px) {
+            .app { padding: 12px 14px; }
+            .perfil-header { flex-direction: column; text-align: center; padding: 20px; }
+            .perfil-header .stats { margin-left: 0; justify-content: center; width: 100%; }
+            .perfil-header .acciones { margin-left: 0; justify-content: center; width: 100%; }
+            .perfil-tabs .tab-btn { font-size: 0.6rem; padding: 8px 14px; }
+            .main-nav .nav-link { font-size: 0.6rem; padding: 6px 10px; }
+            .crypto-controls { flex-direction: column; }
+            .reaccion-picker { left: 50%; transform: translateX(-50%); }
+            .reaccion-picker button { font-size: 1.2rem; padding: 3px 4px; width: 32px; height: 32px; }
+        }
+    </style>
 </head>
 <body>
 
-    <!-- Tu estructura HTML visual se mantiene aquí -->
+    <canvas id="stars-canvas"></canvas>
+    <div class="nebula nebula-1"></div>
+    <div class="nebula nebula-2"></div>
+    <div class="nebula nebula-3"></div>
 
-    <!-- Carga de Supabase SDK -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <div class="app">
 
-    <!-- CÓDIGO JAVASCRIPT UNIFICADO Y CORREGIDO -->
-    <script type="module">
-        let sessionUser = null;
-        let membresiaActual = null;
-        let perfilUsuario = null;
-        let pubSeleccionadaParaComentarios = null;
+        <header class="header">
+            <a href="/" class="logo">
+                <span class="logo-hex">◈</span>
+                <span class="logo-text">Sariel<span>'s</span></span>
+                <span class="logo-badge">✦ WEB3</span>
+            </a>
+            <div class="header-actions" style="display:flex;gap:8px;align-items:center;">
+                <button class="btn-video" onclick="window.location.href='/videos/videos.html'" style="padding:4px 12px;border-radius:20px;border:none;font-size:0.7rem;cursor:pointer;font-weight:600;">🎬 Videos</button>
+                <button onclick="window.location.href='/muro/muro.html'" style="background:transparent;border:none;color:var(--text-muted);font-size:1.2rem;cursor:pointer;">◇</button>
+                <span class="network-badge"><span class="dot"></span> Polygon</span>
+            </div>
+        </header>
 
-        // ===== TOAST =====
-        function showToast(msg, type) {
-            let t = document.getElementById('toast');
-            if (!t) {
-                t = document.createElement('div');
-                t.id = 'toast';
-                t.className = 'toast';
-                document.body.appendChild(t);
-            }
-            t.textContent = msg;
-            t.className = 'toast show';
-            if (type === 'error') t.classList.add('error');
-            else if (type === 'warning') t.classList.add('warning');
-            else if (type === 'success') t.classList.add('success');
-            else t.classList.remove('error', 'warning', 'success');
-            clearTimeout(t._timeout);
-            t._timeout = setTimeout(() => t.classList.remove('show'), 3500);
-        }
+        <nav class="main-nav">
+            <a href="/" class="nav-link">⌂ Inicio</a>
+            <a href="/muro/muro.html" class="nav-link">◇ Muro</a>
+            <a href="/features/perfil/perfil.html" class="nav-link active">◆ Perfil</a>
+            <a href="/mensajes/mensajes.html" class="nav-link">◈ Mensajes</a>
+            <a href="/live/live.html" class="nav-link live">◉ Live</a>
+            <a href="/videos/videos.html" class="nav-link">🎬 Videos</a>
+            <a href="/features/grupos/grupos.html" class="nav-link">👥 Grupos</a>
+        </nav>
 
-        // ================================================================
-        // INICIALIZACIÓN Y AUTENTICACIÓN
-        // ================================================================
+        <div class="perfil-container">
 
-        async function initPerfil() {
-            try {
-                console.log('🔄 Verificando sesión en Supabase...');
-                const sessionResult = await window.supabase.auth.getSession();
-
-                if (sessionResult.error) {
-                    console.error('❌ Error al obtener sesión:', sessionResult.error);
-                    showToast('⚠️ Error de autenticación', 'error');
-                    return;
-                }
-
-                if (!sessionResult.data || !sessionResult.data.session) {
-                    console.warn('⚠️ No hay sesión activa');
-                    const nombreEl = document.getElementById('perfilNombre');
-                    if (nombreEl) nombreEl.innerHTML = 'Inicia sesión';
-                    
-                    const handleEl = document.getElementById('perfilHandle');
-                    if (handleEl) handleEl.textContent = '@invitado';
-
-                    const bioEl = document.getElementById('perfilBio');
-                    if (bioEl) bioEl.textContent = 'Inicia sesión para ver tu perfil.';
-                    
-                    renderMembresiaFree();
-                    return;
-                }
-
-                sessionUser = sessionResult.data.session.user;
-                console.log('🔐 Usuario autenticado:', sessionUser.id);
-
-                // Ejecutar cargas de forma independiente para evitar bloqueos
-                cargarPerfilData();
-                cargarMembresia();
-                cargarPublicaciones();
-                cargarEmojis();
-
-            } catch (error) {
-                console.error('❌ Error grave en initPerfil:', error);
-                showToast('❌ Error inicializando el perfil', 'error');
-            }
-        }
-
-        // ================================================================
-        // 1. CARGAR PERFIL (RPC Y TABLA USUARIOS)
-        // ================================================================
-
-        async function cargarPerfilData() {
-            try {
-                console.log('👤 Cargando información del perfil...');
-                
-                const { data: rpcData, error: rpcError } = await window.supabase.rpc('obtener_mi_perfil');
-
-                if (!rpcError && rpcData) {
-                    perfilUsuario = Array.isArray(rpcData) ? rpcData[0] : rpcData;
-                } else {
-                    console.warn('⚠️ Falló RPC obtener_mi_perfil(), consultando tabla usuarios:', rpcError);
-                    const { data: tableData, error: tableError } = await window.supabase
-                        .from('usuarios')
-                        .select('*')
-                        .eq('id', sessionUser.id)
-                        .single();
-
-                    if (tableError) throw tableError;
-                    perfilUsuario = tableData;
-                }
-
-                if (perfilUsuario) {
-                    actualizarUI(perfilUsuario);
-                    actualizarEstadisticas(perfilUsuario);
-                }
-            } catch (error) {
-                console.error('❌ Error al cargar perfil:', error);
-                showToast('❌ Error al cargar datos del perfil', 'error');
-            }
-        }
-
-        function actualizarUI(data) {
-            const nombreEl = document.getElementById('perfilNombre');
-            if (nombreEl) {
-                const verificado = data.verificado ? ' <span class="verified">✦ VERIFICADO</span>' : '';
-                nombreEl.innerHTML = (data.nombre || 'Usuario') + verificado;
-            }
-
-            const handleEl = document.getElementById('perfilHandle');
-            if (handleEl) {
-                handleEl.textContent = '@' + (data.handle || 'usuario');
-            }
-
-            const bioEl = document.getElementById('perfilBio');
-            if (bioEl) {
-                bioEl.textContent = data.bio || 'Sin biografía';
-            }
-
-            const avatarEl = document.getElementById('perfilAvatar');
-            if (avatarEl) {
-                if (data.avatar_url && data.avatar_url.trim() !== '') {
-                    avatarEl.innerHTML = `
-                        <img src="${data.avatar_url}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;"/>
-                        <button class="edit-badge" onclick="abrirSelectorArchivo()" title="Cambiar foto de perfil">✎</button>
-                    `;
-                } else {
-                    avatarEl.innerHTML = `
+            <div class="perfil-header" id="perfilHeader">
+                <div class="avatar-container">
+                    <div class="avatar" id="perfilAvatar">
                         ◈
-                        <button class="edit-badge" onclick="abrirSelectorArchivo()" title="Cambiar foto de perfil">✎</button>
-                    `;
-                }
-            }
-
-            const editNombre = document.getElementById('editNombre');
-            const editHandle = document.getElementById('editHandle');
-            const editBio = document.getElementById('editBio');
-            if (editNombre) editNombre.value = data.nombre || '';
-            if (editHandle) editHandle.value = data.handle || '';
-            if (editBio) editBio.value = data.bio || '';
-        }
-
-        function actualizarEstadisticas(data) {
-            const statTokens = document.getElementById('statTokens');
-            const statNFTS = document.getElementById('statNFTS');
-            const statSeguidores = document.getElementById('statSeguidores');
-            const statSiguiendo = document.getElementById('statSiguiendo');
-
-            if (statTokens) statTokens.textContent = data.tokens || 0;
-            if (statNFTS) statNFTS.textContent = data.nfts_count || 0;
-            if (statSeguidores) statSeguidores.textContent = data.seguidores_count || 0;
-            if (statSiguiendo) statSiguiendo.textContent = data.siguiendo_count || 0;
-
-            const tokenTotal = document.getElementById('tokenTotal');
-            const tokenDisponibles = document.getElementById('tokenDisponibles');
-            if (tokenTotal) tokenTotal.textContent = data.tokens || 0;
-            if (tokenDisponibles) tokenDisponibles.textContent = data.tokens_para_canje || data.tokens || 0;
-        }
-
-        // ================================================================
-        // 2. CARGAR MEMBRESÍA
-        // ================================================================
-
-        async function cargarMembresia() {
-            try {
-                if (!sessionUser) {
-                    renderMembresiaFree();
-                    return;
-                }
-
-                console.log('✦ Obteniendo membresía RPC...');
-                const { data, error } = await window.supabase.rpc('obtener_membresia_usuario', {
-                    p_usuario_id: sessionUser.id
-                });
-
-                if (error) {
-                    console.error('❌ Error RPC obtener_membresia_usuario:', error);
-                    renderMembresiaFree();
-                    return;
-                }
-
-                const membData = Array.isArray(data) ? data[0] : data;
-
-                if (!membData || !membData.activa) {
-                    renderMembresiaFree();
-                    return;
-                }
-
-                membresiaActual = membData;
-                renderMembresiaActiva(membData);
-
-            } catch (error) {
-                console.error('❌ Error inesperado cargando membresía:', error);
-                renderMembresiaFree();
-            }
-        }
-
-        function renderMembresiaFree() {
-            const container = document.getElementById('membresiaContainer');
-            if (!container) return;
-            container.innerHTML = `
-                <div style="padding:15px; background:rgba(255,255,255,0.02); border-radius:12px; border:1px solid var(--glass-border);">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                        <h4 style="color:var(--text-primary); font-family:'Orbitron',sans-serif; margin:0;">Plan Gratuito (FREE)</h4>
-                        <span class="badge" style="border-color:var(--text-muted); color:var(--text-muted);">Sin suscripción</span>
+                        <button class="edit-badge" onclick="window.abrirSelectorArchivo()" title="Cambiar foto de perfil">✎</button>
                     </div>
-                    <p style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:12px;">
-                        Actualmente no tienes una membresía activa. Actualiza a Sariel's Pro para desbloquear almacenamiento ampliado y beneficios Web3.
-                    </p>
-                    <button class="btn btn-gold btn-sm" onclick="showToast('Módulo de actualización en mantenimiento', 'warning')">⚡ Obtener Membresía</button>
+                    <input type="file" id="fileInput" accept="image/*" style="display:none;" onchange="window.subirFoto(event)" />
                 </div>
-            `;
-        }
-
-        function renderMembresiaActiva(m) {
-            const container = document.getElementById('membresiaContainer');
-            if (!container) return;
-            const mb = m.plan_limite_storage_bytes ? (m.plan_limite_storage_bytes / (1024 * 1024)).toFixed(0) : '0';
-            container.innerHTML = `
-                <div style="padding:15px; background:rgba(212,175,55,0.05); border-radius:12px; border:1px solid var(--gold);">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                        <h4 style="color:var(--gold); font-family:'Orbitron',sans-serif; margin:0;">${m.plan_nombre || 'Plan Activo'}</h4>
-                        <span class="badge gold">● ACTIVA</span>
-                    </div>
-                    <div style="font-size:0.8rem; color:var(--text-secondary); display:grid; grid-template-columns:1fr 1fr; gap:8px;">
-                        <div><strong>Almacenamiento:</strong> ${mb} MB</div>
-                        <div><strong>Conservación:</strong> ${m.plan_conservacion_dias || '--'} días</div>
-                        <div><strong>Días Restantes:</strong> ${m.dias_restantes ?? '--'}</div>
-                        <div><strong>Vence:</strong> ${m.vence_at ? new Date(m.vence_at).toLocaleDateString() : 'N/A'}</div>
+                <div class="info">
+                    <div class="nombre" id="perfilNombre">Cargando...<span class="verified">✦ VERIFICADO</span></div>
+                    <div class="handle" id="perfilHandle">@cargando</div>
+                    <div class="bio" id="perfilBio">Cargando información del usuario...</div>
+                    <div class="badges">
+                        <span class="badge gold">✦ MIEMBRO</span>
+                        <span class="badge success">● ACTIVO</span>
+                        <span class="badge">◈ WEB3</span>
+                        <span class="badge" id="nivelUsuario" style="border-color:var(--purple);color:var(--purple);background:rgba(168,85,247,0.05);">🌱 Explorador</span>
                     </div>
                 </div>
-            `;
-        }
+                <div class="stats">
+                    <div class="stat"><div class="number" id="statTokens">0</div><div class="label">◈ Tokens</div></div>
+                    <div class="stat"><div class="number" id="statNFTS">0</div><div class="label">◈ NFTs</div></div>
+                    <div class="stat"><div class="number" id="statSeguidores">0</div><div class="label">◈ Seguidores</div></div>
+                    <div class="stat"><div class="number" id="statSiguiendo">0</div><div class="label">◈ Siguiendo</div></div>
+                </div>
+                <div class="acciones">
+                    <button class="btn btn-gold btn-sm" onclick="window.editarPerfil()">✎ Editar perfil</button>
+                    <button class="btn btn-outline btn-sm" onclick="window.compartirPerfil()">◈ Compartir</button>
+                    <button class="btn btn-outline btn-sm" onclick="window.generarQRPerfil()">📱 QR</button>
+                </div>
+            </div>
 
-        // ================================================================
-        // 3. CARGAR Y GESTIONAR PUBLICACIONES
-        // ================================================================
+            <div class="estado-section">
+                <div class="estado-header">
+                    <div class="estado-info">
+                        <span class="badge" id="estadoBadge">🟢</span>
+                        <span class="texto" id="estadoTexto" style="color:var(--success);">Activo ahora</span>
+                        <span class="amigos-online">· <span id="amigosEnLineaContador">0</span> amigos en línea</span>
+                    </div>
+                    <div class="estado-buttons">
+                        <button class="btn-estado online" onclick="window.cambiarEstado(true)">🟢 Activo</button>
+                        <button class="btn-estado offline" onclick="window.cambiarEstado(false)">⭕ Inactivo</button>
+                    </div>
+                </div>
+                <div id="solicitudesSection">
+                    <h4 style="margin-top:12px;">📨 Solicitudes de Amistad <span id="solicitudesContador" style="font-size:0.7rem;color:var(--warning);">0</span></h4>
+                    <div id="solicitudesContainer" style="max-height:200px;overflow-y:auto;"><div style="text-align:center;padding:10px;color:var(--text-muted);font-size:0.75rem;">Cargando solicitudes...</div></div>
+                </div>
+                <div id="amigosContainer"></div>
+            </div>
 
-        async function cargarPublicaciones() {
-            const container = document.getElementById('postsList');
-            if (!container) return;
+            <div class="conexion-section">
+                <div class="conexion-header">
+                    <div class="conexion-info">
+                        <span class="status" id="conexionStatus">🛜 WiFi</span>
+                        <span class="velocidad" id="conexionVelocidad">-- Mbps</span>
+                        <span class="señal" id="conexionSeñal" style="color:var(--success);">████</span>
+                    </div>
+                    <div class="conexion-buttons">
+                        <button class="btn-conexion wifi active" onclick="window.cambiarConexion('wifi')">🛜 WiFi</button>
+                        <button class="btn-conexion datos" onclick="window.cambiarConexion('datos')">📶 Datos</button>
+                    </div>
+                </div>
+                <div style="font-size:0.6rem;color:var(--text-muted);margin-top:6px;">Conexión actual: <span id="conexionTipo">🛜 WiFi</span> · Operador: <span id="conexionOperador">Sariel's Net</span></div>
+            </div>
 
-            try {
-                if (!sessionUser) return;
+            <div class="perfil-tabs" role="tablist">
+                <button class="tab-btn active" onclick="window.cambiarTab('actividad')">◈ Actividad</button>
+                <button class="tab-btn" onclick="window.cambiarTab('tokens')">⟡ E.S.TOKS</button>
+                <button class="tab-btn" onclick="window.cambiarTab('nfts')">🎨 NFTs</button>
+                <button class="tab-btn" onclick="window.cambiarTab('esim')">📱 eSIM</button>
+                <button class="tab-btn" onclick="window.cambiarTab('qr')">📷 Escanear QR</button>
+                <button class="tab-btn" onclick="window.cambiarTab('config')">◆ Ajustes</button>
+            </div>
 
-                console.log('📝 Cargando publicaciones de usuario:', sessionUser.id);
-                const { data, error } = await window.supabase
-                    .from('publicaciones')
-                    .select('*')
-                    .eq('usuario_id', sessionUser.id)
-                    .order('created_at', { ascending: false });
+            <div id="tab-actividad" class="tab-content active">
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3>📸 Crear Publicación</h3>
+                        <span class="panel-badge">Nuevo</span>
+                    </div>
+                    <div class="panel-body">
+                        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+                            <button class="btn btn-gold" onclick="window.abrirModalPublicacion()" style="flex:1;justify-content:center;padding:10px;">
+                                📸 Nueva Publicación
+                            </button>
+                        </div>
+                        <div style="font-size:0.6rem;color:var(--text-muted);text-align:center;">
+                            Comparte fotos, videos o texto con la comunidad.
+                        </div>
+                    </div>
+                </div>
 
-                if (error) {
-                    console.error('❌ Error cargando publicaciones:', error);
-                    container.innerHTML = `<div class="empty-state"><h4>Error al cargar publicaciones</h4></div>`;
-                    return;
-                }
-
-                const publicaciones = data || [];
-                const countEl = document.getElementById('postsCount');
-                if (countEl) countEl.textContent = publicaciones.length;
-
-                if (publicaciones.length === 0) {
-                    container.innerHTML = `
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3>◈ Mis Publicaciones</h3>
+                        <span class="panel-badge" id="postsCount">0</span>
+                    </div>
+                    <div class="panel-body" id="postsList">
                         <div class="empty-state">
                             <span class="icon">📝</span>
                             <h4>Sin publicaciones</h4>
                             <p>Crea tu primera publicación desde el botón "Nueva Publicación".</p>
                         </div>
-                    `;
-                    return;
-                }
-
-                const nombreUsuario = perfilUsuario?.nombre || 'Usuario';
-                const avatarUsuario = perfilUsuario?.avatar_url 
-                    ? `<img src="${perfilUsuario.avatar_url}" style="width:100%;height:100%;object-fit:cover;">` 
-                    : '◈';
-
-                container.innerHTML = publicaciones.map(p => {
-                    const fecha = p.created_at ? new Date(p.created_at).toLocaleString() : '';
-                    let mediaHtml = '';
-
-                    if (p.media_url) {
-                        if (p.media_type === 'video') {
-                            mediaHtml = `<video src="${p.media_url}" class="pub-media" controls preload="metadata"></video>`;
-                        } else {
-                            mediaHtml = `<img src="${p.media_url}" class="pub-media" loading="lazy" alt="Foto" onerror="this.style.display='none'" />`;
-                        }
-                    }
-
-                    const contenido = p.contenido ? `<div class="pub-texto">${p.contenido}</div>` : '';
-
-                    return `
-                        <div class="publicacion-item" data-id="${p.id}">
-                            <div class="pub-header">
-                                <div class="avatar-mini">${avatarUsuario}</div>
-                                <span class="pub-nombre">${nombreUsuario}</span>
-                                <span class="pub-fecha">${fecha}</span>
-                            </div>
-                            ${contenido}
-                            ${mediaHtml}
-                            <div class="pub-actions">
-                                <button class="reaccion-btn" onclick="togglePicker('${p.id}')">
-                                    👍 <span class="count" id="react-count-${p.id}">0</span>
-                                </button>
-                                <button class="comment-btn" onclick="abrirModalComentarios('${p.id}')">💬 Comentarios</button>
-                                <button class="delete-btn" onclick="eliminarPublicacion('${p.id}')">🗑️ Eliminar</button>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-
-            } catch (error) {
-                console.error('❌ Error en cargarPublicaciones:', error);
-            }
-        }
-
-        async function publicarContenido() {
-            const textoEl = document.getElementById('pubTexto');
-            const archivoEl = document.getElementById('pubArchivo');
-            const statusEl = document.getElementById('pubStatus');
-            const btn = document.getElementById('btnPublicar');
-
-            const texto = textoEl?.value.trim() || '';
-            const archivo = archivoEl?.files[0];
-
-            if (!texto && !archivo) {
-                showToast('Escribe algo o selecciona una foto/video', 'warning');
-                return;
-            }
-
-            try {
-                if (btn) btn.disabled = true;
-                if (statusEl) statusEl.textContent = 'Subiendo publicación...';
-
-                let mediaUrl = null;
-                let mediaType = null;
-
-                if (archivo) {
-                    const ext = archivo.name.split('.').pop();
-                    const filePath = `${sessionUser.id}/${Date.now()}.${ext}`;
-                    const { data: uploadData, error: uploadError } = await window.supabase.storage
-                        .from('publicaciones')
-                        .upload(filePath, archivo);
-
-                    if (uploadError) throw uploadError;
-
-                    const { data: publicUrlData } = window.supabase.storage
-                        .from('publicaciones')
-                        .getPublicUrl(filePath);
-
-                    mediaUrl = publicUrlData.publicUrl;
-                    mediaType = archivo.type.startsWith('video') ? 'video' : 'imagen';
-                }
-
-                const { error: insertError } = await window.supabase
-                    .from('publicaciones')
-                    .insert({
-                        usuario_id: sessionUser.id,
-                        contenido: texto,
-                        media_url: mediaUrl,
-                        media_type: mediaType,
-                        estado: 'publicado'
-                    });
-
-                if (insertError) throw insertError;
-
-                showToast('🚀 Publicación creada', 'success');
-                if (textoEl) textoEl.value = '';
-                if (archivoEl) archivoEl.value = '';
-                cerrarModal('publicacionModal');
-                cargarPublicaciones();
-
-            } catch (error) {
-                console.error('❌ Error al publicar:', error);
-                showToast('❌ Error al guardar publicación', 'error');
-            } finally {
-                if (btn) btn.disabled = false;
-                if (statusEl) statusEl.textContent = '';
-            }
-        }
-
-        async function eliminarPublicacion(id) {
-            if (!confirm('¿Deseas eliminar esta publicación?')) return;
-            try {
-                const { error } = await window.supabase
-                    .from('publicaciones')
-                    .delete()
-                    .eq('id', id)
-                    .eq('usuario_id', sessionUser.id);
-
-                if (error) throw error;
-                showToast('Publicación eliminada', 'success');
-                cargarPublicaciones();
-            } catch (error) {
-                console.error('❌ Error al eliminar:', error);
-                showToast('❌ No se pudo eliminar', 'error');
-            }
-        }
-
-        // ================================================================
-        // 4. REACCIONES Y COMENTARIOS
-        // ================================================================
-
-        async function cargarEmojis() {
-            try {
-                const { data, error } = await window.supabase
-                    .from('reacciones_emojis')
-                    .select('*');
-
-                if (!error && data) {
-                    window.EMOJIS_DISPONIBLES = data;
-                }
-            } catch (error) {
-                console.warn('⚠️ No se pudieron cargar los emojis:', error);
-            }
-        }
-
-        async function abrirModalComentarios(pubId) {
-            pubSeleccionadaParaComentarios = pubId;
-            const modal = document.getElementById('modalComentarios');
-            const list = document.getElementById('comentariosList');
-            if (modal) modal.classList.add('active');
-            if (list) list.innerHTML = '<div style="color:var(--text-muted);text-align:center;padding:20px;">Cargando comentarios...</div>';
-
-            try {
-                const { data, error } = await window.supabase
-                    .from('publicaciones_comentarios')
-                    .select('*, usuarios(nombre, avatar_url)')
-                    .eq('publicacion_id', pubId)
-                    .order('created_at', { ascending: true });
-
-                if (error) throw error;
-
-                if (!data || data.length === 0) {
-                    list.innerHTML = '<div style="color:var(--text-muted);text-align:center;padding:20px;">Sin comentarios aún.</div>';
-                    return;
-                }
-
-                list.innerHTML = data.map(c => `
-                    <div style="padding:8px 0; border-bottom:1px solid var(--glass-border); font-size:0.8rem;">
-                        <strong>${c.usuarios?.nombre || 'Usuario'}:</strong> ${c.comentario}
                     </div>
-                `).join('');
+                </div>
 
-            } catch (error) {
-                console.error('❌ Error cargando comentarios:', error);
-                list.innerHTML = '<div style="color:var(--danger);text-align:center;padding:20px;">Error al cargar comentarios.</div>';
-            }
-        }
+                <!-- ============================================================ -->
+                <!-- MEMBRESÍA PRO -->
+                <!-- ============================================================ -->
+                <div class="panel" id="membresiaPanel">
+                    <div class="panel-header">
+                        <h3>✦ Sariel's Pro</h3>
+                        <span class="panel-badge">Membresía</span>
+                    </div>
+                    <div class="panel-body" id="membresiaContainer">
+                        <div class="empty-state">
+                            <span class="icon">⏳</span>
+                            <h4>Cargando membresía...</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-        async function enviarComentario() {
-            const input = document.getElementById('inputComentario');
-            const comentario = input?.value.trim();
-            if (!comentario || !pubSeleccionadaParaComentarios) return;
+            <div id="tab-tokens" class="tab-content">
+                <div class="panel">
+                    <div class="panel-header"><h3>⟡ Balance E.S.TOKS & Domos</h3><span class="panel-badge">Ecosistema</span></div>
+                    <div class="panel-body">
+                        <div class="token-status">
+                            <div class="item"><div class="value" id="tokenTotal">0</div><div class="label">◈ Balance Tokens</div></div>
+                            <div class="item"><div class="value" id="tokenDisponibles">0</div><div class="label">◈ Disponibles</div></div>
+                            <div class="item"><div class="value" id="tokenVendidos">0</div><div class="label">◈ Domos Leídos</div></div>
+                            <div class="item"><div class="value" id="tokenNFTs">0</div><div class="label">◈ NFTs Desbloqueados</div></div>
+                        </div>
+                        <div class="progress-bar-container">
+                            <div class="bar"><div class="fill" id="progressFill" style="width:0%;"></div></div>
+                            <div class="label"><span>Progreso meta 12 E.S.TOKS</span><span id="progressText">0 / 12</span></div>
+                        </div>
+                        <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;">
+                            <button class="btn btn-gold" style="flex:1;justify-content:center;padding:10px;" onclick="window.comprarDomo(1)">⟡ Registrar Domo • $75 MXN</button>
+                            <button class="btn btn-gold" style="flex:1;justify-content:center;padding:10px;" id="canjearNft" onclick="window.canjearNFT()" disabled>🔒 CANJEAR NFT (Requiere 12 Tokens)</button>
+                        </div>
+                        <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--glass-border);">
+                            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+                                <span style="font-size:0.8rem;color:var(--gold);font-weight:600;">💳 Obtención vía Cripto</span>
+                                <span style="font-size:0.6rem;color:var(--text-muted);">USDT / USDC · Red TRC-20</span>
+                            </div>
+                            <div class="crypto-controls">
+                                <div class="qty-group">
+                                    <button class="qty-btn" id="cryptoDecreaseQty">−</button>
+                                    <span class="qty-value" id="cryptoQuantity">1</span>
+                                    <button class="qty-btn" id="cryptoIncreaseQty">+</button>
+                                </div>
+                                <div style="flex:1;text-align:center;"><span class="crypto-total" id="cryptoTotal">$4.59 USDT</span></div>
+                            </div>
+                            <button class="btn btn-crypto" style="width:100%;justify-content:center;margin-top:10px;padding:10px;" onclick="window.comprarConCripto()">💳 Pagar con USDT/USDC</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="panel">
+                    <div class="panel-header"><h3>◈ Historial de E.S.TOKS y Domos</h3><span class="panel-badge" id="historialCount">0</span></div>
+                    <div class="panel-body" id="historialList"><div class="empty-state"><span class="icon">◈</span><h4>Sin registros</h4><p>Registra o escanea Domos para acumular tu historial.</p></div></div>
+                </div>
+            </div>
 
-            try {
-                const { error } = await window.supabase
-                    .from('publicaciones_comentarios')
-                    .insert({
-                        publicacion_id: pubSeleccionadaParaComentarios,
-                        usuario_id: sessionUser.id,
-                        comentario: comentario
-                    });
+            <div id="tab-nfts" class="tab-content">
+                <div class="panel">
+                    <div class="panel-header"><h3>🎨 Galería de NFTs Conmemorativos</h3><span class="panel-badge">Sariel's Collection</span></div>
+                    <div class="panel-body">
+                        <div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:14px;">ⓘ Los NFTs de Sariel's son activos digitales conmemorativos e intransferibles emitidos al completar metas dentro de la red.</div>
+                        <div id="nftGalleryContainer" class="nft-grid"><div class="empty-state" style="grid-column:1/-1;"><span class="icon">🎨</span><h4>No posees NFTs conmemorativos</h4><p>Reúne 12 E.S.TOKS para canjear tu primer NFT conmemorativo.</p></div></div>
+                    </div>
+                </div>
+            </div>
 
-                if (error) throw error;
-                input.value = '';
-                abrirModalComentarios(pubSeleccionadaParaComentarios);
-            } catch (error) {
-                console.error('❌ Error enviando comentario:', error);
-                showToast('Error al enviar comentario', 'error');
-            }
-        }
+            <div id="tab-esim" class="tab-content">
+                <div class="panel">
+                    <div class="panel-header"><h3>📱 Estado de eSIM</h3><span class="panel-badge">Telnyx Mobile</span></div>
+                    <div class="panel-body">
+                        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;">
+                            <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;border:1px solid var(--glass-border);"><span style="color:var(--text-muted);font-size:0.6rem;">ESTADO ACTIVACIÓN</span><div id="esimStatus" style="font-weight:600;font-size:0.85rem;">⏳ No asignada</div></div>
+                            <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;border:1px solid var(--glass-border);"><span style="color:var(--text-muted);font-size:0.6rem;">DATOS CONSUMIDOS</span><div id="esimDataUsed" style="font-weight:600;font-size:0.85rem;">-- GB</div></div>
+                            <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;border:1px solid var(--glass-border);"><span style="color:var(--text-muted);font-size:0.6rem;">LÍMITE DEL PLAN</span><div id="esimDataLimit" style="font-weight:600;font-size:0.85rem;">-- GB</div></div>
+                            <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;border:1px solid var(--glass-border);"><span style="color:var(--text-muted);font-size:0.6rem;">DATOS RESTANTES</span><div id="esimDataRestante" style="font-weight:600;font-size:0.85rem;color:var(--success);">-- GB</div></div>
+                        </div>
+                        <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;border:1px solid var(--glass-border);margin-top:10px;"><span style="color:var(--text-muted);font-size:0.6rem;">ICCID IDENTIFICADOR</span><div id="esimIccid" style="font-weight:600;font-size:0.8rem;font-family:monospace;">--</div></div>
+                        <div style="margin-top:12px;"><div style="background:rgba(0,0,0,0.2);border-radius:10px;height:8px;overflow:hidden;"><div id="esimDataProgress" style="height:100%;width:0%;background:var(--success);transition:width 0.8s;"></div></div></div>
+                        <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;">
+                            <button class="btn btn-gold" style="flex:1;justify-content:center;padding:10px;" onclick="window.comprarESIM(1)">📱 Adquirir eSIM</button>
+                            <button class="btn btn-outline" style="flex:1;justify-content:center;padding:10px;" onclick="window.generarQRESIM()">📲 Obtener QR</button>
+                            <button class="btn btn-outline" style="flex:1;justify-content:center;padding:10px;" onclick="window.sincronizarESIM()">🔄 Sincronizar</button>
+                        </div>
+                        <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
+                            <button class="btn btn-outline btn-sm" onclick="window.activarESIM()" style="border-color:var(--success);color:var(--success);">✅ Activar eSIM</button>
+                            <button class="btn btn-danger btn-sm" onclick="window.desactivarESIM()">⛔ Desactivar eSIM</button>
+                        </div>
+                        <div style="margin-top:10px;font-size:0.6rem;color:var(--text-muted);">APN Requerido: <span id="esimApn" style="font-family:monospace;color:var(--text-secondary);">data00.telnyx</span></div>
+                    </div>
+                </div>
+            </div>
 
-        function cerrarModalComentarios() {
-            const modal = document.getElementById('modalComentarios');
-            if (modal) modal.classList.remove('active');
-            pubSeleccionadaParaComentarios = null;
-        }
+            <div id="tab-qr" class="tab-content">
+                <div class="panel">
+                    <div class="panel-header"><h3>📱 Escaneo e Ingreso de QR Domo</h3><span class="panel-badge">Validación Real</span></div>
+                    <div class="panel-body">
+                        <form onsubmit="event.preventDefault(); window.escanearQR();" class="config-group">
+                            <label for="qrInput">Código del QR (Escanea o ingresa manualmente)</label>
+                            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                                <input type="text" id="qrInput" placeholder="Ej: DOMO-2026-X89A12" required style="flex:1;padding:10px 14px;background:rgba(0,0,0,0.3);border:1px solid var(--glass-border);border-radius:10px;color:var(--text-primary);font-size:0.85rem;outline:none;">
+                                <button type="submit" class="btn btn-gold">🔍 Validar Código</button>
+                            </div>
+                            <div class="hint">⚡ Ingresa el identificador único del Domo físico para acumular 1 E.S.TOK real.</div>
+                        </form>
+                        <button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:8px;padding:10px;" onclick="window.abrirCamaraQR()">📷 Abrir Cámara del Dispositivo</button>
+                        <div id="qrReaderContainer">
+                            <video id="qrVideo" playsinline style="width:100%;max-width:300px;border-radius:10px;background:black;"></video>
+                            <canvas id="qrCanvas" style="display:none;"></canvas>
+                            <div style="margin-top:8px;"><button class="btn btn-danger btn-sm" onclick="window.cerrarCamaraQR()">✕ Cerrar cámara</button></div>
+                            <div id="qrCamaraStatus" style="font-size:0.7rem;color:var(--text-muted);margin-top:4px;">Iniciando cámara...</div>
+                        </div>
+                        <div id="qrStatus" style="margin-top:12px;font-size:0.8rem;color:var(--text-muted);min-height:24px;text-align:center;"></div>
+                    </div>
+                </div>
+            </div>
 
-        // ================================================================
-        // 5. EDICIÓN DE PERFIL Y ARCHIVOS
-        // ================================================================
+            <div id="tab-config" class="tab-content">
+                <div class="panel">
+                    <div class="panel-header"><h3>◆ Perfil e Información</h3><span class="panel-badge">Editar</span></div>
+                    <div class="panel-body">
+                        <form onsubmit="event.preventDefault(); window.guardarPerfil();">
+                            <div class="config-group"><label for="editNombre">Nombre de Usuario</label><input type="text" id="editNombre" required /></div>
+                            <div class="config-group"><label for="editHandle">Handle / Apodo (@)</label><input type="text" id="editHandle" required /></div>
+                            <div class="config-group"><label for="editBio">Biografía</label><textarea id="editBio" rows="3"></textarea></div>
+                            <div class="config-group"><label>Imagen de Perfil</label><button type="button" class="btn btn-outline" style="width:100%;" onclick="window.abrirSelectorArchivo()">📸 Subir nueva foto</button></div>
+                            <button type="submit" class="btn btn-gold" style="width:100%;justify-content:center;padding:10px;">◆ Guardar Cambios</button>
+                        </form>
+                    </div>
+                </div>
+                <div class="panel">
+                    <div class="panel-header"><h3>◆ Seguridad y Wallet Web3</h3><span class="panel-badge">Conexión</span></div>
+                    <div class="panel-body">
+                        <div class="config-group">
+                            <label>Dirección Wallet Conectada</label>
+                            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px;">
+                                <span id="walletDisplay" style="font-family:monospace;font-size:0.85rem;color:var(--text-secondary);">⚠️ No conectada</span>
+                                <button type="button" class="btn btn-wallet btn-sm" onclick="window.conectarWallet()">◈ Conectar Wallet</button>
+                                <button type="button" class="btn btn-danger btn-sm" onclick="window.desconectarWallet()" style="display:none;">✕ Desconectar</button>
+                            </div>
+                            <div class="hint">Red Actual: <span id="walletRed">Polygon Mainnet</span></div>
+                        </div>
+                        <button type="button" class="btn btn-danger" style="width:100%;justify-content:center;padding:10px;margin-top:12px;" onclick="window.cerrarSesion()">✕ Cerrar Sesión</button>
+                    </div>
+                </div>
+            </div>
 
-        async function guardarPerfil() {
-            const nombre = document.getElementById('editNombre')?.value.trim();
-            const handle = document.getElementById('editHandle')?.value.trim();
-            const bio = document.getElementById('editBio')?.value.trim();
+        </div>
 
-            try {
-                const { error } = await window.supabase.rpc('actualizar_perfil', {
-                    p_nombre: nombre,
-                    p_handle: handle,
-                    p_bio: bio
-                });
+        <footer class="footer">
+            <span><span class="brand">◈ Sariel's</span> · Red Social WEB3</span>
+            <div class="footer-links">
+                <a href="/terminos">Términos</a>
+                <a href="/privacidad">Privacidad</a>
+                <a href="/cookies">Cookies</a>
+                <span style="opacity:0.4;">⚡ Powered by Polygon</span>
+            </div>
+        </footer>
 
-                if (error) {
-                    const { error: updateError } = await window.supabase
-                        .from('usuarios')
-                        .update({ nombre, handle, bio })
-                        .eq('id', sessionUser.id);
+    </div>
 
-                    if (updateError) throw updateError;
-                }
+    <!-- ================================================================ -->
+    <!-- MODAL PARA CREAR PUBLICACIÓN -->
+    <!-- ================================================================ -->
+    <div class="modal-overlay" id="publicacionModal">
+        <div class="modal-content" style="max-width:560px;text-align:left;">
+            <button class="close-btn" onclick="window.cerrarModal('publicacionModal')">✕</button>
+            <h2 style="text-align:center;">📸 Nueva Publicación</h2>
+            <p class="subtitle" style="text-align:center;">Comparte lo que está pasando</p>
 
-                showToast('Perfil actualizado correctamente', 'success');
-                cargarPerfilData();
-            } catch (error) {
-                console.error('❌ Error guardando perfil:', error);
-                showToast('Error al actualizar el perfil', 'error');
-            }
-        }
+            <div class="config-group">
+                <label>Texto de la publicación</label>
+                <textarea id="pubTexto" rows="4" placeholder="¿Qué estás pensando?" style="width:100%;padding:10px 14px;background:rgba(0,0,0,0.25);border:1px solid var(--glass-border);border-radius:10px;color:var(--text-primary);font-size:0.85rem;outline:none;resize:vertical;min-height:80px;font-family:'Inter',sans-serif;"></textarea>
+            </div>
+            <div class="config-group">
+                <label>Archivo (foto o video)</label>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+                    <input type="file" id="pubArchivo" accept="image/*,video/*" style="flex:1;padding:8px;background:rgba(0,0,0,0.3);border:1px solid var(--glass-border);border-radius:10px;color:var(--text-primary);font-size:0.7rem;"/>
+                    <span style="font-size:0.55rem;color:var(--text-muted);">📸 Foto o 🎬 Video</span>
+                </div>
+                <div id="pubPreview" style="margin-top:10px;display:none;border-radius:10px;overflow:hidden;max-height:200px;background:var(--space);"></div>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;">
+                <button class="btn btn-outline" style="flex:1;justify-content:center;padding:10px;" onclick="window.cerrarModal('publicacionModal')">Cancelar</button>
+                <button class="btn btn-gold" style="flex:1;justify-content:center;padding:10px;" id="btnPublicar" onclick="window.publicarContenido()">🚀 Publicar</button>
+                <button class="btn-outline btn-sm" onclick="window.toggleEmojiPickerPerfil()" id="btnEmojiPerfil" style="font-size:1.2rem;padding:8px 12px;">😊</button>
+                <div class="emoji-picker" id="emojiPickerPerfil" style="display:none;position:absolute;bottom:100%;left:0;background:rgba(15,25,20,0.95);border:1px solid var(--glass-border);border-radius:var(--radius);padding:12px;width:280px;max-width:90vw;z-index:1000;box-shadow:var(--shadow-gold-strong);backdrop-filter:blur(12px);margin-bottom:8px;">
+                    <div class="titulo" style="color:var(--text-muted);font-size:0.6rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;text-align:center;font-family:'Orbitron',monospace;">✦ Elige tu emoji</div>
+                    <div class="grid" id="emojiGridPerfil" style="display:grid;grid-template-columns:repeat(8,1fr);gap:4px;"></div>
+                </div>
+            </div>
+            <div id="pubStatus" style="margin-top:10px;font-size:0.7rem;color:var(--text-muted);text-align:center;min-height:20px;"></div>
+        </div>
+    </div>
 
-        function abrirSelectorArchivo() {
-            document.getElementById('fileInput')?.click();
-        }
+    <!-- ================================================================ -->
+    <!-- MODAL DE COMENTARIOS -->
+    <!-- ================================================================ -->
+    <div class="modal-overlay" id="modalComentarios">
+        <div class="modal-content" style="max-width:500px;text-align:left;">
+            <button class="close-btn" onclick="window.cerrarModalComentarios()">✕</button>
+            <h2 style="text-align:center;">💬 Comentarios</h2>
+            <div id="comentariosList" style="max-height:300px;overflow-y:auto;margin:12px 0;">
+                <div style="color:var(--text-muted);text-align:center;padding:20px;">Cargando comentarios...</div>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:8px;">
+                <input type="text" id="inputComentario" placeholder="Escribe un comentario..." style="flex:1;padding:8px 14px;background:rgba(0,0,0,0.25);border:1px solid var(--glass-border);border-radius:10px;color:var(--text-primary);font-size:0.85rem;outline:none;">
+                <button class="btn btn-gold" onclick="window.enviarComentario()" style="padding:8px 16px;">Enviar</button>
+            </div>
+        </div>
+    </div>
 
-        async function subirFoto(event) {
-            const file = event.target.files[0];
-            if (!file || !sessionUser) return;
+    <div class="toast" id="toast"></div>
 
-            try {
-                showToast('Subiendo foto de perfil...', 'info');
-                const ext = file.name.split('.').pop();
-                const path = `avatars/${sessionUser.id}_${Date.now()}.${ext}`;
+    <!-- ================================================================ -->
+    <!-- MODALES EXISTENTES -->
+    <!-- ================================================================ -->
+    <div class="modal-overlay" id="nftModal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="window.cerrarModal('nftModal')">✕</button>
+            <h2 id="nftModalTitle">NFT Conmemorativo</h2>
+            <div style="margin:15px 0;"><img id="nftModalImage" src="" alt="NFT" style="max-width:200px;width:100%;border-radius:12px;border:1px solid var(--gold);" /></div>
+            <p id="nftModalDescription" class="subtitle" style="font-size:0.8rem;"></p>
+            <div class="address-box"><div class="label">Domo de Origen / Transacción</div><div class="address" id="nftModalDomo">--</div></div>
+            <div class="address-box"><div class="label">Fecha de Obtención</div><div class="address" id="nftModalFecha">--</div></div>
+            <div class="actions"><button class="btn btn-outline btn-sm" onclick="window.cerrarModal('nftModal')">Cerrar</button></div>
+        </div>
+    </div>
 
-                const { error: uploadError } = await window.supabase.storage
-                    .from('perfiles')
-                    .upload(path, file);
+    <div class="modal-overlay" id="cryptoPaymentModal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="window.cerrarModal('cryptoPaymentModal')">✕</button>
+            <h2>💳 Pagar con Cripto</h2>
+            <p class="subtitle">Escanea el QR o copia la dirección oficial de depósito</p>
+            <div class="qr-container"><img id="cryptoQR" src="" alt="QR" /></div>
+            <div class="address-box"><div class="label">📤 Dirección TRC-20 de pago</div><div class="address" id="cryptoAddress">Cargando dirección...</div></div>
+            <div class="amount"><span id="cryptoMonto">0.00</span> <span id="cryptoMoneda">USDT</span></div>
+            <div class="actions">
+                <button class="btn btn-outline btn-sm" onclick="window.copiarDireccion()">📋 Copiar dirección</button>
+                <button class="btn btn-gold btn-sm" onclick="window.verificarPagoCrypto()">✅ Verificar depósito</button>
+                <button class="btn btn-outline btn-sm" onclick="window.cerrarModal('cryptoPaymentModal')">Cancelar</button>
+            </div>
+            <div class="status" id="cryptoStatus">⏳ Esperando confirmación en la red...</div>
+        </div>
+    </div>
 
-                if (uploadError) throw uploadError;
+    <div class="modal-overlay" id="qrPerfilModal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="window.cerrarModal('qrPerfilModal')">✕</button>
+            <h2>📱 Mi QR de Perfil</h2>
+            <p class="subtitle">Muestra este código para que te agreguen rápidamente</p>
+            <div class="qr-container"><img id="qrPerfilImage" src="" alt="QR" /></div>
+            <div class="actions"><button class="btn btn-outline btn-sm" onclick="window.cerrarModal('qrPerfilModal')">Cerrar</button></div>
+        </div>
+    </div>
 
-                const { data: urlData } = window.supabase.storage
-                    .from('perfiles')
-                    .getPublicUrl(path);
+    <div id="errorBanner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:99999;background:#ff3366;color:#fff;padding:12px 16px;font-family:monospace;font-size:0.75rem;word-break:break-word;">
+        <strong>⚠️ Error detectado:</strong>
+        <span id="errorBannerText"></span>
+        <button onclick="document.getElementById('errorBanner').style.display='none'" style="float:right;background:none;border:1px solid #fff;color:#fff;border-radius:6px;padding:2px 10px;cursor:pointer;">Cerrar</button>
+    </div>
 
-                const avatarUrl = urlData.publicUrl;
+    <!-- ================================================================ -->
+    <!-- SCRIPTS -->
+    <!-- ================================================================ -->
 
-                await window.supabase
-                    .from('usuarios')
-                    .update({ avatar_url: avatarUrl })
-                    .eq('id', sessionUser.id);
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="/app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+    <script type="module" src="./perfil.js"></script>
 
-                showToast('Foto de perfil actualizada', 'success');
-                cargarPerfilData();
-            } catch (error) {
-                console.error('❌ Error subiendo avatar:', error);
-                showToast('Error al subir la imagen', 'error');
-            }
-        }
-
-        // ================================================================
-        // NAVEGACIÓN Y MODALES
-        // ================================================================
-
-        function cambiarTab(tabId) {
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-
-            const activeBtn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.getAttribute('onclick')?.includes(tabId));
-            if (activeBtn) activeBtn.classList.add('active');
-
-            const activeTab = document.getElementById('tab-' + tabId);
-            if (activeTab) activeTab.classList.add('active');
-        }
-
-        function abrirModalPublicacion() {
-            document.getElementById('publicacionModal')?.classList.add('active');
-        }
-
-        function cerrarModal(id) {
-            document.getElementById(id)?.classList.remove('active');
-        }
-
-        async function cerrarSesion() {
-            await window.supabase.auth.signOut();
-            window.location.href = '/';
-        }
-
-        // ================================================================
-        // EXPOSICIÓN GLOBAL PARA MANEJADORES INLINE (ONCLICK)
-        // ================================================================
-
-        window.cambiarTab = cambiarTab;
-        window.abrirModalPublicacion = abrirModalPublicacion;
-        window.cerrarModal = cerrarModal;
-        window.publicarContenido = publicarContenido;
-        window.eliminarPublicacion = eliminarPublicacion;
-        window.abrirModalComentarios = abrirModalComentarios;
-        window.enviarComentario = enviarComentario;
-        window.cerrarModalComentarios = cerrarModalComentarios;
-        window.guardarPerfil = guardarPerfil;
-        window.abrirSelectorArchivo = abrirSelectorArchivo;
-        window.subirFoto = subirFoto;
-        window.cerrarSesion = cerrarSesion;
-        window.togglePicker = (id) => console.log('Picker reaccion:', id);
-        window.editarPerfil = () => cambiarTab('config');
-        window.compartirPerfil = () => showToast('Enlace de perfil copiado', 'success');
-        window.generarQRPerfil = () => document.getElementById('qrPerfilModal')?.classList.add('active');
-
-        // Iniciar al cargar el DOM
-        document.addEventListener('DOMContentLoaded', initPerfil);
-    </script>
 </body>
 </html>
