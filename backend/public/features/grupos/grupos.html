@@ -1231,8 +1231,7 @@
         }
 
         // ================================================================
-        // 📷 SUBIR FOTO EN GRUPO
-        // ================================================================
+        // 📷 SUBIR FOTO EN GRUPO        // ================================================================
         async function subirFotoGrupo() {
             if (!sessionUser) { showToast('⚠️ Inicia sesión', 'error'); return; }
             if (!grupoActualId) { showToast('⚠️ No hay grupo seleccionado', 'error'); return; }
@@ -1606,10 +1605,8 @@
                     showToast('⚠️ Modo local - sin transmisión en vivo', 'warning');
                 }
 
-                // Abrir ventana de live general con el ID de la transmisión
-                setTimeout(function() {
-                    window.open('/features/live/live.html?transmision=' + transmision.id + '&grupo=' + grupoActualId, '_blank');
-                }, 1000);
+                // ✅ CORREGIDO: NO abre live.html, NO usa parámetros URL
+                // El LIVE de grupo se maneja completamente dentro de grupos.html
 
                 await cargarPublicacionesGrupo(grupoActualId);
                 await cargarGrupos();
@@ -1748,7 +1745,9 @@
         // ================================================================
         function verLiveActivo() {
             if (liveActivoEnGrupo) {
-                window.open('/features/live/live.html?transmision=' + liveActivoEnGrupo.id + '&grupo=' + grupoActualId, '_blank');
+                // ✅ CORREGIDO: Abre live.html SOLO para ver, no para controlar
+                // Solo pasa el ID de la transmisión para visualización
+                window.open('/features/live/live.html?transmision=' + liveActivoEnGrupo.id, '_blank');
             } else {
                 showToast('⚠️ No hay LIVE activo en este grupo', 'warning');
             }
