@@ -934,9 +934,9 @@
                     <span class="live-status">● En vivo</span>
                 </h1>
                 <div class="live-actions">
-                    <button class="btn btn-gold btn-sm" onclick="iniciarTransmisionGeneral()">◉ Iniciar live</button>
-                    <button class="btn btn-outline btn-sm" onclick="cargarTransmisionesActivas()">◈ Ver todas</button>
-                    <button class="btn btn-outline btn-sm" onclick="cargarEstadisticas()">📊 Estadísticas</button>
+                    <button class="btn btn-gold btn-sm" onclick="iniciarTransmisionGeneral()" data-clave="live_iniciar">◉ Iniciar live</button>
+                    <button class="btn btn-outline btn-sm" onclick="cargarTransmisionesActivas()" data-clave="live_ver_todas">◈ Ver todas</button>
+                    <button class="btn btn-outline btn-sm" onclick="cargarEstadisticas()" data-clave="live_estadisticas">📊 Estadísticas</button>
                 </div>
             </div>
 
@@ -1032,8 +1032,8 @@
 
             <div class="live-chat-container">
                 <div class="chat-header">
-                    <h3><span class="dot-online"></span> Chat en vivo</h3>
-                    <span class="chat-count" id="chatCount">0 mensajes</span>
+                    <h3><span class="dot-online"></span> <span data-clave="live_chat_titulo">Chat en vivo</span></h3>
+                    <span class="chat-count" id="chatCount" data-clave="live_chat_count">0 mensajes</span>
                 </div>
                 <div class="chat-messages" id="chatMessages">
                     <div class="chat-msg">
@@ -1046,20 +1046,20 @@
                     </div>
                 </div>
                 <div class="chat-input">
-                    <input type="text" id="chatInput" placeholder="Escribe un mensaje..." />
-                    <button onclick="enviarMensaje()">Enviar</button>
+                    <input type="text" id="chatInput" data-placeholder="live_chat_placeholder" placeholder="Escribe un mensaje..." />
+                    <button onclick="enviarMensaje()" data-clave="live_chat_enviar">Enviar</button>
                 </div>
             </div>
 
             <div class="streams-section-title">
-                ◈ Transmisiones activas
+                <span data-clave="live_streams_titulo">◈ Transmisiones activas</span>
                 <span class="pulse-bar"></span>
             </div>
             <div class="streams-list" id="streamsList">
                 <div class="empty-state" style="grid-column:1/-1;padding:20px;">
                     <span class="icon">◉</span>
-                    <h3>Sin transmisiones activas</h3>
-                    <p>Sé el primero en iniciar una transmisión</p>
+                    <h3 data-clave="live_empty">Sin transmisiones activas</h3>
+                    <p data-clave="live_empty_desc">Sé el primero en iniciar una transmisión</p>
                 </div>
             </div>
 
@@ -1068,10 +1068,10 @@
         <footer class="footer">
             <span><span class="brand">◈ Sariel's</span> · Sabor al Paladar · WEB3</span>
             <div class="footer-links">
-                <a href="/terminos">◈ Términos</a>
-                <a href="/privacidad">◈ Privacidad</a>
-                <a href="/cookies">◈ Cookies</a>
-                <a href="/live-terminos">◉ Live Términos</a>
+                <a href="/terminos" data-clave="live_footer_terminos">◈ Términos</a>
+                <a href="/privacidad" data-clave="live_footer_privacidad">◈ Privacidad</a>
+                <a href="/cookies" data-clave="live_footer_cookies">◈ Cookies</a>
+                <a href="/live-terminos" data-clave="live_footer_live">◉ Live Términos</a>
                 <span style="opacity:0.3;">⚡ Polygon</span>
             </div>
         </footer>
@@ -1886,8 +1886,8 @@ function renderizarTransmisiones(streams) {
         container.innerHTML = `
             <div class="empty-state" style="grid-column:1/-1;padding:20px;">
                 <span class="icon">◉</span>
-                <h3>Sin transmisiones activas</h3>
-                <p>Sé el primero en iniciar una transmisión</p>
+                <h3 data-clave="live_empty">Sin transmisiones activas</h3>
+                <p data-clave="live_empty_desc">Sé el primero en iniciar una transmisión</p>
             </div>
         `;
         return;
