@@ -1503,7 +1503,7 @@
         }
 
         // ================================================================
-        // INICIAR LIVE EN GRUPO
+        // 🚀 INICIAR LIVE EN GRUPO - CORREGIDO CON RPC
         // ================================================================
         async function iniciarLiveEnGrupo() {
             if (!sessionUser) { showToast('⚠️ Inicia sesión', 'error'); return; }
@@ -1520,32 +1520,33 @@
                 var titulo = prompt('Título del LIVE:', 'Live en ' + (grupoActual.nombre || 'grupo')) || 'Live en grupo';
                 var roomName = 'live-' + sessionUser.id + '-' + Date.now();
 
-                var result = await window.supabase
-                    .from('transmisiones')
-                    .insert({
-                        streamer_id: sessionUser.id,
-                        grupo_id: grupoActualId,
-                        room_name: roomName,
-                        titulo: titulo,
-                        categoria: 'grupo',
-                        estado: 'en_vivo',
-                        is_live: true,
-                        fecha_inicio: new Date().toISOString(),
-                        viewers_count: 0
-                    })
-                    .select()
-                    .single();
+                // ✅ CORRECCIÓN: Usar RPC crear_transmision con grupo_id
+                const { data: result, error } = await window.supabase.rpc('crear_transmision', {
+                    p_titulo: titulo,
+                    p_categoria: 'grupo',
+                    p_room_name: roomName,
+                    p_grupo_id: grupoActualId  // ✅ AHORA PASA EL grupo_id
+                });
 
-                if (result.error) throw result.error;
+                if (error) {
+                    console.error('❌ Error en RPC crear_transmision:', error);
+                    throw new Error(error.message || 'Error al crear LIVE');
+                }
+
+                const transmision = Array.isArray(result) ? result[0] : result;
+                if (!transmision || !transmision.id) {
+                    throw new Error('No se pudo crear la transmisión');
+                }
 
                 showToast('✅ LIVE iniciado! Redirigiendo...', 'success');
 
+                // ✅ CORRECCIÓN: Pasar grupo_id en la URL
                 setTimeout(function() {
-                    window.location.href = '/features/live/live.html?transmision=' + result.data.id;
+                    window.location.href = '/features/live/live.html?transmision=' + transmision.id + '&grupo=' + grupoActualId;
                 }, 1500);
 
             } catch (e) {
-                console.error('Error iniciando live:', e);
+                console.error('❌ Error iniciando live:', e);
                 showToast('❌ Error al iniciar LIVE: ' + e.message, 'error');
             }
         }
