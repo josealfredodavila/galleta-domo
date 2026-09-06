@@ -285,7 +285,15 @@ function actualizarUI(data) {
     if (handleEl) handleEl.textContent = '@' + (data.handle || 'usuario');
 
     const bioEl = document.getElementById('perfilBio');
-    if (bioEl) bioEl.textContent = data.bio || 'Sin biografía';
+    if (bioEl) {
+        bioEl.textContent = data.bio || 'Sin biografía';
+        // ✅ AGREGADO: data-clave para "Sin biografía"
+        if (!data.bio || data.bio.trim() === '') {
+            bioEl.setAttribute('data-clave', 'perfil_sin_biografia');
+        } else {
+            bioEl.removeAttribute('data-clave');
+        }
+    }
 
     const avatarEl = document.getElementById('perfilAvatar');
     if (avatarEl) {
