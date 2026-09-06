@@ -1955,7 +1955,7 @@
         }
 
         // ================================================================
-        // 🗑️ ELIMINAR GRUPO - CORREGIDO
+        // 🗑️ ELIMINAR GRUPO - CORREGIDO CON RPC
         // ================================================================
 
         /**
@@ -1963,7 +1963,6 @@
          * Solo visible para creador o administrador.
          */
         function mostrarConfirmacionEliminarGrupo() {
-            // Verificar permisos (doble verificación)
             if (!sessionUser) {
                 showToast('⚠️ Inicia sesión para eliminar el grupo', 'error');
                 return;
@@ -1972,15 +1971,11 @@
                 showToast('⚠️ No hay grupo seleccionado', 'error');
                 return;
             }
-
-            // ✅ CORREGIDO: Verificar que el usuario sea creador O administrador
-            // NOTA: esAdmin ya incluye al creador (ver verificarMembresia)
             if (!esAdmin && !esCreador) {
                 showToast('⚠️ Solo el creador o un administrador puede eliminar el grupo', 'error');
                 return;
             }
 
-            // Mostrar modal de confirmación
             document.getElementById('modalConfirmarEliminarGrupo').classList.add('show');
             document.getElementById('eliminarGrupoStatus').textContent = '';
         }
@@ -1994,8 +1989,8 @@
         }
 
         /**
-         * Ejecuta la eliminación real del grupo después de la confirmación.
-         * Verifica permisos nuevamente antes de ejecutar el DELETE.
+         * Ejecuta la eliminación del grupo usando la RPC eliminar_grupo.
+         * Esto bypassa RLS y permite que creadores y administradores eliminen.
          */
         async function ejecutarEliminarGrupo() {
             if (eliminandoGrupo) {
@@ -2003,7 +1998,6 @@
                 return;
             }
 
-            // Verificar nuevamente permisos antes de ejecutar
             if (!sessionUser) {
                 showToast('⚠️ Inicia sesión para eliminar el grupo', 'error');
                 return;
@@ -2012,83 +2006,76 @@
                 showToast('⚠️ No hay grupo seleccionado', 'error');
                 return;
             }
-
-            // ✅ CORREGIDO: Verificar que el usuario sea creador O administrador
             if (!esAdmin && !esCreador) {
-                showToast('⚠️ Solo el creador o un administrador puede eliminar el grupo', 'error');
+                showToast('⚠️ No tienes permisos para eliminar este grupo', 'error');
                 return;
             }
 
-            // Obtener el grupo actual para verificar que existe
             var grupoId = grupoActualId;
             var nombreGrupo = grupoActual?.nombre || 'Grupo';
+            var statusEl = document.getElementById('eliminarGrupoStatus');
 
-            // Verificar que el grupo existe y el usuario tiene permisos
+            // Verificar que el grupo existe
             try {
-                var grupoCheck = await window.supabase
+                const { data: grupo, error: checkError } = await window.supabase
                     .from('grupos_video')
-                    .select('id, creador_id')
+                    .select('id, nombre, creador_id')
                     .eq('id', grupoId)
                     .single();
 
-                if (grupoCheck.error) {
-                    console.error('❌ Error verificando grupo:', grupoCheck.error);
-                    showToast('❌ Error al verificar el grupo: ' + grupoCheck.error.message, 'error');
+                if (checkError || !grupo) {
+                    showToast('❌ El grupo no existe o ya fue eliminado', 'error');
                     return;
                 }
 
-                if (!grupoCheck.data) {
-                    showToast('❌ El grupo no existe', 'error');
-                    return;
+                // Si es admin pero no creador, verificar rol
+                if (!esCreador && esAdmin) {
+                    const { data: miembro, error: memberError } = await window.supabase
+                        .from('grupos_video_miembros')
+                        .select('rol')
+                        .eq('grupo_id', grupoId)
+                        .eq('usuario_id', sessionUser.id)
+                        .single();
+
+                    if (memberError || !miembro || miembro.rol !== 'administrador') {
+                        showToast('⚠️ No eres administrador del grupo', 'error');
+                        return;
+                    }
                 }
 
-                // ✅ CORREGIDO: Verificar que el usuario sea el creador O administrador
-                // El administrador puede eliminar aunque no sea el creador
-                if (grupoCheck.data.creador_id !== sessionUser.id && !esAdmin) {
-                    showToast('⚠️ No tienes permisos para eliminar este grupo', 'error');
-                    return;
+                eliminandoGrupo = true;
+                statusEl.textContent = '⏳ Eliminando grupo...';
+                statusEl.style.color = 'var(--text-secondary)';
+
+                // ✅ CORRECCIÓN: Usar RPC eliminar_grupo en lugar de DELETE directo
+                const { data, error } = await window.supabase.rpc('eliminar_grupo', {
+                    p_grupo_id: grupoId
+                });
+
+                if (error) {
+                    console.error('❌ Error en RPC eliminar_grupo:', error);
+                    throw error;
                 }
 
-            } catch (e) {
-                console.error('❌ Error verificando grupo:', e);
-                showToast('❌ Error al verificar permisos: ' + e.message, 'error');
-                return;
-            }
-
-            // Confirmar eliminación
-            eliminandoGrupo = true;
-            var statusEl = document.getElementById('eliminarGrupoStatus');
-            statusEl.textContent = '⏳ Eliminando grupo...';
-            statusEl.style.color = 'var(--text-secondary)';
-
-            try {
-                // Ejecutar DELETE en Supabase
-                // ON DELETE CASCADE se encargará de eliminar los datos relacionados
-                console.log('🗑️ Eliminando grupo:', grupoId, nombreGrupo);
-
-                var result = await window.supabase
-                    .from('grupos_video')
-                    .delete()
-                    .eq('id', grupoId);
-
-                // Verificar si hubo error
-                if (result.error) {
-                    console.error('❌ Error eliminando grupo:', result.error);
-                    throw result.error;
+                // Verificar respuesta de la RPC
+                if (data && data.error) {
+                    throw new Error(data.error);
                 }
 
-                // Verificar que se eliminó correctamente
-                console.log('✅ Grupo eliminado correctamente:', result);
+                if (!data || !data.success) {
+                    throw new Error('No se pudo eliminar el grupo');
+                }
 
-                // Cerrar modales
+                // ✅ ÉXITO
+                console.log('✅ Grupo eliminado correctamente:', nombreGrupo);
+                showToast(`✅ Grupo "${nombreGrupo}" eliminado correctamente`, 'success');
+
                 cerrarConfirmacionEliminarGrupo();
                 cerrarModalAdmin();
 
-                // Cerrar vista interna del grupo
                 document.getElementById('vistaGrupo').classList.remove('show');
                 document.getElementById('vistaLista').style.display = 'block';
 
-                // Limpiar variables
                 grupoActual = null;
                 grupoActualId = null;
                 liveActivoEnGrupo = null;
@@ -2097,37 +2084,25 @@
                 esCreador = false;
                 rolEnGrupo = null;
 
-                // Mostrar mensaje de éxito
-                showToast('✅ Grupo "' + nombreGrupo + '" eliminado correctamente.', 'success');
-
-                // Actualizar lista de grupos
                 await cargarGrupos();
 
             } catch (e) {
                 console.error('❌ Error en ejecutarEliminarGrupo:', e);
-
-                // Mostrar error específico
                 var errorMsg = 'Error al eliminar el grupo: ';
-                if (e.code === '42501') {
-                    errorMsg += 'Permiso denegado (RLS). Verifica que tienes permisos para eliminar este grupo.';
-                    console.error('🔒 Error de RLS / Permiso denegado');
-                } else if (e.code === '23503') {
-                    errorMsg += 'Error de clave foránea. Verifica que no haya datos dependientes.';
-                    console.error('🔗 Error de foreign key');
-                } else if (e.code === '42501' && e.message?.includes('row-level security')) {
-                    errorMsg += 'La política de seguridad RLS bloqueó la eliminación.';
-                    console.error('🛡️ Error RLS: new row violates row-level security policy');
-                } else if (e.code === 'PGRST301') {
-                    errorMsg += 'Error de autenticación. Vuelve a iniciar sesión.';
-                    console.error('🔑 Error JWT/Session');
+                
+                if (e.message?.includes('Permiso denegado')) {
+                    errorMsg += 'No tienes permisos. Solo el creador o administradores pueden eliminar el grupo.';
+                } else if (e.message?.includes('No autenticado')) {
+                    errorMsg += 'Debes iniciar sesión para eliminar el grupo.';
+                } else if (e.message?.includes('Grupo no encontrado')) {
+                    errorMsg += 'El grupo ya fue eliminado o no existe.';
                 } else {
-                    errorMsg += e.message || e.toString() || 'Error desconocido';
+                    errorMsg += e.message || 'Error desconocido';
                 }
-
+                
                 statusEl.textContent = '❌ ' + errorMsg;
                 statusEl.style.color = 'var(--danger)';
                 showToast('❌ ' + errorMsg, 'error');
-
             } finally {
                 eliminandoGrupo = false;
             }
