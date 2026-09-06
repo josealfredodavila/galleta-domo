@@ -199,6 +199,9 @@ app.use('/perfil', express.static(path.join(__dirname, 'public', 'features', 'pe
 app.use('/mensajes', express.static(path.join(__dirname, 'public', 'features', 'mensajes')));
 app.use('/internet', express.static(path.join(__dirname, 'public', 'features', 'internet')));
 
+// ===== 🆕 RUTA PARA SHARED (IDIOMAS) =====
+app.use('/features/shared', express.static(path.join(__dirname, 'public', 'features', 'shared')));
+
 /* ================================================================
    RUTAS DE AUTENTICACIÓN - ✅ CORREGIDO PARA RAILWAY
    ================================================================ */
@@ -382,6 +385,7 @@ app.listen(PORT, '0.0.0.0', () => {
     console.log(`💳 Payments router: ✅ /api/payments`);
     console.log(`📡 Webhook router: ✅ /api/webhook`);
     console.log(`✨ Membresía router: ✅ /api/payments/membresia`);
+    console.log(`🗂️  Shared router: ✅ /features/shared`);
     console.log(`💳 NOWPayments: ${process.env.NOWPAYMENTS_API_KEY ? '✅ Configurado' : '❌ No configurado'}`);
     console.log(`📱 Telnyx: ${process.env.TELNYX_API_KEY ? '✅ Configurado' : '❌ No configurado'}`);
     console.log('========================================');
