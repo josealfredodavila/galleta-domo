@@ -624,23 +624,23 @@
 
         <!-- SUBIR VIDEO -->
         <div class="upload-section">
-            <h3>🎬 Subir nuevo video</h3>
+            <h3 data-clave="videos_titulo">🎬 Subir nuevo video</h3>
             <form id="formSubirVideo" onsubmit="event.preventDefault(); subirVideo();">
                 <div class="form-group">
-                    <label>Título del video</label>
+                    <label data-clave="videos_titulo_video">Título del video</label>
                     <input type="text" id="inputTituloVideo" placeholder="Ej: Mi primer video en Sariel's" required />
                 </div>
                 <div class="form-group">
-                    <label>Descripción</label>
+                    <label data-clave="videos_descripcion">Descripción</label>
                     <textarea id="inputDescripcionVideo" placeholder="Describe tu video..."></textarea>
                 </div>
                 <div class="form-group">
-                    <label>Selecciona el archivo de video</label>
+                    <label data-clave="videos_seleccionar_archivo">Selecciona el archivo de video</label>
                     <div class="file-input-wrapper">
                         <input type="file" id="inputArchivoVideo" accept="video/*" required />
-                        <button type="submit" class="btn-subir-video" id="btnSubirVideo">🚀 Subir video</button>
+                        <button type="submit" class="btn-subir-video" id="btnSubirVideo" data-clave="videos_subir">🚀 Subir video</button>
                     </div>
-                    <div style="font-size:0.55rem;color:var(--text-muted);margin-top:4px;">
+                    <div style="font-size:0.55rem;color:var(--text-muted);margin-top:4px;" data-clave="videos_formatos">
                         Formatos: MP4, WebM, MOV · Máx 100MB · Full HD
                     </div>
                 </div>
@@ -657,17 +657,17 @@
         <div id="videosContainer">
             <div class="empty-state">
                 <span class="icon">🎬</span>
-                <h3>No hay videos aún</h3>
-                <p>Sé el primero en compartir un video en Sariel's.</p>
+                <h3 data-clave="videos_empty">No hay videos aún</h3>
+                <p data-clave="videos_empty_desc">Sé el primero en compartir un video en Sariel's.</p>
             </div>
         </div>
 
         <footer class="footer">
             <span><span class="brand">◈ Sariel's</span> · Sabor al Paladar · WEB3</span>
             <div class="footer-links">
-                <a href="/terminos">📜 Términos</a>
-                <a href="/privacidad">🔒 Privacidad</a>
-                <a href="/cookies">🍪 Cookies</a>
+                <a href="/terminos" data-clave="videos_footer_terminos">📜 Términos</a>
+                <a href="/privacidad" data-clave="videos_footer_privacidad">🔒 Privacidad</a>
+                <a href="/cookies" data-clave="videos_footer_cookies">🍪 Cookies</a>
                 <span style="opacity:0.3;">⚡ Polygon</span>
             </div>
         </footer>
@@ -705,13 +705,13 @@
             </div>
 
             <div class="comentarios-section">
-                <h4>💬 Comentarios</h4>
+                <h4 data-clave="videos_comentarios">💬 Comentarios</h4>
                 <div id="modalComentariosLista">
-                    <div style="color:var(--text-muted);font-size:0.7rem;padding:8px 0;">Sin comentarios. Sé el primero.</div>
+                    <div style="color:var(--text-muted);font-size:0.7rem;padding:8px 0;" data-clave="videos_sin_comentarios">Sin comentarios. Sé el primero.</div>
                 </div>
                 <div class="input-comentario">
-                    <input type="text" id="inputComentarioVideo" placeholder="Escribe un comentario..." />
-                    <button onclick="enviarComentarioVideo()">Enviar</button>
+                    <input type="text" id="inputComentarioVideo" placeholder="Escribe un comentario..." data-placeholder="videos_escribe_comentario" />
+                    <button onclick="enviarComentarioVideo()" data-clave="videos_enviar_comentario">Enviar</button>
                 </div>
             </div>
         </div>
@@ -800,7 +800,7 @@
                 var data = result.data || [];
 
                 if (data.length === 0) {
-                    container.innerHTML = '<div class="empty-state"><span class="icon">🎬</span><h3>No hay videos aún</h3><p>Sé el primero en compartir un video en Sariel\'s.</p></div>';
+                    container.innerHTML = '<div class="empty-state"><span class="icon">🎬</span><h3 data-clave="videos_empty">No hay videos aún</h3><p data-clave="videos_empty_desc">Sé el primero en compartir un video en Sariel\'s.</p></div>';
                     return;
                 }
 
@@ -1154,7 +1154,7 @@
                 var data = result.data || [];
 
                 if (data.length === 0) {
-                    lista.innerHTML = '<div style="color:var(--text-muted);font-size:0.7rem;padding:8px 0;">Sin comentarios. Sé el primero.</div>';
+                    lista.innerHTML = '<div style="color:var(--text-muted);font-size:0.7rem;padding:8px 0;" data-clave="videos_sin_comentarios">Sin comentarios. Sé el primero.</div>';
                     return;
                 }
 
