@@ -49,7 +49,6 @@
             overflow-x: hidden;
         }
 
-        /* ===== FONDO ANIMADO ===== */
         .bg-glow {
             position: fixed;
             border-radius: 50%;
@@ -68,7 +67,6 @@
 
         .app { position: relative; z-index: 1; max-width: 100%; padding: 0; margin: 0; }
 
-        /* ===== HEADER ===== */
         .header {
             display: flex; justify-content: space-between; align-items: center;
             padding: 10px 20px 14px; border-bottom: 1px solid var(--glass-border);
@@ -95,12 +93,10 @@
         .main-nav .nav-link.active { background: rgba(212,175,55,0.12); color: var(--gold); }
         .main-nav .nav-link.live { color: var(--live-red); }
 
-        /* ===== LAYOUT PRINCIPAL ===== */
         .live-container {
             padding: 0 16px 20px;
         }
 
-        /* ===== HEADER LIVE ===== */
         .live-header {
             display: flex; justify-content: space-between; align-items: center;
             padding: 14px 20px; background: var(--glass-bg); border: 1px solid var(--glass-border);
@@ -124,7 +120,6 @@
         .btn-outline:hover { border-color: var(--gold); color: var(--gold); background: rgba(212, 175, 55, 0.05); }
         .btn-sm { padding: 4px 12px; font-size: 0.65rem; }
 
-        /* ===== VIDEO CONTAINER - ESTILO TIKTOK ===== */
         .live-video-container {
             position: relative;
             width: 100%;
@@ -145,7 +140,6 @@
             background: #000;
         }
 
-        /* ===== OVERLAY SUPERIOR ===== */
         .live-overlay-top {
             position: absolute;
             top: 0;
@@ -247,7 +241,6 @@
             transition: all 0.3s ease;
         }
 
-        /* ===== 1. PLAY/PAUSE ===== */
         .ctrl-play {
             background: rgba(212, 175, 55, 0.12);
             border-color: rgba(212, 175, 55, 0.2);
@@ -259,7 +252,6 @@
             box-shadow: 0 0 50px rgba(212, 175, 55, 0.2);
         }
 
-        /* ===== 2. MICRÓFONO CON ONDAS ===== */
         .ctrl-mic {
             background: rgba(0, 214, 143, 0.08);
             border-color: rgba(0, 214, 143, 0.15);
@@ -303,7 +295,6 @@
             100% { transform: scale(1.6); opacity: 0; }
         }
 
-        /* ===== 3. COMPARTIR PANTALLA (VISION PRO) ===== */
         .ctrl-screen {
             background: rgba(168, 85, 247, 0.08);
             border-color: rgba(168, 85, 247, 0.15);
@@ -314,7 +305,6 @@
             box-shadow: 0 0 50px rgba(168, 85, 247, 0.15);
         }
 
-        /* ===== 4. JUEGO (DORADO LINEAL) ===== */
         .ctrl-game {
             background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(212, 175, 55, 0.05));
             border-color: rgba(212, 175, 55, 0.25);
@@ -326,7 +316,6 @@
             box-shadow: 0 0 60px rgba(212, 175, 55, 0.25);
         }
 
-        /* ===== 5. ORBE ROJO (FINALIZAR) ===== */
         .ctrl-end {
             background: rgba(255, 51, 102, 0.08);
             border-color: rgba(255, 51, 102, 0.15);
@@ -377,7 +366,6 @@
             100% { transform: scale(1.8); opacity: 0; }
         }
 
-        /* ===== RESPONSIVE CONTROLES ===== */
         @media (max-width: 768px) {
             .live-controls-bottom {
                 padding: 16px 12px 18px;
@@ -437,7 +425,6 @@
             }
         }
 
-        /* ===== WATERMARK ===== */
         .watermark-live {
             position: absolute;
             bottom: 80px;
@@ -467,34 +454,108 @@
             font-weight: 700;
         }
 
-        /* ===== DONACIONES RÁPIDAS ===== */
+        /* ===== DONACIONES RÁPIDAS - ESTILO VIDRIO 2030 ===== */
         .donaciones-rapidas {
             display: flex;
-            gap: 8px;
+            gap: 10px;
             flex-wrap: wrap;
             justify-content: center;
             margin-bottom: 16px;
         }
         .btn-donacion {
-            padding: 10px 16px;
+            padding: 12px 20px;
             border-radius: 16px;
-            border: 1px solid var(--glass-border);
-            background: var(--glass-bg);
+            border: 1px solid rgba(255,255,255,0.06);
+            background: rgba(255,255,255,0.02);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             color: var(--text-primary);
             cursor: pointer;
-            transition: var(--transition);
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
             text-align: center;
-            min-width: 64px;
-            backdrop-filter: blur(8px);
+            min-width: 72px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.2);
+        }
+        .btn-donacion::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 16px;
+            padding: 1px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.08), transparent, rgba(255,255,255,0.04));
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            pointer-events: none;
         }
         .btn-donacion:hover {
-            border-color: var(--gold);
-            transform: translateY(-4px) scale(1.02);
-            background: rgba(212, 175, 55, 0.1);
-            box-shadow: var(--shadow-gold);
+            transform: translateY(-4px) scale(1.03);
+            border-color: rgba(212, 175, 55, 0.3);
+            background: rgba(212, 175, 55, 0.04);
+            box-shadow: 0 8px 40px rgba(212, 175, 55, 0.15);
         }
-        .btn-donacion .monto { font-weight: 700; color: var(--gold); font-size: 0.9rem; display: block; }
-        .btn-donacion .label { font-size: 0.5rem; color: var(--text-muted); display: block; margin-top: 2px; }
+        .btn-donacion:active {
+            transform: scale(0.95);
+        }
+        .btn-donacion .monto {
+            font-weight: 700;
+            color: var(--gold);
+            font-size: 0.85rem;
+            display: block;
+            font-family: 'Orbitron', monospace;
+        }
+        .btn-donacion .label {
+            font-size: 0.45rem;
+            color: var(--text-muted);
+            display: block;
+            margin-top: 2px;
+            letter-spacing: 0.5px;
+        }
+
+        /* ===== DONACIÓN ESPECIAL ESMERALDA ===== */
+        .btn-donacion.esmeralda {
+            border-color: rgba(80, 200, 120, 0.2);
+        }
+        .btn-donacion.esmeralda .monto {
+            color: var(--esmeralda);
+        }
+        .btn-donacion.esmeralda:hover {
+            border-color: var(--esmeralda);
+            box-shadow: 0 8px 50px rgba(80, 200, 120, 0.2);
+            background: rgba(80, 200, 120, 0.05);
+        }
+        .btn-donacion.esmeralda::after {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            border-radius: 18px;
+            background: linear-gradient(135deg, var(--esmeralda), transparent, var(--esmeralda));
+            opacity: 0;
+            transition: all 0.4s ease;
+            z-index: -1;
+            filter: blur(8px);
+        }
+        .btn-donacion.esmeralda:hover::after {
+            opacity: 0.3;
+        }
+
+        /* ===== DONACIÓN ESPECIAL COHETE ===== */
+        .btn-donacion.cohete {
+            border-color: rgba(205, 127, 50, 0.2);
+        }
+        .btn-donacion.cohete .monto {
+            color: var(--bronze-light);
+        }
+        .btn-donacion.cohete:hover {
+            border-color: var(--bronze);
+            box-shadow: 0 8px 50px rgba(205, 127, 50, 0.15);
+            background: rgba(205, 127, 50, 0.04);
+        }
 
         /* ===== CHAT ===== */
         .live-chat-container {
@@ -624,7 +685,6 @@
             box-shadow: var(--shadow-gold);
         }
 
-        /* ===== TRANSMISIONES ACTIVAS ===== */
         .streams-section-title {
             font-family: 'Orbitron', monospace;
             color: var(--gold);
@@ -726,7 +786,6 @@
             font-family: 'Orbitron', monospace;
         }
 
-        /* ===== TOAST ===== */
         .toast {
             position: fixed;
             bottom: 30px;
@@ -791,11 +850,16 @@
             .live-overlay-top .live-title { max-width: 50%; font-size: 0.6rem; }
             .streams-list { grid-template-columns: 1fr 1fr; }
             .main-nav .nav-link { font-size: 0.6rem; padding: 6px 10px; }
+            .donaciones-rapidas { gap: 6px; }
+            .btn-donacion { padding: 8px 14px; min-width: 56px; }
+            .btn-donacion .monto { font-size: 0.7rem; }
         }
         @media (max-width: 480px) {
             .live-video-container { height: 45vh; min-height: 280px; }
             .streams-list { grid-template-columns: 1fr 1fr; gap: 8px; }
-            .donaciones-rapidas .btn-donacion { min-width: 50px; padding: 6px 8px; font-size: 0.55rem; }
+            .donaciones-rapidas .btn-donacion { min-width: 46px; padding: 6px 10px; }
+            .donaciones-rapidas .btn-donacion .monto { font-size: 0.6rem; }
+            .donaciones-rapidas .btn-donacion .label { font-size: 0.4rem; }
             .live-overlay-top .live-title { max-width: 40%; font-size: 0.5rem; }
             .game-grid { grid-template-columns: 1fr; }
         }
@@ -884,7 +948,6 @@
             <div class="live-video-container" id="liveVideoContainer">
                 <video id="liveVideo" autoplay playsinline muted></video>
 
-                <!-- OVERLAY SUPERIOR -->
                 <div class="live-overlay-top">
                     <div class="live-badge">
                         <span class="dot"></span>
@@ -894,7 +957,6 @@
                     <div class="live-title" id="liveTitle">Transmisión en vivo</div>
                 </div>
 
-                <!-- WATERMARK -->
                 <div class="watermark-live">
                     <span class="icon">◈</span>
                     <span class="text">Sariel<span>'s</span></span>
@@ -903,7 +965,6 @@
 
                 <!-- ===== CONTROLES INFERIORES - ESTILO 2030 ===== -->
                 <div class="live-controls-bottom">
-                    <!-- 1. PAUSA/PLAY -->
                     <button onclick="togglePlay()" id="playBtn" class="ctrl-btn ctrl-play" title="Play/Pause">
                         <svg viewBox="0 0 24 24" fill="currentColor" width="28" height="28">
                             <polygon id="playIcon" points="5,3 19,12 5,21" />
@@ -912,7 +973,6 @@
                         </svg>
                     </button>
 
-                    <!-- 2. MICRÓFONO CON ONDAS (VOZ) -->
                     <button onclick="toggleMute()" id="muteBtn" class="ctrl-btn ctrl-mic" title="Micrófono">
                         <svg viewBox="0 0 24 24" fill="currentColor" width="28" height="28">
                             <path id="micIcon" d="M12 15c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v7c0 1.66 1.34 3 3 3z"/>
@@ -926,7 +986,6 @@
                         </span>
                     </button>
 
-                    <!-- 3. COMPARTIR PANTALLA / CÁMARA (VISION PRO) -->
                     <button onclick="capturarPantalla()" id="screenBtn" class="ctrl-btn ctrl-screen" title="Compartir pantalla">
                         <svg viewBox="0 0 24 24" fill="currentColor" width="28" height="28">
                             <rect x="2" y="4" width="20" height="14" rx="2" stroke="currentColor" stroke-width="1.5" fill="none"/>
@@ -937,14 +996,12 @@
                         </svg>
                     </button>
 
-                    <!-- 4. JUEGO (DORADO LINEAL) -->
                     <button onclick="abrirSelectorJuego()" class="ctrl-btn ctrl-game" id="gameBtn" title="Transmitir juego">
                         <svg viewBox="0 0 24 24" fill="currentColor" width="28" height="28">
                             <path d="M21 6H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-10 7H8v3H6v-3H3v-2h3V8h2v3h3v2zm4.5 2c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm4-3c-.83 0-1.5-.67-1.5-1.5S18.67 9 19.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
                         </svg>
                     </button>
 
-                    <!-- 5. FINALIZAR (ORBE ROJO QUE RESPIRA) -->
                     <button onclick="finalizarTransmision()" class="ctrl-btn ctrl-end" id="endBtn" title="Finalizar transmisión">
                         <div class="orb-red">
                             <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
@@ -956,7 +1013,7 @@
                 </div>
             </div>
 
-            <!-- DONACIONES RÁPIDAS -->
+            <!-- ===== DONACIONES RÁPIDAS - ESTILO VIDRIO 2030 ===== -->
             <div class="donaciones-rapidas">
                 <button class="btn-donacion" onclick="enviarDonacion(5)">
                     <span class="monto">$5</span>
@@ -970,13 +1027,13 @@
                     <span class="monto">$20</span>
                     <span class="label">🥇 Oro</span>
                 </button>
-                <button class="btn-donacion" onclick="enviarDonacion(50)" style="border-color:var(--bronze);">
-                    <span class="monto" style="color:var(--bronze);">$50</span>
-                    <span class="label" style="color:var(--bronze-light);">🚀 Cohete</span>
+                <button class="btn-donacion cohete" onclick="enviarDonacion(50)">
+                    <span class="monto">$50</span>
+                    <span class="label">🚀 Cohete</span>
                 </button>
-                <button class="btn-donacion" onclick="enviarDonacion(100)" style="border-color:var(--esmeralda);">
-                    <span class="monto" style="color:var(--esmeralda);">$100</span>
-                    <span class="label" style="color:var(--esmeralda);">💚 Esmeralda</span>
+                <button class="btn-donacion esmeralda" onclick="enviarDonacion(100)">
+                    <span class="monto">$100</span>
+                    <span class="label">💚 Esmeralda</span>
                 </button>
             </div>
 
@@ -1038,7 +1095,6 @@
    LIVE - TODAS LAS FUNCIONES
    ================================================================ */
 
-// ===== CONFIGURACIÓN SUPABASE =====
 const supabase = window.supabase.createClient(
     'https://zultnlogdoajehbswlih.supabase.co',
     'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
@@ -1083,7 +1139,6 @@ let currentStreamId = null;
 let transmisionParamId = null;
 let juegoSeleccionado = null;
 
-// ===== TOAST =====
 function showToast(msg, type = '', duration = 3500) {
     let t = document.getElementById('toast');
     if (!t) {
@@ -1102,13 +1157,11 @@ function showToast(msg, type = '', duration = 3500) {
     t._timeout = setTimeout(() => t.classList.remove('show'), duration);
 }
 
-// ===== OBTENER SESIÓN =====
 async function getSession() {
     const { data: { session } } = await supabase.auth.getSession();
     return session;
 }
 
-// ===== OBTENER TOKEN LIVEKIT =====
 async function obtenerTokenLiveKit(roomName, participantName) {
     try {
         const session = await getSession();
@@ -1128,7 +1181,6 @@ async function obtenerTokenLiveKit(roomName, participantName) {
     }
 }
 
-// ===== INICIAR TRANSMISIÓN =====
 async function iniciarTransmision() {
     try {
         const session = await getSession();
@@ -1235,7 +1287,6 @@ async function iniciarTransmision() {
     }
 }
 
-// ===== FINALIZAR TRANSMISIÓN =====
 async function finalizarTransmision() {
     try {
         const streamId = transmisionParamId || currentStreamId || currentStream?.id;
@@ -1334,7 +1385,6 @@ async function finalizarTransmision() {
     }
 }
 
-// ===== UNIRSE A TRANSMISIÓN =====
 async function unirseATransmision(streamId) {
     try {
         const session = await getSession();
@@ -1389,7 +1439,6 @@ async function unirseATransmision(streamId) {
     }
 }
 
-// ===== CHAT =====
 function suscribirseAlChat() {
     if (!currentStream) return;
     if (channelChat) { supabase.removeChannel(channelChat); }
@@ -1463,7 +1512,6 @@ function agregarMensajeAlChat(mensaje) {
     }
 }
 
-// ===== MODERACIÓN =====
 function verificarContenido(texto) {
     const textoLower = texto.toLowerCase();
     for (const palabra of PALABRAS_PROHIBIDAS) {
@@ -1488,7 +1536,6 @@ function escapeHTML(texto) {
     return div.innerHTML;
 }
 
-// ===== DONACIONES =====
 async function enviarDonacion(monto) {
     try {
         const session = await getSession();
@@ -1546,7 +1593,6 @@ async function enviarDonacion(monto) {
     }
 }
 
-// ===== EFECTOS VISUALES =====
 function mostrarEfectoDonacion(monto, donacion, usuario) {
     const container = document.getElementById('liveVideoContainer');
     if (!container) return;
@@ -1600,7 +1646,6 @@ function mostrarEfectoDonacion(monto, donacion, usuario) {
     setTimeout(() => { if (overlay.parentNode) overlay.remove(); }, donacion.duracion + 500);
 }
 
-// ===== CONTADOR DE ESPECTADORES =====
 function iniciarContadorEspectadores() {
     if (streamInterval) clearInterval(streamInterval);
     streamInterval = setInterval(async () => {
@@ -1612,7 +1657,6 @@ function iniciarContadorEspectadores() {
     }, 10000);
 }
 
-// ===== NOTIFICACIONES =====
 async function notificarSeguidores() {
     try {
         if (!currentStream || !currentUser) return;
@@ -1637,7 +1681,6 @@ async function notificarSeguidores() {
     } catch (error) { console.error('Error notificando seguidores:', error); }
 }
 
-// ===== TRANSMISIONES ACTIVAS =====
 async function cargarTransmisionesActivas() {
     try {
         const { data, error } = await supabase
@@ -1681,7 +1724,6 @@ function renderizarTransmisiones(streams) {
     `).join('');
 }
 
-// ===== CONTROLES =====
 function togglePlay() {
     const video = document.getElementById('liveVideo');
     if (!video) return;
@@ -1754,7 +1796,6 @@ function verTodasLasTransmisiones() {
     showToast('📺 Cargando transmisiones activas...', '', 2000);
 }
 
-// ===== JUEGOS =====
 let juegosDisponibles = [];
 function esIOS() {
     return /iPad|iPhone|iPod/i.test(navigator.userAgent) ||
@@ -2020,7 +2061,6 @@ async function iniciarTransmisionJuego(juego) {
     }
 }
 
-// ===== ESTADÍSTICAS =====
 async function cargarEstadisticas() {
     try {
         const session = await getSession();
@@ -2060,7 +2100,6 @@ async function cargarEstadisticas() {
     }
 }
 
-// ===== INICIALIZACIÓN =====
 document.addEventListener('DOMContentLoaded', async function() {
     const session = await getSession();
     if (session) { currentUser = session.user; }
@@ -2102,7 +2141,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     console.log('📡 LiveKit URL:', LIVEKIT_CONFIG.url);
 });
 
-// ===== EXPOSICIÓN GLOBAL =====
 window.iniciarTransmision = iniciarTransmision;
 window.finalizarTransmision = finalizarTransmision;
 window.verTodasLasTransmisiones = verTodasLasTransmisiones;
