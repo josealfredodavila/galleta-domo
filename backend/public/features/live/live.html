@@ -1118,7 +1118,7 @@ const PALABRAS_PROHIBIDAS = [
     'fuck', 'shit', 'bitch', 'asshole', 'motherfucker'
 ];
 
-// ===== ESTADO GLOBAL =====
+// ===== ESTADO GLOBAL (SOLO LIVE GENERAL) =====
 let currentUser = null;
 let currentStream = null;
 let liveKitRoom = null;
@@ -1134,7 +1134,6 @@ let gameScreenTrack = null;
 let currentStreamId = null;
 let transmisionParamId = null;
 let juegoSeleccionado = null;
-let grupoIdActual = null;
 
 // ===== TOAST =====
 function showToast(msg, type = '', duration = 3500) {
@@ -1232,7 +1231,7 @@ async function iniciarTransmisionGeneral() {
             p_titulo: titulo,
             p_categoria: categoria,
             p_room_name: roomName,
-            p_grupo_id: null  // 🔑 CLAVE: null para LIVE GENERAL
+            p_grupo_id: null
         });
 
         if (streamError) {
@@ -2242,7 +2241,7 @@ async function iniciarTransmisionJuego(juego) {
             p_titulo: titulo,
             p_categoria: 'gaming',
             p_room_name: roomName,
-            p_grupo_id: null  // 🔑 CLAVE: null para LIVE GENERAL
+            p_grupo_id: null
         });
         if (rpcError) throw rpcError;
 
@@ -2416,16 +2415,12 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     const params = new URLSearchParams(window.location.search);
     transmisionParamId = params.get('transmision');
-    const grupoParam = params.get('grupo');
-    if (grupoParam) {
-        grupoIdActual = grupoParam;
-        console.log('📡 LIVE viene del grupo:', grupoIdActual);
-        showToast('📡 Conectado a transmisión de grupo', 'info', 2000);
-    }
 
+    // ✅ LIVE GENERAL: SOLO VISUALIZA transmisiones (pueden ser de grupo o generales)
+    // NO toma control de transmisiones de grupo, solo las muestra
     if (transmisionParamId) {
         currentStreamId = transmisionParamId;
-        console.log('📡 Transmisión recibida desde URL:', transmisionParamId);
+        console.log('📡 Visualizando transmisión desde URL:', transmisionParamId);
         try {
             const { data: stream, error: streamError } = await supabase
                 .from('transmisiones')
@@ -2436,10 +2431,11 @@ document.addEventListener('DOMContentLoaded', async function() {
             currentStream = stream;
             currentStreamId = stream.id;
             document.getElementById('liveTitle').textContent = stream.titulo || 'EN VIVO';
-            console.log('✅ Transmisión cargada desde URL:', stream.id);
+            console.log('✅ Transmisión cargada para visualización:', stream.id);
             
+            // Solo mostrar información, sin control
             if (stream.grupo_id) {
-                showToast(`📡 Transmisión del grupo ${stream.grupo_id}`, 'info', 3000);
+                console.log('📡 Visualizando transmisión de grupo (solo lectura)');
             }
         } catch (streamError) {
             console.error('❌ Error cargando transmisión desde URL:', streamError);
