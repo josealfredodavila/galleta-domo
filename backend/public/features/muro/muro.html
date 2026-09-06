@@ -1,7 +1,7 @@
 <!-- ================================================================
      MURO - SARIEL'S ECOSYSTEM
-     VERSIÓN CORREGIDA - IMÁGENES + EMOJIS FUNCIONANDO
-     EMOJIS ACTUALIZADOS (Unicode 17.0 + 18.0 + TODOS)
+     VERSIÓN CORREGIDA CON DATA-CLAVE PARA TRADUCCIONES
+     EMOJIS ACTUALIZADOS (Unicode 17.0 + 18.0)
      ================================================================ -->
 <!DOCTYPE html>
 <html lang="es">
@@ -312,29 +312,29 @@
         <!-- VALOR DE MERCADO -->
         <div class="valor-mercado" id="valorMercado">
             <div class="info">
-                <div class="titulo">◈ Valor de Mercado Sariel's</div>
+                <div class="titulo" data-clave="muro_valor_mercado">◈ Valor de Mercado Sariel's</div>
                 <div class="precio" id="precioToken">4.50 <span class="moneda">MXN</span></div>
                 <div class="detalles">
-                    <span>◈ Oferta: <strong id="ofertaTotal">0</strong> tokens</span>
-                    <span>◉ Demanda: <strong id="demandaTotal">0</strong></span>
-                    <span id="tendenciaLabel">⟡ Tendencia: <strong id="tendenciaValor" style="color:var(--text-muted);">Estable</strong></span>
+                    <span data-clave="muro_oferta">◈ Oferta: <strong id="ofertaTotal">0</strong> tokens</span>
+                    <span data-clave="muro_demanda">◉ Demanda: <strong id="demandaTotal">0</strong></span>
+                    <span id="tendenciaLabel" data-clave="muro_tendencia">⟡ Tendencia: <strong id="tendenciaValor" style="color:var(--text-muted);" data-clave="muro_estable">Estable</strong></span>
                 </div>
             </div>
-            <button class="btn-vender-token" onclick="abrirModalVenta()">◆ Vender Es.stoks</button>
+            <button class="btn-vender-token" onclick="abrirModalVenta()" data-clave="muro_vender_tokens_btn">◆ Vender Es.stoks</button>
         </div>
 
         <!-- TENDENCIAS -->
         <div class="trending-section">
             <div class="header">
-                <h3>◈ Tendencia ahora</h3>
-                <span class="actualizado">Actualizado</span>
+                <h3 data-clave="muro_tendencia_ahora">◈ Tendencia ahora</h3>
+                <span class="actualizado" data-clave="muro_actualizado">Actualizado</span>
             </div>
             <div class="trending-tags" id="trendingTags">
-                <span class="tag" onclick="buscarHashtag('Sariels')">#Sariels</span>
-                <span class="tag" onclick="buscarHashtag('GalletaDomo')">#GalletaDomo</span>
-                <span class="tag" onclick="buscarHashtag('Web3')">#Web3</span>
-                <span class="tag" onclick="buscarHashtag('EsStoks')">#EsStoks</span>
-                <span class="tag" onclick="buscarHashtag('NFT')">#NFT</span>
+                <span class="tag" onclick="buscarHashtag('Sariels')" data-clave="muro_tag_sariels">#Sariels</span>
+                <span class="tag" onclick="buscarHashtag('GalletaDomo')" data-clave="muro_tag_galletadomo">#GalletaDomo</span>
+                <span class="tag" onclick="buscarHashtag('Web3')" data-clave="muro_tag_web3">#Web3</span>
+                <span class="tag" onclick="buscarHashtag('EsStoks')" data-clave="muro_tag_esstoks">#EsStoks</span>
+                <span class="tag" onclick="buscarHashtag('NFT')" data-clave="muro_tag_nft">#NFT</span>
             </div>
         </div>
 
@@ -343,24 +343,24 @@
             <div class="form-header">
                 <div class="avatar" id="userAvatar">◈</div>
                 <div>
-                    <div class="nombre" id="userNombre">Explorador</div>
-                    <div class="handle" id="userHandle">@explorador</div>
+                    <div class="nombre" id="userNombre" data-clave="muro_explorador">Explorador</div>
+                    <div class="handle" id="userHandle" data-clave="muro_handle_explorador">@explorador</div>
                 </div>
             </div>
-            <textarea id="postContent" placeholder="¿Qué está pasando en tu mundo? #hashtag @mencion"></textarea>
+            <textarea id="postContent" placeholder="¿Qué está pasando en tu mundo? #hashtag @mencion" data-placeholder="muro_que_pasa"></textarea>
             <div class="form-actions">
                 <div class="tools">
-                    <button onclick="insertarHashtag()"># Hashtag</button>
-                    <button onclick="toggleEmojiPicker()" id="btnEmoji">😊 Emoji</button>
-                    <button onclick="abrirSelectorImagen()">🖼️ Imagen</button>
-                    <button class="venta" onclick="abrirModalVenta()">💰 Vender tokens</button>
+                    <button onclick="insertarHashtag()" data-clave="muro_hashtag"># Hashtag</button>
+                    <button onclick="toggleEmojiPicker()" id="btnEmoji" data-clave="muro_emoji">😊 Emoji</button>
+                    <button onclick="abrirSelectorImagen()" data-clave="muro_imagen">🖼️ Imagen</button>
+                    <button class="venta" onclick="abrirModalVenta()" data-clave="muro_vender_tokens_btn">💰 Vender tokens</button>
                     <!-- ===== SELECTOR DE EMOJIS ===== -->
                     <div class="emoji-picker" id="emojiPicker">
-                        <div class="titulo">✦ Elige tu emoji</div>
+                        <div class="titulo" data-clave="muro_elige_emoji">✦ Elige tu emoji</div>
                         <div class="grid" id="emojiGrid"></div>
                     </div>
                 </div>
-                <button class="btn-publicar" id="btnPublicar">⟡ Publicar</button>
+                <button class="btn-publicar" id="btnPublicar" data-clave="muro_publicar">⟡ Publicar</button>
             </div>
             <input type="file" id="inputImagen" accept="image/*" style="display:none;" onchange="subirImagenMuro(event)" />
         </div>
@@ -369,12 +369,12 @@
         <div id="feedContainer"></div>
 
         <footer class="footer">
-            <span><span class="brand">◈ Sariel's</span> · Sabor al Paladar · WEB3</span>
+            <span><span class="brand" data-clave="muro_footer_brand">◈ Sariel's</span> · Sabor al Paladar · WEB3</span>
             <div class="footer-links">
-                <a href="/terminos">📜 Términos</a>
-                <a href="/privacidad">🔒 Privacidad</a>
-                <a href="/cookies">🍪 Cookies</a>
-                <a href="/live-terminos">📡 Términos de Live</a>
+                <a href="/terminos" data-clave="muro_footer_terminos">📜 Términos</a>
+                <a href="/privacidad" data-clave="muro_footer_privacidad">🔒 Privacidad</a>
+                <a href="/cookies" data-clave="muro_footer_cookies">🍪 Cookies</a>
+                <a href="/live-terminos" data-clave="muro_footer_live">📡 Términos de Live</a>
                 <span style="opacity:0.3;">⚡ Polygon</span>
             </div>
         </footer>
@@ -385,20 +385,20 @@
     <div class="modal-overlay" id="modalVender">
         <div class="modal">
             <div class="modal-header">
-                <h2>💰 Vender Es.stoks</h2>
+                <h2 data-clave="muro_modal_vender_titulo">💰 Vender Es.stoks</h2>
                 <button class="btn-cerrar" onclick="cerrarModalVenta()">✕</button>
             </div>
             <div class="form-group">
-                <label>Cantidad de tokens</label>
+                <label data-clave="muro_cantidad_tokens">Cantidad de tokens</label>
                 <input type="number" id="inputCantidadTokens" min="1" max="100" value="1" />
-                <div style="font-size:0.65rem;color:var(--text-muted);margin-top:4px;">Tokens disponibles: <strong id="tokensDisponibles">0</strong></div>
+                <div style="font-size:0.65rem;color:var(--text-muted);margin-top:4px;" data-clave="muro_tokens_disponibles">Tokens disponibles: <strong id="tokensDisponibles">0</strong></div>
             </div>
             <div class="form-group">
-                <label>Precio por token (MXN)</label>
+                <label data-clave="muro_precio_token">Precio por token (MXN)</label>
                 <input type="number" id="inputPrecioToken" min="1" step="0.1" value="4.50" />
-                <div style="font-size:0.55rem;color:var(--text-muted);margin-top:4px;">💳 El comprador pagará con USDT/USDC vía NOWPayments</div>
+                <div style="font-size:0.55rem;color:var(--text-muted);margin-top:4px;" data-clave="muro_pago_usdt">💳 El comprador pagará con USDT/USDC vía NOWPayments</div>
             </div>
-            <button class="btn-guardar" id="btnPublicarVenta">◆ Publicar venta</button>
+            <button class="btn-guardar" id="btnPublicarVenta" data-clave="muro_publicar_venta">◆ Publicar venta</button>
         </div>
     </div>
 
@@ -406,33 +406,33 @@
     <div class="modal-overlay" id="modalConfirmarCompra">
         <div class="modal">
             <div class="modal-header">
-                <h2>⟡ Confirmar compra</h2>
+                <h2 data-clave="muro_confirmar_compra">⟡ Confirmar compra</h2>
                 <button class="btn-cerrar" onclick="cerrarModalConfirmacion()">✕</button>
             </div>
             <div class="modal-body">
                 <div style="text-align:center;padding:10px 0;">
                     <div style="font-size:2rem;margin-bottom:8px;font-family:'Orbitron',monospace;color:var(--gold);">◈</div>
-                    <p style="color:var(--text-muted);font-size:0.9rem;">
+                    <p style="color:var(--text-muted);font-size:0.9rem;" data-clave="muro_confirmas_compra">
                         Confirmas la compra de 
                         <strong style="color:var(--gold);" id="confirmCantidad">1</strong> 
                         token(s) a 
                         <strong style="color:var(--gold);" id="confirmPrecio">4.50 MXN</strong>
                     </p>
                     <div class="detalle-pago">
-                        <div class="label">💳 Total en MXN</div>
+                        <div class="label" data-clave="muro_total_mxn">💳 Total en MXN</div>
                         <div class="valor" id="confirmTotal">4.50 MXN</div>
                     </div>
                     <div class="detalle-pago">
-                        <div class="label">💳 Total en USDT</div>
+                        <div class="label" data-clave="muro_total_usdt">💳 Total en USDT</div>
                         <div class="valor" id="confirmTotalFinal">0.23 USDT</div>
                     </div>
                     <div class="detalle-pago" style="border-color:rgba(247,212,74,0.2);">
-                        <div class="label">🔶 Comisión de plataforma (2%)</div>
+                        <div class="label" data-clave="muro_comision">🔶 Comisión de plataforma (2%)</div>
                         <div class="valor comision" id="confirmComision">0.00 USDT</div>
                     </div>
                     <div style="display:flex;gap:10px;margin-top:12px;">
-                        <button class="btn-cancelar" onclick="cerrarModalConfirmacion()">Cancelar</button>
-                        <button class="btn-confirmar" onclick="confirmarCompraCrypto()">💳 Pagar con Crypto</button>
+                        <button class="btn-cancelar" onclick="cerrarModalConfirmacion()" data-clave="muro_cancelar">Cancelar</button>
+                        <button class="btn-confirmar" onclick="confirmarCompraCrypto()" data-clave="muro_pagar_crypto">💳 Pagar con Crypto</button>
                     </div>
                 </div>
             </div>
@@ -443,26 +443,26 @@
     <div class="modal-overlay" id="cryptoPaymentModal">
         <div class="modal modal-content">
             <div class="modal-header">
-                <h2>💳 Pagar con USDT/USDC</h2>
+                <h2 data-clave="muro_pagar_usdt">💳 Pagar con USDT/USDC</h2>
                 <button class="btn-cerrar" onclick="cerrarModalPago()">✕</button>
             </div>
             <div style="text-align:center;">
-                <p style="color:var(--text-secondary);font-size:0.85rem;margin-bottom:10px;">Escanea el QR o copia la dirección</p>
+                <p style="color:var(--text-secondary);font-size:0.85rem;margin-bottom:10px;" data-clave="muro_escanear_qr">Escanea el QR o copia la dirección</p>
                 <div class="qr-container">
                     <img id="cryptoQR" src="" alt="QR de pago" />
                 </div>
                 <div class="address-box">
-                    <div class="label" style="font-size:0.6rem;color:var(--text-muted);">📤 Dirección de pago</div>
+                    <div class="label" style="font-size:0.6rem;color:var(--text-muted);" data-clave="muro_direccion_pago">📤 Dirección de pago</div>
                     <div class="address" id="cryptoAddress">Cargando...</div>
                 </div>
                 <div class="monto-final">
                     <span id="cryptoMonto">0.00</span> USDT
                 </div>
                 <div class="actions">
-                    <button class="btn-outline-crypto" onclick="copiarDireccionCrypto()" style="background:transparent;color:var(--text-secondary);border:1px solid var(--glass-border);padding:8px 16px;border-radius:30px;font-size:0.65rem;cursor:pointer;">📋 Copiar dirección</button>
-                    <button class="btn-gold" onclick="verificarPagoCrypto()" id="btnVerificarPago">✅ Verificar pago</button>
+                    <button class="btn-outline-crypto" onclick="copiarDireccionCrypto()" style="background:transparent;color:var(--text-secondary);border:1px solid var(--glass-border);padding:8px 16px;border-radius:30px;font-size:0.65rem;cursor:pointer;" data-clave="muro_copiar_direccion">📋 Copiar dirección</button>
+                    <button class="btn-gold" onclick="verificarPagoCrypto()" id="btnVerificarPago" data-clave="muro_verificar_pago">✅ Verificar pago</button>
                 </div>
-                <div class="status" id="cryptoStatus">⏳ Esperando confirmación de pago...</div>
+                <div class="status" id="cryptoStatus" data-clave="muro_esperando_pago">⏳ Esperando confirmación de pago...</div>
             </div>
         </div>
     </div>
@@ -484,37 +484,6 @@
             Cerrar
         </button>
     </div>
-
-    <script>
-        function mostrarErrorEnPantalla(mensaje) {
-            const banner = document.getElementById('errorBanner');
-            const texto = document.getElementById('errorBannerText');
-            if (banner && texto) {
-                texto.textContent = mensaje;
-                banner.style.display = 'block';
-            }
-        }
-
-        window.addEventListener('error', function (event) {
-            mostrarErrorEnPantalla(
-                (event.message || 'Error desconocido') +
-                ' — línea ' + event.lineno + ' de ' + (event.filename || 'este archivo')
-            );
-        });
-
-        window.addEventListener('unhandledrejection', function (event) {
-            mostrarErrorEnPantalla('Promesa rechazada: ' + (event.reason?.message || event.reason));
-        });
-
-        window.addEventListener('load', function () {
-            if (typeof window.supabase === 'undefined') {
-                mostrarErrorEnPantalla(
-                    'No se pudo cargar la conexión a la base de datos (Supabase). ' +
-                    'Revisa tu internet o si algo está bloqueando cdn.jsdelivr.net.'
-                );
-            }
-        });
-    </script>
 
     <!-- ===== SCRIPTS - ORDEN CORRECTO ===== -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -668,10 +637,10 @@
             var seccionVenta = '';
             if (post.cantidad_venta && post.cantidad_venta > 0 && post.precio_venta) {
                 var precioPorToken = (post.precio_venta / post.cantidad_venta).toFixed(2);
-                seccionVenta = '<div class="post-venta"><div><span style="font-size:0.7rem;color:var(--text-muted);">💎 Venta de tokens</span><div style="font-weight:600;color:var(--gold);">' + post.cantidad_venta + ' tokens · $' + precioPorToken + ' c/u</div><div style="font-size:0.65rem;color:var(--text-muted);">Total: $' + post.precio_venta.toFixed(2) + ' MXN</div></div><button class="btn-comprar" onclick="abrirModalCompra(\'' + post.id + '\')">Comprar</button></div>';
+                seccionVenta = '<div class="post-venta"><div><span style="font-size:0.7rem;color:var(--text-muted);" data-clave="muro_venta_tokens">💎 Venta de tokens</span><div style="font-weight:600;color:var(--gold);">' + post.cantidad_venta + ' tokens · $' + precioPorToken + ' c/u</div><div style="font-size:0.65rem;color:var(--text-muted);" data-clave="muro_total">Total: $' + post.precio_venta.toFixed(2) + ' MXN</div></div><button class="btn-comprar" onclick="abrirModalCompra(\'' + post.id + '\')" data-clave="muro_comprar">Comprar</button></div>';
             }
             var fecha = new Date(post.created_at).toLocaleString();
-            div.innerHTML = '<div class="post-header"><div class="post-avatar">' + avatar + '</div><div><div class="post-author">' + nombre + ' <span class="badge-verificado">✦ Verificado</span></div><div class="post-date">' + fecha + '</div></div><div class="post-actions-header">' + (post.usuario_id === sessionUser?.id ? '<button class="btn-delete" onclick="eliminarPublicacion(\'' + post.id + '\')" title="Eliminar">🗑️</button>' : '<button class="btn-report" onclick="reportarPublicacion(\'' + post.id + '\')" title="Reportar">🚩</button>') + '<button class="btn-share" onclick="compartirPublicacion(\'' + post.id + '\')" title="Compartir">📤</button></div></div><div class="post-content">' + contenidoSanitizado + '</div>' + (post.imagen_url ? '<img src="' + escapeHTML(post.imagen_url) + '" style="width:100%; border-radius:12px; margin-top:12px;" />' : '') + seccionVenta + '<div class="post-stats"><span class="like-btn" onclick="toggleLike(\'' + post.id + '\')" data-liked="false">❤️ <span class="count">' + likesCount + '</span></span><span onclick="toggleComentarios(\'' + post.id + '\')">💬 <span class="count">' + comentariosCount + '</span></span>' + (post.cantidad_venta ? '<span style="color:var(--gold);font-size:0.7rem;">💎 ' + post.cantidad_venta + ' tokens en venta</span>' : '') + '</div><div class="post-comentarios" id="comentarios-' + post.id + '" style="display:none;"><div class="comentarios-lista" id="comentarios-lista-' + post.id + '"></div><div class="input-comentario"><input type="text" id="input-comentario-' + post.id + '" placeholder="Escribe un comentario..." /><button onclick="enviarComentario(\'' + post.id + '\')">Enviar</button></div></div>';
+            div.innerHTML = '<div class="post-header"><div class="post-avatar">' + avatar + '</div><div><div class="post-author">' + nombre + ' <span class="badge-verificado">✦ Verificado</span></div><div class="post-date">' + fecha + '</div></div><div class="post-actions-header">' + (post.usuario_id === sessionUser?.id ? '<button class="btn-delete" onclick="eliminarPublicacion(\'' + post.id + '\')" title="Eliminar">🗑️</button>' : '<button class="btn-report" onclick="reportarPublicacion(\'' + post.id + '\')" title="Reportar">🚩</button>') + '<button class="btn-share" onclick="compartirPublicacion(\'' + post.id + '\')" title="Compartir">📤</button></div></div><div class="post-content">' + contenidoSanitizado + '</div>' + (post.imagen_url ? '<img src="' + escapeHTML(post.imagen_url) + '" style="width:100%; border-radius:12px; margin-top:12px;" />' : '') + seccionVenta + '<div class="post-stats"><span class="like-btn" onclick="toggleLike(\'' + post.id + '\')" data-liked="false">❤️ <span class="count">' + likesCount + '</span></span><span onclick="toggleComentarios(\'' + post.id + '\')">💬 <span class="count">' + comentariosCount + '</span></span>' + (post.cantidad_venta ? '<span style="color:var(--gold);font-size:0.7rem;" data-clave="muro_tokens_venta">💎 ' + post.cantidad_venta + ' tokens en venta</span>' : '') + '</div><div class="post-comentarios" id="comentarios-' + post.id + '" style="display:none;"><div class="comentarios-lista" id="comentarios-lista-' + post.id + '"></div><div class="input-comentario"><input type="text" id="input-comentario-' + post.id + '" placeholder="Escribe un comentario..." data-placeholder="muro_escribe_comentario" /><button onclick="enviarComentario(\'' + post.id + '\')" data-clave="muro_enviar">Enviar</button></div></div>';
             if (sessionUser) {
                 verificarLike(post.id).then(function(liked) {
                     var likeBtn = div.querySelector('.like-btn');
@@ -770,7 +739,7 @@
                 if (result.error) throw result.error;
                 var data = result.data;
                 if (!data || data.length === 0) {
-                    lista.innerHTML = '<div style="color:var(--text-muted);font-size:0.7rem;padding:8px 0;">Sin comentarios. Sé el primero.</div>';
+                    lista.innerHTML = '<div style="color:var(--text-muted);font-size:0.7rem;padding:8px 0;" data-clave="muro_sin_comentarios">Sin comentarios. Sé el primero.</div>';
                     return;
                 }
                 lista.innerHTML = data.map(function(c) {
@@ -779,7 +748,7 @@
                     var esPropietario = c.usuario_id === sessionUser?.id;
                     return '<div class="comentario"><div class="avatar">' + avatar + '</div><div class="texto"><strong>' + nombre + '</strong> ' + sanitizarHTML(c.contenido || '') + '<div class="fecha">' + new Date(c.created_at).toLocaleString() + '</div>' + (esPropietario ? '<button class="btn-eliminar-comentario" onclick="eliminarComentario(\'' + c.id + '\')">✕ Eliminar</button>' : '') + '</div></div>';
                 }).join('');
-            } catch (e) { console.error('Error cargando comentarios:', e); lista.innerHTML = '<div style="color:var(--danger);font-size:0.7rem;">Error al cargar comentarios</div>'; }
+            } catch (e) { console.error('Error cargando comentarios:', e); lista.innerHTML = '<div style="color:var(--danger);font-size:0.7rem;" data-clave="muro_error_comentarios">Error al cargar comentarios</div>'; }
         }
 
         // ===== ENVIAR COMENTARIO =====
@@ -858,7 +827,7 @@
                 if (!data || data.length === 0) {
                     hasMorePosts = false;
                     if (currentPage === 0 && feedContainer) {
-                        feedContainer.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3>Sin publicaciones</h3><p>Sé el primero en compartir algo.</p></div>';
+                        feedContainer.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3 data-clave="muro_sin_publicaciones">Sin publicaciones</h3><p data-clave="muro_sin_publicaciones_desc">Sé el primero en compartir algo.</p></div>';
                     }
                     isLoading = false;
                     return;
