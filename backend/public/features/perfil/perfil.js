@@ -29,24 +29,40 @@ function showToast(msg, type) {
 }
 
 // ================================================================
-// 🆕 INICIALIZAR IDIOMAS
+// 🆕 INICIALIZAR IDIOMAS - FUNCIÓN AGREGADA
 // ================================================================
 async function inicializarIdiomasModulo() {
     try {
+        console.log('🔄 inicializarIdiomasModulo() iniciado...');
+        
+        // 1. Obtener idioma del usuario
         if (typeof window.obtenerIdiomaUsuario === 'function') {
             const idioma = await window.obtenerIdiomaUsuario();
+            console.log('🌐 Idioma obtenido:', idioma);
+            
             if (idioma) {
+                // 2. Cargar traducciones
                 if (typeof window.cargarTraducciones === 'function') {
                     await window.cargarTraducciones(idioma.id);
+                    console.log('✅ Traducciones cargadas para:', idioma.id);
                 }
+                
+                // 3. Aplicar traducciones
                 if (typeof window.aplicarTraducciones === 'function') {
                     window.aplicarTraducciones();
+                    console.log('✅ Traducciones aplicadas');
                 }
             }
+        } else {
+            console.warn('⚠️ window.obtenerIdiomaUsuario no está disponible');
         }
+        
+        // 4. Cargar selector de idiomas
         if (typeof window.cargarSelectorIdiomas === 'function') {
             await window.cargarSelectorIdiomas();
+            console.log('✅ Selector de idiomas cargado');
         }
+        
         console.log('✅ Idiomas inicializados en Perfil');
     } catch (error) {
         console.warn('⚠️ Error inicializando idiomas en Perfil:', error);
@@ -1520,7 +1536,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // ================================================================
-// EXPOSICIÓN GLOBAL
+// EXPOSICIÓN GLOBAL - TODAS LAS FUNCIONES EXPUESTAS
 // ================================================================
 
 window.inicializarIdiomasModulo = inicializarIdiomasModulo;
