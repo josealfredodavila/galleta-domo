@@ -1,178 +1,64 @@
-// ================================================================
-// IDIOMAS - FUNCIONES GLOBALES
-// ================================================================
+-- 1. Obtener el ID de es-MX
+SELECT id FROM idiomas_sistema WHERE codigo = 'es-MX';
 
-// ===== OBTENER SESIÓN - FUNCIÓN INDEPENDIENTE =====
-async function getSession() {
-    try {
-        if (typeof window.supabase === 'undefined') {
-            console.warn('⚠️ Supabase no disponible');
-            return null;
-        }
-        const { data: { session } } = await window.supabase.auth.getSession();
-        return session;
-    } catch (e) {
-        console.error('❌ Error obteniendo sesión:', e);
-        return null;
-    }
-}
-
-let idiomaActual = null;
-let traducciones = {};
-
-/**
- * Obtener el idioma del usuario (de perfil o por defecto)
- */
-async function obtenerIdiomaUsuario() {
-    try {
-        const session = await getSession();
-        if (session) {
-            const { data, error } = await window.supabase
-                .from('usuarios')
-                .select('idioma_preferido_id')
-                .eq('id', session.user.id)
-                .single();
-            
-            if (!error && data?.idioma_preferido_id) {
-                const { data: idioma } = await window.supabase
-                    .from('idiomas_sistema')
-                    .select('*')
-                    .eq('id', data.idioma_preferido_id)
-                    .single();
-                
-                if (idioma) {
-                    idiomaActual = idioma;
-                    return idioma;
-                }
-            }
-        }
-        
-        const localId = localStorage.getItem('idioma_preferido');
-        if (localId) {
-            const { data: idioma } = await window.supabase
-                .from('idiomas_sistema')
-                .select('*')
-                .eq('id', localId)
-                .single();
-            
-            if (idioma) {
-                idiomaActual = idioma;
-                return idioma;
-            }
-        }
-        
-        const { data: idiomaDefault } = await window.supabase
-            .from('idiomas_sistema')
-            .select('*')
-            .eq('codigo', 'es-MX')
-            .single();
-        
-        idiomaActual = idiomaDefault;
-        return idiomaDefault;
-        
-    } catch (error) {
-        console.error('Error obteniendo idioma:', error);
-        return { codigo: 'es-MX', nombre: 'Español' };
-    }
-}
-
-/**
- * Cargar traducciones del idioma actual
- */
-async function cargarTraducciones(idiomaId) {
-    try {
-        const { data, error } = await window.supabase
-            .from('traducciones')
-            .select('clave, valor, modulo')
-            .eq('idioma_id', idiomaId);
-        
-        if (error) throw error;
-        
-        traducciones = {};
-        data.forEach(item => {
-            traducciones[item.clave] = item.valor;
-        });
-        
-        return traducciones;
-    } catch (error) {
-        console.error('Error cargando traducciones:', error);
-        return {};
-    }
-}
-
-/**
- * Obtener texto traducido por clave
- */
-function t(clave, modulo = null) {
-    if (traducciones[clave]) {
-        return traducciones[clave];
-    }
-    
-    if (modulo) {
-        const keyModulo = `${modulo}_${clave}`;
-        if (traducciones[keyModulo]) {
-            return traducciones[keyModulo];
-        }
-    }
-    
-    return clave.replace('_', ' ');
-}
-
-/**
- * Cambiar el idioma del usuario
- */
-async function cambiarIdioma(idiomaId) {
-    try {
-        localStorage.setItem('idioma_preferido', idiomaId);
-        
-        const session = await getSession();
-        if (session) {
-            await window.supabase
-                .from('usuarios')
-                .update({ idioma_preferido_id: idiomaId })
-                .eq('id', session.user.id);
-        }
-        
-        window.location.reload();
-        
-    } catch (error) {
-        console.error('Error cambiando idioma:', error);
-        showToast('❌ Error al cambiar idioma', 'error');
-    }
-}
-
-/**
- * Aplicar traducciones a la página
- */
-function aplicarTraducciones() {
-    document.querySelectorAll('[data-clave]').forEach(el => {
-        const clave = el.getAttribute('data-clave');
-        const modulo = el.getAttribute('data-modulo') || null;
-        const traduccion = t(clave, modulo);
-        
-        if (traduccion && traduccion !== clave) {
-            el.textContent = traduccion;
-        }
-    });
-    
-    document.querySelectorAll('[data-placeholder]').forEach(el => {
-        const clave = el.getAttribute('data-placeholder');
-        const traduccion = t(clave);
-        if (traduccion && traduccion !== clave) {
-            el.placeholder = traduccion;
-        }
-    });
-}
-
-// ================================================================
-// EXPOSICIÓN GLOBAL
-// ================================================================
-
-window.getSession = getSession;
-window.obtenerIdiomaUsuario = obtenerIdiomaUsuario;
-window.cargarTraducciones = cargarTraducciones;
-window.t = t;
-window.cambiarIdioma = cambiarIdioma;
-window.aplicarTraducciones = aplicarTraducciones;
-
-console.log('✅ Sistema de idiomas cargado correctamente');
+-- 2. Insertar todas las claves del index.html (reemplaza 'ID_ES_MX' con el ID real)
+INSERT INTO traducciones (idioma_id, clave, valor) VALUES
+('ID_ES_MX', 'no_autenticado', 'No autenticado'),
+('ID_ES_MX', 'cerrar', 'Cerrar'),
+('ID_ES_MX', 'bienvenido_titulo', '◈ Bienvenido a Sariel''s'),
+('ID_ES_MX', 'bienvenido_descripcion', 'Compra domos físicos, acumula Es.stoks, canjea NFTs y conecta con tu comunidad en un ecosistema Web3 sin custodia.'),
+('ID_ES_MX', 'ir_perfil', '◆ Ir a mi perfil'),
+('ID_ES_MX', 'tab_tienda', '⌂ Tienda'),
+('ID_ES_MX', 'tab_internet', '◈ Internet'),
+('ID_ES_MX', 'tab_admin', '◈ Admin QR'),
+('ID_ES_MX', 'registro_titulo', '◈ Regístrate gratis'),
+('ID_ES_MX', 'registro_sub', 'Crea tu cuenta con email'),
+('ID_ES_MX', 'registro_btn', '⟡ Crear cuenta'),
+('ID_ES_MX', 'registro_tienes_cuenta', '¿Ya tienes cuenta?'),
+('ID_ES_MX', 'registro_iniciar_sesion', 'Inicia sesión'),
+('ID_ES_MX', 'login_titulo', '◈ Iniciar sesión'),
+('ID_ES_MX', 'login_sub', 'Entra con tu email'),
+('ID_ES_MX', 'login_btn', '◈ Iniciar sesión'),
+('ID_ES_MX', 'login_no_tienes_cuenta', '¿No tienes cuenta?'),
+('ID_ES_MX', 'login_registrate', 'Regístrate'),
+('ID_ES_MX', 'comprar_domo_titulo', '◈ Comprar Domo'),
+('ID_ES_MX', 'comprar_domo_badge', 'Nuevo'),
+('ID_ES_MX', 'comprar_domo_btn', 'Comprar Domo'),
+('ID_ES_MX', 'comprar_domo_disclaimer_1', '◈ Recibes'),
+('ID_ES_MX', 'comprar_domo_disclaimer_2', 'por domo · ES.stoks es'),
+('ID_ES_MX', 'comprar_domo_disclaimer_3', 'transferible en P2P'),
+('ID_ES_MX', 'comprar_domo_disclaimer_4', '· NFT Domo'),
+('ID_ES_MX', 'comprar_domo_disclaimer_5', 'intransferible'),
+('ID_ES_MX', 'comprar_domo_disclaimer_6', '· Canje en Puebla'),
+('ID_ES_MX', 'comprar_domo_disclaimer_7', '30 días'),
+('ID_ES_MX', 'comprar_domo_disclaimer_8', '◈ Venta física en Puebla · Sin envíos'),
+('ID_ES_MX', 'comprar_domo_wallet', '◈ Conecta tu wallet en tu perfil'),
+('ID_ES_MX', 'tu_estado_titulo', '◈ Tu Estado'),
+('ID_ES_MX', 'tu_estado_badge', 'Actualizado'),
+('ID_ES_MX', 'estado_domos', '◈ Domos'),
+('ID_ES_MX', 'estado_tokens', '◈ Es.stoks'),
+('ID_ES_MX', 'estado_progreso', '◈ Progreso NFT'),
+('ID_ES_MX', 'estado_nft', '◈ NFT'),
+('ID_ES_MX', 'estado_canjea', 'Canjea tu NFT desde tu perfil'),
+('ID_ES_MX', 'internet_titulo', '◈ Internet de alta velocidad'),
+('ID_ES_MX', 'internet_badge', '4G/5G'),
+('ID_ES_MX', 'internet_descripcion', 'Paquetes de datos móviles · Activación en 2 minutos · Paga en MXN o USDT'),
+('ID_ES_MX', 'internet_basico', 'Básico'),
+('ID_ES_MX', 'internet_chido', 'Chido'),
+('ID_ES_MX', 'internet_pro', 'Pro'),
+('ID_ES_MX', 'internet_ilimitado', 'Ilimitado'),
+('ID_ES_MX', 'internet_7dias', '7 días'),
+('ID_ES_MX', 'internet_15dias', '15 días'),
+('ID_ES_MX', 'internet_30dias', '30 días'),
+('ID_ES_MX', 'internet_ver', 'Ver'),
+('ID_ES_MX', 'internet_ver_todos', '⟡ Ver todos los paquetes'),
+('ID_ES_MX', 'internet_admin', '⚙️ Admin'),
+('ID_ES_MX', 'internet_cobertura', '◈ Cobertura: Puebla, CDMX, Edomex · Tethering incluido'),
+('ID_ES_MX', 'admin_qr_titulo', '◈ Admin QR'),
+('ID_ES_MX', 'admin_qr_placeholder', 'Datos para QR'),
+('ID_ES_MX', 'admin_qr_generar', 'Generar QR'),
+('ID_ES_MX', 'footer_terminos', '◈ Términos'),
+('ID_ES_MX', 'footer_privacidad', '◈ Privacidad'),
+('ID_ES_MX', 'footer_cookies', '◈ Cookies'),
+('ID_ES_MX', 'footer_eliminar_cuenta', '🗑️ Eliminar cuenta'),
+('ID_ES_MX', 'footer_live_terminos', '◉ Live Términos');
