@@ -198,76 +198,243 @@
             text-overflow: ellipsis;
         }
 
-        /* ===== OVERLAY INFERIOR - CONTROLES ===== */
+        /* ===== CONTROLES INFERIORES - ESTILO 2030 ===== */
         .live-controls-bottom {
             position: absolute;
             bottom: 0;
             left: 0;
             right: 0;
             padding: 20px 24px 24px;
-            background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%);
+            background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%);
             z-index: 5;
             display: flex;
             flex-wrap: wrap;
-            gap: 8px;
+            gap: 12px;
             justify-content: center;
             align-items: center;
         }
-        .live-controls-bottom .ctrl-group {
-            display: flex;
-            gap: 6px;
-            background: rgba(0,0,0,0.4);
-            padding: 6px 12px;
-            border-radius: 30px;
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255,255,255,0.05);
-        }
-        .live-controls-bottom button {
-            background: none;
-            border: none;
-            color: rgba(255,255,255,0.8);
-            font-size: 0.9rem;
-            cursor: pointer;
-            padding: 6px 10px;
+
+        .ctrl-btn {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.06);
             border-radius: 50%;
-            transition: var(--transition);
+            width: 56px;
+            height: 56px;
             display: flex;
             align-items: center;
             justify-content: center;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            color: rgba(255,255,255,0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            position: relative;
+            outline: none;
+            padding: 0;
         }
-        .live-controls-bottom button:hover {
+        .ctrl-btn:hover {
+            transform: scale(1.08) translateY(-2px);
+            border-color: rgba(212, 175, 55, 0.3);
             color: var(--gold);
-            background: rgba(212, 175, 55, 0.1);
-            transform: scale(1.05);
+            box-shadow: 0 0 40px rgba(212, 175, 55, 0.15);
         }
-        .live-controls-bottom button.mic { color: var(--success); }
-        .live-controls-bottom button.mic.muted { color: var(--danger); }
-        .live-controls-bottom button.voice { color: var(--gold); }
-        .live-controls-bottom button.voice.voice-active { color: var(--gold); background: rgba(212, 175, 55, 0.2); }
-        .live-controls-bottom button.end {
+        .ctrl-btn:active {
+            transform: scale(0.92);
+        }
+        .ctrl-btn svg {
+            width: 24px;
+            height: 24px;
+            transition: all 0.3s ease;
+        }
+
+        /* ===== 1. PLAY/PAUSE ===== */
+        .ctrl-play {
+            background: rgba(212, 175, 55, 0.12);
+            border-color: rgba(212, 175, 55, 0.2);
+        }
+        .ctrl-play:hover {
+            background: rgba(212, 175, 55, 0.2);
+            border-color: var(--gold);
+            color: var(--gold);
+            box-shadow: 0 0 50px rgba(212, 175, 55, 0.2);
+        }
+
+        /* ===== 2. MICRÓFONO CON ONDAS ===== */
+        .ctrl-mic {
+            background: rgba(0, 214, 143, 0.08);
+            border-color: rgba(0, 214, 143, 0.15);
+        }
+        .ctrl-mic:hover {
+            border-color: var(--success);
+            color: var(--success);
+            box-shadow: 0 0 50px rgba(0, 214, 143, 0.15);
+        }
+        .ctrl-mic.muted {
+            background: rgba(255, 51, 102, 0.08);
+            border-color: rgba(255, 51, 102, 0.15);
             color: var(--danger);
-            background: rgba(255, 51, 102, 0.15);
-            border-radius: 30px;
-            padding: 6px 16px;
-            font-size: 0.7rem;
-            font-weight: 600;
         }
-        .live-controls-bottom button.end:hover {
-            background: rgba(255, 51, 102, 0.3);
+        .ctrl-mic.muted:hover {
+            border-color: var(--danger);
+            box-shadow: 0 0 50px rgba(255, 51, 102, 0.15);
+        }
+
+        .wave-ring {
+            position: absolute;
+            inset: -4px;
+            border-radius: 50%;
+            pointer-events: none;
+        }
+        .wave-ring .wave {
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            border: 1.5px solid rgba(0, 214, 143, 0.3);
+            animation: wavePulse 2s ease-out infinite;
+            opacity: 0;
+        }
+        .ctrl-mic.muted .wave-ring .wave {
+            border-color: rgba(255, 51, 102, 0.3);
+            animation: none;
+            opacity: 0 !important;
+        }
+        @keyframes wavePulse {
+            0% { transform: scale(0.8); opacity: 0.6; }
+            100% { transform: scale(1.6); opacity: 0; }
+        }
+
+        /* ===== 3. COMPARTIR PANTALLA (VISION PRO) ===== */
+        .ctrl-screen {
+            background: rgba(168, 85, 247, 0.08);
+            border-color: rgba(168, 85, 247, 0.15);
+        }
+        .ctrl-screen:hover {
+            border-color: var(--purple);
+            color: var(--purple);
+            box-shadow: 0 0 50px rgba(168, 85, 247, 0.15);
+        }
+
+        /* ===== 4. JUEGO (DORADO LINEAL) ===== */
+        .ctrl-game {
+            background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(212, 175, 55, 0.05));
+            border-color: rgba(212, 175, 55, 0.25);
+            color: var(--gold);
+        }
+        .ctrl-game:hover {
+            background: linear-gradient(135deg, rgba(212, 175, 55, 0.25), rgba(212, 175, 55, 0.1));
+            border-color: var(--gold);
+            box-shadow: 0 0 60px rgba(212, 175, 55, 0.25);
+        }
+
+        /* ===== 5. ORBE ROJO (FINALIZAR) ===== */
+        .ctrl-end {
+            background: rgba(255, 51, 102, 0.08);
+            border-color: rgba(255, 51, 102, 0.15);
+            width: 60px;
+            height: 60px;
+        }
+        .ctrl-end:hover {
+            border-color: var(--danger);
+            box-shadow: 0 0 60px rgba(255, 51, 102, 0.2);
             transform: scale(1.05);
         }
-        .live-controls-bottom .btn-game {
-            color: #fff !important;
-            background: rgba(80, 200, 120, 0.15) !important;
-            border: 1px solid rgba(80, 200, 120, 0.3) !important;
-            border-radius: 30px !important;
-            padding: 4px 14px !important;
-            font-size: 0.65rem !important;
+        .ctrl-end .orb-red {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, rgba(255, 51, 102, 0.4), rgba(255, 0, 68, 0.8));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            position: relative;
+            transition: all 0.4s ease;
+            border: 1px solid rgba(255, 51, 102, 0.2);
         }
-        .live-controls-bottom .btn-game:hover {
-            color: var(--gold) !important;
-            border-color: var(--gold) !important;
-            background: rgba(212, 175, 55, 0.15) !important;
+        .ctrl-end:hover .orb-red {
+            transform: scale(1.05);
+            background: radial-gradient(circle at 30% 30%, rgba(255, 51, 102, 0.6), rgba(255, 0, 68, 0.9));
+            border-color: rgba(255, 51, 102, 0.4);
+        }
+        .ctrl-end .orb-pulse {
+            position: absolute;
+            inset: -6px;
+            border-radius: 50%;
+            border: 1.5px solid rgba(255, 51, 102, 0.15);
+            animation: orbPulse 2.5s ease-out infinite;
+            pointer-events: none;
+        }
+        .ctrl-end .orb-pulse::after {
+            content: '';
+            position: absolute;
+            inset: 8px;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 51, 102, 0.08);
+            animation: orbPulse 2.5s ease-out infinite 0.8s;
+        }
+        @keyframes orbPulse {
+            0% { transform: scale(0.9); opacity: 0.8; }
+            100% { transform: scale(1.8); opacity: 0; }
+        }
+
+        /* ===== RESPONSIVE CONTROLES ===== */
+        @media (max-width: 768px) {
+            .live-controls-bottom {
+                padding: 16px 12px 18px;
+                gap: 8px;
+            }
+            .ctrl-btn {
+                width: 44px;
+                height: 44px;
+            }
+            .ctrl-btn svg {
+                width: 18px;
+                height: 18px;
+            }
+            .ctrl-end {
+                width: 48px;
+                height: 48px;
+            }
+            .ctrl-end .orb-red {
+                width: 34px;
+                height: 34px;
+            }
+            .ctrl-end .orb-red svg {
+                width: 16px;
+                height: 16px;
+            }
+            .ctrl-end .orb-pulse {
+                inset: -4px;
+            }
+            .wave-ring .wave {
+                animation-duration: 2.5s;
+            }
+        }
+        @media (max-width: 480px) {
+            .live-controls-bottom {
+                gap: 6px;
+                padding: 12px 8px 14px;
+            }
+            .ctrl-btn {
+                width: 38px;
+                height: 38px;
+            }
+            .ctrl-btn svg {
+                width: 16px;
+                height: 16px;
+            }
+            .ctrl-end {
+                width: 42px;
+                height: 42px;
+            }
+            .ctrl-end .orb-red {
+                width: 28px;
+                height: 28px;
+            }
+            .ctrl-end .orb-red svg {
+                width: 14px;
+                height: 14px;
+            }
         }
 
         /* ===== WATERMARK ===== */
@@ -621,9 +788,6 @@
         @media (max-width: 768px) {
             .live-video-container { height: 55vh; min-height: 350px; }
             .live-header { flex-direction: column; text-align: center; }
-            .live-controls-bottom { padding: 12px 16px 16px; }
-            .live-controls-bottom .ctrl-group { padding: 4px 8px; gap: 2px; }
-            .live-controls-bottom button { font-size: 0.75rem; padding: 4px 6px; }
             .live-overlay-top .live-title { max-width: 50%; font-size: 0.6rem; }
             .streams-list { grid-template-columns: 1fr 1fr; }
             .main-nav .nav-link { font-size: 0.6rem; padding: 6px 10px; }
@@ -632,7 +796,6 @@
             .live-video-container { height: 45vh; min-height: 280px; }
             .streams-list { grid-template-columns: 1fr 1fr; gap: 8px; }
             .donaciones-rapidas .btn-donacion { min-width: 50px; padding: 6px 8px; font-size: 0.55rem; }
-            .live-controls-bottom .ctrl-group { flex-wrap: wrap; justify-content: center; }
             .live-overlay-top .live-title { max-width: 40%; font-size: 0.5rem; }
             .game-grid { grid-template-columns: 1fr; }
         }
@@ -738,16 +901,58 @@
                     <span class="badge-web3">✦ WEB3</span>
                 </div>
 
-                <!-- CONTROLES INFERIORES -->
+                <!-- ===== CONTROLES INFERIORES - ESTILO 2030 ===== -->
                 <div class="live-controls-bottom">
-                    <div class="ctrl-group">
-                        <button onclick="togglePlay()" id="playBtn" title="Play/Pause">⏸</button>
-                        <button onclick="toggleMute()" id="muteBtn" title="Mute/Unmute" class="mic">🔊</button>
-                        <button onclick="capturarPantalla()" id="screenBtn" title="Compartir pantalla">🖥️</button>
-                    </div>
-                    <button onclick="abrirSelectorJuego()" class="btn-game" id="gameBtn" title="Transmitir juego">🎮 Juego</button>
-                    <button onclick="toggleVoice()" id="voiceBtn" title="Lector de voz" class="voice">🔊</button>
-                    <button class="end" onclick="finalizarTransmision()" title="Finalizar">✕ Finalizar</button>
+                    <!-- 1. PAUSA/PLAY -->
+                    <button onclick="togglePlay()" id="playBtn" class="ctrl-btn ctrl-play" title="Play/Pause">
+                        <svg viewBox="0 0 24 24" fill="currentColor" width="28" height="28">
+                            <polygon id="playIcon" points="5,3 19,12 5,21" />
+                            <rect id="pauseIcon" x="6" y="4" width="4" height="16" rx="1" style="display:none;" />
+                            <rect id="pauseIcon2" x="14" y="4" width="4" height="16" rx="1" style="display:none;" />
+                        </svg>
+                    </button>
+
+                    <!-- 2. MICRÓFONO CON ONDAS (VOZ) -->
+                    <button onclick="toggleMute()" id="muteBtn" class="ctrl-btn ctrl-mic" title="Micrófono">
+                        <svg viewBox="0 0 24 24" fill="currentColor" width="28" height="28">
+                            <path id="micIcon" d="M12 15c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v7c0 1.66 1.34 3 3 3z"/>
+                            <path d="M19 10v2c0 3.87-3.13 7-7 7s-7-3.13-7-7v-2"/>
+                            <line x1="5" y1="4" x2="19" y2="20" id="muteLine" style="display:none;"/>
+                        </svg>
+                        <span class="wave-ring" id="waveRing">
+                            <span class="wave"></span>
+                            <span class="wave" style="animation-delay:0.2s;"></span>
+                            <span class="wave" style="animation-delay:0.4s;"></span>
+                        </span>
+                    </button>
+
+                    <!-- 3. COMPARTIR PANTALLA / CÁMARA (VISION PRO) -->
+                    <button onclick="capturarPantalla()" id="screenBtn" class="ctrl-btn ctrl-screen" title="Compartir pantalla">
+                        <svg viewBox="0 0 24 24" fill="currentColor" width="28" height="28">
+                            <rect x="2" y="4" width="20" height="14" rx="2" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                            <rect x="8" y="20" width="8" height="2" rx="0.5" fill="currentColor"/>
+                            <line x1="12" y1="18" x2="12" y2="20" stroke="currentColor" stroke-width="1.5"/>
+                            <rect x="4" y="6" width="6" height="4" rx="0.5" fill="currentColor" opacity="0.3"/>
+                            <rect x="14" y="6" width="6" height="4" rx="0.5" fill="currentColor" opacity="0.3"/>
+                        </svg>
+                    </button>
+
+                    <!-- 4. JUEGO (DORADO LINEAL) -->
+                    <button onclick="abrirSelectorJuego()" class="ctrl-btn ctrl-game" id="gameBtn" title="Transmitir juego">
+                        <svg viewBox="0 0 24 24" fill="currentColor" width="28" height="28">
+                            <path d="M21 6H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-10 7H8v3H6v-3H3v-2h3V8h2v3h3v2zm4.5 2c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm4-3c-.83 0-1.5-.67-1.5-1.5S18.67 9 19.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
+                        </svg>
+                    </button>
+
+                    <!-- 5. FINALIZAR (ORBE ROJO QUE RESPIRA) -->
+                    <button onclick="finalizarTransmision()" class="ctrl-btn ctrl-end" id="endBtn" title="Finalizar transmisión">
+                        <div class="orb-red">
+                            <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+                                <rect x="6" y="6" width="12" height="12" rx="1" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                            </svg>
+                        </div>
+                        <span class="orb-pulse"></span>
+                    </button>
                 </div>
             </div>
 
@@ -830,8 +1035,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script>
 /* ================================================================
-   LIVE - TODAS LAS FUNCIONES (MISMO CÓDIGO QUE ANTES)
-   SOLO SE ACTUALIZÓ EL CSS PARA UN LOOK MODERNO 2030
+   LIVE - TODAS LAS FUNCIONES
    ================================================================ */
 
 // ===== CONFIGURACIÓN SUPABASE =====
@@ -1481,8 +1685,24 @@ function renderizarTransmisiones(streams) {
 function togglePlay() {
     const video = document.getElementById('liveVideo');
     if (!video) return;
-    if (video.paused) { video.play(); document.getElementById('playBtn').textContent = '⏸'; }
-    else { video.pause(); document.getElementById('playBtn').textContent = '▶'; }
+    const playIcon = document.getElementById('playIcon');
+    const pauseIcon = document.getElementById('pauseIcon');
+    const pauseIcon2 = document.getElementById('pauseIcon2');
+    const btn = document.getElementById('playBtn');
+
+    if (video.paused) {
+        video.play();
+        btn.classList.remove('paused');
+        if (playIcon) playIcon.style.display = 'block';
+        if (pauseIcon) pauseIcon.style.display = 'none';
+        if (pauseIcon2) pauseIcon2.style.display = 'none';
+    } else {
+        video.pause();
+        btn.classList.add('paused');
+        if (playIcon) playIcon.style.display = 'none';
+        if (pauseIcon) pauseIcon.style.display = 'block';
+        if (pauseIcon2) pauseIcon2.style.display = 'block';
+    }
 }
 
 function toggleMute() {
@@ -1491,8 +1711,18 @@ function toggleMute() {
     isMuted = !isMuted;
     video.muted = isMuted;
     const btn = document.getElementById('muteBtn');
-    if (isMuted) { btn.textContent = '🔇'; btn.classList.add('muted'); }
-    else { btn.textContent = '🔊'; btn.classList.remove('muted'); }
+    const micIcon = document.getElementById('micIcon');
+    const muteLine = document.getElementById('muteLine');
+
+    if (isMuted) {
+        btn.classList.add('muted');
+        if (micIcon) micIcon.style.display = 'none';
+        if (muteLine) muteLine.style.display = 'block';
+    } else {
+        btn.classList.remove('muted');
+        if (micIcon) micIcon.style.display = 'block';
+        if (muteLine) muteLine.style.display = 'none';
+    }
 }
 
 async function capturarPantalla() {
@@ -1517,24 +1747,6 @@ async function restaurarCamara() {
         const video = document.getElementById('liveVideo');
         if (video) { video.srcObject = stream; video.play(); }
     } catch (error) { console.error('Error restaurando cámara:', error); }
-}
-
-function toggleVoice() {
-    isVoiceActive = !isVoiceActive;
-    const btn = document.getElementById('voiceBtn');
-    if (isVoiceActive) {
-        btn.textContent = '🔊';
-        btn.classList.add('voice-active');
-        const msg = 'Bienvenidos al Live de Sariel\'s';
-        const utterance = new SpeechSynthesisUtterance(msg);
-        utterance.lang = 'es-ES';
-        utterance.rate = 0.9;
-        window.speechSynthesis.speak(utterance);
-    } else {
-        btn.textContent = '🔈';
-        btn.classList.remove('voice-active');
-        window.speechSynthesis.cancel();
-    }
 }
 
 function verTodasLasTransmisiones() {
@@ -1906,7 +2118,6 @@ window.seleccionarJuego = seleccionarJuego;
 window.mostrarOtroJuego = mostrarOtroJuego;
 window.confirmarOtroJuego = confirmarOtroJuego;
 window.cerrarSelectorJuego = cerrarSelectorJuego;
-window.toggleVoice = toggleVoice;
 window.cargarEstadisticas = cargarEstadisticas;
 window.showToast = showToast;
 </script>
