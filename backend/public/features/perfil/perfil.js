@@ -1,6 +1,6 @@
 // ================================================================
 // PERFIL.JS - SARIEL'S ECOSYSTEM
-// VERSIÓN CORREGIDA - CON MEMBRESIAS_USUARIOS
+// VERSIÓN COMPLETA CORREGIDA - CON EMOJIS EN PICKER
 // ================================================================
 
 // ===== VARIABLES GLOBALES =====
@@ -110,6 +110,98 @@ async function cargarEmojis() {
         console.error('❌ Error cargando emojis:', error);
         REACCIONES = ['❤️', '😊', '🔥', '👏', '🎉', '💎', '🤩', '😍', '😂'];
     }
+}
+
+// ================================================================
+// 😊 RENDERIZAR EMOJIS EN EL PICKER DEL PERFIL
+// ================================================================
+
+function renderizarEmojisPerfil() {
+    const grid = document.getElementById('emojiGridPerfil');
+    if (!grid) {
+        console.warn('⚠️ No se encontró #emojiGridPerfil en el DOM');
+        return;
+    }
+
+    grid.innerHTML = '';
+
+    if (!REACCIONES || REACCIONES.length === 0) {
+        REACCIONES = ['❤️', '😊', '🔥', '👏', '🎉', '💎', '🤩', '😍', '😂'];
+    }
+
+    REACCIONES.forEach(emoji => {
+        const btn = document.createElement('button');
+        btn.textContent = emoji;
+        btn.type = 'button';
+        btn.style.cssText = `
+            background: transparent;
+            border: none;
+            font-size: 1.4rem;
+            padding: 4px;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            line-height: 1;
+            width: 38px;
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        `;
+        
+        btn.onmouseenter = function() {
+            this.style.background = 'rgba(212, 175, 55, 0.2)';
+            this.style.transform = 'scale(1.2)';
+        };
+        btn.onmouseleave = function() {
+            this.style.background = 'transparent';
+            this.style.transform = 'scale(1)';
+        };
+        
+        btn.onclick = function(e) {
+            e.stopPropagation();
+            const textarea = document.getElementById('pubTexto');
+            if (textarea) {
+                const start = textarea.selectionStart;
+                const end = textarea.selectionEnd;
+                const text = textarea.value;
+                textarea.value = text.substring(0, start) + emoji + text.substring(end);
+                textarea.focus();
+                textarea.selectionStart = textarea.selectionEnd = start + emoji.length;
+                textarea.dispatchEvent(new Event('input'));
+            }
+            const picker = document.getElementById('emojiPickerPerfil');
+            if (picker) picker.style.display = 'none';
+        };
+        
+        grid.appendChild(btn);
+    });
+
+    console.log('😊 Emojis renderizados en el picker del perfil:', REACCIONES.length);
+}
+
+// ================================================================
+// 😊 TOGGLE EMOJI PICKER
+// ================================================================
+
+function toggleEmojiPickerPerfil() {
+    const picker = document.getElementById('emojiPickerPerfil');
+    if (!picker) {
+        console.warn('⚠️ No se encontró #emojiPickerPerfil');
+        return;
+    }
+
+    if (picker.style.display === 'block') {
+        picker.style.display = 'none';
+        return;
+    }
+
+    const grid = document.getElementById('emojiGridPerfil');
+    if (grid && grid.children.length === 0) {
+        renderizarEmojisPerfil();
+    }
+
+    picker.style.display = 'block';
 }
 
 // ================================================================
@@ -589,7 +681,6 @@ async function cargarMembresia() {
     try {
         console.log('✦ Cargando membresía para:', sessionUser.id);
 
-        // ✅ CORRECCIÓN: Usar membresias_usuarios (tabla real)
         const { data: membresiaData, error: membresiaError } = await window.supabase
             .from('membresias_usuarios')
             .select('*, planes_membresia(*)')
@@ -1352,12 +1443,6 @@ async function publicarContenido() {
     }
 }
 
-function toggleEmojiPickerPerfil() {
-    const picker = document.getElementById('emojiPickerPerfil');
-    if (!picker) return;
-    picker.style.display = picker.style.display === 'block' ? 'none' : 'block';
-}
-
 function cerrarSesion() {
     if (confirm('¿Seguro que quieres cerrar sesión?')) {
         showToast('👋 Sesión cerrada', 'success');
@@ -1366,11 +1451,25 @@ function cerrarSesion() {
 }
 
 // ================================================================
+// CERRAR EMOJI PICKER AL HACER CLICK FUERA
+// ================================================================
+
+document.addEventListener('click', function(e) {
+    const picker = document.getElementById('emojiPickerPerfil');
+    const btn = document.getElementById('btnEmojiPerfil');
+    if (!picker || !btn) return;
+    
+    if (!picker.contains(e.target) && !btn.contains(e.target)) {
+        picker.style.display = 'none';
+    }
+});
+
+// ================================================================
 // INICIALIZACIÓN
 // ================================================================
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('✅ perfil.js cargado (versión corregida - membresias_usuarios)');
+    console.log('✅ perfil.js cargado (versión completa con emojis)');
     if (typeof window.supabase !== 'undefined') {
         cargarPerfil();
     } else {
@@ -1387,6 +1486,8 @@ window.cargarPerfil = cargarPerfil;
 window.cargarPublicaciones = cargarPublicaciones;
 window.cargarMembresia = cargarMembresia;
 window.cargarEmojis = cargarEmojis;
+window.renderizarEmojisPerfil = renderizarEmojisPerfil;
+window.toggleEmojiPickerPerfil = toggleEmojiPickerPerfil;
 window.cambiarTab = cambiarTab;
 window.editarPerfil = editarPerfil;
 window.compartirPerfil = compartirPerfil;
@@ -1415,7 +1516,6 @@ window.cerrarModal = cerrarModal;
 window.abrirModalNft = abrirModalNft;
 window.abrirModalPublicacion = abrirModalPublicacion;
 window.publicarContenido = publicarContenido;
-window.toggleEmojiPickerPerfil = toggleEmojiPickerPerfil;
 window.cerrarSesion = cerrarSesion;
 window.contratarPro = contratarPro;
 window.renovarPro = renovarPro;
