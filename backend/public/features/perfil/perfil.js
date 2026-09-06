@@ -1,6 +1,6 @@
 // ================================================================
 // PERFIL.JS - SARIEL'S ECOSYSTEM
-// VERSIÓN COMPLETA CORREGIDA - CON EMOJIS EN PICKER
+// VERSIÓN CORREGIDA CON IDIOMAS
 // ================================================================
 
 // ===== VARIABLES GLOBALES =====
@@ -29,7 +29,32 @@ function showToast(msg, type) {
 }
 
 // ================================================================
-// 😊 RENDERIZAR EMOJIS EN EL PICKER DEL PERFIL (CORREGIDO)
+// 🆕 INICIALIZAR IDIOMAS
+// ================================================================
+async function inicializarIdiomasModulo() {
+    try {
+        if (typeof window.obtenerIdiomaUsuario === 'function') {
+            const idioma = await window.obtenerIdiomaUsuario();
+            if (idioma) {
+                if (typeof window.cargarTraducciones === 'function') {
+                    await window.cargarTraducciones(idioma.id);
+                }
+                if (typeof window.aplicarTraducciones === 'function') {
+                    window.aplicarTraducciones();
+                }
+            }
+        }
+        if (typeof window.cargarSelectorIdiomas === 'function') {
+            await window.cargarSelectorIdiomas();
+        }
+        console.log('✅ Idiomas inicializados en Perfil');
+    } catch (error) {
+        console.warn('⚠️ Error inicializando idiomas en Perfil:', error);
+    }
+}
+
+// ================================================================
+// 😊 RENDERIZAR EMOJIS EN EL PICKER DEL PERFIL
 // ================================================================
 
 function renderizarEmojisPerfil() {
@@ -41,7 +66,6 @@ function renderizarEmojisPerfil() {
 
     grid.innerHTML = '';
 
-    // ✅ FALLBACK SEGURO - Si REACCIONES está vacío, usar emojis por defecto
     if (!REACCIONES || REACCIONES.length === 0) {
         console.warn('⚠️ REACCIONES vacío, usando emojis por defecto');
         REACCIONES = ['❤️', '😊', '🔥', '👏', '🎉', '💎', '🤩', '😍', '😂'];
@@ -101,7 +125,7 @@ function renderizarEmojisPerfil() {
 }
 
 // ================================================================
-// 😊 TOGGLE EMOJI PICKER (CORREGIDO)
+// 😊 TOGGLE EMOJI PICKER
 // ================================================================
 
 function toggleEmojiPickerPerfil() {
@@ -121,7 +145,6 @@ function toggleEmojiPickerPerfil() {
 
     console.log('🔼 Mostrando picker');
     
-    // Renderizar emojis si el grid está vacío
     const grid = document.getElementById('emojiGridPerfil');
     if (grid && grid.children.length === 0) {
         console.log('🔄 Grid vacío, renderizando emojis...');
@@ -160,7 +183,6 @@ async function cargarEmojis() {
             console.log('😊 Usando emojis por defecto (tabla vacía)');
         }
         
-        // ✅ Renderizar emojis en el picker después de cargarlos
         renderizarEmojisPerfil();
         
     } catch (error) {
@@ -171,12 +193,15 @@ async function cargarEmojis() {
 }
 
 // ================================================================
-// CARGAR PERFIL
+// CARGAR PERFIL - CORREGIDO CON IDIOMAS
 // ================================================================
 
 async function cargarPerfil() {
     try {
         console.log('🔄 cargarPerfil() iniciado...');
+
+        // 🆕 INICIALIZAR IDIOMAS PRIMERO
+        await inicializarIdiomasModulo();
 
         const { data: { user }, error: userError } = await window.supabase.auth.getUser();
 
@@ -189,7 +214,6 @@ async function cargarPerfil() {
             const bioEl = document.getElementById('perfilBio');
             if (bioEl) bioEl.textContent = 'Inicia sesión para ver tu perfil';
             
-            // ✅ Aún así cargar emojis para que funcionen sin sesión
             await cargarEmojis();
             return;
         }
@@ -285,7 +309,7 @@ function actualizarUI(data) {
 }
 
 // ================================================================
-// CARGAR PUBLICACIONES (VERSIÓN CORTA PARA AHORRAR ESPACIO)
+// CARGAR PUBLICACIONES
 // ================================================================
 
 async function cargarPublicaciones() {
@@ -323,8 +347,8 @@ async function cargarPublicaciones() {
             container.innerHTML = `
                 <div class="empty-state">
                     <span class="icon">📝</span>
-                    <h4>Sin publicaciones</h4>
-                    <p>Crea tu primera publicación desde el botón "Nueva Publicación".</p>
+                    <h4 data-clave="perfil_sin_publicaciones">Sin publicaciones</h4>
+                    <p data-clave="perfil_crea_primera">Crea tu primera publicación desde el botón "Nueva Publicación".</p>
                 </div>
             `;
             return;
@@ -335,7 +359,6 @@ async function cargarPublicaciones() {
             ? `<img src="${perfilUsuario.avatar_url}" style="width:100%;height:100%;object-fit:cover;">` 
             : '◈';
 
-        // Obtener reacciones
         const reaccionesMap = {};
         const publicacionIds = publicaciones.map(p => p.id);
 
@@ -420,7 +443,7 @@ async function cargarPublicaciones() {
 }
 
 // ================================================================
-// CARGAR MEMBRESÍA (VERSIÓN CORTA)
+// CARGAR MEMBRESÍA
 // ================================================================
 
 async function cargarMembresia() {
@@ -430,7 +453,7 @@ async function cargarMembresia() {
     container.innerHTML = `
         <div class="empty-state">
             <span class="icon">⏳</span>
-            <h4>Cargando membresía...</h4>
+            <h4 data-clave="perfil_cargando_membresia">Cargando membresía...</h4>
         </div>
     `;
 
@@ -587,7 +610,7 @@ function mostrarMembresiaPro(container, membresia, plan, esActiva) {
 }
 
 // ================================================================
-// REACCIONES Y COMENTARIOS (VERSIÓN CORTA)
+// REACCIONES Y COMENTARIOS
 // ================================================================
 
 function toggleReaccion(publicacionId, event) {
@@ -682,13 +705,13 @@ async function abrirModalComentarios(publicacionId) {
         modal.innerHTML = `
             <div class="modal-content" style="max-width:500px;text-align:left;">
                 <button class="close-btn" onclick="cerrarModalComentarios()">✕</button>
-                <h2 style="text-align:center;">💬 Comentarios</h2>
+                <h2 style="text-align:center;" data-clave="perfil_comentarios">💬 Comentarios</h2>
                 <div id="comentariosList" style="max-height:300px;overflow-y:auto;margin:12px 0;">
-                    <div style="color:var(--text-muted);text-align:center;padding:20px;">Cargando comentarios...</div>
+                    <div style="color:var(--text-muted);text-align:center;padding:20px;" data-clave="perfil_cargando_comentarios">Cargando comentarios...</div>
                 </div>
                 <div style="display:flex;gap:8px;margin-top:8px;">
-                    <input type="text" id="inputComentario" placeholder="Escribe un comentario..." style="flex:1;padding:8px 14px;background:rgba(0,0,0,0.25);border:1px solid var(--glass-border);border-radius:10px;color:var(--text-primary);font-size:0.85rem;outline:none;">
-                    <button class="btn btn-gold" onclick="enviarComentario()" style="padding:8px 16px;">Enviar</button>
+                    <input type="text" id="inputComentario" placeholder="Escribe un comentario..." style="flex:1;padding:8px 14px;background:rgba(0,0,0,0.25);border:1px solid var(--glass-border);border-radius:10px;color:var(--text-primary);font-size:0.85rem;outline:none;" data-placeholder="perfil_escribe_comentario" />
+                    <button class="btn btn-gold" onclick="enviarComentario()" style="padding:8px 16px;" data-clave="perfil_enviar">Enviar</button>
                 </div>
             </div>
         `;
@@ -715,7 +738,7 @@ async function cargarComentarios(publicacionId) {
         if (!container) return;
 
         if (!data || data.length === 0) {
-            container.innerHTML = '<div style="color:var(--text-muted);text-align:center;padding:20px;">Sin comentarios. Sé el primero.</div>';
+            container.innerHTML = '<div style="color:var(--text-muted);text-align:center;padding:20px;" data-clave="perfil_sin_comentarios">Sin comentarios. Sé el primero.</div>';
             return;
         }
 
@@ -740,7 +763,7 @@ async function cargarComentarios(publicacionId) {
         console.error('Error cargando comentarios:', error);
         const container = document.getElementById('comentariosList');
         if (container) {
-            container.innerHTML = '<div style="color:var(--danger);text-align:center;padding:20px;">Error al cargar comentarios</div>';
+            container.innerHTML = '<div style="color:var(--danger);text-align:center;padding:20px;" data-clave="perfil_error_comentarios">Error al cargar comentarios</div>';
         }
     }
 }
@@ -872,22 +895,22 @@ function mostrarModalPrivacidad(accion) {
         modal.innerHTML = `
             <div class="modal-content" style="max-width:520px;text-align:left;">
                 <button class="close-btn" onclick="cerrarModalPrivacidad()">✕</button>
-                <h2 style="text-align:center;color:var(--gold);">📋 AVISO DE PRIVACIDAD</h2>
+                <h2 style="text-align:center;color:var(--gold);" data-clave="perfil_aviso_privacidad">📋 AVISO DE PRIVACIDAD</h2>
                 <div style="font-size:0.8rem;color:var(--text-secondary);margin:12px 0;line-height:1.6;max-height:250px;overflow-y:auto;padding:8px 4px;">
-                    <p style="margin-bottom:10px;">Al contratar Sariel's Pro, tus datos de cuenta, perfil y contenido podrán ser tratados para prestar el servicio, conservar tu contenido conforme al plan contratado, procesar pagos, mantener la seguridad y cumplir obligaciones legales.</p>
-                    <p style="margin-bottom:10px;"><strong>✦ Sariel's Pro - $20 MXN / 30 días</strong></p>
-                    <p style="margin-bottom:4px;">💾 5 GB de almacenamiento</p>
-                    <p style="margin-bottom:10px;">♻️ Conservación ampliada mientras Pro esté activa</p>
-                    <p style="margin-bottom:10px;font-size:0.75rem;color:var(--text-muted);border-top:1px solid var(--glass-border);padding-top:10px;">
+                    <p style="margin-bottom:10px;" data-clave="perfil_privacidad_texto_1">Al contratar Sariel's Pro, tus datos de cuenta, perfil y contenido podrán ser tratados para prestar el servicio, conservar tu contenido conforme al plan contratado, procesar pagos, mantener la seguridad y cumplir obligaciones legales.</p>
+                    <p style="margin-bottom:10px;"><strong data-clave="perfil_privacidad_texto_2">✦ Sariel's Pro - $20 MXN / 30 días</strong></p>
+                    <p style="margin-bottom:4px;" data-clave="perfil_privacidad_texto_3">💾 5 GB de almacenamiento</p>
+                    <p style="margin-bottom:10px;" data-clave="perfil_privacidad_texto_4">♻️ Conservación ampliada mientras Pro esté activa</p>
+                    <p style="margin-bottom:10px;font-size:0.75rem;color:var(--text-muted);border-top:1px solid var(--glass-border);padding-top:10px;" data-clave="perfil_privacidad_texto_5">
                         ⚠️ Puedes cancelar cuando quieras y borrar tu contenido en cualquier momento desde tu cuenta. 
                         Si no renuevas tu membresía Pro, tu contenido se conservará por <strong>15 días</strong> adicionales 
                         y luego será eliminado de forma permanente.
                     </p>
-                    <p style="font-size:0.7rem;color:var(--text-muted);margin-top:6px;">Consulta el aviso de privacidad integral para conocer tus derechos y mecanismos de atención.</p>
+                    <p style="font-size:0.7rem;color:var(--text-muted);margin-top:6px;" data-clave="perfil_privacidad_texto_6">Consulta el aviso de privacidad integral para conocer tus derechos y mecanismos de atención.</p>
                 </div>
                 <div style="display:flex;align-items:center;gap:10px;margin:12px 0;">
                     <input type="checkbox" id="aceptaPrivacidad" style="width:18px;height:18px;accent-color:var(--gold);">
-                    <label for="aceptaPrivacidad" style="font-size:0.75rem;color:var(--text-secondary);">
+                    <label for="aceptaPrivacidad" style="font-size:0.75rem;color:var(--text-secondary);" data-clave="perfil_acepto_privacidad">
                         He leído y acepto el aviso de privacidad
                     </label>
                 </div>
@@ -1487,7 +1510,7 @@ document.addEventListener('click', function(e) {
 // ================================================================
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('✅ perfil.js cargado (versión completa con emojis)');
+    console.log('✅ perfil.js cargado (versión completa con idiomas)');
     if (typeof window.supabase !== 'undefined') {
         cargarPerfil();
     } else {
@@ -1500,6 +1523,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // EXPOSICIÓN GLOBAL
 // ================================================================
 
+window.inicializarIdiomasModulo = inicializarIdiomasModulo;
 window.cargarPerfil = cargarPerfil;
 window.cargarPublicaciones = cargarPublicaciones;
 window.cargarMembresia = cargarMembresia;
