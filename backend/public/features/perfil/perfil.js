@@ -1,6 +1,6 @@
 // ================================================================
 // PERFIL.JS - SARIEL'S ECOSYSTEM
-// VERSIÓN CORREGIDA - EMOJIS Y COMENTARIOS FUNCIONALES
+// VERSIÓN CORREGIDA - CON MEMBRESIAS_USUARIOS
 // ================================================================
 
 // ===== VARIABLES GLOBALES =====
@@ -40,9 +40,12 @@ async function cargarPerfil() {
 
         if (userError || !user) {
             console.warn('⚠️ No hay usuario autenticado:', userError);
-            document.getElementById('perfilNombre').innerHTML = 'Inicia sesión';
-            document.getElementById('perfilHandle').textContent = '@usuario';
-            document.getElementById('perfilBio').textContent = 'Inicia sesión para ver tu perfil';
+            const nombreEl = document.getElementById('perfilNombre');
+            if (nombreEl) nombreEl.innerHTML = 'Inicia sesión';
+            const handleEl = document.getElementById('perfilHandle');
+            if (handleEl) handleEl.textContent = '@usuario';
+            const bioEl = document.getElementById('perfilBio');
+            if (bioEl) bioEl.textContent = 'Inicia sesión para ver tu perfil';
             return;
         }
 
@@ -84,17 +87,28 @@ async function cargarPerfil() {
 
 async function cargarEmojis() {
     try {
-        const { data, error } = await window.supabase.rpc('obtener_emojis_reaccion');
+        const { data, error } = await window.supabase
+            .from('emojis_reaccion')
+            .select('codigo')
+            .eq('activo', true)
+            .order('orden', { ascending: true });
+
         if (error) {
-            console.warn('⚠️ Error cargando emojis:', error);
+            console.warn('⚠️ Error cargando emojis, usando emojis por defecto:', error);
+            REACCIONES = ['❤️', '😊', '🔥', '👏', '🎉', '💎', '🤩', '😍', '😂'];
             return;
         }
+
         if (data && data.length > 0) {
             REACCIONES = data.map(e => e.codigo);
             console.log('😊 Emojis cargados:', REACCIONES);
+        } else {
+            REACCIONES = ['❤️', '😊', '🔥', '👏', '🎉', '💎', '🤩', '😍', '😂'];
+            console.log('😊 Usando emojis por defecto');
         }
     } catch (error) {
         console.error('❌ Error cargando emojis:', error);
+        REACCIONES = ['❤️', '😊', '🔥', '👏', '🎉', '💎', '🤩', '😍', '😂'];
     }
 }
 
@@ -549,7 +563,7 @@ async function eliminarPublicacion(publicacionId) {
 }
 
 // ================================================================
-// ✦ CARGAR MEMBRESÍA
+// ✦ CARGAR MEMBRESÍA (CORREGIDO - USA membresias_usuarios)
 // ================================================================
 
 async function cargarMembresia() {
@@ -575,27 +589,30 @@ async function cargarMembresia() {
     try {
         console.log('✦ Cargando membresía para:', sessionUser.id);
 
-        const { data, error } = await window.supabase.rpc(
-            'obtener_membresia_usuario',
-            { p_usuario_id: sessionUser.id }
-        );
+        // ✅ CORRECCIÓN: Usar membresias_usuarios (tabla real)
+        const { data: membresiaData, error: membresiaError } = await window.supabase
+            .from('membresias_usuarios')
+            .select('*, planes_membresia(*)')
+            .eq('usuario_id', sessionUser.id)
+            .eq('activa', true)
+            .order('vence_at', { ascending: false })
+            .limit(1);
 
-        if (error) {
-            console.error('❌ Error RPC membresía:', error);
-            throw new Error(error.message || 'Error al cargar membresía');
-        }
-
-        console.log('✦ Datos RPC membresía (raw):', data);
-
-        if (!data || data.length === 0) {
+        if (membresiaError) {
+            console.warn('⚠️ Error consultando membresía:', membresiaError);
             mostrarMembresiaGratis(container);
             return;
         }
 
-        const membresia = data[0];
-        console.log('✦ Membresía procesada:', membresia);
+        const membresia = membresiaData && membresiaData.length > 0 ? membresiaData[0] : null;
 
-        const planId = membresia?.plan_id || 'free';
+        if (!membresia) {
+            mostrarMembresiaGratis(container);
+            return;
+        }
+
+        const plan = membresia.planes_membresia || {};
+        const planId = plan.id || 'free';
 
         if (planId === 'free') {
             mostrarMembresiaGratis(container);
@@ -604,7 +621,7 @@ async function cargarMembresia() {
 
         if (planId === 'pro') {
             const esActiva = membresia.activa || false;
-            mostrarMembresiaPro(container, membresia, esActiva);
+            mostrarMembresiaPro(container, membresia, plan, esActiva);
             membresiaActual = membresia;
             return;
         }
@@ -612,8 +629,6 @@ async function cargarMembresia() {
         container.innerHTML = `
             <div style="text-align:center;padding:16px;color:var(--text-muted);">
                 ⚠️ Estado de membresía desconocido.
-                <br>
-                <span style="font-size:0.6rem;">plan_id: ${planId}</span>
                 <br>
                 <button class="btn btn-outline btn-sm" onclick="cargarMembresia()" style="margin-top:8px;">
                     🔄 Reintentar
@@ -630,8 +645,6 @@ async function cargarMembresia() {
                 <button class="btn btn-outline btn-sm" onclick="cargarMembresia()" style="margin-top:8px;">
                     🔄 Reintentar
                 </button>
-                <br>
-                <span style="font-size:0.6rem;color:var(--text-muted);">${error.message || 'Error desconocido'}</span>
             </div>
         `;
         showToast('❌ Error al cargar membresía', 'error');
@@ -660,10 +673,10 @@ function mostrarMembresiaGratis(container) {
     `;
 }
 
-function mostrarMembresiaPro(container, membresia, esActiva) {
+function mostrarMembresiaPro(container, membresia, plan, esActiva) {
     const diasRestantes = membresia.dias_restantes || 0;
     const venceAt = membresia.vence_at ? new Date(membresia.vence_at).toLocaleDateString() : '--';
-    const planNombre = membresia.plan_nombre || 'Pro';
+    const planNombre = plan.nombre || 'Pro';
 
     if (esActiva) {
         container.innerHTML = `
@@ -685,7 +698,7 @@ function mostrarMembresiaPro(container, membresia, esActiva) {
                         <div style="font-size:0.5rem;color:var(--text-muted);">VENCE EL</div>
                     </div>
                     <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;text-align:center;">
-                        <div style="font-size:0.8rem;color:var(--text-secondary);">5 GB</div>
+                        <div style="font-size:0.8rem;color:var(--text-secondary);">${plan.almacenamiento_gb || 5} GB</div>
                         <div style="font-size:0.5rem;color:var(--text-muted);">ALMACENAMIENTO</div>
                     </div>
                 </div>
@@ -738,7 +751,7 @@ function renovarPro() {
 }
 
 // ================================================================
-// MODAL DE PRIVACIDAD - ACTUALIZADO CON AVISO COMPLETO
+// MODAL DE PRIVACIDAD
 // ================================================================
 
 function mostrarModalPrivacidad(accion) {
@@ -1357,7 +1370,7 @@ function cerrarSesion() {
 // ================================================================
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('✅ perfil.js cargado (versión corregida)');
+    console.log('✅ perfil.js cargado (versión corregida - membresias_usuarios)');
     if (typeof window.supabase !== 'undefined') {
         cargarPerfil();
     } else {
