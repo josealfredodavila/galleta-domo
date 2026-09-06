@@ -1563,12 +1563,12 @@
                 return;
             }
 
-            // ✅ OBTENER LA TRANSMISIÓN ACTIVA DIRECTAMENTE DESDE LA BASE DE DATOS
+            // ✅ BUSCAR CON 'en_vivo' (coincide con cómo se crea)
             const { data: transmisionActiva, error: buscarError } = await window.supabase
                 .from('transmisiones')
                 .select('*')
                 .eq('grupo_id', grupoActualId)
-                .eq('estado', 'activa')
+                .eq('estado', 'en_vivo')
                 .eq('is_live', true)
                 .maybeSingle();
 
