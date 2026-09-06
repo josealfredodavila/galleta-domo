@@ -213,7 +213,10 @@
         }
         .admin-link:hover { border-bottom-color: var(--gold); }
 
-        @media (max-width: 600px) {
+        /* ===== CORRECCIÓN 3: OCULTAR CANVAS EN MÓVILES ===== */
+        @media (max-width: 768px) {
+            #stars-canvas { display: none; }
+            .nebula { display: none; }
             .tabs { flex-direction: column; }
             .tab-btn { flex: none; }
             .header { flex-direction: column; align-items: flex-start; gap: 10px; }
@@ -293,6 +296,19 @@
                                 <button class="qty-btn" id="increaseQty">+</button>
                             </div>
                             <button class="btn btn-gold" style="width:100%;" id="buyDomo" onclick="comprarDomo()">Comprar Domo</button>
+                            
+                            <!-- ===== CORRECCIÓN 2: DISCLAIMER LEGAL ===== -->
+                            <p style="font-size:0.55rem;color:var(--text-muted);margin-top:8px;line-height:1.5;">
+                                ◈ Recibes <strong style="color:var(--gold);">1 ES.stoks</strong> por domo · 
+                                ES.stoks es <strong style="color:var(--gold);">transferible en P2P</strong> · 
+                                NFT Domo <strong style="color:var(--gold);">intransferible</strong> · 
+                                Canje en Puebla <strong style="color:var(--gold);">30 días</strong>
+                            </p>
+                            <p style="font-size:0.5rem;color:var(--text-muted);margin-top:4px;">
+                                ◈ Venta física en Puebla · Sin envíos
+                            </p>
+                            <!-- ===== FIN DISCLAIMER ===== -->
+                            
                             <p style="font-size:0.55rem;color:var(--text-muted);margin-top:6px;">◈ Conecta tu wallet en tu <a href="/features/perfil/perfil.html" style="color:var(--gold);">perfil</a></p>
                         </div>
                     </div>
@@ -502,7 +518,11 @@
             
             if (session) {
                 currentUser = session.user;
-                document.getElementById('userEmail').textContent = currentUser.email || 'Usuario';
+                // ===== CORRECCIÓN 1: OCULTAR CORREO =====
+                const nombre = currentUser.user_metadata?.full_name || currentUser.email || 'Usuario';
+                const displayName = nombre.length > 15 ? nombre.substring(0, 12) + '…' : nombre;
+                document.getElementById('userEmail').textContent = displayName;
+                // ===== FIN CORRECCIÓN 1 =====
                 document.getElementById('logoutBtn').style.display = 'inline-block';
                 document.getElementById('registerCard').style.display = 'none';
                 document.getElementById('loginCard').style.display = 'none';
@@ -809,7 +829,11 @@
                 window.supabase.auth.onAuthStateChange((event, session) => {
                     if (event === 'SIGNED_IN' && session) {
                         currentUser = session.user;
-                        document.getElementById('userEmail').textContent = currentUser.email || 'Usuario';
+                        // ===== CORRECCIÓN 1: OCULTAR CORREO =====
+                        const nombre = currentUser.user_metadata?.full_name || currentUser.email || 'Usuario';
+                        const displayName = nombre.length > 15 ? nombre.substring(0, 12) + '…' : nombre;
+                        document.getElementById('userEmail').textContent = displayName;
+                        // ===== FIN CORRECCIÓN 1 =====
                         document.getElementById('logoutBtn').style.display = 'inline-block';
                         document.getElementById('registerCard').style.display = 'none';
                         document.getElementById('loginCard').style.display = 'none';
