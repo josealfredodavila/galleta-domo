@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>◈ Mensajes · Sariel's</title>
+    <title data-clave="mensajes_titulo">◈ Mensajes · Sariel's</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
     
@@ -536,7 +536,7 @@
             <a href="/features/muro/muro.html" class="nav-link">◇ Muro</a>
             <a href="/features/perfil/perfil.html" class="nav-link">◆ Perfil</a>
             <a href="/features/mensajes/contactos.html" class="nav-link">◈ Contactos</a>
-            <a href="/features/mensajes/mensajes.html" class="nav-link active">◈ Mensajes</a>
+            <a href="/features/mensajes/mensajes.html" class="nav-link active" data-clave="mensajes_header">◈ Mensajes</a>
             <a href="/features/live/live.html" class="nav-link live">◉ Live</a>
             <a href="/features/internet/internet.html" class="nav-link">◈ Internet</a>
         </nav>
@@ -546,16 +546,16 @@
             <!-- ===== PANEL DE CONVERSACIONES ===== -->
             <div class="conversaciones">
                 <div class="header-conv">
-                    <span>◈ Conversaciones</span>
-                    <button class="btn-nuevo" onclick="nuevaConversacion()">✎ Nuevo</button>
+                    <span data-clave="mensajes_conversaciones">◈ Conversaciones</span>
+                    <button class="btn-nuevo" onclick="nuevaConversacion()" data-clave="mensajes_nuevo">✎ Nuevo</button>
                 </div>
                 <div class="search-conv">
-                    <input type="text" id="searchInput" placeholder="🔍 Buscar contactos..." />
+                    <input type="text" id="searchInput" placeholder="🔍 Buscar contactos..." data-placeholder="mensajes_buscar" />
                 </div>
                 <div class="conv-list" id="conversacionesList">
                     <div style="padding:40px;text-align:center;color:var(--text-muted);font-size:0.8rem;">
                         <div style="font-size:2rem;margin-bottom:10px;">◈</div>
-                        <p>Cargando conversaciones...</p>
+                        <p data-clave="mensajes_cargando">Cargando conversaciones...</p>
                     </div>
                 </div>
             </div>
@@ -565,32 +565,32 @@
                 <div class="chat-header">
                     <div class="chat-avatar">✦</div>
                     <div class="chat-info">
-                        <div class="chat-nombre" id="chatNombre">Selecciona una conversación</div>
-                        <div class="chat-estado" id="chatEstado">◉ Sin selección</div>
+                        <div class="chat-nombre" id="chatNombre" data-clave="mensajes_seleccionar">Selecciona una conversación</div>
+                        <div class="chat-estado" id="chatEstado" data-clave="mensajes_sin_seleccion">◉ Sin selección</div>
                     </div>
                     <div class="chat-actions">
-                        <button onclick="buscarEnConversacion(prompt('Buscar en la conversación:'))" title="Buscar">🔍</button>
-                        <button onclick="if(confirm('¿Bloquear a este usuario?')){bloquearUsuario(conversacionActual?.id)}" class="danger" title="Bloquear">🚫</button>
-                        <button onclick="if(confirm('¿Eliminar esta conversación?')){eliminarConversacion(conversacionActual?.id)}" class="danger" title="Eliminar">🗑️</button>
+                        <button onclick="buscarEnConversacion(prompt('Buscar en la conversación:'))" title="Buscar" data-clave="mensajes_buscar_conversacion">🔍</button>
+                        <button onclick="if(confirm('¿Bloquear a este usuario?')){bloquearUsuario(conversacionActual?.id)}" class="danger" title="Bloquear" data-clave="mensajes_bloquear">🚫</button>
+                        <button onclick="if(confirm('¿Eliminar esta conversación?')){eliminarConversacion(conversacionActual?.id)}" class="danger" title="Eliminar" data-clave="mensajes_eliminar">🗑️</button>
                     </div>
                 </div>
 
                 <div class="chat-messages" id="chatMessages">
                     <div class="empty-chat">
                         <span class="icon">◈</span>
-                        <h3>Selecciona una conversación</h3>
-                        <p>Elige un contacto para empezar a chatear</p>
+                        <h3 data-clave="mensajes_seleccionar">Selecciona una conversación</h3>
+                        <p data-clave="mensajes_elige_contacto">Elige un contacto para empezar a chatear</p>
                     </div>
                 </div>
 
                 <div class="chat-input">
                     <div class="file-preview" id="filePreview"></div>
                     <div class="input-wrapper">
-                        <input type="text" id="chatInput" placeholder="Escribe un mensaje... :feliz: para emojis" />
-                        <button class="btn-icon" onclick="seleccionarArchivo()" title="Adjuntar archivo">📎</button>
-                        <button class="btn-icon" onclick="toggleGrabacionVoz()" id="btnGrabarVoz" title="Grabar voz">🎙️</button>
+                        <input type="text" id="chatInput" placeholder="Escribe un mensaje... :feliz: para emojis" data-placeholder="mensajes_escribe" />
+                        <button class="btn-icon" onclick="seleccionarArchivo()" title="Adjuntar archivo" data-clave="mensajes_adjuntar">📎</button>
+                        <button class="btn-icon" onclick="toggleGrabacionVoz()" id="btnGrabarVoz" title="Grabar voz" data-clave="mensajes_grabar_voz">🎙️</button>
                     </div>
-                    <button class="btn-enviar" id="btnEnviar">⟡ Enviar</button>
+                    <button class="btn-enviar" id="btnEnviar" data-clave="mensajes_enviar">⟡ Enviar</button>
                     <input type="file" id="fileInput" accept="image/*,audio/*" style="display:none;" multiple onchange="handleFileSelect(event)" />
                 </div>
             </div>
@@ -600,10 +600,10 @@
         <footer class="footer">
             <span><span class="brand">◈ Sariel's</span> · Sabor al Paladar · WEB3</span>
             <div class="footer-links">
-                <a href="/terminos">◈ Términos</a>
-                <a href="/privacidad">◈ Privacidad</a>
-                <a href="/cookies">◈ Cookies</a>
-                <a href="/live-terminos">◉ Live Términos</a>
+                <a href="/terminos" data-clave="mensajes_footer_terminos">◈ Términos</a>
+                <a href="/privacidad" data-clave="mensajes_footer_privacidad">◈ Privacidad</a>
+                <a href="/cookies" data-clave="mensajes_footer_cookies">◈ Cookies</a>
+                <a href="/live-terminos" data-clave="mensajes_footer_live">◉ Live Términos</a>
                 <span style="opacity:0.3;">⚡ Polygon</span>
             </div>
         </footer>
@@ -614,15 +614,15 @@
     <div class="modal-overlay" id="modalNuevoContacto">
         <div class="modal">
             <div class="modal-header">
-                <h2>◈ Nuevo contacto</h2>
+                <h2 data-clave="mensajes_nuevo_contacto">◈ Nuevo contacto</h2>
                 <button class="btn-cerrar" onclick="cerrarModalNuevoContacto()">✕</button>
             </div>
             <div class="form-group">
-                <label>Buscar usuario por nombre o @handle</label>
+                <label data-clave="mensajes_buscar_usuario">Buscar usuario por nombre o @handle</label>
                 <input type="text" id="searchInputModal" placeholder="Ej: Juan o @juan123" />
             </div>
             <div class="resultados-busqueda" id="resultadosBusqueda">
-                <div style="padding:20px;text-align:center;color:var(--text-muted);font-size:0.75rem;">
+                <div style="padding:20px;text-align:center;color:var(--text-muted);font-size:0.75rem;" data-clave="mensajes_buscar_minimo">
                     Escribe al menos 2 caracteres para buscar
                 </div>
             </div>
@@ -757,7 +757,7 @@
                 if (!container) return;
 
                 if (!result.data || result.data.length === 0) {
-                    container.innerHTML = '<div style="padding:12px;text-align:center;color:var(--text-muted);font-size:0.75rem;">No se encontraron usuarios</div>';
+                    container.innerHTML = '<div style="padding:12px;text-align:center;color:var(--text-muted);font-size:0.75rem;" data-clave="mensajes_no_usuarios">No se encontraron usuarios</div>';
                     return;
                 }
 
@@ -781,9 +781,9 @@
                         '<div style="flex:1;"><div style="font-weight:600;font-size:0.8rem;">' + nombreSanitizado + '</div><div style="font-size:0.6rem;color:var(--text-muted);">@' + handleSanitizado + '</div></div>';
 
                     if (yaEsContacto) {
-                        html += '<span style="font-size:0.55rem;color:var(--success);background:rgba(0,214,143,0.1);padding:2px 10px;border-radius:12px;">✓ Contacto</span>';
+                        html += '<span style="font-size:0.55rem;color:var(--success);background:rgba(0,214,143,0.1);padding:2px 10px;border-radius:12px;" data-clave="mensajes_es_contacto">✓ Contacto</span>';
                     } else {
-                        html += '<button onclick="agregarContacto(\'' + usuario.id + '\')" style="background:linear-gradient(135deg,var(--gold),var(--gold-dark));color:var(--space);border:none;padding:4px 12px;border-radius:12px;font-size:0.6rem;font-weight:600;cursor:pointer;">+ Agregar</button>';
+                        html += '<button onclick="agregarContacto(\'' + usuario.id + '\')" style="background:linear-gradient(135deg,var(--gold),var(--gold-dark));color:var(--space);border:none;padding:4px 12px;border-radius:12px;font-size:0.6rem;font-weight:600;cursor:pointer;" data-clave="mensajes_agregar">+ Agregar</button>';
                     }
                     html += '</div>';
                 }
@@ -859,7 +859,7 @@
                 if (contactos.length === 0) {
                     var convList = document.getElementById('conversacionesList');
                     if (convList) {
-                        convList.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-muted);font-size:0.8rem;"><div style="font-size:2rem;margin-bottom:10px;">◈</div><p>Sin contactos agregados</p><p style="font-size:0.6rem;">Busca y agrega contactos arriba</p></div>';
+                        convList.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-muted);font-size:0.8rem;"><div style="font-size:2rem;margin-bottom:10px;">◈</div><p data-clave="mensajes_sin_contactos">Sin contactos agregados</p><p style="font-size:0.6rem;" data-clave="mensajes_sin_contactos_desc">Busca y agrega contactos arriba</p></div>';
                     }
                     return;
                 }
@@ -1056,7 +1056,7 @@
                 container.innerHTML = html;
                 container.scrollTop = container.scrollHeight;
             } else {
-                container.innerHTML = '<div class="empty-chat"><span class="icon">◈</span><h3>Inicia la conversación</h3><p>Envía un mensaje para comenzar</p></div>';
+                container.innerHTML = '<div class="empty-chat"><span class="icon">◈</span><h3 data-clave="mensajes_inicia_conversacion">Inicia la conversación</h3><p data-clave="mensajes_envia_mensaje">Envía un mensaje para comenzar</p></div>';
             }
         }
 
@@ -1445,7 +1445,7 @@
                 if (conversacionActual && conversacionActual.id === contactoId) {
                     conversacionActual = null;
                     document.getElementById('chatNombre').textContent = 'Selecciona una conversación';
-                    document.getElementById('chatMessages').innerHTML = '<div class="empty-chat"><span class="icon">◈</span><h3>Conversación eliminada</h3></div>';
+                    document.getElementById('chatMessages').innerHTML = '<div class="empty-chat"><span class="icon">◈</span><h3 data-clave="mensajes_conversacion_eliminada">Conversación eliminada</h3></div>';
                 }
 
                 showToast('🗑️ Conversación eliminada');
@@ -1562,7 +1562,7 @@
                 if (conversacionActual && conversacionActual.id === usuarioId) {
                     conversacionActual = null;
                     document.getElementById('chatNombre').textContent = 'Selecciona una conversación';
-                    document.getElementById('chatMessages').innerHTML = '<div class="empty-chat"><span class="icon">◈</span><h3>Usuario bloqueado</h3></div>';
+                    document.getElementById('chatMessages').innerHTML = '<div class="empty-chat"><span class="icon">◈</span><h3 data-clave="mensajes_usuario_bloqueado">Usuario bloqueado</h3></div>';
                 }
 
                 await cargarConversaciones();
@@ -1602,7 +1602,7 @@
 
                 var container = document.getElementById('chatMessages');
                 if (!result.data || result.data.length === 0) {
-                    container.innerHTML = '<div class="empty-chat"><span class="icon">◈</span><h3>No se encontraron resultados</h3><p>No hay mensajes que coincidan con "' + escapeHTML(query) + '"</p><button onclick="cargarMensajes(\'' + conversacionActual.id + '\')" style="margin-top:12px;padding:8px 20px;background:linear-gradient(135deg,var(--gold),var(--gold-dark));border:none;border-radius:30px;color:var(--space);font-weight:600;cursor:pointer;">Volver</button></div>';
+                    container.innerHTML = '<div class="empty-chat"><span class="icon">◈</span><h3 data-clave="mensajes_sin_resultados">No se encontraron resultados</h3><p>No hay mensajes que coincidan con "' + escapeHTML(query) + '"</p><button onclick="cargarMensajes(\'' + conversacionActual.id + '\')" style="margin-top:12px;padding:8px 20px;background:linear-gradient(135deg,var(--gold),var(--gold-dark));border:none;border-radius:30px;color:var(--space);font-weight:600;cursor:pointer;" data-clave="mensajes_volver">Volver</button></div>';
                     return;
                 }
 
@@ -1626,7 +1626,7 @@
         function nuevaConversacion() {
             document.getElementById('modalNuevoContacto').classList.add('show');
             document.getElementById('searchInputModal').value = '';
-            document.getElementById('resultadosBusqueda').innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:0.75rem;">Escribe al menos 2 caracteres para buscar</div>';
+            document.getElementById('resultadosBusqueda').innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:0.75rem;" data-clave="mensajes_buscar_minimo">Escribe al menos 2 caracteres para buscar</div>';
             setTimeout(function() {
                 document.getElementById('searchInputModal').focus();
             }, 200);
