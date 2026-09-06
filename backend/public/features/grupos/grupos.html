@@ -566,7 +566,7 @@
 
     <script>
         // ================================================================
-        // GRUPOS - TODAS LAS FUNCIONES
+        // GRUPOS - TODAS LAS FUNCIONES (SEPARADO DE LIVE GENERAL)
         // ================================================================
 
         var sessionUser = null;
@@ -581,6 +581,19 @@
         var categoriasCache = [];
         var publicando = false;
         var eliminandoGrupo = false;
+
+        // ===== CONFIGURACIÓN LIVEKIT (SOLO PARA GRUPOS) =====
+        const LIVEKIT_CONFIG = {
+            url: 'wss://csariels-domo-57ujk04t.livekit.cloud'
+        };
+
+        var liveKitRoomGrupo = null;
+        var localStreamGrupo = null;
+        var isLiveGrupoActivo = false;
+        var streamIntervalGrupo = null;
+        var channelChatGrupo = null;
+        var espectadoresGrupo = 0;
+        var currentStreamGrupoId = null;
 
         // ===== TOAST =====
         function showToast(msg, type) {
@@ -630,7 +643,7 @@
         }
 
         // ================================================================
-        // 📷 PROCESAR IMAGEN CON MARCA DE AGUA - NUEVA FUNCIÓN
+        // 📷 PROCESAR IMAGEN CON MARCA DE AGUA
         // ================================================================
 
         async function procesarConMarcaDeAgua(file, tipo) {
@@ -641,33 +654,27 @@
                         reader.onload = function(e) {
                             const img = new Image();
                             img.onload = function() {
-                                // Crear canvas para procesar
                                 const canvas = document.createElement('canvas');
                                 canvas.width = img.width;
                                 canvas.height = img.height;
                                 const ctx = canvas.getContext('2d');
 
-                                // Dibujar imagen original
                                 ctx.drawImage(img, 0, 0);
 
-                                // Configurar marca de agua
                                 const marca = "Csariel's Ecosystem";
                                 const fontSize = Math.max(20, Math.min(img.width / 20, 60));
                                 ctx.font = `bold ${fontSize}px 'Inter', sans-serif`;
                                 ctx.textAlign = 'center';
                                 ctx.textBaseline = 'middle';
 
-                                // Sombra para mejor legibilidad
                                 ctx.shadowColor = 'rgba(0,0,0,0.8)';
                                 ctx.shadowBlur = 15;
                                 ctx.shadowOffsetX = 3;
                                 ctx.shadowOffsetY = 3;
 
-                                // Posición: abajo a la derecha
                                 const x = img.width - 40;
                                 const y = img.height - 40;
 
-                                // Fondo semi-transparente
                                 const metrics = ctx.measureText(marca);
                                 const padding = 20;
                                 const rectWidth = metrics.width + padding * 2;
@@ -686,7 +693,6 @@
                                 ctx.roundRect(rectX, rectY, rectWidth, rectHeight, 12);
                                 ctx.fill();
 
-                                // Borde dorado
                                 ctx.shadowBlur = 0;
                                 ctx.strokeStyle = 'rgba(212, 175, 55, 0.6)';
                                 ctx.lineWidth = 2;
@@ -694,7 +700,6 @@
                                 ctx.roundRect(rectX, rectY, rectWidth, rectHeight, 12);
                                 ctx.stroke();
 
-                                // Texto de la marca
                                 ctx.shadowColor = 'rgba(0,0,0,0.9)';
                                 ctx.shadowBlur = 8;
                                 ctx.shadowOffsetX = 2;
@@ -704,7 +709,6 @@
                                 ctx.textBaseline = 'middle';
                                 ctx.fillText(marca, x, y);
 
-                                // Convertir a File
                                 canvas.toBlob(function(blob) {
                                     const processedFile = new File([blob], file.name, {
                                         type: file.type,
@@ -717,7 +721,6 @@
                         };
                         reader.readAsDataURL(file);
                     } else if (tipo === 'video') {
-                        // Para videos, la marca se aplica en el backend
                         console.log('🎥 Video recibido para marca de agua (backend procesará)');
                         resolve(file);
                     } else {
@@ -793,20 +796,18 @@
         }
 
         // ================================================================
-        // CARGAR GRUPOS - CORREGIDO CON MEJOR MANEJO DE ERRORES
+        // CARGAR GRUPOS
         // ================================================================
         async function cargarGrupos() {
             var grid = document.getElementById('gruposGrid');
             
             try {
-                // ✅ Verificar que Supabase esté disponible
                 if (typeof window.supabase === 'undefined') {
                     grid.innerHTML = '<div class="empty-state"><span class="icon">⚠️</span><h3>Error de conexión</h3><p>Supabase no está disponible. Recarga la página.</p></div>';
                     showToast('⚠️ Supabase no disponible', 'error');
                     return;
                 }
 
-                // ✅ Verificar sesión
                 if (!sessionUser) {
                     await cargarUsuarioActual();
                 }
@@ -835,7 +836,6 @@
                     query = query.eq('categoria_id', parseInt(categoria));
                 }
 
-                // Filtrar solo mis grupos
                 if (soloMisGrupos && sessionUser) {
                     var misGruposResult = await window.supabase
                         .from('grupos_video_miembros')
@@ -870,14 +870,14 @@
                     return;
                 }
 
-                // ✅ Verificar lives activos
+                // ✅ Verificar lives activos SOLO PARA GRUPOS
                 var liveMap = {};
                 for (var i = 0; i < grupos.length; i++) {
                     try {
                         var g = grupos[i];
                         var liveResult = await window.supabase
                             .from('transmisiones')
-                            .select('id, titulo')
+                            .select('id, titulo, streamer_id')
                             .eq('grupo_id', g.id)
                             .eq('estado', 'en_vivo')
                             .eq('is_live', true)
@@ -964,17 +964,12 @@
                 grupoActual = result.data;
                 grupoActualId = grupoId;
 
-                // Verificar membresía y rol
                 await verificarMembresia(grupoId);
+                await verificarLiveActivoGrupo(grupoId);
 
-                // Verificar live activo
-                await verificarLiveActivo(grupoId);
-
-                // Mostrar vista interna
                 document.getElementById('vistaLista').style.display = 'none';
                 document.getElementById('vistaGrupo').classList.add('show');
 
-                // Renderizar header
                 document.getElementById('grupoNombre').textContent = grupoActual.nombre || 'Sin nombre';
                 document.getElementById('grupoDescripcion').textContent = grupoActual.descripcion || 'Sin descripción';
                 document.getElementById('grupoCiudad').textContent = '📍 ' + (grupoActual.ciudad || 'Sin ciudad');
@@ -998,7 +993,6 @@
                     portadaEl.textContent = '◈';
                 }
 
-                // ✅ Mostrar acciones según rol y estado del LIVE
                 var btnAdmin = document.getElementById('btnAdminGrupo');
                 if (esAdmin || esModerador) {
                     btnAdmin.style.display = 'inline-block';
@@ -1030,7 +1024,6 @@
                     }
                 }
 
-                // Cargar publicaciones
                 await cargarPublicacionesGrupo(grupoId);
 
             } catch (e) {
@@ -1052,7 +1045,6 @@
                     return;
                 }
 
-                // ✅ Verificar si es el creador
                 if (grupoActual && grupoActual.creador_id === sessionUser.id) {
                     esCreador = true;
                 } else {
@@ -1078,7 +1070,6 @@
                 esAdmin = rolEnGrupo === 'administrador';
                 esModerador = rolEnGrupo === 'moderador' || esAdmin;
 
-                // ✅ Si es creador, también es admin para efectos prácticos
                 if (esCreador) {
                     esAdmin = true;
                 }
@@ -1097,9 +1088,9 @@
         }
 
         // ================================================================
-        // VERIFICAR LIVE ACTIVO
+        // VERIFICAR LIVE ACTIVO EN GRUPO
         // ================================================================
-        async function verificarLiveActivo(grupoId) {
+        async function verificarLiveActivoGrupo(grupoId) {
             try {
                 var result = await window.supabase
                     .from('transmisiones')
@@ -1110,6 +1101,9 @@
                     .maybeSingle();
 
                 liveActivoEnGrupo = result.data || null;
+                if (liveActivoEnGrupo) {
+                    currentStreamGrupoId = liveActivoEnGrupo.id;
+                }
                 return liveActivoEnGrupo;
             } catch (e) {
                 console.error('Error verificando live:', e);
@@ -1237,7 +1231,7 @@
         }
 
         // ================================================================
-        // 📷 SUBIR FOTO EN GRUPO - CON MARCA DE AGUA
+        // 📷 SUBIR FOTO EN GRUPO
         // ================================================================
         async function subirFotoGrupo() {
             if (!sessionUser) { showToast('⚠️ Inicia sesión', 'error'); return; }
@@ -1301,7 +1295,7 @@
         }
 
         // ================================================================
-        // 🎥 SUBIR VIDEO EN GRUPO - CON MARCA DE AGUA
+        // 🎥 SUBIR VIDEO EN GRUPO
         // ================================================================
         async function subirVideoGrupo() {
             if (!sessionUser) { showToast('⚠️ Inicia sesión', 'error'); return; }
@@ -1534,14 +1528,15 @@
         }
 
         // ================================================================
-        // 🚀 INICIAR LIVE EN GRUPO
+        // 🚀 INICIAR LIVE EN GRUPO - EXCLUSIVO PARA GRUPOS
         // ================================================================
         async function iniciarLiveEnGrupo() {
             if (!sessionUser) { showToast('⚠️ Inicia sesión', 'error'); return; }
             if (!grupoActualId) { showToast('⚠️ No hay grupo seleccionado', 'error'); return; }
             if (!esMiembro()) { showToast('⚠️ Debes ser miembro del grupo', 'error'); return; }
+            if (isLiveGrupoActivo) { showToast('⚠️ Ya hay un LIVE activo en este grupo', 'warning'); return; }
 
-            var liveExistente = await verificarLiveActivo(grupoActualId);
+            var liveExistente = await verificarLiveActivoGrupo(grupoActualId);
             if (liveExistente) {
                 showToast('⚠️ Ya hay un LIVE activo en este grupo', 'warning');
                 return;
@@ -1549,39 +1544,112 @@
 
             try {
                 var titulo = prompt('Título del LIVE:', 'Live en ' + (grupoActual.nombre || 'grupo')) || 'Live en grupo';
-                var roomName = 'live-' + sessionUser.id + '-' + Date.now();
+                var roomName = 'grupo-live-' + sessionUser.id + '-' + Date.now();
 
+                showToast('🎥 Creando transmisión de grupo...', '');
+
+                // ✅ RPC exclusiva para GRUPOS con grupo_id
                 const { data: result, error } = await window.supabase.rpc('crear_transmision', {
                     p_titulo: titulo,
                     p_categoria: 'grupo',
                     p_room_name: roomName,
-                    p_grupo_id: grupoActualId
+                    p_grupo_id: grupoActualId  // 🔑 CLAVE: grupo_id para vincular al grupo
                 });
 
                 if (error) {
                     console.error('❌ Error en RPC crear_transmision:', error);
-                    throw new Error(error.message || 'Error al crear LIVE');
+                    throw new Error(error.message || 'Error al crear LIVE de grupo');
                 }
 
                 const transmision = Array.isArray(result) ? result[0] : result;
                 if (!transmision || !transmision.id) {
-                    throw new Error('No se pudo crear la transmisión');
+                    throw new Error('No se pudo crear la transmisión del grupo');
                 }
 
-                showToast('✅ LIVE iniciado! Redirigiendo...', 'success');
+                currentStreamGrupoId = transmision.id;
+                liveActivoEnGrupo = transmision;
+                isLiveGrupoActivo = true;
 
+                document.getElementById('grupoLiveBadge').style.display = 'inline';
+                document.getElementById('btnIniciarLive').style.display = 'none';
+                document.getElementById('btnFinalizarLive').style.display = 'inline-block';
+                document.getElementById('btnVerLive').style.display = 'inline-block';
+
+                showToast('✅ LIVE de grupo iniciado', 'success');
+
+                // Intentar conectar LiveKit (sin bloquear)
+                try {
+                    showToast('🔗 Conectando a LiveKit...', '', 2000);
+                    const { Room } = await import('https://cdn.jsdelivr.net/npm/livekit-client@1/dist/index.js');
+                    liveKitRoomGrupo = new Room();
+
+                    const token = await obtenerTokenLiveKitGrupo(
+                        transmision.room_name,
+                        sessionUser.user_metadata?.nombre || sessionUser.email || 'streamer',
+                        'publisher'
+                    );
+
+                    await liveKitRoomGrupo.connect(LIVEKIT_CONFIG.url, token);
+                    await liveKitRoomGrupo.localParticipant.setCameraEnabled(true);
+                    await liveKitRoomGrupo.localParticipant.setMicrophoneEnabled(true);
+
+                    liveKitRoomGrupo.on('participantConnected', () => {
+                        espectadoresGrupo++;
+                    });
+                    liveKitRoomGrupo.on('participantDisconnected', () => {
+                        espectadoresGrupo = Math.max(0, espectadoresGrupo - 1);
+                    });
+
+                    showToast('✅ Conectado a LiveKit', 'success');
+                } catch (e) {
+                    console.warn('LiveKit no disponible, modo local:', e);
+                    showToast('⚠️ Modo local - sin transmisión en vivo', 'warning');
+                }
+
+                // Abrir ventana de live general con el ID de la transmisión
                 setTimeout(function() {
-                    window.location.href = '/features/live/live.html?transmision=' + transmision.id + '&grupo=' + grupoActualId;
-                }, 1500);
+                    window.open('/features/live/live.html?transmision=' + transmision.id + '&grupo=' + grupoActualId, '_blank');
+                }, 1000);
+
+                await cargarPublicacionesGrupo(grupoActualId);
+                await cargarGrupos();
 
             } catch (e) {
-                console.error('❌ Error iniciando live:', e);
-                showToast('❌ Error al iniciar LIVE: ' + e.message, 'error');
+                console.error('❌ Error iniciando live de grupo:', e);
+                showToast('❌ Error al iniciar LIVE de grupo: ' + e.message, 'error');
+                isLiveGrupoActivo = false;
             }
         }
 
         // ================================================================
-        // FINALIZAR LIVE DESDE EL GRUPO
+        // 🔑 OBTENER TOKEN LIVEKIT PARA GRUPO
+        // ================================================================
+        async function obtenerTokenLiveKitGrupo(roomName, participantName, role = 'subscriber') {
+            try {
+                const session = await getSession();
+                if (!session) throw new Error('No autenticado');
+
+                const response = await fetch(`/api/token?room=${encodeURIComponent(roomName)}&role=${role}`, {
+                    headers: {
+                        'Authorization': `Bearer ${session.access_token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Error al obtener token');
+                }
+
+                const data = await response.json();
+                return data.token;
+            } catch (error) {
+                console.error('Error obteniendo token LiveKit:', error);
+                throw error;
+            }
+        }
+
+        // ================================================================
+        // ⏹ FINALIZAR LIVE DE GRUPO - EXCLUSIVO PARA GRUPOS
         // ================================================================
         async function finalizarLiveGrupo() {
             if (!sessionUser) {
@@ -1593,6 +1661,7 @@
                 return;
             }
 
+            // Buscar transmisión activa del grupo
             const { data: transmisionActiva, error: buscarError } = await window.supabase
                 .from('transmisiones')
                 .select('*')
@@ -1617,17 +1686,19 @@
                 return;
             }
 
-            if (!confirm('¿Seguro que quieres finalizar el LIVE?')) return;
+            if (!confirm('¿Seguro que quieres finalizar el LIVE del grupo?')) return;
 
-            showToast('⏳ Finalizando LIVE...', '');
+            showToast('⏳ Finalizando LIVE de grupo...', '');
 
             try {
+                // ✅ RPC finalizar_transmision para grupos
                 const { data, error } = await window.supabase.rpc('finalizar_transmision', {
                     p_transmision_id: transmisionActiva.id
                 });
 
                 if (error) {
                     console.error('❌ Error en RPC finalizar_transmision:', error);
+                    // Fallback
                     const { error: updateError } = await window.supabase
                         .from('transmisiones')
                         .update({ 
@@ -1637,42 +1708,54 @@
                         })
                         .eq('id', transmisionActiva.id);
 
-                    if (updateError) {
-                        throw updateError;
-                    }
-                    showToast('✅ LIVE finalizado (vía fallback)', 'success');
+                    if (updateError) throw updateError;
+                    showToast('✅ LIVE de grupo finalizado (vía fallback)', 'success');
                 } else {
-                    showToast('✅ LIVE finalizado', 'success');
+                    showToast('✅ LIVE de grupo finalizado', 'success');
                 }
 
+                // Limpiar estado del grupo
                 liveActivoEnGrupo = null;
+                isLiveGrupoActivo = false;
+                currentStreamGrupoId = null;
+
+                // Desconectar LiveKit
+                if (liveKitRoomGrupo) {
+                    try {
+                        await liveKitRoomGrupo.disconnect();
+                        liveKitRoomGrupo = null;
+                    } catch (e) {
+                        console.warn('Error desconectando LiveKit:', e);
+                    }
+                }
+
                 document.getElementById('grupoLiveBadge').style.display = 'none';
+                document.getElementById('btnIniciarLive').style.display = 'inline-block';
                 document.getElementById('btnVerLive').style.display = 'none';
                 document.getElementById('btnFinalizarLive').style.display = 'none';
-                document.getElementById('btnIniciarLive').style.display = 'inline-block';
 
                 await cargarPublicacionesGrupo(grupoActualId);
                 await cargarGrupos();
 
             } catch (e) {
-                console.error('❌ Error finalizando LIVE:', e);
-                showToast('❌ Error al finalizar LIVE: ' + e.message, 'error');
+                console.error('❌ Error finalizando LIVE de grupo:', e);
+                showToast('❌ Error al finalizar LIVE de grupo: ' + e.message, 'error');
             }
         }
 
         // ================================================================
-        // VER LIVE ACTIVO
+        // VER LIVE DE GRUPO
         // ================================================================
         function verLiveActivo() {
             if (liveActivoEnGrupo) {
-                window.location.href = '/features/live/live.html?transmision=' + liveActivoEnGrupo.id;
+                window.open('/features/live/live.html?transmision=' + liveActivoEnGrupo.id + '&grupo=' + grupoActualId, '_blank');
             } else {
                 showToast('⚠️ No hay LIVE activo en este grupo', 'warning');
             }
         }
 
         // ================================================================
-        // ADMINISTRAR GRUPO - COMPLETO
+        // ADMINISTRAR GRUPO
         // ================================================================
         async function abrirAdminGrupo() {
             if (!esAdmin && !esModerador) {
@@ -1980,7 +2063,7 @@
         }
 
         // ================================================================
-        // 🗑️ ELIMINAR GRUPO - CORREGIDO CON RPC
+        // 🗑️ ELIMINAR GRUPO
         // ================================================================
 
         function mostrarConfirmacionEliminarGrupo() {
@@ -2059,7 +2142,6 @@
                 statusEl.textContent = '⏳ Eliminando grupo...';
                 statusEl.style.color = 'var(--text-secondary)';
 
-                // ✅ USAR RPC eliminar_grupo
                 const { data, error } = await window.supabase.rpc('eliminar_grupo', {
                     p_grupo_id: grupoId
                 });
@@ -2089,6 +2171,8 @@
                 grupoActual = null;
                 grupoActualId = null;
                 liveActivoEnGrupo = null;
+                isLiveGrupoActivo = false;
+                currentStreamGrupoId = null;
                 esAdmin = false;
                 esModerador = false;
                 esCreador = false;
@@ -2309,7 +2393,7 @@
         }
 
         // ================================================================
-        // REGALOS (MONETIZACIÓN) - CON NOWPAYMENTS
+        // REGALOS (MONETIZACIÓN)
         // ================================================================
         function abrirModalRegalos(streamerId, streamerNombre) {
             document.getElementById('giftStreamerName').textContent = streamerNombre || 'el creador';
@@ -2611,6 +2695,12 @@
             grupoActual = null;
             grupoActualId = null;
             liveActivoEnGrupo = null;
+            isLiveGrupoActivo = false;
+            currentStreamGrupoId = null;
+            if (liveKitRoomGrupo) {
+                try { liveKitRoomGrupo.disconnect(); } catch(e) {}
+                liveKitRoomGrupo = null;
+            }
             cargarGrupos();
         }
 
@@ -2620,20 +2710,10 @@
         function verTokens() { window.location.href = '/features/perfil/perfil.html'; }
 
         // ================================================================
-        // ERRORES
-        // ================================================================
-        function mostrarErrorEnPantalla(msg) {
-            var banner = document.getElementById('errorBanner');
-            var texto = document.getElementById('errorBannerText');
-            if (banner && texto) { texto.textContent = msg;
-                banner.style.display = 'block'; }
-        }
-
-        // ================================================================
         // INICIALIZACIÓN
         // ================================================================
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('◈ Sariel\'s - Grupos');
+            console.log('◈ Sariel\'s - Grupos (LIVE SEPARADO)');
             console.log('✅ Inicializando...');
 
             cargarUsuarioActual().then(function() {
