@@ -99,6 +99,33 @@
             transform: translateY(-2px);
         }
 
+        /* ===== SELECTOR DE IDIOMA ===== */
+        .idioma-selector {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.65rem;
+            color: var(--text-secondary);
+            background: rgba(0,0,0,0.2);
+            padding: 4px 10px;
+            border-radius: 20px;
+            border: 1px solid var(--glass-border);
+        }
+        .idioma-selector select {
+            background: transparent;
+            border: none;
+            color: var(--gold);
+            font-size: 0.65rem;
+            outline: none;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            padding: 2px 4px;
+        }
+        .idioma-selector select option {
+            background: var(--space);
+            color: var(--text-primary);
+        }
+
         .tabs-container { margin-bottom: 20px; }
         .tabs { display: flex; gap: 4px; background: var(--glass-bg); border-radius: var(--radius); padding: 4px; border: 1px solid var(--glass-border); flex-wrap: wrap; }
         .tab-btn { flex: 1; padding: 10px 16px; border: none; background: transparent; color: var(--text-muted); font-size: 0.75rem; font-weight: 600; border-radius: 10px; cursor: pointer; min-width: 80px; }
@@ -213,7 +240,6 @@
         }
         .admin-link:hover { border-bottom-color: var(--gold); }
 
-        /* ===== CORRECCIÓN 3: OCULTAR CANVAS EN MÓVILES ===== */
         @media (max-width: 768px) {
             #stars-canvas { display: none; }
             .nebula { display: none; }
@@ -236,57 +262,66 @@
             </a>
             <div class="header-actions">
                 <span class="network-badge"><span class="dot"></span> Polygon</span>
+                
+                <!-- ===== SELECTOR DE IDIOMA ===== -->
+                <div class="idioma-selector">
+                    <span>🌐</span>
+                    <select id="selectorIdioma" onchange="cambiarIdioma(this.value)">
+                        <!-- Se llena dinámicamente desde JavaScript -->
+                    </select>
+                </div>
+                
                 <div id="sessionInfo">
                     <span>🔐</span>
-                    <span class="email" id="userEmail">No autenticado</span>
-                    <button class="logout-btn" onclick="cerrarSesion()" id="logoutBtn" style="display:none;">Cerrar</button>
+                    <span class="email" id="userEmail" data-clave="no_autenticado">No autenticado</span>
+                    <button class="logout-btn" onclick="cerrarSesion()" id="logoutBtn" style="display:none;" data-clave="cerrar">Cerrar</button>
                 </div>
             </div>
         </header>
 
         <section class="hero">
-            <h1>◈ Bienvenido a Sariel's</h1>
-            <p>Compra domos físicos, acumula <strong>Es.stoks</strong>, canjea NFTs y conecta con tu comunidad en un ecosistema Web3 sin custodia.</p>
-            <a href="/features/perfil/perfil.html" class="ir-perfil-btn">◆ Ir a mi perfil</a>
+            <h1 data-clave="bienvenido_titulo">◈ Bienvenido a Sariel's</h1>
+            <p data-clave="bienvenido_descripcion">Compra domos físicos, acumula <strong>Es.stoks</strong>, canjea NFTs y conecta con tu comunidad en un ecosistema Web3 sin custodia.</p>
+            <a href="/features/perfil/perfil.html" class="ir-perfil-btn" data-clave="ir_perfil">◆ Ir a mi perfil</a>
         </section>
 
         <div class="tabs-container">
             <div class="tabs">
-                <button class="tab-btn active" onclick="cambiarTab('inicio')">⌂ Tienda</button>
-                <button class="tab-btn" onclick="cambiarTab('internet')">◈ Internet</button>
-                <button class="tab-btn admin" onclick="cambiarTab('admin')">◈ Admin QR</button>
+                <button class="tab-btn active" onclick="cambiarTab('inicio')" data-clave="tab_tienda">⌂ Tienda</button>
+                <button class="tab-btn" onclick="cambiarTab('internet')" data-clave="tab_internet">◈ Internet</button>
+                <button class="tab-btn admin" onclick="cambiarTab('admin')" data-clave="tab_admin">◈ Admin QR</button>
             </div>
         </div>
 
         <div id="tab-inicio" class="tab-content active">
             <div class="auth-section">
                 <div class="auth-card" id="registerCard">
-                    <h3>◈ Regístrate gratis</h3>
-                    <div class="sub">Crea tu cuenta con email</div>
-                    <input type="email" id="regEmail" placeholder="Correo electrónico" />
-                    <input type="password" id="regPassword" placeholder="Contraseña" />
-                    <input type="text" id="regName" placeholder="Nombre (opcional)" />
-                    <button class="btn btn-gold" onclick="registrarUsuario()">⟡ Crear cuenta</button>
+                    <h3 data-clave="registro_titulo">◈ Regístrate gratis</h3>
+                    <div class="sub" data-clave="registro_sub">Crea tu cuenta con email</div>
+                    <input type="email" id="regEmail" data-placeholder="registro_email" placeholder="Correo electrónico" />
+                    <input type="password" id="regPassword" data-placeholder="registro_password" placeholder="Contraseña" />
+                    <input type="text" id="regName" data-placeholder="registro_nombre" placeholder="Nombre (opcional)" />
+                    <button class="btn btn-gold" onclick="registrarUsuario()" data-clave="registro_btn">⟡ Crear cuenta</button>
                     <p style="font-size:0.6rem;color:var(--text-muted);margin-top:8px;text-align:center;">
-                        ¿Ya tienes cuenta? <a href="#" onclick="mostrarLogin()" style="color:var(--gold);">Inicia sesión</a>
+                        <span data-clave="registro_tienes_cuenta">¿Ya tienes cuenta?</span> <a href="#" onclick="mostrarLogin()" style="color:var(--gold);" data-clave="registro_iniciar_sesion">Inicia sesión</a>
                     </p>
                 </div>
 
                 <div class="auth-card" id="loginCard" style="display:none;">
-                    <h3>◈ Iniciar sesión</h3>
-                    <div class="sub">Entra con tu email</div>
-                    <input type="email" id="loginEmail" placeholder="Correo electrónico" />
-                    <input type="password" id="loginPassword" placeholder="Contraseña" />
-                    <button class="btn btn-gold" onclick="iniciarSesion()">◈ Iniciar sesión</button>
+                    <h3 data-clave="login_titulo">◈ Iniciar sesión</h3>
+                    <div class="sub" data-clave="login_sub">Entra con tu email</div>
+                    <input type="email" id="loginEmail" data-placeholder="login_email" placeholder="Correo electrónico" />
+                    <input type="password" id="loginPassword" data-placeholder="login_password" placeholder="Contraseña" />
+                    <button class="btn btn-gold" onclick="iniciarSesion()" data-clave="login_btn">◈ Iniciar sesión</button>
                     <p style="font-size:0.6rem;color:var(--text-muted);margin-top:8px;text-align:center;">
-                        ¿No tienes cuenta? <a href="#" onclick="mostrarRegistro()" style="color:var(--gold);">Regístrate</a>
+                        <span data-clave="login_no_tienes_cuenta">¿No tienes cuenta?</span> <a href="#" onclick="mostrarRegistro()" style="color:var(--gold);" data-clave="login_registrate">Regístrate</a>
                     </p>
                 </div>
             </div>
 
             <div class="grid-2">
                 <section class="panel">
-                    <div class="panel-header"><h2>◈ Comprar Domo</h2><span class="panel-badge">Nuevo</span></div>
+                    <div class="panel-header"><h2 data-clave="comprar_domo_titulo">◈ Comprar Domo</h2><span class="panel-badge" data-clave="comprar_domo_badge">Nuevo</span></div>
                     <div class="panel-body">
                         <div class="domo-card">
                             <span class="domo-price">75 MXN</span>
@@ -295,37 +330,28 @@
                                 <span class="qty-value" id="domoQuantity">1</span>
                                 <button class="qty-btn" id="increaseQty">+</button>
                             </div>
-                            <button class="btn btn-gold" style="width:100%;" id="buyDomo" onclick="comprarDomo()">Comprar Domo</button>
+                            <button class="btn btn-gold" style="width:100%;" id="buyDomo" onclick="comprarDomo()" data-clave="comprar_domo_btn">Comprar Domo</button>
                             
-                            <!-- ===== CORRECCIÓN 2: DISCLAIMER LEGAL ===== -->
                             <p style="font-size:0.55rem;color:var(--text-muted);margin-top:8px;line-height:1.5;">
-                                ◈ Recibes <strong style="color:var(--gold);">1 ES.stoks</strong> por domo · 
-                                ES.stoks es <strong style="color:var(--gold);">transferible en P2P</strong> · 
-                                NFT Domo <strong style="color:var(--gold);">intransferible</strong> · 
-                                Canje en Puebla <strong style="color:var(--gold);">30 días</strong>
+                                <span data-clave="comprar_domo_disclaimer_1">◈ Recibes</span> <strong style="color:var(--gold);">1 ES.stoks</strong> <span data-clave="comprar_domo_disclaimer_2">por domo · ES.stoks es</span> <strong style="color:var(--gold);" data-clave="comprar_domo_disclaimer_3">transferible en P2P</strong> <span data-clave="comprar_domo_disclaimer_4">· NFT Domo</span> <strong style="color:var(--gold);" data-clave="comprar_domo_disclaimer_5">intransferible</strong> <span data-clave="comprar_domo_disclaimer_6">· Canje en Puebla</span> <strong style="color:var(--gold);" data-clave="comprar_domo_disclaimer_7">30 días</strong>
                             </p>
-                            <p style="font-size:0.5rem;color:var(--text-muted);margin-top:4px;">
-                                ◈ Venta física en Puebla · Sin envíos
-                            </p>
-                            <!-- ===== FIN DISCLAIMER ===== -->
+                            <p style="font-size:0.5rem;color:var(--text-muted);margin-top:4px;" data-clave="comprar_domo_disclaimer_8">◈ Venta física en Puebla · Sin envíos</p>
                             
-                            <p style="font-size:0.55rem;color:var(--text-muted);margin-top:6px;">◈ Conecta tu wallet en tu <a href="/features/perfil/perfil.html" style="color:var(--gold);">perfil</a></p>
+                            <p style="font-size:0.55rem;color:var(--text-muted);margin-top:6px;" data-clave="comprar_domo_wallet">◈ Conecta tu wallet en tu <a href="/features/perfil/perfil.html" style="color:var(--gold);">perfil</a></p>
                         </div>
                     </div>
                 </section>
 
                 <section class="panel">
-                    <div class="panel-header"><h2>◈ Tu Estado</h2><span class="panel-badge">Actualizado</span></div>
+                    <div class="panel-header"><h2 data-clave="tu_estado_titulo">◈ Tu Estado</h2><span class="panel-badge" data-clave="tu_estado_badge">Actualizado</span></div>
                     <div class="panel-body">
                         <div class="status-grid">
-                            <div class="status-item"><div class="status-label">◈ Domos</div><div class="status-value" id="domosCount">0</div></div>
-                            <div class="status-item"><div class="status-label">◈ Es.stoks</div><div class="status-value" id="tokensCount">0</div></div>
-                            <div class="status-item" style="grid-column: span 2;"><div class="status-label">◈ Progreso NFT</div><div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%;"></div></div><span id="progressText">0 / 12</span></div>
-                            <div class="status-item" style="grid-column: span 2;"><div class="status-label">◈ NFT</div><div class="status-value" id="haCanjeado">No</div></div>
+                            <div class="status-item"><div class="status-label" data-clave="estado_domos">◈ Domos</div><div class="status-value" id="domosCount">0</div></div>
+                            <div class="status-item"><div class="status-label" data-clave="estado_tokens">◈ Es.stoks</div><div class="status-value" id="tokensCount">0</div></div>
+                            <div class="status-item" style="grid-column: span 2;"><div class="status-label" data-clave="estado_progreso">◈ Progreso NFT</div><div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%;"></div></div><span id="progressText">0 / 12</span></div>
+                            <div class="status-item" style="grid-column: span 2;"><div class="status-label" data-clave="estado_nft">◈ NFT</div><div class="status-value" id="haCanjeado">No</div></div>
                         </div>
-                        <div style="font-size:0.6rem;color:var(--text-muted);text-align:center;margin-top:8px;">
-                            Canjea tu NFT desde tu <a href="/features/perfil/perfil.html" style="color:var(--gold);">perfil</a>
-                        </div>
+                        <div style="font-size:0.6rem;color:var(--text-muted);text-align:center;margin-top:8px;" data-clave="estado_canjea">Canjea tu NFT desde tu <a href="/features/perfil/perfil.html" style="color:var(--gold);">perfil</a></div>
                     </div>
                 </section>
             </div>
@@ -335,61 +361,56 @@
         <div id="tab-internet" class="tab-content">
             <div class="panel">
                 <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-                    <h2 style="color:var(--gold); font-family:'Orbitron',monospace; font-size:1rem;">◈ Internet de alta velocidad</h2>
-                    <span style="font-size:0.6rem; background:rgba(0,214,143,0.15); color:#00d68f; padding:2px 12px; border-radius:20px;">4G/5G</span>
+                    <h2 style="color:var(--gold); font-family:'Orbitron',monospace; font-size:1rem;" data-clave="internet_titulo">◈ Internet de alta velocidad</h2>
+                    <span style="font-size:0.6rem; background:rgba(0,214,143,0.15); color:#00d68f; padding:2px 12px; border-radius:20px;" data-clave="internet_badge">4G/5G</span>
                 </div>
-                <p style="color:var(--text-secondary); font-size:0.8rem; margin-top:4px;">
-                    Paquetes de datos móviles · Activación en 2 minutos · Paga en MXN o USDT
-                </p>
+                <p style="color:var(--text-secondary); font-size:0.8rem; margin-top:4px;" data-clave="internet_descripcion">Paquetes de datos móviles · Activación en 2 minutos · Paga en MXN o USDT</p>
                 
-                <!-- Previsualización de paquetes -->
                 <div class="internet-grid-cards" id="internetPreview">
                     <div class="internet-card">
-                        <div class="name">Básico</div>
+                        <div class="name" data-clave="internet_basico">Básico</div>
                         <div class="data">3 GB</div>
-                        <div style="font-size:0.6rem;color:var(--text-muted);">7 días</div>
+                        <div style="font-size:0.6rem;color:var(--text-muted);" data-clave="internet_7dias">7 días</div>
                         <div class="price">$79 MXN</div>
-                        <a href="/internet" class="btn btn-gold" style="text-decoration:none;">Ver</a>
+                        <a href="/internet" class="btn btn-gold" style="text-decoration:none;" data-clave="internet_ver">Ver</a>
                     </div>
                     <div class="internet-card" style="border-color:var(--gold);">
-                        <div class="name" style="color:var(--gold);">Chido</div>
+                        <div class="name" style="color:var(--gold);" data-clave="internet_chido">Chido</div>
                         <div class="data">10 GB</div>
-                        <div style="font-size:0.6rem;color:var(--text-muted);">15 días</div>
+                        <div style="font-size:0.6rem;color:var(--text-muted);" data-clave="internet_15dias">15 días</div>
                         <div class="price">$169 MXN</div>
-                        <a href="/internet" class="btn btn-gold" style="text-decoration:none;">Ver</a>
+                        <a href="/internet" class="btn btn-gold" style="text-decoration:none;" data-clave="internet_ver">Ver</a>
                     </div>
                     <div class="internet-card">
-                        <div class="name">Pro</div>
+                        <div class="name" data-clave="internet_pro">Pro</div>
                         <div class="data">30 GB</div>
-                        <div style="font-size:0.6rem;color:var(--text-muted);">30 días</div>
+                        <div style="font-size:0.6rem;color:var(--text-muted);" data-clave="internet_30dias">30 días</div>
                         <div class="price">$299 MXN</div>
-                        <a href="/internet" class="btn btn-gold" style="text-decoration:none;">Ver</a>
+                        <a href="/internet" class="btn btn-gold" style="text-decoration:none;" data-clave="internet_ver">Ver</a>
                     </div>
                     <div class="internet-card">
-                        <div class="name">Ilimitado</div>
+                        <div class="name" data-clave="internet_ilimitado">Ilimitado</div>
                         <div class="data">∞</div>
-                        <div style="font-size:0.6rem;color:var(--text-muted);">30 días</div>
+                        <div style="font-size:0.6rem;color:var(--text-muted);" data-clave="internet_30dias">30 días</div>
                         <div class="price">$549 MXN</div>
-                        <a href="/internet" class="btn btn-gold" style="text-decoration:none;">Ver</a>
+                        <a href="/internet" class="btn btn-gold" style="text-decoration:none;" data-clave="internet_ver">Ver</a>
                     </div>
                 </div>
                 
                 <div style="margin-top:16px; display:flex; gap:12px; flex-wrap:wrap; justify-content:center;">
-                    <a href="/internet" class="btn btn-gold" style="text-decoration:none; padding:10px 32px;">⟡ Ver todos los paquetes</a>
-                    <a href="/admin-internet" class="btn btn-outline" style="text-decoration:none; padding:10px 24px;">⚙️ Admin</a>
+                    <a href="/internet" class="btn btn-gold" style="text-decoration:none; padding:10px 32px;" data-clave="internet_ver_todos">⟡ Ver todos los paquetes</a>
+                    <a href="/admin-internet" class="btn btn-outline" style="text-decoration:none; padding:10px 24px;" data-clave="internet_admin">⚙️ Admin</a>
                 </div>
-                <p style="font-size:0.55rem;color:var(--text-muted);text-align:center;margin-top:8px;">
-                    ◈ Cobertura: Puebla, CDMX, Edomex · Tethering incluido
-                </p>
+                <p style="font-size:0.55rem;color:var(--text-muted);text-align:center;margin-top:8px;" data-clave="internet_cobertura">◈ Cobertura: Puebla, CDMX, Edomex · Tethering incluido</p>
             </div>
         </div>
 
         <div id="tab-admin" class="tab-content">
             <div class="panel">
-                <h2>◈ Admin QR</h2>
+                <h2 data-clave="admin_qr_titulo">◈ Admin QR</h2>
                 <div style="display:flex; gap: 10px; flex-wrap:wrap; margin-top:10px;">
-                    <input type="text" id="qrData" placeholder="Datos para QR" value="https://sariels.com" style="flex:1; padding:10px; background:rgba(0,0,0,0.4); border:1px solid var(--glass-border); border-radius:10px; color:white;" />
-                    <button class="btn btn-gold" onclick="generarQR()">Generar QR</button>
+                    <input type="text" id="qrData" data-placeholder="admin_qr_placeholder" placeholder="Datos para QR" value="https://sariels.com" style="flex:1; padding:10px; background:rgba(0,0,0,0.4); border:1px solid var(--glass-border); border-radius:10px; color:white;" />
+                    <button class="btn btn-gold" onclick="generarQR()" data-clave="admin_qr_generar">Generar QR</button>
                 </div>
                 <div id="qrContainer" style="margin-top:20px; display:flex; justify-content:center; background:white; padding:20px; border-radius:10px;"></div>
             </div>
@@ -398,11 +419,11 @@
         <footer class="footer">
             <span><span class="brand">◈ Sariel's</span> · Sabor al Paladar · WEB3</span>
             <div class="footer-links">
-                <a href="/terminos.html">◈ Términos</a>
-                <a href="/privacidad.html">◈ Privacidad</a>
-                <a href="/cookies.html">◈ Cookies</a>
-                <a href="/eliminar-cuenta.html">🗑️ Eliminar cuenta</a>
-                <a href="/live-terminos.html">◉ Live Términos</a>
+                <a href="/terminos.html" data-clave="footer_terminos">◈ Términos</a>
+                <a href="/privacidad.html" data-clave="footer_privacidad">◈ Privacidad</a>
+                <a href="/cookies.html" data-clave="footer_cookies">◈ Cookies</a>
+                <a href="/eliminar-cuenta.html" data-clave="footer_eliminar_cuenta">🗑️ Eliminar cuenta</a>
+                <a href="/live-terminos.html" data-clave="footer_live_terminos">◉ Live Términos</a>
                 <span style="opacity:0.3;">⚡ Polygon</span>
             </div>
         </footer>
@@ -410,13 +431,24 @@
 
     <div class="toast" id="toast"></div>
 
-    <!-- ✅ SOLO Supabase - SIN Web3 en Index -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
-    <script src="/app.js"></script>
-    
     <!-- ============================================================ -->
-    <!-- BANNER DE ERRORES VISIBLES EN PANTALLA                       -->
+    <!-- SCRIPTS - ORDEN CORRECTO                                     -->
+    <!-- ============================================================ -->
+
+    <!-- 1. Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
+    <!-- 2. QRCode.js -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+
+    <!-- 3. App.js - Configuración global -->
+    <script src="/app.js"></script>
+
+    <!-- 4. IDIOMAS.js - Sistema de traducciones -->
+    <script src="/features/shared/js/idiomas.js"></script>
+
+    <!-- ============================================================ -->
+    <!-- BANNER DE ERRORES                                           -->
     <!-- ============================================================ -->
     <div id="errorBanner" style="
         display:none; position:fixed; top:0; left:0; right:0; z-index:99999;
@@ -473,8 +505,6 @@
         let userHasNft = false;
         let isRegistering = false;
 
-        // ✅ NO DECLARAMOS supabase - usamos window.supabase directamente
-
         // ================================================================
         // TOAST
         // ================================================================
@@ -501,6 +531,52 @@
         }
 
         // ================================================================
+        // CARGAR SELECTOR DE IDIOMAS
+        // ================================================================
+        async function cargarSelectorIdiomas() {
+            try {
+                const { data, error } = await window.supabase
+                    .from('idiomas_sistema')
+                    .select('*')
+                    .eq('activo', true)
+                    .order('nombre', { ascending: true });
+
+                if (error) throw error;
+
+                const select = document.getElementById('selectorIdioma');
+                if (!select) return;
+
+                // Obtener idioma actual
+                const idiomaActual = await window.obtenerIdiomaUsuario?.() || { id: null };
+
+                select.innerHTML = data.map(idioma => `
+                    <option value="${idioma.id}" ${idioma.id === idiomaActual.id ? 'selected' : ''}>
+                        ${idioma.bandera || '🌐'} ${idioma.nombre_nativo || idioma.nombre}
+                    </option>
+                `).join('');
+
+            } catch (error) {
+                console.error('Error cargando idiomas:', error);
+            }
+        }
+
+        // ================================================================
+        // INICIALIZAR IDIOMAS
+        // ================================================================
+        async function inicializarIdiomas() {
+            try {
+                const idioma = await window.obtenerIdiomaUsuario?.();
+                if (idioma) {
+                    await window.cargarTraducciones?.(idioma.id);
+                    window.aplicarTraducciones?.();
+                }
+                await cargarSelectorIdiomas();
+            } catch (error) {
+                console.error('Error inicializando idiomas:', error);
+            }
+        }
+
+        // ================================================================
         // SESIÓN - usando window.supabase
         // ================================================================
         async function checkSession() {
@@ -518,11 +594,9 @@
             
             if (session) {
                 currentUser = session.user;
-                // ===== CORRECCIÓN 1: OCULTAR CORREO =====
                 const nombre = currentUser.user_metadata?.full_name || currentUser.email || 'Usuario';
                 const displayName = nombre.length > 15 ? nombre.substring(0, 12) + '…' : nombre;
                 document.getElementById('userEmail').textContent = displayName;
-                // ===== FIN CORRECCIÓN 1 =====
                 document.getElementById('logoutBtn').style.display = 'inline-block';
                 document.getElementById('registerCard').style.display = 'none';
                 document.getElementById('loginCard').style.display = 'none';
@@ -823,17 +897,20 @@
                 if (val < 10) qtyDisplay.textContent = val + 1;
             });
 
-            checkSession();
+            // Inicializar idiomas PRIMERO
+            inicializarIdiomas().then(() => {
+                checkSession();
+            }).catch(() => {
+                checkSession();
+            });
 
             if (window.supabase) {
                 window.supabase.auth.onAuthStateChange((event, session) => {
                     if (event === 'SIGNED_IN' && session) {
                         currentUser = session.user;
-                        // ===== CORRECCIÓN 1: OCULTAR CORREO =====
                         const nombre = currentUser.user_metadata?.full_name || currentUser.email || 'Usuario';
                         const displayName = nombre.length > 15 ? nombre.substring(0, 12) + '…' : nombre;
                         document.getElementById('userEmail').textContent = displayName;
-                        // ===== FIN CORRECCIÓN 1 =====
                         document.getElementById('logoutBtn').style.display = 'inline-block';
                         document.getElementById('registerCard').style.display = 'none';
                         document.getElementById('loginCard').style.display = 'none';
@@ -874,6 +951,8 @@
         window.showToast = showToast;
         window.abrirQRAdmin = abrirQRAdmin;
         window.generarQR = generarQR;
+        window.cargarSelectorIdiomas = cargarSelectorIdiomas;
+        window.inicializarIdiomas = inicializarIdiomas;
     </script>
 </body>
 </html>
