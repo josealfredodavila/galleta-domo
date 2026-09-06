@@ -329,7 +329,7 @@
         <!-- ============================================================ -->
         <div id="vistaLista">
             <div class="grupos-header">
-                <h1>👥 Grupos</h1>
+                <h1 data-clave="grupos_titulo">👥 Grupos</h1>
                 <div class="filtros">
                     <input type="text" id="inputBuscar" placeholder="🔍 Buscar..." oninput="cargarGrupos()" />
                     <select id="selectCiudad" onchange="cargarGrupos()">
@@ -344,7 +344,7 @@
             </div>
 
             <div class="grupos-grid" id="gruposGrid">
-                <div class="empty-state"><span class="icon">⏳</span><h3>Cargando grupos...</h3></div>
+                <div class="empty-state"><span class="icon">⏳</span><h3 data-clave="grupos_cargando">Cargando grupos...</h3></div>
             </div>
         </div>
 
@@ -397,7 +397,7 @@
 
             <!-- Publicaciones -->
             <div class="publicaciones-container" id="publicacionesContainer">
-                <div class="empty-state"><span class="icon">📝</span><h3>Sin publicaciones aún</h3><p>Sé el primero en publicar</p></div>
+                <div class="empty-state"><span class="icon">📝</span><h3 data-clave="grupos_sin_publicaciones">Sin publicaciones aún</h3><p data-clave="grupos_sin_publicaciones_desc">Sé el primero en publicar</p></div>
             </div>
         </div>
 
@@ -412,15 +412,15 @@
                 </div>
                 <form id="formCrearGrupo" onsubmit="event.preventDefault(); crearGrupo();">
                     <div class="form-group">
-                        <label>Nombre del grupo *</label>
+                        <label data-clave="grupos_nombre_grupo">Nombre del grupo *</label>
                         <input type="text" id="inputNombreGrupo" required />
                     </div>
                     <div class="form-group">
-                        <label>Descripción</label>
+                        <label data-clave="grupos_descripcion_grupo">Descripción</label>
                         <textarea id="inputDescripcionGrupo" rows="2"></textarea>
                     </div>
                     <div class="form-group">
-                        <label>Categoría</label>
+                        <label data-clave="grupos_categoria">Categoría</label>
                         <select id="inputCategoriaGrupo">
                             <option value="General">General</option>
                             <option value="Música">Música</option>
@@ -434,26 +434,26 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>Ciudad</label>
+                        <label data-clave="grupos_ciudad">Ciudad</label>
                         <input type="text" id="inputCiudadGrupo" placeholder="Ej: Puebla" />
                     </div>
                     <div class="form-group">
-                        <label>Estado/Región</label>
+                        <label data-clave="grupos_estado">Estado/Región</label>
                         <input type="text" id="inputEstadoGrupo" placeholder="Ej: Puebla" />
                     </div>
                     <div class="form-group">
-                        <label>País</label>
+                        <label data-clave="grupos_pais">País</label>
                         <input type="text" id="inputPaisGrupo" placeholder="Ej: México" />
                     </div>
                     <div class="form-group">
-                        <label>Visibilidad</label>
+                        <label data-clave="grupos_visibilidad">Visibilidad</label>
                         <select id="inputVisibilidadGrupo">
                             <option value="publico">Público</option>
                             <option value="privado">Privado</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>Modo de ingreso</label>
+                        <label data-clave="grupos_modo_ingreso">Modo de ingreso</label>
                         <select id="inputModoIngresoGrupo">
                             <option value="abierto">Abierto</option>
                             <option value="solicitud">Solicitud</option>
@@ -475,7 +475,7 @@
                     <button class="btn-cerrar" onclick="cerrarModalAdmin()">✕</button>
                 </div>
                 <div id="adminContenido">
-                    <div class="empty-state"><span class="icon">⏳</span><h3>Cargando...</h3></div>
+                    <div class="empty-state"><span class="icon">⏳</span><h3 data-clave="grupos_cargando_admin">Cargando...</h3></div>
                 </div>
                 <div style="margin-top:16px; display:flex; gap:8px; flex-wrap:wrap;">
                     <button class="btn-gold btn-sm" onclick="cargarAdminMiembros()" style="flex:1;">👤 Miembros</button>
@@ -549,9 +549,9 @@
         <footer class="footer">
             <span><span class="brand">◈ Sariel's</span> · Sabor al Paladar · WEB3</span>
             <div class="footer-links">
-                <a href="/terminos">📜 Términos</a>
-                <a href="/privacidad">🔒 Privacidad</a>
-                <a href="/cookies">🍪 Cookies</a>
+                <a href="/terminos" data-clave="grupos_footer_terminos">📜 Términos</a>
+                <a href="/privacidad" data-clave="grupos_footer_privacidad">🔒 Privacidad</a>
+                <a href="/cookies" data-clave="grupos_footer_cookies">🍪 Cookies</a>
                 <span style="opacity:0.3;">⚡ Polygon</span>
             </div>
         </footer>
@@ -803,7 +803,7 @@
             
             try {
                 if (typeof window.supabase === 'undefined') {
-                    grid.innerHTML = '<div class="empty-state"><span class="icon">⚠️</span><h3>Error de conexión</h3><p>Supabase no está disponible. Recarga la página.</p></div>';
+                    grid.innerHTML = '<div class="empty-state"><span class="icon">⚠️</span><h3 data-clave="grupos_error_conexion">Error de conexión</h3><p data-clave="grupos_error_conexion_desc">Supabase no está disponible. Recarga la página.</p></div>';
                     showToast('⚠️ Supabase no disponible', 'error');
                     return;
                 }
@@ -847,7 +847,7 @@
                     var ids = (misGruposResult.data || []).map(function(m) { return m.grupo_id; });
                     if (ids.length === 0) {
                         grid.innerHTML =
-                            '<div class="empty-state"><span class="icon">👥</span><h3>No perteneces a ningún grupo</h3><p>Crea uno o únete a uno existente</p></div>';
+                            '<div class="empty-state"><span class="icon">👥</span><h3 data-clave="grupos_no_perteneces">No perteneces a ningún grupo</h3><p data-clave="grupos_no_perteneces_desc">Crea uno o únete a uno existente</p></div>';
                         return;
                     }
                     query = query.in('id', ids);
@@ -866,7 +866,7 @@
 
                 if (grupos.length === 0) {
                     grid.innerHTML =
-                        '<div class="empty-state"><span class="icon">👥</span><h3>No hay grupos</h3><p>Crea el primer grupo de la comunidad</p></div>';
+                        '<div class="empty-state"><span class="icon">👥</span><h3 data-clave="grupos_no_hay">No hay grupos</h3><p data-clave="grupos_no_hay_desc">Crea el primer grupo de la comunidad</p></div>';
                     return;
                 }
 
@@ -925,7 +925,7 @@
                 } else {
                     errorMsg += e.message || 'Error desconocido. Recarga la página.';
                 }
-                grid.innerHTML = '<div class="empty-state"><span class="icon">❌</span><h3>Error cargando grupos</h3><p>' + errorMsg + '</p></div>';
+                grid.innerHTML = '<div class="empty-state"><span class="icon">❌</span><h3 data-clave="grupos_error_cargar">Error cargando grupos</h3><p>' + errorMsg + '</p></div>';
                 showToast('❌ ' + errorMsg, 'error');
             }
         }
@@ -1134,7 +1134,7 @@
 
                 if (data.length === 0) {
                     container.innerHTML =
-                        '<div class="empty-state"><span class="icon">📝</span><h3>Sin publicaciones</h3><p>Sé el primero en publicar algo</p></div>';
+                        '<div class="empty-state"><span class="icon">📝</span><h3 data-clave="grupos_sin_publicaciones">Sin publicaciones</h3><p data-clave="grupos_sin_publicaciones_desc">Sé el primero en publicar algo</p></div>';
                     return;
                 }
 
@@ -1231,7 +1231,8 @@
         }
 
         // ================================================================
-        // 📷 SUBIR FOTO EN GRUPO        // ================================================================
+        // 📷 SUBIR FOTO EN GRUPO        
+        // ================================================================
         async function subirFotoGrupo() {
             if (!sessionUser) { showToast('⚠️ Inicia sesión', 'error'); return; }
             if (!grupoActualId) { showToast('⚠️ No hay grupo seleccionado', 'error'); return; }
@@ -1440,7 +1441,7 @@
                 var data = result.data || [];
                 if (data.length === 0) {
                     lista.innerHTML =
-                        '<div style="color:var(--text-muted);font-size:0.65rem;padding:4px 0;">Sin comentarios</div>';
+                        '<div style="color:var(--text-muted);font-size:0.65rem;padding:4px 0;" data-clave="grupos_sin_comentarios">Sin comentarios</div>';
                     return;
                 }
 
@@ -1605,9 +1606,6 @@
                     showToast('⚠️ Modo local - sin transmisión en vivo', 'warning');
                 }
 
-                // ✅ CORREGIDO: NO abre live.html, NO usa parámetros URL
-                // El LIVE de grupo se maneja completamente dentro de grupos.html
-
                 await cargarPublicacionesGrupo(grupoActualId);
                 await cargarGrupos();
 
@@ -1745,8 +1743,6 @@
         // ================================================================
         function verLiveActivo() {
             if (liveActivoEnGrupo) {
-                // ✅ CORREGIDO: Abre live.html SOLO para ver, no para controlar
-                // Solo pasa el ID de la transmisión para visualización
                 window.open('/features/live/live.html?transmision=' + liveActivoEnGrupo.id, '_blank');
             } else {
                 showToast('⚠️ No hay LIVE activo en este grupo', 'warning');
@@ -1777,7 +1773,7 @@
         // ===== ADMIN: MIEMBROS =====
         async function cargarAdminMiembros() {
             var container = document.getElementById('adminContenido');
-            container.innerHTML = '<div class="empty-state"><span class="icon">⏳</span><h3>Cargando miembros...</h3></div>';
+            container.innerHTML = '<div class="empty-state"><span class="icon">⏳</span><h3 data-clave="grupos_cargando_miembros">Cargando miembros...</h3></div>';
 
             try {
                 var result = await window.supabase
@@ -1794,7 +1790,7 @@
                 var miembros = result.data || [];
 
                 if (miembros.length === 0) {
-                    container.innerHTML = '<div class="empty-state"><span class="icon">👤</span><h3>Sin miembros</h3></div>';
+                    container.innerHTML = '<div class="empty-state"><span class="icon">👤</span><h3 data-clave="grupos_sin_miembros">Sin miembros</h3></div>';
                     return;
                 }
 
@@ -1844,14 +1840,14 @@
             } catch (e) {
                 console.error('Error cargando miembros admin:', e);
                 container.innerHTML =
-                '<div class="empty-state"><span class="icon">❌</span><h3>Error cargando miembros</h3></div>';
+                '<div class="empty-state"><span class="icon">❌</span><h3 data-clave="grupos_error_miembros">Error cargando miembros</h3></div>';
             }
         }
 
         // ===== ADMIN: PUBLICACIONES =====
         async function cargarAdminPublicaciones() {
             var container = document.getElementById('adminContenido');
-            container.innerHTML = '<div class="empty-state"><span class="icon">⏳</span><h3>Cargando publicaciones...</h3></div>';
+            container.innerHTML = '<div class="empty-state"><span class="icon">⏳</span><h3 data-clave="grupos_cargando_publicaciones">Cargando publicaciones...</h3></div>';
 
             try {
                 var result = await window.supabase
@@ -1869,7 +1865,7 @@
 
                 if (publicaciones.length === 0) {
                     container.innerHTML =
-                        '<div class="empty-state"><span class="icon">📝</span><h3>Sin publicaciones</h3></div>';
+                        '<div class="empty-state"><span class="icon">📝</span><h3 data-clave="grupos_sin_publicaciones">Sin publicaciones</h3></div>';
                     return;
                 }
 
@@ -1921,14 +1917,14 @@
             } catch (e) {
                 console.error('Error cargando publicaciones admin:', e);
                 container.innerHTML =
-                    '<div class="empty-state"><span class="icon">❌</span><h3>Error cargando publicaciones</h3></div>';
+                    '<div class="empty-state"><span class="icon">❌</span><h3 data-clave="grupos_error_publicaciones">Error cargando publicaciones</h3></div>';
             }
         }
 
         // ===== ADMIN: SOLICITUDES =====
         async function cargarAdminSolicitudes() {
             var container = document.getElementById('adminContenido');
-            container.innerHTML = '<div class="empty-state"><span class="icon">⏳</span><h3>Cargando solicitudes...</h3></div>';
+            container.innerHTML = '<div class="empty-state"><span class="icon">⏳</span><h3 data-clave="grupos_cargando_solicitudes">Cargando solicitudes...</h3></div>';
 
             try {
                 var result = await window.supabase
@@ -1947,7 +1943,7 @@
 
                 if (solicitudes.length === 0) {
                     container.innerHTML =
-                        '<div class="empty-state"><span class="icon">📨</span><h3>Sin solicitudes pendientes</h3></div>';
+                        '<div class="empty-state"><span class="icon">📨</span><h3 data-clave="grupos_sin_solicitudes">Sin solicitudes pendientes</h3></div>';
                     return;
                 }
 
@@ -1974,14 +1970,14 @@
             } catch (e) {
                 console.error('Error cargando solicitudes admin:', e);
                 container.innerHTML =
-                    '<div class="empty-state"><span class="icon">❌</span><h3>Error cargando solicitudes</h3></div>';
+                    '<div class="empty-state"><span class="icon">❌</span><h3 data-clave="grupos_error_solicitudes">Error cargando solicitudes</h3></div>';
             }
         }
 
         // ===== ADMIN: EDITAR GRUPO =====
         async function cargarAdminEditar() {
             var container = document.getElementById('adminContenido');
-            container.innerHTML = '<div class="empty-state"><span class="icon">⏳</span><h3>Cargando datos del grupo...</h3></div>';
+            container.innerHTML = '<div class="empty-state"><span class="icon">⏳</span><h3 data-clave="grupos_cargando_editar">Cargando datos del grupo...</h3></div>';
 
             try {
                 var result = await window.supabase
@@ -1995,17 +1991,17 @@
                 var g = result.data;
 
                 var html = '<h4 style="color:var(--gold);font-size:0.8rem;margin-bottom:12px;">✏️ Editar grupo</h4>' +
-                    '<div class="form-group"><label>Nombre</label><input type="text" id="editGrupoNombre" value="' +
+                    '<div class="form-group"><label data-clave="grupos_nombre">Nombre</label><input type="text" id="editGrupoNombre" value="' +
                     escapeHTML(g.nombre || '') + '" /></div>' +
-                    '<div class="form-group"><label>Descripción</label><textarea id="editGrupoDescripcion" rows="2">' +
+                    '<div class="form-group"><label data-clave="grupos_descripcion">Descripción</label><textarea id="editGrupoDescripcion" rows="2">' +
                     escapeHTML(g.descripcion || '') + '</textarea></div>' +
-                    '<div class="form-group"><label>Ciudad</label><input type="text" id="editGrupoCiudad" value="' +
+                    '<div class="form-group"><label data-clave="grupos_ciudad">Ciudad</label><input type="text" id="editGrupoCiudad" value="' +
                     escapeHTML(g.ciudad || '') + '" /></div>' +
-                    '<div class="form-group"><label>Visibilidad</label><select id="editGrupoVisibilidad">' +
+                    '<div class="form-group"><label data-clave="grupos_visibilidad">Visibilidad</label><select id="editGrupoVisibilidad">' +
                     '<option value="publico"' + (g.visibilidad === 'publico' ? ' selected' : '') + '>Público</option>' +
                     '<option value="privado"' + (g.visibilidad === 'privado' ? ' selected' : '') + '>Privado</option>' +
                     '</select></div>' +
-                    '<div class="form-group"><label>Modo ingreso</label><select id="editGrupoModoIngreso">' +
+                    '<div class="form-group"><label data-clave="grupos_modo_ingreso">Modo ingreso</label><select id="editGrupoModoIngreso">' +
                     '<option value="abierto"' + (g.modo_ingreso === 'abierto' ? ' selected' : '') + '>Abierto</option>' +
                     '<option value="solicitud"' + (g.modo_ingreso === 'solicitud' ? ' selected' : '') +
                     '>Solicitud</option>' +
@@ -2019,7 +2015,7 @@
             } catch (e) {
                 console.error('Error cargando edición:', e);
                 container.innerHTML =
-                    '<div class="empty-state"><span class="icon">❌</span><h3>Error cargando datos del grupo</h3></div>';
+                    '<div class="empty-state"><span class="icon">❌</span><h3 data-clave="grupos_error_editar">Error cargando datos del grupo</h3></div>';
             }
         }
 
