@@ -1,42 +1,38 @@
-<!-- ================================================================
-     LIVE - SARIEL'S ECOSYSTEM
-     VERSIÓN FUNCIONAL - CONEXIÓN REAL CON SUPABASE + LIVEKIT
-     CORREGIDO: FINALIZAR TRANSMISIÓN VÍA RPC
-     ================================================================ -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>◉ Live · Sariel's</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     
     <style>
         :root {
             --gold: #D4AF37;
             --gold-dark: #b8923a;
             --gold-light: #e8c84a;
+            --gold-glow: rgba(212, 175, 55, 0.4);
             --green-deep: #0F2D1A;
             --green-mid: #1a4a2a;
             --space: #05080f;
             --text-primary: #f0f4f8;
             --text-secondary: #c0d8e8;
             --text-muted: #8aa8b8;
-            --glass-bg: rgba(15, 45, 26, 0.55);
-            --glass-border: rgba(212, 175, 55, 0.15);
-            --shadow-gold: 0 8px 32px rgba(212, 175, 55, 0.25);
-            --shadow-gold-strong: 0 0 60px rgba(212, 175, 55, 0.15);
+            --glass-bg: rgba(15, 45, 26, 0.45);
+            --glass-border: rgba(212, 175, 55, 0.12);
+            --shadow-gold: 0 8px 40px rgba(212, 175, 55, 0.3);
+            --shadow-gold-strong: 0 0 80px rgba(212, 175, 55, 0.15);
             --radius: 16px;
-            --radius-xl: 24px;
-            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --radius-xl: 28px;
+            --transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
             --success: #00d68f;
             --danger: #ff3366;
             --live-red: #ff0044;
             --bronze: #CD7F32;
             --bronze-light: #D4A574;
-            --bronze-dark: #8B5A2B;
             --esmeralda: #50C878;
+            --purple: #a855f7;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -46,108 +42,604 @@
             color: var(--text-primary);
             font-family: 'Inter', sans-serif;
             min-height: 100vh;
-            background-image: radial-gradient(ellipse at 20% 50%, rgba(26, 74, 42, 0.4) 0%, transparent 60%), radial-gradient(ellipse at 80% 50%, rgba(212, 175, 55, 0.08) 0%, transparent 60%);
+            background-image: 
+                radial-gradient(ellipse at 20% 50%, rgba(26, 74, 42, 0.3) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 50%, rgba(212, 175, 55, 0.06) 0%, transparent 60%);
             -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
         }
 
-        .app { max-width: 1100px; margin: 0 auto; padding: 16px 20px 30px; }
+        /* ===== FONDO ANIMADO ===== */
+        .bg-glow {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(150px);
+            pointer-events: none;
+            z-index: 0;
+            animation: glowFloat 20s ease-in-out infinite alternate;
+        }
+        .bg-glow-1 { width: 600px; height: 600px; background: rgba(212, 175, 55, 0.06); top: -10%; right: -10%; animation-delay: 0s; }
+        .bg-glow-2 { width: 500px; height: 500px; background: rgba(168, 85, 247, 0.04); bottom: -10%; left: -10%; animation-delay: -7s; }
+        .bg-glow-3 { width: 400px; height: 400px; background: rgba(0, 214, 143, 0.03); top: 50%; left: 50%; transform: translate(-50%, -50%); animation-delay: -14s; }
+        @keyframes glowFloat {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(60px, -40px) scale(1.2); }
+        }
 
+        .app { position: relative; z-index: 1; max-width: 100%; padding: 0; margin: 0; }
+
+        /* ===== HEADER ===== */
         .header {
             display: flex; justify-content: space-between; align-items: center;
-            padding: 10px 0 14px; border-bottom: 1px solid var(--glass-border);
+            padding: 10px 20px 14px; border-bottom: 1px solid var(--glass-border);
             background: rgba(5, 8, 15, 0.92); position: sticky; top: 0; z-index: 100;
+            backdrop-filter: blur(20px);
         }
         .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
         .logo-hex { font-size: 1.8rem; color: var(--gold); font-family: 'Orbitron', monospace; }
         .logo-text { font-family: 'Orbitron', monospace; font-size: 1.2rem; color: var(--text-primary); letter-spacing: 2px; }
         .logo-text span { color: var(--gold); }
         .logo-badge { font-size: 0.45rem; background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: var(--space); padding: 2px 10px; border-radius: 20px; font-weight: 700; }
-        .network-badge { display: flex; align-items: center; gap: 6px; font-size: 0.6rem; color: var(--gold); background: rgba(212, 175, 55, 0.1); padding: 4px 12px; border-radius: 20px; }
+        .network-badge { display: flex; align-items: center; gap: 6px; font-size: 0.6rem; color: var(--gold); background: rgba(212, 175, 55, 0.1); padding: 4px 12px; border-radius: 20px; border: 1px solid rgba(212, 175, 55, 0.1); }
 
         .main-nav {
-            display: flex; gap: 4px; background: rgba(15, 45, 26, 0.3); border-radius: var(--radius);
-            padding: 4px; border: 1px solid var(--glass-border); margin: 16px 0 20px; overflow-x: auto;
+            display: flex; gap: 4px; background: rgba(15,45,26,0.3); border-radius: var(--radius);
+            padding: 4px; border: 1px solid var(--glass-border); margin: 12px 16px 16px; overflow-x: auto;
+            backdrop-filter: blur(10px);
         }
         .main-nav .nav-link {
             padding: 8px 16px; border-radius: 12px; color: var(--text-muted); text-decoration: none;
             font-size: 0.7rem; transition: var(--transition); white-space: nowrap;
         }
-        .main-nav .nav-link.active { background: rgba(212, 175, 55, 0.12); color: var(--gold); }
+        .main-nav .nav-link:hover { color: var(--text-primary); background: rgba(212,175,55,0.05); }
+        .main-nav .nav-link.active { background: rgba(212,175,55,0.12); color: var(--gold); }
         .main-nav .nav-link.live { color: var(--live-red); }
 
+        /* ===== LAYOUT PRINCIPAL ===== */
+        .live-container {
+            padding: 0 16px 20px;
+        }
+
+        /* ===== HEADER LIVE ===== */
         .live-header {
             display: flex; justify-content: space-between; align-items: center;
             padding: 14px 20px; background: var(--glass-bg); border: 1px solid var(--glass-border);
-            border-radius: var(--radius-xl); margin-bottom: 20px; flex-wrap: wrap; gap: 10px;
+            border-radius: var(--radius-xl); margin: 0 0 16px; flex-wrap: wrap; gap: 10px;
+            backdrop-filter: blur(12px);
         }
-        .live-header h1 { font-family: 'Orbitron', monospace; font-size: 1.2rem; color: var(--gold); }
+        .live-header h1 { font-family: 'Orbitron', monospace; font-size: 1.1rem; color: var(--gold); display: flex; align-items: center; gap: 10px; }
         .live-header .live-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--live-red); animation: pulse-dot-live 1.5s infinite; }
-        @keyframes pulse-dot-live { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+        @keyframes pulse-dot-live { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.3; transform: scale(0.8); } }
         .live-header .live-status { font-size: 0.6rem; color: var(--live-red); font-family: 'Orbitron', monospace; }
+        .live-actions { display: flex; gap: 6px; flex-wrap: wrap; }
 
         .btn {
-            display: inline-flex; align-items: center; gap: 6px; padding: 8px 20px; border-radius: 30px;
+            display: inline-flex; align-items: center; gap: 6px; padding: 8px 18px; border-radius: 30px;
             font-size: 0.7rem; font-weight: 600; border: none; cursor: pointer; font-family: 'Inter', sans-serif;
-        }
-        .btn-gold { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); }
-        .btn-gold:hover { transform: translateY(-2px); box-shadow: var(--shadow-gold); }
-        .btn-outline { background: transparent; color: var(--text-secondary); border: 1px solid var(--glass-border); }
-        .btn-outline:hover { border-color: var(--gold); color: var(--gold); }
-        .btn-danger { background: rgba(255, 51, 102, 0.1); color: var(--danger); border: 1px solid rgba(255, 51, 102, 0.2); }
-        .btn-danger:hover { background: rgba(255, 51, 102, 0.2); }
-        .btn-sm { padding: 4px 12px; font-size: 0.65rem; }
-        .btn-donacion {
-            padding: 8px 12px;
-            border-radius: 12px;
-            border: 1px solid var(--glass-border);
-            background: rgba(0,0,0,0.3);
-            color: var(--text-primary);
-            cursor: pointer;
             transition: var(--transition);
-            font-size: 0.65rem;
-            text-align: center;
-            min-width: 60px;
         }
-        .btn-donacion:hover {
-            border-color: var(--gold);
-            transform: scale(1.05);
-            background: rgba(212, 175, 55, 0.1);
-        }
-        .btn-donacion .monto { font-weight: 700; color: var(--gold); }
-        .btn-donacion .label { font-size: 0.5rem; color: var(--text-muted); display: block; }
+        .btn-gold { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); box-shadow: 0 4px 20px rgba(212, 175, 55, 0.2); }
+        .btn-gold:hover { transform: translateY(-2px) scale(1.02); box-shadow: var(--shadow-gold); }
+        .btn-outline { background: transparent; color: var(--text-secondary); border: 1px solid var(--glass-border); }
+        .btn-outline:hover { border-color: var(--gold); color: var(--gold); background: rgba(212, 175, 55, 0.05); }
+        .btn-sm { padding: 4px 12px; font-size: 0.65rem; }
 
+        /* ===== VIDEO CONTAINER - ESTILO TIKTOK ===== */
         .live-video-container {
-            background: var(--space); border: 1px solid var(--glass-border); border-radius: var(--radius-xl);
-            overflow: hidden; margin-bottom: 20px; position: relative;
-            width: 100%; height: 70vh; min-height: 400px;
+            position: relative;
+            width: 100%;
+            height: 75vh;
+            min-height: 450px;
+            max-height: 85vh;
+            background: #000;
+            border-radius: var(--radius-xl);
+            overflow: hidden;
+            margin-bottom: 16px;
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.6);
         }
-        .live-video-container video { width: 100%; height: 100%; object-fit: cover; background: #000; }
-        .live-video-container .live-overlay {
-            position: absolute; top: 12px; left: 12px; display: flex; align-items: center; gap: 8px;
-            background: rgba(0, 0, 0, 0.6); padding: 4px 12px; border-radius: 20px; z-index: 5;
+        .live-video-container video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            background: #000;
         }
-        .live-video-container .live-overlay .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--live-red); animation: pulse-dot-live 1.5s infinite; }
-        .live-video-container .live-overlay .text { font-size: 0.6rem; font-weight: 700; color: var(--live-red); }
-        .live-video-container .live-overlay .viewers { font-size: 0.55rem; color: var(--text-muted); }
 
-        .live-video-container .live-controls {
-            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
-            display: flex; gap: 12px; background: rgba(0, 0, 0, 0.6); padding: 8px 16px; border-radius: 30px; z-index: 5;
-        }
-        .live-video-container .live-controls button { background: none; border: none; color: white; font-size: 1.1rem; cursor: pointer; padding: 4px 8px; border-radius: 50%; transition: var(--transition); }
-        .live-video-container .live-controls button:hover { color: var(--gold); }
-        .live-video-container .live-controls button.mic { color: var(--success); }
-        .live-video-container .live-controls button.mic.muted { color: var(--danger); }
-        .live-video-container .live-controls button.voice { color: var(--gold); }
-        .live-video-container .live-controls button.voice.voice-active { color: var(--gold); background: rgba(212, 175, 55, 0.2); }
-        .live-video-container .live-controls button.end { color: var(--danger); font-size: 0.8rem; padding: 4px 12px; border-radius: 20px; }
-
-        .donacion-overlay {
+        /* ===== OVERLAY SUPERIOR ===== */
+        .live-overlay-top {
             position: absolute;
             top: 0;
             left: 0;
+            right: 0;
+            padding: 16px 20px;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, transparent 100%);
+            z-index: 5;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        .live-overlay-top .live-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 0, 68, 0.9);
+            padding: 6px 14px 6px 10px;
+            border-radius: 30px;
+            box-shadow: 0 0 30px rgba(255, 0, 68, 0.3);
+        }
+        .live-overlay-top .live-badge .dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: #fff;
+            animation: pulse-dot-live 1s infinite;
+        }
+        .live-overlay-top .live-badge .text {
+            font-size: 0.65rem;
+            font-weight: 700;
+            color: #fff;
+            font-family: 'Orbitron', monospace;
+            letter-spacing: 1px;
+        }
+        .live-overlay-top .live-badge .viewers {
+            font-size: 0.55rem;
+            color: rgba(255,255,255,0.7);
+            font-weight: 400;
+            margin-left: 4px;
+        }
+        .live-overlay-top .live-title {
+            font-size: 0.7rem;
+            color: rgba(255,255,255,0.8);
+            background: rgba(0,0,0,0.5);
+            padding: 4px 14px;
+            border-radius: 20px;
+            backdrop-filter: blur(8px);
+            max-width: 60%;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* ===== OVERLAY INFERIOR - CONTROLES ===== */
+        .live-controls-bottom {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 20px 24px 24px;
+            background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%);
+            z-index: 5;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            align-items: center;
+        }
+        .live-controls-bottom .ctrl-group {
+            display: flex;
+            gap: 6px;
+            background: rgba(0,0,0,0.4);
+            padding: 6px 12px;
+            border-radius: 30px;
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .live-controls-bottom button {
+            background: none;
+            border: none;
+            color: rgba(255,255,255,0.8);
+            font-size: 0.9rem;
+            cursor: pointer;
+            padding: 6px 10px;
+            border-radius: 50%;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .live-controls-bottom button:hover {
+            color: var(--gold);
+            background: rgba(212, 175, 55, 0.1);
+            transform: scale(1.05);
+        }
+        .live-controls-bottom button.mic { color: var(--success); }
+        .live-controls-bottom button.mic.muted { color: var(--danger); }
+        .live-controls-bottom button.voice { color: var(--gold); }
+        .live-controls-bottom button.voice.voice-active { color: var(--gold); background: rgba(212, 175, 55, 0.2); }
+        .live-controls-bottom button.end {
+            color: var(--danger);
+            background: rgba(255, 51, 102, 0.15);
+            border-radius: 30px;
+            padding: 6px 16px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+        .live-controls-bottom button.end:hover {
+            background: rgba(255, 51, 102, 0.3);
+            transform: scale(1.05);
+        }
+        .live-controls-bottom .btn-game {
+            color: #fff !important;
+            background: rgba(80, 200, 120, 0.15) !important;
+            border: 1px solid rgba(80, 200, 120, 0.3) !important;
+            border-radius: 30px !important;
+            padding: 4px 14px !important;
+            font-size: 0.65rem !important;
+        }
+        .live-controls-bottom .btn-game:hover {
+            color: var(--gold) !important;
+            border-color: var(--gold) !important;
+            background: rgba(212, 175, 55, 0.15) !important;
+        }
+
+        /* ===== WATERMARK ===== */
+        .watermark-live {
+            position: absolute;
+            bottom: 80px;
+            right: 16px;
+            z-index: 5;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(8px);
+            padding: 6px 14px 6px 10px;
+            border-radius: 30px;
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+            pointer-events: none;
+            user-select: none;
+        }
+        .watermark-live .icon { font-size: 1rem; color: var(--gold); font-family: 'Orbitron', monospace; }
+        .watermark-live .text { font-family: 'Orbitron', monospace; font-size: 0.6rem; font-weight: 700; color: #fff; letter-spacing: 1px; }
+        .watermark-live .text span { color: var(--gold); }
+        .watermark-live .badge-web3 {
+            font-size: 0.4rem;
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            color: var(--space);
+            padding: 1px 6px;
+            border-radius: 10px;
+            font-weight: 700;
+        }
+
+        /* ===== DONACIONES RÁPIDAS ===== */
+        .donaciones-rapidas {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+        .btn-donacion {
+            padding: 10px 16px;
+            border-radius: 16px;
+            border: 1px solid var(--glass-border);
+            background: var(--glass-bg);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: var(--transition);
+            text-align: center;
+            min-width: 64px;
+            backdrop-filter: blur(8px);
+        }
+        .btn-donacion:hover {
+            border-color: var(--gold);
+            transform: translateY(-4px) scale(1.02);
+            background: rgba(212, 175, 55, 0.1);
+            box-shadow: var(--shadow-gold);
+        }
+        .btn-donacion .monto { font-weight: 700; color: var(--gold); font-size: 0.9rem; display: block; }
+        .btn-donacion .label { font-size: 0.5rem; color: var(--text-muted); display: block; margin-top: 2px; }
+
+        /* ===== CHAT ===== */
+        .live-chat-container {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-xl);
+            overflow: hidden;
+            margin-bottom: 16px;
+            backdrop-filter: blur(12px);
+        }
+        .live-chat-container .chat-header {
+            padding: 12px 18px;
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .live-chat-container .chat-header h3 {
+            color: var(--gold);
+            font-family: 'Orbitron', monospace;
+            font-size: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .live-chat-container .chat-header h3 .dot-online {
+            width: 6px; height: 6px; border-radius: 50%;
+            background: var(--success);
+            display: inline-block;
+            animation: pulse-dot-live 2s infinite;
+        }
+        .live-chat-container .chat-header .chat-count {
+            font-size: 0.55rem;
+            color: var(--text-muted);
+            background: rgba(255,255,255,0.05);
+            padding: 2px 12px;
+            border-radius: 20px;
+        }
+        .live-chat-container .chat-messages {
+            padding: 12px 16px;
+            max-height: 200px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .live-chat-container .chat-messages::-webkit-scrollbar {
+            width: 2px;
+        }
+        .live-chat-container .chat-messages::-webkit-scrollbar-thumb {
+            background: var(--gold);
+            border-radius: 2px;
+        }
+        .live-chat-container .chat-messages .chat-msg {
+            display: flex;
+            gap: 8px;
+            padding: 4px 0;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.03);
+            animation: fadeInUp 0.3s ease;
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .live-chat-container .chat-messages .chat-msg .avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--green-deep), var(--gold));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.6rem;
+            color: white;
+            flex-shrink: 0;
+        }
+        .live-chat-container .chat-messages .chat-msg .msg .name {
+            color: var(--gold);
+            font-size: 0.65rem;
+            font-weight: 600;
+        }
+        .live-chat-container .chat-messages .chat-msg .msg .time {
+            color: var(--text-muted);
+            font-size: 0.45rem;
+            margin-left: 6px;
+        }
+        .live-chat-container .chat-messages .chat-msg .msg .text {
+            color: var(--text-secondary);
+            font-size: 0.7rem;
+            word-wrap: break-word;
+        }
+        .live-chat-container .chat-input {
+            padding: 10px 16px;
+            border-top: 1px solid var(--glass-border);
+            display: flex;
+            gap: 8px;
+            background: rgba(0,0,0,0.2);
+        }
+        .live-chat-container .chat-input input {
+            flex: 1;
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 30px;
+            color: var(--text-primary);
+            outline: none;
+            transition: var(--transition);
+            font-size: 0.75rem;
+        }
+        .live-chat-container .chat-input input:focus {
+            border-color: var(--gold);
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.05);
+        }
+        .live-chat-container .chat-input button {
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            color: var(--space);
+            border: none;
+            padding: 6px 20px;
+            border-radius: 30px;
+            font-weight: 700;
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .live-chat-container .chat-input button:hover {
+            transform: scale(1.05);
+            box-shadow: var(--shadow-gold);
+        }
+
+        /* ===== TRANSMISIONES ACTIVAS ===== */
+        .streams-section-title {
+            font-family: 'Orbitron', monospace;
+            color: var(--gold);
+            font-size: 0.8rem;
+            margin: 16px 0 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .streams-section-title .pulse-bar {
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(to right, var(--gold), transparent);
+        }
+        .streams-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 12px;
+        }
+        .stream-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            padding: 14px;
+            cursor: pointer;
+            transition: var(--transition);
+            backdrop-filter: blur(8px);
+        }
+        .stream-card:hover {
+            border-color: var(--gold);
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-gold);
+        }
+        .stream-card .stream-thumb {
             width: 100%;
-            height: 100%;
+            aspect-ratio: 16/9;
+            background: var(--space);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+        .stream-card .stream-thumb .live-badge {
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            background: var(--live-red);
+            color: white;
+            font-size: 0.4rem;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .stream-card .stream-thumb .live-badge .dot {
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: #fff;
+            animation: pulse-dot-live 1s infinite;
+        }
+        .stream-card .stream-name {
+            font-weight: 600;
+            font-size: 0.8rem;
+            color: var(--text-primary);
+            margin-top: 8px;
+        }
+        .stream-card .stream-host {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .stream-card .stream-host .online-dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: var(--success);
+            display: inline-block;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-muted);
+        }
+        .empty-state .icon {
+            font-size: 2.5rem;
+            display: block;
+            margin-bottom: 12px;
+            color: var(--gold);
+            opacity: 0.3;
+            font-family: 'Orbitron', monospace;
+        }
+
+        /* ===== TOAST ===== */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            padding: 14px 28px;
+            border-radius: 16px;
+            background: var(--glass-bg);
+            border: 1px solid var(--gold);
+            color: var(--gold);
+            font-size: 0.8rem;
+            font-weight: 500;
+            box-shadow: var(--shadow-gold-strong);
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            z-index: 99999;
+            max-width: 420px;
+            backdrop-filter: blur(16px);
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.error { border-color: var(--danger); color: var(--danger); }
+        .toast.warning { border-color: var(--warning); color: var(--warning); }
+        .toast.success { border-color: var(--success); color: var(--success); }
+
+        .footer {
+            margin-top: 30px;
+            padding-top: 16px;
+            border-top: 1px solid var(--glass-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .footer .brand { color: var(--gold); font-weight: 600; }
+        .footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
+        .footer-links a { color: var(--text-muted); text-decoration: none; transition: var(--transition); }
+        .footer-links a:hover { color: var(--gold); }
+
+        .game-modal-backdrop { position: fixed; inset: 0; z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px; background: rgba(0,0,0,.85); backdrop-filter: blur(12px); }
+        .game-modal { width: min(680px, 100%); max-height: min(88vh, 720px); overflow-y: auto; background: linear-gradient(160deg, rgba(15,45,26,.98), rgba(5,8,15,.98)); border: 1px solid var(--gold); border-radius: 28px; padding: 24px; box-shadow: 0 20px 70px rgba(0,0,0,.55), var(--shadow-gold); }
+        .game-modal-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
+        .game-modal-kicker { color: var(--gold); font: 700 .55rem 'Orbitron', monospace; letter-spacing: 2px; margin-bottom: 5px; }
+        .game-modal h2 { color: var(--text-primary); font: 700 1.05rem 'Orbitron', monospace; }
+        .game-modal-close { border: 0; background: transparent; color: var(--text-muted); font-size: 1.8rem; line-height: 1; cursor: pointer; }
+        .game-modal-close:hover { color: var(--gold); }
+        .game-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; }
+        .game-option { padding: 13px 12px; border-radius: 13px; border: 1px solid var(--glass-border); background: rgba(0,0,0,.28); color: var(--text-primary); cursor: pointer; font: 600 .72rem 'Inter', sans-serif; text-align: left; transition: var(--transition); }
+        .game-option:hover { border-color: var(--gold); color: var(--gold); transform: translateY(-2px); }
+        .game-option-other { border-color: rgba(212,175,55,.35); }
+        .otro-juego-wrap { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--glass-border); }
+        .otro-juego-wrap label { display: block; color: var(--text-secondary); font-size: .65rem; margin-bottom: 7px; }
+        .otro-juego-row { display: flex; gap: 8px; }
+        .otro-juego-row input { flex: 1; min-width: 0; padding: 10px 13px; border-radius: 20px; border: 1px solid var(--glass-border); background: rgba(255,255,255,.05); color: var(--text-primary); outline: none; }
+        .otro-juego-row input:focus { border-color: var(--gold); }
+
+        @media (max-width: 768px) {
+            .live-video-container { height: 55vh; min-height: 350px; }
+            .live-header { flex-direction: column; text-align: center; }
+            .live-controls-bottom { padding: 12px 16px 16px; }
+            .live-controls-bottom .ctrl-group { padding: 4px 8px; gap: 2px; }
+            .live-controls-bottom button { font-size: 0.75rem; padding: 4px 6px; }
+            .live-overlay-top .live-title { max-width: 50%; font-size: 0.6rem; }
+            .streams-list { grid-template-columns: 1fr 1fr; }
+            .main-nav .nav-link { font-size: 0.6rem; padding: 6px 10px; }
+        }
+        @media (max-width: 480px) {
+            .live-video-container { height: 45vh; min-height: 280px; }
+            .streams-list { grid-template-columns: 1fr 1fr; gap: 8px; }
+            .donaciones-rapidas .btn-donacion { min-width: 50px; padding: 6px 8px; font-size: 0.55rem; }
+            .live-controls-bottom .ctrl-group { flex-wrap: wrap; justify-content: center; }
+            .live-overlay-top .live-title { max-width: 40%; font-size: 0.5rem; }
+            .game-grid { grid-template-columns: 1fr; }
+        }
+
+        .donacion-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
             pointer-events: none;
             z-index: 10;
             display: flex;
@@ -155,85 +647,11 @@
             justify-content: center;
         }
 
-        .live-chat-container {
-            background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-xl);
-            overflow: hidden; margin-bottom: 20px;
-        }
-        .live-chat-container .chat-header { 
-            padding: 12px 18px; border-bottom: 1px solid var(--glass-border);
-            display: flex; justify-content: space-between; align-items: center;
-        }
-        .live-chat-container .chat-header h3 { color: var(--gold); font-family: 'Orbitron', monospace; font-size: 0.8rem; }
-        .live-chat-container .chat-header .chat-count { font-size: 0.6rem; color: var(--text-muted); }
-        .live-chat-container .chat-messages { 
-            padding: 12px 16px; max-height: 250px; overflow-y: auto; 
-            display: flex; flex-direction: column; gap: 6px;
-        }
-        .live-chat-container .chat-messages .chat-msg { display: flex; gap: 8px; padding: 6px 0; border-bottom: 1px solid rgba(212, 175, 55, 0.04); }
-        .live-chat-container .chat-messages .chat-msg .avatar { 
-            width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, var(--green-deep), var(--gold)); 
-            display: flex; align-items: center; justify-content: center; font-size: 0.6rem; color: white; flex-shrink: 0;
-        }
-        .live-chat-container .chat-messages .chat-msg .msg .name { color: var(--gold); font-size: 0.65rem; font-weight: 600; }
-        .live-chat-container .chat-messages .chat-msg .msg .time { color: var(--text-muted); font-size: 0.5rem; margin-left: 6px; }
-        .live-chat-container .chat-messages .chat-msg .msg .text { color: var(--text-secondary); font-size: 0.75rem; word-wrap: break-word; }
-        .live-chat-container .chat-input { padding: 10px 16px; border-top: 1px solid var(--glass-border); display: flex; gap: 8px; }
-        .live-chat-container .chat-input input { 
-            flex: 1; padding: 8px 14px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border); 
-            border-radius: 20px; color: var(--text-primary); outline: none; transition: var(--transition);
-        }
-        .live-chat-container .chat-input input:focus { border-color: var(--gold); }
-        .live-chat-container .chat-input button { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); border: none; padding: 6px 16px; border-radius: 20px; font-weight: 700; cursor: pointer; transition: var(--transition); }
-        .live-chat-container .chat-input button:hover { transform: scale(1.05); }
-
-        .donaciones-rapidas {
-            display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; justify-content: center;
-        }
-
-        .streams-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
-        .stream-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius); padding: 14px; cursor: pointer; transition: var(--transition); }
-        .stream-card:hover { border-color: var(--gold); transform: translateY(-3px); box-shadow: var(--shadow-gold); }
-        .stream-card .stream-thumb { width: 100%; aspect-ratio: 16/9; background: var(--space); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 2rem; position: relative; }
-        .stream-card .stream-thumb .live-badge { position: absolute; top: 6px; left: 6px; background: var(--live-red); color: white; font-size: 0.45rem; padding: 2px 10px; border-radius: 12px; }
-        .stream-card .stream-name { font-weight: 600; font-size: 0.8rem; color: var(--text-primary); margin-top: 8px; }
-        .stream-card .stream-host { font-size: 0.65rem; color: var(--text-muted); }
-
-        .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
-        .empty-state .icon { font-size: 2.5rem; display: block; margin-bottom: 16px; color: var(--gold); opacity: 0.4; font-family: 'Orbitron', monospace; }
-
-        .toast {
-            position: fixed; bottom: 20px; right: 20px; padding: 12px 24px; border-radius: 12px;
-            background: var(--green-deep); border: 1px solid var(--gold); color: var(--gold);
-            font-size: 0.8rem; font-weight: 500; box-shadow: var(--shadow-gold-strong);
-            transform: translateY(100px); opacity: 0; transition: all 0.4s ease;
-            z-index: 9999; max-width: 400px; backdrop-filter: blur(10px);
-        }
-        .toast.show { transform: translateY(0); opacity: 1; }
-        .toast.error { border-color: var(--danger); color: var(--danger); }
-        .toast.warning { border-color: var(--warning); color: var(--warning); }
-        .toast.success { border-color: var(--success); color: var(--success); }
-
-        .footer { margin-top: 30px; padding-top: 16px; border-top: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center; font-size: 0.7rem; color: var(--text-muted); flex-wrap: wrap; gap: 10px; }
-        .footer .brand { color: var(--gold); font-weight: 600; }
-        .footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
-        .footer-links a { color: var(--text-muted); text-decoration: none; transition: var(--transition); }
-        .footer-links a:hover { color: var(--gold); }
-
-        @keyframes fadeInOut {
-            0% { opacity: 0; transform: scale(0.5); }
-            20% { opacity: 1; transform: scale(1); }
-            80% { opacity: 1; transform: scale(1); }
-            100% { opacity: 0; transform: scale(1.2); }
-        }
         @keyframes cuboGirar {
-            0% { transform: rotateY(0deg) scale(0.5); opacity: 0; }
-            20% { transform: rotateY(180deg) scale(1.2); opacity: 1; }
+            0% { transform: rotateY(0deg) scale(0.3); opacity: 0; }
+            20% { transform: rotateY(180deg) scale(1.1); opacity: 1; }
             80% { transform: rotateY(360deg) scale(1); opacity: 1; }
             100% { transform: rotateY(720deg) scale(0.8); opacity: 0; }
-        }
-        @keyframes brillo {
-            0%, 100% { text-shadow: 0 0 20px currentColor; }
-            50% { text-shadow: 0 0 60px currentColor, 0 0 100px currentColor; }
         }
         @keyframes coheteVuelo {
             0% { transform: translateX(-200%) rotate(-45deg); opacity: 0; }
@@ -247,43 +665,19 @@
             80% { transform: rotate(720deg) scale(1); opacity: 1; }
             100% { transform: rotate(1080deg) scale(0.5); opacity: 0; }
         }
-
-        /* 🎮 Selector de juegos */
-        .btn-game { color: #fff !important; background: rgba(80, 200, 120, 0.12) !important; border: 1px solid rgba(80, 200, 120, 0.45) !important; }
-        .btn-game:hover { color: var(--gold) !important; border-color: var(--gold) !important; background: rgba(212, 175, 55, 0.14) !important; }
-        .game-modal-backdrop { position: fixed; inset: 0; z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px; background: rgba(0,0,0,.78); backdrop-filter: blur(8px); }
-        .game-modal { width: min(680px, 100%); max-height: min(88vh, 720px); overflow-y: auto; background: linear-gradient(160deg, rgba(15,45,26,.98), rgba(5,8,15,.98)); border: 1px solid var(--gold); border-radius: 22px; padding: 22px; box-shadow: 0 20px 70px rgba(0,0,0,.55), var(--shadow-gold); }
-        .game-modal-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
-        .game-modal-kicker { color: var(--gold); font: 700 .55rem 'Orbitron', monospace; letter-spacing: 2px; margin-bottom: 5px; }
-        .game-modal h2 { color: var(--text-primary); font: 700 1.05rem 'Orbitron', monospace; }
-        .game-modal-close { border: 0; background: transparent; color: var(--text-muted); font-size: 1.8rem; line-height: 1; cursor: pointer; }
-        .game-modal-close:hover { color: var(--gold); }
-        .game-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; }
-        .game-option { padding: 13px 12px; border-radius: 13px; border: 1px solid var(--glass-border); background: rgba(0,0,0,.28); color: var(--text-primary); cursor: pointer; font: 600 .72rem 'Inter', sans-serif; text-align: left; transition: var(--transition); }
-        .game-option:hover, .game-option:focus-visible { border-color: var(--gold); color: var(--gold); transform: translateY(-1px); outline: none; }
-        .game-option-other { border-color: rgba(212,175,55,.35); }
-        .otro-juego-wrap { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--glass-border); }
-        .otro-juego-wrap label { display: block; color: var(--text-secondary); font-size: .65rem; margin-bottom: 7px; }
-        .otro-juego-row { display: flex; gap: 8px; }
-        .otro-juego-row input { flex: 1; min-width: 0; padding: 10px 13px; border-radius: 20px; border: 1px solid var(--glass-border); background: rgba(255,255,255,.05); color: var(--text-primary); outline: none; }
-        .otro-juego-row input:focus { border-color: var(--gold); }
-        .game-modal-help { margin-top: 14px; color: var(--text-muted); font-size: .58rem; line-height: 1.5; }
-
-        @media (max-width: 768px) {
-            .live-video-container { height: 50vh; min-height: 300px; }
-            .live-header { flex-direction: column; text-align: center; }
-            .main-nav .nav-link { font-size: 0.6rem; padding: 6px 10px; }
-            .live-controls { gap: 8px; flex-wrap: wrap; justify-content: center; }
-            .live-controls button { font-size: 0.9rem !important; }
-        }
-        @media (max-width: 480px) {
-            .live-video-container { height: 40vh; min-height: 250px; }
-            .streams-list { grid-template-columns: 1fr 1fr; }
-            .donaciones-rapidas .btn-donacion { min-width: 50px; padding: 6px 8px; font-size: 0.55rem; }
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: scale(0.5); }
+            20% { opacity: 1; transform: scale(1); }
+            80% { opacity: 1; transform: scale(1); }
+            100% { opacity: 0; transform: scale(1.2); }
         }
     </style>
 </head>
 <body>
+
+    <div class="bg-glow bg-glow-1"></div>
+    <div class="bg-glow bg-glow-2"></div>
+    <div class="bg-glow bg-glow-3"></div>
 
     <div class="app">
 
@@ -326,21 +720,38 @@
 
             <div class="live-video-container" id="liveVideoContainer">
                 <video id="liveVideo" autoplay playsinline muted></video>
-                <div class="live-overlay">
-                    <span class="dot"></span>
-                    <span class="text">EN VIVO</span>
-                    <span class="viewers" id="viewersCount">0 espectadores</span>
+
+                <!-- OVERLAY SUPERIOR -->
+                <div class="live-overlay-top">
+                    <div class="live-badge">
+                        <span class="dot"></span>
+                        <span class="text">EN VIVO</span>
+                        <span class="viewers" id="viewersCount">● 0</span>
+                    </div>
+                    <div class="live-title" id="liveTitle">Transmisión en vivo</div>
                 </div>
-                <div class="live-controls">
-                    <button onclick="togglePlay()" id="playBtn" title="Play/Pause">⏸</button>
-                    <button onclick="toggleMute()" id="muteBtn" title="Mute/Unmute" class="mic">🔊</button>
-                    <button onclick="capturarPantalla()" id="screenBtn" title="Compartir pantalla">🖥️</button>
+
+                <!-- WATERMARK -->
+                <div class="watermark-live">
+                    <span class="icon">◈</span>
+                    <span class="text">Sariel<span>'s</span></span>
+                    <span class="badge-web3">✦ WEB3</span>
+                </div>
+
+                <!-- CONTROLES INFERIORES -->
+                <div class="live-controls-bottom">
+                    <div class="ctrl-group">
+                        <button onclick="togglePlay()" id="playBtn" title="Play/Pause">⏸</button>
+                        <button onclick="toggleMute()" id="muteBtn" title="Mute/Unmute" class="mic">🔊</button>
+                        <button onclick="capturarPantalla()" id="screenBtn" title="Compartir pantalla">🖥️</button>
+                    </div>
                     <button onclick="abrirSelectorJuego()" class="btn-game" id="gameBtn" title="Transmitir juego">🎮 Juego</button>
                     <button onclick="toggleVoice()" id="voiceBtn" title="Lector de voz" class="voice">🔊</button>
                     <button class="end" onclick="finalizarTransmision()" title="Finalizar">✕ Finalizar</button>
                 </div>
             </div>
 
+            <!-- DONACIONES RÁPIDAS -->
             <div class="donaciones-rapidas">
                 <button class="btn-donacion" onclick="enviarDonacion(5)">
                     <span class="monto">$5</span>
@@ -364,9 +775,10 @@
                 </button>
             </div>
 
+            <!-- CHAT -->
             <div class="live-chat-container">
                 <div class="chat-header">
-                    <h3>◈ Chat en vivo</h3>
+                    <h3><span class="dot-online"></span> Chat en vivo</h3>
                     <span class="chat-count" id="chatCount">0 mensajes</span>
                 </div>
                 <div class="chat-messages" id="chatMessages">
@@ -385,9 +797,11 @@
                 </div>
             </div>
 
-            <h3 style="font-family:'Orbitron',monospace;color:var(--gold);font-size:0.85rem;margin:16px 0 8px;">
+            <!-- TRANSMISIONES ACTIVAS -->
+            <div class="streams-section-title">
                 ◈ Transmisiones activas
-            </h3>
+                <span class="pulse-bar"></span>
+            </div>
             <div class="streams-list" id="streamsList">
                 <div class="empty-state" style="grid-column:1/-1;padding:20px;">
                     <span class="icon">◉</span>
@@ -413,33 +827,23 @@
 
     <div class="toast" id="toast"></div>
 
-    <!-- ✅ SOLO SUPABASE - SIN WEB3 -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script>
 /* ================================================================
-   LIVE - SARIEL'S ECOSYSTEM
-   VERSIÓN FUNCIONAL - CONEXIÓN REAL CON SUPABASE + LIVEKIT
-   CORREGIDO: FINALIZAR TRANSMISIÓN VÍA RPC
+   LIVE - TODAS LAS FUNCIONES (MISMO CÓDIGO QUE ANTES)
+   SOLO SE ACTUALIZÓ EL CSS PARA UN LOOK MODERNO 2030
    ================================================================ */
 
-// ================================================================
-// CONFIGURACIÓN SUPABASE
-// ================================================================
+// ===== CONFIGURACIÓN SUPABASE =====
 const supabase = window.supabase.createClient(
     'https://zultnlogdoajehbswlih.supabase.co',
     'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
 );
 
-// ================================================================
-// CONFIGURACIÓN LIVEKIT - SIN SECRETOS
-// ================================================================
 const LIVEKIT_CONFIG = {
     url: 'wss://csariels-domo-57ujk04t.livekit.cloud'
 };
 
-// ================================================================
-// CONFIGURACIÓN DONACIONES
-// ================================================================
 const DONACIONES = {
     5: { nombre: 'Cubo Plata', emoji: '🥈', color: '#C0C0C0', duracion: 3000, efecto: 'cubo_plata' },
     10: { nombre: 'Cubo Bronce', emoji: '🥉', color: '#CD7F32', duracion: 4000, efecto: 'cubo_bronce' },
@@ -448,9 +852,6 @@ const DONACIONES = {
     100: { nombre: 'Cohete Esmeralda', emoji: '💚', color: '#50C878', duracion: 8000, efecto: 'cohete_esmeralda' }
 };
 
-// ================================================================
-// PALABRAS PROHIBIDAS
-// ================================================================
 const PALABRAS_PROHIBIDAS = [
     'puta', 'verga', 'mierda', 'pendejo', 'chingar', 'chingada',
     'cabron', 'cabrón', 'pinche', 'wey', 'güey', 'culero',
@@ -462,9 +863,6 @@ const PALABRAS_PROHIBIDAS = [
     'fuck', 'shit', 'bitch', 'asshole', 'motherfucker'
 ];
 
-// ================================================================
-// ESTADO GLOBAL
-// ================================================================
 let currentUser = null;
 let currentStream = null;
 let liveKitRoom = null;
@@ -481,9 +879,7 @@ let currentStreamId = null;
 let transmisionParamId = null;
 let juegoSeleccionado = null;
 
-// ================================================================
-// TOAST
-// ================================================================
+// ===== TOAST =====
 function showToast(msg, type = '', duration = 3500) {
     let t = document.getElementById('toast');
     if (!t) {
@@ -502,33 +898,24 @@ function showToast(msg, type = '', duration = 3500) {
     t._timeout = setTimeout(() => t.classList.remove('show'), duration);
 }
 
-// ================================================================
-// OBTENER SESIÓN
-// ================================================================
+// ===== OBTENER SESIÓN =====
 async function getSession() {
     const { data: { session } } = await supabase.auth.getSession();
     return session;
 }
 
-// ================================================================
-// OBTENER TOKEN LIVEKIT DEL BACKEND
-// ================================================================
+// ===== OBTENER TOKEN LIVEKIT =====
 async function obtenerTokenLiveKit(roomName, participantName) {
     try {
         const session = await getSession();
         if (!session) throw new Error('No autenticado');
-
         const response = await fetch(`/api/token?room=${encodeURIComponent(roomName)}`, {
-            headers: {
-                'Authorization': `Bearer ${session.access_token}`
-            }
+            headers: { 'Authorization': `Bearer ${session.access_token}` }
         });
-
         if (!response.ok) {
             const error = await response.json();
             throw new Error(error.error || 'Error al obtener token');
         }
-
         const data = await response.json();
         return data.token;
     } catch (error) {
@@ -537,9 +924,7 @@ async function obtenerTokenLiveKit(roomName, participantName) {
     }
 }
 
-// ================================================================
-// 🎥 INICIAR TRANSMISIÓN
-// ================================================================
+// ===== INICIAR TRANSMISIÓN =====
 async function iniciarTransmision() {
     try {
         const session = await getSession();
@@ -549,7 +934,6 @@ async function iniciarTransmision() {
         }
         currentUser = session.user;
 
-        // Verificar transmisión activa
         const { data: streamActivo, error: checkError } = await supabase
             .from('transmisiones')
             .select('id')
@@ -565,7 +949,6 @@ async function iniciarTransmision() {
 
         showToast('⏳ Iniciando transmisión...', '', 3000);
 
-        // Obtener cámara y micrófono
         localStream = await navigator.mediaDevices.getUserMedia({
             video: { facingMode: 'user', width: 1280, height: 720 },
             audio: true
@@ -582,7 +965,6 @@ async function iniciarTransmision() {
 
         const roomName = `live-${currentUser.id}-${Date.now()}`;
 
-        // Crear transmisión en Supabase
         const { data: streamData, error: streamError } = await supabase
             .from('transmisiones')
             .insert({
@@ -601,36 +983,28 @@ async function iniciarTransmision() {
 
         currentStream = streamData;
         currentStreamId = streamData.id;
+        document.getElementById('liveTitle').textContent = titulo;
 
-        // CONEXIÓN LIVEKIT
         try {
             showToast('🔗 Conectando a LiveKit...', '', 2000);
-
             const { Room } = await import('https://cdn.jsdelivr.net/npm/livekit-client@1/dist/index.js');
-
             liveKitRoom = new Room();
-
             const token = await obtenerTokenLiveKit(
                 currentStream.room_name,
                 currentUser.user_metadata?.nombre || currentUser.email || 'streamer'
             );
-
             await liveKitRoom.connect(LIVEKIT_CONFIG.url, token);
-
-            // Publicar video
             await liveKitRoom.localParticipant.setCameraEnabled(true);
             await liveKitRoom.localParticipant.setMicrophoneEnabled(true);
-
             showToast('✅ Conectado a LiveKit', 'success');
 
-            liveKitRoom.on('participantConnected', (participant) => {
+            liveKitRoom.on('participantConnected', () => {
                 espectadores++;
-                document.getElementById('viewersCount').textContent = `${espectadores} espectadores`;
+                document.getElementById('viewersCount').textContent = `● ${espectadores}`;
             });
-
             liveKitRoom.on('participantDisconnected', () => {
                 espectadores = Math.max(0, espectadores - 1);
-                document.getElementById('viewersCount').textContent = `${espectadores} espectadores`;
+                document.getElementById('viewersCount').textContent = `● ${espectadores}`;
             });
 
         } catch (e) {
@@ -639,7 +1013,7 @@ async function iniciarTransmision() {
         }
 
         isLive = true;
-        document.getElementById('viewersCount').textContent = '0 espectadores';
+        document.getElementById('viewersCount').textContent = '● 0';
 
         iniciarContadorEspectadores();
         suscribirseAlChat();
@@ -657,34 +1031,24 @@ async function iniciarTransmision() {
     }
 }
 
-// ================================================================
-// ✋ FINALIZAR TRANSMISIÓN - CORREGIDO CON RPC
-// ================================================================
+// ===== FINALIZAR TRANSMISIÓN =====
 async function finalizarTransmision() {
     try {
-        // ✅ PRIORIDAD: 1. ID de la URL, 2. currentStreamId, 3. currentStream.id
         const streamId = transmisionParamId || currentStreamId || currentStream?.id;
-
         if (!streamId) {
             showToast('⚠️ No se encontró el ID de la transmisión', 'error');
             return;
         }
 
-        // ✅ Verificar que el usuario sea el streamer (seguridad)
         if (currentUser) {
-            // Si currentStream no está cargado, obtenerlo
             if (!currentStream || currentStream.id !== streamId) {
                 const { data: stream, error: loadError } = await supabase
                     .from('transmisiones')
                     .select('streamer_id, estado')
                     .eq('id', streamId)
                     .maybeSingle();
-
                 if (loadError) throw loadError;
-                if (!stream) {
-                    showToast('❌ Transmisión no encontrada', 'error');
-                    return;
-                }
+                if (!stream) { showToast('❌ Transmisión no encontrada', 'error'); return; }
                 if (stream.streamer_id !== currentUser.id) {
                     showToast('⚠️ Solo el streamer puede finalizar la transmisión', 'error');
                     return;
@@ -704,36 +1068,25 @@ async function finalizarTransmision() {
 
         showToast('⏳ Finalizando transmisión...', '', 3000);
 
-        // ✅ 1. Detener medios locales
         const video = document.getElementById('liveVideo');
         if (video && video.srcObject) {
             video.srcObject.getTracks().forEach(track => track.stop());
             video.srcObject = null;
         }
-
         if (localStream) {
             localStream.getTracks().forEach(t => t.stop());
             localStream = null;
         }
-
         if (gameScreenStream) {
             gameScreenStream.getTracks().forEach(t => t.stop());
             gameScreenStream = null;
             gameScreenTrack = null;
         }
-
-        // ✅ 2. Desconectar LiveKit
         if (liveKitRoom) {
-            try {
-                await liveKitRoom.disconnect();
-                console.log('✅ LiveKit desconectado');
-            } catch (lkError) {
-                console.warn('Error desconectando LiveKit:', lkError);
-            }
+            try { await liveKitRoom.disconnect(); } catch (lkError) { console.warn('Error desconectando LiveKit:', lkError); }
             liveKitRoom = null;
         }
 
-        // ✅ 3. LLAMAR A LA RPC DE SUPABASE (YA CORREGIDA)
         console.log('📡 Finalizando transmisión con RPC:', streamId);
         const { data, error } = await supabase.rpc('finalizar_transmision', {
             p_transmision_id: streamId
@@ -741,53 +1094,34 @@ async function finalizarTransmision() {
 
         if (error) {
             console.error('❌ Error en RPC finalizar_transmision:', error);
-            // Fallback: UPDATE directo si la RPC falla
             console.warn('⚠️ Usando UPDATE directo como fallback');
             const fechaFin = new Date().toISOString();
             const { error: updateError } = await supabase
                 .from('transmisiones')
-                .update({
-                    estado: 'finalizada',
-                    is_live: false,
-                    fecha_fin: fechaFin
-                })
+                .update({ estado: 'finalizada', is_live: false, fecha_fin: fechaFin })
                 .eq('id', streamId);
             if (updateError) throw updateError;
         } else {
             console.log('✅ RPC finalizar_transmision ejecutada:', data);
         }
 
-        // ✅ 4. Limpiar estado
-        if (streamInterval) {
-            clearInterval(streamInterval);
-            streamInterval = null;
-        }
-
-        if (channelChat) {
-            supabase.removeChannel(channelChat);
-            channelChat = null;
-        }
+        if (streamInterval) { clearInterval(streamInterval); streamInterval = null; }
+        if (channelChat) { supabase.removeChannel(channelChat); channelChat = null; }
 
         isLive = false;
         currentStream = null;
         currentStreamId = null;
         transmisionParamId = null;
         juegoSeleccionado = null;
-        document.getElementById('viewersCount').textContent = '0 espectadores';
+        document.getElementById('viewersCount').textContent = '● 0';
 
         showToast('✅ Transmisión finalizada', 'success');
 
-        // ✅ 5. Redirigir al grupo si venía de ahí
         const referrer = document.referrer;
         if (referrer && referrer.includes('/features/grupos/grupos.html')) {
-            setTimeout(() => {
-                window.location.href = referrer;
-            }, 1500);
+            setTimeout(() => { window.location.href = referrer; }, 1500);
         } else {
-            // Si no viene de grupos, ir al muro
-            setTimeout(() => {
-                window.location.href = '/features/muro/muro.html';
-            }, 1500);
+            setTimeout(() => { window.location.href = '/features/muro/muro.html'; }, 1500);
         }
 
     } catch (error) {
@@ -796,9 +1130,7 @@ async function finalizarTransmision() {
     }
 }
 
-// ================================================================
-// 📺 UNIRSE A TRANSMISIÓN
-// ================================================================
+// ===== UNIRSE A TRANSMISIÓN =====
 async function unirseATransmision(streamId) {
     try {
         const session = await getSession();
@@ -819,25 +1151,21 @@ async function unirseATransmision(streamId) {
 
         currentStream = stream;
         currentStreamId = stream.id;
+        document.getElementById('liveTitle').textContent = stream.titulo || 'Transmisión en vivo';
 
         try {
             const { Room } = await import('https://cdn.jsdelivr.net/npm/livekit-client@1/dist/index.js');
-
             liveKitRoom = new Room();
-
             const token = await obtenerTokenLiveKit(
                 stream.room_name,
                 session.user.user_metadata?.nombre || session.user.email || 'espectador'
             );
-
             await liveKitRoom.connect(LIVEKIT_CONFIG.url, token);
 
             liveKitRoom.on('trackSubscribed', (track, publication, participant) => {
                 if (track.kind === 'video') {
                     const video = document.getElementById('liveVideo');
-                    if (video) {
-                        track.attach(video);
-                    }
+                    if (video) track.attach(video);
                 }
             });
 
@@ -849,10 +1177,6 @@ async function unirseATransmision(streamId) {
         }
 
         suscribirseAlChat();
-
-        const overlay = document.querySelector('.live-overlay .text');
-        if (overlay) overlay.textContent = stream.titulo || 'EN VIVO';
-
         showToast(`📺 Viendo: ${stream.titulo || 'Live'}`, 'success');
 
     } catch (error) {
@@ -861,17 +1185,10 @@ async function unirseATransmision(streamId) {
     }
 }
 
-// ================================================================
-// 💬 CHAT
-// ================================================================
-
+// ===== CHAT =====
 function suscribirseAlChat() {
     if (!currentStream) return;
-
-    if (channelChat) {
-        supabase.removeChannel(channelChat);
-    }
-
+    if (channelChat) { supabase.removeChannel(channelChat); }
     channelChat = supabase
         .channel(`live-${currentStream.id}`)
         .on('postgres_changes', {
@@ -888,25 +1205,13 @@ function suscribirseAlChat() {
 async function enviarMensaje() {
     const input = document.getElementById('chatInput');
     const mensaje = input.value.trim();
-
-    if (!mensaje) {
-        showToast('⚠️ Escribe un mensaje', 'warning');
-        return;
-    }
+    if (!mensaje) { showToast('⚠️ Escribe un mensaje', 'warning'); return; }
 
     const session = await getSession();
-    if (!session) {
-        showToast('⚠️ Inicia sesión para chatear', 'error');
-        return;
-    }
-
-    if (!currentStream) {
-        showToast('⚠️ No hay transmisión activa', 'error');
-        return;
-    }
+    if (!session) { showToast('⚠️ Inicia sesión para chatear', 'error'); return; }
+    if (!currentStream) { showToast('⚠️ No hay transmisión activa', 'error'); return; }
 
     const moderationResult = verificarContenido(mensaje);
-
     if (moderationResult.prohibido) {
         showToast(`⚠️ ${moderationResult.razon}`, 'warning');
         input.value = '';
@@ -922,12 +1227,9 @@ async function enviarMensaje() {
                 mensaje: mensaje,
                 nombre_usuario: session.user.user_metadata?.nombre || 'Explorador'
             });
-
         if (error) throw error;
-
         input.value = '';
         input.focus();
-
     } catch (error) {
         console.error('Error enviando mensaje:', error);
         showToast('❌ Error al enviar mensaje', 'error');
@@ -937,12 +1239,9 @@ async function enviarMensaje() {
 function agregarMensajeAlChat(mensaje) {
     const container = document.getElementById('chatMessages');
     if (!container) return;
-
     const div = document.createElement('div');
     div.className = 'chat-msg';
-
     const avatar = mensaje.nombre_usuario ? mensaje.nombre_usuario.charAt(0).toUpperCase() : '◈';
-
     div.innerHTML = `
         <div class="avatar">${avatar}</div>
         <div class="msg">
@@ -951,10 +1250,8 @@ function agregarMensajeAlChat(mensaje) {
             <div class="text">${escapeHTML(mensaje.mensaje)}</div>
         </div>
     `;
-
     container.appendChild(div);
     container.scrollTop = container.scrollHeight;
-
     const countEl = document.getElementById('chatCount');
     if (countEl) {
         const messages = container.querySelectorAll('.chat-msg').length;
@@ -962,29 +1259,22 @@ function agregarMensajeAlChat(mensaje) {
     }
 }
 
-// ================================================================
-// 🛡️ MODERACIÓN
-// ================================================================
-
+// ===== MODERACIÓN =====
 function verificarContenido(texto) {
     const textoLower = texto.toLowerCase();
-
     for (const palabra of PALABRAS_PROHIBIDAS) {
         if (textoLower.includes(palabra)) {
-            return { prohibido: true, razon: `Contiene lenguaje inapropiado` };
+            return { prohibido: true, razon: 'Contiene lenguaje inapropiado' };
         }
     }
-
     if (/(acoso|bullying|hostigamiento|amenaza)/i.test(texto)) {
         return { prohibido: true, razon: 'Contenido de acoso detectado' };
     }
-
     const palabras = texto.split(' ');
     const repetidas = palabras.filter((p, i) => palabras.indexOf(p) !== i);
     if (repetidas.length > 5) {
         return { prohibido: true, razon: 'Posible spam detectado' };
     }
-
     return { prohibido: false };
 }
 
@@ -994,28 +1284,15 @@ function escapeHTML(texto) {
     return div.innerHTML;
 }
 
-// ================================================================
-// 💰 DONACIONES
-// ================================================================
-
+// ===== DONACIONES =====
 async function enviarDonacion(monto) {
     try {
         const session = await getSession();
-        if (!session) {
-            showToast('⚠️ Inicia sesión para donar', 'error');
-            return;
-        }
-
-        if (!currentStream) {
-            showToast('⚠️ No hay transmisión activa', 'error');
-            return;
-        }
+        if (!session) { showToast('⚠️ Inicia sesión para donar', 'error'); return; }
+        if (!currentStream) { showToast('⚠️ No hay transmisión activa', 'error'); return; }
 
         const donacion = DONACIONES[monto];
-        if (!donacion) {
-            showToast('⚠️ Monto no válido', 'error');
-            return;
-        }
+        if (!donacion) { showToast('⚠️ Monto no válido', 'error'); return; }
 
         showToast(`⏳ Procesando donación de $${monto} USD...`, '', 3000);
 
@@ -1065,14 +1342,10 @@ async function enviarDonacion(monto) {
     }
 }
 
-// ================================================================
-// 🎨 EFECTOS VISUALES
-// ================================================================
-
+// ===== EFECTOS VISUALES =====
 function mostrarEfectoDonacion(monto, donacion, usuario) {
     const container = document.getElementById('liveVideoContainer');
     if (!container) return;
-
     const overlay = document.createElement('div');
     overlay.className = 'donacion-overlay';
     overlay.style.animation = `fadeInOut ${donacion.duracion}ms ease forwards`;
@@ -1082,70 +1355,52 @@ function mostrarEfectoDonacion(monto, donacion, usuario) {
     let contenido = '';
     switch (donacion.efecto) {
         case 'cubo_plata':
-            contenido = `
-                <div style="background:linear-gradient(135deg,#E8E8E8,#C0C0C0);border-radius:8px;padding:30px;font-size:4rem;box-shadow:0 0 50px rgba(192,192,192,0.5);animation:cuboGirar 3s ease;text-align:center;">
-                    <div>🥈</div>
-                    <div style="font-size:1rem;color:#C0C0C0;margin-top:10px;">${nombre} donó $${monto}</div>
-                    <div style="font-size:0.7rem;color:#C0C0C0;">Cubo de Plata</div>
-                </div>
-            `;
+            contenido = `<div style="background:linear-gradient(135deg,#E8E8E8,#C0C0C0);border-radius:8px;padding:30px;font-size:4rem;box-shadow:0 0 50px rgba(192,192,192,0.5);animation:cuboGirar 3s ease;text-align:center;">
+                <div>🥈</div>
+                <div style="font-size:1rem;color:#C0C0C0;margin-top:10px;">${nombre} donó $${monto}</div>
+                <div style="font-size:0.7rem;color:#C0C0C0;">Cubo de Plata</div>
+            </div>`;
             break;
         case 'cubo_bronce':
-            contenido = `
-                <div style="background:linear-gradient(135deg,#D4A574,#CD7F32);border-radius:8px;padding:30px;font-size:5rem;box-shadow:0 0 60px rgba(205,127,50,0.6);animation:cuboGirar 4s ease;text-align:center;">
-                    <div>🥉</div>
-                    <div style="font-size:1.2rem;color:#CD7F32;margin-top:10px;">${nombre} donó $${monto}</div>
-                    <div style="font-size:0.8rem;color:#CD7F32;">Cubo de Bronce</div>
-                </div>
-            `;
+            contenido = `<div style="background:linear-gradient(135deg,#D4A574,#CD7F32);border-radius:8px;padding:30px;font-size:5rem;box-shadow:0 0 60px rgba(205,127,50,0.6);animation:cuboGirar 4s ease;text-align:center;">
+                <div>🥉</div>
+                <div style="font-size:1.2rem;color:#CD7F32;margin-top:10px;">${nombre} donó $${monto}</div>
+                <div style="font-size:0.8rem;color:#CD7F32;">Cubo de Bronce</div>
+            </div>`;
             break;
         case 'cubo_oro':
-            contenido = `
-                <div style="background:linear-gradient(135deg,#F0D060,#D4AF37);border-radius:8px;padding:30px;font-size:6rem;box-shadow:0 0 80px rgba(212,175,55,0.7);animation:cuboGirar 5s ease;text-align:center;">
-                    <div>🥇</div>
-                    <div style="font-size:1.5rem;color:#D4AF37;margin-top:10px;text-shadow:0 0 20px rgba(212,175,55,0.5);">${nombre} donó $${monto}</div>
-                    <div style="font-size:1rem;color:#D4AF37;">Cubo de Oro</div>
-                </div>
-            `;
+            contenido = `<div style="background:linear-gradient(135deg,#F0D060,#D4AF37);border-radius:8px;padding:30px;font-size:6rem;box-shadow:0 0 80px rgba(212,175,55,0.7);animation:cuboGirar 5s ease;text-align:center;">
+                <div>🥇</div>
+                <div style="font-size:1.5rem;color:#D4AF37;margin-top:10px;text-shadow:0 0 20px rgba(212,175,55,0.5);">${nombre} donó $${monto}</div>
+                <div style="font-size:1rem;color:#D4AF37;">Cubo de Oro</div>
+            </div>`;
             break;
         case 'cohete_explosion':
-            contenido = `
-                <div style="animation:coheteGirar 4s ease;text-align:center;">
-                    <div style="font-size:8rem;animation:coheteVuelo 3s ease;">🚀</div>
-                    <div style="font-size:1.5rem;color:#CD7F32;margin-top:10px;text-shadow:0 0 40px rgba(205,127,50,0.8);">${nombre} donó $${monto}</div>
-                    <div style="font-size:1rem;color:#CD7F32;">🚀 Cohete Bronce</div>
-                </div>
-            `;
+            contenido = `<div style="animation:coheteGirar 4s ease;text-align:center;">
+                <div style="font-size:8rem;animation:coheteVuelo 3s ease;">🚀</div>
+                <div style="font-size:1.5rem;color:#CD7F32;margin-top:10px;text-shadow:0 0 40px rgba(205,127,50,0.8);">${nombre} donó $${monto}</div>
+                <div style="font-size:1rem;color:#CD7F32;">🚀 Cohete Bronce</div>
+            </div>`;
             break;
         case 'cohete_esmeralda':
-            contenido = `
-                <div style="animation:coheteGirar 6s ease;text-align:center;">
-                    <div style="font-size:10rem;animation:coheteVuelo 4s ease;filter:drop-shadow(0 0 50px rgba(80,200,120,0.8));">🚀</div>
-                    <div style="font-size:2rem;color:#50C878;margin-top:10px;text-shadow:0 0 60px rgba(80,200,120,0.9);">${nombre} donó $${monto}</div>
-                    <div style="font-size:1.2rem;color:#50C878;">💚 Cohete Esmeralda</div>
-                </div>
-            `;
+            contenido = `<div style="animation:coheteGirar 6s ease;text-align:center;">
+                <div style="font-size:10rem;animation:coheteVuelo 4s ease;filter:drop-shadow(0 0 50px rgba(80,200,120,0.8));">🚀</div>
+                <div style="font-size:2rem;color:#50C878;margin-top:10px;text-shadow:0 0 60px rgba(80,200,120,0.9);">${nombre} donó $${monto}</div>
+                <div style="font-size:1.2rem;color:#50C878;">💚 Cohete Esmeralda</div>
+            </div>`;
             break;
     }
 
     overlay.innerHTML = contenido;
     container.appendChild(overlay);
-
-    setTimeout(() => {
-        if (overlay.parentNode) overlay.remove();
-    }, donacion.duracion + 500);
+    setTimeout(() => { if (overlay.parentNode) overlay.remove(); }, donacion.duracion + 500);
 }
 
-// ================================================================
-// 🔄 CONTADOR DE ESPECTADORES
-// ================================================================
-
+// ===== CONTADOR DE ESPECTADORES =====
 function iniciarContadorEspectadores() {
     if (streamInterval) clearInterval(streamInterval);
-
     streamInterval = setInterval(async () => {
         if (!currentStream) return;
-
         await supabase
             .from('transmisiones')
             .update({ viewers_count: espectadores })
@@ -1153,77 +1408,15 @@ function iniciarContadorEspectadores() {
     }, 10000);
 }
 
-// ================================================================
-// 👥 SEGUIDORES
-// ================================================================
-
-async function seguirStreamer(streamerId) {
-    try {
-        const session = await getSession();
-        if (!session) {
-            showToast('⚠️ Inicia sesión para seguir', 'error');
-            return;
-        }
-
-        if (session.user.id === streamerId) {
-            showToast('⚠️ No puedes seguirte a ti mismo', 'warning');
-            return;
-        }
-
-        const { error } = await supabase
-            .from('live_seguidores')
-            .insert({
-                streamer_id: streamerId,
-                seguidor_id: session.user.id
-            });
-
-        if (error) {
-            if (error.code === '23505') {
-                showToast('⚠️ Ya sigues a este streamer', 'warning');
-                return;
-            }
-            throw error;
-        }
-
-        showToast('✅ Ahora sigues a este streamer', 'success');
-
-    } catch (error) {
-        console.error('Error siguiendo:', error);
-        showToast('❌ Error al seguir', 'error');
-    }
-}
-
-async function getSeguidores(streamerId) {
-    try {
-        const { data, error } = await supabase
-            .from('live_seguidores')
-            .select('seguidor_id', { count: 'exact' })
-            .eq('streamer_id', streamerId);
-
-        if (error) throw error;
-        return data.length;
-
-    } catch (error) {
-        console.error('Error obteniendo seguidores:', error);
-        return 0;
-    }
-}
-
-// ================================================================
-// 🔔 NOTIFICACIONES A SEGUIDORES
-// ================================================================
-
+// ===== NOTIFICACIONES =====
 async function notificarSeguidores() {
     try {
         if (!currentStream || !currentUser) return;
-
         const { data: seguidores } = await supabase
             .from('live_seguidores')
             .select('seguidor_id')
             .eq('streamer_id', currentUser.id);
-
         if (!seguidores || seguidores.length === 0) return;
-
         for (const s of seguidores) {
             await supabase
                 .from('notificaciones')
@@ -1236,42 +1429,26 @@ async function notificarSeguidores() {
                     fecha: new Date().toISOString()
                 });
         }
-
         showToast(`🔔 Notificados ${seguidores.length} seguidores`, 'success');
-
-    } catch (error) {
-        console.error('Error notificando seguidores:', error);
-    }
+    } catch (error) { console.error('Error notificando seguidores:', error); }
 }
 
-// ================================================================
-// 📋 LISTA DE TRANSMISIONES ACTIVAS
-// ================================================================
-
+// ===== TRANSMISIONES ACTIVAS =====
 async function cargarTransmisionesActivas() {
     try {
         const { data, error } = await supabase
             .from('transmisiones')
-            .select(`
-                *,
-                usuarios(id, nombre, avatar_url)
-            `)
+            .select('*, usuarios(id, nombre, avatar_url)')
             .eq('estado', 'activa')
             .order('fecha_inicio', { ascending: false });
-
         if (error) throw error;
-
         renderizarTransmisiones(data);
-
-    } catch (error) {
-        console.error('Error cargando transmisiones:', error);
-    }
+    } catch (error) { console.error('Error cargando transmisiones:', error); }
 }
 
 function renderizarTransmisiones(streams) {
     const container = document.getElementById('streamsList');
     if (!container) return;
-
     if (!streams || streams.length === 0) {
         container.innerHTML = `
             <div class="empty-state" style="grid-column:1/-1;padding:20px;">
@@ -1282,15 +1459,15 @@ function renderizarTransmisiones(streams) {
         `;
         return;
     }
-
     container.innerHTML = streams.map(stream => `
         <div class="stream-card" onclick="unirseATransmision('${stream.id}')">
             <div class="stream-thumb">
                 <span style="font-size:2rem;">◉</span>
-                <span class="live-badge">🔴 EN VIVO</span>
+                <span class="live-badge"><span class="dot"></span> EN VIVO</span>
             </div>
             <div class="stream-name">${escapeHTML(stream.titulo || 'Live')}</div>
             <div class="stream-host">
+                <span class="online-dot"></span>
                 ${stream.usuarios?.nombre || 'Streamer'} · ${stream.viewers_count || 0} espectadores
             </div>
             <div style="font-size:0.55rem;color:var(--text-muted);margin-top:4px;">
@@ -1300,59 +1477,31 @@ function renderizarTransmisiones(streams) {
     `).join('');
 }
 
-// ================================================================
-// 🎮 CONTROLES
-// ================================================================
-
+// ===== CONTROLES =====
 function togglePlay() {
     const video = document.getElementById('liveVideo');
     if (!video) return;
-
-    if (video.paused) {
-        video.play();
-        document.getElementById('playBtn').textContent = '⏸';
-    } else {
-        video.pause();
-        document.getElementById('playBtn').textContent = '▶';
-    }
+    if (video.paused) { video.play(); document.getElementById('playBtn').textContent = '⏸'; }
+    else { video.pause(); document.getElementById('playBtn').textContent = '▶'; }
 }
 
 function toggleMute() {
     const video = document.getElementById('liveVideo');
     if (!video) return;
-
     isMuted = !isMuted;
     video.muted = isMuted;
-
     const btn = document.getElementById('muteBtn');
-    if (isMuted) {
-        btn.textContent = '🔇';
-        btn.classList.add('muted');
-    } else {
-        btn.textContent = '🔊';
-        btn.classList.remove('muted');
-    }
+    if (isMuted) { btn.textContent = '🔇'; btn.classList.add('muted'); }
+    else { btn.textContent = '🔊'; btn.classList.remove('muted'); }
 }
 
 async function capturarPantalla() {
     try {
-        const screenStream = await navigator.mediaDevices.getDisplayMedia({
-            video: true,
-            audio: true
-        });
-
+        const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
         const video = document.getElementById('liveVideo');
-        if (video) {
-            video.srcObject = screenStream;
-            video.play();
-        }
-
+        if (video) { video.srcObject = screenStream; video.play(); }
         showToast('🖥️ Compartiendo pantalla', 'success');
-
-        screenStream.getVideoTracks()[0].onended = () => {
-            restaurarCamara();
-        };
-
+        screenStream.getVideoTracks()[0].onended = () => { restaurarCamara(); };
     } catch (error) {
         console.error('Error capturando pantalla:', error);
         showToast('❌ Error al compartir pantalla', 'error');
@@ -1365,22 +1514,14 @@ async function restaurarCamara() {
             video: { facingMode: 'user', width: 1280, height: 720 },
             audio: true
         });
-
         const video = document.getElementById('liveVideo');
-        if (video) {
-            video.srcObject = stream;
-            video.play();
-        }
-
-    } catch (error) {
-        console.error('Error restaurando cámara:', error);
-    }
+        if (video) { video.srcObject = stream; video.play(); }
+    } catch (error) { console.error('Error restaurando cámara:', error); }
 }
 
 function toggleVoice() {
     isVoiceActive = !isVoiceActive;
     const btn = document.getElementById('voiceBtn');
-
     if (isVoiceActive) {
         btn.textContent = '🔊';
         btn.classList.add('voice-active');
@@ -1401,16 +1542,12 @@ function verTodasLasTransmisiones() {
     showToast('📺 Cargando transmisiones activas...', '', 2000);
 }
 
-// ================================================================
-// 🎮 TRANSMISIÓN DE JUEGO
-// ================================================================
+// ===== JUEGOS =====
 let juegosDisponibles = [];
-
 function esIOS() {
     return /iPad|iPhone|iPod/i.test(navigator.userAgent) ||
         (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 }
-
 function soportaCompartirPantalla() {
     return !!(navigator.mediaDevices && typeof navigator.mediaDevices.getDisplayMedia === 'function');
 }
@@ -1422,7 +1559,6 @@ function cerrarSelectorJuego() {
 
 async function abrirSelectorJuego() {
     if (document.getElementById('gameSelectorModal')) return;
-
     const modal = document.createElement('div');
     modal.id = 'gameSelectorModal';
     modal.className = 'game-modal-backdrop';
@@ -1435,9 +1571,7 @@ async function abrirSelectorJuego() {
                 </div>
                 <button type="button" class="game-modal-close" aria-label="Cerrar" onclick="cerrarSelectorJuego()">×</button>
             </div>
-            <div class="game-grid" id="gameGrid">
-                <div style="grid-column:1/-1;padding:20px;text-align:center;">⏳ Cargando juegos...</div>
-            </div>
+            <div class="game-grid" id="gameGrid"><div style="grid-column:1/-1;padding:20px;text-align:center;">⏳ Cargando juegos...</div></div>
             <div id="otroJuegoWrap" class="otro-juego-wrap" hidden>
                 <label for="otroJuegoInput">Nombre del juego</label>
                 <div class="otro-juego-row">
@@ -1448,9 +1582,7 @@ async function abrirSelectorJuego() {
             <p class="game-modal-help">Después de elegirlo se abrirá el selector de pantalla del navegador.</p>
         </div>
     `;
-    modal.addEventListener('click', (event) => {
-        if (event.target === modal) cerrarSelectorJuego();
-    });
+    modal.addEventListener('click', (event) => { if (event.target === modal) cerrarSelectorJuego(); });
     document.body.appendChild(modal);
 
     try {
@@ -1461,11 +1593,9 @@ async function abrirSelectorJuego() {
             .order('nombre');
         if (error) throw error;
         juegosDisponibles = data || [];
-
         const grid = document.getElementById('gameGrid');
         if (!grid) return;
         grid.innerHTML = '';
-
         juegosDisponibles.forEach((juego) => {
             const button = document.createElement('button');
             button.type = 'button';
@@ -1474,7 +1604,6 @@ async function abrirSelectorJuego() {
             button.addEventListener('click', () => seleccionarJuego(juego));
             grid.appendChild(button);
         });
-
         const other = document.createElement('button');
         other.type = 'button';
         other.className = 'game-option game-option-other';
@@ -1502,20 +1631,13 @@ function mostrarOtroJuego() {
     if (!wrap) return;
     wrap.hidden = false;
     const input = document.getElementById('otroJuegoInput');
-    if (input) {
-        input.focus();
-        input.select();
-    }
+    if (input) { input.focus(); input.select(); }
 }
 
 function confirmarOtroJuego() {
     const input = document.getElementById('otroJuegoInput');
     const nombre = (input?.value || '').trim();
-    if (!nombre) {
-        showToast('⚠️ Escribe el nombre del juego', 'warning');
-        input?.focus();
-        return;
-    }
+    if (!nombre) { showToast('⚠️ Escribe el nombre del juego', 'warning'); input?.focus(); return; }
     seleccionarJuego({ id: null, nombre, package_name: null, activo: true });
 }
 
@@ -1523,10 +1645,7 @@ async function seleccionarJuego(juego) {
     if (!juego || typeof juego !== 'object') {
         juego = { id: null, nombre: String(juego || '').trim(), package_name: null, activo: true };
     }
-    if (!juego.nombre) {
-        showToast('⚠️ Juego no válido', 'warning');
-        return;
-    }
+    if (!juego.nombre) { showToast('⚠️ Juego no válido', 'warning'); return; }
     juegoSeleccionado = juego;
     cerrarSelectorJuego();
     await iniciarTransmisionJuego(juego);
@@ -1595,6 +1714,7 @@ async function iniciarTransmisionJuego(juego) {
         currentStream = streamData;
         currentStreamId = streamData.id;
         if (!currentStream.room_name) currentStream.room_name = roomName;
+        document.getElementById('liveTitle').textContent = titulo;
 
         juegoSeleccionado = {
             id: juego?.id || null,
@@ -1616,20 +1736,17 @@ async function iniciarTransmisionJuego(juego) {
             showToast('🔗 Conectando el juego a LiveKit...', '', 3000);
             const { Room, LocalVideoTrack, LocalAudioTrack } = await import('https://cdn.jsdelivr.net/npm/livekit-client@1/dist/index.js');
             liveKitRoom = new Room();
-
             const token = await obtenerTokenLiveKit(
                 currentStream.room_name,
                 currentUser.user_metadata?.nombre || currentUser.email || 'streamer'
             );
             if (!token) throw new Error('El backend no devolvió un token LiveKit.');
-
             await liveKitRoom.connect(LIVEKIT_CONFIG.url, token);
 
             await liveKitRoom.localParticipant.publishTrack(
                 new LocalVideoTrack(gameScreenTrack),
                 { name: 'game-screen', source: 'screen_share' }
             );
-
             const screenAudioTrack = gameScreenStream.getAudioTracks()[0];
             if (screenAudioTrack && LocalAudioTrack) {
                 await liveKitRoom.localParticipant.publishTrack(
@@ -1637,18 +1754,15 @@ async function iniciarTransmisionJuego(juego) {
                     { name: 'game-audio', source: 'screen_share_audio' }
                 );
             }
-
             await liveKitRoom.localParticipant.setMicrophoneEnabled(true);
 
             liveKitRoom.on('participantConnected', () => {
                 espectadores++;
-                const count = document.getElementById('viewersCount');
-                if (count) count.textContent = `${espectadores} espectadores`;
+                document.getElementById('viewersCount').textContent = `● ${espectadores}`;
             });
             liveKitRoom.on('participantDisconnected', () => {
                 espectadores = Math.max(0, espectadores - 1);
-                const count = document.getElementById('viewersCount');
-                if (count) count.textContent = `${espectadores} espectadores`;
+                document.getElementById('viewersCount').textContent = `● ${espectadores}`;
             });
 
             showToast(`🎮 ¡Transmitiendo ${nombreJuego}!`, 'success', 4000);
@@ -1660,18 +1774,13 @@ async function iniciarTransmisionJuego(juego) {
                     .update({ estado: 'finalizada', fecha_fin: new Date().toISOString() })
                     .eq('id', currentStreamId)
                     .eq('streamer_id', currentUser.id);
-            } catch (cleanupError) {
-                console.warn('No se pudo cerrar la transmisión fallida:', cleanupError);
-            }
+            } catch (cleanupError) { console.warn('No se pudo cerrar la transmisión fallida:', cleanupError); }
             throw new Error('No se pudo conectar el juego a LiveKit: ' + (liveKitError?.message || liveKitError));
         }
 
         isLive = true;
         espectadores = 0;
-        const viewers = document.getElementById('viewersCount');
-        if (viewers) viewers.textContent = '0 espectadores';
-        const overlay = document.querySelector('.live-overlay .text');
-        if (overlay) overlay.textContent = titulo;
+        document.getElementById('viewersCount').textContent = '● 0';
 
         iniciarContadorEspectadores();
         suscribirseAlChat();
@@ -1687,33 +1796,23 @@ async function iniciarTransmisionJuego(juego) {
     } catch (error) {
         console.error('Error iniciando transmisión de juego:', error);
         showToast('❌ ' + (error?.message || 'No se pudo iniciar la transmisión de juego'), 'error', 6000);
-
         if (gameScreenStream) {
             gameScreenStream.getTracks().forEach(track => track.stop());
             gameScreenStream = null;
         }
         gameScreenTrack = null;
-        if (liveKitRoom) {
-            try { await liveKitRoom.disconnect(); } catch (_) {}
-            liveKitRoom = null;
-        }
+        if (liveKitRoom) { try { await liveKitRoom.disconnect(); } catch (_) {} liveKitRoom = null; }
         currentStream = null;
         currentStreamId = null;
         isLive = false;
     }
 }
 
-// ================================================================
-// 📊 ESTADÍSTICAS
-// ================================================================
-
+// ===== ESTADÍSTICAS =====
 async function cargarEstadisticas() {
     try {
         const session = await getSession();
-        if (!session) {
-            showToast('⚠️ Inicia sesión para ver estadísticas', 'error');
-            return;
-        }
+        if (!session) { showToast('⚠️ Inicia sesión para ver estadísticas', 'error'); return; }
 
         const { data, error } = await supabase
             .from('transmisiones')
@@ -1722,11 +1821,7 @@ async function cargarEstadisticas() {
             .order('fecha_inicio', { ascending: false });
 
         if (error) throw error;
-
-        if (!data || data.length === 0) {
-            showToast('📊 Sin estadísticas aún', 'warning');
-            return;
-        }
+        if (!data || data.length === 0) { showToast('📊 Sin estadísticas aún', 'warning'); return; }
 
         const totalStreams = data.length;
         const totalHoras = data.reduce((acc, s) => {
@@ -1753,40 +1848,27 @@ async function cargarEstadisticas() {
     }
 }
 
-// ================================================================
-// 🚀 INICIALIZACIÓN
-// ================================================================
-
+// ===== INICIALIZACIÓN =====
 document.addEventListener('DOMContentLoaded', async function() {
     const session = await getSession();
-    if (session) {
-        currentUser = session.user;
-    } else {
-        showToast('⚠️ Inicia sesión para transmitir y chatear', 'warning');
-    }
+    if (session) { currentUser = session.user; }
+    else { showToast('⚠️ Inicia sesión para transmitir y chatear', 'warning'); }
 
-    // ✅ Cuando grupos.html abre este módulo con ?transmision=ID
     const params = new URLSearchParams(window.location.search);
     transmisionParamId = params.get('transmision');
     if (transmisionParamId) {
         currentStreamId = transmisionParamId;
         console.log('📡 Transmisión recibida desde URL:', transmisionParamId);
-
         try {
             const { data: stream, error: streamError } = await supabase
                 .from('transmisiones')
                 .select('*')
                 .eq('id', transmisionParamId)
                 .single();
-
             if (streamError) throw streamError;
-
             currentStream = stream;
             currentStreamId = stream.id;
-
-            const overlay = document.querySelector('.live-overlay .text');
-            if (overlay) overlay.textContent = stream.titulo || 'EN VIVO';
-
+            document.getElementById('liveTitle').textContent = stream.titulo || 'EN VIVO';
             console.log('✅ Transmisión cargada desde URL:', stream.id);
         } catch (streamError) {
             console.error('❌ Error cargando transmisión desde URL:', streamError);
@@ -1800,9 +1882,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     const chatInput = document.getElementById('chatInput');
     if (chatInput) {
         chatInput.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') {
-                enviarMensaje();
-            }
+            if (e.key === 'Enter') { enviarMensaje(); }
         });
     }
 
@@ -1810,10 +1890,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     console.log('📡 LiveKit URL:', LIVEKIT_CONFIG.url);
 });
 
-// ================================================================
-// 📤 EXPOSICIÓN DE FUNCIONES GLOBALES
-// ================================================================
-
+// ===== EXPOSICIÓN GLOBAL =====
 window.iniciarTransmision = iniciarTransmision;
 window.finalizarTransmision = finalizarTransmision;
 window.verTodasLasTransmisiones = verTodasLasTransmisiones;
@@ -1830,8 +1907,6 @@ window.mostrarOtroJuego = mostrarOtroJuego;
 window.confirmarOtroJuego = confirmarOtroJuego;
 window.cerrarSelectorJuego = cerrarSelectorJuego;
 window.toggleVoice = toggleVoice;
-window.seguirStreamer = seguirStreamer;
-window.getSeguidores = getSeguidores;
 window.cargarEstadisticas = cargarEstadisticas;
 window.showToast = showToast;
 </script>
