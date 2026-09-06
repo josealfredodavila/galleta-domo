@@ -934,8 +934,8 @@
                     <span class="live-status">● En vivo</span>
                 </h1>
                 <div class="live-actions">
-                    <button class="btn btn-gold btn-sm" onclick="iniciarTransmision()">◉ Iniciar live</button>
-                    <button class="btn btn-outline btn-sm" onclick="verTodasLasTransmisiones()">◈ Ver todas</button>
+                    <button class="btn btn-gold btn-sm" onclick="iniciarTransmisionGeneral()">◉ Iniciar live</button>
+                    <button class="btn btn-outline btn-sm" onclick="cargarTransmisionesActivas()">◈ Ver todas</button>
                     <button class="btn btn-outline btn-sm" onclick="cargarEstadisticas()">📊 Estadísticas</button>
                 </div>
             </div>
@@ -996,7 +996,7 @@
                         </svg>
                     </button>
 
-                    <button onclick="finalizarTransmision()" class="ctrl-btn ctrl-end" id="endBtn" title="Finalizar transmisión">
+                    <button onclick="finalizarTransmisionGeneral()" class="ctrl-btn ctrl-end" id="endBtn" title="Finalizar transmisión">
                         <div class="orb-red">
                             <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
                                 <rect x="6" y="6" width="12" height="12" rx="1" stroke="currentColor" stroke-width="1.5" fill="none"/>
@@ -1083,7 +1083,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script>
 /* ================================================================
-   LIVE - TODAS LAS FUNCIONES (CORREGIDO)
+   LIVE GENERAL - INDEPENDIENTE DE GRUPOS
    ================================================================ */
 
 // ===== CONFIGURACIÓN SUPABASE =====
@@ -1134,7 +1134,7 @@ let gameScreenTrack = null;
 let currentStreamId = null;
 let transmisionParamId = null;
 let juegoSeleccionado = null;
-let grupoIdActual = null; // ✅ CORRECCIÓN: Guardar grupo_id
+let grupoIdActual = null;
 
 // ===== TOAST =====
 function showToast(msg, type = '', duration = 3500) {
@@ -1195,9 +1195,9 @@ async function obtenerTokenLiveKit(roomName, participantName, role = 'subscriber
 }
 
 // ================================================================
-// 🎥 INICIAR TRANSMISIÓN - CORREGIDO CON RPC
+// 🎥 INICIAR TRANSMISIÓN GENERAL - INDEPENDIENTE DE GRUPOS
 // ================================================================
-async function iniciarTransmision() {
+async function iniciarTransmisionGeneral() {
     try {
         const session = await getSession();
         if (!session) {
@@ -1211,6 +1211,7 @@ async function iniciarTransmision() {
             .select('id')
             .eq('streamer_id', currentUser.id)
             .eq('estado', 'en_vivo')
+            .eq('is_live', true)
             .maybeSingle();
 
         if (checkError) throw checkError;
@@ -1226,12 +1227,12 @@ async function iniciarTransmision() {
 
         const roomName = `live-${currentUser.id}-${Date.now()}`;
 
-        // ✅ CORRECCIÓN: Usar RPC crear_transmision
+        // ✅ RPC crear_transmision SIN grupo_id (LIVE GENERAL)
         const { data: streamData, error: streamError } = await supabase.rpc('crear_transmision', {
             p_titulo: titulo,
             p_categoria: categoria,
             p_room_name: roomName,
-            p_grupo_id: grupoIdActual || null
+            p_grupo_id: null  // 🔑 CLAVE: null para LIVE GENERAL
         });
 
         if (streamError) {
@@ -1306,9 +1307,9 @@ async function iniciarTransmision() {
 }
 
 // ================================================================
-// ✋ FINALIZAR TRANSMISIÓN - CORREGIDO CON RPC
+// ✋ FINALIZAR TRANSMISIÓN GENERAL
 // ================================================================
-async function finalizarTransmision() {
+async function finalizarTransmisionGeneral() {
     try {
         const streamId = transmisionParamId || currentStreamId || currentStream?.id;
         if (!streamId) {
@@ -1393,106 +1394,14 @@ async function finalizarTransmision() {
 
         showToast('✅ Transmisión finalizada', 'success');
 
-        // ✅ CORRECCIÓN: Redirigir al grupo si viene de ahí
-        if (grupoIdActual) {
-            setTimeout(() => {
-                window.location.href = '/features/grupos/grupos.html?grupo=' + grupoIdActual;
-            }, 1500);
-        } else {
-            const referrer = document.referrer;
-            if (referrer && referrer.includes('/features/grupos/grupos.html')) {
-                setTimeout(() => { window.location.href = referrer; }, 1500);
-            } else {
-                setTimeout(() => { window.location.href = '/features/muro/muro.html'; }, 1500);
-            }
-        }
+        setTimeout(() => {
+            window.location.href = '/features/muro/muro.html';
+        }, 1500);
 
     } catch (error) {
         console.error('❌ Error finalizando transmisión:', error);
         showToast('❌ Error al finalizar: ' + error.message, 'error');
     }
-}
-
-// ================================================================
-// 🧹 LIMPIEZA DE RECURSOS
-// ================================================================
-function limpiarRecursosLive() {
-    if (localStream) {
-        try {
-            localStream.getTracks().forEach(t => {
-                t.stop();
-                t.enabled = false;
-            });
-            localStream = null;
-        } catch (e) {
-            console.warn('Error limpiando localStream:', e);
-        }
-    }
-
-    const video = document.getElementById('liveVideo');
-    if (video) {
-        try {
-            if (video.srcObject) {
-                if (video.srcObject.getTracks) {
-                    video.srcObject.getTracks().forEach(t => t.stop());
-                }
-                video.srcObject = null;
-            }
-            video.pause();
-            video.src = '';
-            video.load();
-        } catch (e) {
-            console.warn('Error limpiando video element:', e);
-        }
-    }
-
-    if (liveKitRoom) {
-        try {
-            if (liveKitRoom.localParticipant) {
-                try {
-                    await liveKitRoom.localParticipant.setCameraEnabled(false);
-                    await liveKitRoom.localParticipant.setMicrophoneEnabled(false);
-                } catch (e) {
-                    console.warn('Error deshabilitando dispositivos LiveKit:', e);
-                }
-            }
-            await liveKitRoom.disconnect();
-            console.log('✅ LiveKit desconectado');
-        } catch (lkError) {
-            console.warn('Error desconectando LiveKit:', lkError);
-        }
-        liveKitRoom = null;
-    }
-
-    if (streamInterval) {
-        clearInterval(streamInterval);
-        streamInterval = null;
-    }
-
-    if (channelChat) {
-        try {
-            supabase.removeChannel(channelChat);
-            console.log('✅ Canal de chat cerrado');
-        } catch (e) {
-            console.warn('Error cerrando canal de chat:', e);
-        }
-        channelChat = null;
-    }
-
-    isLive = false;
-    currentStream = null;
-    espectadores = 0;
-
-    const viewersEl = document.getElementById('viewersCount');
-    if (viewersEl) viewersEl.textContent = '0 espectadores';
-
-    const container = document.getElementById('liveVideoContainer');
-    if (container) {
-        const overlays = container.querySelectorAll('.donacion-overlay');
-        overlays.forEach(el => el.remove());
-    }
-
-    console.log('🧹 Limpieza de recursos completada');
 }
 
 // ================================================================
@@ -1517,6 +1426,7 @@ async function unirseATransmision(streamId) {
         if (error) throw error;
 
         currentStream = stream;
+        currentStreamId = stream.id;
 
         try {
             const { Room } = await import('https://cdn.jsdelivr.net/npm/livekit-client@1/dist/index.js');
@@ -1957,6 +1867,7 @@ async function cargarTransmisionesActivas() {
                 usuarios(id, nombre, avatar_url)
             `)
             .eq('estado', 'en_vivo')
+            .eq('is_live', true)
             .order('fecha_inicio', { ascending: false });
 
         if (error) throw error;
@@ -1983,11 +1894,13 @@ function renderizarTransmisiones(streams) {
         return;
     }
 
-    container.innerHTML = streams.map(stream => `
+    container.innerHTML = streams.map(stream => {
+        const grupoInfo = stream.grupo_id ? ' (Grupo)' : '';
+        return `
         <div class="stream-card" onclick="unirseATransmision('${stream.id}')">
             <div class="stream-thumb">
                 <span style="font-size:2rem;">◉</span>
-                <span class="live-badge">🔴 EN VIVO</span>
+                <span class="live-badge">🔴 EN VIVO${grupoInfo}</span>
             </div>
             <div class="stream-name">${escapeHTML(stream.titulo || 'Live')}</div>
             <div class="stream-host">
@@ -1997,7 +1910,7 @@ function renderizarTransmisiones(streams) {
                 ${escapeHTML(stream.categoria || 'General')} · ${new Date(stream.fecha_inicio).toLocaleTimeString()}
             </div>
         </div>
-    `).join('');
+    `}).join('');
 }
 
 // ================================================================
@@ -2308,6 +2221,7 @@ async function iniciarTransmisionJuego(juego) {
             .select('id')
             .eq('streamer_id', currentUser.id)
             .eq('estado', 'en_vivo')
+            .eq('is_live', true)
             .maybeSingle();
         if (checkError) throw checkError;
         if (streamActivo) {
@@ -2323,12 +2237,12 @@ async function iniciarTransmisionJuego(juego) {
         const roomName = `live-${currentUser.id}-${Date.now()}`;
         const titulo = `🎮 Jugando ${nombreJuego}`;
 
-        // ✅ Usar RPC crear_transmision con grupo_id
+        // ✅ RPC crear_transmision SIN grupo_id (LIVE GENERAL)
         const { data: rpcData, error: rpcError } = await supabase.rpc('crear_transmision', {
             p_titulo: titulo,
             p_categoria: 'gaming',
             p_room_name: roomName,
-            p_grupo_id: grupoIdActual || null
+            p_grupo_id: null  // 🔑 CLAVE: null para LIVE GENERAL
         });
         if (rpcError) throw rpcError;
 
@@ -2420,7 +2334,7 @@ async function iniciarTransmisionJuego(juego) {
         gameScreenTrack.onended = async () => {
             if (isLive && currentStreamId) {
                 showToast('🖥️ Se detuvo el compartir pantalla.', 'warning');
-                try { await finalizarTransmision(); } catch (_) {}
+                try { await finalizarTransmisionGeneral(); } catch (_) {}
             }
         };
 
@@ -2506,6 +2420,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (grupoParam) {
         grupoIdActual = grupoParam;
         console.log('📡 LIVE viene del grupo:', grupoIdActual);
+        showToast('📡 Conectado a transmisión de grupo', 'info', 2000);
     }
 
     if (transmisionParamId) {
@@ -2522,6 +2437,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             currentStreamId = stream.id;
             document.getElementById('liveTitle').textContent = stream.titulo || 'EN VIVO';
             console.log('✅ Transmisión cargada desde URL:', stream.id);
+            
+            if (stream.grupo_id) {
+                showToast(`📡 Transmisión del grupo ${stream.grupo_id}`, 'info', 3000);
+            }
         } catch (streamError) {
             console.error('❌ Error cargando transmisión desde URL:', streamError);
             showToast('❌ No se pudo cargar la transmisión', 'error');
@@ -2538,18 +2457,15 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
 
-    console.log('◈ Sariel\'s - Live');
+    console.log('◈ Sariel\'s - Live General (INDEPENDIENTE)');
     console.log('📡 LiveKit URL:', LIVEKIT_CONFIG.url);
-    if (grupoIdActual) {
-        console.log('📡 Conectado desde grupo:', grupoIdActual);
-    }
 });
 
 // ================================================================
 // EXPOSICIÓN GLOBAL
 // ================================================================
-window.iniciarTransmision = iniciarTransmision;
-window.finalizarTransmision = finalizarTransmision;
+window.iniciarTransmisionGeneral = iniciarTransmisionGeneral;
+window.finalizarTransmisionGeneral = finalizarTransmisionGeneral;
 window.verTodasLasTransmisiones = verTodasLasTransmisiones;
 window.unirseATransmision = unirseATransmision;
 window.enviarMensaje = enviarMensaje;
@@ -2567,8 +2483,8 @@ window.toggleVoice = toggleVoice;
 window.seguirStreamer = seguirStreamer;
 window.getSeguidores = getSeguidores;
 window.cargarEstadisticas = cargarEstadisticas;
+window.cargarTransmisionesActivas = cargarTransmisionesActivas;
 window.showToast = showToast;
-window.limpiarRecursosLive = limpiarRecursosLive;
 </script>
 </body>
 </html>
