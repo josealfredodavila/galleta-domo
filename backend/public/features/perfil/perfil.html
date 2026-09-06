@@ -8,8 +8,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
     
     <style>
-        /* ... [TUS ESTILOS EXISTENTES] ... */
-        /* (He mantenido todos tus estilos tal cual) */
         :root {
             --gold: #D4AF37;
             --gold-dark: #b8923a;
@@ -122,6 +120,34 @@
         .logo-text { font-family: 'Orbitron', monospace; font-size: 1.2rem; font-weight: 700; color: var(--text-primary); letter-spacing: 2px; }
         .logo-text span { color: var(--gold); }
         .logo-badge { font-size: 0.45rem; background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: var(--space); padding: 2px 10px; border-radius: 20px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
+
+        /* ===== SELECTOR DE IDIOMA ===== */
+        .idioma-selector {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.65rem;
+            color: var(--text-secondary);
+            background: rgba(0,0,0,0.2);
+            padding: 4px 10px;
+            border-radius: 20px;
+            border: 1px solid var(--glass-border);
+        }
+        .idioma-selector select {
+            background: transparent;
+            border: none;
+            color: var(--gold);
+            font-size: 0.65rem;
+            outline: none;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            padding: 2px 4px;
+        }
+        .idioma-selector select option {
+            background: var(--space);
+            color: var(--text-primary);
+        }
+
         .network-badge { display: flex; align-items: center; gap: 6px; font-size: 0.6rem; color: var(--gold); background: rgba(212, 175, 55, 0.1); padding: 4px 12px; border-radius: 20px; border: 1px solid rgba(212, 175, 55, 0.15); }
         .network-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); animation: pulse-dot 2s infinite; }
         @keyframes pulse-dot {
@@ -872,7 +898,15 @@
                 <span class="logo-text">Sariel<span>'s</span></span>
                 <span class="logo-badge">✦ WEB3</span>
             </a>
-            <div class="header-actions" style="display:flex;gap:8px;align-items:center;">
+            <div class="header-actions" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                <!-- ===== SELECTOR DE IDIOMA ===== -->
+                <div class="idioma-selector">
+                    <span>🌐</span>
+                    <select id="selectorIdioma" onchange="cambiarIdioma(this.value)">
+                        <!-- Se llena dinámicamente desde JavaScript -->
+                    </select>
+                </div>
+                
                 <button class="btn-video" onclick="window.location.href='/videos/videos.html'" style="padding:4px 12px;border-radius:20px;border:none;font-size:0.7rem;cursor:pointer;font-weight:600;">🎬 Videos</button>
                 <button onclick="window.location.href='/muro/muro.html'" style="background:transparent;border:none;color:var(--text-muted);font-size:1.2rem;cursor:pointer;">◇</button>
                 <span class="network-badge"><span class="dot"></span> Polygon</span>
@@ -969,16 +1003,16 @@
             <div id="tab-actividad" class="tab-content active">
                 <div class="panel">
                     <div class="panel-header">
-                        <h3>📸 Crear Publicación</h3>
-                        <span class="panel-badge">Nuevo</span>
+                        <h3 data-clave="perfil_crear_publicacion">📸 Crear Publicación</h3>
+                        <span class="panel-badge" data-clave="perfil_nuevo">Nuevo</span>
                     </div>
                     <div class="panel-body">
                         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
-                            <button class="btn btn-gold" onclick="window.abrirModalPublicacion()" style="flex:1;justify-content:center;padding:10px;">
+                            <button class="btn btn-gold" onclick="window.abrirModalPublicacion()" style="flex:1;justify-content:center;padding:10px;" data-clave="perfil_nueva_publicacion_btn">
                                 📸 Nueva Publicación
                             </button>
                         </div>
-                        <div style="font-size:0.6rem;color:var(--text-muted);text-align:center;">
+                        <div style="font-size:0.6rem;color:var(--text-muted);text-align:center;" data-clave="perfil_comparte_comunidad">
                             Comparte fotos, videos o texto con la comunidad.
                         </div>
                     </div>
@@ -986,14 +1020,14 @@
 
                 <div class="panel">
                     <div class="panel-header">
-                        <h3>◈ Mis Publicaciones</h3>
+                        <h3 data-clave="perfil_mis_publicaciones">◈ Mis Publicaciones</h3>
                         <span class="panel-badge" id="postsCount">0</span>
                     </div>
                     <div class="panel-body" id="postsList">
                         <div class="empty-state">
                             <span class="icon">📝</span>
-                            <h4>Sin publicaciones</h4>
-                            <p>Crea tu primera publicación desde el botón "Nueva Publicación".</p>
+                            <h4 data-clave="perfil_sin_publicaciones">Sin publicaciones</h4>
+                            <p data-clave="perfil_crea_primera">Crea tu primera publicación desde el botón "Nueva Publicación".</p>
                         </div>
                     </div>
                 </div>
@@ -1003,13 +1037,13 @@
                 <!-- ============================================================ -->
                 <div class="panel" id="membresiaPanel">
                     <div class="panel-header">
-                        <h3>✦ Sariel's Pro</h3>
-                        <span class="panel-badge">Membresía</span>
+                        <h3 data-clave="perfil_pro_titulo">✦ Sariel's Pro</h3>
+                        <span class="panel-badge" data-clave="perfil_membresia">Membresía</span>
                     </div>
                     <div class="panel-body" id="membresiaContainer">
                         <div class="empty-state">
                             <span class="icon">⏳</span>
-                            <h4>Cargando membresía...</h4>
+                            <h4 data-clave="perfil_cargando_membresia">Cargando membresía...</h4>
                         </div>
                     </div>
                 </div>
@@ -1017,26 +1051,26 @@
 
             <div id="tab-tokens" class="tab-content">
                 <div class="panel">
-                    <div class="panel-header"><h3>⟡ Balance E.S.TOKS & Domos</h3><span class="panel-badge">Ecosistema</span></div>
+                    <div class="panel-header"><h3 data-clave="perfil_balance_tokens">⟡ Balance E.S.TOKS & Domos</h3><span class="panel-badge" data-clave="perfil_ecosistema">Ecosistema</span></div>
                     <div class="panel-body">
                         <div class="token-status">
-                            <div class="item"><div class="value" id="tokenTotal">0</div><div class="label">◈ Balance Tokens</div></div>
-                            <div class="item"><div class="value" id="tokenDisponibles">0</div><div class="label">◈ Disponibles</div></div>
-                            <div class="item"><div class="value" id="tokenVendidos">0</div><div class="label">◈ Domos Leídos</div></div>
-                            <div class="item"><div class="value" id="tokenNFTs">0</div><div class="label">◈ NFTs Desbloqueados</div></div>
+                            <div class="item"><div class="value" id="tokenTotal">0</div><div class="label" data-clave="perfil_balance">◈ Balance Tokens</div></div>
+                            <div class="item"><div class="value" id="tokenDisponibles">0</div><div class="label" data-clave="perfil_disponibles">◈ Disponibles</div></div>
+                            <div class="item"><div class="value" id="tokenVendidos">0</div><div class="label" data-clave="perfil_domos_leidos">◈ Domos Leídos</div></div>
+                            <div class="item"><div class="value" id="tokenNFTs">0</div><div class="label" data-clave="perfil_nfts_desbloqueados">◈ NFTs Desbloqueados</div></div>
                         </div>
                         <div class="progress-bar-container">
                             <div class="bar"><div class="fill" id="progressFill" style="width:0%;"></div></div>
-                            <div class="label"><span>Progreso meta 12 E.S.TOKS</span><span id="progressText">0 / 12</span></div>
+                            <div class="label"><span data-clave="perfil_progreso_meta">Progreso meta 12 E.S.TOKS</span><span id="progressText">0 / 12</span></div>
                         </div>
                         <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;">
-                            <button class="btn btn-gold" style="flex:1;justify-content:center;padding:10px;" onclick="window.comprarDomo(1)">⟡ Registrar Domo • $75 MXN</button>
-                            <button class="btn btn-gold" style="flex:1;justify-content:center;padding:10px;" id="canjearNft" onclick="window.canjearNFT()" disabled>🔒 CANJEAR NFT (Requiere 12 Tokens)</button>
+                            <button class="btn btn-gold" style="flex:1;justify-content:center;padding:10px;" onclick="window.comprarDomo(1)" data-clave="perfil_registrar_domo">⟡ Registrar Domo • $75 MXN</button>
+                            <button class="btn btn-gold" style="flex:1;justify-content:center;padding:10px;" id="canjearNft" onclick="window.canjearNFT()" disabled data-clave="perfil_canjear_nft">🔒 CANJEAR NFT (Requiere 12 Tokens)</button>
                         </div>
                         <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--glass-border);">
                             <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
-                                <span style="font-size:0.8rem;color:var(--gold);font-weight:600;">💳 Obtención vía Cripto</span>
-                                <span style="font-size:0.6rem;color:var(--text-muted);">USDT / USDC · Red TRC-20</span>
+                                <span style="font-size:0.8rem;color:var(--gold);font-weight:600;" data-clave="perfil_obtencion_cripto">💳 Obtención vía Cripto</span>
+                                <span style="font-size:0.6rem;color:var(--text-muted);" data-clave="perfil_usdt_trc20">USDT / USDC · Red TRC-20</span>
                             </div>
                             <div class="crypto-controls">
                                 <div class="qty-group">
@@ -1046,69 +1080,69 @@
                                 </div>
                                 <div style="flex:1;text-align:center;"><span class="crypto-total" id="cryptoTotal">$4.59 USDT</span></div>
                             </div>
-                            <button class="btn btn-crypto" style="width:100%;justify-content:center;margin-top:10px;padding:10px;" onclick="window.comprarConCripto()">💳 Pagar con USDT/USDC</button>
+                            <button class="btn btn-crypto" style="width:100%;justify-content:center;margin-top:10px;padding:10px;" onclick="window.comprarConCripto()" data-clave="perfil_pagar_usdt">💳 Pagar con USDT/USDC</button>
                         </div>
                     </div>
                 </div>
                 <div class="panel">
-                    <div class="panel-header"><h3>◈ Historial de E.S.TOKS y Domos</h3><span class="panel-badge" id="historialCount">0</span></div>
-                    <div class="panel-body" id="historialList"><div class="empty-state"><span class="icon">◈</span><h4>Sin registros</h4><p>Registra o escanea Domos para acumular tu historial.</p></div></div>
+                    <div class="panel-header"><h3 data-clave="perfil_historial">◈ Historial de E.S.TOKS y Domos</h3><span class="panel-badge" id="historialCount">0</span></div>
+                    <div class="panel-body" id="historialList"><div class="empty-state"><span class="icon">◈</span><h4 data-clave="perfil_sin_registros">Sin registros</h4><p data-clave="perfil_registra_escanea">Registra o escanea Domos para acumular tu historial.</p></div></div>
                 </div>
             </div>
 
             <div id="tab-nfts" class="tab-content">
                 <div class="panel">
-                    <div class="panel-header"><h3>🎨 Galería de NFTs Conmemorativos</h3><span class="panel-badge">Sariel's Collection</span></div>
+                    <div class="panel-header"><h3 data-clave="perfil_galeria_nfts">🎨 Galería de NFTs Conmemorativos</h3><span class="panel-badge" data-clave="perfil_collection">Sariel's Collection</span></div>
                     <div class="panel-body">
-                        <div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:14px;">ⓘ Los NFTs de Sariel's son activos digitales conmemorativos e intransferibles emitidos al completar metas dentro de la red.</div>
-                        <div id="nftGalleryContainer" class="nft-grid"><div class="empty-state" style="grid-column:1/-1;"><span class="icon">🎨</span><h4>No posees NFTs conmemorativos</h4><p>Reúne 12 E.S.TOKS para canjear tu primer NFT conmemorativo.</p></div></div>
+                        <div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:14px;" data-clave="perfil_nfts_info">ⓘ Los NFTs de Sariel's son activos digitales conmemorativos e intransferibles emitidos al completar metas dentro de la red.</div>
+                        <div id="nftGalleryContainer" class="nft-grid"><div class="empty-state" style="grid-column:1/-1;"><span class="icon">🎨</span><h4 data-clave="perfil_no_nfts">No posees NFTs conmemorativos</h4><p data-clave="perfil_canjea_nft">Reúne 12 E.S.TOKS para canjear tu primer NFT conmemorativo.</p></div></div>
                     </div>
                 </div>
             </div>
 
             <div id="tab-esim" class="tab-content">
                 <div class="panel">
-                    <div class="panel-header"><h3>📱 Estado de eSIM</h3><span class="panel-badge">Telnyx Mobile</span></div>
+                    <div class="panel-header"><h3 data-clave="perfil_esim_estado">📱 Estado de eSIM</h3><span class="panel-badge" data-clave="perfil_telnyx">Telnyx Mobile</span></div>
                     <div class="panel-body">
                         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;">
-                            <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;border:1px solid var(--glass-border);"><span style="color:var(--text-muted);font-size:0.6rem;">ESTADO ACTIVACIÓN</span><div id="esimStatus" style="font-weight:600;font-size:0.85rem;">⏳ No asignada</div></div>
-                            <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;border:1px solid var(--glass-border);"><span style="color:var(--text-muted);font-size:0.6rem;">DATOS CONSUMIDOS</span><div id="esimDataUsed" style="font-weight:600;font-size:0.85rem;">-- GB</div></div>
-                            <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;border:1px solid var(--glass-border);"><span style="color:var(--text-muted);font-size:0.6rem;">LÍMITE DEL PLAN</span><div id="esimDataLimit" style="font-weight:600;font-size:0.85rem;">-- GB</div></div>
-                            <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;border:1px solid var(--glass-border);"><span style="color:var(--text-muted);font-size:0.6rem;">DATOS RESTANTES</span><div id="esimDataRestante" style="font-weight:600;font-size:0.85rem;color:var(--success);">-- GB</div></div>
+                            <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;border:1px solid var(--glass-border);"><span style="color:var(--text-muted);font-size:0.6rem;" data-clave="perfil_estado_activacion">ESTADO ACTIVACIÓN</span><div id="esimStatus" style="font-weight:600;font-size:0.85rem;">⏳ No asignada</div></div>
+                            <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;border:1px solid var(--glass-border);"><span style="color:var(--text-muted);font-size:0.6rem;" data-clave="perfil_datos_consumidos">DATOS CONSUMIDOS</span><div id="esimDataUsed" style="font-weight:600;font-size:0.85rem;">-- GB</div></div>
+                            <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;border:1px solid var(--glass-border);"><span style="color:var(--text-muted);font-size:0.6rem;" data-clave="perfil_limite_plan">LÍMITE DEL PLAN</span><div id="esimDataLimit" style="font-weight:600;font-size:0.85rem;">-- GB</div></div>
+                            <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;border:1px solid var(--glass-border);"><span style="color:var(--text-muted);font-size:0.6rem;" data-clave="perfil_datos_restantes">DATOS RESTANTES</span><div id="esimDataRestante" style="font-weight:600;font-size:0.85rem;color:var(--success);">-- GB</div></div>
                         </div>
-                        <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;border:1px solid var(--glass-border);margin-top:10px;"><span style="color:var(--text-muted);font-size:0.6rem;">ICCID IDENTIFICADOR</span><div id="esimIccid" style="font-weight:600;font-size:0.8rem;font-family:monospace;">--</div></div>
+                        <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;border:1px solid var(--glass-border);margin-top:10px;"><span style="color:var(--text-muted);font-size:0.6rem;" data-clave="perfil_iccid">ICCID IDENTIFICADOR</span><div id="esimIccid" style="font-weight:600;font-size:0.8rem;font-family:monospace;">--</div></div>
                         <div style="margin-top:12px;"><div style="background:rgba(0,0,0,0.2);border-radius:10px;height:8px;overflow:hidden;"><div id="esimDataProgress" style="height:100%;width:0%;background:var(--success);transition:width 0.8s;"></div></div></div>
                         <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;">
-                            <button class="btn btn-gold" style="flex:1;justify-content:center;padding:10px;" onclick="window.comprarESIM(1)">📱 Adquirir eSIM</button>
-                            <button class="btn btn-outline" style="flex:1;justify-content:center;padding:10px;" onclick="window.generarQRESIM()">📲 Obtener QR</button>
-                            <button class="btn btn-outline" style="flex:1;justify-content:center;padding:10px;" onclick="window.sincronizarESIM()">🔄 Sincronizar</button>
+                            <button class="btn btn-gold" style="flex:1;justify-content:center;padding:10px;" onclick="window.comprarESIM(1)" data-clave="perfil_adquirir_esim">📱 Adquirir eSIM</button>
+                            <button class="btn btn-outline" style="flex:1;justify-content:center;padding:10px;" onclick="window.generarQRESIM()" data-clave="perfil_obtener_qr">📲 Obtener QR</button>
+                            <button class="btn btn-outline" style="flex:1;justify-content:center;padding:10px;" onclick="window.sincronizarESIM()" data-clave="perfil_sincronizar">🔄 Sincronizar</button>
                         </div>
                         <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
-                            <button class="btn btn-outline btn-sm" onclick="window.activarESIM()" style="border-color:var(--success);color:var(--success);">✅ Activar eSIM</button>
-                            <button class="btn btn-danger btn-sm" onclick="window.desactivarESIM()">⛔ Desactivar eSIM</button>
+                            <button class="btn btn-outline btn-sm" onclick="window.activarESIM()" style="border-color:var(--success);color:var(--success);" data-clave="perfil_activar_esim">✅ Activar eSIM</button>
+                            <button class="btn btn-danger btn-sm" onclick="window.desactivarESIM()" data-clave="perfil_desactivar_esim">⛔ Desactivar eSIM</button>
                         </div>
-                        <div style="margin-top:10px;font-size:0.6rem;color:var(--text-muted);">APN Requerido: <span id="esimApn" style="font-family:monospace;color:var(--text-secondary);">data00.telnyx</span></div>
+                        <div style="margin-top:10px;font-size:0.6rem;color:var(--text-muted);" data-clave="perfil_apn_requerido">APN Requerido: <span id="esimApn" style="font-family:monospace;color:var(--text-secondary);">data00.telnyx</span></div>
                     </div>
                 </div>
             </div>
 
             <div id="tab-qr" class="tab-content">
                 <div class="panel">
-                    <div class="panel-header"><h3>📱 Escaneo e Ingreso de QR Domo</h3><span class="panel-badge">Validación Real</span></div>
+                    <div class="panel-header"><h3 data-clave="perfil_escanear_qr">📱 Escaneo e Ingreso de QR Domo</h3><span class="panel-badge" data-clave="perfil_validacion_real">Validación Real</span></div>
                     <div class="panel-body">
                         <form onsubmit="event.preventDefault(); window.escanearQR();" class="config-group">
-                            <label for="qrInput">Código del QR (Escanea o ingresa manualmente)</label>
+                            <label for="qrInput" data-clave="perfil_codigo_qr">Código del QR (Escanea o ingresa manualmente)</label>
                             <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                                <input type="text" id="qrInput" placeholder="Ej: DOMO-2026-X89A12" required style="flex:1;padding:10px 14px;background:rgba(0,0,0,0.3);border:1px solid var(--glass-border);border-radius:10px;color:var(--text-primary);font-size:0.85rem;outline:none;">
-                                <button type="submit" class="btn btn-gold">🔍 Validar Código</button>
+                                <input type="text" id="qrInput" placeholder="Ej: DOMO-2026-X89A12" required style="flex:1;padding:10px 14px;background:rgba(0,0,0,0.3);border:1px solid var(--glass-border);border-radius:10px;color:var(--text-primary);font-size:0.85rem;outline:none;" data-placeholder="perfil_ejemplo_domo" />
+                                <button type="submit" class="btn btn-gold" data-clave="perfil_validar_codigo">🔍 Validar Código</button>
                             </div>
-                            <div class="hint">⚡ Ingresa el identificador único del Domo físico para acumular 1 E.S.TOK real.</div>
+                            <div class="hint" data-clave="perfil_escanea_qr_hint">⚡ Ingresa el identificador único del Domo físico para acumular 1 E.S.TOK real.</div>
                         </form>
-                        <button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:8px;padding:10px;" onclick="window.abrirCamaraQR()">📷 Abrir Cámara del Dispositivo</button>
+                        <button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:8px;padding:10px;" onclick="window.abrirCamaraQR()" data-clave="perfil_abrir_camara">📷 Abrir Cámara del Dispositivo</button>
                         <div id="qrReaderContainer">
                             <video id="qrVideo" playsinline style="width:100%;max-width:300px;border-radius:10px;background:black;"></video>
                             <canvas id="qrCanvas" style="display:none;"></canvas>
-                            <div style="margin-top:8px;"><button class="btn btn-danger btn-sm" onclick="window.cerrarCamaraQR()">✕ Cerrar cámara</button></div>
+                            <div style="margin-top:8px;"><button class="btn btn-danger btn-sm" onclick="window.cerrarCamaraQR()" data-clave="perfil_cerrar_camara">✕ Cerrar cámara</button></div>
                             <div id="qrCamaraStatus" style="font-size:0.7rem;color:var(--text-muted);margin-top:4px;">Iniciando cámara...</div>
                         </div>
                         <div id="qrStatus" style="margin-top:12px;font-size:0.8rem;color:var(--text-muted);min-height:24px;text-align:center;"></div>
@@ -1118,30 +1152,30 @@
 
             <div id="tab-config" class="tab-content">
                 <div class="panel">
-                    <div class="panel-header"><h3>◆ Perfil e Información</h3><span class="panel-badge">Editar</span></div>
+                    <div class="panel-header"><h3 data-clave="perfil_editar_perfil">◆ Perfil e Información</h3><span class="panel-badge" data-clave="perfil_editar">Editar</span></div>
                     <div class="panel-body">
                         <form onsubmit="event.preventDefault(); window.guardarPerfil();">
-                            <div class="config-group"><label for="editNombre">Nombre de Usuario</label><input type="text" id="editNombre" required /></div>
-                            <div class="config-group"><label for="editHandle">Handle / Apodo (@)</label><input type="text" id="editHandle" required /></div>
-                            <div class="config-group"><label for="editBio">Biografía</label><textarea id="editBio" rows="3"></textarea></div>
-                            <div class="config-group"><label>Imagen de Perfil</label><button type="button" class="btn btn-outline" style="width:100%;" onclick="window.abrirSelectorArchivo()">📸 Subir nueva foto</button></div>
-                            <button type="submit" class="btn btn-gold" style="width:100%;justify-content:center;padding:10px;">◆ Guardar Cambios</button>
+                            <div class="config-group"><label for="editNombre" data-clave="perfil_nombre_usuario">Nombre de Usuario</label><input type="text" id="editNombre" required /></div>
+                            <div class="config-group"><label for="editHandle" data-clave="perfil_handle">Handle / Apodo (@)</label><input type="text" id="editHandle" required /></div>
+                            <div class="config-group"><label for="editBio" data-clave="perfil_biografia">Biografía</label><textarea id="editBio" rows="3"></textarea></div>
+                            <div class="config-group"><label data-clave="perfil_imagen_perfil">Imagen de Perfil</label><button type="button" class="btn btn-outline" style="width:100%;" onclick="window.abrirSelectorArchivo()" data-clave="perfil_subir_foto">📸 Subir nueva foto</button></div>
+                            <button type="submit" class="btn btn-gold" style="width:100%;justify-content:center;padding:10px;" data-clave="perfil_guardar_cambios">◆ Guardar Cambios</button>
                         </form>
                     </div>
                 </div>
                 <div class="panel">
-                    <div class="panel-header"><h3>◆ Seguridad y Wallet Web3</h3><span class="panel-badge">Conexión</span></div>
+                    <div class="panel-header"><h3 data-clave="perfil_seguridad_wallet">◆ Seguridad y Wallet Web3</h3><span class="panel-badge" data-clave="perfil_conexion">Conexión</span></div>
                     <div class="panel-body">
                         <div class="config-group">
-                            <label>Dirección Wallet Conectada</label>
+                            <label data-clave="perfil_wallet_conectada">Dirección Wallet Conectada</label>
                             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px;">
                                 <span id="walletDisplay" style="font-family:monospace;font-size:0.85rem;color:var(--text-secondary);">⚠️ No conectada</span>
-                                <button type="button" class="btn btn-wallet btn-sm" onclick="window.conectarWallet()">◈ Conectar Wallet</button>
-                                <button type="button" class="btn btn-danger btn-sm" onclick="window.desconectarWallet()" style="display:none;">✕ Desconectar</button>
+                                <button type="button" class="btn btn-wallet btn-sm" onclick="window.conectarWallet()" data-clave="perfil_conectar_wallet">◈ Conectar Wallet</button>
+                                <button type="button" class="btn btn-danger btn-sm" onclick="window.desconectarWallet()" style="display:none;" data-clave="perfil_desconectar_wallet">✕ Desconectar</button>
                             </div>
-                            <div class="hint">Red Actual: <span id="walletRed">Polygon Mainnet</span></div>
+                            <div class="hint" data-clave="perfil_red_actual">Red Actual: <span id="walletRed">Polygon Mainnet</span></div>
                         </div>
-                        <button type="button" class="btn btn-danger" style="width:100%;justify-content:center;padding:10px;margin-top:12px;" onclick="window.cerrarSesion()">✕ Cerrar Sesión</button>
+                        <button type="button" class="btn btn-danger" style="width:100%;justify-content:center;padding:10px;margin-top:12px;" onclick="window.cerrarSesion()" data-clave="perfil_cerrar_sesion">✕ Cerrar Sesión</button>
                     </div>
                 </div>
             </div>
@@ -1151,9 +1185,9 @@
         <footer class="footer">
             <span><span class="brand">◈ Sariel's</span> · Red Social WEB3</span>
             <div class="footer-links">
-                <a href="/terminos">Términos</a>
-                <a href="/privacidad">Privacidad</a>
-                <a href="/cookies">Cookies</a>
+                <a href="/terminos" data-clave="perfil_footer_terminos">Términos</a>
+                <a href="/privacidad" data-clave="perfil_footer_privacidad">Privacidad</a>
+                <a href="/cookies" data-clave="perfil_footer_cookies">Cookies</a>
                 <span style="opacity:0.4;">⚡ Powered by Polygon</span>
             </div>
         </footer>
@@ -1161,38 +1195,38 @@
     </div>
 
     <!-- ================================================================ -->
-    <!-- MODAL PARA CREAR PUBLICACIÓN -->
+    <!-- MODALES -->
     <!-- ================================================================ -->
     <div class="modal-overlay" id="publicacionModal">
         <div class="modal-content" style="max-width:560px;text-align:left;position:relative;">
             <button class="close-btn" onclick="window.cerrarModal('publicacionModal')">✕</button>
-            <h2 style="text-align:center;">📸 Nueva Publicación</h2>
-            <p class="subtitle" style="text-align:center;">Comparte lo que está pasando</p>
+            <h2 style="text-align:center;" data-clave="perfil_nueva_publicacion">📸 Nueva Publicación</h2>
+            <p class="subtitle" style="text-align:center;" data-clave="perfil_comparte_lo_que_pasa">Comparte lo que está pasando</p>
 
             <div class="config-group">
-                <label>Texto de la publicación</label>
+                <label data-clave="perfil_texto_publicacion">Texto de la publicación</label>
                 <div style="position:relative;">
-                    <textarea id="pubTexto" rows="4" placeholder="¿Qué estás pensando?" style="width:100%;padding:10px 14px;background:rgba(0,0,0,0.25);border:1px solid var(--glass-border);border-radius:10px;color:var(--text-primary);font-size:0.85rem;outline:none;resize:vertical;min-height:80px;font-family:'Inter',sans-serif;"></textarea>
+                    <textarea id="pubTexto" rows="4" placeholder="¿Qué estás pensando?" style="width:100%;padding:10px 14px;background:rgba(0,0,0,0.25);border:1px solid var(--glass-border);border-radius:10px;color:var(--text-primary);font-size:0.85rem;outline:none;resize:vertical;min-height:80px;font-family:'Inter',sans-serif;" data-placeholder="perfil_que_piensas"></textarea>
                     <div class="publicacion-modal-emoji-wrapper" style="position:absolute;bottom:10px;right:10px;z-index:2;">
                         <button type="button" id="btnEmojiPerfil" onclick="window.toggleEmojiPickerPerfil()" style="background:transparent;border:none;font-size:1.4rem;cursor:pointer;padding:4px 8px;border-radius:8px;transition:all 0.2s ease;">😊</button>
                         <div class="emoji-picker" id="emojiPickerPerfil">
-                            <div class="titulo">✦ Elige tu emoji</div>
+                            <div class="titulo" data-clave="perfil_elige_emoji">✦ Elige tu emoji</div>
                             <div class="grid" id="emojiGridPerfil"></div>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="config-group">
-                <label>Archivo (foto o video)</label>
+                <label data-clave="perfil_archivo">Archivo (foto o video)</label>
                 <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
                     <input type="file" id="pubArchivo" accept="image/*,video/*" style="flex:1;padding:8px;background:rgba(0,0,0,0.3);border:1px solid var(--glass-border);border-radius:10px;color:var(--text-primary);font-size:0.7rem;"/>
-                    <span style="font-size:0.55rem;color:var(--text-muted);">📸 Foto o 🎬 Video</span>
+                    <span style="font-size:0.55rem;color:var(--text-muted);" data-clave="perfil_foto_video">📸 Foto o 🎬 Video</span>
                 </div>
                 <div id="pubPreview" style="margin-top:10px;display:none;border-radius:10px;overflow:hidden;max-height:200px;background:var(--space);"></div>
             </div>
             <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;">
-                <button class="btn btn-outline" style="flex:1;justify-content:center;padding:10px;" onclick="window.cerrarModal('publicacionModal')">Cancelar</button>
-                <button class="btn btn-gold" style="flex:1;justify-content:center;padding:10px;" id="btnPublicar" onclick="window.publicarContenido()">🚀 Publicar</button>
+                <button class="btn btn-outline" style="flex:1;justify-content:center;padding:10px;" onclick="window.cerrarModal('publicacionModal')" data-clave="perfil_cancelar">Cancelar</button>
+                <button class="btn btn-gold" style="flex:1;justify-content:center;padding:10px;" id="btnPublicar" onclick="window.publicarContenido()" data-clave="perfil_publicar">🚀 Publicar</button>
             </div>
             <div id="pubStatus" style="margin-top:10px;font-size:0.7rem;color:var(--text-muted);text-align:center;min-height:20px;"></div>
         </div>
@@ -1204,13 +1238,13 @@
     <div class="modal-overlay" id="modalComentarios">
         <div class="modal-content" style="max-width:500px;text-align:left;">
             <button class="close-btn" onclick="window.cerrarModalComentarios()">✕</button>
-            <h2 style="text-align:center;">💬 Comentarios</h2>
+            <h2 style="text-align:center;" data-clave="perfil_comentarios">💬 Comentarios</h2>
             <div id="comentariosList" style="max-height:300px;overflow-y:auto;margin:12px 0;">
-                <div style="color:var(--text-muted);text-align:center;padding:20px;">Cargando comentarios...</div>
+                <div style="color:var(--text-muted);text-align:center;padding:20px;" data-clave="perfil_cargando_comentarios">Cargando comentarios...</div>
             </div>
             <div style="display:flex;gap:8px;margin-top:8px;">
-                <input type="text" id="inputComentario" placeholder="Escribe un comentario..." style="flex:1;padding:8px 14px;background:rgba(0,0,0,0.25);border:1px solid var(--glass-border);border-radius:10px;color:var(--text-primary);font-size:0.85rem;outline:none;">
-                <button class="btn btn-gold" onclick="window.enviarComentario()" style="padding:8px 16px;">Enviar</button>
+                <input type="text" id="inputComentario" placeholder="Escribe un comentario..." style="flex:1;padding:8px 14px;background:rgba(0,0,0,0.25);border:1px solid var(--glass-border);border-radius:10px;color:var(--text-primary);font-size:0.85rem;outline:none;" data-placeholder="perfil_escribe_comentario" />
+                <button class="btn btn-gold" onclick="window.enviarComentario()" style="padding:8px 16px;" data-clave="perfil_enviar">Enviar</button>
             </div>
         </div>
     </div>
@@ -1218,59 +1252,13 @@
     <div class="toast" id="toast"></div>
 
     <!-- ================================================================ -->
-    <!-- MODALES EXISTENTES -->
-    <!-- ================================================================ -->
-    <div class="modal-overlay" id="nftModal">
-        <div class="modal-content">
-            <button class="close-btn" onclick="window.cerrarModal('nftModal')">✕</button>
-            <h2 id="nftModalTitle">NFT Conmemorativo</h2>
-            <div style="margin:15px 0;"><img id="nftModalImage" src="" alt="NFT" style="max-width:200px;width:100%;border-radius:12px;border:1px solid var(--gold);" /></div>
-            <p id="nftModalDescription" class="subtitle" style="font-size:0.8rem;"></p>
-            <div class="address-box"><div class="label">Domo de Origen / Transacción</div><div class="address" id="nftModalDomo">--</div></div>
-            <div class="address-box"><div class="label">Fecha de Obtención</div><div class="address" id="nftModalFecha">--</div></div>
-            <div class="actions"><button class="btn btn-outline btn-sm" onclick="window.cerrarModal('nftModal')">Cerrar</button></div>
-        </div>
-    </div>
-
-    <div class="modal-overlay" id="cryptoPaymentModal">
-        <div class="modal-content">
-            <button class="close-btn" onclick="window.cerrarModal('cryptoPaymentModal')">✕</button>
-            <h2>💳 Pagar con Cripto</h2>
-            <p class="subtitle">Escanea el QR o copia la dirección oficial de depósito</p>
-            <div class="qr-container"><img id="cryptoQR" src="" alt="QR" /></div>
-            <div class="address-box"><div class="label">📤 Dirección TRC-20 de pago</div><div class="address" id="cryptoAddress">Cargando dirección...</div></div>
-            <div class="amount"><span id="cryptoMonto">0.00</span> <span id="cryptoMoneda">USDT</span></div>
-            <div class="actions">
-                <button class="btn btn-outline btn-sm" onclick="window.copiarDireccion()">📋 Copiar dirección</button>
-                <button class="btn btn-gold btn-sm" onclick="window.verificarPagoCrypto()">✅ Verificar depósito</button>
-                <button class="btn btn-outline btn-sm" onclick="window.cerrarModal('cryptoPaymentModal')">Cancelar</button>
-            </div>
-            <div class="status" id="cryptoStatus">⏳ Esperando confirmación en la red...</div>
-        </div>
-    </div>
-
-    <div class="modal-overlay" id="qrPerfilModal">
-        <div class="modal-content">
-            <button class="close-btn" onclick="window.cerrarModal('qrPerfilModal')">✕</button>
-            <h2>📱 Mi QR de Perfil</h2>
-            <p class="subtitle">Muestra este código para que te agreguen rápidamente</p>
-            <div class="qr-container"><img id="qrPerfilImage" src="" alt="QR" /></div>
-            <div class="actions"><button class="btn btn-outline btn-sm" onclick="window.cerrarModal('qrPerfilModal')">Cerrar</button></div>
-        </div>
-    </div>
-
-    <div id="errorBanner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:99999;background:#ff3366;color:#fff;padding:12px 16px;font-family:monospace;font-size:0.75rem;word-break:break-word;">
-        <strong>⚠️ Error detectado:</strong>
-        <span id="errorBannerText"></span>
-        <button onclick="document.getElementById('errorBanner').style.display='none'" style="float:right;background:none;border:1px solid #fff;color:#fff;border-radius:6px;padding:2px 10px;cursor:pointer;">Cerrar</button>
-    </div>
-
-    <!-- ================================================================ -->
     <!-- SCRIPTS -->
     <!-- ================================================================ -->
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="/app.js"></script>
+    <!-- 🆕 IDIOMAS -->
+    <script src="/features/shared/js/idiomas.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
     <script src="./perfil.js"></script>
 
