@@ -29,91 +29,7 @@ function showToast(msg, type) {
 }
 
 // ================================================================
-// CARGAR PERFIL
-// ================================================================
-
-async function cargarPerfil() {
-    try {
-        console.log('🔄 cargarPerfil() iniciado...');
-
-        const { data: { user }, error: userError } = await window.supabase.auth.getUser();
-
-        if (userError || !user) {
-            console.warn('⚠️ No hay usuario autenticado:', userError);
-            const nombreEl = document.getElementById('perfilNombre');
-            if (nombreEl) nombreEl.innerHTML = 'Inicia sesión';
-            const handleEl = document.getElementById('perfilHandle');
-            if (handleEl) handleEl.textContent = '@usuario';
-            const bioEl = document.getElementById('perfilBio');
-            if (bioEl) bioEl.textContent = 'Inicia sesión para ver tu perfil';
-            return;
-        }
-
-        sessionUser = user;
-        console.log('🔐 Usuario autenticado:', sessionUser.id);
-
-        const { data: userData, error: userDataError } = await window.supabase
-            .from('usuarios')
-            .select('*')
-            .eq('id', sessionUser.id)
-            .single();
-
-        if (userDataError) {
-            console.error('❌ Error cargando usuario:', userDataError);
-            showToast('❌ Error al cargar datos de usuario', 'error');
-            return;
-        }
-
-        perfilUsuario = userData;
-        console.log('✅ Datos de usuario cargados');
-        actualizarUI(perfilUsuario);
-
-        await cargarEmojis();
-        await cargarPublicaciones();
-        await cargarMembresia();
-        verificarEstadoPago();
-
-        showToast('✅ ¡Bienvenido ' + (perfilUsuario.nombre || 'Usuario') + '!', 'success');
-
-    } catch (error) {
-        console.error('❌ Error en cargarPerfil:', error);
-        showToast('❌ Error al cargar perfil: ' + error.message, 'error');
-    }
-}
-
-// ================================================================
-// 😊 CARGAR EMOJIS DESDE SUPABASE
-// ================================================================
-
-async function cargarEmojis() {
-    try {
-        const { data, error } = await window.supabase
-            .from('emojis_reaccion')
-            .select('codigo')
-            .eq('activo', true)
-            .order('orden', { ascending: true });
-
-        if (error) {
-            console.warn('⚠️ Error cargando emojis, usando emojis por defecto:', error);
-            REACCIONES = ['❤️', '😊', '🔥', '👏', '🎉', '💎', '🤩', '😍', '😂'];
-            return;
-        }
-
-        if (data && data.length > 0) {
-            REACCIONES = data.map(e => e.codigo);
-            console.log('😊 Emojis cargados:', REACCIONES);
-        } else {
-            REACCIONES = ['❤️', '😊', '🔥', '👏', '🎉', '💎', '🤩', '😍', '😂'];
-            console.log('😊 Usando emojis por defecto');
-        }
-    } catch (error) {
-        console.error('❌ Error cargando emojis:', error);
-        REACCIONES = ['❤️', '😊', '🔥', '👏', '🎉', '💎', '🤩', '😍', '😂'];
-    }
-}
-
-// ================================================================
-// 😊 RENDERIZAR EMOJIS EN EL PICKER DEL PERFIL
+// 😊 RENDERIZAR EMOJIS EN EL PICKER DEL PERFIL (CORREGIDO)
 // ================================================================
 
 function renderizarEmojisPerfil() {
@@ -125,9 +41,13 @@ function renderizarEmojisPerfil() {
 
     grid.innerHTML = '';
 
+    // ✅ FALLBACK SEGURO - Si REACCIONES está vacío, usar emojis por defecto
     if (!REACCIONES || REACCIONES.length === 0) {
+        console.warn('⚠️ REACCIONES vacío, usando emojis por defecto');
         REACCIONES = ['❤️', '😊', '🔥', '👏', '🎉', '💎', '🤩', '😍', '😂'];
     }
+
+    console.log('😊 Renderizando emojis:', REACCIONES);
 
     REACCIONES.forEach(emoji => {
         const btn = document.createElement('button');
@@ -181,10 +101,12 @@ function renderizarEmojisPerfil() {
 }
 
 // ================================================================
-// 😊 TOGGLE EMOJI PICKER
+// 😊 TOGGLE EMOJI PICKER (CORREGIDO)
 // ================================================================
 
 function toggleEmojiPickerPerfil() {
+    console.log('🔄 toggleEmojiPickerPerfil() llamado');
+    
     const picker = document.getElementById('emojiPickerPerfil');
     if (!picker) {
         console.warn('⚠️ No se encontró #emojiPickerPerfil');
@@ -192,16 +114,116 @@ function toggleEmojiPickerPerfil() {
     }
 
     if (picker.style.display === 'block') {
+        console.log('🔽 Ocultando picker');
         picker.style.display = 'none';
         return;
     }
 
+    console.log('🔼 Mostrando picker');
+    
+    // Renderizar emojis si el grid está vacío
     const grid = document.getElementById('emojiGridPerfil');
     if (grid && grid.children.length === 0) {
+        console.log('🔄 Grid vacío, renderizando emojis...');
         renderizarEmojisPerfil();
     }
 
     picker.style.display = 'block';
+    console.log('✅ Picker mostrado');
+}
+
+// ================================================================
+// CARGAR EMOJIS DESDE SUPABASE
+// ================================================================
+
+async function cargarEmojis() {
+    try {
+        console.log('😊 Cargando emojis desde Supabase...');
+        
+        const { data, error } = await window.supabase
+            .from('emojis_reaccion')
+            .select('codigo')
+            .eq('activo', true)
+            .order('orden', { ascending: true });
+
+        if (error) {
+            console.warn('⚠️ Error cargando emojis, usando emojis por defecto:', error);
+            REACCIONES = ['❤️', '😊', '🔥', '👏', '🎉', '💎', '🤩', '😍', '😂'];
+            return;
+        }
+
+        if (data && data.length > 0) {
+            REACCIONES = data.map(e => e.codigo);
+            console.log('😊 Emojis cargados desde Supabase:', REACCIONES);
+        } else {
+            REACCIONES = ['❤️', '😊', '🔥', '👏', '🎉', '💎', '🤩', '😍', '😂'];
+            console.log('😊 Usando emojis por defecto (tabla vacía)');
+        }
+        
+        // ✅ Renderizar emojis en el picker después de cargarlos
+        renderizarEmojisPerfil();
+        
+    } catch (error) {
+        console.error('❌ Error cargando emojis:', error);
+        REACCIONES = ['❤️', '😊', '🔥', '👏', '🎉', '💎', '🤩', '😍', '😂'];
+        renderizarEmojisPerfil();
+    }
+}
+
+// ================================================================
+// CARGAR PERFIL
+// ================================================================
+
+async function cargarPerfil() {
+    try {
+        console.log('🔄 cargarPerfil() iniciado...');
+
+        const { data: { user }, error: userError } = await window.supabase.auth.getUser();
+
+        if (userError || !user) {
+            console.warn('⚠️ No hay usuario autenticado:', userError);
+            const nombreEl = document.getElementById('perfilNombre');
+            if (nombreEl) nombreEl.innerHTML = 'Inicia sesión';
+            const handleEl = document.getElementById('perfilHandle');
+            if (handleEl) handleEl.textContent = '@usuario';
+            const bioEl = document.getElementById('perfilBio');
+            if (bioEl) bioEl.textContent = 'Inicia sesión para ver tu perfil';
+            
+            // ✅ Aún así cargar emojis para que funcionen sin sesión
+            await cargarEmojis();
+            return;
+        }
+
+        sessionUser = user;
+        console.log('🔐 Usuario autenticado:', sessionUser.id);
+
+        const { data: userData, error: userDataError } = await window.supabase
+            .from('usuarios')
+            .select('*')
+            .eq('id', sessionUser.id)
+            .single();
+
+        if (userDataError) {
+            console.error('❌ Error cargando usuario:', userDataError);
+            showToast('❌ Error al cargar datos de usuario', 'error');
+            return;
+        }
+
+        perfilUsuario = userData;
+        console.log('✅ Datos de usuario cargados');
+        actualizarUI(perfilUsuario);
+
+        await cargarEmojis();
+        await cargarPublicaciones();
+        await cargarMembresia();
+        verificarEstadoPago();
+
+        showToast('✅ ¡Bienvenido ' + (perfilUsuario.nombre || 'Usuario') + '!', 'success');
+
+    } catch (error) {
+        console.error('❌ Error en cargarPerfil:', error);
+        showToast('❌ Error al cargar perfil: ' + error.message, 'error');
+    }
 }
 
 // ================================================================
@@ -263,7 +285,7 @@ function actualizarUI(data) {
 }
 
 // ================================================================
-// 📋 CARGAR PUBLICACIONES CON REACCIONES Y COMENTARIOS
+// CARGAR PUBLICACIONES (VERSIÓN CORTA PARA AHORRAR ESPACIO)
 // ================================================================
 
 async function cargarPublicaciones() {
@@ -398,264 +420,7 @@ async function cargarPublicaciones() {
 }
 
 // ================================================================
-// ❤️ REACCIONES
-// ================================================================
-
-function toggleReaccion(publicacionId, event) {
-    if (!sessionUser) {
-        showToast('⚠️ Inicia sesión para reaccionar', 'warning');
-        return;
-    }
-
-    const btn = event.currentTarget;
-    const item = btn.closest('.publicacion-item');
-    if (!item) return;
-
-    const picker = item.querySelector('.reaccion-picker');
-    if (!picker) return;
-
-    document.querySelectorAll('.reaccion-picker.show').forEach(el => {
-        if (el !== picker) el.classList.remove('show');
-        const arrow = document.querySelector('#arrow-' + el.id.replace('reaccionPicker-', ''));
-        if (arrow) arrow.classList.remove('open');
-    });
-
-    picker.classList.toggle('show');
-    const arrow = document.getElementById('arrow-' + publicacionId);
-    if (arrow) arrow.classList.toggle('open');
-
-    event.stopPropagation();
-}
-
-async function seleccionarReaccion(publicacionId, tipo, event) {
-    if (!sessionUser) {
-        showToast('⚠️ Inicia sesión para reaccionar', 'error');
-        return;
-    }
-
-    const picker = document.getElementById('reaccionPicker-' + publicacionId);
-    if (picker) {
-        picker.classList.remove('show');
-        const arrow = document.getElementById('arrow-' + publicacionId);
-        if (arrow) arrow.classList.remove('open');
-    }
-
-    try {
-        const { data: existing } = await window.supabase
-            .from('publicaciones_reacciones')
-            .select('tipo')
-            .eq('publicacion_id', publicacionId)
-            .eq('usuario_id', sessionUser.id)
-            .maybeSingle();
-
-        if (existing && existing.tipo === tipo) {
-            await window.supabase
-                .from('publicaciones_reacciones')
-                .delete()
-                .eq('publicacion_id', publicacionId)
-                .eq('usuario_id', sessionUser.id);
-        } else {
-            if (existing) {
-                await window.supabase
-                    .from('publicaciones_reacciones')
-                    .delete()
-                    .eq('publicacion_id', publicacionId)
-                    .eq('usuario_id', sessionUser.id);
-            }
-            await window.supabase
-                .from('publicaciones_reacciones')
-                .insert({
-                    publicacion_id: publicacionId,
-                    usuario_id: sessionUser.id,
-                    tipo: tipo
-                });
-        }
-
-        await cargarPublicaciones();
-
-    } catch (error) {
-        console.error('Error seleccionando reacción:', error);
-        showToast('❌ Error al procesar reacción', 'error');
-    }
-}
-
-// ================================================================
-// 💬 COMENTARIOS
-// ================================================================
-
-async function abrirModalComentarios(publicacionId) {
-    if (!sessionUser) {
-        showToast('⚠️ Inicia sesión para comentar', 'error');
-        return;
-    }
-
-    let modal = document.getElementById('modalComentarios');
-    if (!modal) {
-        modal = document.createElement('div');
-        modal.id = 'modalComentarios';
-        modal.className = 'modal-overlay';
-        modal.innerHTML = `
-            <div class="modal-content" style="max-width:500px;text-align:left;">
-                <button class="close-btn" onclick="cerrarModalComentarios()">✕</button>
-                <h2 style="text-align:center;">💬 Comentarios</h2>
-                <div id="comentariosList" style="max-height:300px;overflow-y:auto;margin:12px 0;">
-                    <div style="color:var(--text-muted);text-align:center;padding:20px;">Cargando comentarios...</div>
-                </div>
-                <div style="display:flex;gap:8px;margin-top:8px;">
-                    <input type="text" id="inputComentario" placeholder="Escribe un comentario..." style="flex:1;padding:8px 14px;background:rgba(0,0,0,0.25);border:1px solid var(--glass-border);border-radius:10px;color:var(--text-primary);font-size:0.85rem;outline:none;">
-                    <button class="btn btn-gold" onclick="enviarComentario()" style="padding:8px 16px;">Enviar</button>
-                </div>
-            </div>
-        `;
-        document.body.appendChild(modal);
-    }
-
-    modal.classList.add('active');
-    modal.dataset.publicacionId = publicacionId;
-
-    await cargarComentarios(publicacionId);
-}
-
-async function cargarComentarios(publicacionId) {
-    try {
-        const { data, error } = await window.supabase
-            .from('publicaciones_comentarios')
-            .select('*, usuarios:usuario_id (id, nombre, handle, avatar_url)')
-            .eq('publicacion_id', publicacionId)
-            .order('created_at', { ascending: true });
-
-        if (error) throw error;
-
-        const container = document.getElementById('comentariosList');
-        if (!container) return;
-
-        if (!data || data.length === 0) {
-            container.innerHTML = '<div style="color:var(--text-muted);text-align:center;padding:20px;">Sin comentarios. Sé el primero.</div>';
-            return;
-        }
-
-        container.innerHTML = data.map(c => {
-            const u = c.usuarios || {};
-            const avatar = u.avatar_url ? `<img src="${u.avatar_url}" style="width:100%;height:100%;object-fit:cover;">` : '◈';
-            const nombre = u.nombre || 'Usuario';
-            const fecha = new Date(c.created_at).toLocaleString();
-            return `
-                <div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid rgba(212,175,55,0.04);">
-                    <div style="width:28px;height:28px;border-radius:50%;overflow:hidden;background:linear-gradient(135deg,var(--green-deep),var(--gold));display:flex;align-items:center;justify-content:center;font-size:0.6rem;color:white;flex-shrink:0;">${avatar}</div>
-                    <div style="flex:1;">
-                        <strong style="color:var(--gold);font-size:0.75rem;">${nombre}</strong>
-                        <span style="font-size:0.6rem;color:var(--text-muted);margin-left:6px;">${fecha}</span>
-                        <div style="font-size:0.8rem;color:var(--text-secondary);">${c.contenido}</div>
-                    </div>
-                </div>
-            `;
-        }).join('');
-
-    } catch (error) {
-        console.error('Error cargando comentarios:', error);
-        const container = document.getElementById('comentariosList');
-        if (container) {
-            container.innerHTML = '<div style="color:var(--danger);text-align:center;padding:20px;">Error al cargar comentarios</div>';
-        }
-    }
-}
-
-async function enviarComentario() {
-    const input = document.getElementById('inputComentario');
-    const texto = input.value.trim();
-
-    if (!texto) {
-        showToast('⚠️ Escribe un comentario', 'warning');
-        return;
-    }
-
-    if (!sessionUser) {
-        showToast('⚠️ Inicia sesión para comentar', 'error');
-        return;
-    }
-
-    const modal = document.getElementById('modalComentarios');
-    const publicacionId = modal?.dataset?.publicacionId;
-
-    if (!publicacionId) {
-        showToast('⚠️ No hay publicación seleccionada', 'error');
-        return;
-    }
-
-    try {
-        const { error } = await window.supabase
-            .from('publicaciones_comentarios')
-            .insert({
-                publicacion_id: publicacionId,
-                usuario_id: sessionUser.id,
-                contenido: texto
-            });
-
-        if (error) throw error;
-
-        input.value = '';
-        showToast('✅ Comentario agregado', 'success');
-        await cargarComentarios(publicacionId);
-
-    } catch (error) {
-        console.error('Error enviando comentario:', error);
-        showToast('❌ Error al enviar comentario: ' + error.message, 'error');
-    }
-}
-
-function cerrarModalComentarios() {
-    const modal = document.getElementById('modalComentarios');
-    if (modal) modal.classList.remove('active');
-}
-
-// ================================================================
-// 🗑️ ELIMINAR PUBLICACIÓN
-// ================================================================
-
-async function eliminarPublicacion(publicacionId) {
-    if (!sessionUser) {
-        showToast('⚠️ Inicia sesión para eliminar', 'error');
-        return;
-    }
-
-    if (!confirm('¿Eliminar esta publicación permanentemente?')) return;
-
-    showToast('⏳ Eliminando publicación...', '');
-
-    try {
-        const { data: pub, error: pubError } = await window.supabase
-            .from('publicaciones')
-            .select('media_url')
-            .eq('id', publicacionId)
-            .eq('usuario_id', sessionUser.id)
-            .single();
-
-        if (pubError) throw pubError;
-
-        if (pub?.media_url) {
-            const match = pub.media_url.match(/\/publicaciones\/(.+)$/);
-            if (match && match[1]) {
-                await window.supabase.storage.from('publicaciones').remove([match[1]]);
-            }
-        }
-
-        await window.supabase
-            .from('publicaciones')
-            .delete()
-            .eq('id', publicacionId)
-            .eq('usuario_id', sessionUser.id);
-
-        showToast('✅ Publicación eliminada', 'success');
-        await cargarPublicaciones();
-
-    } catch (error) {
-        console.error('Error eliminando publicación:', error);
-        showToast('❌ Error al eliminar publicación', 'error');
-    }
-}
-
-// ================================================================
-// ✦ CARGAR MEMBRESÍA (CORREGIDO - USA membresias_usuarios)
+// CARGAR MEMBRESÍA (VERSIÓN CORTA)
 // ================================================================
 
 async function cargarMembresia() {
@@ -818,6 +583,259 @@ function mostrarMembresiaPro(container, membresia, plan, esActiva) {
                 </div>
             </div>
         `;
+    }
+}
+
+// ================================================================
+// REACCIONES Y COMENTARIOS (VERSIÓN CORTA)
+// ================================================================
+
+function toggleReaccion(publicacionId, event) {
+    if (!sessionUser) {
+        showToast('⚠️ Inicia sesión para reaccionar', 'warning');
+        return;
+    }
+
+    const btn = event.currentTarget;
+    const item = btn.closest('.publicacion-item');
+    if (!item) return;
+
+    const picker = item.querySelector('.reaccion-picker');
+    if (!picker) return;
+
+    document.querySelectorAll('.reaccion-picker.show').forEach(el => {
+        if (el !== picker) el.classList.remove('show');
+        const arrow = document.querySelector('#arrow-' + el.id.replace('reaccionPicker-', ''));
+        if (arrow) arrow.classList.remove('open');
+    });
+
+    picker.classList.toggle('show');
+    const arrow = document.getElementById('arrow-' + publicacionId);
+    if (arrow) arrow.classList.toggle('open');
+
+    event.stopPropagation();
+}
+
+async function seleccionarReaccion(publicacionId, tipo, event) {
+    if (!sessionUser) {
+        showToast('⚠️ Inicia sesión para reaccionar', 'error');
+        return;
+    }
+
+    const picker = document.getElementById('reaccionPicker-' + publicacionId);
+    if (picker) {
+        picker.classList.remove('show');
+        const arrow = document.getElementById('arrow-' + publicacionId);
+        if (arrow) arrow.classList.remove('open');
+    }
+
+    try {
+        const { data: existing } = await window.supabase
+            .from('publicaciones_reacciones')
+            .select('tipo')
+            .eq('publicacion_id', publicacionId)
+            .eq('usuario_id', sessionUser.id)
+            .maybeSingle();
+
+        if (existing && existing.tipo === tipo) {
+            await window.supabase
+                .from('publicaciones_reacciones')
+                .delete()
+                .eq('publicacion_id', publicacionId)
+                .eq('usuario_id', sessionUser.id);
+        } else {
+            if (existing) {
+                await window.supabase
+                    .from('publicaciones_reacciones')
+                    .delete()
+                    .eq('publicacion_id', publicacionId)
+                    .eq('usuario_id', sessionUser.id);
+            }
+            await window.supabase
+                .from('publicaciones_reacciones')
+                .insert({
+                    publicacion_id: publicacionId,
+                    usuario_id: sessionUser.id,
+                    tipo: tipo
+                });
+        }
+
+        await cargarPublicaciones();
+
+    } catch (error) {
+        console.error('Error seleccionando reacción:', error);
+        showToast('❌ Error al procesar reacción', 'error');
+    }
+}
+
+async function abrirModalComentarios(publicacionId) {
+    if (!sessionUser) {
+        showToast('⚠️ Inicia sesión para comentar', 'error');
+        return;
+    }
+
+    let modal = document.getElementById('modalComentarios');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'modalComentarios';
+        modal.className = 'modal-overlay';
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width:500px;text-align:left;">
+                <button class="close-btn" onclick="cerrarModalComentarios()">✕</button>
+                <h2 style="text-align:center;">💬 Comentarios</h2>
+                <div id="comentariosList" style="max-height:300px;overflow-y:auto;margin:12px 0;">
+                    <div style="color:var(--text-muted);text-align:center;padding:20px;">Cargando comentarios...</div>
+                </div>
+                <div style="display:flex;gap:8px;margin-top:8px;">
+                    <input type="text" id="inputComentario" placeholder="Escribe un comentario..." style="flex:1;padding:8px 14px;background:rgba(0,0,0,0.25);border:1px solid var(--glass-border);border-radius:10px;color:var(--text-primary);font-size:0.85rem;outline:none;">
+                    <button class="btn btn-gold" onclick="enviarComentario()" style="padding:8px 16px;">Enviar</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+
+    modal.classList.add('active');
+    modal.dataset.publicacionId = publicacionId;
+
+    await cargarComentarios(publicacionId);
+}
+
+async function cargarComentarios(publicacionId) {
+    try {
+        const { data, error } = await window.supabase
+            .from('publicaciones_comentarios')
+            .select('*, usuarios:usuario_id (id, nombre, handle, avatar_url)')
+            .eq('publicacion_id', publicacionId)
+            .order('created_at', { ascending: true });
+
+        if (error) throw error;
+
+        const container = document.getElementById('comentariosList');
+        if (!container) return;
+
+        if (!data || data.length === 0) {
+            container.innerHTML = '<div style="color:var(--text-muted);text-align:center;padding:20px;">Sin comentarios. Sé el primero.</div>';
+            return;
+        }
+
+        container.innerHTML = data.map(c => {
+            const u = c.usuarios || {};
+            const avatar = u.avatar_url ? `<img src="${u.avatar_url}" style="width:100%;height:100%;object-fit:cover;">` : '◈';
+            const nombre = u.nombre || 'Usuario';
+            const fecha = new Date(c.created_at).toLocaleString();
+            return `
+                <div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid rgba(212,175,55,0.04);">
+                    <div style="width:28px;height:28px;border-radius:50%;overflow:hidden;background:linear-gradient(135deg,var(--green-deep),var(--gold));display:flex;align-items:center;justify-content:center;font-size:0.6rem;color:white;flex-shrink:0;">${avatar}</div>
+                    <div style="flex:1;">
+                        <strong style="color:var(--gold);font-size:0.75rem;">${nombre}</strong>
+                        <span style="font-size:0.6rem;color:var(--text-muted);margin-left:6px;">${fecha}</span>
+                        <div style="font-size:0.8rem;color:var(--text-secondary);">${c.contenido}</div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+    } catch (error) {
+        console.error('Error cargando comentarios:', error);
+        const container = document.getElementById('comentariosList');
+        if (container) {
+            container.innerHTML = '<div style="color:var(--danger);text-align:center;padding:20px;">Error al cargar comentarios</div>';
+        }
+    }
+}
+
+async function enviarComentario() {
+    const input = document.getElementById('inputComentario');
+    const texto = input.value.trim();
+
+    if (!texto) {
+        showToast('⚠️ Escribe un comentario', 'warning');
+        return;
+    }
+
+    if (!sessionUser) {
+        showToast('⚠️ Inicia sesión para comentar', 'error');
+        return;
+    }
+
+    const modal = document.getElementById('modalComentarios');
+    const publicacionId = modal?.dataset?.publicacionId;
+
+    if (!publicacionId) {
+        showToast('⚠️ No hay publicación seleccionada', 'error');
+        return;
+    }
+
+    try {
+        const { error } = await window.supabase
+            .from('publicaciones_comentarios')
+            .insert({
+                publicacion_id: publicacionId,
+                usuario_id: sessionUser.id,
+                contenido: texto
+            });
+
+        if (error) throw error;
+
+        input.value = '';
+        showToast('✅ Comentario agregado', 'success');
+        await cargarComentarios(publicacionId);
+
+    } catch (error) {
+        console.error('Error enviando comentario:', error);
+        showToast('❌ Error al enviar comentario: ' + error.message, 'error');
+    }
+}
+
+function cerrarModalComentarios() {
+    const modal = document.getElementById('modalComentarios');
+    if (modal) modal.classList.remove('active');
+}
+
+// ================================================================
+// ELIMINAR PUBLICACIÓN
+// ================================================================
+
+async function eliminarPublicacion(publicacionId) {
+    if (!sessionUser) {
+        showToast('⚠️ Inicia sesión para eliminar', 'error');
+        return;
+    }
+
+    if (!confirm('¿Eliminar esta publicación permanentemente?')) return;
+
+    showToast('⏳ Eliminando publicación...', '');
+
+    try {
+        const { data: pub, error: pubError } = await window.supabase
+            .from('publicaciones')
+            .select('media_url')
+            .eq('id', publicacionId)
+            .eq('usuario_id', sessionUser.id)
+            .single();
+
+        if (pubError) throw pubError;
+
+        if (pub?.media_url) {
+            const match = pub.media_url.match(/\/publicaciones\/(.+)$/);
+            if (match && match[1]) {
+                await window.supabase.storage.from('publicaciones').remove([match[1]]);
+            }
+        }
+
+        await window.supabase
+            .from('publicaciones')
+            .delete()
+            .eq('id', publicacionId)
+            .eq('usuario_id', sessionUser.id);
+
+        showToast('✅ Publicación eliminada', 'success');
+        await cargarPublicaciones();
+
+    } catch (error) {
+        console.error('Error eliminando publicación:', error);
+        showToast('❌ Error al eliminar publicación', 'error');
     }
 }
 
