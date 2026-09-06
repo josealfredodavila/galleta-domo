@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>◈ Contactos · Sariel's</title>
+    <title data-clave="contactos_titulo">◈ Contactos · Sariel's</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
     
@@ -257,7 +257,7 @@
             <a href="/" class="nav-link">⌂ Inicio</a>
             <a href="/features/muro/muro.html" class="nav-link">◇ Muro</a>
             <a href="/features/perfil/perfil.html" class="nav-link">◆ Perfil</a>
-            <a href="/features/mensajes/contactos.html" class="nav-link active">◈ Contactos</a>
+            <a href="/features/mensajes/contactos.html" class="nav-link active" data-clave="contactos_header">◈ Contactos</a>
             <a href="/features/mensajes/mensajes.html" class="nav-link">◈ Mensajes</a>
             <a href="/features/live/live.html" class="nav-link live">◉ Live</a>
             <a href="/features/internet/internet.html" class="nav-link">◈ Internet</a>
@@ -268,30 +268,30 @@
 
             <!-- ===== ESTADÍSTICAS ===== -->
             <div class="contactos-stats">
-                <span class="stat">◈ Total: <span class="numero" id="totalContactos">0</span></span>
-                <span class="stat"><span class="dot online"></span> En línea: <span class="numero" id="onlineContactos">0</span></span>
+                <span class="stat" data-clave="contactos_total">◈ Total: <span class="numero" id="totalContactos">0</span></span>
+                <span class="stat" data-clave="contactos_en_linea"><span class="dot online"></span> En línea: <span class="numero" id="onlineContactos">0</span></span>
             </div>
 
             <!-- ===== BÚSQUEDA Y ACCIONES ===== -->
             <div class="search-bar">
-                <input type="text" id="searchInput" placeholder="🔍 Buscar contactos por nombre o @handle..." />
-                <button class="btn-agregar" onclick="abrirAgregarContacto()">◆ Agregar contacto</button>
-                <button class="btn-invitar" onclick="invitarContacto()">✉️ Invitar</button>
+                <input type="text" id="searchInput" placeholder="🔍 Buscar contactos por nombre o @handle..." data-placeholder="contactos_buscar" />
+                <button class="btn-agregar" onclick="abrirAgregarContacto()" data-clave="contactos_agregar">◆ Agregar contacto</button>
+                <button class="btn-invitar" onclick="invitarContacto()" data-clave="contactos_invitar">✉️ Invitar</button>
             </div>
 
             <!-- ===== FILTROS ===== -->
             <div class="filtros">
-                <button class="filtro active" data-filtro="todos" onclick="document.querySelectorAll('.filtro').forEach(b=>b.classList.remove('active'));this.classList.add('active');filtroActual='todos';ordenarContactos('nombre');aplicarFiltros();">◈ Todos</button>
-                <button class="filtro" data-filtro="online" onclick="document.querySelectorAll('.filtro').forEach(b=>b.classList.remove('active'));this.classList.add('active');filtroActual='online';ordenarContactos('online');aplicarFiltros();">🟢 En línea</button>
-                <button class="filtro" data-filtro="favoritos" onclick="document.querySelectorAll('.filtro').forEach(b=>b.classList.remove('active'));this.classList.add('active');filtroActual='favoritos';ordenarContactos('nombre');aplicarFiltros();">◆ Favoritos</button>
-                <button class="filtro" data-filtro="recientes" onclick="document.querySelectorAll('.filtro').forEach(b=>b.classList.remove('active'));this.classList.add('active');filtroActual='recientes';ordenarContactos('reciente');aplicarFiltros();">⟡ Recientes</button>
+                <button class="filtro active" data-filtro="todos" onclick="document.querySelectorAll('.filtro').forEach(b=>b.classList.remove('active'));this.classList.add('active');filtroActual='todos';ordenarContactos('nombre');aplicarFiltros();" data-clave="contactos_todos">◈ Todos</button>
+                <button class="filtro" data-filtro="online" onclick="document.querySelectorAll('.filtro').forEach(b=>b.classList.remove('active'));this.classList.add('active');filtroActual='online';ordenarContactos('online');aplicarFiltros();" data-clave="contactos_filtro_online">🟢 En línea</button>
+                <button class="filtro" data-filtro="favoritos" onclick="document.querySelectorAll('.filtro').forEach(b=>b.classList.remove('active'));this.classList.add('active');filtroActual='favoritos';ordenarContactos('nombre');aplicarFiltros();" data-clave="contactos_filtro_favoritos">◆ Favoritos</button>
+                <button class="filtro" data-filtro="recientes" onclick="document.querySelectorAll('.filtro').forEach(b=>b.classList.remove('active'));this.classList.add('active');filtroActual='recientes';ordenarContactos('reciente');aplicarFiltros();" data-clave="contactos_filtro_recientes">⟡ Recientes</button>
             </div>
 
             <!-- ===== LISTA DE CONTACTOS ===== -->
             <div class="contactos-list" id="contactosList">
                 <div class="empty-state">
                     <span class="icon">◈</span>
-                    <h3>Cargando contactos...</h3>
+                    <h3 data-clave="contactos_cargando">Cargando contactos...</h3>
                 </div>
             </div>
 
@@ -300,10 +300,10 @@
         <footer class="footer">
             <span><span class="brand">◈ Sariel's</span> · Sabor al Paladar · WEB3</span>
             <div class="footer-links">
-                <a href="/terminos">◈ Términos</a>
-                <a href="/privacidad">◈ Privacidad</a>
-                <a href="/cookies">◈ Cookies</a>
-                <a href="/live-terminos">◉ Live Términos</a>
+                <a href="/terminos" data-clave="contactos_footer_terminos">◈ Términos</a>
+                <a href="/privacidad" data-clave="contactos_footer_privacidad">◈ Privacidad</a>
+                <a href="/cookies" data-clave="contactos_footer_cookies">◈ Cookies</a>
+                <a href="/live-terminos" data-clave="contactos_footer_live">◉ Live Términos</a>
                 <span style="opacity:0.3;">⚡ Polygon</span>
             </div>
         </footer>
@@ -314,15 +314,15 @@
     <div class="modal-overlay" id="modalBuscarContacto">
         <div class="modal">
             <div class="modal-header">
-                <h2>◈ Buscar contacto</h2>
+                <h2 data-clave="contactos_buscar_titulo">◈ Buscar contacto</h2>
                 <button class="btn-cerrar" onclick="cerrarModalBuscar()">✕</button>
             </div>
             <div class="form-group">
-                <label>Buscar por nombre o @handle</label>
+                <label data-clave="contactos_buscar_label">Buscar por nombre o @handle</label>
                 <input type="text" id="searchInputModal" placeholder="Ej: Juan o @juan123" />
             </div>
             <div class="resultados-busqueda" id="resultadosBusqueda">
-                <div style="padding:20px;text-align:center;color:var(--text-muted);font-size:0.75rem;">
+                <div style="padding:20px;text-align:center;color:var(--text-muted);font-size:0.75rem;" data-clave="contactos_buscar_minimo">
                     Escribe al menos 2 caracteres para buscar
                 </div>
             </div>
@@ -333,21 +333,21 @@
     <div class="modal-overlay" id="modalInvitacion">
         <div class="modal">
             <div class="modal-header">
-                <h2>✉️ Invitar contacto</h2>
+                <h2 data-clave="contactos_invitar_titulo">✉️ Invitar contacto</h2>
                 <button class="btn-cerrar" onclick="cerrarModalInvitacion()">✕</button>
             </div>
             <div style="text-align:center;">
-                <p style="color:var(--text-secondary);font-size:0.85rem;margin-bottom:12px;">
+                <p style="color:var(--text-secondary);font-size:0.85rem;margin-bottom:12px;" data-clave="contactos_invitar_desc">
                     Comparte este código con quien quieras invitar
                 </p>
                 <div class="codigo-box">
                     <div class="codigo" id="codigoInvitacion">SAR-XXXX</div>
                 </div>
                 <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
-                    <button class="btn-copiar" onclick="copiarCodigoInvitacion()">📋 Copiar código</button>
-                    <button class="btn-copiar" onclick="cerrarModalInvitacion()">Cerrar</button>
+                    <button class="btn-copiar" onclick="copiarCodigoInvitacion()" data-clave="contactos_copiar_codigo">📋 Copiar código</button>
+                    <button class="btn-copiar" onclick="cerrarModalInvitacion()" data-clave="contactos_cerrar">Cerrar</button>
                 </div>
-                <p style="font-size:0.6rem;color:var(--text-muted);margin-top:12px;">
+                <p style="font-size:0.6rem;color:var(--text-muted);margin-top:12px;" data-clave="contactos_codigo_expira">
                     El código expira después de 7 días
                 </p>
             </div>
@@ -519,7 +519,7 @@
         function mostrarSinContactos() {
             var contactosListEl = document.getElementById('contactosList');
             if (contactosListEl) {
-                contactosListEl.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3>Sin contactos</h3><p>Comienza a agregar personas a tu red</p><button class="btn-accion" onclick="abrirAgregarContacto()">◈ Agregar contacto</button></div>';
+                contactosListEl.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3 data-clave="contactos_sin_contactos">Sin contactos</h3><p data-clave="contactos_sin_contactos_desc">Comienza a agregar personas a tu red</p><button class="btn-accion" onclick="abrirAgregarContacto()" data-clave="contactos_agregar_btn">◈ Agregar contacto</button></div>';
             }
         }
 
@@ -624,15 +624,15 @@
                     (esFavorito ? '<span class="favorito-badge">◆</span>' : '') +
                     '</div>' +
                     '<div class="contacto-info">' +
-                    '<div class="nombre">' + nombreSanitizado + (contacto.verificado ? ' <span class="verified">✦ VERIFICADO</span>' : '') + '</div>' +
+                    '<div class="nombre">' + nombreSanitizado + (contacto.verificado ? ' <span class="verified" data-clave="contactos_verificado">✦ VERIFICADO</span>' : '') + '</div>' +
                     '<div class="estado ' + (esOnline ? 'online' : 'offline') + '">' + estadoTexto + '</div>' +
                     '<div class="contacto-meta"><span>@' + handleSanitizado + '</span></div>' +
                     '</div>' +
                     '<div class="contacto-actions">' +
-                    '<button class="mensaje" onclick="irAMensajes(\'' + escapeHTML(contacto._id) + '\')" title="Enviar mensaje">◈</button>' +
-                    '<button class="favorito ' + (esFavorito ? 'active' : '') + '" onclick="toggleFavorito(\'' + escapeHTML(contacto._id) + '\')" title="Favorito">◆</button>' +
-                    '<button class="bloquear" onclick="bloquearContacto(\'' + escapeHTML(contacto._id) + '\')" title="Bloquear">🚫</button>' +
-                    '<button class="eliminar" onclick="eliminarContacto(\'' + escapeHTML(contacto._id) + '\')" title="Eliminar">✕</button>' +
+                    '<button class="mensaje" onclick="irAMensajes(\'' + escapeHTML(contacto._id) + '\')" title="Enviar mensaje" data-clave="contactos_enviar_mensaje">◈</button>' +
+                    '<button class="favorito ' + (esFavorito ? 'active' : '') + '" onclick="toggleFavorito(\'' + escapeHTML(contacto._id) + '\')" title="Favorito" data-clave="contactos_favorito">◆</button>' +
+                    '<button class="bloquear" onclick="bloquearContacto(\'' + escapeHTML(contacto._id) + '\')" title="Bloquear" data-clave="contactos_bloquear">🚫</button>' +
+                    '<button class="eliminar" onclick="eliminarContacto(\'' + escapeHTML(contacto._id) + '\')" title="Eliminar" data-clave="contactos_eliminar">✕</button>' +
                     '</div>' +
                     '</div>';
             }
@@ -692,7 +692,7 @@
                 if (!container) return;
 
                 if (!result.data || result.data.length === 0) {
-                    container.innerHTML = '<div style="padding:12px;text-align:center;color:var(--text-muted);font-size:0.75rem;">No se encontraron usuarios</div>';
+                    container.innerHTML = '<div style="padding:12px;text-align:center;color:var(--text-muted);font-size:0.75rem;" data-clave="contactos_no_usuarios">No se encontraron usuarios</div>';
                     return;
                 }
 
@@ -717,9 +717,9 @@
                         '<div style="flex:1;"><div style="font-weight:600;font-size:0.8rem;">' + nombreSanitizado + '</div><div style="font-size:0.6rem;color:var(--text-muted);">@' + handleSanitizado + (estaOnline ? ' · 🟢 En línea' : '') + '</div></div>';
 
                     if (yaEsContacto) {
-                        html += '<span style="font-size:0.55rem;color:var(--success);background:rgba(0,214,143,0.1);padding:2px 10px;border-radius:12px;">✓ Contacto</span>';
+                        html += '<span style="font-size:0.55rem;color:var(--success);background:rgba(0,214,143,0.1);padding:2px 10px;border-radius:12px;" data-clave="contactos_es_contacto">✓ Contacto</span>';
                     } else {
-                        html += '<button onclick="agregarContacto(\'' + usuario.id + '\')" style="background:linear-gradient(135deg,var(--gold),var(--gold-dark));color:var(--space);border:none;padding:4px 12px;border-radius:12px;font-size:0.6rem;font-weight:600;cursor:pointer;">+ Agregar</button>';
+                        html += '<button onclick="agregarContacto(\'' + usuario.id + '\')" style="background:linear-gradient(135deg,var(--gold),var(--gold-dark));color:var(--space);border:none;padding:4px 12px;border-radius:12px;font-size:0.6rem;font-weight:600;cursor:pointer;" data-clave="contactos_agregar_btn">+ Agregar</button>';
                     }
                     html += '</div>';
                 }
