@@ -1,7 +1,3 @@
-<!-- ================================================================
-     GRUPOS - SARIEL'S ECOSYSTEM
-     VERSIÓN PRODUCCIÓN - COMPLETA CON ADMIN Y SUBIDA DE ARCHIVOS
-     ================================================================ -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -1555,19 +1551,40 @@
         }
 
         // ================================================================
-        // FINALIZAR LIVE DESDE EL GRUPO
+        // FINALIZAR LIVE DESDE EL GRUPO - CORREGIDO
         // ================================================================
         async function finalizarLiveGrupo() {
             if (!sessionUser) {
                 showToast('⚠️ Inicia sesión', 'error');
                 return;
             }
-            if (!liveActivoEnGrupo) {
-                showToast('⚠️ No hay LIVE activo', 'error');
+            if (!grupoActualId) {
+                showToast('⚠️ No hay grupo seleccionado', 'error');
                 return;
             }
 
-            if (liveActivoEnGrupo.streamer_id !== sessionUser.id) {
+            // ✅ OBTENER LA TRANSMISIÓN ACTIVA DIRECTAMENTE DESDE LA BASE DE DATOS
+            const { data: transmisionActiva, error: buscarError } = await window.supabase
+                .from('transmisiones')
+                .select('*')
+                .eq('grupo_id', grupoActualId)
+                .eq('estado', 'activa')
+                .eq('is_live', true)
+                .maybeSingle();
+
+            if (buscarError) {
+                console.error('❌ Error buscando transmisión:', buscarError);
+                showToast('❌ Error al buscar transmisión activa', 'error');
+                return;
+            }
+
+            if (!transmisionActiva) {
+                showToast('⚠️ No hay LIVE activo en este grupo', 'warning');
+                return;
+            }
+
+            // ✅ Verificar que el usuario sea el streamer
+            if (transmisionActiva.streamer_id !== sessionUser.id) {
                 showToast('⚠️ Solo el streamer puede finalizar el LIVE', 'error');
                 return;
             }
@@ -1577,13 +1594,29 @@
             showToast('⏳ Finalizando LIVE...', '');
 
             try {
-                const { data, error } = await supabase.rpc('finalizar_transmision', {
-                    p_transmision_id: liveActivoEnGrupo.id
+                const { data, error } = await window.supabase.rpc('finalizar_transmision', {
+                    p_transmision_id: transmisionActiva.id
                 });
 
-                if (error) throw error;
+                if (error) {
+                    console.error('❌ Error en RPC finalizar_transmision:', error);
+                    // ✅ FALLBACK: UPDATE DIRECTO
+                    const { error: updateError } = await window.supabase
+                        .from('transmisiones')
+                        .update({ 
+                            estado: 'finalizada', 
+                            is_live: false, 
+                            fecha_fin: new Date().toISOString() 
+                        })
+                        .eq('id', transmisionActiva.id);
 
-                showToast('✅ LIVE finalizado', 'success');
+                    if (updateError) {
+                        throw updateError;
+                    }
+                    showToast('✅ LIVE finalizado (vía fallback)', 'success');
+                } else {
+                    showToast('✅ LIVE finalizado', 'success');
+                }
 
                 liveActivoEnGrupo = null;
                 document.getElementById('grupoLiveBadge').style.display = 'none';
