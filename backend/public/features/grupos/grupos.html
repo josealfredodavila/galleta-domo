@@ -344,7 +344,7 @@
             </div>
 
             <div class="grupos-grid" id="gruposGrid">
-                <div class="empty-state"><span class="icon">👥</span><h3>Cargando grupos...</h3></div>
+                <div class="empty-state"><span class="icon">⏳</span><h3>Cargando grupos...</h3></div>
             </div>
         </div>
 
@@ -718,8 +718,6 @@
                         reader.readAsDataURL(file);
                     } else if (tipo === 'video') {
                         // Para videos, la marca se aplica en el backend
-                        // Aquí solo reenviámos el archivo con una nota
-                        // En producción real, usarías ffmpeg en el backend
                         console.log('🎥 Video recibido para marca de agua (backend procesará)');
                         resolve(file);
                     } else {
@@ -727,7 +725,7 @@
                     }
                 } catch (error) {
                     console.error('❌ Error procesando marca de agua:', error);
-                    resolve(file); // Fallback: subir sin marca
+                    resolve(file);
                 }
             });
         }
@@ -795,13 +793,29 @@
         }
 
         // ================================================================
-        // CARGAR GRUPOS
+        // CARGAR GRUPOS - CORREGIDO CON MEJOR MANEJO DE ERRORES
         // ================================================================
         async function cargarGrupos() {
+            var grid = document.getElementById('gruposGrid');
+            
             try {
-                var buscar = document.getElementById('inputBuscar')?.value.trim() || '';
+                // ✅ Verificar que Supabase esté disponible
+                if (typeof window.supabase === 'undefined') {
+                    grid.innerHTML = '<div class="empty-state"><span class="icon">⚠️</span><h3>Error de conexión</h3><p>Supabase no está disponible. Recarga la página.</p></div>';
+                    showToast('⚠️ Supabase no disponible', 'error');
+                    return;
+                }
+
+                // ✅ Verificar sesión
+                if (!sessionUser) {
+                    await cargarUsuarioActual();
+                }
+
+                var buscar = document.getElementById('inputBuscar')?.value?.trim() || '';
                 var ciudad = document.getElementById('selectCiudad')?.value || '';
                 var categoria = document.getElementById('selectCategoria')?.value || '';
+
+                console.log('🔍 Cargando grupos con filtros:', { buscar, ciudad, categoria });
 
                 var query = window.supabase
                     .from('grupos_video')
@@ -832,19 +846,23 @@
                     if (misGruposResult.error) throw misGruposResult.error;
                     var ids = (misGruposResult.data || []).map(function(m) { return m.grupo_id; });
                     if (ids.length === 0) {
-                        document.getElementById('gruposGrid').innerHTML =
+                        grid.innerHTML =
                             '<div class="empty-state"><span class="icon">👥</span><h3>No perteneces a ningún grupo</h3><p>Crea uno o únete a uno existente</p></div>';
                         return;
                     }
                     query = query.in('id', ids);
                 }
 
+                console.log('📡 Ejecutando consulta a Supabase...');
                 var result = await query;
 
-                if (result.error) throw result.error;
+                if (result.error) {
+                    console.error('❌ Error en consulta Supabase:', result.error);
+                    throw result.error;
+                }
 
                 var grupos = result.data || [];
-                var grid = document.getElementById('gruposGrid');
+                console.log(`✅ ${grupos.length} grupos cargados`);
 
                 if (grupos.length === 0) {
                     grid.innerHTML =
@@ -852,20 +870,24 @@
                     return;
                 }
 
-                // ✅ Verificar lives activos con estado 'en_vivo'
+                // ✅ Verificar lives activos
                 var liveMap = {};
                 for (var i = 0; i < grupos.length; i++) {
-                    var g = grupos[i];
-                    var liveResult = await window.supabase
-                        .from('transmisiones')
-                        .select('id, titulo')
-                        .eq('grupo_id', g.id)
-                        .eq('estado', 'en_vivo')
-                        .eq('is_live', true)
-                        .maybeSingle();
+                    try {
+                        var g = grupos[i];
+                        var liveResult = await window.supabase
+                            .from('transmisiones')
+                            .select('id, titulo')
+                            .eq('grupo_id', g.id)
+                            .eq('estado', 'en_vivo')
+                            .eq('is_live', true)
+                            .maybeSingle();
 
-                    if (liveResult.data) {
-                        liveMap[g.id] = liveResult.data;
+                        if (liveResult.data) {
+                            liveMap[g.id] = liveResult.data;
+                        }
+                    } catch (e) {
+                        console.warn('⚠️ Error verificando live para grupo:', g.id, e);
                     }
                 }
 
@@ -892,8 +914,19 @@
                 }).join('');
 
             } catch (e) {
-                console.error('Error cargando grupos:', e);
-                showToast('❌ Error cargando grupos', 'error');
+                console.error('❌ Error cargando grupos:', e);
+                var errorMsg = 'Error al cargar grupos: ';
+                if (e.message?.includes('JWT')) {
+                    errorMsg += 'Error de autenticación. Inicia sesión nuevamente.';
+                } else if (e.message?.includes('permission')) {
+                    errorMsg += 'No tienes permisos para ver los grupos.';
+                } else if (e.message?.includes('network')) {
+                    errorMsg += 'Error de red. Verifica tu conexión.';
+                } else {
+                    errorMsg += e.message || 'Error desconocido. Recarga la página.';
+                }
+                grid.innerHTML = '<div class="empty-state"><span class="icon">❌</span><h3>Error cargando grupos</h3><p>' + errorMsg + '</p></div>';
+                showToast('❌ ' + errorMsg, 'error');
             }
         }
 
@@ -1226,7 +1259,6 @@
                 showToast('⏳ Procesando imagen con marca de agua...', '');
 
                 try {
-                    // ✅ APLICAR MARCA DE AGUA
                     var processedFile = await procesarConMarcaDeAgua(file, 'imagen');
 
                     showToast('⏳ Subiendo imagen...', '');
@@ -1291,7 +1323,6 @@
                 showToast('⏳ Procesando video con marca de agua...', '');
 
                 try {
-                    // ✅ PROCESAR VIDEO (backend se encargará de la marca)
                     var processedFile = await procesarConMarcaDeAgua(file, 'video');
 
                     showToast('⏳ Subiendo video...', '');
@@ -1503,7 +1534,7 @@
         }
 
         // ================================================================
-        // 🚀 INICIAR LIVE EN GRUPO - CORREGIDO CON RPC
+        // 🚀 INICIAR LIVE EN GRUPO
         // ================================================================
         async function iniciarLiveEnGrupo() {
             if (!sessionUser) { showToast('⚠️ Inicia sesión', 'error'); return; }
@@ -1520,12 +1551,11 @@
                 var titulo = prompt('Título del LIVE:', 'Live en ' + (grupoActual.nombre || 'grupo')) || 'Live en grupo';
                 var roomName = 'live-' + sessionUser.id + '-' + Date.now();
 
-                // ✅ CORRECCIÓN: Usar RPC crear_transmision con grupo_id
                 const { data: result, error } = await window.supabase.rpc('crear_transmision', {
                     p_titulo: titulo,
                     p_categoria: 'grupo',
                     p_room_name: roomName,
-                    p_grupo_id: grupoActualId  // ✅ AHORA PASA EL grupo_id
+                    p_grupo_id: grupoActualId
                 });
 
                 if (error) {
@@ -1540,7 +1570,6 @@
 
                 showToast('✅ LIVE iniciado! Redirigiendo...', 'success');
 
-                // ✅ CORRECCIÓN: Pasar grupo_id en la URL
                 setTimeout(function() {
                     window.location.href = '/features/live/live.html?transmision=' + transmision.id + '&grupo=' + grupoActualId;
                 }, 1500);
@@ -1552,7 +1581,7 @@
         }
 
         // ================================================================
-        // FINALIZAR LIVE DESDE EL GRUPO - CORREGIDO
+        // FINALIZAR LIVE DESDE EL GRUPO
         // ================================================================
         async function finalizarLiveGrupo() {
             if (!sessionUser) {
@@ -1564,7 +1593,6 @@
                 return;
             }
 
-            // ✅ BUSCAR CON 'en_vivo' (coincide con cómo se crea)
             const { data: transmisionActiva, error: buscarError } = await window.supabase
                 .from('transmisiones')
                 .select('*')
@@ -1584,7 +1612,6 @@
                 return;
             }
 
-            // ✅ Verificar que el usuario sea el streamer
             if (transmisionActiva.streamer_id !== sessionUser.id) {
                 showToast('⚠️ Solo el streamer puede finalizar el LIVE', 'error');
                 return;
@@ -1601,7 +1628,6 @@
 
                 if (error) {
                     console.error('❌ Error en RPC finalizar_transmision:', error);
-                    // ✅ FALLBACK: UPDATE DIRECTO
                     const { error: updateError } = await window.supabase
                         .from('transmisiones')
                         .update({ 
@@ -1659,7 +1685,6 @@
             }
 
             document.getElementById('modalAdminGrupo').classList.add('show');
-            // Cargar miembros por defecto
             await cargarAdminMiembros();
         }
 
@@ -1958,10 +1983,6 @@
         // 🗑️ ELIMINAR GRUPO - CORREGIDO CON RPC
         // ================================================================
 
-        /**
-         * Muestra el modal de confirmación para eliminar el grupo.
-         * Solo visible para creador o administrador.
-         */
         function mostrarConfirmacionEliminarGrupo() {
             if (!sessionUser) {
                 showToast('⚠️ Inicia sesión para eliminar el grupo', 'error');
@@ -1980,18 +2001,11 @@
             document.getElementById('eliminarGrupoStatus').textContent = '';
         }
 
-        /**
-         * Cierra el modal de confirmación de eliminación.
-         */
         function cerrarConfirmacionEliminarGrupo() {
             document.getElementById('modalConfirmarEliminarGrupo').classList.remove('show');
             document.getElementById('eliminarGrupoStatus').textContent = '';
         }
 
-        /**
-         * Ejecuta la eliminación del grupo usando la RPC eliminar_grupo.
-         * Esto bypassa RLS y permite que creadores y administradores eliminen.
-         */
         async function ejecutarEliminarGrupo() {
             if (eliminandoGrupo) {
                 showToast('⏳ Ya se está eliminando el grupo...', 'warning');
@@ -2015,7 +2029,6 @@
             var nombreGrupo = grupoActual?.nombre || 'Grupo';
             var statusEl = document.getElementById('eliminarGrupoStatus');
 
-            // Verificar que el grupo existe
             try {
                 const { data: grupo, error: checkError } = await window.supabase
                     .from('grupos_video')
@@ -2028,7 +2041,6 @@
                     return;
                 }
 
-                // Si es admin pero no creador, verificar rol
                 if (!esCreador && esAdmin) {
                     const { data: miembro, error: memberError } = await window.supabase
                         .from('grupos_video_miembros')
@@ -2047,7 +2059,7 @@
                 statusEl.textContent = '⏳ Eliminando grupo...';
                 statusEl.style.color = 'var(--text-secondary)';
 
-                // ✅ CORRECCIÓN: Usar RPC eliminar_grupo en lugar de DELETE directo
+                // ✅ USAR RPC eliminar_grupo
                 const { data, error } = await window.supabase.rpc('eliminar_grupo', {
                     p_grupo_id: grupoId
                 });
@@ -2057,7 +2069,6 @@
                     throw error;
                 }
 
-                // Verificar respuesta de la RPC
                 if (data && data.error) {
                     throw new Error(data.error);
                 }
@@ -2066,7 +2077,6 @@
                     throw new Error('No se pudo eliminar el grupo');
                 }
 
-                // ✅ ÉXITO
                 console.log('✅ Grupo eliminado correctamente:', nombreGrupo);
                 showToast(`✅ Grupo "${nombreGrupo}" eliminado correctamente`, 'success');
 
