@@ -2,6 +2,21 @@
 // IDIOMAS - FUNCIONES GLOBALES
 // ================================================================
 
+// ===== OBTENER SESIÓN - FUNCIÓN INDEPENDIENTE =====
+async function getSession() {
+    try {
+        if (typeof window.supabase === 'undefined') {
+            console.warn('⚠️ Supabase no disponible');
+            return null;
+        }
+        const { data: { session } } = await window.supabase.auth.getSession();
+        return session;
+    } catch (e) {
+        console.error('❌ Error obteniendo sesión:', e);
+        return null;
+    }
+}
+
 let idiomaActual = null;
 let traducciones = {};
 
@@ -10,7 +25,6 @@ let traducciones = {};
  */
 async function obtenerIdiomaUsuario() {
     try {
-        // 1. Intentar desde la sesión del usuario
         const session = await getSession();
         if (session) {
             const { data, error } = await window.supabase
@@ -33,7 +47,6 @@ async function obtenerIdiomaUsuario() {
             }
         }
         
-        // 2. Intentar desde localStorage (si guardó preferencia)
         const localId = localStorage.getItem('idioma_preferido');
         if (localId) {
             const { data: idioma } = await window.supabase
@@ -48,11 +61,10 @@ async function obtenerIdiomaUsuario() {
             }
         }
         
-        // 3. Idioma por defecto (Español México)
         const { data: idiomaDefault } = await window.supabase
             .from('idiomas_sistema')
             .select('*')
-            .eq('codigo', 'es')
+            .eq('codigo', 'es-MX')
             .single();
         
         idiomaActual = idiomaDefault;
@@ -60,7 +72,7 @@ async function obtenerIdiomaUsuario() {
         
     } catch (error) {
         console.error('Error obteniendo idioma:', error);
-        return { codigo: 'es', nombre: 'Español' };
+        return { codigo: 'es-MX', nombre: 'Español' };
     }
 }
 
@@ -76,7 +88,6 @@ async function cargarTraducciones(idiomaId) {
         
         if (error) throw error;
         
-        // Guardar en objeto para acceso rápido
         traducciones = {};
         data.forEach(item => {
             traducciones[item.clave] = item.valor;
@@ -93,12 +104,10 @@ async function cargarTraducciones(idiomaId) {
  * Obtener texto traducido por clave
  */
 function t(clave, modulo = null) {
-    // Si hay traducción, devolverla
     if (traducciones[clave]) {
         return traducciones[clave];
     }
     
-    // Si no, buscar por modulo + clave
     if (modulo) {
         const keyModulo = `${modulo}_${clave}`;
         if (traducciones[keyModulo]) {
@@ -106,7 +115,6 @@ function t(clave, modulo = null) {
         }
     }
     
-    // Si no hay traducción, devolver la clave (fallback)
     return clave.replace('_', ' ');
 }
 
@@ -115,10 +123,8 @@ function t(clave, modulo = null) {
  */
 async function cambiarIdioma(idiomaId) {
     try {
-        // Guardar en localStorage
         localStorage.setItem('idioma_preferido', idiomaId);
         
-        // Si hay sesión, guardar en Supabase
         const session = await getSession();
         if (session) {
             await window.supabase
@@ -127,7 +133,6 @@ async function cambiarIdioma(idiomaId) {
                 .eq('id', session.user.id);
         }
         
-        // Recargar la página para aplicar cambios
         window.location.reload();
         
     } catch (error) {
@@ -140,7 +145,6 @@ async function cambiarIdioma(idiomaId) {
  * Aplicar traducciones a la página
  */
 function aplicarTraducciones() {
-    // Buscar todos los elementos con data-clave
     document.querySelectorAll('[data-clave]').forEach(el => {
         const clave = el.getAttribute('data-clave');
         const modulo = el.getAttribute('data-modulo') || null;
@@ -151,7 +155,6 @@ function aplicarTraducciones() {
         }
     });
     
-    // Buscar todos los elementos con data-placeholder
     document.querySelectorAll('[data-placeholder]').forEach(el => {
         const clave = el.getAttribute('data-placeholder');
         const traduccion = t(clave);
@@ -160,3 +163,16 @@ function aplicarTraducciones() {
         }
     });
 }
+
+// ================================================================
+// EXPOSICIÓN GLOBAL
+// ================================================================
+
+window.getSession = getSession;
+window.obtenerIdiomaUsuario = obtenerIdiomaUsuario;
+window.cargarTraducciones = cargarTraducciones;
+window.t = t;
+window.cambiarIdioma = cambiarIdioma;
+window.aplicarTraducciones = aplicarTraducciones;
+
+console.log('✅ Sistema de idiomas cargado correctamente');
