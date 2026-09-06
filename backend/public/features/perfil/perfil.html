@@ -8,6 +8,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
     
     <style>
+        /* ... [TUS ESTILOS EXISTENTES] ... */
+        /* (He mantenido todos tus estilos tal cual) */
         :root {
             --gold: #D4AF37;
             --gold-dark: #b8923a;
@@ -797,6 +799,62 @@
             .reaccion-picker { left: 50%; transform: translateX(-50%); }
             .reaccion-picker button { font-size: 1.2rem; padding: 3px 4px; width: 32px; height: 32px; }
         }
+        
+        /* Estilos para el picker de emojis en la publicación */
+        .publicacion-modal-emoji-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+        .emoji-picker {
+            display: none;
+            position: absolute;
+            bottom: calc(100% + 10px);
+            left: 0;
+            background: rgba(15, 25, 20, 0.95);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            padding: 12px;
+            width: 280px;
+            max-width: 90vw;
+            z-index: 1000;
+            box-shadow: var(--shadow-gold-strong);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            margin-bottom: 8px;
+        }
+        .emoji-picker .titulo {
+            color: var(--text-muted);
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+            text-align: center;
+            font-family: 'Orbitron', monospace;
+        }
+        .emoji-picker .grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 4px;
+        }
+        .emoji-picker .grid button {
+            background: transparent;
+            border: none;
+            font-size: 1.4rem;
+            padding: 4px;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            line-height: 1;
+            width: 38px;
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .emoji-picker .grid button:hover {
+            background: rgba(212, 175, 55, 0.2);
+            transform: scale(1.2);
+        }
     </style>
 </head>
 <body>
@@ -1106,14 +1164,23 @@
     <!-- MODAL PARA CREAR PUBLICACIÓN -->
     <!-- ================================================================ -->
     <div class="modal-overlay" id="publicacionModal">
-        <div class="modal-content" style="max-width:560px;text-align:left;">
+        <div class="modal-content" style="max-width:560px;text-align:left;position:relative;">
             <button class="close-btn" onclick="window.cerrarModal('publicacionModal')">✕</button>
             <h2 style="text-align:center;">📸 Nueva Publicación</h2>
             <p class="subtitle" style="text-align:center;">Comparte lo que está pasando</p>
 
             <div class="config-group">
                 <label>Texto de la publicación</label>
-                <textarea id="pubTexto" rows="4" placeholder="¿Qué estás pensando?" style="width:100%;padding:10px 14px;background:rgba(0,0,0,0.25);border:1px solid var(--glass-border);border-radius:10px;color:var(--text-primary);font-size:0.85rem;outline:none;resize:vertical;min-height:80px;font-family:'Inter',sans-serif;"></textarea>
+                <div style="position:relative;">
+                    <textarea id="pubTexto" rows="4" placeholder="¿Qué estás pensando?" style="width:100%;padding:10px 14px;background:rgba(0,0,0,0.25);border:1px solid var(--glass-border);border-radius:10px;color:var(--text-primary);font-size:0.85rem;outline:none;resize:vertical;min-height:80px;font-family:'Inter',sans-serif;"></textarea>
+                    <div class="publicacion-modal-emoji-wrapper" style="position:absolute;bottom:10px;right:10px;z-index:2;">
+                        <button type="button" id="btnEmojiPerfil" onclick="window.toggleEmojiPickerPerfil()" style="background:transparent;border:none;font-size:1.4rem;cursor:pointer;padding:4px 8px;border-radius:8px;transition:all 0.2s ease;">😊</button>
+                        <div class="emoji-picker" id="emojiPickerPerfil">
+                            <div class="titulo">✦ Elige tu emoji</div>
+                            <div class="grid" id="emojiGridPerfil"></div>
+                        </div>
+                    </div>
+                </div>
             </div>
             <div class="config-group">
                 <label>Archivo (foto o video)</label>
@@ -1126,18 +1193,13 @@
             <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;">
                 <button class="btn btn-outline" style="flex:1;justify-content:center;padding:10px;" onclick="window.cerrarModal('publicacionModal')">Cancelar</button>
                 <button class="btn btn-gold" style="flex:1;justify-content:center;padding:10px;" id="btnPublicar" onclick="window.publicarContenido()">🚀 Publicar</button>
-                <button class="btn-outline btn-sm" onclick="window.toggleEmojiPickerPerfil()" id="btnEmojiPerfil" style="font-size:1.2rem;padding:8px 12px;">😊</button>
-                <div class="emoji-picker" id="emojiPickerPerfil" style="display:none;position:absolute;bottom:100%;left:0;background:rgba(15,25,20,0.95);border:1px solid var(--glass-border);border-radius:var(--radius);padding:12px;width:280px;max-width:90vw;z-index:1000;box-shadow:var(--shadow-gold-strong);backdrop-filter:blur(12px);margin-bottom:8px;">
-                    <div class="titulo" style="color:var(--text-muted);font-size:0.6rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;text-align:center;font-family:'Orbitron',monospace;">✦ Elige tu emoji</div>
-                    <div class="grid" id="emojiGridPerfil" style="display:grid;grid-template-columns:repeat(8,1fr);gap:4px;"></div>
-                </div>
             </div>
             <div id="pubStatus" style="margin-top:10px;font-size:0.7rem;color:var(--text-muted);text-align:center;min-height:20px;"></div>
         </div>
     </div>
 
     <!-- ================================================================ -->
-    <!-- MODAL DE COMENTARIOS - ✅ AGREGADO PARA QUE FUNCIONE -->
+    <!-- MODAL DE COMENTARIOS -->
     <!-- ================================================================ -->
     <div class="modal-overlay" id="modalComentarios">
         <div class="modal-content" style="max-width:500px;text-align:left;">
