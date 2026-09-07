@@ -151,9 +151,56 @@
             font-weight: 600;
         }
 
+        /* ===== FLUJO VISUAL ===== */
+        .flow-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            margin: 16px 0 8px 0;
+            padding: 16px 20px;
+            background: rgba(0, 0, 0, 0.25);
+            border-radius: 12px;
+            border: 1px solid var(--glass-border);
+        }
+        .flow-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 8px 4px;
+        }
+        .flow-step {
+            background: rgba(212, 175, 55, 0.12);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            color: var(--gold);
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        .flow-arrow {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            opacity: 0.5;
+        }
+        .flow-step.highlight {
+            background: rgba(212, 175, 55, 0.25);
+            border: 1px solid var(--gold);
+        }
+        .flow-label {
+            font-size: 0.55rem;
+            color: var(--text-muted);
+            text-align: center;
+            margin-top: 4px;
+            letter-spacing: 0.3px;
+        }
+
         @media (max-width: 600px) {
             .container { padding: 20px; }
             h1 { font-size: 1.5rem; }
+            .flow-step { font-size: 0.6rem; padding: 3px 8px; }
+            .flow-arrow { font-size: 0.7rem; }
         }
     </style>
 </head>
@@ -192,55 +239,84 @@
             <p>
                 Sariel's utiliza la tecnología Web3 para crear un programa de lealtad con activos digitales reales. El sistema es simple:
             </p>
+
+            <!-- FLUJO VISUAL -->
+            <div class="flow-container">
+                <div class="flow-row">
+                    <span class="flow-step">🛒 Venta real</span>
+                    <span class="flow-arrow">→</span>
+                    <span class="flow-step">📱 QR escaneado</span>
+                    <span class="flow-arrow">→</span>
+                    <span class="flow-step">🔷 1 ES.TOKS</span>
+                </div>
+                <div class="flow-row">
+                    <span class="flow-arrow">↓</span>
+                </div>
+                <div class="flow-row">
+                    <span class="flow-step">📦 12 ES.TOKS</span>
+                    <span class="flow-arrow">→</span>
+                    <span class="flow-step highlight">🖼️ NFT Domo</span>
+                    <span class="flow-arrow">→</span>
+                    <span class="flow-step">🍪 1 domo gratis</span>
+                </div>
+                <div class="flow-label">o si no se canjea en 30 días → 🎗️ NFT Conmemorativo</div>
+            </div>
+
             <ul>
                 <li>Compras un domo de galleta en nuestro local en Puebla por <strong>$75 MXN</strong>.</li>
-                <li>Escaneas el <strong>QR de un solo uso</strong> dentro del domo.</li>
+                <li>Escaneas el <strong>QR de un solo uso</strong> dentro del domo en la terminal autorizada.</li>
                 <li>En <strong>24 horas</strong>, recibes <strong>1 ES.TOKS</strong> en tu wallet de Polygon.</li>
-                <li><strong>ES.TOKS es transferible</strong>: puedes venderlo en el Mercado P2P.</li>
-                <li>Acumula <strong>12 ES.TOKS</strong> y <strong>canjea 1 NFT exclusivo</strong>.</li>
+                <li><strong>ES.TOKS es transferible</strong>: puedes venderlo o comprarlo en el Mercado P2P.</li>
+                <li>Acumula <strong>12 ES.TOKS</strong> y <strong>canjea 1 NFT Domo exclusivo</strong>.</li>
                 <li>El NFT te da derecho a <strong>1 domo gratis en 30 días</strong>, o se convierte en <strong>Conmemorativo 🎗️</strong>.</li>
             </ul>
         </div>
 
         <!-- ============================================================ -->
-        <!-- SECCIÓN 3: TOKEN ES.TOKS                                    -->
+        <!-- SECCIÓN 3: ES.TOKS                                           -->
         <!-- ============================================================ -->
         <div class="section">
             <h2>✦ ¿Qué es ES.TOKS?</h2>
             <p>
-                <strong>ES.TOKS</strong> es un <strong>token de utilidad</strong> que representa tu participación en el ecosistema Sariel's. Sus características son:
+                <strong>ES.TOKS</strong> es un <strong>token de utilidad y fidelización</strong> que representa tu participación en el ecosistema Sariel's.
+            </p>
+            <p style="margin-top:8px;">
+                Su característica más importante es que <strong>solo se genera cuando ocurre una venta real</strong> de un domo de galleta físico. <strong>El token no existe si no hay una venta real.</strong>
             </p>
             <ul>
-                <li><strong>Se genera únicamente con una compra real</strong> de un domo de galleta físico.</li>
-                <li><strong>No existe un token sin una venta real</strong> — está respaldado por la economía real.</li>
-                <li><strong>Es transferible P2P</strong>: puedes venderlo a otros usuarios al precio que determines.</li>
-                <li><strong>Valor de mercado</strong>: determinado por oferta y demanda en el Mercado P2P.</li>
+                <li><strong>Origen vinculado a ventas reales</strong>: cada ES.TOKS emitido está respaldado por una compra física.</li>
+                <li><strong>El Mercado P2P no crea nuevos ES.TOKS</strong>: solo permite transferir los que ya existen.</li>
+                <li><strong>Es transferible</strong>: puedes venderlo o comprarlo en el Mercado P2P al precio que determines.</li>
+                <li><strong>Valor determinado por oferta y demanda</strong>: el precio lo fija el mercado, no Sariel's.</li>
                 <li><strong>Comisión del 2%</strong> por transacción P2P (se cobra en MATIC/POL).</li>
             </ul>
             <div class="highlight-box">
                 <p>
-                    <strong>Dato clave:</strong> Cada domo de galleta cuesta $75 MXN y te da <strong>1 ES.TOKS</strong>. En el mercado P2P, el precio lo fija la oferta y la demanda. ¡La lealtad tiene valor real!
+                    <strong>Dato clave:</strong> Cada domo de galleta cuesta $75 MXN y te da <strong>1 ES.TOKS</strong>. Puedes acumularlos, transferirlos o venderlos en el Mercado P2P. <strong>El valor de ES.TOKS refleja la confianza y actividad del ecosistema.</strong>
                 </p>
             </div>
         </div>
 
         <!-- ============================================================ -->
-        <!-- SECCIÓN 4: NFT DOMO - EL COLECCIONABLE                       -->
+        <!-- SECCIÓN 4: NFT DOMO                                          -->
         <!-- ============================================================ -->
         <div class="section">
             <h2>✦ El NFT Domo</h2>
             <p>
-                Cuando acumulas <strong>12 ES.TOKS</strong> (por compras o por compra en el P2P), puedes <strong>mintear un NFT Domo</strong>. Estos son sus atributos:
+                Cuando acumulas <strong>12 ES.TOKS</strong> (ya sea por compras directas o mediante el Mercado P2P), puedes <strong>obtener un NFT Domo</strong>. Los 12 ES.TOKS utilizados se <strong>queman</strong> en el proceso.
+            </p>
+            <p style="margin-top:8px;">
+                El NFT Domo es el <strong>beneficio de canje</strong>. No canjeas directamente los ES.TOKS por el producto físico; primero reúnes 12 ES.TOKS, después obtienes el NFT y finalmente utilizas ese NFT para realizar el canje.
             </p>
             <ul>
                 <li><strong>Intransferible (Soulbound)</strong>: no se puede vender, regalar ni listar en ningún mercado.</li>
-                <li><strong>Vinculado permanentemente</strong> a la wallet que lo minteó.</li>
-                <li><strong>Minteo interno</strong>: se realiza dentro del ecosistema, no en OpenSea.</li>
-                <li>Los <strong>12 ES.TOKS se queman (burn)</strong> en el Smart Contract al mintear.</li>
+                <li><strong>Vinculado permanentemente</strong> a la wallet que lo obtuvo.</li>
+                <li><strong>Minteo interno</strong>: se realiza dentro del ecosistema.</li>
+                <li><strong>Los 12 ES.TOKS se queman (burn)</strong> al obtener el NFT.</li>
             </ul>
             <div class="highlight-box">
                 <p>
-                    <strong>¿Por qué es intransferible?</strong> El NFT Domo es un <strong>comprobante de lealtad</strong>, no un activo especulativo. Está diseñado para <strong>premiar a los clientes reales</strong>, no a los revendedores.
+                    <strong>Origen del NFT:</strong> Cada NFT se obtiene mediante <strong>12 ES.TOKS cuyo origen está vinculado a ventas reales del ecosistema</strong>. Esto asegura que cada NFT tenga un respaldo en la economía real, independientemente de si los ES.TOKS fueron adquiridos directamente o mediante el Mercado P2P.
                 </p>
             </div>
         </div>
@@ -251,7 +327,7 @@
         <div class="section">
             <h2>✦ Regla de los 30 Días</h2>
             <p>
-                El NFT Domo tiene un <strong>período de canje de 30 días</strong> a partir de su minteo:
+                El NFT Domo tiene un <strong>período de canje de 30 días</strong> a partir del momento en que se obtiene:
             </p>
             <ul>
                 <li><strong>Si lo canjeas</strong> dentro de los 30 días → el NFT se quema (burn) y recibes <strong>1 domo de galleta gratis</strong> en nuestro local de Puebla.</li>
@@ -279,7 +355,7 @@
             </ul>
             <div class="highlight-box">
                 <p>
-                    <strong>Importante:</strong> Los <strong>NFTs Domo NO se venden</strong> en el mercado P2P. Son <strong>completamente intransferibles</strong> por diseño. Solo los ES.TOKS pueden comercializarse.
+                    <strong>Importante:</strong> Los <strong>NFTs Domo NO se venden</strong> en el mercado P2P. Son <strong>completamente intransferibles</strong> por diseño. Solo los ES.TOKS pueden comercializarse. El P2P <strong>no crea nuevos ES.TOKS</strong>, solo permite transferir los que ya existen.
                 </p>
             </div>
         </div>
@@ -290,13 +366,13 @@
         <div class="section">
             <h2>✦ Blockchain y Polygon</h2>
             <p>
-                Todo el ecosistema funciona sobre la blockchain de <strong>Polygon</strong>:
+                Sariel's utiliza la blockchain de <strong>Polygon</strong> para que tus ES.TOKS no sean únicamente un saldo interno de la plataforma, sino <strong>activos digitales reales que puedes gestionar desde tu wallet</strong>.
             </p>
             <ul>
                 <li><strong>Transparencia total</strong>: todas las transacciones son públicas e inmutables.</li>
                 <li><strong>Bajo costo</strong>: Polygon tiene comisiones (gas fees) muy bajas.</li>
                 <li><strong>Sostenible</strong>: Polygon es una red con bajo impacto ambiental.</li>
-                <li><strong>Seguridad</strong>: los activos están protegidos por criptografía.</li>
+                <li><strong>Interoperable</strong>: tus ES.TOKS son visibles en wallets como MetaMask y consultables en exploradores de blockchain como PolygonScan.</li>
             </ul>
             <p style="margin-top:8px;">
                 <span class="badge-polygon">🟢 Polygon</span>
@@ -325,7 +401,7 @@
         </div>
 
         <!-- ============================================================ -->
-        <!-- SECCIÓN 9: QUEMA DE TOKENS Y NFT                             -->
+        <!-- SECCIÓN 9: QUEMA DE ES.TOKS Y NFT                            -->
         <!-- ============================================================ -->
         <div class="section">
             <h2>✦ Quema (Burn) de ES.TOKS y NFTs</h2>
@@ -333,14 +409,33 @@
                 La <strong>quema (burn)</strong> es el proceso de destruir tokens o NFTs para reducir la oferta:
             </p>
             <ul>
-                <li><strong>12 ES.TOKS</strong> se queman al mintear un NFT Domo.</li>
+                <li><strong>12 ES.TOKS</strong> se queman al obtener un NFT Domo.</li>
                 <li><strong>El NFT Domo</strong> se quema al canjearlo por la galleta gratis.</li>
                 <li><strong>Los ES.TOKS quemados</strong> salen de circulación permanentemente.</li>
                 <li><strong>El NFT quemado</strong> deja de existir en la blockchain.</li>
             </ul>
             <p style="margin-top:8px;">
-                Esto asegura que <strong>cada NFT corresponda a una compra real</strong> y que el sistema sea sostenible.
+                La quema asegura que el sistema sea sostenible y que cada NFT obtenido represente un consumo real de ES.TOKS dentro del ecosistema.
             </p>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- SECCIÓN 10: DIFERENCIA ENTRE ES.TOKS Y NFT                   -->
+        <!-- ============================================================ -->
+        <div class="section">
+            <h2>✦ Diferencia entre ES.TOKS y NFT Domo</h2>
+            <p>
+                Es importante entender la diferencia entre ambos activos:
+            </p>
+            <ul>
+                <li><strong>ES.TOKS</strong> → Token de fidelización y acumulación. <strong>Es transferible</strong>. Se puede comprar, vender y acumular.</li>
+                <li><strong>NFT Domo</strong> → Beneficio de canje. <strong>No es transferible</strong>. Solo se puede utilizar para reclamar el producto físico.</li>
+            </ul>
+            <div class="highlight-box">
+                <p>
+                    <strong>Resumen:</strong> <strong>12 ES.TOKS → 1 NFT Domo → 1 domo gratis</strong>. Los ES.TOKS son acumulables y transferibles; el NFT es el comprobante de canje y es intransferible.
+                </p>
+            </div>
         </div>
 
         <!-- ============================================================ -->
