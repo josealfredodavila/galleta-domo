@@ -10,7 +10,7 @@
     <!-- ================================================================
     CLOUDFLARE TURNSTILE
     ================================================================ -->
-    <meta name="turnstile-sitekey" content="TU_TURNSTILE_SITE_KEY">
+    <meta name="turnstile-sitekey" content="0x4AAAAAAEqg1T_4FkpM9FDg">
 
     <script
         src="https://challenges.cloudflare.com/turnstile/v0/api.js"
@@ -620,9 +620,10 @@
                             <div
                                 id="turnstile-container"
                                 class="cf-turnstile"
-                                data-sitekey="TU_TURNSTILE_SITE_KEY"
+                                data-sitekey="0x4AAAAAAEqg1T_4FkpM9FDg"
                                 data-theme="dark"
                                 data-size="normal"
+                                data-action="delete_account"
                                 data-callback="onTurnstileSuccess"
                                 data-expired-callback="onTurnstileExpired"
                                 data-error-callback="onTurnstileError">
@@ -735,7 +736,7 @@
     <script>
         /* ================================================================
            SARIEL'S · ELIMINACIÓN DE CUENTA
-           CLOUDFLARE TURNSTILE + BACKEND
+           CLOUDFLARE TURNSTILE + BACKEND + SUPABASE AUTH
            ================================================================ */
 
         (function() {
@@ -744,11 +745,9 @@
 
             const DELETE_ENDPOINT = '/api/account/delete';
 
-            const TURNSTILE_SITE_KEY =
-                document
-                .querySelector('meta[name="turnstile-sitekey"]')
-                ?.getAttribute('content') ||
-                'TU_TURNSTILE_SITE_KEY';
+            // Obtener la instancia de Supabase desde el contexto global
+            // (asumiendo que la aplicación ya la inicializa en window.supabase)
+            const supabase = window.supabase || null;
 
             const confirmCheckbox =
                 document.getElementById('confirmDelete');
@@ -852,6 +851,32 @@
                     return;
                 }
 
+                // --- OBTENER SESIÓN DE SUPABASE ---
+                if (!supabase) {
+                    setStatus('error', 'No se pudo cargar el sistema de autenticación. Inicia sesión nuevamente.');
+                    resetTurnstile();
+                    return;
+                }
+
+                let session;
+                try {
+                    const { data, error } = await supabase.auth.getSession();
+                    if (error || !data?.session) {
+                        throw new Error('No hay sesión activa. Inicia sesión nuevamente.');
+                    }
+                    session = data.session;
+                } catch (err) {
+                    setStatus('error', err.message || 'Sesión no válida. Inicia sesión nuevamente.');
+                    resetTurnstile();
+                    return;
+                }
+
+                if (!session?.access_token) {
+                    setStatus('error', 'No se pudo obtener el token de autenticación. Inicia sesión nuevamente.');
+                    resetTurnstile();
+                    return;
+                }
+
                 requestInProgress = true;
                 updateButton();
                 setStatus('loading', 'Verificando tu identidad y procesando la solicitud...');
@@ -862,7 +887,8 @@
                         credentials: 'include',
                         headers: {
                             'Content-Type': 'application/json',
-                            'Accept': 'application/json'
+                            'Accept': 'application/json',
+                            'Authorization': 'Bearer ' + session.access_token
                         },
                         body: JSON.stringify({
                             turnstile_token: turnstileToken,
@@ -879,10 +905,16 @@
                     }
 
                     if (!response.ok) {
-                        const message = data?.message || 'El servidor rechazó la solicitud de eliminación.';
+                        let message = 'El servidor rechazó la solicitud de eliminación.';
+                        if (response.status === 401 || response.status === 403) {
+                            message = 'Tu sesión ha expirado o no tienes permisos. Inicia sesión nuevamente.';
+                        } else if (data?.message) {
+                            message = data.message;
+                        }
                         throw new Error(message);
                     }
 
+                    // Éxito
                     deletePanel.classList.add('hidden');
                     successScreen.classList.add('show');
                     setStatus('success', 'Solicitud de eliminación recibida correctamente.');
@@ -897,15 +929,20 @@
                     console.error('[SARIELS] Error al solicitar eliminación:', error);
                     requestInProgress = false;
                     setStatus('error', error?.message || 'No fue posible procesar la solicitud. Inténtalo nuevamente.');
-                    turnstileToken = null;
-                    try {
-                        if (window.turnstile && document.getElementById('turnstile-container')) {
-                            window.turnstile.reset('#turnstile-container');
-                        }
-                    } catch (_) {}
+                    resetTurnstile();
                     updateButton();
                 }
             });
+
+            function resetTurnstile() {
+                turnstileToken = null;
+                try {
+                    if (window.turnstile && document.getElementById('turnstile-container')) {
+                        window.turnstile.reset('#turnstile-container');
+                    }
+                } catch (_) {}
+                updateButton();
+            }
 
             // Estrellas de fondo
             const canvas = document.getElementById('stars-canvas');
@@ -953,10 +990,6 @@
             }
 
             updateButton();
-
-            if (!TURNSTILE_SITE_KEY || TURNSTILE_SITE_KEY === 'TU_TURNSTILE_SITE_KEY') {
-                console.warn('[SARIELS] Falta configurar el Site Key de Cloudflare Turnstile.');
-            }
 
         })();
     </script>
