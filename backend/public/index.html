@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title data-clave="index_titulo">◈ Sariel's · Ecosistema WEB3</title>
+    <title>◈ Sariel's · Ecosistema WEB3</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet" />
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     
@@ -240,6 +240,61 @@
         }
         .admin-link:hover { border-bottom-color: var(--gold); }
 
+        /* ===== ESTRELLAS ===== */
+        .stars-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .nebula {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(120px);
+            pointer-events: none;
+            z-index: 0;
+            animation: nebula-drift 25s ease-in-out infinite alternate;
+        }
+
+        .nebula-1 {
+            width: 700px;
+            height: 700px;
+            background: #0B3D2E;
+            top: -15%;
+            right: -15%;
+            opacity: .10;
+        }
+
+        .nebula-2 {
+            width: 600px;
+            height: 600px;
+            background: var(--gold);
+            bottom: -15%;
+            left: -15%;
+            opacity: .05;
+            animation-delay: -8s;
+        }
+
+        .nebula-3 {
+            width: 500px;
+            height: 500px;
+            background: #00e5ff;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            opacity: .04;
+            animation-delay: -15s;
+        }
+
+        @keyframes nebula-drift {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(40px, -30px) scale(1.15); }
+        }
+
         @media (max-width: 768px) {
             #stars-canvas { display: none; }
             .nebula { display: none; }
@@ -253,15 +308,21 @@
 </head>
 <body>
 
+    <!-- ===== FONDO ===== -->
+    <canvas id="stars-canvas" class="stars-canvas"></canvas>
+    <div class="nebula nebula-1"></div>
+    <div class="nebula nebula-2"></div>
+    <div class="nebula nebula-3"></div>
+
     <div class="app">
         <header class="header">
             <a href="/" class="logo">
                 <span class="logo-hex">◈</span>
-                <span class="logo-text" data-clave="index_logo">Sariel<span>'s</span></span>
-                <span class="logo-badge" data-clave="index_logo_badge">✦ WEB3</span>
+                <span class="logo-text">Sariel<span>'s</span></span>
+                <span class="logo-badge">✦ WEB3</span>
             </a>
             <div class="header-actions">
-                <span class="network-badge" data-clave="index_polygon"><span class="dot"></span> Polygon</span>
+                <span class="network-badge"><span class="dot"></span> Polygon</span>
                 
                 <!-- ===== SELECTOR DE IDIOMA ===== -->
                 <div class="idioma-selector">
@@ -281,7 +342,7 @@
 
         <section class="hero">
             <h1 data-clave="bienvenido_titulo">◈ Bienvenido a Sariel's</h1>
-            <p data-clave="bienvenido_descripcion">Compra domos físicos, acumula <strong data-clave="index_esstoks">Es.stoks</strong>, canjea NFTs y conecta con tu comunidad en un ecosistema Web3 sin custodia.</p>
+            <p data-clave="bienvenido_descripcion">Compra domos físicos, acumula <strong>Es.stoks</strong>, canjea NFTs y conecta con tu comunidad en un ecosistema Web3 sin custodia.</p>
             <a href="/features/perfil/perfil.html" class="ir-perfil-btn" data-clave="ir_perfil">◆ Ir a mi perfil</a>
         </section>
 
@@ -324,10 +385,10 @@
                     <div class="panel-header"><h2 data-clave="comprar_domo_titulo">◈ Comprar Domo</h2><span class="panel-badge" data-clave="comprar_domo_badge">Nuevo</span></div>
                     <div class="panel-body">
                         <div class="domo-card">
-                            <span class="domo-price" data-clave="index_precio_domo">75 MXN</span>
+                            <span class="domo-price">75 MXN</span>
                             <div class="qty-control">
                                 <button class="qty-btn" id="decreaseQty">−</button>
-                                <span class="qty-value" id="domoQuantity" data-clave="index_cantidad">1</span>
+                                <span class="qty-value" id="domoQuantity">1</span>
                                 <button class="qty-btn" id="increaseQty">+</button>
                             </div>
                             <button class="btn btn-gold" style="width:100%;" id="buyDomo" onclick="comprarDomo()" data-clave="comprar_domo_btn">Comprar Domo</button>
@@ -417,14 +478,14 @@
         </div>
 
         <footer class="footer">
-            <span><span class="brand" data-clave="index_footer_brand">◈ Sariel's</span> <span data-clave="index_footer_texto">· Sabor al Paladar · WEB3</span></span>
+            <span><span class="brand">◈ Sariel's</span> · Sabor al Paladar · WEB3</span>
             <div class="footer-links">
                 <a href="/terminos.html" data-clave="footer_terminos">◈ Términos</a>
                 <a href="/privacidad.html" data-clave="footer_privacidad">◈ Privacidad</a>
                 <a href="/cookies.html" data-clave="footer_cookies">◈ Cookies</a>
                 <a href="/eliminar-cuenta.html" data-clave="footer_eliminar_cuenta">🗑️ Eliminar cuenta</a>
                 <a href="/live-terminos.html" data-clave="footer_live_terminos">◉ Live Términos</a>
-                <span style="opacity:0.3;" data-clave="index_footer_polygon">⚡ Polygon</span>
+                <span style="opacity:0.3;">⚡ Polygon</span>
             </div>
         </footer>
     </div>
@@ -464,6 +525,57 @@
     </div>
 
     <script>
+        // ================================================================
+        // ESTRELLAS DE FONDO
+        // ================================================================
+        (function initStars() {
+            const canvas = document.getElementById('stars-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            let stars = [];
+
+            function resizeCanvas() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                createStars();
+            }
+
+            function createStars() {
+                const amount = Math.min(180, Math.floor(window.innerWidth * window.innerHeight / 9000));
+                stars = [];
+                for (let i = 0; i < amount; i++) {
+                    stars.push({
+                        x: Math.random() * canvas.width,
+                        y: Math.random() * canvas.height,
+                        radius: Math.random() * 1.4 + 0.2,
+                        opacity: Math.random() * 0.7 + 0.15,
+                        speed: Math.random() * 0.004 + 0.001
+                    });
+                }
+            }
+
+            function drawStars(time) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                stars.forEach(function(star) {
+                    const pulse = star.opacity + Math.sin(time * star.speed) * 0.12;
+                    ctx.beginPath();
+                    ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+                    ctx.globalAlpha = Math.max(0.05, Math.min(1, pulse));
+                    ctx.fillStyle = '#D4AF37';
+                    ctx.fill();
+                });
+                ctx.globalAlpha = 1;
+                requestAnimationFrame(drawStars);
+            }
+
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
+            requestAnimationFrame(drawStars);
+        })();
+
+        // ================================================================
+        // ERRORES GLOBALES
+        // ================================================================
         function mostrarErrorEnPantalla(mensaje) {
             const banner = document.getElementById('errorBanner');
             const texto = document.getElementById('errorBannerText');
@@ -492,9 +604,7 @@
                 );
             }
         });
-    </script>
 
-    <script>
         // ================================================================
         // CONFIGURACIÓN SUPABASE - app.js YA LA DECLARA COMO window.supabase
         // ================================================================
@@ -596,6 +706,14 @@
 
             } catch (error) {
                 console.error('Error cargando idiomas:', error);
+                // Fallback por si no hay idiomas en la BD
+                const select = document.getElementById('selectorIdioma');
+                if (select && !select.innerHTML.trim()) {
+                    select.innerHTML = `
+                        <option value="es-MX" selected>🌐 Español</option>
+                        <option value="en-US">🌐 English</option>
+                    `;
+                }
             }
         }
 
