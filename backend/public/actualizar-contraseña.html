@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>◈ Nueva contraseña · Sariel's</title>
+    <title data-clave="actualizar_titulo_pagina">◈ Nueva contraseña · Sariel's</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet" />
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <style>
@@ -346,37 +346,37 @@
     <!-- ===== CONTAINER ===== -->
     <div class="reset-container" id="resetContainer">
         <span class="logo-icon">◈</span>
-        <h2>◈ Nueva contraseña</h2>
-        <p class="sub">
+        <h2 data-clave="actualizar_titulo">◈ Nueva contraseña</h2>
+        <p class="sub" data-clave="actualizar_subtitulo">
             Crea una nueva contraseña segura para tu cuenta.<br>
-            <strong>Mínimo 6 caracteres</strong>
+            <strong data-clave="actualizar_minimo">Mínimo 6 caracteres</strong>
         </p>
 
         <!-- ===== FORM ===== -->
         <div class="form-group">
-            <label>Nueva contraseña</label>
-            <input type="password" id="newPassword" placeholder="Ingresa tu nueva contraseña" autofocus />
+            <label data-clave="actualizar_nueva_password">Nueva contraseña</label>
+            <input type="password" id="newPassword" placeholder="Ingresa tu nueva contraseña" data-placeholder="actualizar_placeholder_password" autofocus />
             <div class="password-strength">
                 <div class="fill" id="passwordStrengthFill"></div>
             </div>
-            <div class="input-hint" id="passwordHint">Usa al menos 6 caracteres</div>
+            <div class="input-hint" id="passwordHint" data-clave="actualizar_hint_minimo">Usa al menos 6 caracteres</div>
         </div>
 
         <div class="form-group">
-            <label>Confirmar contraseña</label>
-            <input type="password" id="confirmPassword" placeholder="Confirma tu nueva contraseña" />
-            <div class="input-hint" id="confirmHint">Las contraseñas deben coincidir</div>
+            <label data-clave="actualizar_confirmar_password">Confirmar contraseña</label>
+            <input type="password" id="confirmPassword" placeholder="Confirma tu nueva contraseña" data-placeholder="actualizar_placeholder_confirmar" />
+            <div class="input-hint" id="confirmHint" data-clave="actualizar_hint_coincidir">Las contraseñas deben coincidir</div>
         </div>
 
-        <button class="btn btn-gold" id="btnGuardar" onclick="guardarNuevaContraseña()">
+        <button class="btn btn-gold" id="btnGuardar" onclick="guardarNuevaContraseña()" data-clave="actualizar_guardar">
             ⟡ Guardar y entrar
         </button>
 
         <!-- ===== FOOTER ===== -->
         <div class="reset-footer">
             <span class="lock-icon">🔒</span>
-            Este enlace expira en <strong>1 hora</strong> por seguridad.<br>
-            <a href="/">← Volver al inicio</a>
+            <span data-clave="actualizar_footer_expiracion">Este enlace expira en <strong>1 hora</strong> por seguridad.</span><br>
+            <a href="/" data-clave="actualizar_volver">← Volver al inicio</a>
         </div>
     </div>
 
@@ -420,6 +420,7 @@
                 fill.className = 'fill';
                 fill.style.width = '0%';
                 hint.textContent = 'Usa al menos 6 caracteres';
+                hint.style.color = 'var(--text-muted)';
                 return;
             }
 
@@ -431,22 +432,29 @@
             if (/[^A-Za-z0-9]/.test(password)) strength++;
 
             let level = 'weak';
+            let textKey = 'actualizar_fortaleza_debil';
             let text = 'Débil';
             let width = 33;
 
             if (strength >= 4) {
                 level = 'strong';
+                textKey = 'actualizar_fortaleza_fuerte';
                 text = 'Fuerte';
                 width = 100;
             } else if (strength >= 2) {
                 level = 'medium';
+                textKey = 'actualizar_fortaleza_media';
                 text = 'Media';
                 width = 66;
             }
 
             fill.className = 'fill ' + level;
             fill.style.width = width + '%';
-            hint.textContent = 'Fortaleza: ' + text + (password.length < 6 ? ' (mínimo 6 caracteres)' : '');
+
+            // Usar traducción para el texto de fortaleza
+            const hintText = text + (password.length < 6 ? ' (mínimo 6 caracteres)' : '');
+            hint.textContent = 'Fortaleza: ' + hintText;
+            hint.setAttribute('data-clave', textKey);
             hint.style.color = level === 'strong' ? 'var(--success)' : level === 'medium' ? 'var(--warning)' : 'var(--text-muted)';
         });
 
@@ -460,15 +468,18 @@
 
             if (confirm.length === 0) {
                 hint.textContent = 'Las contraseñas deben coincidir';
+                hint.setAttribute('data-clave', 'actualizar_hint_coincidir');
                 hint.style.color = 'var(--text-muted)';
                 return;
             }
 
             if (confirm === password) {
                 hint.textContent = '✅ Las contraseñas coinciden';
+                hint.setAttribute('data-clave', 'actualizar_coinciden');
                 hint.style.color = 'var(--success)';
             } else {
                 hint.textContent = '❌ Las contraseñas no coinciden';
+                hint.setAttribute('data-clave', 'actualizar_no_coinciden');
                 hint.style.color = 'var(--danger)';
             }
         });
@@ -527,7 +538,7 @@
 
             } catch (error) {
                 console.error('Error actualizando contraseña:', error);
-                showToast('❌ Error: ' + (error.message || 'No se pudo actualizar la contraseña'), 'error');
+                showToast('❌ Error: No se pudo actualizar la contraseña', 'error');
                 btn.disabled = false;
                 btn.textContent = '⟡ Guardar y entrar';
             }
