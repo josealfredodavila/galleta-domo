@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>◈ ¿Qué es Web3? · Sariel's</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet" />
+    <style>
+        :root {
+            --gold: #D4AF37;
+            --gold-dark: #b8923a;
+            --gold-light: #e8c84a;
+            --space: #05080f;
+            --text-primary: #f0f4f8;
+            --text-secondary: #c0d8e8;
+            --text-muted: #8aa8b8;
+            --glass-bg: rgba(15, 45, 26, 0.55);
+            --glass-border: rgba(212, 175, 55, 0.2);
+            --radius: 16px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: var(--space);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            background-image: radial-gradient(ellipse at 20% 50%, rgba(26, 74, 42, 0.4) 0%, transparent 60%), radial-gradient(ellipse at 80% 50%, rgba(212, 175, 55, 0.08) 0%, transparent 60%);
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            padding: 40px;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--gold);
+            text-decoration: none;
+            font-size: 0.85rem;
+            margin-bottom: 24px;
+            transition: var(--transition);
+        }
+        .back-link:hover { transform: translateX(-4px); }
+
+        h1 {
+            font-family: 'Orbitron', monospace;
+            font-size: 2rem;
+            color: var(--gold);
+            margin-bottom: 8px;
+        }
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            margin-bottom: 30px;
+            border-bottom: 1px solid var(--glass-border);
+            padding-bottom: 16px;
+        }
+
+        .section {
+            margin-bottom: 28px;
+        }
+        .section h2 {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.1rem;
+            color: var(--gold);
+            margin-bottom: 8px;
+        }
+        .section p {
+            color: var(--text-secondary);
+            line-height: 1.7;
+            font-size: 0.95rem;
+        }
+        .section ul {
+            list-style: none;
+            padding: 0;
+        }
+        .section ul li {
+            color: var(--text-secondary);
+            padding: 6px 0 6px 24px;
+            position: relative;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+        .section ul li::before {
+            content: "✦";
+            color: var(--gold);
+            position: absolute;
+            left: 0;
+        }
+
+        .highlight-box {
+            background: rgba(212, 175, 55, 0.08);
+            border-left: 3px solid var(--gold);
+            padding: 16px 20px;
+            border-radius: 0 8px 8px 0;
+            margin: 12px 0;
+        }
+        .highlight-box p {
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+        .highlight-box strong {
+            color: var(--gold);
+        }
+
+        .btn-home {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            color: var(--space);
+            padding: 12px 32px;
+            border-radius: 30px;
+            text-decoration: none;
+            font-weight: 600;
+            margin-top: 20px;
+            transition: var(--transition);
+            font-family: 'Inter', sans-serif;
+        }
+        .btn-home:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(212, 175, 55, 0.25);
+        }
+
+        .footer-info {
+            margin-top: 30px;
+            padding-top: 16px;
+            border-top: 1px solid var(--glass-border);
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-align: center;
+        }
+
+        @media (max-width: 600px) {
+            .container { padding: 20px; }
+            h1 { font-size: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <a href="/" class="back-link">← Volver al inicio</a>
+
+        <h1>◈ ¿Qué es Web3?</h1>
+        <div class="subtitle">La nueva era de internet descentralizada · Explicación para todos</div>
+
+        <div class="section">
+            <h2>✦ ¿Qué significa Web3?</h2>
+            <p>
+                <strong>Web3</strong> (o Web 3.0) es la evolución de internet. Mientras que la Web1 era estática y la Web2 es interactiva pero controlada por grandes empresas (Google, Facebook, etc.), la <strong>Web3 devuelve el control a los usuarios</strong>.
+            </p>
+            <p style="margin-top:8px;">
+                En la Web3, <strong>tú eres dueño de tus datos</strong>, tu identidad y tus activos digitales. Todo funciona mediante <strong>blockchain</strong>, una tecnología que garantiza transparencia y seguridad sin necesidad de intermediarios.
+            </p>
+        </div>
+
+        <div class="highlight-box">
+            <p>
+                <strong>En pocas palabras:</strong> Web3 es internet donde tú controlas tu información, tus finanzas y tu identidad digital. <strong>No necesitas pedir permiso</strong> para participar.
+            </p>
+        </div>
+
+        <div class="section">
+            <h2>✦ ¿Cómo se relaciona con Sariel's?</h2>
+            <p>
+                Sariel's utiliza la tecnología Web3 para crear un ecosistema donde:
+            </p>
+            <ul>
+                <li><strong>Compras domos físicos</strong> y recibes <strong>Es.stoks</strong> como recompensa digital.</li>
+                <li><strong>Es.stoks</strong> son tokens que puedes <strong>transferir entre usuarios</strong> (P2P).</li>
+                <li><strong>Acumulas Es.stoks</strong> y al llegar a 12, <strong>puedes canjear un NFT</strong> exclusivo.</li>
+                <li><strong>Tus NFTs</strong> son tuyos, los puedes conservar o vender en el mercado.</li>
+                <li><strong>Tu wallet</strong> es tu identidad digital en el ecosistema.</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>✦ ¿Qué papel tiene la blockchain?</h2>
+            <p>
+                La blockchain (cadena de bloques) es como un <strong>libro de contabilidad público y seguro</strong>. Cada transacción se registra y <strong>no se puede modificar</strong>. Esto garantiza:
+            </p>
+            <ul>
+                <li><strong>Transparencia:</strong> Cualquier persona puede verificar las transacciones.</li>
+                <li><strong>Seguridad:</strong> La información está protegida por criptografía.</li>
+                <li><strong>Sin intermediarios:</strong> No necesitas un banco o empresa que "apruebe" tus movimientos.</li>
+            </ul>
+            <p style="margin-top:8px;">
+                En Sariel's, usamos la blockchain de <strong>Polygon</strong> por su rapidez, bajo costo y sostenibilidad ambiental.
+            </p>
+        </div>
+
+        <div class="section">
+            <h2>✦ ¿Qué significa "conectar una wallet"?</h2>
+            <p>
+                Una <strong>wallet</strong> (cartera digital) es como una cuenta bancaria, pero sin un banco. Es una aplicación donde guardas tus <strong>activos digitales</strong> (tokens, NFTs).
+            </p>
+            <ul>
+                <li><strong>Conectarla</strong> significa darle permiso a la aplicación (Sariel's) para ver tu dirección pública y tus activos.</li>
+                <li><strong>No le das acceso</strong> a tu dinero, solo a lo que es visible en la blockchain.</li>
+                <li><strong>Tú firmas</strong> cada transacción con tu clave privada, nunca la compartes.</li>
+            </ul>
+            <div class="highlight-box">
+                <p>
+                    <strong>Ejemplo práctico:</strong> Cuando compras un domo en Sariel's, conectas tu wallet, pagas 75 MXN y automáticamente <strong>recibes 1 ES.stoks</strong> en tu wallet. ¡Así de simple!
+                </p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>✦ Tokenización Web3 en Sariel's</h2>
+            <p>
+                <strong>Tokenizar</strong> significa convertir un valor en un token digital. En Sariel's:
+            </p>
+            <ul>
+                <li>Los <strong>domos físicos</strong> se tokenizan como <strong>Es.stoks</strong>.</li>
+                <li>Cada <strong>ES.stoks</strong> representa tu participación y lealtad.</li>
+                <li>Los <strong>NFTs</strong> son coleccionables digitales exclusivos.</li>
+                <li>Todos los activos son <strong>rastreables, seguros e inmutables</strong>.</li>
+            </ul>
+            <p style="margin-top:8px;">
+                Esto permite que tu experiencia como cliente vaya más allá: <strong>tienes activos reales en el mundo digital</strong>, sin depender de nadie.
+            </p>
+        </div>
+
+        <div style="text-align:center; margin-top: 20px;">
+            <a href="/" class="btn-home">← Volver a Sariel's</a>
+        </div>
+
+        <div class="footer-info">
+            Sariel's · Ecosistema Web3 · Tecnología al servicio de las personas
+        </div>
+    </div>
+
+</body>
+</html>
