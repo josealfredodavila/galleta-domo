@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>◈ Sariel's · Ecosistema WEB3</title>
+    <title data-clave="index_titulo">◈ Sariel's · Ecosistema WEB3</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet" />
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     
@@ -257,11 +257,11 @@
         <header class="header">
             <a href="/" class="logo">
                 <span class="logo-hex">◈</span>
-                <span class="logo-text">Sariel<span>'s</span></span>
-                <span class="logo-badge">✦ WEB3</span>
+                <span class="logo-text" data-clave="index_logo">Sariel<span>'s</span></span>
+                <span class="logo-badge" data-clave="index_logo_badge">✦ WEB3</span>
             </a>
             <div class="header-actions">
-                <span class="network-badge"><span class="dot"></span> Polygon</span>
+                <span class="network-badge" data-clave="index_polygon"><span class="dot"></span> Polygon</span>
                 
                 <!-- ===== SELECTOR DE IDIOMA ===== -->
                 <div class="idioma-selector">
@@ -281,7 +281,7 @@
 
         <section class="hero">
             <h1 data-clave="bienvenido_titulo">◈ Bienvenido a Sariel's</h1>
-            <p data-clave="bienvenido_descripcion">Compra domos físicos, acumula <strong>Es.stoks</strong>, canjea NFTs y conecta con tu comunidad en un ecosistema Web3 sin custodia.</p>
+            <p data-clave="bienvenido_descripcion">Compra domos físicos, acumula <strong data-clave="index_esstoks">Es.stoks</strong>, canjea NFTs y conecta con tu comunidad en un ecosistema Web3 sin custodia.</p>
             <a href="/features/perfil/perfil.html" class="ir-perfil-btn" data-clave="ir_perfil">◆ Ir a mi perfil</a>
         </section>
 
@@ -324,10 +324,10 @@
                     <div class="panel-header"><h2 data-clave="comprar_domo_titulo">◈ Comprar Domo</h2><span class="panel-badge" data-clave="comprar_domo_badge">Nuevo</span></div>
                     <div class="panel-body">
                         <div class="domo-card">
-                            <span class="domo-price">75 MXN</span>
+                            <span class="domo-price" data-clave="index_precio_domo">75 MXN</span>
                             <div class="qty-control">
                                 <button class="qty-btn" id="decreaseQty">−</button>
-                                <span class="qty-value" id="domoQuantity">1</span>
+                                <span class="qty-value" id="domoQuantity" data-clave="index_cantidad">1</span>
                                 <button class="qty-btn" id="increaseQty">+</button>
                             </div>
                             <button class="btn btn-gold" style="width:100%;" id="buyDomo" onclick="comprarDomo()" data-clave="comprar_domo_btn">Comprar Domo</button>
@@ -417,14 +417,14 @@
         </div>
 
         <footer class="footer">
-            <span><span class="brand">◈ Sariel's</span> · Sabor al Paladar · WEB3</span>
+            <span><span class="brand" data-clave="index_footer_brand">◈ Sariel's</span> <span data-clave="index_footer_texto">· Sabor al Paladar · WEB3</span></span>
             <div class="footer-links">
                 <a href="/terminos.html" data-clave="footer_terminos">◈ Términos</a>
                 <a href="/privacidad.html" data-clave="footer_privacidad">◈ Privacidad</a>
                 <a href="/cookies.html" data-clave="footer_cookies">◈ Cookies</a>
                 <a href="/eliminar-cuenta.html" data-clave="footer_eliminar_cuenta">🗑️ Eliminar cuenta</a>
                 <a href="/live-terminos.html" data-clave="footer_live_terminos">◉ Live Términos</a>
-                <span style="opacity:0.3;">⚡ Polygon</span>
+                <span style="opacity:0.3;" data-clave="index_footer_polygon">⚡ Polygon</span>
             </div>
         </footer>
     </div>
