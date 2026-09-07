@@ -1,1379 +1,964 @@
-<!DOCTYPE html><html lang="es">
+<!DOCTYPE html>
+<html lang="es">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Eliminación de cuenta y datos de Sariel's WEB3." />
-    <meta name="robots" content="noindex, follow" /><title>◈ Eliminar Cuenta · Sariel's</title>
+    <meta name="robots" content="noindex, follow" />
+    <title data-clave="eliminar_titulo_pagina">◈ Eliminar Cuenta · Sariel's</title>
 
-<!--
-    ================================================================
+    <!-- ================================================================
     CLOUDFLARE TURNSTILE
-    ================================================================
-    IMPORTANTE:
-    - Este es el SITE KEY público.
-    - NUNCA colocar aquí el SECRET KEY.
-    - Sustituir el valor por el Site Key real de Cloudflare.
-    ================================================================
--->
-<meta name="turnstile-sitekey" content="TU_TURNSTILE_SITE_KEY">
+    ================================================================ -->
+    <meta name="turnstile-sitekey" content="TU_TURNSTILE_SITE_KEY">
 
-<script
-    src="https://challenges.cloudflare.com/turnstile/v0/api.js"
-    async
-    defer>
-</script>
+    <script
+        src="https://challenges.cloudflare.com/turnstile/v0/api.js"
+        async
+        defer>
+    </script>
 
-<link
-    rel="icon"
-    type="image/svg+xml"
-    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>"
-/>
+    <link
+        rel="icon"
+        type="image/svg+xml"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>"
+    />
 
-<link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap"
-    rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap"
+        rel="stylesheet">
 
-<style>
-    :root {
-        --gold-cosmic: #D4AF37;
-        --gold-dim: rgba(212, 168, 87, 0.25);
-        --text-primary: #FFFFFF;
-        --text-secondary: #E2E8F0;
-        --text-muted: #94A3B8;
-        --space-deep: #05080f;
-        --danger: #ff5c5c;
-        --success: #4ade80;
-        --radius: 16px;
-    }
-
-    * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-    }
-
-    body {
-        background: var(--space-deep);
-        color: var(--text-primary);
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-        min-height: 100vh;
-        line-height: 1.6;
-    }
-
-    #stars-canvas {
-        position: fixed;
-        inset: 0;
-        width: 100%;
-        height: 100%;
-        z-index: 0;
-        pointer-events: none;
-    }
-
-    .nebula {
-        position: fixed;
-        border-radius: 50%;
-        filter: blur(120px);
-        pointer-events: none;
-        z-index: 0;
-        animation: nebula-drift 25s ease-in-out infinite alternate;
-    }
-
-    .nebula-1 {
-        width: 700px;
-        height: 700px;
-        background: #0B3D2E;
-        top: -15%;
-        right: -15%;
-        opacity: .10;
-    }
-
-    .nebula-2 {
-        width: 600px;
-        height: 600px;
-        background: var(--gold-cosmic);
-        bottom: -15%;
-        left: -15%;
-        opacity: .05;
-        animation-delay: -8s;
-    }
-
-    .nebula-3 {
-        width: 500px;
-        height: 500px;
-        background: #00e5ff;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        opacity: .04;
-        animation-delay: -15s;
-    }
-
-    @keyframes nebula-drift {
-        0% {
-            transform: translate(0, 0) scale(1);
+    <style>
+        :root {
+            --gold-cosmic: #D4AF37;
+            --gold-dim: rgba(212, 168, 87, 0.25);
+            --text-primary: #FFFFFF;
+            --text-secondary: #E2E8F0;
+            --text-muted: #94A3B8;
+            --space-deep: #05080f;
+            --danger: #ff5c5c;
+            --success: #4ade80;
+            --radius: 16px;
         }
 
-        100% {
-            transform: translate(40px, -30px) scale(1.15);
-        }
-    }
-
-    .main {
-        position: relative;
-        z-index: 1;
-    }
-
-    .header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 12px 20px 16px;
-        border-bottom: 2px solid var(--gold-dim);
-        margin: 0 auto 16px;
-        max-width: 900px;
-        flex-wrap: wrap;
-        gap: 10px;
-        backdrop-filter: blur(10px);
-    }
-
-    .header-content {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        width: 100%;
-        flex-wrap: wrap;
-        gap: 10px;
-    }
-
-    .logo {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        text-decoration: none;
-    }
-
-    .logo-icon {
-        font-size: 2rem;
-        color: var(--gold-cosmic);
-        filter: drop-shadow(0 0 20px rgba(212, 168, 87, .2));
-    }
-
-    .logo-text {
-        font-family: 'Orbitron', monospace;
-        font-size: 1.3rem;
-        font-weight: 900;
-        letter-spacing: 2px;
-        background: linear-gradient(135deg, var(--gold-cosmic), #b8923a);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-    }
-
-    .logo-badge {
-        font-size: .5rem;
-        background: linear-gradient(135deg, var(--gold-cosmic), #b8923a);
-        color: #0a0c10;
-        padding: 2px 12px;
-        border-radius: 20px;
-        font-weight: 700;
-        letter-spacing: 1px;
-        text-transform: uppercase;
-    }
-
-    .network-badge {
-        font-size: .7rem;
-        color: var(--gold-cosmic);
-        background: rgba(212, 168, 87, .1);
-        padding: 4px 14px;
-        border-radius: 20px;
-        border: 1px solid rgba(212, 168, 87, .2);
-    }
-
-    .container {
-        max-width: 900px;
-        margin: 0 auto;
-        padding: 0 20px 40px;
-    }
-
-    .terminos-container {
-        padding: 40px 24px;
-        background: rgba(15, 45, 26, .4);
-        border: 1px solid var(--gold-dim);
-        border-radius: var(--radius);
-        backdrop-filter: blur(10px);
-        box-shadow: 0 8px 40px rgba(0, 0, 0, .5);
-    }
-
-    h1 {
-        font-family: 'Orbitron', monospace;
-        font-size: 2rem;
-        color: var(--gold-cosmic);
-        text-align: center;
-        margin-bottom: 8px;
-    }
-
-    .fecha {
-        text-align: center;
-        color: var(--text-muted);
-        font-size: .85rem;
-        margin-bottom: 30px;
-        border-bottom: 1px solid var(--gold-dim);
-        padding-bottom: 20px;
-    }
-
-    h2 {
-        font-family: 'Orbitron', monospace;
-        font-size: 1.2rem;
-        color: var(--gold-cosmic);
-        margin-top: 30px;
-        margin-bottom: 12px;
-        border-left: 4px solid var(--gold-cosmic);
-        padding-left: 14px;
-    }
-
-    p {
-        color: var(--text-secondary);
-        line-height: 1.7;
-        margin-bottom: 12px;
-        font-size: .95rem;
-    }
-
-    ul {
-        list-style: none;
-        padding-left: 10px;
-        margin: 12px 0 18px;
-    }
-
-    ul li {
-        padding: 6px 0 6px 28px;
-        position: relative;
-        color: var(--text-secondary);
-        font-size: .95rem;
-    }
-
-    ul li::before {
-        content: "✦";
-        color: var(--gold-cosmic);
-        position: absolute;
-        left: 4px;
-        top: 8px;
-    }
-
-    .art {
-        background: rgba(255, 255, 255, .04);
-        border: 1px solid rgba(212, 168, 87, .25);
-        border-left: 4px solid var(--gold-cosmic);
-        padding: 16px 20px;
-        border-radius: 10px;
-        margin: 18px 0;
-    }
-
-    .art p {
-        color: #F8FAFC !important;
-    }
-
-    .art strong {
-        color: #FFE066 !important;
-    }
-
-    .danger-box {
-        background: rgba(255, 92, 92, .08);
-        border: 1px solid rgba(255, 92, 92, .35);
-        border-left: 4px solid var(--danger);
-    }
-
-    .danger-box strong {
-        color: #ff8b8b !important;
-    }
-
-    .delete-panel {
-        margin-top: 35px;
-        padding: 24px;
-        border-radius: 14px;
-        border: 1px solid rgba(255, 92, 92, .35);
-        background: rgba(20, 8, 10, .75);
-    }
-
-    .delete-panel h2 {
-        margin-top: 0;
-        border-left-color: var(--danger);
-        color: #ff8585;
-    }
-
-    .confirmation-row {
-        display: flex;
-        align-items: flex-start;
-        gap: 12px;
-        margin: 18px 0;
-        color: var(--text-secondary);
-    }
-
-    .confirmation-row input {
-        width: 20px;
-        height: 20px;
-        margin-top: 3px;
-        accent-color: var(--danger);
-        cursor: pointer;
-        flex-shrink: 0;
-    }
-
-    .delete-word {
-        margin-top: 18px;
-    }
-
-    .delete-word label {
-        display: block;
-        color: var(--text-secondary);
-        font-size: .9rem;
-        margin-bottom: 8px;
-    }
-
-    .delete-word input {
-        width: 100%;
-        padding: 13px 15px;
-        border-radius: 10px;
-        border: 1px solid rgba(255, 255, 255, .15);
-        background: rgba(255, 255, 255, .05);
-        color: white;
-        outline: none;
-        font-size: 1rem;
-    }
-
-    .delete-word input:focus {
-        border-color: var(--gold-cosmic);
-        box-shadow: 0 0 0 3px rgba(212, 168, 87, .1);
-    }
-
-    .turnstile-wrapper {
-        margin: 22px 0;
-        display: flex;
-        justify-content: center;
-        min-height: 65px;
-    }
-
-    .status {
-        display: none;
-        padding: 14px 16px;
-        border-radius: 10px;
-        margin: 16px 0;
-        font-size: .9rem;
-    }
-
-    .status.show {
-        display: block;
-    }
-
-    .status.error {
-        background: rgba(255, 92, 92, .10);
-        border: 1px solid rgba(255, 92, 92, .35);
-        color: #ffb0b0;
-    }
-
-    .status.success {
-        background: rgba(74, 222, 128, .10);
-        border: 1px solid rgba(74, 222, 128, .35);
-        color: #9af0b5;
-    }
-
-    .status.loading {
-        background: rgba(212, 168, 87, .08);
-        border: 1px solid var(--gold-dim);
-        color: #ffe699;
-    }
-
-    .btn-delete,
-    .btn-volver {
-        display: inline-block;
-        padding: 13px 28px;
-        border-radius: 40px;
-        font-size: .9rem;
-        font-weight: 700;
-        font-family: 'Orbitron', monospace;
-        cursor: pointer;
-        transition: all .3s ease;
-    }
-
-    .btn-delete {
-        width: 100%;
-        border: 1px solid rgba(255, 92, 92, .5);
-        background: linear-gradient(135deg, #a92323, #6f1515);
-        color: white;
-    }
-
-    .btn-delete:hover:not(:disabled) {
-        transform: scale(1.01);
-        box-shadow: 0 0 30px rgba(255, 92, 92, .15);
-    }
-
-    .btn-delete:disabled {
-        opacity: .45;
-        cursor: not-allowed;
-        transform: none;
-    }
-
-    .btn-volver {
-        background: linear-gradient(135deg, var(--gold-cosmic), #b8923a);
-        color: #0a0c10;
-        text-decoration: none;
-        border: none;
-        margin-top: 20px;
-    }
-
-    .btn-volver:hover {
-        transform: scale(1.03);
-    }
-
-    .success-screen {
-        display: none;
-        text-align: center;
-        padding: 30px 15px;
-    }
-
-    .success-screen.show {
-        display: block;
-    }
-
-    .success-icon {
-        font-size: 4rem;
-        margin-bottom: 15px;
-    }
-
-    .success-screen h2 {
-        border-left: 0;
-        padding-left: 0;
-        color: var(--success);
-    }
-
-    .hidden {
-        display: none !important;
-    }
-
-    .divisor {
-        border: none;
-        border-top: 1px solid rgba(212, 168, 87, .12);
-        margin: 40px 0 20px;
-    }
-
-    .footer-tyc {
-        text-align: center;
-        margin-top: 45px;
-        padding-top: 25px;
-        border-top: 1px solid rgba(212, 168, 87, .1);
-        font-size: .85rem;
-        color: var(--text-muted);
-    }
-
-    .text-center {
-        text-align: center;
-    }
-
-    @media (max-width: 600px) {
-        .terminos-container {
-            padding: 28px 17px;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
-        h1 {
-            font-size: 1.45rem;
+        body {
+            background: var(--space-deep);
+            color: var(--text-primary);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            min-height: 100vh;
+            line-height: 1.6;
         }
 
-        h2 {
-            font-size: 1rem;
+        #stars-canvas {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .nebula {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(120px);
+            pointer-events: none;
+            z-index: 0;
+            animation: nebula-drift 25s ease-in-out infinite alternate;
+        }
+
+        .nebula-1 {
+            width: 700px;
+            height: 700px;
+            background: #0B3D2E;
+            top: -15%;
+            right: -15%;
+            opacity: .10;
+        }
+
+        .nebula-2 {
+            width: 600px;
+            height: 600px;
+            background: var(--gold-cosmic);
+            bottom: -15%;
+            left: -15%;
+            opacity: .05;
+            animation-delay: -8s;
+        }
+
+        .nebula-3 {
+            width: 500px;
+            height: 500px;
+            background: #00e5ff;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            opacity: .04;
+            animation-delay: -15s;
+        }
+
+        @keyframes nebula-drift {
+            0% {
+                transform: translate(0, 0) scale(1);
+            }
+            100% {
+                transform: translate(40px, -30px) scale(1.15);
+            }
+        }
+
+        .main {
+            position: relative;
+            z-index: 1;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 20px 16px;
+            border-bottom: 2px solid var(--gold-dim);
+            margin: 0 auto 16px;
+            max-width: 900px;
+            flex-wrap: wrap;
+            gap: 10px;
+            backdrop-filter: blur(10px);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+        }
+
+        .logo-icon {
+            font-size: 2rem;
+            color: var(--gold-cosmic);
+            filter: drop-shadow(0 0 20px rgba(212, 168, 87, .2));
+        }
+
+        .logo-text {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.3rem;
+            font-weight: 900;
+            letter-spacing: 2px;
+            background: linear-gradient(135deg, var(--gold-cosmic), #b8923a);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
         .logo-badge {
-            display: none;
+            font-size: .5rem;
+            background: linear-gradient(135deg, var(--gold-cosmic), #b8923a);
+            color: #0a0c10;
+            padding: 2px 12px;
+            border-radius: 20px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
         }
-    }
-</style>
 
-</head><body><canvas id="stars-canvas"></canvas>
+        .network-badge {
+            font-size: .7rem;
+            color: var(--gold-cosmic);
+            background: rgba(212, 168, 87, .1);
+            padding: 4px 14px;
+            border-radius: 20px;
+            border: 1px solid rgba(212, 168, 87, .2);
+        }
 
-<div class="nebula nebula-1"></div>
-<div class="nebula nebula-2"></div>
-<div class="nebula nebula-3"></div><div id="app"><header class="header">
-    <div class="header-content">
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 20px 40px;
+        }
 
-        <a href="/" class="logo">
-            <span class="logo-icon">◈</span>
-            <span class="logo-text">Sariel's</span>
-            <span class="logo-badge">✦ WEB3</span>
-        </a>
+        .terminos-container {
+            padding: 40px 24px;
+            background: rgba(15, 45, 26, .4);
+            border: 1px solid var(--gold-dim);
+            border-radius: var(--radius);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 40px rgba(0, 0, 0, .5);
+        }
 
-        <div class="header-info">
-            <span class="network-badge">🟢 Polygon</span>
-        </div>
+        h1 {
+            font-family: 'Orbitron', monospace;
+            font-size: 2rem;
+            color: var(--gold-cosmic);
+            text-align: center;
+            margin-bottom: 8px;
+        }
 
-    </div>
-</header>
+        .fecha {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: .85rem;
+            margin-bottom: 30px;
+            border-bottom: 1px solid var(--gold-dim);
+            padding-bottom: 20px;
+        }
 
-<main class="main">
+        h2 {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.2rem;
+            color: var(--gold-cosmic);
+            margin-top: 30px;
+            margin-bottom: 12px;
+            border-left: 4px solid var(--gold-cosmic);
+            padding-left: 14px;
+        }
 
-    <div class="container">
+        p {
+            color: var(--text-secondary);
+            line-height: 1.7;
+            margin-bottom: 12px;
+            font-size: .95rem;
+        }
 
-        <div class="terminos-container">
+        ul {
+            list-style: none;
+            padding-left: 10px;
+            margin: 12px 0 18px;
+        }
 
-            <h1>🗑️ Eliminación de Cuenta y Datos</h1>
+        ul li {
+            padding: 6px 0 6px 28px;
+            position: relative;
+            color: var(--text-secondary);
+            font-size: .95rem;
+        }
 
-            <div class="fecha">
-                📅 Última actualización: 10 de agosto de 2026
-            </div>
+        ul li::before {
+            content: "✦";
+            color: var(--gold-cosmic);
+            position: absolute;
+            left: 4px;
+            top: 8px;
+        }
 
-            <div class="art"
-                 style="background:rgba(212,168,87,.08);border-color:var(--gold-cosmic);text-align:center;">
+        .art {
+            background: rgba(255, 255, 255, .04);
+            border: 1px solid rgba(212, 168, 87, .25);
+            border-left: 4px solid var(--gold-cosmic);
+            padding: 16px 20px;
+            border-radius: 10px;
+            margin: 18px 0;
+        }
 
-                <p style="font-weight:600;color:var(--gold-cosmic)!important;">
-                    ⚡ Aquí puedes solicitar directamente la eliminación de tu cuenta y de los datos personales asociados.
-                </p>
+        .art p {
+            color: #F8FAFC !important;
+        }
 
-            </div>
+        .art strong {
+            color: #FFE066 !important;
+        }
 
-            <h2>📘 1. ¿Qué datos eliminamos?</h2>
+        .danger-box {
+            background: rgba(255, 92, 92, .08);
+            border: 1px solid rgba(255, 92, 92, .35);
+            border-left: 4px solid var(--danger);
+        }
 
-            <div class="art">
+        .danger-box strong {
+            color: #ff8b8b !important;
+        }
 
-                <p>
-                    <strong>
-                        Cuando la solicitud sea procesada, Sariel's eliminará los datos personales
-                        que puedan eliminarse legalmente de sus sistemas centralizados.
-                    </strong>
-                </p>
+        .delete-panel {
+            margin-top: 35px;
+            padding: 24px;
+            border-radius: 14px;
+            border: 1px solid rgba(255, 92, 92, .35);
+            background: rgba(20, 8, 10, .75);
+        }
 
-                <ul>
-                    <li>Correo electrónico</li>
-                    <li>Nombre completo</li>
-                    <li>Número de teléfono</li>
-                    <li>Dirección de wallet vinculada cuando corresponda</li>
-                    <li>Datos de perfil y configuración</li>
-                    <li>Contenido y registros asociados al usuario que sean eliminables</li>
-                    <li>Datos almacenados en sistemas centralizados sujetos a eliminación</li>
-                </ul>
+        .delete-panel h2 {
+            margin-top: 0;
+            border-left-color: var(--danger);
+            color: #ff8585;
+        }
 
-                <p>
-                    Algunos datos podrán conservarse temporalmente cuando exista una obligación
-                    legal, fiscal, de seguridad, prevención de fraude o cumplimiento normativo.
-                </p>
+        .confirmation-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin: 18px 0;
+            color: var(--text-secondary);
+        }
 
-                <p>
-                    <strong>NO podemos eliminar:</strong>
-                </p>
+        .confirmation-row input {
+            width: 20px;
+            height: 20px;
+            margin-top: 3px;
+            accent-color: var(--danger);
+            cursor: pointer;
+            flex-shrink: 0;
+        }
 
-                <ul>
-                    <li>Registros publicados en la blockchain de Polygon</li>
-                    <li>Transacciones blockchain confirmadas</li>
-                    <li>Minteos y registros on-chain</li>
-                    <li>Tokens y NFTs cuyo registro exista de forma inmutable en blockchain</li>
-                </ul>
+        .delete-word {
+            margin-top: 18px;
+        }
 
-            </div>
+        .delete-word label {
+            display: block;
+            color: var(--text-secondary);
+            font-size: .9rem;
+            margin-bottom: 8px;
+        }
 
-            <h2>📗 2. Eliminación desde esta página</h2>
+        .delete-word input {
+            width: 100%;
+            padding: 13px 15px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, .15);
+            background: rgba(255, 255, 255, .05);
+            color: white;
+            outline: none;
+            font-size: 1rem;
+        }
 
-            <div class="art">
+        .delete-word input:focus {
+            border-color: var(--gold-cosmic);
+            box-shadow: 0 0 0 3px rgba(212, 168, 87, .1);
+        }
 
-                <p>
-                    Esta página contiene el mecanismo electrónico para iniciar la solicitud
-                    de eliminación de cuenta.
-                </p>
+        .turnstile-wrapper {
+            margin: 22px 0;
+            display: flex;
+            justify-content: center;
+            min-height: 65px;
+        }
 
-                <ul>
-                    <li>Debes estar autenticado en tu cuenta.</li>
-                    <li>Debes confirmar expresamente que deseas eliminarla.</li>
-                    <li>Debes escribir <strong>ELIMINAR</strong>.</li>
-                    <li>Debes completar la verificación de seguridad.</li>
-                    <li>La solicitud será enviada al servidor para su validación.</li>
-                </ul>
+        .status {
+            display: none;
+            padding: 14px 16px;
+            border-radius: 10px;
+            margin: 16px 0;
+            font-size: .9rem;
+        }
 
-            </div>
+        .status.show {
+            display: block;
+        }
 
-            <!-- ====================================================
-                 PANEL REAL DE ELIMINACIÓN
-                 ==================================================== -->
+        .status.error {
+            background: rgba(255, 92, 92, .10);
+            border: 1px solid rgba(255, 92, 92, .35);
+            color: #ffb0b0;
+        }
 
-            <section class="delete-panel" id="deletePanel">
+        .status.success {
+            background: rgba(74, 222, 128, .10);
+            border: 1px solid rgba(74, 222, 128, .35);
+            color: #9af0b5;
+        }
 
-                <h2>🗑️ Eliminar mi cuenta definitivamente</h2>
+        .status.loading {
+            background: rgba(212, 168, 87, .08);
+            border: 1px solid var(--gold-dim);
+            color: #ffe699;
+        }
 
-                <div class="art danger-box">
+        .btn-delete,
+        .btn-volver {
+            display: inline-block;
+            padding: 13px 28px;
+            border-radius: 40px;
+            font-size: .9rem;
+            font-weight: 700;
+            font-family: 'Orbitron', monospace;
+            cursor: pointer;
+            transition: all .3s ease;
+        }
 
-                    <p>
-                        <strong>⚠️ Esta acción es irreversible.</strong>
-                    </p>
+        .btn-delete {
+            width: 100%;
+            border: 1px solid rgba(255, 92, 92, .5);
+            background: linear-gradient(135deg, #a92323, #6f1515);
+            color: white;
+        }
 
-                    <p>
-                        Al confirmar la eliminación, se iniciará el proceso de eliminación
-                        de tu cuenta y de los datos personales que correspondan.
-                    </p>
+        .btn-delete:hover:not(:disabled) {
+            transform: scale(1.01);
+            box-shadow: 0 0 30px rgba(255, 92, 92, .15);
+        }
 
-                    <p>
-                        Los registros que ya existan en blockchain no podrán ser eliminados
-                        por Sariel's.
-                    </p>
+        .btn-delete:disabled {
+            opacity: .45;
+            cursor: not-allowed;
+            transform: none;
+        }
 
+        .btn-volver {
+            background: linear-gradient(135deg, var(--gold-cosmic), #b8923a);
+            color: #0a0c10;
+            text-decoration: none;
+            border: none;
+            margin-top: 20px;
+        }
+
+        .btn-volver:hover {
+            transform: scale(1.03);
+        }
+
+        .success-screen {
+            display: none;
+            text-align: center;
+            padding: 30px 15px;
+        }
+
+        .success-screen.show {
+            display: block;
+        }
+
+        .success-icon {
+            font-size: 4rem;
+            margin-bottom: 15px;
+        }
+
+        .success-screen h2 {
+            border-left: 0;
+            padding-left: 0;
+            color: var(--success);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .divisor {
+            border: none;
+            border-top: 1px solid rgba(212, 168, 87, .12);
+            margin: 40px 0 20px;
+        }
+
+        .footer-tyc {
+            text-align: center;
+            margin-top: 45px;
+            padding-top: 25px;
+            border-top: 1px solid rgba(212, 168, 87, .1);
+            font-size: .85rem;
+            color: var(--text-muted);
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        @media (max-width: 600px) {
+            .terminos-container {
+                padding: 28px 17px;
+            }
+            h1 {
+                font-size: 1.45rem;
+            }
+            h2 {
+                font-size: 1rem;
+            }
+            .logo-badge {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="stars-canvas"></canvas>
+    <div class="nebula nebula-1"></div>
+    <div class="nebula nebula-2"></div>
+    <div class="nebula nebula-3"></div>
+
+    <div id="app">
+        <header class="header">
+            <div class="header-content">
+                <a href="/" class="logo">
+                    <span class="logo-icon">◈</span>
+                    <span class="logo-text">Sariel's</span>
+                    <span class="logo-badge">✦ WEB3</span>
+                </a>
+                <div class="header-info">
+                    <span class="network-badge" data-clave="eliminar_network">🟢 Polygon</span>
                 </div>
+            </div>
+        </header>
 
-                <label class="confirmation-row">
-                    <input
-                        type="checkbox"
-                        id="confirmDelete"
-                        autocomplete="off"
-                    />
+        <main class="main">
+            <div class="container">
+                <div class="terminos-container">
 
-                    <span>
-                        Entiendo que estoy solicitando la eliminación definitiva
-                        de mi cuenta y de los datos personales eliminables asociados.
-                    </span>
-                </label>
+                    <h1 data-clave="eliminar_titulo">🗑️ Eliminación de Cuenta y Datos</h1>
 
-                <div class="delete-word">
+                    <div class="fecha" data-clave="eliminar_actualizacion">
+                        📅 Última actualización: 10 de agosto de 2026
+                    </div>
 
-                    <label for="deleteConfirmation">
-                        Para continuar escribe exactamente:
-                        <strong>ELIMINAR</strong>
-                    </label>
+                    <div class="art" style="background:rgba(212,168,87,.08);border-color:var(--gold-cosmic);text-align:center;">
+                        <p style="font-weight:600;color:var(--gold-cosmic)!important;" data-clave="eliminar_intro">
+                            ⚡ Aquí puedes solicitar directamente la eliminación de tu cuenta y de los datos personales asociados.
+                        </p>
+                    </div>
 
-                    <input
-                        type="text"
-                        id="deleteConfirmation"
-                        autocomplete="off"
-                        autocapitalize="characters"
-                        spellcheck="false"
-                        maxlength="8"
-                        placeholder="ELIMINAR"
-                    />
+                    <h2 data-clave="eliminar_seccion_1_titulo">📘 1. ¿Qué datos eliminamos?</h2>
 
-                </div>
+                    <div class="art">
+                        <p data-clave="eliminar_seccion_1_intro">
+                            <strong>
+                                Cuando la solicitud sea procesada, Sariel's eliminará los datos personales
+                                que puedan eliminarse legalmente de sus sistemas centralizados.
+                            </strong>
+                        </p>
 
-                <!-- ====================================================
-                     CLOUDFLARE TURNSTILE
-                     ==================================================== -->
+                        <ul>
+                            <li data-clave="eliminar_seccion_1_lista_1">Correo electrónico</li>
+                            <li data-clave="eliminar_seccion_1_lista_2">Nombre completo</li>
+                            <li data-clave="eliminar_seccion_1_lista_3">Número de teléfono</li>
+                            <li data-clave="eliminar_seccion_1_lista_4">Dirección de wallet vinculada cuando corresponda</li>
+                            <li data-clave="eliminar_seccion_1_lista_5">Datos de perfil y configuración</li>
+                            <li data-clave="eliminar_seccion_1_lista_6">Contenido y registros asociados al usuario que sean eliminables</li>
+                            <li data-clave="eliminar_seccion_1_lista_7">Datos almacenados en sistemas centralizados sujetos a eliminación</li>
+                        </ul>
 
-                <div class="turnstile-wrapper">
+                        <p data-clave="eliminar_seccion_1_texto_1">
+                            Algunos datos podrán conservarse temporalmente cuando exista una obligación
+                            legal, fiscal, de seguridad, prevención de fraude o cumplimiento normativo.
+                        </p>
 
-                    <div
-                        id="turnstile-container"
-                        class="cf-turnstile"
-                        data-sitekey="TU_TURNSTILE_SITE_KEY"
-                        data-theme="dark"
-                        data-size="normal"
-                        data-callback="onTurnstileSuccess"
-                        data-expired-callback="onTurnstileExpired"
-                        data-error-callback="onTurnstileError">
+                        <p data-clave="eliminar_seccion_1_texto_2">
+                            <strong>NO podemos eliminar:</strong>
+                        </p>
+
+                        <ul>
+                            <li data-clave="eliminar_seccion_1_lista_no_1">Registros publicados en la blockchain de Polygon</li>
+                            <li data-clave="eliminar_seccion_1_lista_no_2">Transacciones blockchain confirmadas</li>
+                            <li data-clave="eliminar_seccion_1_lista_no_3">Minteos y registros on-chain</li>
+                            <li data-clave="eliminar_seccion_1_lista_no_4">Tokens y NFTs cuyo registro exista de forma inmutable en blockchain</li>
+                        </ul>
+                    </div>
+
+                    <h2 data-clave="eliminar_seccion_2_titulo">📗 2. Eliminación desde esta página</h2>
+
+                    <div class="art">
+                        <p data-clave="eliminar_seccion_2_texto_1">
+                            Esta página contiene el mecanismo electrónico para iniciar la solicitud
+                            de eliminación de cuenta.
+                        </p>
+
+                        <ul>
+                            <li data-clave="eliminar_seccion_2_lista_1">Debes estar autenticado en tu cuenta.</li>
+                            <li data-clave="eliminar_seccion_2_lista_2">Debes confirmar expresamente que deseas eliminarla.</li>
+                            <li data-clave="eliminar_seccion_2_lista_3">Debes escribir <strong>ELIMINAR</strong>.</li>
+                            <li data-clave="eliminar_seccion_2_lista_4">Debes completar la verificación de seguridad.</li>
+                            <li data-clave="eliminar_seccion_2_lista_5">La solicitud será enviada al servidor para su validación.</li>
+                        </ul>
+                    </div>
+
+                    <!-- ====================================================
+                    PANEL REAL DE ELIMINACIÓN
+                    ==================================================== -->
+
+                    <section class="delete-panel" id="deletePanel">
+                        <h2 data-clave="eliminar_panel_titulo">🗑️ Eliminar mi cuenta definitivamente</h2>
+
+                        <div class="art danger-box">
+                            <p data-clave="eliminar_panel_aviso_1">
+                                <strong>⚠️ Esta acción es irreversible.</strong>
+                            </p>
+                            <p data-clave="eliminar_panel_aviso_2">
+                                Al confirmar la eliminación, se iniciará el proceso de eliminación
+                                de tu cuenta y de los datos personales que correspondan.
+                            </p>
+                            <p data-clave="eliminar_panel_aviso_3">
+                                Los registros que ya existan en blockchain no podrán ser eliminados
+                                por Sariel's.
+                            </p>
+                        </div>
+
+                        <label class="confirmation-row">
+                            <input type="checkbox" id="confirmDelete" autocomplete="off" />
+                            <span data-clave="eliminar_panel_confirmacion">
+                                Entiendo que estoy solicitando la eliminación definitiva
+                                de mi cuenta y de los datos personales eliminables asociados.
+                            </span>
+                        </label>
+
+                        <div class="delete-word">
+                            <label for="deleteConfirmation" data-clave="eliminar_panel_escribir">
+                                Para continuar escribe exactamente:
+                                <strong>ELIMINAR</strong>
+                            </label>
+                            <input
+                                type="text"
+                                id="deleteConfirmation"
+                                autocomplete="off"
+                                autocapitalize="characters"
+                                spellcheck="false"
+                                maxlength="8"
+                                placeholder="ELIMINAR"
+                                data-placeholder="eliminar_panel_placeholder"
+                            />
+                        </div>
+
+                        <!-- ====================================================
+                        CLOUDFLARE TURNSTILE
+                        ==================================================== -->
+
+                        <div class="turnstile-wrapper">
+                            <div
+                                id="turnstile-container"
+                                class="cf-turnstile"
+                                data-sitekey="TU_TURNSTILE_SITE_KEY"
+                                data-theme="dark"
+                                data-size="normal"
+                                data-callback="onTurnstileSuccess"
+                                data-expired-callback="onTurnstileExpired"
+                                data-error-callback="onTurnstileError">
+                            </div>
+                        </div>
+
+                        <div id="status" class="status" role="alert" aria-live="polite"></div>
+
+                        <button type="button" id="btnDelete" class="btn-delete" disabled data-clave="eliminar_panel_boton">
+                            🔒 Verificación requerida
+                        </button>
+                    </section>
+
+                    <!-- ====================================================
+                    PANTALLA DE ÉXITO
+                    ==================================================== -->
+
+                    <section id="successScreen" class="success-screen">
+                        <div class="success-icon">✅</div>
+                        <h2 data-clave="eliminar_exito_titulo">Solicitud recibida</h2>
+                        <p data-clave="eliminar_exito_texto_1">
+                            Tu solicitud de eliminación fue recibida correctamente.
+                        </p>
+                        <p data-clave="eliminar_exito_texto_2">
+                            El servidor realizará las validaciones correspondientes
+                            y procesará la eliminación de los datos que correspondan.
+                        </p>
+                        <p data-clave="eliminar_exito_texto_3">
+                            Los registros blockchain permanecerán en Polygon debido
+                            a la naturaleza inmutable de la red.
+                        </p>
+                        <a href="/" class="btn-volver" data-clave="eliminar_volver">
+                            ← Volver a Sariel's
+                        </a>
+                    </section>
+
+                    <h2 data-clave="eliminar_seccion_3_titulo">📙 3. Plazos y confirmación</h2>
+
+                    <div class="art">
+                        <p data-clave="eliminar_seccion_3_texto_1">
+                            <strong>3.1. Plazo:</strong>
+                            La solicitud será procesada conforme a los plazos legales
+                            y operativos aplicables.
+                        </p>
+                        <p data-clave="eliminar_seccion_3_texto_2">
+                            <strong>3.2. Confirmación:</strong>
+                            Cuando el proceso corresponda y se complete, se podrá
+                            emitir una confirmación mediante los canales asociados
+                            a la cuenta.
+                        </p>
+                        <p data-clave="eliminar_seccion_3_texto_3">
+                            <strong>3.3. Blockchain:</strong>
+                            Los registros existentes en Polygon permanecerán públicos
+                            e inmutables.
+                        </p>
+                    </div>
+
+                    <h2 data-clave="eliminar_seccion_4_titulo">📕 4. Seguridad de la solicitud</h2>
+
+                    <div class="art">
+                        <p data-clave="eliminar_seccion_4_texto_1">
+                            Para reducir solicitudes automatizadas y abuso,
+                            este formulario utiliza <strong>Cloudflare Turnstile</strong>.
+                        </p>
+                        <p data-clave="eliminar_seccion_4_texto_2">
+                            La validación de Turnstile debe realizarse en el servidor.
+                            El navegador nunca recibe ni contiene la clave secreta.
+                        </p>
+                        <p data-clave="eliminar_seccion_4_texto_3">
+                            Completar Turnstile por sí solo no autoriza la eliminación:
+                            el servidor debe validar también la sesión y las condiciones
+                            de la solicitud.
+                        </p>
+                    </div>
+
+                    <h2 data-clave="eliminar_seccion_5_titulo">📕 5. Contacto</h2>
+
+                    <div class="art">
+                        <p data-clave="eliminar_contacto_email">
+                            <strong>Correo electrónico:</strong>
+                            csarielscontacto@gmail.com
+                        </p>
+                        <p data-clave="eliminar_contacto_direccion">
+                            <strong>Dirección postal:</strong>
+                            Puebla, México.
+                        </p>
+                    </div>
+
+                    <hr class="divisor" />
+
+                    <div class="footer-tyc">
+                        <p data-clave="eliminar_footer">
+                            © <strong>Sariel's</strong>.
+                            Todos los derechos reservados.
+                            Puebla, México 🇲🇽
+                        </p>
+                    </div>
+
+                    <div class="text-center">
+                        <a href="/" class="btn-volver" data-clave="eliminar_volver">
+                            ← Volver a la plataforma
+                        </a>
                     </div>
 
                 </div>
-
-                <div
-                    id="status"
-                    class="status"
-                    role="alert"
-                    aria-live="polite">
-                </div>
-
-                <button
-                    type="button"
-                    id="btnDelete"
-                    class="btn-delete"
-                    disabled>
-                    🔒 Verificación requerida
-                </button>
-
-            </section>
-
-            <!-- ====================================================
-                 PANTALLA DE ÉXITO
-                 ==================================================== -->
-
-            <section
-                id="successScreen"
-                class="success-screen">
-
-                <div class="success-icon">
-                    ✅
-                </div>
-
-                <h2>Solicitud recibida</h2>
-
-                <p>
-                    Tu solicitud de eliminación fue recibida correctamente.
-                </p>
-
-                <p>
-                    El servidor realizará las validaciones correspondientes
-                    y procesará la eliminación de los datos que correspondan.
-                </p>
-
-                <p>
-                    Los registros blockchain permanecerán en Polygon debido
-                    a la naturaleza inmutable de la red.
-                </p>
-
-                <a
-                    href="/"
-                    class="btn-volver">
-                    ← Volver a Sariel's
-                </a>
-
-            </section>
-
-            <h2>📙 3. Plazos y confirmación</h2>
-
-            <div class="art">
-
-                <p>
-                    <strong>3.1. Plazo:</strong>
-                    La solicitud será procesada conforme a los plazos legales
-                    y operativos aplicables.
-                </p>
-
-                <p>
-                    <strong>3.2. Confirmación:</strong>
-                    Cuando el proceso corresponda y se complete, se podrá
-                    emitir una confirmación mediante los canales asociados
-                    a la cuenta.
-                </p>
-
-                <p>
-                    <strong>3.3. Blockchain:</strong>
-                    Los registros existentes en Polygon permanecerán públicos
-                    e inmutables.
-                </p>
-
             </div>
-
-            <h2>📕 4. Seguridad de la solicitud</h2>
-
-            <div class="art">
-
-                <p>
-                    Para reducir solicitudes automatizadas y abuso,
-                    este formulario utiliza <strong>Cloudflare Turnstile</strong>.
-                </p>
-
-                <p>
-                    La validación de Turnstile debe realizarse en el servidor.
-                    El navegador nunca recibe ni contiene la clave secreta.
-                </p>
-
-                <p>
-                    Completar Turnstile por sí solo no autoriza la eliminación:
-                    el servidor debe validar también la sesión y las condiciones
-                    de la solicitud.
-                </p>
-
-            </div>
-
-            <h2>📕 5. Contacto</h2>
-
-            <div class="art">
-
-                <p>
-                    <strong>Correo electrónico:</strong>
-                    csarielscontacto@gmail.com
-                </p>
-
-                <p>
-                    <strong>Dirección postal:</strong>
-                    Puebla, México.
-                </p>
-
-            </div>
-
-            <hr class="divisor" />
-
-            <div class="footer-tyc">
-
-                <p>
-                    © <strong>Sariel's</strong>.
-                    Todos los derechos reservados.
-                    Puebla, México 🇲🇽
-                </p>
-
-            </div>
-
-            <div class="text-center">
-
-                <a
-                    href="/"
-                    class="btn-volver">
-                    ← Volver a la plataforma
-                </a>
-
-            </div>
-
-        </div>
-
+        </main>
     </div>
 
-</main>
-
-</div><script>
-/* ================================================================
-   SARIEL'S · ELIMINACIÓN DE CUENTA
-   CLOUDFLARE TURNSTILE + BACKEND
-   ================================================================ */
-
-(function () {
-
-    'use strict';
-
-    /*
-     * ================================================================
-     * CONFIGURACIÓN
-     * ================================================================
-     *
-     * Endpoint de backend.
-     *
-     * El backend DEBE:
-     *
-     * 1. Validar la sesión del usuario.
-     * 2. Obtener el user_id desde la sesión.
-     * 3. Validar el token de Turnstile mediante Siteverify.
-     * 4. Verificar que el token corresponde al sitio.
-     * 5. Registrar/procesar la solicitud.
-     * 6. Ejecutar la eliminación únicamente en servidor.
-     * 7. Eliminar primero Storage/objetos dependientes.
-     * 8. Eliminar datos relacionados.
-     * 9. Eliminar finalmente el usuario de Supabase Auth.
-     *
-     * NUNCA realizar auth.admin.deleteUser() desde el navegador.
-     */
-
-    const DELETE_ENDPOINT = '/api/account/delete';
-
-    const TURNSTILE_SITE_KEY =
-        document
-            .querySelector('meta[name="turnstile-sitekey"]')
-            ?.getAttribute('content') ||
-        'TU_TURNSTILE_SITE_KEY';
-
-    const confirmCheckbox =
-        document.getElementById('confirmDelete');
-
-    const deleteConfirmation =
-        document.getElementById('deleteConfirmation');
-
-    const btnDelete =
-        document.getElementById('btnDelete');
-
-    const status =
-        document.getElementById('status');
-
-    const deletePanel =
-        document.getElementById('deletePanel');
-
-    const successScreen =
-        document.getElementById('successScreen');
-
-    let turnstileToken = null;
-    let requestInProgress = false;
-
-    /*
-     * ================================================================
-     * ESTADO
-     * ================================================================
-     */
-
-    function setStatus(type, message) {
-
-        status.className = 'status show ' + type;
-        status.textContent = message;
-
-    }
-
-    function clearStatus() {
-
-        status.className = 'status';
-        status.textContent = '';
-
-    }
-
-    /*
-     * ================================================================
-     * VALIDACIÓN DEL FORMULARIO
-     * ================================================================
-     */
-
-    function formIsValid() {
-
-        const confirmed =
-            confirmCheckbox.checked;
-
-        const typedCorrectly =
-            deleteConfirmation.value.trim().toUpperCase() === 'ELIMINAR';
-
-        const verified =
-            Boolean(turnstileToken);
-
-        return confirmed &&
-               typedCorrectly &&
-               verified &&
-               !requestInProgress;
-    }
-
-    function updateButton() {
-
-        if (requestInProgress) {
-
-            btnDelete.disabled = true;
-            btnDelete.textContent =
-                '⏳ Procesando solicitud...';
-
-            return;
-        }
-
-        if (!turnstileToken) {
-
-            btnDelete.disabled = true;
-            btnDelete.textContent =
-                '🔒 Completa la verificación';
-
-            return;
-        }
-
-        if (!confirmCheckbox.checked) {
-
-            btnDelete.disabled = true;
-            btnDelete.textContent =
-                '☑️ Confirma la eliminación';
-
-            return;
-        }
-
-        if (
-            deleteConfirmation.value
-                .trim()
-                .toUpperCase() !== 'ELIMINAR'
-        ) {
-
-            btnDelete.disabled = true;
-            btnDelete.textContent =
-                '✍️ Escribe ELIMINAR';
-
-            return;
-        }
-
-        btnDelete.disabled = false;
-        btnDelete.textContent =
-            '🗑️ ELIMINAR CUENTA DEFINITIVAMENTE';
-    }
-
-    /*
-     * ================================================================
-     * TURNSTILE
-     * ================================================================
-     */
-
-    window.onTurnstileSuccess = function (token) {
-
-        turnstileToken = token;
-
-        clearStatus();
-
-        updateButton();
-
-    };
-
-    window.onTurnstileExpired = function () {
-
-        turnstileToken = null;
-
-        setStatus(
-            'error',
-            'La verificación de seguridad expiró. Vuelve a verificarte.'
-        );
-
-        updateButton();
-
-    };
-
-    window.onTurnstileError = function () {
-
-        turnstileToken = null;
-
-        setStatus(
-            'error',
-            'No fue posible completar la verificación de seguridad.'
-        );
-
-        updateButton();
-
-    };
-
-    /*
-     * ================================================================
-     * EVENTOS
-     * ================================================================
-     */
-
-    confirmCheckbox.addEventListener(
-        'change',
-        updateButton
-    );
-
-    deleteConfirmation.addEventListener(
-        'input',
-        function () {
-
-            deleteConfirmation.value =
-                deleteConfirmation.value
-                    .toUpperCase()
-                    .replace(/[^A-ZÁÉÍÓÚÑ]/g, '');
-
-            updateButton();
-
-        }
-    );
-
-    /*
-     * ================================================================
-     * ENVÍO DE SOLICITUD
-     * ================================================================
-     */
-
-    btnDelete.addEventListener(
-        'click',
-        async function () {
-
-            if (!formIsValid()) {
+    <script>
+        /* ================================================================
+           SARIEL'S · ELIMINACIÓN DE CUENTA
+           CLOUDFLARE TURNSTILE + BACKEND
+           ================================================================ */
+
+        (function() {
+
+            'use strict';
+
+            const DELETE_ENDPOINT = '/api/account/delete';
+
+            const TURNSTILE_SITE_KEY =
+                document
+                .querySelector('meta[name="turnstile-sitekey"]')
+                ?.getAttribute('content') ||
+                'TU_TURNSTILE_SITE_KEY';
+
+            const confirmCheckbox =
+                document.getElementById('confirmDelete');
+
+            const deleteConfirmation =
+                document.getElementById('deleteConfirmation');
+
+            const btnDelete =
+                document.getElementById('btnDelete');
+
+            const status =
+                document.getElementById('status');
+
+            const deletePanel =
+                document.getElementById('deletePanel');
+
+            const successScreen =
+                document.getElementById('successScreen');
+
+            let turnstileToken = null;
+            let requestInProgress = false;
+
+            function setStatus(type, message) {
+                status.className = 'status show ' + type;
+                status.textContent = message;
+            }
+
+            function clearStatus() {
+                status.className = 'status';
+                status.textContent = '';
+            }
+
+            function formIsValid() {
+                const confirmed = confirmCheckbox.checked;
+                const typedCorrectly = deleteConfirmation.value.trim().toUpperCase() === 'ELIMINAR';
+                const verified = Boolean(turnstileToken);
+                return confirmed && typedCorrectly && verified && !requestInProgress;
+            }
+
+            function updateButton() {
+                if (requestInProgress) {
+                    btnDelete.disabled = true;
+                    btnDelete.textContent = '⏳ Procesando solicitud...';
+                    return;
+                }
+                if (!turnstileToken) {
+                    btnDelete.disabled = true;
+                    btnDelete.textContent = '🔒 Completa la verificación';
+                    return;
+                }
+                if (!confirmCheckbox.checked) {
+                    btnDelete.disabled = true;
+                    btnDelete.textContent = '☑️ Confirma la eliminación';
+                    return;
+                }
+                if (deleteConfirmation.value.trim().toUpperCase() !== 'ELIMINAR') {
+                    btnDelete.disabled = true;
+                    btnDelete.textContent = '✍️ Escribe ELIMINAR';
+                    return;
+                }
+                btnDelete.disabled = false;
+                btnDelete.textContent = '🗑️ ELIMINAR CUENTA DEFINITIVAMENTE';
+            }
+
+            window.onTurnstileSuccess = function(token) {
+                turnstileToken = token;
+                clearStatus();
                 updateButton();
-                return;
-            }
+            };
 
-            /*
-             * Confirmación adicional antes del envío.
-             */
-
-            const finalConfirmation = window.confirm(
-                '¿Estás completamente seguro de que deseas eliminar tu cuenta? Esta acción no se puede deshacer.'
-            );
-
-            if (!finalConfirmation) {
-                return;
-            }
-
-            requestInProgress = true;
-
-            updateButton();
-
-            setStatus(
-                'loading',
-                'Verificando tu identidad y procesando la solicitud...'
-            );
-
-            try {
-
-                /*
-                 * ====================================================
-                 * PETICIÓN SEGURA AL SERVIDOR
-                 * ====================================================
-                 *
-                 * credentials: include
-                 * permite enviar la cookie/sesión existente.
-                 */
-
-                const response =
-                    await fetch(
-                        DELETE_ENDPOINT,
-                        {
-                            method: 'POST',
-
-                            credentials: 'include',
-
-                            headers: {
-                                'Content-Type':
-                                    'application/json',
-
-                                'Accept':
-                                    'application/json'
-                            },
-
-                            body: JSON.stringify({
-
-                                /*
-                                 * Token generado por Cloudflare.
-                                 * El servidor lo valida mediante Siteverify.
-                                 */
-
-                                turnstile_token:
-                                    turnstileToken,
-
-                                /*
-                                 * Confirmación explícita.
-                                 */
-
-                                confirmation:
-                                    'ELIMINAR',
-
-                                /*
-                                 * No enviamos user_id.
-                                 *
-                                 * El servidor DEBE obtenerlo
-                                 * desde la sesión autenticada.
-                                 */
-
-                                action:
-                                    'delete_account'
-
-                            })
-                        }
-                    );
-
-                let data = null;
-
-                try {
-                    data = await response.json();
-                } catch (_) {
-                    data = null;
-                }
-
-                if (!response.ok) {
-
-                    const message =
-                        data?.message ||
-                        'El servidor rechazó la solicitud de eliminación.';
-
-                    throw new Error(message);
-                }
-
-                /*
-                 * ====================================================
-                 * ÉXITO
-                 * ====================================================
-                 */
-
-                deletePanel.classList.add('hidden');
-
-                successScreen.classList.add('show');
-
-                setStatus(
-                    'success',
-                    'Solicitud de eliminación recibida correctamente.'
-                );
-
-                /*
-                 * Si el backend devuelve una URL de cierre,
-                 * se podría utilizar aquí.
-                 */
-
-                if (data?.redirect) {
-
-                    setTimeout(
-                        function () {
-
-                            window.location.href =
-                                data.redirect;
-
-                        },
-                        2500
-                    );
-
-                }
-
-            } catch (error) {
-
-                console.error(
-                    '[SARIELS] Error al solicitar eliminación:',
-                    error
-                );
-
-                requestInProgress = false;
-
-                setStatus(
-                    'error',
-                    error?.message ||
-                    'No fue posible procesar la solicitud. Inténtalo nuevamente.'
-                );
-
-                /*
-                 * El token de Turnstile se invalida/reinicia
-                 * para evitar reutilización.
-                 */
-
+            window.onTurnstileExpired = function() {
                 turnstileToken = null;
-
-                try {
-
-                    if (
-                        window.turnstile &&
-                        document.getElementById(
-                            'turnstile-container'
-                        )
-                    ) {
-
-                        window.turnstile.reset(
-                            '#turnstile-container'
-                        );
-
-                    }
-
-                } catch (_) {}
-
+                setStatus('error', 'La verificación de seguridad expiró. Vuelve a verificarte.');
                 updateButton();
+            };
 
-            }
+            window.onTurnstileError = function() {
+                turnstileToken = null;
+                setStatus('error', 'No fue posible completar la verificación de seguridad.');
+                updateButton();
+            };
 
-        }
-    );
+            confirmCheckbox.addEventListener('change', updateButton);
 
-    /*
-     * ================================================================
-     * ESTRELLAS DE FONDO
-     * ================================================================
-     */
-
-    const canvas =
-        document.getElementById('stars-canvas');
-
-    if (canvas) {
-
-        const ctx =
-            canvas.getContext('2d');
-
-        let stars = [];
-
-        function resizeCanvas() {
-
-            canvas.width =
-                window.innerWidth;
-
-            canvas.height =
-                window.innerHeight;
-
-            createStars();
-
-        }
-
-        function createStars() {
-
-            const amount =
-                Math.min(
-                    180,
-                    Math.floor(
-                        window.innerWidth *
-                        window.innerHeight /
-                        9000
-                    )
-                );
-
-            stars = [];
-
-            for (
-                let i = 0;
-                i < amount;
-                i++
-            ) {
-
-                stars.push({
-
-                    x:
-                        Math.random() *
-                        canvas.width,
-
-                    y:
-                        Math.random() *
-                        canvas.height,
-
-                    radius:
-                        Math.random() * 1.4 + .2,
-
-                    opacity:
-                        Math.random() * .7 + .15,
-
-                    speed:
-                        Math.random() * .004 + .001
-
-                });
-
-            }
-
-        }
-
-        function drawStars(time) {
-
-            ctx.clearRect(
-                0,
-                0,
-                canvas.width,
-                canvas.height
-            );
-
-            stars.forEach(function (star) {
-
-                const pulse =
-                    star.opacity +
-                    Math.sin(
-                        time *
-                        star.speed
-                    ) *
-                    .12;
-
-                ctx.beginPath();
-
-                ctx.arc(
-                    star.x,
-                    star.y,
-                    star.radius,
-                    0,
-                    Math.PI * 2
-                );
-
-                ctx.globalAlpha =
-                    Math.max(
-                        .05,
-                        Math.min(1, pulse)
-                    );
-
-                ctx.fillStyle =
-                    '#D4AF37';
-
-                ctx.fill();
-
+            deleteConfirmation.addEventListener('input', function() {
+                deleteConfirmation.value = deleteConfirmation.value.toUpperCase().replace(/[^A-ZÁÉÍÓÚÑ]/g, '');
+                updateButton();
             });
 
-            ctx.globalAlpha = 1;
+            btnDelete.addEventListener('click', async function() {
+                if (!formIsValid()) {
+                    updateButton();
+                    return;
+                }
 
-            requestAnimationFrame(
-                drawStars
-            );
+                const finalConfirmation = window.confirm(
+                    '¿Estás completamente seguro de que deseas eliminar tu cuenta? Esta acción no se puede deshacer.'
+                );
 
-        }
+                if (!finalConfirmation) {
+                    return;
+                }
 
-        window.addEventListener(
-            'resize',
-            resizeCanvas
-        );
+                requestInProgress = true;
+                updateButton();
+                setStatus('loading', 'Verificando tu identidad y procesando la solicitud...');
 
-        resizeCanvas();
+                try {
+                    const response = await fetch(DELETE_ENDPOINT, {
+                        method: 'POST',
+                        credentials: 'include',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            turnstile_token: turnstileToken,
+                            confirmation: 'ELIMINAR',
+                            action: 'delete_account'
+                        })
+                    });
 
-        requestAnimationFrame(
-            drawStars
-        );
+                    let data = null;
+                    try {
+                        data = await response.json();
+                    } catch (_) {
+                        data = null;
+                    }
 
-    }
+                    if (!response.ok) {
+                        const message = data?.message || 'El servidor rechazó la solicitud de eliminación.';
+                        throw new Error(message);
+                    }
 
-    /*
-     * ================================================================
-     * INICIALIZACIÓN
-     * ================================================================
-     */
+                    deletePanel.classList.add('hidden');
+                    successScreen.classList.add('show');
+                    setStatus('success', 'Solicitud de eliminación recibida correctamente.');
 
-    updateButton();
+                    if (data?.redirect) {
+                        setTimeout(function() {
+                            window.location.href = data.redirect;
+                        }, 2500);
+                    }
 
-    /*
-     * Aviso si el sitekey todavía no fue configurado.
-     */
+                } catch (error) {
+                    console.error('[SARIELS] Error al solicitar eliminación:', error);
+                    requestInProgress = false;
+                    setStatus('error', error?.message || 'No fue posible procesar la solicitud. Inténtalo nuevamente.');
+                    turnstileToken = null;
+                    try {
+                        if (window.turnstile && document.getElementById('turnstile-container')) {
+                            window.turnstile.reset('#turnstile-container');
+                        }
+                    } catch (_) {}
+                    updateButton();
+                }
+            });
 
-    if (
-        !TURNSTILE_SITE_KEY ||
-        TURNSTILE_SITE_KEY ===
-            'TU_TURNSTILE_SITE_KEY'
-    ) {
+            // Estrellas de fondo
+            const canvas = document.getElementById('stars-canvas');
+            if (canvas) {
+                const ctx = canvas.getContext('2d');
+                let stars = [];
 
-        console.warn(
-            '[SARIELS] Falta configurar el Site Key de Cloudflare Turnstile.'
-        );
+                function resizeCanvas() {
+                    canvas.width = window.innerWidth;
+                    canvas.height = window.innerHeight;
+                    createStars();
+                }
 
-    }
+                function createStars() {
+                    const amount = Math.min(180, Math.floor(window.innerWidth * window.innerHeight / 9000));
+                    stars = [];
+                    for (let i = 0; i < amount; i++) {
+                        stars.push({
+                            x: Math.random() * canvas.width,
+                            y: Math.random() * canvas.height,
+                            radius: Math.random() * 1.4 + .2,
+                            opacity: Math.random() * .7 + .15,
+                            speed: Math.random() * .004 + .001
+                        });
+                    }
+                }
 
-})();
-</script></body>
+                function drawStars(time) {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    stars.forEach(function(star) {
+                        const pulse = star.opacity + Math.sin(time * star.speed) * .12;
+                        ctx.beginPath();
+                        ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+                        ctx.globalAlpha = Math.max(.05, Math.min(1, pulse));
+                        ctx.fillStyle = '#D4AF37';
+                        ctx.fill();
+                    });
+                    ctx.globalAlpha = 1;
+                    requestAnimationFrame(drawStars);
+                }
+
+                window.addEventListener('resize', resizeCanvas);
+                resizeCanvas();
+                requestAnimationFrame(drawStars);
+            }
+
+            updateButton();
+
+            if (!TURNSTILE_SITE_KEY || TURNSTILE_SITE_KEY === 'TU_TURNSTILE_SITE_KEY') {
+                console.warn('[SARIELS] Falta configurar el Site Key de Cloudflare Turnstile.');
+            }
+
+        })();
+    </script>
+</body>
 </html>
