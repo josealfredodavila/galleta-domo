@@ -58,9 +58,12 @@
         .logo-hex { font-size: 2rem; color: var(--gold); font-family: 'Orbitron', monospace; text-shadow: 0 0 30px rgba(212, 175, 55, 0.3); }
         .logo-text { font-family: 'Orbitron', monospace; font-size: 1.3rem; color: var(--text-primary); letter-spacing: 2px; }
         .logo-text span { color: var(--gold); }
-        .logo-badge { font-size: 0.5rem; background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: var(--space); padding: 2px 12px; border-radius: 20px; font-weight: 700; }
+        .logo-badge { font-size: 0.5rem; background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: var(--space); padding: 2px 12px; border-radius: 20px; font-weight: 700; text-decoration: none; cursor: pointer; transition: var(--transition); }
+        .logo-badge:hover { transform: scale(1.05); box-shadow: 0 0 20px rgba(212, 175, 55, 0.3); }
         .header-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-        .network-badge { display: flex; align-items: center; gap: 6px; font-size: 0.65rem; color: var(--gold); background: rgba(212, 175, 55, 0.1); padding: 4px 14px; border-radius: 20px; }
+        .network-badge { display: flex; align-items: center; gap: 6px; font-size: 0.65rem; color: var(--gold); background: rgba(212, 175, 55, 0.1); padding: 4px 14px; border-radius: 20px; text-decoration: none; cursor: pointer; transition: var(--transition); }
+        .network-badge:hover { background: rgba(212, 175, 55, 0.2); transform: scale(1.02); }
+        .network-badge .dot { display: inline-block; width: 6px; height: 6px; background: var(--gold); border-radius: 50%; }
         .header-actions .nav-link { font-size: 0.7rem; padding: 4px 12px; border-radius: 20px; color: var(--text-muted); text-decoration: none; transition: var(--transition); }
         .header-actions .nav-link:hover { color: var(--gold); background: rgba(212, 175, 55, 0.05); }
         .header-actions .nav-link.active { color: var(--gold); background: rgba(212, 175, 55, 0.1); }
@@ -319,10 +322,10 @@
             <a href="/" class="logo">
                 <span class="logo-hex">◈</span>
                 <span class="logo-text">Sariel<span>'s</span></span>
-                <span class="logo-badge">✦ WEB3</span>
+                <a href="/info/web3.html" class="logo-badge" target="_blank" rel="noopener noreferrer">✦ WEB3</a>
             </a>
             <div class="header-actions">
-                <span class="network-badge"><span class="dot"></span> Polygon</span>
+                <a href="https://polygon.technology/" target="_blank" rel="noopener noreferrer" class="network-badge"><span class="dot"></span> Polygon</a>
                 
                 <!-- ===== SELECTOR DE IDIOMA ===== -->
                 <div class="idioma-selector">
