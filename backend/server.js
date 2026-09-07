@@ -16,6 +16,7 @@
    ✅ I18N
    ✅ SISTEMA SEGURO DE ELIMINACIÓN DE CUENTA
    ✅ CLOUDFLARE TURNSTILE SERVER-SIDE
+   ✅ VIDEOLLAMADA LIVEKIT
 ================================================================ */
 
 const express = require('express');
@@ -50,6 +51,19 @@ const SUPABASE_ANON_KEY =
 
 const SUPABASE_SERVICE_ROLE_KEY =
     process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+/* ================================================================
+   LIVEKIT CONFIGURACIÓN
+================================================================ */
+
+const LIVEKIT_API_KEY =
+    process.env.LIVEKIT_API_KEY;
+
+const LIVEKIT_API_SECRET =
+    process.env.LIVEKIT_API_SECRET;
+
+const LIVEKIT_URL =
+    process.env.LIVEKIT_URL;
 
 /* ================================================================
    CLOUDFLARE TURNSTILE
@@ -111,6 +125,12 @@ if (!TURNSTILE_SECRET_KEY) {
 if (!TURNSTILE_SITE_KEY) {
     console.warn(
         '⚠️ Falta TURNSTILE_SITE_KEY'
+    );
+}
+
+if (!LIVEKIT_API_KEY || !LIVEKIT_API_SECRET || !LIVEKIT_URL) {
+    console.warn(
+        '⚠️ LiveKit no configurado correctamente. Las videollamadas no funcionarán.'
     );
 }
 
@@ -1001,6 +1021,269 @@ app.patch(
 );
 
 /* ================================================================
+   ================================================================
+   🎥 LIVEKIT - GENERAR TOKEN DE ACCESO
+   ================================================================
+   ================================================================ */
+
+app.post(
+    '/api/livekit/token',
+    verificarAutenticacion,
+    async (req, res) => {
+
+        try {
+
+            /* ----------------------------------------------------
+               1. VALIDAR CONFIGURACIÓN DE LIVEKIT
+            ---------------------------------------------------- */
+
+            if (
+                !LIVEKIT_API_KEY ||
+                !LIVEKIT_API_SECRET ||
+                !LIVEKIT_URL
+            ) {
+
+                console.error(
+                    '❌ LiveKit no configurado correctamente'
+                );
+
+                return res.status(503).json({
+                    success: false,
+                    error: 'SERVICIO_NO_DISPONIBLE',
+                    message: 'El servicio de videollamadas no está configurado'
+                });
+            }
+
+            /* ----------------------------------------------------
+               2. VALIDAR PARÁMETROS DE LA SOLICITUD
+            ---------------------------------------------------- */
+
+            const {
+                roomName,
+                participantName
+            } = req.body;
+
+            if (
+                !roomName ||
+                typeof roomName !== 'string' ||
+                roomName.length < 3
+            ) {
+
+                return res.status(400).json({
+                    success: false,
+                    error: 'ROOM_INVALIDA',
+                    message: 'El nombre de la sala es obligatorio y debe tener al menos 3 caracteres'
+                });
+            }
+
+            if (
+                !participantName ||
+                typeof participantName !== 'string' ||
+                participantName.length < 1
+            ) {
+
+                return res.status(400).json({
+                    success: false,
+                    error: 'PARTICIPANTE_INVALIDO',
+                    message: 'El nombre del participante es obligatorio'
+                });
+            }
+
+            /* ----------------------------------------------------
+               3. VERIFICAR QUE EL USUARIO SOLICITA SU PROPIO TOKEN
+            ---------------------------------------------------- */
+
+            const userId =
+                req.user.id;
+
+            if (
+                participantName !== userId
+            ) {
+
+                console.warn(
+                    `⚠️ Intento de suplantación: ${participantName} intentó usar token de ${userId}`
+                );
+
+                return res.status(403).json({
+                    success: false,
+                    error: 'NO_AUTORIZADO',
+                    message: 'No puedes generar un token para otro usuario'
+                });
+            }
+
+            /* ----------------------------------------------------
+               4. VERIFICAR QUE EL USUARIO ESTÁ AUTORIZADO EN LA LLAMADA
+            ---------------------------------------------------- */
+
+            // Extraer el ID de la llamada del roomName
+            const callIdMatch =
+                roomName.match(/^call_(.+)$/);
+
+            let callId =
+                null;
+
+            if (callIdMatch) {
+                callId =
+                    callIdMatch[1];
+            }
+
+            if (callId) {
+
+                // Verificar que el usuario participa en esta llamada
+                const {
+                    data: llamada,
+                    error: llamadaError
+                } =
+                    await supabaseAdmin
+                        .from('llamadas')
+                        .select('usuario_origen, usuario_destino, estado')
+                        .eq('id', callId)
+                        .maybeSingle();
+
+                if (llamadaError || !llamada) {
+
+                    console.warn(
+                        `⚠️ Llamada no encontrada: ${callId}`
+                    );
+
+                    return res.status(404).json({
+                        success: false,
+                        error: 'LLAMADA_NO_ENCONTRADA',
+                        message: 'La llamada no existe'
+                    });
+                }
+
+                // Verificar que el usuario es origen o destino
+                const esOrigen =
+                    llamada.usuario_origen === userId;
+
+                const esDestino =
+                    llamada.usuario_destino === userId;
+
+                if (!esOrigen && !esDestino) {
+
+                    console.warn(
+                        `⚠️ Usuario ${userId} no autorizado en llamada ${callId}`
+                    );
+
+                    return res.status(403).json({
+                        success: false,
+                        error: 'NO_AUTORIZADO',
+                        message: 'No estás autorizado para unirte a esta llamada'
+                    });
+                }
+
+                // Verificar que la llamada está activa o en ringing
+                if (
+                    llamada.estado !== 'active' &&
+                    llamada.estado !== 'ringing'
+                ) {
+
+                    console.warn(
+                        `⚠️ Llamada ${callId} en estado ${llamada.estado}`
+                    );
+
+                    return res.status(400).json({
+                        success: false,
+                        error: 'LLAMADA_NO_DISPONIBLE',
+                        message: 'La llamada no está disponible'
+                    });
+                }
+
+            } else {
+
+                // Si no es una llamada con formato call_*, verificar que el usuario tiene autorización
+                // Solo permitir tokens para salas con formato call_*
+                return res.status(400).json({
+                    success: false,
+                    error: 'FORMATO_INVALIDO',
+                    message: 'El nombre de la sala debe comenzar con "call_"'
+                });
+            }
+
+            /* ----------------------------------------------------
+               5. OBTENER NOMBRE DE USUARIO
+            ---------------------------------------------------- */
+
+            let nombreUsuario =
+                req.user.user_metadata?.nombre ||
+                req.user.email ||
+                'Usuario';
+
+            const {
+                data: usuarioData,
+                error: usuarioError
+            } =
+                await supabaseAdmin
+                    .from('usuarios')
+                    .select('nombre')
+                    .eq('id', userId)
+                    .maybeSingle();
+
+            if (
+                !usuarioError &&
+                usuarioData?.nombre
+            ) {
+                nombreUsuario =
+                    usuarioData.nombre;
+            }
+
+            /* ----------------------------------------------------
+               6. GENERAR TOKEN LIVEKIT
+            ---------------------------------------------------- */
+
+            const token =
+                new AccessToken(
+                    LIVEKIT_API_KEY,
+                    LIVEKIT_API_SECRET,
+                    {
+                        identity: userId,
+                        ttl: 3600, // 1 hora
+                        name: nombreUsuario
+                    }
+                );
+
+            token.addGrant({
+                roomJoin: true,
+                room: roomName,
+                canPublish: true,
+                canSubscribe: true,
+                canPublishData: true,
+                canUpdateOwnMetadata: true
+            });
+
+            const jwt =
+                token.toJwt();
+
+            console.log(
+                `✅ Token LiveKit generado para ${userId} en sala ${roomName}`
+            );
+
+            return res.status(200).json({
+                success: true,
+                token: jwt,
+                url: LIVEKIT_URL,
+                identity: userId,
+                roomName: roomName
+            });
+
+        } catch (error) {
+
+            console.error(
+                '❌ Error generando token LiveKit:',
+                error
+            );
+
+            return res.status(500).json({
+                success: false,
+                error: 'ERROR_INTERNO',
+                message: 'Error al generar el token de videollamada'
+            });
+        }
+    }
+);
+
+/* ================================================================
    MIDDLEWARES DE SEGURIDAD
 ================================================================ */
 
@@ -1135,6 +1418,13 @@ app.use(
             req.path.startsWith(
                 '/webhook/'
             )
+        ) {
+            return next();
+        }
+
+        // Excepción para LiveKit para no limitar demasiado
+        if (
+            req.path === '/livekit/token'
         ) {
             return next();
         }
@@ -2446,6 +2736,19 @@ app.get(
 
                 process_function:
                     ACCOUNT_DELETION_PROCESS_FUNCTION
+            },
+
+            livekit: {
+
+                configured:
+                    Boolean(
+                        LIVEKIT_API_KEY &&
+                        LIVEKIT_API_SECRET &&
+                        LIVEKIT_URL
+                    ),
+
+                endpoint:
+                    '/api/livekit/token'
             }
         });
     }
@@ -2664,6 +2967,14 @@ app.listen(
         console.log(
             `📱 Telnyx: ${
                 process.env.TELNYX_API_KEY
+                    ? '✅ Configurado'
+                    : '❌ No configurado'
+            }`
+        );
+
+        console.log(
+            `🎥 LiveKit: ${
+                LIVEKIT_API_KEY && LIVEKIT_API_SECRET && LIVEKIT_URL
                     ? '✅ Configurado'
                     : '❌ No configurado'
             }`
