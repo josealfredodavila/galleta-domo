@@ -3,20 +3,23 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title data-clave="mensajes_titulo">◈ Mensajes · Sariel's</title>
+    <title>◈ Mensajes · Sariel's</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/features/mensajes/mensajes.css" />
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
-    
-    <!-- SDK de LiveKit para videollamadas -->
-    <script src="https://unpkg.com/livekit-client@2/dist/livekit-client.umd.js"></script>
-    
     <style>
+        /* ================================================================
+           MENSAJES ULTRA MEGA PRO - SARIEL'S
+           ================================================================ */
+
         :root {
             --gold: #D4AF37;
             --gold-dark: #b8923a;
             --gold-light: #e8c84a;
+            --gold-bright: #f0d060;
             --green-deep: #0F2D1A;
             --green-mid: #1a4a2a;
+            --green-bright: #2a6a3a;
             --space: #05080f;
             --text-primary: #f0f4f8;
             --text-secondary: #c0d8e8;
@@ -24,14 +27,18 @@
             --glass-bg: rgba(15, 45, 26, 0.55);
             --glass-border: rgba(212, 175, 55, 0.15);
             --shadow-gold: 0 8px 32px rgba(212, 175, 55, 0.25);
+            --shadow-gold-strong: 0 0 60px rgba(212, 175, 55, 0.15);
             --radius: 16px;
             --radius-xl: 24px;
             --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-slow: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
             --success: #00d68f;
             --danger: #ff3366;
             --warning: #f7d44a;
+            --cyan: #00e5ff;
+            --purple: #a855f7;
+            --pink: #ec4899;
             --live-red: #ff0044;
-            --bg-dark: rgba(5, 8, 15, 0.8);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -39,846 +46,836 @@
         body {
             background: var(--space);
             color: var(--text-primary);
-            font-family: 'Inter', sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             min-height: 100vh;
-            background-image: radial-gradient(ellipse at 20% 50%, rgba(26, 74, 42, 0.4) 0%, transparent 60%), radial-gradient(ellipse at 80% 50%, rgba(212, 175, 55, 0.08) 0%, transparent 60%);
+            line-height: 1.6;
+            background-image: 
+                radial-gradient(ellipse at 20% 50%, rgba(26, 74, 42, 0.4) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 50%, rgba(212, 175, 55, 0.08) 0%, transparent 60%);
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
-        .app { max-width: 1100px; margin: 0 auto; padding: 16px 20px 30px; }
+        /* ===== FONDO ESTELAR ===== */
+        #stars-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+            will-change: transform;
+        }
 
+        .nebula {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(120px);
+            opacity: 0.12;
+            pointer-events: none;
+            z-index: 0;
+            animation: nebula-drift 25s ease-in-out infinite alternate;
+            will-change: transform;
+        }
+        .nebula-1 { width: 700px; height: 700px; background: var(--green-bright); top: -15%; right: -15%; }
+        .nebula-2 { width: 600px; height: 600px; background: var(--gold-light); bottom: -15%; left: -15%; animation-delay: -8s; opacity: 0.06; }
+        .nebula-3 { width: 500px; height: 500px; background: var(--purple); top: 50%; left: 50%; transform: translate(-50%, -50%); animation-delay: -15s; opacity: 0.04; }
+
+        @keyframes nebula-drift {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(40px, -30px) scale(1.15); }
+        }
+
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: var(--space); }
+        ::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 2px; }
+
+        /* ===== APP ===== */
+        .app {
+            position: relative;
+            z-index: 1;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 16px 20px 30px;
+            contain: layout style;
+        }
+
+        /* ===== HEADER ===== */
         .header {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 10px 0 14px; border-bottom: 1px solid var(--glass-border);
-            background: rgba(5, 8, 15, 0.92); position: sticky; top: 0; z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0 14px;
+            border-bottom: 1px solid var(--glass-border);
+            flex-wrap: wrap;
+            gap: 10px;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(5, 8, 15, 0.92);
+            border-radius: var(--radius) var(--radius) 0 0;
+            contain: layout style;
         }
-        .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
-        .logo-hex { font-size: 1.8rem; color: var(--gold); font-family: 'Orbitron', monospace; }
-        .logo-text { font-family: 'Orbitron', monospace; font-size: 1.2rem; color: var(--text-primary); letter-spacing: 2px; }
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            transition: var(--transition);
+        }
+        .logo:hover { opacity: 0.85; }
+        .logo-hex {
+            font-size: 1.8rem;
+            color: var(--gold);
+            font-weight: 800;
+            font-family: 'Orbitron', monospace;
+            text-shadow: 0 0 30px rgba(212, 175, 55, 0.3);
+            animation: glow-pulse 3s ease-in-out infinite;
+            will-change: text-shadow;
+        }
+        @keyframes glow-pulse {
+            0%, 100% { text-shadow: 0 0 30px rgba(212, 175, 55, 0.3); }
+            50% { text-shadow: 0 0 60px rgba(212, 175, 55, 0.6); }
+        }
+        .logo-text {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: 2px;
+        }
         .logo-text span { color: var(--gold); }
-        .logo-badge { font-size: 0.45rem; background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: var(--space); padding: 2px 10px; border-radius: 20px; font-weight: 700; }
-        .network-badge { display: flex; align-items: center; gap: 6px; font-size: 0.6rem; color: var(--gold); background: rgba(212, 175, 55, 0.1); padding: 4px 12px; border-radius: 20px; }
+        .logo-badge {
+            font-size: 0.45rem;
+            background: linear-gradient(135deg, var(--gold), var(--gold-light));
+            color: var(--space);
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .network-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.6rem;
+            color: var(--gold);
+            background: rgba(212, 175, 55, 0.1);
+            padding: 4px 12px;
+            border-radius: 20px;
+            border: 1px solid rgba(212, 175, 55, 0.15);
+        }
+        .network-badge .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--success);
+            animation: pulse-dot 2s infinite;
+            will-change: transform, opacity;
+        }
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.3; transform: scale(0.8); }
+        }
 
+        /* ===== NAVEGACIÓN ===== */
         .main-nav {
-            display: flex; gap: 4px; background: rgba(15, 45, 26, 0.3); border-radius: var(--radius);
-            padding: 4px; border: 1px solid var(--glass-border); margin: 16px 0 20px; overflow-x: auto;
+            display: flex;
+            gap: 4px;
+            background: rgba(15, 45, 26, 0.3);
+            border-radius: var(--radius);
+            padding: 4px;
+            border: 1px solid var(--glass-border);
+            margin: 16px 0 20px;
+            overflow-x: auto;
+            flex-wrap: nowrap;
+            -webkit-overflow-scrolling: touch;
+            contain: layout style;
         }
         .main-nav .nav-link {
-            padding: 8px 16px; border-radius: 12px; color: var(--text-muted); text-decoration: none;
-            font-size: 0.7rem; transition: var(--transition); white-space: nowrap;
-        }
-        .main-nav .nav-link.active { background: rgba(212, 175, 55, 0.12); color: var(--gold); }
-        .main-nav .nav-link.live { color: var(--live-red); }
-
-        .chat-panel { display: grid; grid-template-columns: 340px 1fr; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-xl); overflow: hidden; min-height: 600px; }
-
-        /* ===== CONVERSACIONES ===== */
-        .conversaciones { 
-            border-right: 1px solid var(--glass-border); 
-            background: rgba(0, 0, 0, 0.2); 
-            overflow-y: auto; 
-            max-height: 600px;
-            display: flex;
-            flex-direction: column;
-        }
-        .conversaciones .header-conv { 
-            padding: 16px 18px; 
-            border-bottom: 1px solid var(--glass-border); 
-            font-family: 'Orbitron', monospace; 
-            color: var(--gold); 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            flex-shrink: 0;
-        }
-        .conversaciones .header-conv .btn-nuevo {
-            background: transparent;
-            border: 1px solid var(--glass-border);
-            color: var(--text-muted);
-            padding: 4px 12px;
+            padding: 8px 16px;
             border-radius: 12px;
-            cursor: pointer;
-            font-size: 0.8rem;
-            transition: var(--transition);
-        }
-        .conversaciones .header-conv .btn-nuevo:hover {
-            border-color: var(--gold);
-            color: var(--gold);
-        }
-
-        .search-conv {
-            padding: 10px 16px;
-            border-bottom: 1px solid var(--glass-border);
-            flex-shrink: 0;
-        }
-        .search-conv input {
-            width: 100%;
-            padding: 8px 14px;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid var(--glass-border);
-            border-radius: 20px;
-            color: var(--text-primary);
-            font-size: 0.75rem;
-            outline: none;
-            transition: var(--transition);
-        }
-        .search-conv input:focus {
-            border-color: var(--gold);
-        }
-        .search-conv input::placeholder {
             color: var(--text-muted);
-        }
-
-        .conv-list {
-            flex: 1;
-            overflow-y: auto;
-        }
-
-        .conv-item { 
-            display: flex; 
-            align-items: center; 
-            gap: 12px; 
-            padding: 10px 16px; 
-            border-bottom: 1px solid rgba(212, 175, 55, 0.04); 
-            cursor: pointer; 
-            transition: var(--transition); 
+            text-decoration: none;
+            font-size: 0.7rem;
+            font-weight: 500;
+            transition: var(--transition);
+            white-space: nowrap;
+            font-family: 'Inter', sans-serif;
+            background: transparent;
+            border: none;
+            cursor: pointer;
             position: relative;
         }
-        .conv-item:hover { background: rgba(212, 175, 55, 0.05); }
-        .conv-item.active { background: rgba(212, 175, 55, 0.10); border-left: 3px solid var(--gold); }
-        .conv-item .conv-avatar { 
-            width: 40px; 
-            height: 40px; 
-            border-radius: 50%; 
-            background: linear-gradient(135deg, var(--green-deep), var(--gold)); 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            color: white; 
-            font-size: 1rem; 
+        .main-nav .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: 2px;
+            left: 50%;
+            width: 0;
+            height: 2px;
+            background: var(--gold);
+            transition: var(--transition);
+            transform: translateX(-50%);
+            border-radius: 2px;
+        }
+        .main-nav .nav-link:hover::after,
+        .main-nav .nav-link.active::after {
+            width: 60%;
+        }
+        .main-nav .nav-link:hover {
+            color: var(--text-primary);
+            background: rgba(212, 175, 55, 0.05);
+        }
+        .main-nav .nav-link.active {
+            background: rgba(212, 175, 55, 0.12);
+            color: var(--gold);
+        }
+        .main-nav .nav-link.live {
+            color: var(--live-red);
+        }
+        .main-nav .nav-link.live:hover {
+            background: rgba(255, 0, 68, 0.08);
+        }
+
+        /* ===== CHAT PANEL ===== */
+        .chat-panel {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 0;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-xl);
             overflow: hidden;
+            min-height: 520px;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            transition: var(--transition-slow);
+        }
+        .chat-panel:hover {
+            border-color: rgba(212, 175, 55, 0.2);
+            box-shadow: var(--shadow-gold);
+        }
+
+        /* ===== CONVERSACIONES ===== */
+        .conversaciones {
+            border-right: 1px solid var(--glass-border);
+            background: rgba(0, 0, 0, 0.2);
+            overflow-y: auto;
+            max-height: 600px;
+        }
+        .conversaciones::-webkit-scrollbar {
+            width: 3px;
+        }
+        .conversaciones::-webkit-scrollbar-thumb {
+            background: var(--gold);
+            border-radius: 2px;
+        }
+        .conversaciones .header-conv {
+            padding: 16px 18px;
+            border-bottom: 1px solid var(--glass-border);
+            font-family: 'Orbitron', monospace;
+            font-size: 0.85rem;
+            color: var(--gold);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            letter-spacing: 0.5px;
+        }
+        .conversaciones .header-conv .btn-nuevo {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 1rem;
+            transition: var(--transition);
+            font-family: 'Inter', sans-serif;
+            padding: 4px 8px;
+            border-radius: 8px;
+        }
+        .conversaciones .header-conv .btn-nuevo:hover {
+            color: var(--gold);
+            background: rgba(212, 175, 55, 0.05);
+        }
+
+        .conv-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 16px;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.04);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .conv-item:hover {
+            background: rgba(212, 175, 55, 0.05);
+        }
+        .conv-item.active {
+            background: rgba(212, 175, 55, 0.10);
+            border-left: 3px solid var(--gold);
+        }
+        .conv-item .conv-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--green-deep), var(--gold));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: white;
+            font-size: 1rem;
+            flex-shrink: 0;
+            font-family: 'Orbitron', monospace;
+        }
+        .conv-item .conv-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+        }
+        .conv-item .conv-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .conv-item .conv-info .conv-nombre {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            letter-spacing: 0.3px;
+        }
+        .conv-item .conv-info .conv-msg {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .conv-item .conv-meta {
+            text-align: right;
             flex-shrink: 0;
         }
-        .conv-item .conv-avatar img { width: 100%; height: 100%; object-fit: cover; }
-        .conv-item .conv-info { flex: 1; min-width: 0; }
-        .conv-item .conv-info .conv-nombre { font-weight: 600; color: var(--text-primary); font-size: 0.85rem; }
-        .conv-item .conv-info .conv-msg { font-size: 0.7rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .conv-item .conv-meta { text-align: right; flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
-        .conv-item .conv-meta .conv-badge { 
-            background: var(--gold); 
-            color: var(--space); 
-            font-size: 0.55rem; 
-            font-weight: 700; 
-            padding: 2px 8px; 
-            border-radius: 12px; 
-            min-width: 20px;
-            text-align: center;
+        .conv-item .conv-meta .conv-hora {
+            font-size: 0.6rem;
+            color: var(--text-muted);
         }
-        .conv-item .conv-meta .conv-hora { font-size: 0.55rem; color: var(--text-muted); }
+        .conv-item .conv-meta .conv-badge {
+            background: var(--gold);
+            color: var(--space);
+            font-size: 0.55rem;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 12px;
+            display: inline-block;
+            margin-top: 2px;
+            font-family: 'Orbitron', monospace;
+        }
 
         /* ===== CHAT AREA ===== */
-        .chat-area { display: flex; flex-direction: column; height: 100%; }
-        .chat-area .chat-header { 
-            padding: 14px 20px; 
-            border-bottom: 1px solid var(--glass-border); 
-            display: flex; 
-            align-items: center; 
-            gap: 12px; 
-            background: rgba(0, 0, 0, 0.1); 
+        .chat-area {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            min-height: 520px;
+        }
+        .chat-area .chat-header {
+            padding: 14px 20px;
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(0, 0, 0, 0.1);
+        }
+        .chat-area .chat-header .chat-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--green-deep), var(--gold));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: white;
+            font-size: 0.9rem;
             flex-shrink: 0;
+            font-family: 'Orbitron', monospace;
         }
-        .chat-area .chat-header .chat-avatar { 
-            width: 36px; 
-            height: 36px; 
-            border-radius: 50%; 
-            background: linear-gradient(135deg, var(--green-deep), var(--gold)); 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            color: white; 
-            font-size: 0.9rem; 
-            overflow: hidden;
+        .chat-area .chat-header .chat-info {
+            flex: 1;
         }
-        .chat-area .chat-header .chat-avatar img { width: 100%; height: 100%; object-fit: cover; }
-        .chat-area .chat-header .chat-info { flex: 1; }
-        .chat-area .chat-header .chat-nombre { font-weight: 600; color: var(--text-primary); font-size: 0.95rem; }
-        .chat-area .chat-header .chat-estado { font-size: 0.65rem; color: var(--text-muted); }
-        .chat-area .chat-header .chat-estado.online { color: var(--success); }
+        .chat-area .chat-header .chat-nombre {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            letter-spacing: 0.3px;
+        }
+        .chat-area .chat-header .chat-estado {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            letter-spacing: 0.3px;
+        }
+        .chat-area .chat-header .chat-estado.online {
+            color: var(--success);
+        }
         .chat-area .chat-header .chat-actions {
             display: flex;
             gap: 4px;
         }
         .chat-area .chat-header .chat-actions button {
-            background: transparent;
+            background: none;
             border: none;
             color: var(--text-muted);
             cursor: pointer;
-            font-size: 0.7rem;
+            transition: var(--transition);
+            font-size: 0.8rem;
             padding: 4px 8px;
             border-radius: 8px;
-            transition: var(--transition);
         }
         .chat-area .chat-header .chat-actions button:hover {
-            background: rgba(255,255,255,0.05);
+            color: var(--gold);
+            background: rgba(212, 175, 55, 0.05);
+        }
+
+        /* ===== MENSAJES ===== */
+        .chat-messages {
+            flex: 1;
+            padding: 16px 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 400px;
+            background: rgba(0, 0, 0, 0.05);
+        }
+        .chat-messages::-webkit-scrollbar {
+            width: 3px;
+        }
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: var(--gold);
+            border-radius: 2px;
+        }
+
+        /* ================================================================
+           BURBUJAS CON AVATAR Y ESTADOS
+           ================================================================ */
+
+        .msg-wrapper.enviado {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            animation: fadeIn 0.3s ease;
+            width: 100%;
+        }
+
+        .msg-wrapper.enviado .burbuja {
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            color: var(--space);
+            border-radius: 18px 18px 4px 18px;
+            padding: 10px 16px;
+            max-width: 75%;
+            word-wrap: break-word;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            transition: var(--transition);
+        }
+
+        .msg-wrapper.enviado .burbuja:hover {
+            transform: scale(1.01);
+        }
+
+        .msg-wrapper.enviado .meta {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 3px;
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            letter-spacing: 0.3px;
+        }
+
+        .msg-wrapper.enviado .meta .leido {
+            font-size: 0.65rem;
+        }
+
+        .msg-wrapper.enviado .meta .leido.no-leido {
+            color: var(--text-muted);
+        }
+
+        .msg-wrapper.enviado .meta .leido.leido {
             color: var(--gold);
         }
-        .chat-area .chat-header .chat-actions button.danger:hover {
-            color: var(--danger);
-        }
-        .chat-area .chat-header .chat-actions button.call-btn {
-            color: var(--success);
-            font-size: 0.9rem;
-        }
-        .chat-area .chat-header .chat-actions button.call-btn:hover {
-            background: rgba(0,214,143,0.15);
-        }
-        .chat-area .chat-header .chat-actions button.call-btn.active-call {
-            color: var(--live-red);
-            animation: pulse-call 1.5s ease-in-out infinite;
-        }
 
-        @keyframes pulse-call {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.6; transform: scale(1.1); }
-        }
-
-        .chat-messages { 
-            flex: 1; 
-            padding: 16px 20px; 
-            overflow-y: auto; 
-            display: flex; 
-            flex-direction: column; 
-            gap: 6px; 
-            max-height: 420px;
-            min-height: 300px;
-        }
-
-        .msg-wrapper.enviado { display: flex; flex-direction: column; align-items: flex-end; width: 100%; }
-        .msg-wrapper.enviado .burbuja { 
-            background: linear-gradient(135deg, var(--gold), var(--gold-dark)); 
-            color: var(--space); 
-            border-radius: 18px 18px 4px 18px; 
-            padding: 10px 16px; 
-            max-width: 75%; 
-            word-wrap: break-word; 
-            font-size: 0.9rem; 
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15); 
-        }
-        .msg-wrapper.enviado .meta { 
-            display: flex; 
-            align-items: center; 
-            gap: 4px; 
-            margin-top: 3px; 
-            font-size: 0.55rem; 
-            color: var(--text-muted); 
-        }
-        .msg-wrapper.enviado .meta .leido.leido { color: var(--gold); }
-        .msg-wrapper.enviado .meta .leido.no-leido { color: var(--text-muted); }
-        .msg-wrapper.enviado .meta button { 
-            background: none; 
-            border: none; 
-            cursor: pointer; 
-            font-size: 0.5rem; 
-            padding: 0 2px; 
-        }
-
-        .msg-wrapper.recibido { display: flex; flex-direction: column; align-items: flex-start; width: 100%; }
-        .msg-wrapper.recibido .fila { display: flex; align-items: flex-end; gap: 10px; max-width: 85%; }
-        .msg-wrapper.recibido .avatar { 
-            width: 34px; 
-            height: 34px; 
-            border-radius: 50%; 
-            background: linear-gradient(135deg, var(--green-deep), var(--gold)); 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            color: white; 
-            font-size: 0.8rem; 
-            flex-shrink: 0; 
-            border: 2px solid rgba(212, 175, 55, 0.2); 
-            overflow: hidden;
-        }
-        .msg-wrapper.recibido .avatar img { width: 100%; height: 100%; object-fit: cover; }
-        .msg-wrapper.recibido .avatar.estado-conectado { border-color: var(--success); }
-        .msg-wrapper.recibido .avatar.estado-desconectado { border-color: var(--text-muted); opacity: 0.6; }
-        .msg-wrapper.recibido .burbuja { 
-            background: rgba(255, 255, 255, 0.06); 
-            color: var(--text-secondary); 
-            border-radius: 18px 18px 18px 4px; 
-            padding: 10px 16px; 
-            word-wrap: break-word; 
-            border: 1px solid var(--glass-border); 
-            font-size: 0.9rem; 
-        }
-        .msg-wrapper.recibido .meta { 
-            margin-top: 3px; 
-            margin-left: 44px; 
-            font-size: 0.55rem; 
-            color: var(--text-muted); 
+        .msg-wrapper.recibido {
             display: flex;
-            gap: 4px;
+            flex-direction: column;
+            align-items: flex-start;
+            animation: fadeIn 0.3s ease;
+            width: 100%;
+        }
+
+        .msg-wrapper.recibido .fila {
+            display: flex;
+            align-items: flex-end;
+            gap: 10px;
+            max-width: 85%;
+        }
+
+        .msg-wrapper.recibido .avatar {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--green-deep), var(--gold));
+            display: flex;
             align-items: center;
-        }
-        .msg-wrapper.recibido .meta button {
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-size: 0.5rem;
-            padding: 0 2px;
-        }
-
-        .empty-chat { 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            justify-content: center; 
-            flex: 1; 
-            color: var(--text-muted); 
-            text-align: center; 
-            padding: 40px 20px; 
-        }
-        .empty-chat .icon { font-size: 2.5rem; display: block; margin-bottom: 16px; color: var(--gold); opacity: 0.4; font-family: 'Orbitron', monospace; }
-        .empty-chat h3 { font-family: 'Orbitron', monospace; color: var(--text-secondary); font-size: 1rem; font-weight: 400; }
-        .empty-chat p { font-size: 0.8rem; }
-
-        /* ===== INPUT ===== */
-        .chat-input { 
-            display: flex; 
-            gap: 8px; 
-            padding: 12px 16px; 
-            border-top: 1px solid var(--glass-border); 
-            background: rgba(0, 0, 0, 0.1); 
+            justify-content: center;
+            font-weight: 700;
+            color: white;
+            font-size: 0.8rem;
             flex-shrink: 0;
-            flex-wrap: wrap;
-            align-items: center;
+            font-family: 'Orbitron', monospace;
+            transition: var(--transition);
+            position: relative;
+            border: 2px solid rgba(212, 175, 55, 0.2);
         }
-        .chat-input .input-wrapper {
-            flex: 1;
+
+        .msg-wrapper.recibido .avatar.estado-conectado {
+            border-color: var(--success);
+            box-shadow: 0 0 20px rgba(0, 214, 143, 0.2);
+        }
+
+        .msg-wrapper.recibido .avatar.estado-desconectado {
+            border-color: var(--text-muted);
+            opacity: 0.6;
+        }
+
+        .msg-wrapper.recibido .avatar.estado-sin-datos {
+            border-color: var(--danger);
+            animation: parpadeo-rojo 1.5s ease-in-out infinite;
+        }
+
+        .msg-wrapper.recibido .avatar.estado-entregado {
+            border-color: var(--success);
+            box-shadow: 0 0 20px rgba(0, 214, 143, 0.1);
+        }
+
+        .msg-wrapper.recibido .avatar.estado-enviando {
+            border-color: var(--warning);
+            animation: parpadeo-amarillo 0.8s ease-in-out infinite;
+        }
+
+        .msg-wrapper.recibido .avatar.estado-sin-esim {
+            border-color: var(--danger);
+            animation: parpadeo-rojo 0.5s ease-in-out infinite;
+        }
+
+        @keyframes parpadeo-rojo {
+            0%, 100% { box-shadow: 0 0 5px rgba(255, 51, 102, 0.2); }
+            50% { box-shadow: 0 0 25px rgba(255, 51, 102, 0.6); }
+        }
+
+        @keyframes parpadeo-amarillo {
+            0%, 100% { box-shadow: 0 0 5px rgba(247, 212, 74, 0.2); }
+            50% { box-shadow: 0 0 25px rgba(247, 212, 74, 0.6); }
+        }
+
+        .msg-wrapper.recibido .avatar .tooltip {
+            visibility: hidden;
+            opacity: 0;
+            width: 140px;
+            background: var(--space);
+            color: var(--text-primary);
+            text-align: center;
+            border-radius: 8px;
+            padding: 6px 10px;
+            font-size: 0.55rem;
+            font-family: 'Inter', sans-serif;
+            position: absolute;
+            z-index: 10;
+            bottom: 110%;
+            left: 50%;
+            transform: translateX(-50%);
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+            border: 1px solid var(--glass-border);
+            letter-spacing: 0.3px;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
+        .msg-wrapper.recibido .avatar .tooltip::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 6px solid transparent;
+            border-top-color: var(--space);
+        }
+
+        .msg-wrapper.recibido .avatar:hover .tooltip {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .msg-wrapper.recibido .burbuja {
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--text-secondary);
+            border-radius: 18px 18px 18px 4px;
+            padding: 10px 16px;
+            word-wrap: break-word;
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            transition: var(--transition);
+        }
+
+        .msg-wrapper.recibido .burbuja:hover {
+            background: rgba(255, 255, 255, 0.10);
+        }
+
+        .msg-wrapper.recibido .meta {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 3px;
+            margin-left: 44px;
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            letter-spacing: 0.3px;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px) scale(0.98); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        /* ===== INPUT CHAT ===== */
+        .chat-input {
             display: flex;
             gap: 8px;
-            align-items: center;
+            padding: 12px 16px;
+            border-top: 1px solid var(--glass-border);
+            background: rgba(0, 0, 0, 0.1);
+        }
+        .chat-input input {
+            flex: 1;
+            padding: 10px 16px;
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid var(--glass-border);
             border-radius: 30px;
-            padding: 4px 8px 4px 16px;
-            transition: var(--transition);
-        }
-        .chat-input .input-wrapper:focus-within {
-            border-color: var(--gold);
-        }
-        .chat-input .input-wrapper input { 
-            flex: 1; 
-            padding: 8px 0; 
-            background: transparent; 
-            border: none; 
-            color: var(--text-primary); 
-            outline: none; 
+            color: var(--text-primary);
             font-size: 0.85rem;
+            font-family: 'Inter', sans-serif;
+            transition: var(--transition);
+            outline: none;
         }
-        .chat-input .input-wrapper input::placeholder {
+        .chat-input input:focus {
+            outline: none;
+            border-color: var(--gold);
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 0 30px rgba(212, 175, 55, 0.05);
+        }
+        .chat-input input::placeholder {
             color: var(--text-muted);
         }
-        .chat-input .input-wrapper .btn-icon {
-            background: transparent;
+        .chat-input .btn-enviar {
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            color: var(--space);
             border: none;
-            color: var(--text-muted);
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            font-size: 0.65rem;
             cursor: pointer;
-            font-size: 1rem;
-            padding: 4px 6px;
-            border-radius: 50%;
             transition: var(--transition);
+            letter-spacing: 0.5px;
         }
-        .chat-input .input-wrapper .btn-icon:hover {
-            color: var(--gold);
-            background: rgba(212,175,55,0.1);
+        .chat-input .btn-enviar:hover {
+            transform: scale(1.02);
+            box-shadow: var(--shadow-gold);
         }
-        .chat-input .btn-enviar { 
-            background: linear-gradient(135deg, var(--gold), var(--gold-dark)); 
-            color: var(--space); 
-            border: none; 
-            padding: 8px 20px; 
-            border-radius: 30px; 
-            font-weight: 700; 
-            cursor: pointer; 
-            font-size: 0.8rem;
-            transition: var(--transition);
-            flex-shrink: 0;
-        }
-        .chat-input .btn-enviar:hover { transform: scale(1.02); box-shadow: var(--shadow-gold); }
-        .chat-input .file-preview {
-            width: 100%;
-            display: flex;
-            gap: 6px;
-            flex-wrap: wrap;
-            padding: 4px 0;
+        .chat-input .btn-enviar:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
         }
 
-        .toast { 
-            position: fixed; 
-            bottom: 30px; 
-            right: 30px; 
-            background: var(--green-deep); 
-            border: 1px solid var(--gold); 
-            color: var(--gold); 
-            padding: 14px 28px; 
-            border-radius: 14px; 
-            font-size: 0.8rem; 
-            transform: translateY(100px); 
-            opacity: 0; 
-            transition: all 0.5s ease; 
-            z-index: 9999; 
+        /* ===== EMPTY CHAT ===== */
+        .empty-chat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            color: var(--text-muted);
+            text-align: center;
+            padding: 40px 20px;
+        }
+        .empty-chat .icon {
+            font-size: 2.5rem;
+            display: block;
+            margin-bottom: 12px;
+            font-family: 'Orbitron', monospace;
+            color: var(--gold);
+            opacity: 0.4;
+            letter-spacing: 2px;
+        }
+        .empty-chat h3 {
+            font-family: 'Orbitron', monospace;
+            color: var(--text-secondary);
+            font-size: 1rem;
+            letter-spacing: 1px;
+            font-weight: 400;
+        }
+        .empty-chat p {
+            font-size: 0.85rem;
+            letter-spacing: 0.3px;
+        }
+
+        /* ===== TOAST ===== */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: var(--green-deep);
+            border: 1px solid var(--gold);
+            color: var(--gold);
+            padding: 14px 28px;
+            border-radius: 14px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            box-shadow: var(--shadow-gold-strong);
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 9999;
             max-width: 400px;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            letter-spacing: 0.3px;
         }
         .toast.show { transform: translateY(0); opacity: 1; }
         .toast.error { border-color: var(--danger); color: var(--danger); }
-        .toast.warning { border-color: var(--warning); color: var(--warning); }
-        .toast.success { border-color: var(--success); color: var(--success); }
 
-        /* ===== MODAL NUEVO CONTACTO ===== */
-        .modal-overlay { 
-            position: fixed; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 100%; 
-            background: rgba(5, 8, 15, 0.9); 
-            display: none; 
-            align-items: center; 
-            justify-content: center; 
-            z-index: 1000; 
+        /* ===== MODO CLARO ===== */
+        body.modo-claro .msg-wrapper.recibido .burbuja {
+            background: rgba(0, 0, 0, 0.05);
+            color: #0a1a2a;
         }
-        .modal-overlay.show { display: flex; }
-        .modal { 
-            background: var(--glass-bg); 
-            border: 1px solid var(--glass-border); 
-            border-radius: var(--radius-xl); 
-            padding: 32px; 
-            max-width: 480px; 
-            width: 92%; 
-            max-height: 85vh; 
-            overflow-y: auto; 
+        body.modo-claro .msg-wrapper.recibido .burbuja:hover {
+            background: rgba(0, 0, 0, 0.08);
         }
-        .modal .modal-header { 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            margin-bottom: 20px; 
+        body.modo-claro .msg-wrapper.recibido .avatar .tooltip {
+            background: #f0f4f8;
+            color: #0a1a2a;
+            border-color: rgba(0, 0, 0, 0.1);
         }
-        .modal .modal-header h2 { 
-            font-family: 'Orbitron', monospace; 
-            color: var(--gold); 
-            font-size: 1.1rem; 
-        }
-        .modal .modal-header .btn-cerrar { 
-            background: none; 
-            border: none; 
-            color: var(--text-muted); 
-            font-size: 1.6rem; 
-            cursor: pointer; 
-        }
-        .modal .modal-header .btn-cerrar:hover { color: var(--text-primary); }
-        .modal .form-group { margin-bottom: 16px; }
-        .modal .form-group label { 
-            display: block; 
-            font-size: 0.75rem; 
-            color: var(--text-muted); 
-            margin-bottom: 4px; 
-        }
-        .modal .form-group input { 
-            width: 100%; 
-            padding: 10px 14px; 
-            background: rgba(0, 0, 0, 0.3); 
-            border: 1px solid var(--glass-border); 
-            border-radius: 10px; 
-            color: var(--text-primary); 
-            font-size: 0.9rem; 
-            outline: none; 
-        }
-        .modal .form-group input:focus { border-color: var(--gold); }
-        .modal .resultados-busqueda { 
-            margin-top: 8px; 
-            max-height: 200px; 
-            overflow-y: auto; 
+        body.modo-claro .msg-wrapper.recibido .avatar .tooltip::after {
+            border-top-color: #f0f4f8;
         }
 
-        .footer { 
-            margin-top: 30px; 
-            padding-top: 16px; 
-            border-top: 1px solid var(--glass-border); 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            font-size: 0.7rem; 
-            color: var(--text-muted); 
-            flex-wrap: wrap; 
-            gap: 10px;
-        }
-        .footer .brand { color: var(--gold); font-weight: 600; }
-        .footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
-        .footer-links a { color: var(--text-muted); text-decoration: none; }
-        .footer-links a:hover { color: var(--gold); }
-
-        /* ===== VIDEO CALL OVERLAY ===== */
-        .call-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.92);
-            z-index: 2000;
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-        .call-overlay.show { display: flex; }
-
-        .call-container {
-            width: 100%;
-            max-width: 900px;
-            max-height: 90vh;
-            background: var(--space);
-            border-radius: var(--radius-xl);
-            border: 1px solid var(--glass-border);
-            overflow: hidden;
-            position: relative;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .call-header {
-            padding: 12px 20px;
-            background: rgba(0,0,0,0.5);
-            border-bottom: 1px solid var(--glass-border);
+        /* ===== FOOTER ===== */
+        .footer {
+            margin-top: 30px;
+            padding-top: 16px;
+            border-top: 1px solid var(--glass-border);
             display: flex;
             justify-content: space-between;
             align-items: center;
-            flex-shrink: 0;
-        }
-        .call-header .call-title {
-            font-family: 'Orbitron', monospace;
-            color: var(--gold);
-            font-size: 0.8rem;
-        }
-        .call-header .call-duration {
-            color: var(--text-secondary);
-            font-size: 0.75rem;
-            font-variant-numeric: tabular-nums;
-        }
-        .call-header .call-close-btn {
-            background: none;
-            border: none;
-            color: var(--text-muted);
-            font-size: 1.2rem;
-            cursor: pointer;
-            padding: 4px 8px;
-            border-radius: 8px;
-            transition: var(--transition);
-        }
-        .call-header .call-close-btn:hover {
-            color: var(--text-primary);
-            background: rgba(255,255,255,0.05);
-        }
-
-        .call-videos {
-            flex: 1;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            padding: 16px;
-            min-height: 400px;
-            background: rgba(0,0,0,0.3);
-            position: relative;
-        }
-        .call-videos .video-container {
-            position: relative;
-            background: rgba(0,0,0,0.5);
-            border-radius: var(--radius);
-            overflow: hidden;
-            min-height: 180px;
-        }
-        .call-videos .video-container video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            background: #0a0a0a;
-        }
-        .call-videos .video-container .video-label {
-            position: absolute;
-            bottom: 10px;
-            left: 10px;
-            background: rgba(0,0,0,0.6);
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 0.6rem;
-            color: var(--text-secondary);
-            backdrop-filter: blur(4px);
-        }
-        .call-videos .video-container .video-label.remote {
-            background: rgba(212,175,55,0.2);
-            border: 1px solid rgba(212,175,55,0.3);
-        }
-        .call-videos .video-container .video-label.local {
-            background: rgba(0,214,143,0.2);
-            border: 1px solid rgba(0,214,143,0.3);
-        }
-        .call-videos .video-container .avatar-placeholder {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 3rem;
-            color: var(--text-muted);
-            opacity: 0.3;
-        }
-        .call-videos .video-container .mute-indicator {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: rgba(255,51,102,0.8);
-            color: white;
-            padding: 2px 8px;
-            border-radius: 10px;
-            font-size: 0.55rem;
-            display: none;
-        }
-        .call-videos .video-container .mute-indicator.show { display: block; }
-
-        .call-controls {
-            padding: 16px 20px;
-            background: rgba(0,0,0,0.6);
-            border-top: 1px solid var(--glass-border);
-            display: flex;
-            justify-content: center;
-            gap: 12px;
             flex-wrap: wrap;
-            flex-shrink: 0;
-        }
-        .call-controls button {
-            background: rgba(255,255,255,0.08);
-            border: 1px solid rgba(255,255,255,0.1);
-            color: var(--text-secondary);
-            padding: 10px 16px;
-            border-radius: 50%;
-            cursor: pointer;
-            font-size: 1.1rem;
-            transition: var(--transition);
-            width: 48px;
-            height: 48px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .call-controls button:hover {
-            background: rgba(255,255,255,0.15);
-            color: var(--text-primary);
-        }
-        .call-controls button.active {
-            background: rgba(212,175,55,0.2);
-            border-color: var(--gold);
-            color: var(--gold);
-        }
-        .call-controls button.muted {
-            background: rgba(255,51,102,0.2);
-            border-color: var(--danger);
-            color: var(--danger);
-        }
-        .call-controls button.end-call {
-            background: var(--danger);
-            border-color: var(--danger);
-            color: white;
-        }
-        .call-controls button.end-call:hover {
-            background: #cc0033;
-            transform: scale(1.05);
-        }
-        .call-controls button.participants-btn {
-            border-radius: 30px;
-            width: auto;
-            padding: 8px 18px;
-            gap: 6px;
-            font-size: 0.75rem;
-        }
-
-        /* ===== CALL INCOMING OVERLAY ===== */
-        .call-incoming {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.85);
-            z-index: 3000;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            backdrop-filter: blur(8px);
-        }
-        .call-incoming.show { display: flex; }
-
-        .call-incoming-box {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius-xl);
-            padding: 40px;
-            max-width: 400px;
-            width: 100%;
-            text-align: center;
-            animation: pulse-incoming 1.5s ease-in-out infinite;
-        }
-        @keyframes pulse-incoming {
-            0%, 100% { border-color: var(--glass-border); }
-            50% { border-color: var(--gold); }
-        }
-
-        .call-incoming-box .caller-avatar {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--green-deep), var(--gold));
-            margin: 0 auto 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2.5rem;
-            color: white;
-            overflow: hidden;
-        }
-        .call-incoming-box .caller-avatar img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        .call-incoming-box .caller-name {
-            font-size: 1.3rem;
-            font-weight: 600;
-            color: var(--text-primary);
-            margin-bottom: 4px;
-        }
-        .call-incoming-box .caller-status {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            margin-bottom: 20px;
-        }
-        .call-incoming-box .call-actions {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-        }
-        .call-incoming-box .call-actions button {
-            padding: 14px 30px;
-            border: none;
-            border-radius: 30px;
-            font-weight: 700;
-            font-size: 0.9rem;
-            cursor: pointer;
-            transition: var(--transition);
-        }
-        .call-incoming-box .call-actions .accept-call {
-            background: linear-gradient(135deg, var(--success), #00b87a);
-            color: white;
-        }
-        .call-incoming-box .call-actions .accept-call:hover {
-            transform: scale(1.05);
-        }
-        .call-incoming-box .call-actions .reject-call {
-            background: var(--danger);
-            color: white;
-        }
-        .call-incoming-box .call-actions .reject-call:hover {
-            transform: scale(1.05);
-        }
-
-        /* ===== PARTICIPANTS PANEL ===== */
-        .call-participants-panel {
-            position: absolute;
-            top: 60px;
-            right: 16px;
-            background: rgba(0,0,0,0.85);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius);
-            padding: 16px;
-            min-width: 180px;
-            max-height: 300px;
-            overflow-y: auto;
-            display: none;
-            backdrop-filter: blur(8px);
-            z-index: 10;
-        }
-        .call-participants-panel.show { display: block; }
-        .call-participants-panel .participant-item {
-            display: flex;
-            align-items: center;
             gap: 10px;
-            padding: 6px 8px;
-            border-radius: 8px;
-            font-size: 0.8rem;
-            color: var(--text-secondary);
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            padding-bottom: 8px;
+            letter-spacing: 0.3px;
         }
-        .call-participants-panel .participant-item .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            display: inline-block;
-        }
-        .call-participants-panel .participant-item .status-dot.online {
-            background: var(--success);
-        }
-        .call-participants-panel .participant-item .status-dot.offline {
-            background: var(--text-muted);
+        .footer .brand { color: var(--gold); font-weight: 600; letter-spacing: 1px; }
+        .footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
+        .footer-links a { color: var(--text-muted); text-decoration: none; transition: var(--transition); }
+        .footer-links a:hover { color: var(--gold); }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .app { padding: 12px 14px; }
+            .chat-panel {
+                grid-template-columns: 1fr;
+                min-height: auto;
+                border-radius: var(--radius);
+            }
+            .conversaciones {
+                border-right: none;
+                border-bottom: 1px solid var(--glass-border);
+                max-height: 180px;
+            }
+            .chat-area { min-height: 400px; }
+            .chat-messages { padding: 12px 14px; max-height: 300px; }
+            .msg-wrapper.enviado .burbuja,
+            .msg-wrapper.recibido .burbuja {
+                font-size: 0.85rem;
+                padding: 8px 14px;
+                max-width: 90%;
+            }
+            .msg-wrapper.recibido .avatar {
+                width: 28px;
+                height: 28px;
+                font-size: 0.7rem;
+            }
+            .msg-wrapper.recibido .meta {
+                margin-left: 38px;
+            }
+            .main-nav .nav-link { font-size: 0.6rem; padding: 6px 10px; }
+            .header .logo-text { font-size: 1rem; }
+            .header .logo-hex { font-size: 1.4rem; }
         }
 
-        @media (max-width: 768px) {
-            .chat-panel { grid-template-columns: 1fr; min-height: auto; }
-            .conversaciones { border-right: none; border-bottom: 1px solid var(--glass-border); max-height: 220px; }
-            .chat-area { min-height: 420px; }
-            .main-nav .nav-link { font-size: 0.6rem; padding: 6px 10px; }
-            .chat-input { flex-wrap: wrap; }
-            .chat-input .input-wrapper { flex: 1 1 100%; }
-            .chat-input .btn-enviar { flex: 1; }
-            
-            .call-videos {
-                grid-template-columns: 1fr;
-                min-height: 300px;
-            }
-            .call-videos .video-container:first-child {
-                min-height: 250px;
-            }
-            .call-videos .video-container:last-child {
-                min-height: 150px;
-                order: 2;
-            }
-            .call-container { max-height: 95vh; }
-            .call-controls button {
-                width: 40px;
-                height: 40px;
-                font-size: 0.9rem;
-                padding: 8px 12px;
-            }
-            .call-incoming-box { padding: 28px; }
-            .call-participants-panel {
-                right: 8px;
-                min-width: 150px;
-            }
-        }
         @media (max-width: 480px) {
-            .chat-messages { padding: 10px; max-height: 300px; min-height: 200px; }
-            .chat-input .input-wrapper input { font-size: 0.75rem; }
+            .chat-area .chat-header { flex-wrap: wrap; padding: 10px 14px; }
+            .chat-input { flex-wrap: wrap; }
+            .chat-input input { flex: 1 1 100%; }
+            .chat-input .btn-enviar { flex: 1; justify-content: center; }
             .conv-item { padding: 8px 12px; }
+            .conv-item .conv-avatar { width: 32px; height: 32px; font-size: 0.8rem; }
             .main-nav .nav-link { font-size: 0.55rem; padding: 4px 8px; }
-            .modal { padding: 20px; }
-            .call-videos { padding: 8px; gap: 8px; }
-            .call-controls { gap: 8px; padding: 12px; }
-            .call-incoming-box .call-actions { flex-direction: column; gap: 10px; }
+            .chat-messages { padding: 10px 10px; }
+            .msg-wrapper.enviado .burbuja,
+            .msg-wrapper.recibido .burbuja {
+                font-size: 0.8rem;
+                padding: 6px 12px;
+            }
+            .msg-wrapper.recibido .avatar {
+                width: 24px;
+                height: 24px;
+                font-size: 0.6rem;
+            }
+            .msg-wrapper.recibido .meta {
+                margin-left: 34px;
+            }
         }
     </style>
 </head>
 <body>
 
+    <!-- ===== FONDO ESTELAR ===== -->
+    <canvas id="stars-canvas"></canvas>
+    <div class="nebula nebula-1"></div>
+    <div class="nebula nebula-2"></div>
+    <div class="nebula nebula-3"></div>
+
     <div class="app">
 
+        <!-- ===== HEADER ===== -->
         <header class="header">
             <a href="/" class="logo">
                 <span class="logo-hex">◈</span>
@@ -890,2221 +887,521 @@
             </div>
         </header>
 
+        <!-- ===== NAVEGACIÓN ===== -->
         <nav class="main-nav">
             <a href="/" class="nav-link">⌂ Inicio</a>
             <a href="/features/muro/muro.html" class="nav-link">◇ Muro</a>
             <a href="/features/perfil/perfil.html" class="nav-link">◆ Perfil</a>
             <a href="/features/mensajes/contactos.html" class="nav-link">◈ Contactos</a>
-            <a href="/features/mensajes/mensajes.html" class="nav-link active" data-clave="mensajes_header">◈ Mensajes</a>
+            <a href="/features/mensajes/mensajes.html" class="nav-link active">◈ Mensajes</a>
             <a href="/features/live/live.html" class="nav-link live">◉ Live</a>
-            <a href="/features/internet/internet.html" class="nav-link">◈ Internet</a>
         </nav>
 
+        <!-- ===== CHAT PANEL ===== -->
         <div class="chat-panel">
 
-            <!-- ===== PANEL DE CONVERSACIONES ===== -->
+            <!-- ===== CONVERSACIONES ===== -->
             <div class="conversaciones">
                 <div class="header-conv">
-                    <span data-clave="mensajes_conversaciones">◈ Conversaciones</span>
-                    <button class="btn-nuevo" onclick="nuevaConversacion()" data-clave="mensajes_nuevo">✎ Nuevo</button>
+                    <span>◈ Conversaciones</span>
+                    <button class="btn-nuevo" onclick="nuevaConversacion()">✎</button>
                 </div>
-                <div class="search-conv">
-                    <input type="text" id="searchInput" placeholder="🔍 Buscar contactos..." data-placeholder="mensajes_buscar" />
-                </div>
-                <div class="conv-list" id="conversacionesList">
-                    <div style="padding:40px;text-align:center;color:var(--text-muted);font-size:0.8rem;">
-                        <div style="font-size:2rem;margin-bottom:10px;">◈</div>
-                        <p data-clave="mensajes_cargando">Cargando conversaciones...</p>
+                <div id="conversacionesList">
+                    <div class="conv-item active" data-id="1" onclick="seleccionarConversacion(1)">
+                        <div class="conv-avatar">✦</div>
+                        <div class="conv-info">
+                            <div class="conv-nombre">Ana Martínez</div>
+                            <div class="conv-msg">Hola, ¿cómo estás?</div>
+                        </div>
+                        <div class="conv-meta">
+                            <div class="conv-hora">14:30</div>
+                            <span class="conv-badge">2</span>
+                        </div>
+                    </div>
+                    <div class="conv-item" data-id="2" onclick="seleccionarConversacion(2)">
+                        <div class="conv-avatar">◆</div>
+                        <div class="conv-info">
+                            <div class="conv-nombre">Carlos López</div>
+                            <div class="conv-msg">Nos vemos mañana</div>
+                        </div>
+                        <div class="conv-meta">
+                            <div class="conv-hora">12:15</div>
+                        </div>
+                    </div>
+                    <div class="conv-item" data-id="3" onclick="seleccionarConversacion(3)">
+                        <div class="conv-avatar">◈</div>
+                        <div class="conv-info">
+                            <div class="conv-nombre">María García</div>
+                            <div class="conv-msg">Gracias por tu ayuda</div>
+                        </div>
+                        <div class="conv-meta">
+                            <div class="conv-hora">Ayer</div>
+                        </div>
+                    </div>
+                    <div class="conv-item" data-id="4" onclick="seleccionarConversacion(4)">
+                        <div class="conv-avatar">◇</div>
+                        <div class="conv-info">
+                            <div class="conv-nombre">Grupo Sariel's</div>
+                            <div class="conv-msg">◈ Evento: Degustación mañana</div>
+                        </div>
+                        <div class="conv-meta">
+                            <div class="conv-hora">10:30</div>
+                            <span class="conv-badge">5</span>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- ===== ÁREA DE CHAT ===== -->
+            <!-- ===== CHAT AREA ===== -->
             <div class="chat-area">
                 <div class="chat-header">
                     <div class="chat-avatar">✦</div>
                     <div class="chat-info">
-                        <div class="chat-nombre" id="chatNombre" data-clave="mensajes_seleccionar">Selecciona una conversación</div>
-                        <div class="chat-estado" id="chatEstado" data-clave="mensajes_sin_seleccion">◉ Sin selección</div>
+                        <div class="chat-nombre" id="chatNombre">Ana Martínez</div>
+                        <div class="chat-estado online" id="chatEstado">◉ En línea</div>
                     </div>
                     <div class="chat-actions">
-                        <button onclick="iniciarVideollamada()" id="btnVideoCall" class="call-btn" title="Videollamada" data-clave="mensajes_videollamada">📹</button>
-                        <button onclick="buscarEnConversacion(prompt('Buscar en la conversación:'))" title="Buscar" data-clave="mensajes_buscar_conversacion">🔍</button>
-                        <button onclick="if(confirm('¿Bloquear a este usuario?')){bloquearUsuario(conversacionActual?.id)}" class="danger" title="Bloquear" data-clave="mensajes_bloquear">🚫</button>
-                        <button onclick="if(confirm('¿Eliminar esta conversación?')){eliminarConversacion(conversacionActual?.id)}" class="danger" title="Eliminar" data-clave="mensajes_eliminar">🗑️</button>
+                        <button onclick="showToast('◈ Llamada de voz')" title="Llamada de voz">◈</button>
+                        <button onclick="showToast('◈ Llamada de video')" title="Llamada de video">◆</button>
+                        <button onclick="showToast('◈ Perfil del contacto')" title="Perfil">◉</button>
                     </div>
                 </div>
 
+                <!-- ===== CHAT MESSAGES CON BURBUJAS ===== -->
                 <div class="chat-messages" id="chatMessages">
-                    <div class="empty-chat">
-                        <span class="icon">◈</span>
-                        <h3 data-clave="mensajes_seleccionar">Selecciona una conversación</h3>
-                        <p data-clave="mensajes_elige_contacto">Elige un contacto para empezar a chatear</p>
+                    <!-- Mensaje recibido con avatar -->
+                    <div class="msg-wrapper recibido">
+                        <div class="fila">
+                            <div class="avatar estado-conectado" title="◈ Conectado">
+                                ◈
+                                <span class="tooltip">◈ Conectado</span>
+                            </div>
+                            <div class="burbuja">
+                                Hola, ¿cómo estás?
+                            </div>
+                        </div>
+                        <div class="meta">
+                            14:25
+                        </div>
+                    </div>
+
+                    <!-- Mensaje enviado (propio) -->
+                    <div class="msg-wrapper enviado">
+                        <div class="burbuja">
+                            ¡Hola! Todo bien, ¿y tú?
+                        </div>
+                        <div class="meta">
+                            14:27
+                            <span class="leido leido">◆◆</span>
+                        </div>
+                    </div>
+
+                    <!-- Mensaje recibido con avatar (desconectado) -->
+                    <div class="msg-wrapper recibido">
+                        <div class="fila">
+                            <div class="avatar estado-desconectado" title="◈ Desconectado">
+                                ◈
+                                <span class="tooltip">◈ Desconectado</span>
+                            </div>
+                            <div class="burbuja">
+                                Bien, quería preguntarte sobre los tokens
+                            </div>
+                        </div>
+                        <div class="meta">
+                            14:28
+                        </div>
+                    </div>
+
+                    <!-- Mensaje enviado (propio) con leído -->
+                    <div class="msg-wrapper enviado">
+                        <div class="burbuja">
+                            Claro, ¿qué necesitas saber?
+                        </div>
+                        <div class="meta">
+                            14:30
+                            <span class="leido leido">◆◆</span>
+                        </div>
+                    </div>
+
+                    <!-- Mensaje recibido con avatar (sin datos - rojo) -->
+                    <div class="msg-wrapper recibido">
+                        <div class="fila">
+                            <div class="avatar estado-sin-datos" title="⚠️ Sin conexión a internet">
+                                ◈
+                                <span class="tooltip">⚠️ Sin conexión a internet</span>
+                            </div>
+                            <div class="burbuja">
+                                (Mensaje pendiente de enviar...)
+                            </div>
+                        </div>
+                        <div class="meta">
+                            14:32
+                        </div>
+                    </div>
+
+                    <!-- Mensaje enviado (propio) no leído -->
+                    <div class="msg-wrapper enviado">
+                        <div class="burbuja">
+                            ¿Podemos hablar mañana?
+                        </div>
+                        <div class="meta">
+                            14:35
+                            <span class="leido no-leido">◈◈</span>
+                        </div>
                     </div>
                 </div>
 
                 <div class="chat-input">
-                    <div class="file-preview" id="filePreview"></div>
-                    <div class="input-wrapper">
-                        <input type="text" id="chatInput" placeholder="Escribe un mensaje... :feliz: para emojis" data-placeholder="mensajes_escribe" />
-                        <button class="btn-icon" onclick="seleccionarArchivo()" title="Adjuntar archivo" data-clave="mensajes_adjuntar">📎</button>
-                        <button class="btn-icon" onclick="toggleGrabacionVoz()" id="btnGrabarVoz" title="Grabar voz" data-clave="mensajes_grabar_voz">🎙️</button>
-                    </div>
-                    <button class="btn-enviar" id="btnEnviar" data-clave="mensajes_enviar">⟡ Enviar</button>
-                    <input type="file" id="fileInput" accept="image/*,audio/*" style="display:none;" multiple onchange="handleFileSelect(event)" />
+                    <input type="text" id="chatInput" placeholder="Escribe un mensaje..." />
+                    <button class="btn-enviar" id="btnEnviar">⟡ Enviar</button>
                 </div>
             </div>
 
         </div>
 
+        <!-- ===== FOOTER ===== -->
         <footer class="footer">
             <span><span class="brand">◈ Sariel's</span> · Sabor al Paladar · WEB3</span>
             <div class="footer-links">
-                <a href="/terminos" data-clave="mensajes_footer_terminos">◈ Términos</a>
-                <a href="/privacidad" data-clave="mensajes_footer_privacidad">◈ Privacidad</a>
-                <a href="/cookies" data-clave="mensajes_footer_cookies">◈ Cookies</a>
-                <a href="/live-terminos" data-clave="mensajes_footer_live">◉ Live Términos</a>
+                <a href="/terminos.html">◈ Términos</a>
                 <span style="opacity:0.3;">⚡ Polygon</span>
             </div>
         </footer>
 
     </div>
 
-    <!-- ===== MODAL NUEVO CONTACTO ===== -->
-    <div class="modal-overlay" id="modalNuevoContacto">
-        <div class="modal">
-            <div class="modal-header">
-                <h2 data-clave="mensajes_nuevo_contacto">◈ Nuevo contacto</h2>
-                <button class="btn-cerrar" onclick="cerrarModalNuevoContacto()">✕</button>
-            </div>
-            <div class="form-group">
-                <label data-clave="mensajes_buscar_usuario">Buscar usuario por nombre o @handle</label>
-                <input type="text" id="searchInputModal" placeholder="Ej: Juan o @juan123" />
-            </div>
-            <div class="resultados-busqueda" id="resultadosBusqueda">
-                <div style="padding:20px;text-align:center;color:var(--text-muted);font-size:0.75rem;" data-clave="mensajes_buscar_minimo">
-                    Escribe al menos 2 caracteres para buscar
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ===== VIDEO CALL OVERLAY ===== -->
-    <div class="call-overlay" id="callOverlay">
-        <div class="call-container">
-            <div class="call-header">
-                <span class="call-title">📹 Videollamada</span>
-                <span class="call-duration" id="callDuration">00:00</span>
-                <button class="call-close-btn" onclick="minimizarLlamada()">▬</button>
-            </div>
-            <div class="call-videos" id="callVideos">
-                <div class="video-container" id="remoteVideoContainer">
-                    <video id="remoteVideo" autoplay playsinline></video>
-                    <div class="avatar-placeholder" id="remoteAvatarPlaceholder">👤</div>
-                    <div class="video-label remote" id="remoteLabel">Participante</div>
-                    <div class="mute-indicator" id="remoteMuteIndicator">🔇 Silenciado</div>
-                </div>
-                <div class="video-container" id="localVideoContainer">
-                    <video id="localVideo" autoplay playsinline muted></video>
-                    <div class="avatar-placeholder" id="localAvatarPlaceholder">📷</div>
-                    <div class="video-label local">Tú</div>
-                    <div class="mute-indicator" id="localMuteIndicator">🔇</div>
-                </div>
-                <div class="call-participants-panel" id="participantsPanel">
-                    <div style="font-weight:600;font-size:0.7rem;color:var(--gold);margin-bottom:8px;">👥 Participantes</div>
-                    <div id="participantsList"></div>
-                </div>
-            </div>
-            <div class="call-controls" id="callControls">
-                <button id="btnToggleAudio" onclick="toggleAudio()" title="Micrófono">🎤</button>
-                <button id="btnToggleVideo" onclick="toggleVideo()" title="Cámara">📷</button>
-                <button id="btnToggleScreen" onclick="toggleScreenShare()" title="Compartir pantalla">🖥️</button>
-                <button id="btnToggleParticipants" onclick="toggleParticipantsPanel()" class="participants-btn">👥 <span id="participantsCount">0</span></button>
-                <button id="btnEndCall" onclick="colgarLlamada()" class="end-call" title="Colgar">📞</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- ===== CALL INCOMING OVERLAY ===== -->
-    <div class="call-incoming" id="callIncoming">
-        <div class="call-incoming-box">
-            <div class="caller-avatar" id="callerAvatar">◈</div>
-            <div class="caller-name" id="callerName">Usuario</div>
-            <div class="caller-status">📞 Llamada entrante...</div>
-            <div class="call-actions">
-                <button class="accept-call" onclick="aceptarLlamadaEntrante()">✅ Aceptar</button>
-                <button class="reject-call" onclick="rechazarLlamadaEntrante()">❌ Rechazar</button>
-            </div>
-        </div>
-    </div>
-
+    <!-- ===== TOAST ===== -->
     <div class="toast" id="toast"></div>
 
-    <!-- ================================================================ -->
-    <!-- SCRIPTS -->
-    <!-- ================================================================ -->
-
-    <!-- 1. Supabase -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-
-    <!-- 2. App.js -->
+    <!-- ===== SCRIPTS ===== -->
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.8.0/dist/web3.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
     <script src="/app.js"></script>
-
-    <!-- 3. TODAS las funciones de Mensajes + Videollamada -->
+    <script src="/features/mensajes/mensajes.js"></script>
     <script>
         // ================================================================
-        // MENSAJES - TODAS LAS FUNCIONES
+        // MENSAJES - LÓGICA COMPLETA CON BURBUJAS
         // ================================================================
 
-        // ================================================================
-        // ESCAPE HTML - PREVENCIÓN XSS
-        // ================================================================
-        function escapeHTML(texto) {
-            if (!texto) return '';
-            var div = document.createElement('div');
-            div.textContent = texto;
-            return div.innerHTML;
-        }
-
-        // ================================================================
-        // TOAST NOTIFICACIONES
-        // ================================================================
-        function showToast(msg, type) {
-            try {
-                if (typeof window.showToast === 'function') { window.showToast(msg, type); return; }
-                var t = document.getElementById('toast');
-                if (!t) { t = document.createElement('div'); t.id = 'toast'; t.className = 'toast'; document.body.appendChild(t); }
-                t.textContent = msg;
-                t.className = 'toast show';
-                if (type === 'error') t.classList.add('error');
-                else if (type === 'warning') t.classList.add('warning');
-                else if (type === 'success') t.classList.add('success');
-                else t.classList.remove('error', 'warning', 'success');
-                clearTimeout(t._timeout);
-                t._timeout = setTimeout(function() { t.classList.remove('show'); }, 3500);
-            } catch (e) { console.warn('Toast error:', e); }
-        }
-
-        // ================================================================
-        // OBTENER SESIÓN
-        // ================================================================
-        async function getSession() {
-            try {
-                if (typeof window.supabase === 'undefined') { console.warn('Supabase no disponible'); return null; }
-                var r = await window.supabase.auth.getSession();
-                return r.data.session;
-            } catch (e) { console.error('Error sesión:', e); return null; }
-        }
-
-        // ================================================================
-        // VARIABLES GLOBALES
-        // ================================================================
-        var usuarioActual = null;
-        var conversacionActual = null;
-        var realtimeChannel = null;
-        var archivosSeleccionados = [];
-        var grabacionActiva = false;
-        var mediaRecorder = null;
-        var audioChunks = [];
-
-        // ===== VARIABLES DE VIDEOLLAMADA =====
-        var callState = {
-            active: false,
-            room: null,
-            localTrack: null,
-            remoteTrack: null,
-            audioTrack: null,
-            screenTrack: null,
-            participants: [],
-            callId: null,
-            isInitiator: false,
-            startTime: null,
-            durationInterval: null,
-            incomingCallId: null,
-            incomingFrom: null
+        let conversacionActual = 1;
+        let mensajesPorConversacion = {
+            1: [
+                { tipo: 'recibido', texto: 'Hola, ¿cómo estás?', hora: '14:25', estado: 'conectado' },
+                { tipo: 'enviado', texto: '¡Hola! Todo bien, ¿y tú?', hora: '14:27', leido: true },
+                { tipo: 'recibido', texto: 'Bien, quería preguntarte sobre los tokens', hora: '14:28', estado: 'desconectado' },
+                { tipo: 'enviado', texto: 'Claro, ¿qué necesitas saber?', hora: '14:30', leido: true },
+                { tipo: 'recibido', texto: '(Mensaje pendiente de enviar...)', hora: '14:32', estado: 'sin-datos' }
+            ],
+            2: [
+                { tipo: 'recibido', texto: '¿Confirmamos la reunión?', hora: '12:10', estado: 'conectado' },
+                { tipo: 'enviado', texto: 'Sí, a las 5 pm', hora: '12:12', leido: true },
+                { tipo: 'recibido', texto: 'Nos vemos mañana', hora: '12:15', estado: 'conectado' }
+            ],
+            3: [
+                { tipo: 'enviado', texto: '¿Necesitas ayuda con algo más?', hora: '10:00', leido: true },
+                { tipo: 'recibido', texto: 'Gracias por tu ayuda', hora: '10:05', estado: 'conectado' }
+            ],
+            4: [
+                { tipo: 'recibido', texto: '◈ Evento: Degustación mañana a las 7pm', hora: '10:25', estado: 'conectado' },
+                { tipo: 'recibido', texto: '¿Quién se apunta?', hora: '10:28', estado: 'conectado' },
+                { tipo: 'enviado', texto: 'Yo voy!', hora: '10:30', leido: true }
+            ]
         };
-        var callChannel = null;
-        var callListeners = [];
 
-        // ================================================================
-        // VERIFICAR AUTENTICACIÓN
-        // ================================================================
-        async function verificarAutenticacion() {
-            var session = await getSession();
-            if (!session) {
-                showToast('⚠️ Inicia sesión para usar mensajería', 'warning');
-                return false;
-            }
-            usuarioActual = session.user;
-            return true;
+        function showToast(msg, type = '') {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.className = 'toast show';
+            if (type === 'error') t.classList.add('error');
+            else t.classList.remove('error');
+            clearTimeout(t._timeout);
+            t._timeout = setTimeout(() => t.classList.remove('show'), 3500);
         }
 
         // ================================================================
-        // FORMATEAR TEXTO (Emojis)
+        // RENDERIZAR MENSAJE CON BURBUJA Y AVATAR
         // ================================================================
-        function formatearTexto(texto) {
-            if (!texto) return '';
-            var textoFormateado = escapeHTML(texto);
-            var emojis = {
-                ':feliz:': '😊', ':risa:': '😂', ':amo:': '❤️', ':fuego:': '🔥',
-                ':estrella:': '⭐', ':genial:': '🤩', ':ok:': '👌', ':visto:': '👀',
-                ':musica:': '🎵', ':pizza:': '🍕', ':cafe:': '☕', ':helado:': '🍦',
-                ':rocket:': '🚀', ':sariel:': '◈'
-            };
-            for (var key in emojis) {
-                if (emojis.hasOwnProperty(key)) {
-                    textoFormateado = textoFormateado.replaceAll(key, emojis[key]);
-                }
-            }
-            return textoFormateado;
-        }
-
-        // ================================================================
-        // 🔍 BUSCAR CONTACTOS
-        // ================================================================
-        async function buscarContactos(query) {
-            if (!query || query.length < 2) {
-                document.getElementById('resultadosBusqueda').innerHTML = '';
-                return;
-            }
-
-            try {
-                var session = await getSession();
-                if (!session) return;
-
-                var result = await window.supabase
-                    .from('usuarios')
-                    .select('id, nombre, handle, avatar_url')
-                    .or('nombre.ilike.%' + query + '%,handle.ilike.%' + query + '%')
-                    .neq('id', session.user.id)
-                    .limit(10);
-
-                if (result.error) throw result.error;
-
-                var container = document.getElementById('resultadosBusqueda');
-                if (!container) return;
-
-                if (!result.data || result.data.length === 0) {
-                    container.innerHTML = '<div style="padding:12px;text-align:center;color:var(--text-muted);font-size:0.75rem;" data-clave="mensajes_no_usuarios">No se encontraron usuarios</div>';
-                    return;
-                }
-
-                var contactosResult = await window.supabase
-                    .from('contactos')
-                    .select('contacto_id')
-                    .eq('usuario_id', session.user.id);
-
-                var idsExistentes = contactosResult.data ? contactosResult.data.map(function(c) { return c.contacto_id; }) : [];
-
-                var html = '';
-                for (var i = 0; i < result.data.length; i++) {
-                    var usuario = result.data[i];
-                    var yaEsContacto = idsExistentes.indexOf(usuario.id) !== -1;
-                    var nombreSanitizado = escapeHTML(usuario.nombre || 'Usuario');
-                    var handleSanitizado = escapeHTML(usuario.handle || 'usuario');
-                    var avatarHtml = usuario.avatar_url ? '<img src="' + escapeHTML(usuario.avatar_url) + '" style="width:100%;height:100%;object-fit:cover;">' : (usuario.nombre ? nombreSanitizado[0].toUpperCase() : '◈');
-
-                    html += '<div class="resultado-item" style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid rgba(212,175,55,0.05);transition:all 0.2s;">' +
-                        '<div class="avatar" style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--green-deep),var(--gold));display:flex;align-items:center;justify-content:center;color:white;font-size:0.8rem;overflow:hidden;">' + avatarHtml + '</div>' +
-                        '<div style="flex:1;"><div style="font-weight:600;font-size:0.8rem;">' + nombreSanitizado + '</div><div style="font-size:0.6rem;color:var(--text-muted);">@' + handleSanitizado + '</div></div>';
-
-                    if (yaEsContacto) {
-                        html += '<span style="font-size:0.55rem;color:var(--success);background:rgba(0,214,143,0.1);padding:2px 10px;border-radius:12px;" data-clave="mensajes_es_contacto">✓ Contacto</span>';
-                    } else {
-                        html += '<button onclick="agregarContacto(\'' + usuario.id + '\')" style="background:linear-gradient(135deg,var(--gold),var(--gold-dark));color:var(--space);border:none;padding:4px 12px;border-radius:12px;font-size:0.6rem;font-weight:600;cursor:pointer;" data-clave="mensajes_agregar">+ Agregar</button>';
-                    }
-                    html += '</div>';
-                }
-                container.innerHTML = html;
-
-            } catch (e) {
-                console.error('Error buscando contactos:', e);
-            }
-        }
-
-        // ================================================================
-        // ➕ AGREGAR CONTACTO
-        // ================================================================
-        async function agregarContacto(contactoId) {
-            try {
-                var session = await getSession();
-                if (!session) {
-                    showToast('⚠️ Inicia sesión para agregar contactos', 'error');
-                    return;
-                }
-
-                var existeResult = await window.supabase
-                    .from('contactos')
-                    .select('id')
-                    .eq('usuario_id', session.user.id)
-                    .eq('contacto_id', contactoId)
-                    .maybeSingle();
-
-                if (existeResult.data) {
-                    showToast('⚠️ Este usuario ya es tu contacto', 'warning');
-                    return;
-                }
-
-                var result = await window.supabase
-                    .from('contactos')
-                    .insert({
-                        usuario_id: session.user.id,
-                        contacto_id: contactoId,
-                        estado: 'activo'
-                    });
-
-                if (result.error) throw result.error;
-
-                showToast('✅ Contacto agregado correctamente', 'success');
-                document.getElementById('searchInputModal').value = '';
-                document.getElementById('resultadosBusqueda').innerHTML = '';
-                cerrarModalNuevoContacto();
-                await cargarConversaciones();
-
-            } catch (e) {
-                console.error('Error agregando contacto:', e);
-                showToast('❌ Error al agregar contacto', 'error');
-            }
-        }
-
-        // ================================================================
-        // 📋 CARGAR CONVERSACIONES
-        // ================================================================
-        async function cargarConversaciones() {
-            if (!await verificarAutenticacion()) return;
-
-            try {
-                var result = await window.supabase
-                    .from('contactos')
-                    .select('*, usuarios:contactos_contacto_id_fkey(id, nombre, handle, avatar_url)')
-                    .eq('usuario_id', usuarioActual.id)
-                    .eq('estado', 'activo');
-
-                if (result.error) throw result.error;
-
-                var contactos = result.data || [];
-
-                if (contactos.length === 0) {
-                    var convList = document.getElementById('conversacionesList');
-                    if (convList) {
-                        convList.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-muted);font-size:0.8rem;"><div style="font-size:2rem;margin-bottom:10px;">◈</div><p data-clave="mensajes_sin_contactos">Sin contactos agregados</p><p style="font-size:0.6rem;" data-clave="mensajes_sin_contactos_desc">Busca y agrega contactos arriba</p></div>';
-                    }
-                    return;
-                }
-
-                var conversaciones = [];
-                for (var i = 0; i < contactos.length; i++) {
-                    var contacto = contactos[i];
-                    var contactoInfo = contacto.usuarios || {};
-
-                    var ultimoResult = await window.supabase
-                        .from('mensajes_chat')
-                        .select('contenido, created_at, leido, remitente_id')
-                        .or('and(remitente_id.eq.' + usuarioActual.id + ',destinatario_id.eq.' + contactoInfo.id + '),and(remitente_id.eq.' + contactoInfo.id + ',destinatario_id.eq.' + usuarioActual.id + ')')
-                        .order('created_at', { ascending: false })
-                        .limit(1)
-                        .maybeSingle();
-
-                    var noLeidosResult = await window.supabase
-                        .from('mensajes_chat')
-                        .select('id', { count: 'exact' })
-                        .eq('remitente_id', contactoInfo.id)
-                        .eq('destinatario_id', usuarioActual.id)
-                        .eq('leido', false)
-                        .is('eliminado', false);
-
-                    conversaciones.push({
-                        id: contactoInfo.id,
-                        nombre: contactoInfo.nombre || 'Usuario',
-                        avatar_url: contactoInfo.avatar_url || null,
-                        ultimoMensaje: ultimoResult.data ? ultimoResult.data.contenido : 'Sin mensajes',
-                        ultimoRemitente: ultimoResult.data ? ultimoResult.data.remitente_id : null,
-                        noLeidos: noLeidosResult.count || 0,
-                        fecha: ultimoResult.data ? ultimoResult.data.created_at : null
-                    });
-                }
-
-                conversaciones.sort(function(a, b) {
-                    if (!a.fecha) return 1;
-                    if (!b.fecha) return -1;
-                    return new Date(b.fecha) - new Date(a.fecha);
-                });
-
-                var convList = document.getElementById('conversacionesList');
-                if (convList) {
-                    var html = '';
-                    for (var j = 0; j < conversaciones.length; j++) {
-                        var conv = conversaciones[j];
-                        var avatar = conv.avatar_url ? '<img src="' + escapeHTML(conv.avatar_url) + '" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" />' : (conv.nombre ? conv.nombre[0].toUpperCase() : '✦');
-                        var isActive = conversacionActual && conversacionActual.id === conv.id;
-                        var nombreSanitizado = escapeHTML(conv.nombre);
-                        var ultimoMensajeSanitizado = escapeHTML(conv.ultimoMensaje);
-
-                        html += '<div class="conv-item ' + (isActive ? 'active' : '') + '" data-id="' + conv.id + '" onclick="abrirConversacion(\'' + conv.id + '\')">' +
-                            '<div class="conv-avatar">' + avatar + '</div>' +
-                            '<div class="conv-info">' +
-                            '<div class="conv-nombre">' + nombreSanitizado + '</div>' +
-                            '<div class="conv-msg">' + (ultimoMensajeSanitizado.length > 40 ? ultimoMensajeSanitizado.substring(0, 40) + '...' : ultimoMensajeSanitizado) + '</div>' +
-                            '</div>' +
-                            '<div class="conv-meta">' +
-                            (conv.noLeidos > 0 ? '<span class="conv-badge">' + conv.noLeidos + '</span>' : '') +
-                            (conv.fecha ? '<span class="conv-hora">' + new Date(conv.fecha).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) + '</span>' : '') +
-                            '</div>' +
-                            '<div style="display:flex;gap:4px;flex-shrink:0;">' +
-                            '<button onclick="event.stopPropagation();eliminarConversacion(\'' + conv.id + '\')" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.6rem;">✕</button>' +
-                            '</div>' +
-                            '</div>';
-                    }
-                    convList.innerHTML = html;
-                }
-            } catch (e) {
-                console.error('Error cargando conversaciones:', e);
-            }
-        }
-
-        // ================================================================
-        // 💬 ABRIR CONVERSACIÓN
-        // ================================================================
-        async function abrirConversacion(contactoId) {
-            var session = await getSession();
-            if (!session) {
-                showToast('⚠️ Inicia sesión para abrir conversaciones', 'error');
-                return;
-            }
-
-            try {
-                var contactoResult = await window.supabase
-                    .from('usuarios')
-                    .select('id, nombre, handle, avatar_url')
-                    .eq('id', contactoId)
-                    .single();
-
-                if (contactoResult.error) throw contactoResult.error;
-
-                conversacionActual = contactoResult.data;
-
-                var chatNombre = document.getElementById('chatNombre');
-                if (chatNombre) chatNombre.textContent = contactoResult.data.nombre || 'Usuario';
-
-                var chatAvatar = document.querySelector('.chat-avatar');
-                if (chatAvatar) chatAvatar.textContent = contactoResult.data.nombre ? contactoResult.data.nombre[0].toUpperCase() : '✦';
-
-                var estadoResult = await window.supabase
-                    .from('usuarios')
-                    .select('online, ultima_conexion')
-                    .eq('id', contactoId)
-                    .single();
-
-                var chatEstado = document.getElementById('chatEstado');
-                if (chatEstado) {
-                    if (estadoResult.data && estadoResult.data.online) {
-                        chatEstado.textContent = '🟢 En línea';
-                        chatEstado.className = 'chat-estado online';
-                    } else if (estadoResult.data && estadoResult.data.ultima_conexion) {
-                        var diff = Math.floor((Date.now() - new Date(estadoResult.data.ultima_conexion)) / 60000);
-                        if (diff < 5) {
-                            chatEstado.textContent = '🟡 Última vez hace unos minutos';
-                        } else if (diff < 60) {
-                            chatEstado.textContent = '🟡 Última vez hace ' + diff + ' min';
-                        } else if (diff < 1440) {
-                            chatEstado.textContent = '🟡 Última vez hace ' + Math.floor(diff / 60) + ' h';
-                        } else {
-                            chatEstado.textContent = '🟡 Última vez hace ' + Math.floor(diff / 1440) + ' d';
-                        }
-                        chatEstado.className = 'chat-estado';
-                    } else {
-                        chatEstado.textContent = '⚪ Desconectado';
-                        chatEstado.className = 'chat-estado';
-                    }
-                }
-
-                await marcarMensajesLeidos(contactoId);
-                await cargarMensajes(contactoId);
-
-                if (realtimeChannel) {
-                    try { await window.supabase.removeChannel(realtimeChannel); } catch (e) {}
-                    realtimeChannel = null;
-                }
-
-                realtimeChannel = window.supabase
-                    .channel('chat-' + contactoId)
-                    .on('postgres_changes', {
-                        event: 'INSERT',
-                        schema: 'public',
-                        table: 'mensajes_chat',
-                        filter: 'remitente_id=eq.' + contactoId
-                    }, function(payload) {
-                        if (payload.new.destinatario_id === session.user.id) {
-                            agregarMensajeRealtime(payload.new);
-                            marcarMensajesLeidos(contactoId);
-                        }
-                    })
-                    .on('postgres_changes', {
-                        event: 'UPDATE',
-                        schema: 'public',
-                        table: 'mensajes_chat'
-                    }, function() {
-                        cargarConversaciones();
-                    })
-                    .subscribe();
-
-                cargarConversaciones();
-
-                // Escuchar llamadas entrantes
-                suscribirseALlamadas();
-
-            } catch (e) {
-                console.error('Error abriendo conversación:', e);
-            }
-        }
-
-        // ================================================================
-        // 📖 CARGAR MENSAJES
-        // ================================================================
-        async function cargarMensajes(contactoId) {
-            var session = await getSession();
-            if (!session) return;
-
-            var container = document.getElementById('chatMessages');
-            if (!container) return;
-
-            var result = await window.supabase
-                .from('mensajes_chat')
-                .select('*')
-                .or('and(remitente_id.eq.' + session.user.id + ',destinatario_id.eq.' + contactoId + '),and(remitente_id.eq.' + contactoId + ',destinatario_id.eq.' + session.user.id + ')')
-                .order('created_at', { ascending: true });
-
-            if (result.error) {
-                console.error('Error cargando mensajes:', result.error);
-                return;
-            }
-
-            if (result.data && result.data.length > 0) {
-                var html = '';
-                for (var i = 0; i < result.data.length; i++) {
-                    html += crearMensajeHTML(result.data[i]);
-                }
-                container.innerHTML = html;
-                container.scrollTop = container.scrollHeight;
+        function renderizarMensaje(msg) {
+            if (msg.tipo === 'enviado') {
+                return `
+                    <div class="msg-wrapper enviado">
+                        <div class="burbuja">${msg.texto}</div>
+                        <div class="meta">
+                            ${msg.hora}
+                            ${msg.leido ? '<span class="leido leido">◆◆</span>' : '<span class="leido no-leido">◈◈</span>'}
+                        </div>
+                    </div>
+                `;
             } else {
-                container.innerHTML = '<div class="empty-chat"><span class="icon">◈</span><h3 data-clave="mensajes_inicia_conversacion">Inicia la conversación</h3><p data-clave="mensajes_envia_mensaje">Envía un mensaje para comenzar</p></div>';
+                const estadoClass = msg.estado || 'conectado';
+                const estadoTexto = {
+                    'conectado': '◈ Conectado',
+                    'desconectado': '◈ Desconectado',
+                    'sin-datos': '⚠️ Sin conexión a internet',
+                    'entregado': '✓ Mensaje entregado',
+                    'enviando': '⟡ Enviando...',
+                    'sin-esim': '⚠️ Sin eSIM'
+                }[estadoClass] || '◈ Conectado';
+
+                return `
+                    <div class="msg-wrapper recibido">
+                        <div class="fila">
+                            <div class="avatar estado-${estadoClass}" title="${estadoTexto}">
+                                ◈
+                                <span class="tooltip">${estadoTexto}</span>
+                            </div>
+                            <div class="burbuja">${msg.texto}</div>
+                        </div>
+                        <div class="meta">${msg.hora}</div>
+                    </div>
+                `;
             }
         }
 
         // ================================================================
-        // ✏️ CREAR MENSAJE HTML
+        // SELECCIONAR CONVERSACIÓN
         // ================================================================
-        function crearMensajeHTML(msg) {
-            var esEnviado = msg.remitente_id === usuarioActual.id;
-            var fecha = new Date(msg.created_at);
-            var hora = fecha.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            var contenidoFormateado = formatearTexto(msg.contenido || '');
+        function seleccionarConversacion(id) {
+            conversacionActual = id;
 
-            if (msg.tipo === 'imagen' && msg.imagen_url) {
-                return crearMensajeImagen(msg, esEnviado, hora);
+            document.querySelectorAll('.conv-item').forEach(el => el.classList.remove('active'));
+            const selected = document.querySelector(`.conv-item[data-id="${id}"]`);
+            if (selected) selected.classList.add('active');
+
+            const nombre = selected?.querySelector('.conv-nombre')?.textContent || 'Usuario';
+            document.getElementById('chatNombre').textContent = nombre;
+
+            const mensajes = mensajesPorConversacion[id] || [];
+            const container = document.getElementById('chatMessages');
+            container.innerHTML = '';
+
+            if (mensajes.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-chat">
+                        <span class="icon">◈</span>
+                        <h3>Sin mensajes</h3>
+                        <p>Inicia la conversación</p>
+                    </div>
+                `;
+                return;
             }
 
-            if (msg.tipo === 'voz' && msg.imagen_url) {
-                return crearMensajeAudio(msg, esEnviado, hora);
-            }
-
-            if (esEnviado) {
-                return '<div class="msg-wrapper enviado">' +
-                    '<div class="burbuja">' + contenidoFormateado + '</div>' +
-                    '<div class="meta">' + hora + (msg.editado ? ' ✎' : '') +
-                    ' <span class="leido ' + (msg.leido ? 'leido' : 'no-leido') + '">' + (msg.leido ? '◆◆' : '◆◇') + '</span>' +
-                    ' <button onclick="eliminarMensaje(\'' + msg.id + '\')" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:0.5rem;">✕</button>' +
-                    ' <button onclick="editarMensaje(\'' + msg.id + '\')" style="background:none;border:none;color:var(--gold);cursor:pointer;font-size:0.5rem;">✎</button>' +
-                    '</div></div>';
-            }
-
-            return '<div class="msg-wrapper recibido">' +
-                '<div class="fila">' +
-                '<div class="avatar estado-conectado">◈</div>' +
-                '<div class="burbuja">' + contenidoFormateado + '</div>' +
-                '</div>' +
-                '<div class="meta">' + hora + (msg.editado ? ' ✎' : '') +
-                ' <button onclick="reportarMensaje(\'' + msg.id + '\')" style="background:none;border:none;color:var(--warning);cursor:pointer;font-size:0.5rem;">⚠️</button>' +
-                '</div></div>';
-        }
-
-        function crearMensajeImagen(msg, esEnviado, hora) {
-            var imagenUrl = escapeHTML(msg.imagen_url);
-            if (esEnviado) {
-                return '<div class="msg-wrapper enviado">' +
-                    '<div class="burbuja" style="padding:4px;background:transparent;border-radius:12px;">' +
-                    '<img src="' + imagenUrl + '" style="max-width:200px;border-radius:12px;border:2px solid var(--gold);" />' +
-                    '</div>' +
-                    '<div class="meta">' + hora + (msg.editado ? ' ✎' : '') + ' <span class="leido ' + (msg.leido ? 'leido' : 'no-leido') + '">' + (msg.leido ? '◆◆' : '◆◇') + '</span></div></div>';
-            }
-            return '<div class="msg-wrapper recibido">' +
-                '<div class="fila">' +
-                '<div class="avatar estado-conectado">◈</div>' +
-                '<div class="burbuja" style="padding:4px;background:transparent;border-radius:12px;border:1px solid var(--glass-border);">' +
-                '<img src="' + imagenUrl + '" style="max-width:200px;border-radius:12px;" />' +
-                '</div>' +
-                '</div>' +
-                '<div class="meta">' + hora + '</div></div>';
-        }
-
-        function crearMensajeAudio(msg, esEnviado, hora) {
-            var audioUrl = escapeHTML(msg.imagen_url);
-            if (esEnviado) {
-                return '<div class="msg-wrapper enviado">' +
-                    '<div class="burbuja" style="display:flex;align-items:center;gap:8px;">' +
-                    '<span>🎵</span>' +
-                    '<audio controls style="max-width:150px;height:30px;"><source src="' + audioUrl + '" type="audio/mpeg"></audio>' +
-                    '</div>' +
-                    '<div class="meta">' + hora + ' <span class="leido ' + (msg.leido ? 'leido' : 'no-leido') + '">' + (msg.leido ? '◆◆' : '◆◇') + '</span></div></div>';
-            }
-            return '<div class="msg-wrapper recibido">' +
-                '<div class="fila">' +
-                '<div class="avatar estado-conectado">◈</div>' +
-                '<div class="burbuja" style="display:flex;align-items:center;gap:8px;">' +
-                '<span>🎵</span>' +
-                '<audio controls style="max-width:150px;height:30px;"><source src="' + audioUrl + '" type="audio/mpeg"></audio>' +
-                '</div>' +
-                '</div>' +
-                '<div class="meta">' + hora + '</div></div>';
+            mensajes.forEach(msg => {
+                container.innerHTML += renderizarMensaje(msg);
+            });
+            container.scrollTop = container.scrollHeight;
         }
 
         // ================================================================
-        // 📨 AGREGAR MENSAJE EN TIEMPO REAL
+        // ENVIAR MENSAJE
         // ================================================================
-        function agregarMensajeRealtime(msg) {
-            var container = document.getElementById('chatMessages');
-            if (!container) return;
+        function enviarMensaje() {
+            const input = document.getElementById('chatInput');
+            const texto = input.value.trim();
+            if (!texto) return;
 
-            var empty = container.querySelector('.empty-chat');
+            const container = document.getElementById('chatMessages');
+            const empty = container.querySelector('.empty-chat');
             if (empty) empty.remove();
 
-            if (msg.remitente_id !== conversacionActual.id && msg.destinatario_id !== conversacionActual.id) return;
+            const hora = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-            container.innerHTML += crearMensajeHTML(msg);
+            // Agregar mensaje enviado
+            const msgEnviado = {
+                tipo: 'enviado',
+                texto: texto,
+                hora: hora,
+                leido: false
+            };
+
+            if (!mensajesPorConversacion[conversacionActual]) {
+                mensajesPorConversacion[conversacionActual] = [];
+            }
+            mensajesPorConversacion[conversacionActual].push(msgEnviado);
+
+            container.innerHTML += renderizarMensaje(msgEnviado);
             container.scrollTop = container.scrollHeight;
-            cargarConversaciones();
-        }
+            input.value = '';
 
-        // ================================================================
-        // 📤 ENVIAR MENSAJE
-        // ================================================================
-        async function enviarMensaje() {
-            var chatInput = document.getElementById('chatInput');
-            var contenido = chatInput.value.trim();
-
-            if (!contenido && archivosSeleccionados.length === 0) {
-                if (!conversacionActual) showToast('⚠️ Selecciona una conversación', 'warning');
-                return;
-            }
-
-            var session = await getSession();
-            if (!session) {
-                showToast('⚠️ Inicia sesión para enviar mensajes', 'error');
-                return;
-            }
-
-            if (!conversacionActual) {
-                showToast('⚠️ Selecciona una conversación', 'error');
-                return;
-            }
-
-            try {
-                if (archivosSeleccionados.length > 0) {
-                    for (var i = 0; i < archivosSeleccionados.length; i++) {
-                        await subirArchivo(archivosSeleccionados[i], session);
-                    }
-                    archivosSeleccionados = [];
-                    document.getElementById('filePreview').innerHTML = '';
-                    chatInput.value = '';
-                    return;
+            // Simular entrega y lectura
+            setTimeout(() => {
+                // Marcar como entregado (cambiar palomitas a dorado)
+                const mensajes = mensajesPorConversacion[conversacionActual];
+                const ultimo = mensajes[mensajes.length - 1];
+                if (ultimo && ultimo.tipo === 'enviado') {
+                    ultimo.leido = true;
+                    // Re-renderizar todo para actualizar
+                    seleccionarConversacion(conversacionActual);
+                    showToast('◆◆ Mensaje leído');
                 }
+            }, 1500);
 
-                var result = await window.supabase
-                    .from('mensajes_chat')
-                    .insert({
-                        remitente_id: session.user.id,
-                        destinatario_id: conversacionActual.id,
-                        contenido: contenido,
-                        tipo: 'texto'
-                    });
+            // Simular respuesta del otro
+            setTimeout(() => {
+                const respuestas = [
+                    '◈ Interesante, cuéntame más',
+                    '◆ ¡Entendido!',
+                    '◉ Perfecto, gracias',
+                    '✦ Buena idea',
+                    '◇ Lo revisaré',
+                    '◈ Excelente propuesta',
+                    '◆ Totalmente de acuerdo',
+                    '◉ ¿Puedes enviarme más detalles?'
+                ];
+                const respuesta = respuestas[Math.floor(Math.random() * respuestas.length)];
+                const horaResp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-                if (result.error) throw result.error;
+                const estados = ['conectado', 'desconectado', 'conectado', 'conectado', 'entregado'];
+                const estadoRandom = estados[Math.floor(Math.random() * estados.length)];
 
-                chatInput.value = '';
-                await cargarMensajes(conversacionActual.id);
-                cargarConversaciones();
-
-            } catch (e) {
-                console.error('Error enviando mensaje:', e);
-                showToast('❌ Error al enviar mensaje', 'error');
-            }
-        }
-
-        // ================================================================
-        // 🖼️ SUBIR ARCHIVO
-        // ================================================================
-        async function subirArchivo(file, session) {
-            try {
-                var fileExt = file.name.split('.').pop().toLowerCase();
-                var tipo = file.type.startsWith('image/') ? 'imagen' : 'voz';
-                var filePath = 'mensajes/' + session.user.id + '/' + Date.now() + '.' + fileExt;
-
-                var uploadResult = await window.supabase.storage
-                    .from('mensajes')
-                    .upload(filePath, file, { upsert: true });
-
-                if (uploadResult.error) throw uploadResult.error;
-
-                var urlData = window.supabase.storage.from('mensajes').getPublicUrl(filePath);
-                var publicUrl = urlData.data.publicUrl;
-
-                var result = await window.supabase
-                    .from('mensajes_chat')
-                    .insert({
-                        remitente_id: session.user.id,
-                        destinatario_id: conversacionActual.id,
-                        contenido: file.name,
-                        tipo: tipo,
-                        imagen_url: publicUrl
-                    });
-
-                if (result.error) throw result.error;
-
-                showToast('✅ Archivo enviado', 'success');
-                await cargarMensajes(conversacionActual.id);
-                cargarConversaciones();
-
-            } catch (e) {
-                console.error('Error subiendo archivo:', e);
-                showToast('❌ Error al subir archivo', 'error');
-            }
-        }
-
-        // ================================================================
-        // 📎 SELECCIONAR ARCHIVO
-        // ================================================================
-        function seleccionarArchivo() {
-            var input = document.getElementById('fileInput');
-            if (input) input.click();
-        }
-
-        function handleFileSelect(event) {
-            var files = event.target.files;
-            if (!files || files.length === 0) return;
-
-            var preview = document.getElementById('filePreview');
-            preview.innerHTML = '';
-            archivosSeleccionados = [];
-
-            for (var i = 0; i < files.length; i++) {
-                var file = files[i];
-                archivosSeleccionados.push(file);
-                var isImage = file.type.startsWith('image/');
-                var isAudio = file.type.startsWith('audio/');
-                var icon = isImage ? '🖼️' : (isAudio ? '🎵' : '📎');
-                var size = (file.size / 1024).toFixed(1);
-
-                var el = document.createElement('div');
-                el.style.cssText = 'display:inline-flex;align-items:center;gap:6px;background:rgba(212,175,55,0.1);padding:4px 12px;border-radius:12px;font-size:0.65rem;color:var(--text-secondary);';
-                el.innerHTML = icon + ' ' + escapeHTML(file.name) + ' (' + size + 'KB) <span onclick="this.parentElement.remove();archivosSeleccionados=[];" style="cursor:pointer;color:var(--danger);">✕</span>';
-                preview.appendChild(el);
-            }
-
-            event.target.value = '';
-            showToast('📎 ' + files.length + ' archivo(s) seleccionado(s)', 'success');
-        }
-
-        // ================================================================
-        // 🎙️ GRABACIÓN DE VOZ
-        // ================================================================
-        function toggleGrabacionVoz() {
-            var btn = document.getElementById('btnGrabarVoz');
-            if (!grabacionActiva) {
-                iniciarGrabacionVoz(btn);
-            } else {
-                detenerGrabacionVoz(btn);
-            }
-        }
-
-        async function iniciarGrabacionVoz(btn) {
-            try {
-                var stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                mediaRecorder = new MediaRecorder(stream);
-                audioChunks = [];
-
-                mediaRecorder.ondataavailable = function(event) {
-                    audioChunks.push(event.data);
+                const msgRecibido = {
+                    tipo: 'recibido',
+                    texto: respuesta,
+                    hora: horaResp,
+                    estado: estadoRandom
                 };
 
-                mediaRecorder.onstop = async function() {
-                    var audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-                    var file = new File([audioBlob], 'voz_' + Date.now() + '.webm', { type: 'audio/webm' });
-
-                    var session = await getSession();
-                    if (session && conversacionActual) {
-                        archivosSeleccionados = [file];
-                        await enviarMensaje();
-                    }
-
-                    stream.getTracks().forEach(function(track) { track.stop(); });
-                };
-
-                mediaRecorder.start();
-                grabacionActiva = true;
-                btn.textContent = '⏹️';
-                btn.style.color = 'var(--danger)';
-                showToast('🎙️ Grabando...', '');
-
-            } catch (e) {
-                console.error('Error iniciando grabación:', e);
-                showToast('❌ Error al acceder al micrófono', 'error');
-            }
-        }
-
-        function detenerGrabacionVoz(btn) {
-            if (mediaRecorder && mediaRecorder.state === 'recording') {
-                mediaRecorder.stop();
-                grabacionActiva = false;
-                btn.textContent = '🎙️';
-                btn.style.color = '';
-                showToast('✅ Grabación finalizada', 'success');
-            }
-        }
-
-        // ================================================================
-        // 🗑️ ELIMINAR MENSAJE
-        // ================================================================
-        async function eliminarMensaje(mensajeId) {
-            if (!confirm('¿Eliminar este mensaje?')) return;
-
-            try {
-                var session = await getSession();
-                if (!session) {
-                    showToast('⚠️ Inicia sesión', 'error');
-                    return;
-                }
-
-                var result = await window.supabase
-                    .from('mensajes_chat')
-                    .update({ eliminado: true })
-                    .eq('id', mensajeId)
-                    .eq('remitente_id', session.user.id);
-
-                if (result.error) throw result.error;
-
-                showToast('🗑️ Mensaje eliminado');
-                if (conversacionActual) {
-                    await cargarMensajes(conversacionActual.id);
-                }
-                cargarConversaciones();
-
-            } catch (e) {
-                console.error('Error eliminando mensaje:', e);
-                showToast('❌ Error al eliminar mensaje', 'error');
-            }
-        }
-
-        // ================================================================
-        // ✏️ EDITAR MENSAJE
-        // ================================================================
-        async function editarMensaje(mensajeId) {
-            var nuevoContenido = prompt('Edita tu mensaje:');
-            if (nuevoContenido === null) return;
-            if (!nuevoContenido.trim()) {
-                showToast('⚠️ No puedes dejar vacío', 'error');
-                return;
-            }
-
-            try {
-                var session = await getSession();
-                if (!session) {
-                    showToast('⚠️ Inicia sesión', 'error');
-                    return;
-                }
-
-                var result = await window.supabase
-                    .from('mensajes_chat')
-                    .update({
-                        contenido: nuevoContenido,
-                        editado: true
-                    })
-                    .eq('id', mensajeId)
-                    .eq('remitente_id', session.user.id);
-
-                if (result.error) throw result.error;
-
-                showToast('✅ Mensaje editado');
-                if (conversacionActual) {
-                    await cargarMensajes(conversacionActual.id);
-                }
-
-            } catch (e) {
-                console.error('Error editando mensaje:', e);
-                showToast('❌ Error al editar mensaje', 'error');
-            }
-        }
-
-        // ================================================================
-        // 🗑️ ELIMINAR CONVERSACIÓN
-        // ================================================================
-        async function eliminarConversacion(contactoId) {
-            if (!contactoId) {
-                showToast('⚠️ No hay conversación seleccionada', 'error');
-                return;
-            }
-
-            if (!confirm('¿Eliminar toda la conversación con este contacto?')) return;
-
-            try {
-                var session = await getSession();
-                if (!session) {
-                    showToast('⚠️ Inicia sesión', 'error');
-                    return;
-                }
-
-                await window.supabase
-                    .from('mensajes_chat')
-                    .update({ eliminado: true })
-                    .or('and(remitente_id.eq.' + session.user.id + ',destinatario_id.eq.' + contactoId + '),and(remitente_id.eq.' + contactoId + ',destinatario_id.eq.' + session.user.id + ')');
-
-                await window.supabase
-                    .from('contactos')
-                    .delete()
-                    .eq('usuario_id', session.user.id)
-                    .eq('contacto_id', contactoId);
-
-                if (conversacionActual && conversacionActual.id === contactoId) {
-                    conversacionActual = null;
-                    document.getElementById('chatNombre').textContent = 'Selecciona una conversación';
-                    document.getElementById('chatMessages').innerHTML = '<div class="empty-chat"><span class="icon">◈</span><h3 data-clave="mensajes_conversacion_eliminada">Conversación eliminada</h3></div>';
-                }
-
-                showToast('🗑️ Conversación eliminada');
-                await cargarConversaciones();
-
-            } catch (e) {
-                console.error('Error eliminando conversación:', e);
-                showToast('❌ Error al eliminar conversación', 'error');
-            }
-        }
-
-        // ================================================================
-        // 👁️ MARCAR MENSAJES COMO LEÍDOS
-        // ================================================================
-        async function marcarMensajesLeidos(contactoId) {
-            try {
-                var session = await getSession();
-                if (!session) return;
-
-                var result = await window.supabase
-                    .from('mensajes_chat')
-                    .update({ leido: true })
-                    .eq('remitente_id', contactoId)
-                    .eq('destinatario_id', session.user.id)
-                    .eq('leido', false)
-                    .is('eliminado', false);
-
-                if (result.error) throw result.error;
-
-            } catch (e) {
-                console.error('Error marcando mensajes como leídos:', e);
-            }
-        }
-
-        // ================================================================
-        // ⚠️ REPORTAR MENSAJE
-        // ================================================================
-        async function reportarMensaje(mensajeId) {
-            var motivo = prompt('¿Por qué reportas este mensaje? (spam, ofensa, acoso, ilegal)');
-            if (!motivo) return;
-
-            try {
-                var session = await getSession();
-                if (!session) {
-                    showToast('⚠️ Inicia sesión para reportar', 'error');
-                    return;
-                }
-
-                var result = await window.supabase
-                    .from('mensajes_reportes')
-                    .insert({
-                        mensaje_id: mensajeId,
-                        usuario_id: session.user.id,
-                        motivo: motivo
-                    });
-
-                if (result.error) {
-                    if (result.error.code === '42P01') {
-                        showToast('⚠️ La tabla de reportes no está configurada', 'warning');
-                        return;
-                    }
-                    throw result.error;
-                }
-
-                showToast('⚠️ Reporte enviado. Gracias por ayudar.', 'warning');
-
-            } catch (e) {
-                console.error('Error reportando mensaje:', e);
-                showToast('❌ Error al reportar', 'error');
-            }
-        }
-
-        // ================================================================
-        // 🚫 BLOQUEAR USUARIO
-        // ================================================================
-        async function bloquearUsuario(usuarioId) {
-            if (!usuarioId) {
-                showToast('⚠️ No hay usuario seleccionado', 'error');
-                return;
-            }
-
-            if (!confirm('¿Bloquear a este usuario? No podrán enviarte mensajes.')) return;
-
-            try {
-                var session = await getSession();
-                if (!session) {
-                    showToast('⚠️ Inicia sesión', 'error');
-                    return;
-                }
-
-                try {
-                    await window.supabase
-                        .from('bloqueos')
-                        .insert({
-                            usuario_id: session.user.id,
-                            bloqueado_id: usuarioId
-                        });
-                } catch (insertError) {
-                    if (insertError.code === '42P01') {
-                        showToast('⚠️ La tabla de bloqueos no está configurada', 'warning');
-                        return;
-                    }
-                    throw insertError;
-                }
-
-                await window.supabase
-                    .from('contactos')
-                    .delete()
-                    .eq('usuario_id', session.user.id)
-                    .eq('contacto_id', usuarioId);
-
-                showToast('🚫 Usuario bloqueado');
-
-                if (conversacionActual && conversacionActual.id === usuarioId) {
-                    conversacionActual = null;
-                    document.getElementById('chatNombre').textContent = 'Selecciona una conversación';
-                    document.getElementById('chatMessages').innerHTML = '<div class="empty-chat"><span class="icon">◈</span><h3 data-clave="mensajes_usuario_bloqueado">Usuario bloqueado</h3></div>';
-                }
-
-                await cargarConversaciones();
-
-            } catch (e) {
-                console.error('Error bloqueando usuario:', e);
-                showToast('❌ Error al bloquear usuario', 'error');
-            }
-        }
-
-        // ================================================================
-        // 🔍 BUSCAR EN CONVERSACIÓN
-        // ================================================================
-        async function buscarEnConversacion(query) {
-            if (!query || !query.trim()) {
-                showToast('⚠️ Escribe algo para buscar', 'warning');
-                return;
-            }
-
-            if (!conversacionActual) {
-                showToast('⚠️ Selecciona una conversación', 'error');
-                return;
-            }
-
-            try {
-                var session = await getSession();
-                if (!session) return;
-
-                var result = await window.supabase
-                    .from('mensajes_chat')
-                    .select('*')
-                    .or('and(remitente_id.eq.' + session.user.id + ',destinatario_id.eq.' + conversacionActual.id + '),and(remitente_id.eq.' + conversacionActual.id + ',destinatario_id.eq.' + session.user.id + ')')
-                    .ilike('contenido', '%' + query + '%')
-                    .order('created_at', { ascending: true });
-
-                if (result.error) throw result.error;
-
-                var container = document.getElementById('chatMessages');
-                if (!result.data || result.data.length === 0) {
-                    container.innerHTML = '<div class="empty-chat"><span class="icon">◈</span><h3 data-clave="mensajes_sin_resultados">No se encontraron resultados</h3><p>No hay mensajes que coincidan con "' + escapeHTML(query) + '"</p><button onclick="cargarMensajes(\'' + conversacionActual.id + '\')" style="margin-top:12px;padding:8px 20px;background:linear-gradient(135deg,var(--gold),var(--gold-dark));border:none;border-radius:30px;color:var(--space);font-weight:600;cursor:pointer;" data-clave="mensajes_volver">Volver</button></div>';
-                    return;
-                }
-
-                var html = '';
-                for (var i = 0; i < result.data.length; i++) {
-                    html += crearMensajeHTML(result.data[i]);
-                }
-                container.innerHTML = html;
+                mensajesPorConversacion[conversacionActual].push(msgRecibido);
+                container.innerHTML += renderizarMensaje(msgRecibido);
                 container.scrollTop = container.scrollHeight;
-                showToast('🔍 Encontrados ' + result.data.length + ' mensajes', 'success');
 
-            } catch (e) {
-                console.error('Error buscando:', e);
-                showToast('❌ Error al buscar', 'error');
-            }
+                // Si el estado es "sin-datos", mostrar notificación
+                if (estadoRandom === 'sin-datos') {
+                    showToast('⚠️ El usuario no tiene conexión a internet', 'error');
+                }
+            }, 2500 + Math.random() * 1500);
         }
 
         // ================================================================
-        // ✎ NUEVA CONVERSACIÓN (ABRIR MODAL)
+        // NUEVA CONVERSACIÓN
         // ================================================================
         function nuevaConversacion() {
-            document.getElementById('modalNuevoContacto').classList.add('show');
-            document.getElementById('searchInputModal').value = '';
-            document.getElementById('resultadosBusqueda').innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:0.75rem;" data-clave="mensajes_buscar_minimo">Escribe al menos 2 caracteres para buscar</div>';
-            setTimeout(function() {
-                document.getElementById('searchInputModal').focus();
-            }, 200);
-        }
-
-        function cerrarModalNuevoContacto() {
-            document.getElementById('modalNuevoContacto').classList.remove('show');
-        }
-
-        // ================================================================
-        // ================================================================
-        // 🎥 VIDEOLLAMADA - FUNCIONES PRINCIPALES
-        // ================================================================
-        // ================================================================
-
-        // ================================================================
-        // OBTENER TOKEN LIVEKIT DESDE EL SERVIDOR
-        // ================================================================
-        async function obtenerTokenLiveKit(roomName, participantName) {
-            try {
-                var session = await getSession();
-                if (!session) {
-                    throw new Error('No autenticado');
-                }
-
-                var response = await fetch('/api/livekit/token', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + session.access_token
-                    },
-                    body: JSON.stringify({
-                        roomName: roomName,
-                        participantName: participantName
-                    })
-                });
-
-                if (!response.ok) {
-                    var errorData = await response.json();
-                    throw new Error(errorData.error || 'Error al obtener token');
-                }
-
-                var data = await response.json();
-                return data;
-
-            } catch (e) {
-                console.error('Error obteniendo token LiveKit:', e);
-                throw e;
+            const nombre = prompt('◈ Nombre del contacto:');
+            if (nombre && nombre.trim()) {
+                const id = Date.now();
+                const avatar = '◈';
+                const lista = document.getElementById('conversacionesList');
+                const item = document.createElement('div');
+                item.className = 'conv-item';
+                item.dataset.id = id;
+                item.onclick = () => seleccionarConversacion(id);
+                item.innerHTML = `
+                    <div class="conv-avatar">${avatar}</div>
+                    <div class="conv-info">
+                        <div class="conv-nombre">${nombre.trim()}</div>
+                        <div class="conv-msg">Nueva conversación</div>
+                    </div>
+                    <div class="conv-meta">
+                        <div class="conv-hora">Ahora</div>
+                    </div>
+                `;
+                lista.appendChild(item);
+                mensajesPorConversacion[id] = [];
+                seleccionarConversacion(id);
+                showToast(`◈ Nueva conversación con ${nombre.trim()}`);
             }
         }
 
         // ================================================================
-        // INICIAR VIDEOLLAMADA
-        // ================================================================
-        async function iniciarVideollamada() {
-            if (!conversacionActual) {
-                showToast('⚠️ Selecciona una conversación para llamar', 'warning');
-                return;
-            }
-
-            if (callState.active) {
-                mostrarLlamada();
-                return;
-            }
-
-            try {
-                var session = await getSession();
-                if (!session) {
-                    showToast('⚠️ Inicia sesión para llamar', 'error');
-                    return;
-                }
-
-                // Verificar si el otro usuario existe
-                var usuarioResult = await window.supabase
-                    .from('usuarios')
-                    .select('id, nombre')
-                    .eq('id', conversacionActual.id)
-                    .single();
-
-                if (usuarioResult.error) {
-                    showToast('❌ Usuario no encontrado', 'error');
-                    return;
-                }
-
-                // Verificar si ya hay una llamada activa
-                var llamadaActiva = await window.supabase
-                    .from('llamadas')
-                    .select('id, estado')
-                    .or('and(usuario_origen.eq.' + session.user.id + ',usuario_destino.eq.' + conversacionActual.id + '),and(usuario_origen.eq.' + conversacionActual.id + ',usuario_destino.eq.' + session.user.id + ')')
-                    .in('estado', ['ringing', 'active'])
-                    .maybeSingle();
-
-                if (llamadaActiva.data) {
-                    showToast('⚠️ Ya hay una llamada en curso con este usuario', 'warning');
-                    return;
-                }
-
-                // Crear la llamada en la BD
-                var callId = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).substr(2);
-                var roomName = 'call_' + callId;
-
-                var crearLlamada = await window.supabase
-                    .from('llamadas')
-                    .insert({
-                        id: callId,
-                        usuario_origen: session.user.id,
-                        usuario_destino: conversacionActual.id,
-                        estado: 'ringing',
-                        sala: roomName,
-                        created_at: new Date().toISOString()
-                    });
-
-                if (crearLlamada.error) throw crearLlamada.error;
-
-                // Registrar participante origen
-                await window.supabase
-                    .from('llamadas_participantes')
-                    .insert({
-                        llamada_id: callId,
-                        usuario_id: session.user.id,
-                        estado: 'conectado',
-                        joined_at: new Date().toISOString()
-                    });
-
-                // Guardar estado de la llamada
-                callState.callId = callId;
-                callState.isInitiator = true;
-                callState.active = true;
-
-                // Mostrar la interfaz de llamada
-                mostrarLlamada();
-
-                // Obtener y conectar a LiveKit
-                await conectarALiveKit(roomName, session.user.id, callId);
-
-                // Iniciar el temporizador de duración
-                iniciarContadorDuracion();
-
-                // Suscribirse a cambios en la llamada
-                suscribirseALlamada(callId);
-
-                // Mostrar estado
-                showToast('📞 Llamando a ' + (conversacionActual.nombre || 'usuario') + '...', '');
-
-                // Actualizar botón
-                var btnCall = document.getElementById('btnVideoCall');
-                if (btnCall) {
-                    btnCall.textContent = '📞';
-                    btnCall.classList.add('active-call');
-                }
-
-            } catch (e) {
-                console.error('Error iniciando videollamada:', e);
-                showToast('❌ Error al iniciar llamada: ' + e.message, 'error');
-                limpiarLlamada();
-            }
-        }
-
-        // ================================================================
-        // CONECTAR A LIVEKIT
-        // ================================================================
-        async function conectarALiveKit(roomName, participantId, callId) {
-            try {
-                // Obtener token del servidor
-                var tokenData = await obtenerTokenLiveKit(roomName, participantId);
-
-                // Conectar a LiveKit
-                var room = new LivekitClient.Room();
-
-                room.on(LivekitClient.RoomEvent.TrackSubscribed, function(track, publication, participant) {
-                    if (track.kind === 'video' && !track.isLocal) {
-                        var videoElement = document.getElementById('remoteVideo');
-                        if (videoElement) {
-                            track.attach(videoElement);
-                            document.getElementById('remoteAvatarPlaceholder').style.display = 'none';
-                            document.getElementById('remoteLabel').textContent = participant.name || 'Participante';
-                        }
-                    }
-                    if (track.kind === 'audio' && !track.isLocal) {
-                        track.attach();
-                    }
-                });
-
-                room.on(LivekitClient.RoomEvent.ParticipantConnected, function(participant) {
-                    actualizarParticipantes(room);
-                    showToast('👤 ' + (participant.name || 'Usuario') + ' se unió a la llamada', 'success');
-                });
-
-                room.on(LivekitClient.RoomEvent.ParticipantDisconnected, function(participant) {
-                    actualizarParticipantes(room);
-                    showToast('👤 ' + (participant.name || 'Usuario') + ' abandonó la llamada', 'warning');
-                });
-
-                room.on(LivekitClient.RoomEvent.Disconnected, function() {
-                    if (callState.active) {
-                        colgarLlamada();
-                    }
-                });
-
-                room.on(LivekitClient.RoomEvent.ConnectionStateChanged, function(state) {
-                    console.log('Estado de conexión LiveKit:', state);
-                });
-
-                await room.connect(tokenData.url, tokenData.token);
-
-                // Publicar tracks locales
-                await publicarTracksLocales(room);
-
-                callState.room = room;
-                callState.active = true;
-
-                // Actualizar participantes iniciales
-                actualizarParticipantes(room);
-
-                showToast('✅ Conectado a la videollamada', 'success');
-
-            } catch (e) {
-                console.error('Error conectando a LiveKit:', e);
-                showToast('❌ Error al conectar a la videollamada: ' + e.message, 'error');
-                colgarLlamada();
-                throw e;
-            }
-        }
-
-        // ================================================================
-        // PUBLICAR TRACKS LOCALES
-        // ================================================================
-        async function publicarTracksLocales(room) {
-            try {
-                // Obtener permisos de cámara y micrófono
-                var stream = await navigator.mediaDevices.getUserMedia({
-                    audio: true,
-                    video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }
-                });
-
-                // Publicar audio
-                var audioTrack = stream.getAudioTracks()[0];
-                if (audioTrack) {
-                    var audioPublication = await room.localParticipant.publishTrack(audioTrack, {
-                        name: 'microphone',
-                        source: LivekitClient.TrackSource.Microphone
-                    });
-                    callState.audioTrack = audioTrack;
-                }
-
-                // Publicar video
-                var videoTrack = stream.getVideoTracks()[0];
-                if (videoTrack) {
-                    var videoPublication = await room.localParticipant.publishTrack(videoTrack, {
-                        name: 'camera',
-                        source: LivekitClient.TrackSource.Camera
-                    });
-                    callState.localTrack = videoTrack;
-
-                    // Mostrar video local
-                    var localVideo = document.getElementById('localVideo');
-                    if (localVideo) {
-                        localVideo.srcObject = new MediaStream([videoTrack]);
-                        document.getElementById('localAvatarPlaceholder').style.display = 'none';
-                    }
-                }
-
-                return stream;
-
-            } catch (e) {
-                console.error('Error publicando tracks locales:', e);
-
-                // Intentar publicar solo audio si la cámara falla
-                try {
-                    var audioOnly = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    var audioTrack = audioOnly.getAudioTracks()[0];
-                    if (audioTrack) {
-                        await room.localParticipant.publishTrack(audioTrack, {
-                            name: 'microphone',
-                            source: LivekitClient.TrackSource.Microphone
-                        });
-                        callState.audioTrack = audioTrack;
-                        showToast('🎤 Audio disponible (cámara no accesible)', 'warning');
-                    }
-                } catch (audioError) {
-                    showToast('⚠️ No se pudo acceder a cámara ni micrófono', 'error');
-                }
-            }
-        }
-
-        // ================================================================
-        // MOSTRAR INTERFAZ DE LLAMADA
-        // ================================================================
-        function mostrarLlamada() {
-            var overlay = document.getElementById('callOverlay');
-            if (overlay) {
-                overlay.classList.add('show');
-            }
-
-            // Ocultar placeholders
-            document.getElementById('remoteAvatarPlaceholder').style.display = 'block';
-            document.getElementById('localAvatarPlaceholder').style.display = 'block';
-            document.getElementById('remoteVideo').srcObject = null;
-            document.getElementById('localVideo').srcObject = null;
-        }
-
-        function ocultarLlamada() {
-            var overlay = document.getElementById('callOverlay');
-            if (overlay) {
-                overlay.classList.remove('show');
-            }
-        }
-
-        function minimizarLlamada() {
-            ocultarLlamada();
-            showToast('📹 Llamada minimizada', '');
-        }
-
-        // ================================================================
-        // CONTADOR DE DURACIÓN
-        // ================================================================
-        function iniciarContadorDuracion() {
-            callState.startTime = Date.now();
-            if (callState.durationInterval) {
-                clearInterval(callState.durationInterval);
-            }
-            callState.durationInterval = setInterval(function() {
-                if (!callState.active) {
-                    clearInterval(callState.durationInterval);
-                    return;
-                }
-                var elapsed = Math.floor((Date.now() - callState.startTime) / 1000);
-                var mins = String(Math.floor(elapsed / 60)).padStart(2, '0');
-                var secs = String(elapsed % 60).padStart(2, '0');
-                var durationEl = document.getElementById('callDuration');
-                if (durationEl) {
-                    durationEl.textContent = mins + ':' + secs;
-                }
-            }, 1000);
-        }
-
-        // ================================================================
-        // SUSCRIBIRSE A CAMBIOS DE LLAMADA
-        // ================================================================
-        function suscribirseALlamada(callId) {
-            if (callChannel) {
-                try { window.supabase.removeChannel(callChannel); } catch (e) {}
-                callChannel = null;
-            }
-
-            callChannel = window.supabase
-                .channel('call-' + callId)
-                .on('postgres_changes', {
-                    event: 'UPDATE',
-                    schema: 'public',
-                    table: 'llamadas',
-                    filter: 'id=eq.' + callId
-                }, function(payload) {
-                    manejarCambioLlamada(payload.new);
-                })
-                .subscribe();
-        }
-
-        function manejarCambioLlamada(data) {
-            console.log('Cambio en llamada:', data);
-
-            if (data.estado === 'ended' || data.estado === 'rejected' || data.estado === 'missed') {
-                if (callState.active) {
-                    showToast('📞 La llamada ha terminado', 'warning');
-                    colgarLlamada();
-                }
-            }
-
-            if (data.estado === 'active' && callState.isInitiator) {
-                showToast('✅ Llamada conectada', 'success');
-            }
-        }
-
-        // ================================================================
-        // SUSCRIBIRSE A LLAMADAS ENTRANTES
-        // ================================================================
-        function suscribirseALlamadas() {
-            // Limpiar listeners anteriores
-            callListeners.forEach(function(listener) {
-                try { window.supabase.removeChannel(listener); } catch (e) {}
-            });
-            callListeners = [];
-
-            var session = getSession();
-            if (!session) return;
-
-            var channel = window.supabase
-                .channel('llamadas-entrantes')
-                .on('postgres_changes', {
-                    event: 'INSERT',
-                    schema: 'public',
-                    table: 'llamadas',
-                    filter: 'usuario_destino=eq.' + (usuarioActual ? usuarioActual.id : '')
-                }, function(payload) {
-                    if (payload.new.estado === 'ringing') {
-                        mostrarLlamadaEntrante(payload.new);
-                    }
-                })
-                .subscribe();
-
-            callListeners.push(channel);
-        }
-
-        // ================================================================
-        // MOSTRAR LLAMADA ENTRANTE
-        // ================================================================
-        function mostrarLlamadaEntrante(data) {
-            // No mostrar si ya hay una llamada activa
-            if (callState.active) {
-                rechazarLlamada(data.id);
-                return;
-            }
-
-            // No mostrar si ya se está mostrando
-            if (document.getElementById('callIncoming').classList.contains('show')) {
-                return;
-            }
-
-            callState.incomingCallId = data.id;
-            callState.incomingFrom = data.usuario_origen;
-
-            // Obtener información del usuario
-            window.supabase
-                .from('usuarios')
-                .select('nombre, avatar_url')
-                .eq('id', data.usuario_origen)
-                .single()
-                .then(function(result) {
-                    if (!result.error && result.data) {
-                        document.getElementById('callerName').textContent = result.data.nombre || 'Usuario';
-                        var avatar = document.getElementById('callerAvatar');
-                        if (result.data.avatar_url) {
-                            avatar.innerHTML = '<img src="' + escapeHTML(result.data.avatar_url) + '" />';
-                        } else {
-                            avatar.textContent = (result.data.nombre || 'U')[0].toUpperCase();
-                        }
-                    }
-                });
-
-            document.getElementById('callIncoming').classList.add('show');
-
-            // Reproducir sonido de llamada (opcional)
-            try {
-                var audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                var oscillator = audioContext.createOscillator();
-                var gainNode = audioContext.createGain();
-                oscillator.connect(gainNode);
-                gainNode.connect(audioContext.destination);
-                oscillator.frequency.value = 440;
-                oscillator.type = 'sine';
-                gainNode.gain.value = 0.15;
-                oscillator.start();
-                oscillator.stop(audioContext.currentTime + 0.3);
-
-                // Repetir cada 2 segundos
-                var interval = setInterval(function() {
-                    if (!document.getElementById('callIncoming').classList.contains('show')) {
-                        clearInterval(interval);
-                        return;
-                    }
-                    var osc = audioContext.createOscillator();
-                    var gain = audioContext.createGain();
-                    osc.connect(gain);
-                    gain.connect(audioContext.destination);
-                    osc.frequency.value = 440;
-                    osc.type = 'sine';
-                    gain.gain.value = 0.15;
-                    osc.start();
-                    osc.stop(audioContext.currentTime + 0.3);
-                }, 2000);
-
-                callState._ringInterval = interval;
-
-            } catch (e) {
-                // Silencio si no se puede reproducir sonido
-            }
-        }
-
-        // ================================================================
-        // ACEPTAR LLAMADA ENTRANTE
-        // ================================================================
-        async function aceptarLlamadaEntrante() {
-            var callId = callState.incomingCallId;
-            if (!callId) return;
-
-            try {
-                var session = await getSession();
-                if (!session) {
-                    showToast('⚠️ Inicia sesión para aceptar', 'error');
-                    return;
-                }
-
-                // Actualizar estado de la llamada
-                await window.supabase
-                    .from('llamadas')
-                    .update({
-                        estado: 'active',
-                        updated_at: new Date().toISOString()
-                    })
-                    .eq('id', callId);
-
-                // Registrar participante destino
-                await window.supabase
-                    .from('llamadas_participantes')
-                    .insert({
-                        llamada_id: callId,
-                        usuario_id: session.user.id,
-                        estado: 'conectado',
-                        joined_at: new Date().toISOString()
-                    });
-
-                // Obtener datos de la llamada
-                var llamadaData = await window.supabase
-                    .from('llamadas')
-                    .select('sala, usuario_origen')
-                    .eq('id', callId)
-                    .single();
-
-                if (llamadaData.error) throw llamadaData.error;
-
-                // Configurar estado
-                callState.callId = callId;
-                callState.isInitiator = false;
-                callState.active = true;
-
-                // Ocultar incoming y mostrar llamada
-                document.getElementById('callIncoming').classList.remove('show');
-                mostrarLlamada();
-
-                // Conectar a LiveKit
-                await conectarALiveKit(llamadaData.data.sala, session.user.id, callId);
-
-                // Iniciar contador
-                iniciarContadorDuracion();
-
-                // Suscribirse a cambios
-                suscribirseALlamada(callId);
-
-                // Limpiar ring interval
-                if (callState._ringInterval) {
-                    clearInterval(callState._ringInterval);
-                    callState._ringInterval = null;
-                }
-
-                showToast('✅ Llamada aceptada', 'success');
-
-                // Actualizar botón
-                var btnCall = document.getElementById('btnVideoCall');
-                if (btnCall) {
-                    btnCall.textContent = '📞';
-                    btnCall.classList.add('active-call');
-                }
-
-            } catch (e) {
-                console.error('Error aceptando llamada:', e);
-                showToast('❌ Error al aceptar llamada: ' + e.message, 'error');
-                limpiarLlamada();
-            }
-        }
-
-        // ================================================================
-        // RECHAZAR LLAMADA ENTRANTE
-        // ================================================================
-        async function rechazarLlamadaEntrante() {
-            var callId = callState.incomingCallId;
-            if (!callId) return;
-
-            try {
-                await rechazarLlamada(callId);
-
-                document.getElementById('callIncoming').classList.remove('show');
-
-                if (callState._ringInterval) {
-                    clearInterval(callState._ringInterval);
-                    callState._ringInterval = null;
-                }
-
-                showToast('❌ Llamada rechazada', 'warning');
-
-            } catch (e) {
-                console.error('Error rechazando llamada:', e);
-            }
-        }
-
-        async function rechazarLlamada(callId) {
-            try {
-                await window.supabase
-                    .from('llamadas')
-                    .update({
-                        estado: 'rejected',
-                        updated_at: new Date().toISOString()
-                    })
-                    .eq('id', callId);
-            } catch (e) {
-                console.error('Error rechazando llamada:', e);
-            }
-        }
-
-        // ================================================================
-        // COLGAR LLAMADA
-        // ================================================================
-        async function colgarLlamada() {
-            if (!callState.active && !callState.callId) return;
-
-            try {
-                var session = await getSession();
-
-                // Actualizar estado en BD
-                if (callState.callId) {
-                    await window.supabase
-                        .from('llamadas')
-                        .update({
-                            estado: 'ended',
-                            updated_at: new Date().toISOString()
-                        })
-                        .eq('id', callState.callId);
-
-                    // Actualizar participantes
-                    if (session) {
-                        await window.supabase
-                            .from('llamadas_participantes')
-                            .update({
-                                estado: 'desconectado',
-                                left_at: new Date().toISOString()
-                            })
-                            .eq('llamada_id', callState.callId)
-                            .eq('usuario_id', session.user.id)
-                            .eq('estado', 'conectado');
-                    }
-                }
-
-                // Limpiar recursos LiveKit
-                limpiarRecursosLiveKit();
-
-                // Limpiar estado
-                limpiarLlamada();
-
-                // Ocultar UI
-                ocultarLlamada();
-                document.getElementById('callIncoming').classList.remove('show');
-
-                // Actualizar botón
-                var btnCall = document.getElementById('btnVideoCall');
-                if (btnCall) {
-                    btnCall.textContent = '📹';
-                    btnCall.classList.remove('active-call');
-                }
-
-                showToast('📞 Llamada finalizada', '');
-
-            } catch (e) {
-                console.error('Error colgando llamada:', e);
-                // Forzar limpieza
-                limpiarRecursosLiveKit();
-                limpiarLlamada();
-                ocultarLlamada();
-            }
-        }
-
-        // ================================================================
-        // LIMPIAR RECURSOS LIVEKIT
-        // ================================================================
-        function limpiarRecursosLiveKit() {
-            try {
-                if (callState.room) {
-                    callState.room.disconnect();
-                    callState.room = null;
-                }
-
-                // Detener tracks locales
-                if (callState.localTrack) {
-                    callState.localTrack.stop();
-                    callState.localTrack = null;
-                }
-
-                if (callState.audioTrack) {
-                    callState.audioTrack.stop();
-                    callState.audioTrack = null;
-                }
-
-                if (callState.screenTrack) {
-                    callState.screenTrack.stop();
-                    callState.screenTrack = null;
-                }
-
-                // Limpiar elementos de video
-                var remoteVideo = document.getElementById('remoteVideo');
-                if (remoteVideo) {
-                    remoteVideo.srcObject = null;
-                }
-                var localVideo = document.getElementById('localVideo');
-                if (localVideo) {
-                    localVideo.srcObject = null;
-                }
-
-                // Mostrar placeholders
-                document.getElementById('remoteAvatarPlaceholder').style.display = 'block';
-                document.getElementById('localAvatarPlaceholder').style.display = 'block';
-
-                // Cerrar canales
-                if (callChannel) {
-                    try { window.supabase.removeChannel(callChannel); } catch (e) {}
-                    callChannel = null;
-                }
-
-                // Detener contador
-                if (callState.durationInterval) {
-                    clearInterval(callState.durationInterval);
-                    callState.durationInterval = null;
-                }
-
-                if (callState._ringInterval) {
-                    clearInterval(callState._ringInterval);
-                    callState._ringInterval = null;
-                }
-
-            } catch (e) {
-                console.error('Error limpiando recursos LiveKit:', e);
-            }
-        }
-
-        // ================================================================
-        // LIMPIAR ESTADO DE LLAMADA
-        // ================================================================
-        function limpiarLlamada() {
-            callState.active = false;
-            callState.room = null;
-            callState.localTrack = null;
-            callState.audioTrack = null;
-            callState.screenTrack = null;
-            callState.callId = null;
-            callState.isInitiator = false;
-            callState.startTime = null;
-            callState.incomingCallId = null;
-            callState.incomingFrom = null;
-            callState.participants = [];
-
-            // Limpiar lista de participantes
-            document.getElementById('participantsList').innerHTML = '';
-            document.getElementById('participantsCount').textContent = '0';
-
-            // Resetear duración
-            document.getElementById('callDuration').textContent = '00:00';
-        }
-
-        // ================================================================
-        // ACTUALIZAR PARTICIPANTES
-        // ================================================================
-        function actualizarParticipantes(room) {
-            if (!room) return;
-
-            var participants = [];
-            var localIdentity = room.localParticipant.identity;
-
-            // Participante local
-            participants.push({
-                identity: localIdentity,
-                name: room.localParticipant.name || 'Tú',
-                isLocal: true
-            });
-
-            // Participantes remotos
-            room.participants.forEach(function(p) {
-                participants.push({
-                    identity: p.identity,
-                    name: p.name || 'Participante',
-                    isLocal: false
-                });
-            });
-
-            callState.participants = participants;
-
-            // Actualizar UI
-            var list = document.getElementById('participantsList');
-            var count = document.getElementById('participantsCount');
-
-            if (list) {
-                list.innerHTML = participants.map(function(p) {
-                    return '<div class="participant-item">' +
-                        '<span class="status-dot online"></span>' +
-                        escapeHTML(p.name) + (p.isLocal ? ' (Tú)' : '') +
-                        '</div>';
-                }).join('');
-            }
-
-            if (count) {
-                count.textContent = participants.length;
-            }
-        }
-
-        // ================================================================
-        // CONTROLES DE LLAMADA
-        // ================================================================
-        var audioMuted = false;
-        var videoMuted = false;
-        var screenSharing = false;
-
-        function toggleAudio() {
-            var btn = document.getElementById('btnToggleAudio');
-            if (!callState.room) return;
-
-            try {
-                audioMuted = !audioMuted;
-                if (callState.audioTrack) {
-                    callState.audioTrack.enabled = !audioMuted;
-                }
-
-                if (audioMuted) {
-                    btn.classList.add('muted');
-                    btn.textContent = '🔇';
-                    document.getElementById('localMuteIndicator').classList.add('show');
-                } else {
-                    btn.classList.remove('muted');
-                    btn.textContent = '🎤';
-                    document.getElementById('localMuteIndicator').classList.remove('show');
-                }
-
-                showToast(audioMuted ? '🔇 Micrófono silenciado' : '🎤 Micrófono activado', '');
-
-            } catch (e) {
-                console.error('Error toggling audio:', e);
-            }
-        }
-
-        function toggleVideo() {
-            var btn = document.getElementById('btnToggleVideo');
-            if (!callState.room) return;
-
-            try {
-                videoMuted = !videoMuted;
-                if (callState.localTrack) {
-                    callState.localTrack.enabled = !videoMuted;
-                }
-
-                if (videoMuted) {
-                    btn.classList.add('muted');
-                    btn.textContent = '📷❌';
-                    document.getElementById('localVideo').style.display = 'none';
-                    document.getElementById('localAvatarPlaceholder').style.display = 'block';
-                } else {
-                    btn.classList.remove('muted');
-                    btn.textContent = '📷';
-                    document.getElementById('localVideo').style.display = 'block';
-                    document.getElementById('localAvatarPlaceholder').style.display = 'none';
-                }
-
-                showToast(videoMuted ? '📷 Cámara desactivada' : '📷 Cámara activada', '');
-
-            } catch (e) {
-                console.error('Error toggling video:', e);
-            }
-        }
-
-        async function toggleScreenShare() {
-            var btn = document.getElementById('btnToggleScreen');
-            if (!callState.room) return;
-
-            try {
-                if (!screenSharing) {
-                    // Iniciar compartir pantalla
-                    var stream = await navigator.mediaDevices.getDisplayMedia({
-                        video: { cursor: 'always' },
-                        audio: true
-                    });
-
-                    var videoTrack = stream.getVideoTracks()[0];
-                    if (videoTrack) {
-                        var publication = await callState.room.localParticipant.publishTrack(videoTrack, {
-                            name: 'screen',
-                            source: LivekitClient.TrackSource.ScreenShare
-                        });
-                        callState.screenTrack = videoTrack;
-                        screenSharing = true;
-                        btn.classList.add('active');
-                        btn.textContent = '🖥️⏹️';
-
-                        // Cuando el usuario detiene el compartir desde el navegador
-                        videoTrack.onended = function() {
-                            detenerScreenShare();
-                        };
-
-                        showToast('🖥️ Compartiendo pantalla', 'success');
-                    }
-                } else {
-                    detenerScreenShare();
-                }
-
-            } catch (e) {
-                console.error('Error toggling screen share:', e);
-                if (e.name === 'NotAllowedError') {
-                    showToast('⚠️ Permiso denegado para compartir pantalla', 'warning');
-                } else {
-                    showToast('❌ Error al compartir pantalla: ' + e.message, 'error');
-                }
-            }
-        }
-
-        async function detenerScreenShare() {
-            try {
-                if (callState.screenTrack) {
-                    await callState.room.localParticipant.unpublishTrack(callState.screenTrack);
-                    callState.screenTrack.stop();
-                    callState.screenTrack = null;
-                }
-                screenSharing = false;
-                var btn = document.getElementById('btnToggleScreen');
-                if (btn) {
-                    btn.classList.remove('active');
-                    btn.textContent = '🖥️';
-                }
-                showToast('🖥️ Compartir pantalla detenido', '');
-            } catch (e) {
-                console.error('Error deteniendo screen share:', e);
-            }
-        }
-
-        function toggleParticipantsPanel() {
-            var panel = document.getElementById('participantsPanel');
-            if (panel) {
-                panel.classList.toggle('show');
-            }
-        }
-
-        // ================================================================
-        // LIMPIEZA DE RECURSOS
-        // ================================================================
-        function limpiarRecursosMensajes() {
-            if (realtimeChannel) {
-                try { window.supabase.removeChannel(realtimeChannel); } catch (e) {}
-                realtimeChannel = null;
-            }
-            if (mediaRecorder && mediaRecorder.state === 'recording') {
-                try { mediaRecorder.stop(); } catch (e) {}
-            }
-            if (audioChunks.length > 0) {
-                audioChunks = [];
-            }
-            archivosSeleccionados = [];
-            grabacionActiva = false;
-
-            // Limpiar recursos de llamada
-            limpiarRecursosLiveKit();
-            callListeners.forEach(function(listener) {
-                try { window.supabase.removeChannel(listener); } catch (e) {}
-            });
-            callListeners = [];
-        }
-
-        window.addEventListener('beforeunload', function() {
-            if (callState.active) {
-                colgarLlamada();
-            }
-            limpiarRecursosMensajes();
-        });
-
-        // ================================================================
-        // 🔄 INICIALIZACIÓN
+        // INICIALIZAR
         // ================================================================
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('◈ Sariel\'s - Mensajes con Videollamada');
-            console.log('✅ Inicializando...');
+            initStars();
 
-            cargarConversaciones();
-
-            var chatInput = document.getElementById('chatInput');
-            if (chatInput) {
-                chatInput.addEventListener('keydown', function(e) {
-                    if (e.key === 'Enter') {
-                        enviarMensaje();
-                    }
-                });
-            }
-
-            var btnEnviar = document.getElementById('btnEnviar');
-            if (btnEnviar) {
-                btnEnviar.addEventListener('click', enviarMensaje);
-            }
-
-            var searchInput = document.getElementById('searchInput');
-            if (searchInput) {
-                searchInput.addEventListener('input', function(e) {
-                    buscarContactos(e.target.value);
-                });
-            }
-
-            var searchInputModal = document.getElementById('searchInputModal');
-            if (searchInputModal) {
-                searchInputModal.addEventListener('input', function(e) {
-                    buscarContactos(e.target.value);
-                });
-            }
-
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape') {
-                    cerrarModalNuevoContacto();
-                    var incoming = document.getElementById('callIncoming');
-                    if (incoming && incoming.classList.contains('show')) {
-                        rechazarLlamadaEntrante();
-                    }
-                }
+            document.getElementById('btnEnviar').addEventListener('click', enviarMensaje);
+            document.getElementById('chatInput').addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') enviarMensaje();
             });
 
-            // Inicializar suscripción a llamadas
-            setTimeout(function() {
-                verificarAutenticacion().then(function(ok) {
-                    if (ok) {
-                        suscribirseALlamadas();
-                    }
-                });
-            }, 2000);
+            // Cargar conversación inicial
+            seleccionarConversacion(1);
+
+            console.log('◈ Sariel\'s - Mensajes Ultra Mega Pro');
+            console.log('◆ Burbujas con avatar y estados de conexión');
+            console.log('◆ Palomitas: ◈◈ = no leído, ◆◆ = leído');
         });
 
         // ================================================================
-        // 🎯 EXPOSICIÓN GLOBAL
+        // FONDO ESTELAR
         // ================================================================
-        window.cargarConversaciones = cargarConversaciones;
-        window.abrirConversacion = abrirConversacion;
-        window.enviarMensaje = enviarMensaje;
-        window.eliminarMensaje = eliminarMensaje;
-        window.editarMensaje = editarMensaje;
-        window.eliminarConversacion = eliminarConversacion;
-        window.bloquearUsuario = bloquearUsuario;
-        window.reportarMensaje = reportarMensaje;
-        window.buscarEnConversacion = buscarEnConversacion;
-        window.nuevaConversacion = nuevaConversacion;
-        window.cerrarModalNuevoContacto = cerrarModalNuevoContacto;
-        window.agregarContacto = agregarContacto;
-        window.buscarContactos = buscarContactos;
-        window.seleccionarArchivo = seleccionarArchivo;
-        window.handleFileSelect = handleFileSelect;
-        window.toggleGrabacionVoz = toggleGrabacionVoz;
+        function initStars() {
+            const canvas = document.getElementById('stars-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            let width, height, stars = [];
+            let animId = null;
+            let isVisible = true;
+
+            const isMobile = window.innerWidth < 600;
+            const STAR_COUNT = isMobile ? 40 : 100;
+
+            function resize() {
+                width = window.innerWidth;
+                height = window.innerHeight;
+                canvas.width = width;
+                canvas.height = height;
+                createStars();
+            }
+
+            function createStars() {
+                stars = [];
+                for (let i = 0; i < STAR_COUNT; i++) {
+                    stars.push({
+                        x: Math.random() * width,
+                        y: Math.random() * height,
+                        radius: Math.random() * 0.8 + 0.2,
+                        speed: Math.random() * 0.005 + 0.002,
+                        opacity: Math.random() * 0.5 + 0.2,
+                        twinklePhase: Math.random() * Math.PI * 2
+                    });
+                }
+            }
+
+            function draw() {
+                if (!isVisible) {
+                    animId = requestAnimationFrame(draw);
+                    return;
+                }
+                ctx.clearRect(0, 0, width, height);
+                for (let star of stars) {
+                    const opacity = star.opacity * (0.6 + 0.4 * Math.sin(star.twinklePhase));
+                    ctx.beginPath();
+                    ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
+                    ctx.fill();
+                    star.twinklePhase += 0.02;
+                    star.y += star.speed;
+                    if (star.y > height) {
+                        star.y = 0;
+                        star.x = Math.random() * width;
+                    }
+                }
+                animId = requestAnimationFrame(draw);
+            }
+
+            function pauseAnimation() { isVisible = false; }
+            function resumeAnimation() { isVisible = true; }
+
+            resize();
+            draw();
+
+            window.addEventListener('resize', resize);
+            document.addEventListener('visibilitychange', function() {
+                if (document.hidden) pauseAnimation();
+                else resumeAnimation();
+            });
+
+            return { pauseAnimation, resumeAnimation };
+        }
+
+        // ================================================================
+        // EXPONER FUNCIONES GLOBALES
+        // ================================================================
         window.showToast = showToast;
-        window.limpiarRecursosMensajes = limpiarRecursosMensajes;
-
-        // Videollamada
-        window.iniciarVideollamada = iniciarVideollamada;
-        window.aceptarLlamadaEntrante = aceptarLlamadaEntrante;
-        window.rechazarLlamadaEntrante = rechazarLlamadaEntrante;
-        window.colgarLlamada = colgarLlamada;
-        window.minimizarLlamada = minimizarLlamada;
-        window.toggleAudio = toggleAudio;
-        window.toggleVideo = toggleVideo;
-        window.toggleScreenShare = toggleScreenShare;
-        window.toggleParticipantsPanel = toggleParticipantsPanel;
-        window.mostrarLlamada = mostrarLlamada;
-        window.ocultarLlamada = ocultarLlamada;
+        window.seleccionarConversacion = seleccionarConversacion;
+        window.nuevaConversacion = nuevaConversacion;
+        window.enviarMensaje = enviarMensaje;
     </script>
-
 </body>
 </html>
