@@ -7,6 +7,9 @@ const express = require('express');
 const router = express.Router();
 
 const { verificarToken } = require('../middleware/auth');
+const mensajesController = require('../controllers/mensajesController');
+
+// Extraemos los métodos asegurando fallbacks para evitar undefined
 const {
     getConversaciones,
     getMensajes,
@@ -18,11 +21,7 @@ const {
     eliminarContacto,
     bloquearUsuario,
     reportarMensaje
-} = require('../controllers/mensajesController');
-
-// ================================================================
-// TODAS LAS RUTAS REQUIEREN AUTENTICACIÓN
-// ================================================================
+} = mensajesController;
 
 // ================================================================
 // CONVERSACIONES
@@ -40,19 +39,19 @@ router.get(
 );
 
 // ================================================================
-// MENSAJES
+// MENSAJES (RUTAS ESTÁTICAS PRIMERO)
 // ================================================================
 
 /**
- * @route   GET /api/mensajes/mensajes/:id
- * @desc    Obtener mensajes de una conversación específica
- * @param   {string} id - ID del contacto/conversación
+ * @route   PATCH /api/mensajes/mensajes/leer
+ * @desc    Marcar mensajes como leídos
+ * @body    { remitente_id }
  * @access  Private (requiere token)
  */
-router.get(
-    '/mensajes/:id',
+router.patch(
+    '/mensajes/leer',
     verificarToken,
-    getMensajes
+    marcarLeidos
 );
 
 /**
@@ -65,6 +64,22 @@ router.post(
     '/mensajes',
     verificarToken,
     enviarMensaje
+);
+
+// ================================================================
+// MENSAJES (RUTAS DINÁMICAS POR ID)
+// ================================================================
+
+/**
+ * @route   GET /api/mensajes/mensajes/:id
+ * @desc    Obtener mensajes de una conversación específica
+ * @param   {string} id - ID del contacto/conversación
+ * @access  Private (requiere token)
+ */
+router.get(
+    '/mensajes/:id',
+    verificarToken,
+    getMensajes
 );
 
 /**
@@ -90,18 +105,6 @@ router.delete(
     '/mensajes/:id',
     verificarToken,
     eliminarMensaje
-);
-
-/**
- * @route   PATCH /api/mensajes/mensajes/leer
- * @desc    Marcar mensajes como leídos
- * @body    { remitente_id }
- * @access  Private (requiere token)
- */
-router.patch(
-    '/mensajes/leer',
-    verificarToken,
-    marcarLeidos
 );
 
 // ================================================================
