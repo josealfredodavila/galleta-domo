@@ -19,6 +19,8 @@
    ✅ VIDEOLLAMADA LIVEKIT
    ✅ MENSAJERÍA (NUEVO)
    ✅ CONTENT-TYPE CORREGIDO PARA JS
+   ✅ MIDDLEWARES EN ORDEN CORRECTO
+   ✅ SOPORTE PARA SALAS LIVE_
 ================================================================ */
 
 const express = require('express');
@@ -361,6 +363,216 @@ async function verificarAdmin(
         });
     }
 }
+
+/* ================================================================
+   ═══════════════════════════════════════════════════════════════
+   ✅ MOVIDO: MIDDLEWARES DE SEGURIDAD (AHORA AL INICIO)
+   ═══════════════════════════════════════════════════════════════
+   Esto asegura que todas las rutas pasen por CORS, Rate Limit y Body Parser
+   ═══════════════════════════════════════════════════════════════
+================================================================ */
+
+app.disable(
+    'x-powered-by'
+);
+
+app.use(
+    helmet({
+        contentSecurityPolicy:
+            false
+    })
+);
+
+app.use(
+    compression()
+);
+
+const isProduction =
+    process.env.NODE_ENV ===
+    'production';
+
+const corsOrigins =
+    (
+        process.env.CORS_ORIGINS ||
+        ''
+    )
+        .split(',')
+        .map(origin =>
+            origin.trim()
+        )
+        .filter(Boolean);
+
+app.use(
+    cors({
+        origin:
+            function (
+                origin,
+                callback
+            ) {
+
+                if (!origin) {
+                    return callback(
+                        null,
+                        true
+                    );
+                }
+
+                if (!isProduction) {
+                    return callback(
+                        null,
+                        true
+                    );
+                }
+
+                if (
+                    corsOrigins.length ===
+                    0
+                ) {
+
+                    console.warn(
+                        '⚠️ CORS_ORIGINS no configurado en producción'
+                    );
+
+                    return callback(
+                        new Error(
+                            'Origen no permitido por CORS'
+                        )
+                    );
+                }
+
+                if (
+                    corsOrigins.includes(
+                        origin
+                    )
+                ) {
+
+                    return callback(
+                        null,
+                        true
+                    );
+                }
+
+                return callback(
+                    new Error(
+                        'Origen no permitido por CORS'
+                    )
+                );
+            },
+
+        credentials:
+            true
+    })
+);
+
+app.use(
+    morgan('combined')
+);
+
+/* ================================================================
+   ═══════════════════════════════════════════════════════════════
+   ✅ MOVIDO: RATE LIMIT GENERAL API (AHORA AL INICIO)
+   ═══════════════════════════════════════════════════════════════
+================================================================ */
+
+const apiLimiter =
+    rateLimit({
+        windowMs:
+            15 * 60 * 1000,
+
+        max:
+            300,
+
+        standardHeaders:
+            true,
+
+        legacyHeaders:
+            false,
+
+        message: {
+            success:
+                false,
+
+            error:
+                'Demasiadas peticiones'
+        }
+    });
+
+app.use(
+    '/api/',
+    (req, res, next) => {
+
+        if (
+            req.path.startsWith(
+                '/webhook/'
+            )
+        ) {
+            return next();
+        }
+
+        // Excepción para LiveKit para no limitar demasiado
+        if (
+            req.path === '/livekit/token'
+        ) {
+            return next();
+        }
+
+        return apiLimiter(
+            req,
+            res,
+            next
+        );
+    }
+);
+
+/* ================================================================
+   ═══════════════════════════════════════════════════════════════
+   ✅ MOVIDO: BODY PARSER (AHORA AL INICIO)
+   ═══════════════════════════════════════════════════════════════
+   Ahora req.body llega correctamente a /api/livekit/token y PATCH /api/usuarios/idioma
+   ═══════════════════════════════════════════════════════════════
+================================================================ */
+
+app.use(
+    express.json({
+        limit:
+            '2mb',
+
+        verify:
+            (
+                req,
+                res,
+                buf
+            ) => {
+
+                req.rawBody =
+                    Buffer.from(buf);
+            }
+    })
+);
+
+app.use(
+    express.urlencoded({
+        extended:
+            true,
+
+        limit:
+            '2mb',
+
+        verify:
+            (
+                req,
+                res,
+                buf
+            ) => {
+
+                if (!req.rawBody) {
+
+                    req.rawBody =
+                        Buffer.from(buf);
+                }
+            }
+    })
+);
 
 /* ================================================================
    SISTEMA MULTIIDIOMA / I18N
@@ -1114,24 +1326,44 @@ app.post(
             }
 
             /* ----------------------------------------------------
-               4. VERIFICAR QUE EL USUARIO ESTÁ AUTORIZADO EN LA LLAMADA
+               4. VERIFICAR QUE EL USUARIO ESTÁ AUTORIZADO EN LA LLAMADA O STREAM
             ---------------------------------------------------- */
 
-            // Extraer el ID de la llamada del roomName
+            // Extraer el ID de la llamada o stream del roomName
             const callIdMatch =
                 roomName.match(/^call_(.+)$/);
 
-            let callId =
-                null;
+            const liveIdMatch =
+                roomName.match(/^live_(.+)$/);
+
+            let callId = null;
+            let liveId = null;
+            let isCall = false;
+            let isLive = false;
 
             if (callIdMatch) {
-                callId =
-                    callIdMatch[1];
+                callId = callIdMatch[1];
+                isCall = true;
+            } else if (liveIdMatch) {
+                liveId = liveIdMatch[1];
+                isLive = true;
+            } else {
+                // ═══════════════════════════════════════════════════════════
+                // ✅ NUEVO: Soporte para salas live_ (streaming en vivo)
+                // ═══════════════════════════════════════════════════════════
+                return res.status(400).json({
+                    success: false,
+                    error: 'FORMATO_INVALIDO',
+                    message: 'El nombre de la sala debe comenzar con "call_" o "live_"'
+                });
             }
 
-            if (callId) {
+            // ──────────────────────────────────────────────────────────────
+            // VERIFICAR AUTORIZACIÓN PARA CALL (videollamadas)
+            // ──────────────────────────────────────────────────────────────
 
-                // Verificar que el usuario participa en esta llamada
+            if (isCall && callId) {
+
                 const {
                     data: llamada,
                     error: llamadaError
@@ -1155,7 +1387,6 @@ app.post(
                     });
                 }
 
-                // Verificar que el usuario es origen o destino
                 const esOrigen =
                     llamada.usuario_origen === userId;
 
@@ -1175,7 +1406,6 @@ app.post(
                     });
                 }
 
-                // Verificar que la llamada está activa o en ringing
                 if (
                     llamada.estado !== 'active' &&
                     llamada.estado !== 'ringing'
@@ -1191,16 +1421,68 @@ app.post(
                         message: 'La llamada no está disponible'
                     });
                 }
+            }
 
-            } else {
+            // ──────────────────────────────────────────────────────────────
+            // ✅ NUEVO: VERIFICAR AUTORIZACIÓN PARA LIVE (streaming en vivo)
+            // ──────────────────────────────────────────────────────────────
 
-                // Si no es una llamada con formato call_*, verificar que el usuario tiene autorización
-                // Solo permitir tokens para salas con formato call_*
-                return res.status(400).json({
-                    success: false,
-                    error: 'FORMATO_INVALIDO',
-                    message: 'El nombre de la sala debe comenzar con "call_"'
-                });
+            if (isLive && liveId) {
+
+                const {
+                    data: stream,
+                    error: streamError
+                } =
+                    await supabaseAdmin
+                        .from('streams')
+                        .select('usuario_id, estado')
+                        .eq('id', liveId)
+                        .maybeSingle();
+
+                if (streamError || !stream) {
+
+                    console.warn(
+                        `⚠️ Stream no encontrado: ${liveId}`
+                    );
+
+                    return res.status(404).json({
+                        success: false,
+                        error: 'STREAM_NO_ENCONTRADO',
+                        message: 'El stream no existe'
+                    });
+                }
+
+                // Solo el creador del stream puede transmitir
+                if (stream.usuario_id !== userId) {
+
+                    console.warn(
+                        `⚠️ Usuario ${userId} no autorizado en stream ${liveId}`
+                    );
+
+                    return res.status(403).json({
+                        success: false,
+                        error: 'NO_AUTORIZADO',
+                        message: 'No eres el creador de este stream'
+                    });
+                }
+
+                // Verificar que el stream está activo
+                if (
+                    stream.estado !== 'active' &&
+                    stream.estado !== 'live' &&
+                    stream.estado !== 'starting'
+                ) {
+
+                    console.warn(
+                        `⚠️ Stream ${liveId} en estado ${stream.estado}`
+                    );
+
+                    return res.status(400).json({
+                        success: false,
+                        error: 'STREAM_NO_DISPONIBLE',
+                        message: 'El stream no está disponible'
+                    });
+                }
             }
 
             /* ----------------------------------------------------
@@ -1258,7 +1540,7 @@ app.post(
                 token.toJwt();
 
             console.log(
-                `✅ Token LiveKit generado para ${userId} en sala ${roomName}`
+                `✅ Token LiveKit generado para ${userId} en sala ${roomName} (tipo: ${isCall ? 'call' : 'live'})`
             );
 
             return res.status(200).json({
@@ -1283,206 +1565,6 @@ app.post(
             });
         }
     }
-);
-
-/* ================================================================
-   MIDDLEWARES DE SEGURIDAD
-================================================================ */
-
-app.disable(
-    'x-powered-by'
-);
-
-app.use(
-    helmet({
-        contentSecurityPolicy:
-            false
-    })
-);
-
-app.use(
-    compression()
-);
-
-const isProduction =
-    process.env.NODE_ENV ===
-    'production';
-
-const corsOrigins =
-    (
-        process.env.CORS_ORIGINS ||
-        ''
-    )
-        .split(',')
-        .map(origin =>
-            origin.trim()
-        )
-        .filter(Boolean);
-
-app.use(
-    cors({
-        origin:
-            function (
-                origin,
-                callback
-            ) {
-
-                if (!origin) {
-                    return callback(
-                        null,
-                        true
-                    );
-                }
-
-                if (!isProduction) {
-                    return callback(
-                        null,
-                        true
-                    );
-                }
-
-                if (
-                    corsOrigins.length ===
-                    0
-                ) {
-
-                    console.warn(
-                        '⚠️ CORS_ORIGINS no configurado en producción'
-                    );
-
-                    return callback(
-                        new Error(
-                            'Origen no permitido por CORS'
-                        )
-                    );
-                }
-
-                if (
-                    corsOrigins.includes(
-                        origin
-                    )
-                ) {
-
-                    return callback(
-                        null,
-                        true
-                    );
-                }
-
-                return callback(
-                    new Error(
-                        'Origen no permitido por CORS'
-                    )
-                );
-            },
-
-        credentials:
-            true
-    })
-);
-
-app.use(
-    morgan('combined')
-);
-
-/* ================================================================
-   RATE LIMIT GENERAL API
-================================================================ */
-
-const apiLimiter =
-    rateLimit({
-        windowMs:
-            15 * 60 * 1000,
-
-        max:
-            300,
-
-        standardHeaders:
-            true,
-
-        legacyHeaders:
-            false,
-
-        message: {
-            success:
-                false,
-
-            error:
-                'Demasiadas peticiones'
-        }
-    });
-
-app.use(
-    '/api/',
-    (req, res, next) => {
-
-        if (
-            req.path.startsWith(
-                '/webhook/'
-            )
-        ) {
-            return next();
-        }
-
-        // Excepción para LiveKit para no limitar demasiado
-        if (
-            req.path === '/livekit/token'
-        ) {
-            return next();
-        }
-
-        return apiLimiter(
-            req,
-            res,
-            next
-        );
-    }
-);
-
-/* ================================================================
-   BODY PARSER
-================================================================ */
-
-app.use(
-    express.json({
-        limit:
-            '2mb',
-
-        verify:
-            (
-                req,
-                res,
-                buf
-            ) => {
-
-                req.rawBody =
-                    Buffer.from(buf);
-            }
-    })
-);
-
-app.use(
-    express.urlencoded({
-        extended:
-            true,
-
-        limit:
-            '2mb',
-
-        verify:
-            (
-                req,
-                res,
-                buf
-            ) => {
-
-                if (!req.rawBody) {
-
-                    req.rawBody =
-                        Buffer.from(buf);
-                }
-            }
-    })
 );
 
 /* ================================================================
@@ -2371,7 +2453,7 @@ app.use(
 
 /* ================================================================
    ═══════════════════════════════════════════════════════════════
-   ✅ RUTAS DE MENSAJERÍA (MOVIDAS AQUÍ CON LAS OTRAS RUTAS)
+   ✅ RUTAS DE MENSAJERÍA
    ═══════════════════════════════════════════════════════════════
 ================================================================ */
 
