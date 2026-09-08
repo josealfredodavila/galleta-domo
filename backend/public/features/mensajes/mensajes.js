@@ -1,17 +1,20 @@
 // ================================================================
-// MENSAJES.JS - SARIEL'S WEB3 (PRODUCCIÓN)
+// MENSAJES.JS - SARIEL'S WEB3 (PRODUCCIÓN) - VERSIÓN CON BACKEND
 // ================================================================
 
 window.conversacionActual = null;
 let suscripcionMensajes = null;
+const API_BASE = '/api/mensajes';
 
-function getSupabase() {
-    return window.supabaseClient || window.supabase;
-}
+// ================================================================
+// FUNCIONES AUXILIARES
+// ================================================================
 
 function formatearHora(fechaIso) {
     if (!fechaIso) return '';
-    return new Date(fechaIso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const fecha = new Date(fechaIso);
+    if (isNaN(fecha.getTime())) return '';
+    return fecha.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
 function escapeHTML(str) {
@@ -24,29 +27,41 @@ function escapeHTML(str) {
         .replace(/'/g, '&#039;');
 }
 
+function obtenerToken() {
+    return localStorage.getItem('token') || sessionStorage.getItem('token');
+}
+
+function headersAutenticados() {
+    return {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${obtenerToken()}`
+    };
+}
+
+// ================================================================
+// CARGAR CONVERSACIONES
+// ================================================================
+
 async function cargarConversaciones() {
     const container = document.getElementById('conversationList');
     if (!container) return;
 
-    const client = getSupabase();
-    if (!client) {
-        container.innerHTML = `<div class="sin-conversaciones"><p>Error: Cliente de base de datos no listo</p></div>`;
-        return;
-    }
-
     try {
-        const { data: { user }, error: userError } = await client.auth.getUser();
-        if (userError || !user) {
-            container.innerHTML = `<div class="sin-conversaciones"><p>Inicia sesión para ver tus chats</p></div>`;
-            return;
+        const response = await fetch(`${API_BASE}/conversaciones`, {
+            headers: headersAutenticados()
+        });
+
+        if (!response.ok) {
+            if (response.status === 401) {
+                container.innerHTML = `<div class="sin-conversaciones"><p>Inicia sesión para ver tus chats</p></div>`;
+                return;
+            }
+            throw new Error(`Error ${response.status}: ${response.statusText}`);
         }
 
-        const { data: participaciones, error: partError } = await client
-            .from('conversation_participants')
-            .select('conversation_id')
-            .eq('user_id', user.id);
+        const data = await response.json();
 
-        if (partError || !participaciones || participaciones.length === 0) {
+        if (!data.success || !data.conversaciones || data.conversaciones.length === 0) {
             container.innerHTML = `
                 <div class="sin-conversaciones">
                     <span class="icono">💬</span>
@@ -55,28 +70,15 @@ async function cargarConversaciones() {
             return;
         }
 
-        const convIds = participaciones.map(p => p.conversation_id);
-
-        const { data: participantes, error: partOtrosError } = await client
-            .from('conversation_participants')
-            .select('conversation_id, user_id, usuarios(id, username, avatar_url)')
-            .in('conversation_id', convIds)
-            .neq('user_id', user.id);
-
-        if (partOtrosError) throw partOtrosError;
-
         container.innerHTML = '';
-
-        if (!participantes || participantes.length === 0) {
-            container.innerHTML = `<div class="sin-conversaciones"><p>No hay otros participantes en los chats</p></div>`;
-            return;
-        }
-
-        participantes.forEach(p => {
-            const perfil = p.usuarios || {};
-            const username = perfil.username || 'Usuario';
-            const avatarUrl = perfil.avatar_url;
-            const convId = p.conversation_id;
+        
+        data.conversaciones.forEach(conv => {
+            const usuario = conv.otros_participantes?.[0] || {};
+            const username = usuario.username || 'Usuario';
+            const avatarUrl = usuario.avatar_url;
+            const convId = conv.id;
+            const ultimoMensaje = conv.ultimo_mensaje?.contenido || 'Toca para abrir el chat';
+            const hora = conv.ultimo_mensaje ? formatearHora(conv.ultimo_mensaje.created_at) : '';
 
             const div = document.createElement('div');
             div.className = `conversation-item ${window.conversacionActual === convId ? 'active' : ''}`;
@@ -88,7 +90,7 @@ async function cargarConversaciones() {
                 </div>
                 <div class="conversation-content">
                     <strong>${escapeHTML(username)}</strong>
-                    <span>Toca para abrir el chat</span>
+                    <span>${escapeHTML(ultimoMensaje)} ${hora ? `· ${hora}` : ''}</span>
                 </div>
             `;
             container.appendChild(div);
@@ -99,6 +101,10 @@ async function cargarConversaciones() {
         container.innerHTML = `<div class="sin-conversaciones"><p>Error al cargar las conversaciones</p></div>`;
     }
 }
+
+// ================================================================
+// ABRIR CONVERSACIÓN
+// ================================================================
 
 async function abrirConversacion(convId, nombre, avatarUrl) {
     window.conversacionActual = convId;
@@ -118,25 +124,37 @@ async function abrirConversacion(convId, nombre, avatarUrl) {
     suscribirMensajesTiempoReal(convId);
 }
 
+// ================================================================
+// CARGAR MENSAJES
+// ================================================================
+
 async function cargarMensajes(convId) {
     const container = document.getElementById('chatMessages');
     if (!container) return;
 
     container.innerHTML = `<div class="loading-mensajes">Cargando mensajes...</div>`;
 
-    const client = getSupabase();
     try {
-        const { data: { user } } = await client.auth.getUser();
+        const response = await fetch(`${API_BASE}/mensajes/${convId}`, {
+            headers: headersAutenticados()
+        });
 
-        const { data: mensajes, error } = await client
-            .from('messages')
-            .select('*')
-            .eq('conversation_id', convId)
-            .order('created_at', { ascending: true });
+        if (!response.ok) {
+            if (response.status === 404) {
+                container.innerHTML = `
+                    <div class="sin-mensajes">
+                        <span class="icono">💭</span>
+                        <p>No hay mensajes en este chat</p>
+                        <span style="font-size:0.7rem;opacity:0.7;">¡Sé el primero en escribir!</span>
+                    </div>`;
+                return;
+            }
+            throw new Error(`Error ${response.status}: ${response.statusText}`);
+        }
 
-        if (error) throw error;
+        const data = await response.json();
 
-        if (!mensajes || mensajes.length === 0) {
+        if (!data.success || !data.mensajes || data.mensajes.length === 0) {
             container.innerHTML = `
                 <div class="sin-mensajes">
                     <span class="icono">💭</span>
@@ -147,8 +165,10 @@ async function cargarMensajes(convId) {
         }
 
         container.innerHTML = '';
-        mensajes.forEach(msg => {
-            const esMio = msg.sender_id === user.id;
+        
+        const userId = data.usuario_id;
+        data.mensajes.forEach(msg => {
+            const esMio = msg.sender_id === userId;
             renderizarMensaje(msg, esMio);
         });
 
@@ -160,6 +180,10 @@ async function cargarMensajes(convId) {
     }
 }
 
+// ================================================================
+// RENDERIZAR MENSAJE
+// ================================================================
+
 function renderizarMensaje(msg, esMio) {
     const container = document.getElementById('chatMessages');
     if (!container) return;
@@ -169,40 +193,50 @@ function renderizarMensaje(msg, esMio) {
 
     let adjuntoHTML = '';
     if (msg.media_url) {
-        if (msg.tipo === 'imagen') {
+        const mediaType = msg.media_type || 'archivo';
+        if (mediaType === 'imagen' || mediaType === 'image') {
             adjuntoHTML = `
                 <div class="message-image">
                     <img src="${escapeHTML(msg.media_url)}" onclick="abrirModalImagen('${escapeHTML(msg.media_url)}')" alt="Imagen"/>
                 </div>`;
-        } else if (msg.tipo === 'audio') {
+        } else if (mediaType === 'audio') {
             adjuntoHTML = `
                 <div class="message-audio">
                     <audio controls src="${escapeHTML(msg.media_url)}"></audio>
                 </div>`;
-        } else if (msg.tipo === 'video') {
+        } else if (mediaType === 'video') {
             adjuntoHTML = `
                 <div class="message-video">
                     <video controls src="${escapeHTML(msg.media_url)}" style="max-width:100%; border-radius:8px;"></video>
                 </div>`;
         } else {
+            const nombreArchivo = msg.file_name || 'Descargar archivo';
             adjuntoHTML = `
                 <div class="message-file">
-                    <a href="${escapeHTML(msg.media_url)}" target="_blank" download>📎 ${escapeHTML(msg.nombre_archivo || 'Descargar archivo')}</a>
+                    <a href="${escapeHTML(msg.media_url)}" target="_blank" download>📎 ${escapeHTML(nombreArchivo)}</a>
                 </div>`;
         }
     }
 
+    const contenido = msg.contenido || '';
+    const hora = formatearHora(msg.created_at);
+
     div.innerHTML = `
-        ${msg.contenido ? `<div class="message-text">${escapeHTML(msg.contenido)}</div>` : ''}
+        ${contenido ? `<div class="message-text">${escapeHTML(contenido)}</div>` : ''}
         ${adjuntoHTML}
         <div class="message-meta">
-            <span>${formatearHora(msg.created_at)}</span>
+            <span>${hora}</span>
+            ${esMio ? `<span>${msg.is_read ? '✓✓' : '✓'}</span>` : ''}
         </div>
     `;
 
     container.appendChild(div);
     container.scrollTop = container.scrollHeight;
 }
+
+// ================================================================
+// ENVIAR MENSAJE
+// ================================================================
 
 async function enviarMensaje() {
     if (!window.conversacionActual) {
@@ -221,100 +255,192 @@ async function enviarMensaje() {
     const btnEnviar = document.getElementById('sendMessageButton');
     if (btnEnviar) btnEnviar.disabled = true;
 
-    const client = getSupabase();
-
     try {
-        const { data: { user } } = await client.auth.getUser();
         let mediaUrl = null;
-        let tipoMensaje = 'texto';
+        let mediaType = 'texto';
+        let fileName = null;
+        let fileSize = null;
+        let mimeType = null;
 
+        // Si hay archivo, subirlo primero
         if (file) {
-            const fileExt = file.name.split('.').pop().toLowerCase();
-            const esAudio = file.type.startsWith('audio/') || ['mp3', 'wav', 'ogg', 'm4a'].includes(fileExt);
-            const bucketName = esAudio ? 'chat-audio' : 'chat-attachments';
-            const folderPrefix = esAudio ? 'audios' : 'media';
+            const formData = new FormData();
+            formData.append('archivo', file);
+            formData.append('conversacionId', window.conversacionActual);
 
-            const filePath = `${folderPrefix}/${window.conversacionActual}/${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
+            const uploadResponse = await fetch(`${API_BASE}/subir-archivo`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${obtenerToken()}`
+                },
+                body: formData
+            });
 
-            const { error: uploadError } = await client.storage
-                .from(bucketName)
-                .upload(filePath, file);
+            if (!uploadResponse.ok) {
+                throw new Error('Error al subir el archivo');
+            }
 
-            if (uploadError) throw uploadError;
+            const uploadData = await uploadResponse.json();
+            if (!uploadData.success) {
+                throw new Error(uploadData.error || 'Error al subir el archivo');
+            }
 
-            const { data: publicUrlData } = client.storage
-                .from(bucketName)
-                .getPublicUrl(filePath);
-
-            mediaUrl = publicUrlData.publicUrl;
-
-            if (file.type.startsWith('image/')) tipoMensaje = 'imagen';
-            else if (file.type.startsWith('video/')) tipoMensaje = 'video';
-            else if (esAudio) tipoMensaje = 'audio';
-            else tipoMensaje = 'archivo';
+            mediaUrl = uploadData.url;
+            mediaType = uploadData.tipo || 'archivo';
+            fileName = file.name;
+            fileSize = file.size;
+            mimeType = file.type;
         }
 
-        const { error: sendError } = await client
-            .from('messages')
-            .insert({
-                conversation_id: window.conversacionActual,
-                sender_id: user.id,
+        // Enviar mensaje
+        const response = await fetch(`${API_BASE}/enviar`, {
+            method: 'POST',
+            headers: headersAutenticados(),
+            body: JSON.stringify({
+                conversationId: window.conversacionActual,
                 contenido: texto || null,
                 media_url: mediaUrl,
-                tipo: tipoMensaje,
-                nombre_archivo: file ? file.name : null,
-                tamano_bytes: file ? file.size : null,
-                mime_type: file ? file.type : null
+                media_type: mediaType,
+                file_name: fileName,
+                file_size: fileSize,
+                mime_type: mimeType
             })
-            .select()
-            .single();
+        });
 
-        if (sendError) throw sendError;
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Error al enviar mensaje');
+        }
 
+        const data = await response.json();
+        if (!data.success) {
+            throw new Error(data.error || 'Error al enviar mensaje');
+        }
+
+        // Limpiar campos
         if (input) input.value = '';
         if (fileInput) fileInput.value = '';
         limpiarArchivosSeleccionados();
-        actualizarContadorTexto();
+
+        // Agregar mensaje localmente
+        const mensajeEnviado = data.mensaje;
+        if (mensajeEnviado) {
+            renderizarMensaje(mensajeEnviado, true);
+        }
 
     } catch (err) {
         console.error('Error al enviar mensaje:', err);
-        alert('Error al enviar el mensaje');
+        alert(err.message || 'Error al enviar el mensaje');
     } finally {
         if (btnEnviar) btnEnviar.disabled = false;
     }
 }
 
-function suscribirMensajesTiempoReal(convId) {
-    const client = getSupabase();
-    if (!client) return;
+// ================================================================
+// SUSCRIPCIÓN EN TIEMPO REAL (Polling simple)
+// ================================================================
 
+let ultimoMensajeId = null;
+
+function suscribirMensajesTiempoReal(convId) {
+    // Cancelar suscripción anterior si existe
     if (suscripcionMensajes) {
-        client.removeChannel(suscripcionMensajes);
+        clearInterval(suscripcionMensajes);
+        suscripcionMensajes = null;
     }
 
-    suscripcionMensajes = client
-        .channel(`chat_${convId}`)
-        .on(
-            'postgres_changes',
-            {
-                event: 'INSERT',
-                schema: 'public',
-                table: 'messages',
-                filter: `conversation_id=eq.${convId}`
-            },
-            async (payload) => {
-                const nuevoMsg = payload.new;
-                const { data: { user } } = await client.auth.getUser();
+    // Usar polling como fallback cuando no hay WebSocket
+    suscripcionMensajes = setInterval(async () => {
+        try {
+            const response = await fetch(`${API_BASE}/mensajes/${convId}?since=${ultimoMensajeId || ''}`, {
+                headers: headersAutenticados()
+            });
 
-                const sinMensajesEl = document.querySelector('.chat-messages .sin-mensajes');
-                if (sinMensajesEl) sinMensajesEl.remove();
+            if (!response.ok) return;
 
-                const esMio = nuevoMsg.sender_id === user.id;
-                renderizarMensaje(nuevoMsg, esMio);
-            }
-        )
-        .subscribe();
+            const data = await response.json();
+            if (!data.success || !data.mensajes) return;
+
+            const userId = data.usuario_id;
+            const mensajesNuevos = data.mensajes;
+
+            // Filtrar mensajes nuevos (los que no están en el DOM)
+            const mensajesExistentes = document.querySelectorAll('.chat-messages .message');
+            const ultimoMensajeDom = mensajesExistentes[mensajesExistentes.length - 1];
+            const ultimoId = ultimoMensajeDom?.dataset?.mensajeId;
+
+            mensajesNuevos.forEach(msg => {
+                if (msg.id === ultimoId) return;
+                // Verificar si ya existe en el DOM
+                const existe = document.querySelector(`.chat-messages .message[data-mensaje-id="${msg.id}"]`);
+                if (!existe) {
+                    const esMio = msg.sender_id === userId;
+                    renderizarMensaje(msg, esMio);
+                    if (msg.id) ultimoMensajeId = msg.id;
+                }
+            });
+
+        } catch (err) {
+            // Silenciar errores de polling
+        }
+    }, 3000);
 }
+
+// ================================================================
+// ELIMINAR CONVERSACIÓN
+// ================================================================
+
+async function eliminarConversacion() {
+    if (!window.conversacionActual) {
+        return alert('Selecciona una conversación primero');
+    }
+
+    if (!confirm('¿Deseas salir de este chat?')) return;
+
+    try {
+        const response = await fetch(`${API_BASE}/conversacion/${window.conversacionActual}`, {
+            method: 'DELETE',
+            headers: headersAutenticados()
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Error al salir del chat');
+        }
+
+        const data = await response.json();
+        if (!data.success) {
+            throw new Error(data.error || 'Error al salir del chat');
+        }
+
+        // Limpiar estado
+        window.conversacionActual = null;
+        document.getElementById('chatUserName').textContent = 'Selecciona una conversación';
+        document.getElementById('chatUserAvatar').innerHTML = '<span>◈</span>';
+        document.getElementById('chatMessages').innerHTML = `
+            <div class="sin-mensajes">
+                <span class="icono">💭</span>
+                <p>Selecciona una conversación</p>
+            </div>
+        `;
+
+        // Cancelar suscripción
+        if (suscripcionMensajes) {
+            clearInterval(suscripcionMensajes);
+            suscripcionMensajes = null;
+        }
+
+        cargarConversaciones();
+
+    } catch (err) {
+        console.error('Error al eliminar conversación:', err);
+        alert(err.message || 'Error al salir del chat');
+    }
+}
+
+// ================================================================
+// NUEVA CONVERSACIÓN
+// ================================================================
 
 function nuevaConversacion() {
     const modal = document.getElementById('modalNuevoContacto');
@@ -324,6 +450,11 @@ function nuevaConversacion() {
         if (input) {
             input.value = '';
             input.focus();
+            // Limpiar resultados
+            const resultados = document.getElementById('resultadosBusqueda');
+            if (resultados) {
+                resultados.innerHTML = '<p style="text-align:center;color:var(--text-muted);font-size:0.75rem;padding:12px;">Escribe al menos 2 caracteres</p>';
+            }
         }
     }
 }
@@ -333,51 +464,48 @@ function cerrarModalNuevoContacto() {
     if (modal) modal.classList.remove('show');
 }
 
+// ================================================================
+// INICIAR CONVERSACIÓN CON USUARIO
+// ================================================================
+
 async function iniciarConversacionConUsuario(targetUserId) {
-    const client = getSupabase();
     try {
-        const { data: { user } } = await client.auth.getUser();
-        if (!user) return alert('Inicia sesión para chatear');
-
-        const { data: nuevaConv, error: convError } = await client
-            .from('conversations')
-            .insert({
-                usuario_a_id: user.id,
-                usuario_b_id: targetUserId,
-                tipo: 'directo'
+        const response = await fetch(`${API_BASE}/conversacion`, {
+            method: 'POST',
+            headers: headersAutenticados(),
+            body: JSON.stringify({
+                targetUserId: targetUserId
             })
-            .select()
-            .single();
+        });
 
-        if (convError) throw convError;
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Error al crear la conversación');
+        }
 
-        const { error: partError } = await client
-            .from('conversation_participants')
-            .insert([
-                { conversation_id: nuevaConv.id, user_id: user.id },
-                { conversation_id: nuevaConv.id, user_id: targetUserId }
-            ]);
-
-        if (partError) throw partError;
+        const data = await response.json();
+        if (!data.success) {
+            throw new Error(data.error || 'Error al crear la conversación');
+        }
 
         cerrarModalNuevoContacto();
 
-        const { data: targetProfile } = await client
-            .from('usuarios')
-            .select('username, avatar_url')
-            .eq('id', targetUserId)
-            .single();
+        const conversacion = data.conversacion;
+        const usuario = data.otros_participantes?.[0] || {};
+        const nombre = usuario.username || 'Usuario';
+        const avatar = usuario.avatar_url || null;
 
-        const nombre = targetProfile ? targetProfile.username : 'Usuario';
-        const avatar = targetProfile ? targetProfile.avatar_url : null;
-
-        abrirConversacion(nuevaConv.id, nombre, avatar);
+        abrirConversacion(conversacion.id, nombre, avatar);
 
     } catch (err) {
         console.error('Error al iniciar conversación:', err);
-        alert('Error al crear el chat');
+        alert(err.message || 'Error al crear el chat');
     }
 }
+
+// ================================================================
+// ABRIR MODAL DE IMAGEN
+// ================================================================
 
 function abrirModalImagen(src) {
     const modal = document.getElementById('modalImagenMensaje');
@@ -388,18 +516,18 @@ function abrirModalImagen(src) {
     }
 }
 
+// ================================================================
+// LIMPIAR ARCHIVOS SELECCIONADOS
+// ================================================================
+
 function limpiarArchivosSeleccionados() {
     const div = document.getElementById('archivosSeleccionados');
     if (div) div.innerHTML = '';
 }
 
-function actualizarContadorTexto() {
-    const input = document.getElementById('messageInput');
-    const counter = document.getElementById('charCounter');
-    if (input && counter) {
-        counter.textContent = `${input.value.length}/2000`;
-    }
-}
+// ================================================================
+// EVENTOS DOM
+// ================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
     const messageInput = document.getElementById('messageInput');
@@ -407,7 +535,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (messageInput) {
         messageInput.addEventListener('input', () => {
-            actualizarContadorTexto();
             messageInput.style.height = 'auto';
             messageInput.style.height = Math.min(messageInput.scrollHeight, 100) + 'px';
         });
@@ -428,7 +555,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (file) {
                     divContainer.innerHTML = `
                         <div class="archivo-seleccionado">
-                            <span>📎 ${escapeHTML(file.name)}</span>
+                            <span>📎 ${escapeHTML(file.name)} (${(file.size / 1024).toFixed(1)} KB)</span>
                             <button onclick="document.getElementById('fileInput').value=''; limpiarArchivosSeleccionados();">✕</button>
                         </div>`;
                 } else {
@@ -437,7 +564,14 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+    // Cargar conversaciones al iniciar
+    cargarConversaciones();
 });
+
+// ================================================================
+// EXPONER FUNCIONES GLOBALMENTE
+// ================================================================
 
 window.cargarConversaciones = cargarConversaciones;
 window.abrirConversacion = abrirConversacion;
@@ -447,3 +581,4 @@ window.cerrarModalNuevoContacto = cerrarModalNuevoContacto;
 window.iniciarConversacionConUsuario = iniciarConversacionConUsuario;
 window.abrirModalImagen = abrirModalImagen;
 window.limpiarArchivosSeleccionados = limpiarArchivosSeleccionados;
+window.eliminarConversacion = eliminarConversacion;
