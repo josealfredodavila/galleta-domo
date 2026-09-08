@@ -1,6 +1,6 @@
 // ================================================================
 // MENSAJES - SARIEL'S ECOSYSTEM
-// VERSIÓN CORREGIDA - COMPATIBLE CON BACKEND
+// VERSIÓN FINAL - AUDITORÍA QUIRÚRGICA COMPLETA
 // ================================================================
 
 // ================================================================
@@ -13,85 +13,86 @@ if (typeof supabase === 'undefined') {
 }
 
 // ================================================================
-// ESCAPE HTML - PREVENCIÓN XSS
 // ================================================================
+// 📋 SISTEMA DE LOGGING ESTRUCTURADO
+// ================================================================
+// ================================================================
+
+const Logger = {
+    levels: {
+        DEBUG: 0,
+        INFO: 1,
+        WARN: 2,
+        ERROR: 3,
+        FATAL: 4
+    },
+    
+    _level: 1,
+    
+    setLevel: function(level) {
+        this._level = this.levels[level] || 1;
+    },
+    
+    _log: function(level, message, data) {
+        data = data || null;
+        const levelName = Object.keys(this.levels).find(
+            function(k) { return this.levels[k] === level; }.bind(this)
+        );
+        
+        if (level < this._level) return;
+        
+        const entry = {
+            timestamp: new Date().toISOString(),
+            level: levelName,
+            message: message,
+            data: data,
+            module: 'mensajes'
+        };
+        
+        const prefix = '[' + entry.timestamp + '] [' + levelName + ']';
+        if (level >= this.levels.ERROR) {
+            console.error(prefix, message, data || '');
+        } else if (level >= this.levels.WARN) {
+            console.warn(prefix, message, data || '');
+        } else {
+            console.log(prefix, message, data || '');
+        }
+    },
+    
+    debug: function(message, data) { this._log(this.levels.DEBUG, message, data); },
+    info: function(message, data) { this._log(this.levels.INFO, message, data); },
+    warn: function(message, data) { this._log(this.levels.WARN, message, data); },
+    error: function(message, data) { this._log(this.levels.ERROR, message, data); },
+    fatal: function(message, data) { this._log(this.levels.FATAL, message, data); }
+};
+
+// ================================================================
+// ================================================================
+// 🛡️ SEGURIDAD - ESCAPE HTML
+// ================================================================
+// ================================================================
+
 function escapeHTML(texto) {
     if (!texto) return '';
-    const div = document.createElement('div');
+    var div = document.createElement('div');
     div.textContent = texto;
     return div.innerHTML;
 }
 
 // ================================================================
-// TOAST NOTIFICACIONES
 // ================================================================
-function showToast(msg, type = '', duration = 3500) {
-    try {
-        let t = document.getElementById('toast');
-        if (!t) {
-            t = document.createElement('div');
-            t.id = 'toast';
-            t.className = 'toast';
-            document.body.appendChild(t);
-        }
-        t.textContent = msg;
-        t.className = 'toast show';
-        if (type === 'error') t.classList.add('error');
-        else if (type === 'warning') t.classList.add('warning');
-        else if (type === 'success') t.classList.add('success');
-        else t.classList.remove('error', 'warning', 'success');
-        clearTimeout(t._timeout);
-        t._timeout = setTimeout(() => t.classList.remove('show'), duration);
-    } catch (e) {
-        console.warn('Toast no disponible:', e);
-        alert(msg);
-    }
-}
+// 🛡️ SEGURIDAD - SANITIZACIÓN COMPLETA
+// ================================================================
+// ================================================================
 
-// ================================================================
-// OBTENER SESIÓN
-// ================================================================
-async function getSession() {
-    try {
-        const { data: { session } } = await supabase.auth.getSession();
-        return session;
-    } catch (error) {
-        console.error('Error obteniendo sesión:', error);
-        return null;
-    }
-}
-
-// ================================================================
-// VERIFICAR AUTENTICACIÓN
-// ================================================================
-async function verificarAutenticacion() {
-    const session = await getSession();
-    if (!session) {
-        showToast('⚠️ Inicia sesión para usar mensajería', 'warning');
-        return false;
-    }
-    usuarioActual = session.user;
-    return true;
-}
-
-// ================================================================
-// VARIABLES GLOBALES
-// ================================================================
-let usuarioActual = null;
-let conversacionActual = null;
-let realtimeChannel = null;
-let archivosSeleccionados = [];
-let grabacionActiva = false;
-let mediaRecorder = null;
-let audioChunks = [];
-
-// ================================================================
-// FORMATEAR TEXTO (Emojis) - CON ESCAPE HTML
-// ================================================================
-function formatearTexto(texto) {
+function sanitizarContenido(texto) {
     if (!texto) return '';
-    let textoFormateado = escapeHTML(texto);
-    const emojis = {
+    
+    var div = document.createElement('div');
+    div.textContent = texto;
+    var sanitizado = div.innerHTML;
+
+    var emojisSeguros = {
         ':feliz:': '😊',
         ':risa:': '😂',
         ':amo:': '❤️',
@@ -107,346 +108,798 @@ function formatearTexto(texto) {
         ':rocket:': '🚀',
         ':sariel:': '◈'
     };
-    for (const [key, value] of Object.entries(emojis)) {
-        textoFormateado = textoFormateado.replaceAll(key, value);
+
+    for (var key in emojisSeguros) {
+        if (emojisSeguros.hasOwnProperty(key)) {
+            var pattern = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            sanitizado = sanitizado.replace(new RegExp(pattern, 'g'), emojisSeguros[key]);
+        }
     }
-    return textoFormateado;
+
+    sanitizado = sanitizado.replace(/<a\s+href=["'](javascript:|data:)/gi, '<a href="#"');
+    sanitizado = sanitizado.replace(/on\w+\s*=/gi, 'data-');
+
+    sanitizado = sanitizado.replace(/&/g, '&amp;')
+                           .replace(/</g, '&lt;')
+                           .replace(/>/g, '&gt;')
+                           .replace(/"/g, '&quot;');
+
+    return sanitizado;
 }
 
 // ================================================================
+// ================================================================
+// 📋 TOAST NOTIFICACIONES
+// ================================================================
+// ================================================================
+
+function showToast(msg, type, duration) {
+    type = type || '';
+    duration = duration || 3500;
+    try {
+        var t = document.getElementById('toast');
+        if (!t) {
+            t = document.createElement('div');
+            t.id = 'toast';
+            t.className = 'toast';
+            document.body.appendChild(t);
+        }
+        t.textContent = msg;
+        t.className = 'toast show';
+        if (type === 'error') t.classList.add('error');
+        else if (type === 'warning') t.classList.add('warning');
+        else if (type === 'success') t.classList.add('success');
+        else t.classList.remove('error', 'warning', 'success');
+        clearTimeout(t._timeout);
+        t._timeout = setTimeout(function() { t.classList.remove('show'); }, duration);
+    } catch (e) {
+        Logger.warn('Toast no disponible', e);
+        alert(msg);
+    }
+}
+
+// ================================================================
+// ================================================================
+// 🔐 SESSION MANAGER - PATRÓN SINGLETON
+// ================================================================
+// ================================================================
+
+function SessionManager() {
+    this._usuario = null;
+    this._session = null;
+    this._lastRefresh = null;
+    this._refreshLock = false;
+}
+
+SessionManager.prototype = {
+    constructor: SessionManager,
+
+    /** Obtiene el usuario actual de forma segura */
+    get usuario() {
+        return this._usuario;
+    },
+
+    /** Obtiene la sesión actual de forma segura */
+    get session() {
+        return this._session;
+    },
+
+    /** Verifica si el usuario está autenticado */
+    get isAuthenticated() {
+        return this._usuario !== null && this._session !== null;
+    },
+
+    getUsuario: function() {
+        if (this._refreshLock) {
+            return new Promise(function(resolve) {
+                setTimeout(function() { resolve(this._usuario); }.bind(this), 100);
+            }.bind(this));
+        }
+
+        if (this._usuario && this._session) {
+            var expiryTime = new Date(this._session.expires_at);
+            var timeUntilExpiry = expiryTime - Date.now();
+            
+            if (timeUntilExpiry < 300000) {
+                return this._refreshSession();
+            }
+            return Promise.resolve(this._usuario);
+        }
+
+        return this._refreshSession();
+    },
+
+    getSession: function() {
+        if (this._session) return Promise.resolve(this._session);
+        return this.getUsuario().then(function() {
+            return this._session;
+        }.bind(this));
+    },
+
+    _refreshSession: function() {
+        if (this._refreshLock) return Promise.resolve(this._usuario);
+        
+        this._refreshLock = true;
+        return supabase.auth.getSession()
+            .then(function(result) {
+                var session = result.data.session;
+                if (!session) {
+                    this._usuario = null;
+                    this._session = null;
+                    return null;
+                }
+                this._session = session;
+                this._usuario = session.user;
+                this._lastRefresh = Date.now();
+                return this._usuario;
+            }.bind(this))
+            .catch(function(error) {
+                Logger.error('Error refrescando sesión', error);
+                return null;
+            })
+            .finally(function() {
+                this._refreshLock = false;
+            }.bind(this));
+    },
+
+    verificarAutenticacion: function() {
+        return this.getUsuario().then(function(usuario) {
+            if (!usuario) {
+                showToast('⚠️ Inicia sesión para usar mensajería', 'warning');
+                return false;
+            }
+            return true;
+        });
+    },
+
+    logout: function() {
+        this._usuario = null;
+        this._session = null;
+        this._lastRefresh = null;
+        return supabase.auth.signOut();
+    }
+};
+
+var sessionManager = new SessionManager();
+
+// ================================================================
+// ================================================================
+// 📡 API CALL - CON MANEJO DE CORS Y TIMEOUT
+// ================================================================
+// ================================================================
+
+/**
+ * Realiza una llamada a la API con manejo de errores, CORS y timeout
+ * @param {string} endpoint - URL del endpoint
+ * @param {object} options - Opciones de fetch
+ * @param {number} timeout - Timeout en milisegundos (default 30000)
+ * @returns {Promise<object|null>} Respuesta de la API o null si hay error
+ */
+function llamadaAPI(endpoint, options, timeout) {
+    options = options || {};
+    timeout = timeout || 30000;
+    
+    var controller = new AbortController();
+    var timeoutId = setTimeout(function() { controller.abort(); }, timeout);
+    
+    return sessionManager.getSession()
+        .then(function(session) {
+            if (!session) throw new Error('No autenticado');
+
+            return fetch(endpoint, {
+                ...options,
+                headers: {
+                    'Authorization': 'Bearer ' + session.access_token,
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    ...options.headers
+                },
+                signal: controller.signal
+            });
+        })
+        .then(function(response) {
+            clearTimeout(timeoutId);
+
+            if (response.status === 403 || response.status === 401) {
+                showToast('⚠️ Sesión expirada, por favor inicia sesión nuevamente', 'error');
+                return sessionManager.logout().then(function() {
+                    window.location.href = '/login';
+                    return null;
+                });
+            }
+
+            if (!response.ok) {
+                return response.json().catch(function() { return {}; }).then(function(errorData) {
+                    throw new Error(errorData.error || 'Error ' + response.status + ': ' + response.statusText);
+                });
+            }
+
+            return response.json();
+        })
+        .catch(function(error) {
+            clearTimeout(timeoutId);
+            if (error.name === 'AbortError') {
+                showToast('⏳ La operación tardó demasiado, intenta de nuevo', 'warning');
+                Logger.warn('Timeout en API', { endpoint: endpoint, timeout: timeout });
+                return null;
+            }
+            if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+                showToast('❌ Error de conexión con el servidor', 'error');
+                Logger.error('CORS/Network Error', { endpoint: endpoint, error: error.message });
+                return null;
+            }
+            throw error;
+        });
+}
+
+// ================================================================
+// ================================================================
+// 🚦 RATE LIMITER - CONTROL DE FRECUENCIA
+// ================================================================
+// ================================================================
+
+var rateLimiter = {
+    _lastSend: 0,
+    _pendingMessages: 0,
+    _MAX_MESSAGES_PER_SECOND: 3,
+    _MAX_PENDING: 5,
+
+    canSend: function() {
+        var now = Date.now();
+        var diff = now - this._lastSend;
+        
+        if (this._pendingMessages >= this._MAX_PENDING) {
+            showToast('⏳ Demasiados mensajes pendientes, espera un momento', 'warning');
+            return false;
+        }
+
+        if (diff < 1000 && this._pendingMessages > 0) {
+            showToast('⏳ Por favor espera antes de enviar más mensajes', 'warning');
+            return false;
+        }
+
+        if (diff < 300) {
+            showToast('⏳ Demasiado rápido, espera un momento', 'warning');
+            return false;
+        }
+
+        this._lastSend = now;
+        this._pendingMessages++;
+        setTimeout(function() { this._pendingMessages--; }.bind(this), 1000);
+        return true;
+    }
+};
+
+// ================================================================
+// ================================================================
+// 📁 VALIDACIÓN DE ARCHIVOS
+// ================================================================
+// ================================================================
+
+var MAX_FILE_SIZE = 10 * 1024 * 1024;
+var MAX_FILES = 5;
+var TIPOS_PERMITIDOS = [
+    'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+    'audio/mpeg', 'audio/webm', 'audio/ogg', 'audio/wav'
+];
+var EXTENSIONES_PERMITIDAS = [
+    'jpg', 'jpeg', 'png', 'gif', 'webp',
+    'mp3', 'webm', 'ogg', 'wav'
+];
+
+/**
+ * Valida un archivo para subida
+ * @param {File} file - Archivo a validar
+ * @returns {boolean} true si es válido
+ */
+function validarArchivo(file) {
+    if (file.size > MAX_FILE_SIZE) {
+        showToast('❌ Archivo demasiado grande (máx ' + (MAX_FILE_SIZE/1024/1024) + 'MB)', 'error');
+        return false;
+    }
+
+    if (TIPOS_PERMITIDOS.indexOf(file.type) === -1) {
+        showToast('❌ Tipo de archivo no permitido', 'error');
+        return false;
+    }
+
+    var ext = file.name.split('.').pop().toLowerCase();
+    if (EXTENSIONES_PERMITIDAS.indexOf(ext) === -1) {
+        showToast('❌ Extensión de archivo no permitida', 'error');
+        return false;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+        if (!confirm('⚠️ El archivo ' + file.name + ' pesa ' + (file.size/1024/1024).toFixed(1) + 'MB. ¿Continuar?')) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+// ================================================================
+// ================================================================
+// 📡 CANAL REALTIME CON RECONEXIÓN
+// ================================================================
+// ================================================================
+
+var currentChannel = null;
+var reconnectAttempts = 0;
+var MAX_RECONNECT_ATTEMPTS = 5;
+var RECONNECT_DELAY = 2000;
+
+/**
+ * Crea un canal de Realtime con reconexión automática
+ * @param {string} contactoId - ID del contacto
+ * @param {Function} onMessage - Callback para mensajes nuevos
+ * @param {Function} onUpdate - Callback para actualizaciones
+ * @returns {object} Canal de Supabase
+ */
+function crearCanalRealtime(contactoId, onMessage, onUpdate) {
+    var channel = supabase
+        .channel('chat-' + contactoId)
+        .on('postgres_changes', 
+            { event: 'INSERT', schema: 'public', table: 'mensajes_chat', filter: 'remitente_id=eq.' + contactoId },
+            onMessage
+        )
+        .on('postgres_changes',
+            { event: 'UPDATE', schema: 'public', table: 'mensajes_chat' },
+            onUpdate
+        );
+
+    reconnectAttempts = 0;
+
+    channel.subscribe(function(status) {
+        if (status === 'SUBSCRIBED') {
+            reconnectAttempts = 0;
+            Logger.info('Canal Realtime conectado', { contactoId: contactoId });
+            var statusEl = document.querySelector('.chat-status');
+            if (statusEl) statusEl.classList.remove('desconectado');
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+            if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+                reconnectAttempts++;
+                Logger.warn('Reconectando canal', { contactoId: contactoId, intento: reconnectAttempts });
+                setTimeout(function() {
+                    channel.subscribe();
+                }, RECONNECT_DELAY * reconnectAttempts);
+            } else {
+                Logger.error('Error crítico: no se pudo reconectar', { contactoId: contactoId });
+                showToast('❌ Perdiste conexión con el chat', 'error');
+                var statusEl = document.querySelector('.chat-status');
+                if (statusEl) statusEl.classList.add('desconectado');
+            }
+        }
+    });
+
+    return channel;
+}
+
+// ================================================================
+// ================================================================
+// 📦 CACHE DE MENSAJES
+// ================================================================
+// ================================================================
+
+var messageCache = new Map();
+var CACHE_TTL = 5 * 60 * 1000;
+
+function getCachedMessages(contactoId) {
+    var cached = messageCache.get(contactoId);
+    if (!cached) return null;
+    
+    var now = Date.now();
+    if (now - cached.timestamp > CACHE_TTL) {
+        messageCache.delete(contactoId);
+        return null;
+    }
+    return cached.data;
+}
+
+function setCachedMessages(contactoId, messages) {
+    messageCache.set(contactoId, {
+        data: messages,
+        timestamp: Date.now()
+    });
+}
+
+// ================================================================
+// ================================================================
+// 🔄 INDICADOR DE CARGA
+// ================================================================
+// ================================================================
+
+function showLoading(message) {
+    message = message || 'Cargando...';
+    var overlay = document.querySelector('.loading-overlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.className = 'loading-overlay';
+        overlay.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 9999; backdrop-filter: blur(4px);';
+        overlay.innerHTML = '<div style="background: #1a1a2e; padding: 30px 40px; border-radius: 12px; border: 1px solid rgba(212,175,55,0.3); text-align: center;"><div style="width: 40px; height: 40px; border: 3px solid rgba(212,175,55,0.1); border-top-color: #d4af37; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px;"></div><div class="loading-message" style="color: #d4af37; font-weight: 500;">' + message + '</div></div>';
+        document.body.appendChild(overlay);
+        
+        if (!document.getElementById('loading-style')) {
+            var style = document.createElement('style');
+            style.id = 'loading-style';
+            style.textContent = '@keyframes spin { to { transform: rotate(360deg); } }';
+            document.head.appendChild(style);
+        }
+    }
+    
+    var msgEl = overlay.querySelector('.loading-message');
+    if (msgEl) msgEl.textContent = message;
+    overlay.style.display = 'flex';
+}
+
+function hideLoading() {
+    var overlay = document.querySelector('.loading-overlay');
+    if (overlay) overlay.style.display = 'none';
+}
+
+// ================================================================
+// ================================================================
+// ✏️ FORMATEAR TEXTO CON SANITIZACIÓN
+// ================================================================
+// ================================================================
+
+function formatearTexto(texto) {
+    return sanitizarContenido(texto || '');
+}
+
+// ================================================================
+// ================================================================
 // 🔍 BUSCAR CONTACTOS
 // ================================================================
-async function buscarContactos(query) {
+// ================================================================
+
+function buscarContactos(query) {
     if (!query || query.length < 2) {
         document.getElementById('resultadosBusqueda').innerHTML = '';
         return;
     }
 
-    try {
-        const session = await getSession();
-        if (!session) return;
+    sessionManager.getSession()
+        .then(function(session) {
+            if (!session) return;
 
-        const { data, error } = await supabase
-            .from('usuarios')
-            .select('id, nombre, handle, avatar_url')
-            .or(`nombre.ilike.%${query}%,handle.ilike.%${query}%`)
-            .neq('id', session.user.id)
-            .limit(10);
+            return supabase
+                .from('usuarios')
+                .select('id, nombre, handle, avatar_url')
+                .or('nombre.ilike.%' + query + '%,handle.ilike.%' + query + '%')
+                .neq('id', session.user.id)
+                .limit(10);
+        })
+        .then(function(result) {
+            if (!result) return;
+            if (result.error) throw result.error;
 
-        if (error) throw error;
+            var container = document.getElementById('resultadosBusqueda');
+            if (!container) return;
 
-        const container = document.getElementById('resultadosBusqueda');
-        if (!container) return;
+            var data = result.data || [];
+            if (data.length === 0) {
+                container.innerHTML = '<div style="padding:12px;text-align:center;color:#667788;font-size:0.75rem;">No se encontraron usuarios</div>';
+                return;
+            }
 
-        if (!data || data.length === 0) {
-            container.innerHTML = `
-                <div style="padding:12px;text-align:center;color:#667788;font-size:0.75rem;">
-                    No se encontraron usuarios
-                </div>
-            `;
-            return;
-        }
+            return sessionManager.getSession().then(function(session) {
+                return supabase
+                    .from('contactos')
+                    .select('contacto_id')
+                    .eq('usuario_id', session.user.id)
+                    .then(function(contactosResult) {
+                        var idsExistentes = (contactosResult.data || []).map(function(c) { return c.contacto_id; });
+                        return { data: data, idsExistentes: idsExistentes };
+                    });
+            });
+        })
+        .then(function(result) {
+            if (!result) return;
+            var data = result.data;
+            var idsExistentes = result.idsExistentes;
 
-        const { data: contactosExistentes } = await supabase
-            .from('contactos')
-            .select('contacto_id')
-            .eq('usuario_id', session.user.id);
-
-        const idsExistentes = contactosExistentes?.map(c => c.contacto_id) || [];
-
-        container.innerHTML = data.map(usuario => {
-            const yaEsContacto = idsExistentes.includes(usuario.id);
-            const nombreSanitizado = escapeHTML(usuario.nombre || 'Usuario');
-            const handleSanitizado = escapeHTML(usuario.handle || 'usuario');
-            const avatarHtml = usuario.avatar_url 
-                ? `<img src="${usuario.avatar_url}" style="width:100%;height:100%;object-fit:cover;">` 
-                : (usuario.nombre ? nombreSanitizado[0].toUpperCase() : '◈');
-            
-            return `
-                <div class="resultado-item" style="
-                    display:flex;align-items:center;gap:10px;padding:8px 12px;
-                    border-bottom:1px solid rgba(212,175,55,0.05);
-                    transition:all 0.2s;
-                ">
-                    <div class="avatar" style="
-                        width:36px;height:36px;border-radius:50%;
-                        background:linear-gradient(135deg,#1a2a1a,#d4af37);
-                        display:flex;align-items:center;justify-content:center;
-                        color:white;font-size:0.8rem;overflow:hidden;
-                    ">
-                        ${avatarHtml}
-                    </div>
-                    <div style="flex:1;">
-                        <div style="font-weight:600;font-size:0.8rem;">${nombreSanitizado}</div>
-                        <div style="font-size:0.6rem;color:#667788;">@${handleSanitizado}</div>
-                    </div>
-                    ${yaEsContacto ? `
-                        <span style="font-size:0.55rem;color:#4ade80;background:rgba(0,214,143,0.1);padding:2px 10px;border-radius:12px;">
-                            ✓ Contacto
-                        </span>
-                    ` : `
-                        <button onclick="agregarContacto('${usuario.id}')" style="
-                            background:linear-gradient(135deg,#d4af37,#c49a2a);
-                            color:#0b0e14;border:none;padding:4px 12px;border-radius:12px;
-                            font-size:0.6rem;font-weight:600;cursor:pointer;
-                        ">
-                            + Agregar
-                        </button>
-                    `}
-                </div>
-            `;
-        }).join('');
-
-    } catch (error) {
-        console.error('Error buscando contactos:', error);
-    }
+            var container = document.getElementById('resultadosBusqueda');
+            var html = '';
+            for (var i = 0; i < data.length; i++) {
+                var usuario = data[i];
+                var yaEsContacto = idsExistentes.indexOf(usuario.id) !== -1;
+                var nombreSanitizado = escapeHTML(usuario.nombre || 'Usuario');
+                var handleSanitizado = escapeHTML(usuario.handle || 'usuario');
+                var avatarHtml = usuario.avatar_url 
+                    ? '<img src="' + usuario.avatar_url + '" style="width:100%;height:100%;object-fit:cover;">' 
+                    : (usuario.nombre ? nombreSanitizado[0].toUpperCase() : '◈');
+                
+                html += '<div class="resultado-item" style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid rgba(212,175,55,0.05);transition:all 0.2s;">';
+                html += '<div class="avatar" style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#1a2a1a,#d4af37);display:flex;align-items:center;justify-content:center;color:white;font-size:0.8rem;overflow:hidden;">' + avatarHtml + '</div>';
+                html += '<div style="flex:1;"><div style="font-weight:600;font-size:0.8rem;">' + nombreSanitizado + '</div>';
+                html += '<div style="font-size:0.6rem;color:#667788;">@' + handleSanitizado + '</div></div>';
+                if (yaEsContacto) {
+                    html += '<span style="font-size:0.55rem;color:#4ade80;background:rgba(0,214,143,0.1);padding:2px 10px;border-radius:12px;">✓ Contacto</span>';
+                } else {
+                    html += '<button onclick="agregarContacto(\'' + usuario.id + '\')" style="background:linear-gradient(135deg,#d4af37,#c49a2a);color:#0b0e14;border:none;padding:4px 12px;border-radius:12px;font-size:0.6rem;font-weight:600;cursor:pointer;">+ Agregar</button>';
+                }
+                html += '</div>';
+            }
+            container.innerHTML = html;
+        })
+        .catch(function(error) {
+            Logger.error('Error buscando contactos', error);
+        });
 }
 
+// ================================================================
 // ================================================================
 // ➕ AGREGAR CONTACTO
 // ================================================================
-async function agregarContacto(contactoId) {
-    try {
-        const session = await getSession();
-        if (!session) {
-            showToast('⚠️ Inicia sesión para agregar contactos', 'error');
-            return;
-        }
-
-        const { data: existe } = await supabase
-            .from('contactos')
-            .select('id')
-            .eq('usuario_id', session.user.id)
-            .eq('contacto_id', contactoId)
-            .maybeSingle();
-
-        if (existe) {
-            showToast('⚠️ Este usuario ya es tu contacto', 'warning');
-            return;
-        }
-
-        const { error } = await supabase
-            .from('contactos')
-            .insert({
-                usuario_id: session.user.id,
-                contacto_id: contactoId,
-                estado: 'activo'
-            });
-
-        if (error) throw error;
-
-        showToast('✅ Contacto agregado correctamente', 'success');
-        
-        document.getElementById('searchInputModal').value = '';
-        document.getElementById('resultadosBusqueda').innerHTML = '';
-        cerrarModalNuevoContacto();
-        await cargarConversaciones();
-
-    } catch (error) {
-        console.error('Error agregando contacto:', error);
-        showToast('❌ Error al agregar contacto', 'error');
-    }
-}
-
 // ================================================================
-// 📋 CARGAR CONVERSACIONES (USA EL BACKEND) - CORREGIDO
-// ================================================================
-async function cargarConversaciones() {
-    if (!await verificarAutenticacion()) return;
 
-    try {
-        const session = await getSession();
-        const response = await fetch('/api/mensajes/conversaciones', {
-            headers: {
-                'Authorization': `Bearer ${session.access_token}`
+function agregarContacto(contactoId) {
+    sessionManager.getSession()
+        .then(function(session) {
+            if (!session) {
+                showToast('⚠️ Inicia sesión para agregar contactos', 'error');
+                return;
             }
+
+            return supabase
+                .from('contactos')
+                .select('id')
+                .eq('usuario_id', session.user.id)
+                .eq('contacto_id', contactoId)
+                .maybeSingle()
+                .then(function(existeResult) {
+                    if (existeResult.data) {
+                        showToast('⚠️ Este usuario ya es tu contacto', 'warning');
+                        return;
+                    }
+                    return supabase
+                        .from('contactos')
+                        .insert({
+                            usuario_id: session.user.id,
+                            contacto_id: contactoId,
+                            estado: 'activo'
+                        });
+                });
+        })
+        .then(function(result) {
+            if (!result) return;
+            if (result.error) throw result.error;
+
+            showToast('✅ Contacto agregado correctamente', 'success');
+            document.getElementById('searchInputModal').value = '';
+            document.getElementById('resultadosBusqueda').innerHTML = '';
+            cerrarModalNuevoContacto();
+            return cargarConversaciones();
+        })
+        .catch(function(error) {
+            Logger.error('Error agregando contacto', error);
+            showToast('❌ Error al agregar contacto', 'error');
         });
-
-        const result = await response.json();
-        if (!result.success) throw new Error(result.error || 'Error al cargar conversaciones');
-
-        const conversaciones = result.conversaciones || [];
-
-        const convList = document.getElementById('conversacionesList');
-        if (!convList) return;
-
-        if (conversaciones.length === 0) {
-            convList.innerHTML = `
-                <div style="padding:40px;text-align:center;color:#667788;font-size:0.8rem;">
-                    <div style="font-size:2rem;margin-bottom:10px;">◈</div>
-                    <p>Sin contactos agregados</p>
-                    <p style="font-size:0.6rem;">Busca y agrega contactos arriba</p>
-                </div>
-            `;
-            return;
-        }
-
-        convList.innerHTML = conversaciones.map(conv => {
-            // ✅ CORREGIDO - NO usar escapeHTML en avatar_url
-            const avatar = conv.avatar_url 
-                ? `<img src="${conv.avatar_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" />` 
-                : (conv.nombre ? conv.nombre[0].toUpperCase() : '✦');
-            
-            const isActive = conversacionActual?.id === conv.id;
-            const nombreSanitizado = escapeHTML(conv.nombre);
-            const ultimoMensajeSanitizado = escapeHTML(conv.ultimoMensaje);
-
-            return `
-                <div class="conv-item ${isActive ? 'active' : ''}" 
-                     data-id="${conv.id}" 
-                     onclick="abrirConversacion('${conv.id}')">
-                    <div class="conv-avatar">${avatar}</div>
-                    <div class="conv-info">
-                        <div class="conv-nombre">${nombreSanitizado}</div>
-                        <div class="conv-msg">${ultimoMensajeSanitizado.length > 40 ? ultimoMensajeSanitizado.substring(0, 40) + '...' : ultimoMensajeSanitizado}</div>
-                    </div>
-                    <div class="conv-meta">
-                        ${conv.noLeidos > 0 ? `<span class="conv-badge">${conv.noLeidos}</span>` : ''}
-                        ${conv.fecha ? `<span class="conv-hora">${new Date(conv.fecha).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</span>` : ''}
-                    </div>
-                </div>
-            `;
-        }).join('');
-
-    } catch (error) {
-        console.error('Error cargando conversaciones:', error);
-        showToast('❌ Error al cargar conversaciones', 'error');
-    }
 }
 
+// ================================================================
+// ================================================================
+// 📋 CARGAR CONVERSACIONES
+// ================================================================
+// ================================================================
+
+function cargarConversaciones() {
+    return sessionManager.verificarAutenticacion()
+        .then(function(autenticado) {
+            if (!autenticado) return;
+
+            return llamadaAPI('/api/mensajes/conversaciones');
+        })
+        .then(function(result) {
+            if (!result) return;
+
+            var conversaciones = result.conversaciones || [];
+
+            var convList = document.getElementById('conversacionesList');
+            if (!convList) return;
+
+            if (conversaciones.length === 0) {
+                convList.innerHTML = '<div style="padding:40px;text-align:center;color:#667788;font-size:0.8rem;"><div style="font-size:2rem;margin-bottom:10px;">◈</div><p>Sin contactos agregados</p><p style="font-size:0.6rem;">Busca y agrega contactos arriba</p></div>';
+                return;
+            }
+
+            var usuario = sessionManager.usuario;
+            var html = '';
+            for (var i = 0; i < conversaciones.length; i++) {
+                var conv = conversaciones[i];
+                var avatar = conv.avatar_url 
+                    ? '<img src="' + conv.avatar_url + '" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" />' 
+                    : (conv.nombre ? conv.nombre[0].toUpperCase() : '✦');
+                
+                var isActive = conv.id === (window._conversacionActualId || null);
+                var nombreSanitizado = escapeHTML(conv.nombre);
+                var ultimoMensajeSanitizado = escapeHTML(conv.ultimoMensaje);
+
+                html += '<div class="conv-item' + (isActive ? ' active' : '') + '" data-id="' + conv.id + '" onclick="abrirConversacion(\'' + conv.id + '\')">';
+                html += '<div class="conv-avatar">' + avatar + '</div>';
+                html += '<div class="conv-info"><div class="conv-nombre">' + nombreSanitizado + '</div>';
+                html += '<div class="conv-msg">' + (ultimoMensajeSanitizado.length > 40 ? ultimoMensajeSanitizado.substring(0, 40) + '...' : ultimoMensajeSanitizado) + '</div></div>';
+                html += '<div class="conv-meta">';
+                if (conv.noLeidos > 0) html += '<span class="conv-badge">' + conv.noLeidos + '</span>';
+                if (conv.fecha) html += '<span class="conv-hora">' + new Date(conv.fecha).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) + '</span>';
+                html += '</div></div>';
+            }
+            convList.innerHTML = html;
+        })
+        .catch(function(error) {
+            Logger.error('Error cargando conversaciones', error);
+            showToast('❌ Error al cargar conversaciones', 'error');
+        });
+}
+
+// ================================================================
 // ================================================================
 // 💬 ABRIR CONVERSACIÓN
 // ================================================================
-async function abrirConversacion(contactoId) {
-    const session = await getSession();
-    if (!session) {
-        showToast('⚠️ Inicia sesión para abrir conversaciones', 'error');
-        return;
-    }
+// ================================================================
 
-    try {
-        const { data: contacto } = await supabase
-            .from('usuarios')
-            .select('id, nombre, handle, avatar_url')
-            .eq('id', contactoId)
-            .single();
+var conversacionActual = null;
 
-        conversacionActual = contacto;
-
-        const chatNombre = document.getElementById('chatNombre');
-        if (chatNombre) chatNombre.textContent = contacto.nombre || 'Usuario';
-
-        const chatAvatar = document.querySelector('.chat-avatar');
-        if (chatAvatar) chatAvatar.textContent = contacto.nombre ? contacto.nombre[0].toUpperCase() : '✦';
-
-        const { data: estadoContacto } = await supabase
-            .from('usuarios')
-            .select('online, ultima_conexion')
-            .eq('id', contactoId)
-            .single();
-
-        const chatEstado = document.getElementById('chatEstado');
-        if (chatEstado) {
-            if (estadoContacto?.online) {
-                chatEstado.textContent = '🟢 En línea';
-                chatEstado.className = 'chat-estado online';
-            } else if (estadoContacto?.ultima_conexion) {
-                const diff = Math.floor((Date.now() - new Date(estadoContacto.ultima_conexion)) / 60000);
-                if (diff < 5) {
-                    chatEstado.textContent = '🟡 Última vez hace unos minutos';
-                } else if (diff < 60) {
-                    chatEstado.textContent = `🟡 Última vez hace ${diff} min`;
-                } else if (diff < 1440) {
-                    chatEstado.textContent = `🟡 Última vez hace ${Math.floor(diff / 60)} h`;
-                } else {
-                    chatEstado.textContent = `🟡 Última vez hace ${Math.floor(diff / 1440)} d`;
-                }
-                chatEstado.className = 'chat-estado';
-            } else {
-                chatEstado.textContent = '⚪ Desconectado';
-                chatEstado.className = 'chat-estado';
+function abrirConversacion(contactoId) {
+    sessionManager.getSession()
+        .then(function(session) {
+            if (!session) {
+                showToast('⚠️ Inicia sesión para abrir conversaciones', 'error');
+                return;
             }
-        }
 
-        await marcarMensajesLeidos(contactoId);
-        await cargarMensajes(contactoId);
+            return supabase
+                .from('usuarios')
+                .select('id, nombre, handle, avatar_url')
+                .eq('id', contactoId)
+                .single()
+                .then(function(contactoResult) {
+                    if (contactoResult.error) throw contactoResult.error;
+                    return { session: session, contacto: contactoResult.data };
+                });
+        })
+        .then(function(result) {
+            if (!result) return;
+            var session = result.session;
+            var contacto = result.contacto;
 
-        if (realtimeChannel) {
-            await supabase.removeChannel(realtimeChannel);
-        }
+            conversacionActual = contacto;
+            window._conversacionActualId = contactoId;
 
-        realtimeChannel = supabase
-            .channel(`chat-${contactoId}`)
-            .on('postgres_changes', 
-                { event: 'INSERT', schema: 'public', table: 'mensajes_chat', filter: `remitente_id=eq.${contactoId}` },
-                (payload) => {
-                    if (payload.new.destinatario_id === session.user.id) {
-                        agregarMensajeRealtime(payload.new);
-                        marcarMensajesLeidos(contactoId);
+            var chatNombre = document.getElementById('chatNombre');
+            if (chatNombre) chatNombre.textContent = contacto.nombre || 'Usuario';
+
+            var chatAvatar = document.querySelector('.chat-avatar');
+            if (chatAvatar) chatAvatar.textContent = contacto.nombre ? contacto.nombre[0].toUpperCase() : '✦';
+
+            return supabase
+                .from('usuarios')
+                .select('online, ultima_conexion')
+                .eq('id', contactoId)
+                .single()
+                .then(function(estadoResult) {
+                    var chatEstado = document.getElementById('chatEstado');
+                    if (!chatEstado) return;
+                    var estadoContacto = estadoResult.data || {};
+                    if (estadoContacto.online) {
+                        chatEstado.textContent = '🟢 En línea';
+                        chatEstado.className = 'chat-estado online';
+                    } else if (estadoContacto.ultima_conexion) {
+                        var diff = Math.floor((Date.now() - new Date(estadoContacto.ultima_conexion)) / 60000);
+                        if (diff < 5) {
+                            chatEstado.textContent = '🟡 Última vez hace unos minutos';
+                        } else if (diff < 60) {
+                            chatEstado.textContent = '🟡 Última vez hace ' + diff + ' min';
+                        } else if (diff < 1440) {
+                            chatEstado.textContent = '🟡 Última vez hace ' + Math.floor(diff / 60) + ' h';
+                        } else {
+                            chatEstado.textContent = '🟡 Última vez hace ' + Math.floor(diff / 1440) + ' d';
+                        }
+                        chatEstado.className = 'chat-estado';
+                    } else {
+                        chatEstado.textContent = '⚪ Desconectado';
+                        chatEstado.className = 'chat-estado';
                     }
-                }
-            )
-            .on('postgres_changes',
-                { event: 'UPDATE', schema: 'public', table: 'mensajes_chat' },
-                () => cargarConversaciones()
-            )
-            .subscribe();
+                    return { session: session, contactoId: contactoId };
+                });
+        })
+        .then(function(result) {
+            if (!result) return;
+            var session = result.session;
+            var contactoId = result.contactoId;
 
-        cargarConversaciones();
+            return marcarMensajesLeidos(contactoId)
+                .then(function() {
+                    return cargarMensajes(contactoId);
+                })
+                .then(function() {
+                    if (currentChannel) {
+                        try { supabase.removeChannel(currentChannel); } catch(e) {}
+                        currentChannel = null;
+                    }
 
-    } catch (error) {
-        console.error('Error abriendo conversación:', error);
-    }
-}
+                    currentChannel = crearCanalRealtime(
+                        contactoId,
+                        function(payload) {
+                            if (payload.new.destinatario_id === session.user.id) {
+                                agregarMensajeRealtime(payload.new);
+                                marcarMensajesLeidos(contactoId);
+                            }
+                        },
+                        function() { cargarConversaciones(); }
+                    );
 
-// ================================================================
-// 📖 CARGAR MENSAJES (USA EL BACKEND)
-// ================================================================
-async function cargarMensajes(contactoId) {
-    const session = await getSession();
-    if (!session) return;
-
-    const container = document.getElementById('chatMessages');
-    if (!container) return;
-
-    try {
-        const response = await fetch(`/api/mensajes/mensajes/${contactoId}?userId=${session.user.id}`, {
-            headers: {
-                'Authorization': `Bearer ${session.access_token}`
-            }
+                    return cargarConversaciones();
+                });
+        })
+        .catch(function(error) {
+            Logger.error('Error abriendo conversación', error);
         });
-
-        const result = await response.json();
-        if (!result.success) throw new Error(result.error || 'Error al cargar mensajes');
-
-        const mensajes = result.mensajes || [];
-
-        if (mensajes.length > 0) {
-            container.innerHTML = mensajes.map(msg => crearMensajeHTML(msg)).join('');
-            container.scrollTop = container.scrollHeight;
-        } else {
-            container.innerHTML = `
-                <div class="empty-chat">
-                    <span class="icon">◈</span>
-                    <h3>Inicia la conversación</h3>
-                    <p>Envía un mensaje para comenzar</p>
-                </div>
-            `;
-        }
-    } catch (error) {
-        console.error('Error cargando mensajes:', error);
-        showToast('❌ Error al cargar mensajes', 'error');
-    }
 }
 
 // ================================================================
-// ✏️ CREAR MENSAJE HTML
 // ================================================================
+// 📖 CARGAR MENSAJES CON CACHE
+// ================================================================
+// ================================================================
+
+function cargarMensajes(contactoId) {
+    return sessionManager.getSession()
+        .then(function(session) {
+            if (!session) return;
+
+            var container = document.getElementById('chatMessages');
+            if (!container) return;
+
+            // Verificar cache
+            var cached = getCachedMessages(contactoId);
+            if (cached) {
+                var html = '';
+                for (var i = 0; i < cached.length; i++) {
+                    html += crearMensajeHTML(cached[i]);
+                }
+                container.innerHTML = html;
+                container.scrollTop = container.scrollHeight;
+                return;
+            }
+
+            return llamadaAPI('/api/mensajes/mensajes/' + contactoId + '?userId=' + session.user.id)
+                .then(function(result) {
+                    if (!result) return;
+                    var mensajes = result.mensajes || [];
+
+                    if (mensajes.length > 0) {
+                        setCachedMessages(contactoId, mensajes);
+                        var html = '';
+                        for (var i = 0; i < mensajes.length; i++) {
+                            html += crearMensajeHTML(mensajes[i]);
+                        }
+                        container.innerHTML = html;
+                        container.scrollTop = container.scrollHeight;
+                    } else {
+                        container.innerHTML = '<div class="empty-chat"><span class="icon">◈</span><h3>Inicia la conversación</h3><p>Envía un mensaje para comenzar</p></div>';
+                    }
+                });
+        })
+        .catch(function(error) {
+            Logger.error('Error cargando mensajes', error);
+            showToast('❌ Error al cargar mensajes', 'error');
+        });
+}
+
+// ================================================================
+// ================================================================
+// ✏️ CREAR MENSAJE HTML CON SANITIZACIÓN
+// ================================================================
+// ================================================================
+
 function crearMensajeHTML(msg) {
-    const esEnviado = msg.remitente_id === usuarioActual?.id;
-    const fecha = new Date(msg.created_at);
-    const hora = fecha.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const contenidoFormateado = formatearTexto(msg.contenido || '');
+    var usuario = sessionManager.usuario;
+    var esEnviado = msg.remitente_id === (usuario ? usuario.id : null);
+    var fecha = new Date(msg.created_at);
+    var hora = fecha.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    var contenidoFormateado = formatearTexto(msg.contenido || '');
 
     if (msg.tipo === 'imagen' && msg.imagen_url) {
         return crearMensajeImagen(msg, esEnviado, hora);
@@ -457,100 +910,73 @@ function crearMensajeHTML(msg) {
     }
 
     if (esEnviado) {
-        return `
-            <div class="msg-wrapper enviado">
-                <div class="burbuja">${contenidoFormateado}</div>
-                <div class="meta">
-                    ${hora} ${msg.editado ? '✎' : ''}
-                    <span class="leido ${msg.leido ? 'leido' : 'no-leido'}">${msg.leido ? '◆◆' : '◆◇'}</span>
-                    <button onclick="eliminarMensaje('${msg.id}')" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:0.5rem;">✕</button>
-                    <button onclick="editarMensaje('${msg.id}')" style="background:none;border:none;color:#d4af37;cursor:pointer;font-size:0.5rem;">✎</button>
-                </div>
-            </div>
-        `;
+        return '<div class="msg-wrapper enviado">' +
+            '<div class="burbuja">' + contenidoFormateado + '</div>' +
+            '<div class="meta">' + hora + (msg.editado ? ' ✎' : '') +
+            '<span class="leido ' + (msg.leido ? 'leido' : 'no-leido') + '">' + (msg.leido ? '◆◆' : '◆◇') + '</span>' +
+            '<button onclick="eliminarMensaje(\'' + msg.id + '\')" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:0.5rem;">✕</button>' +
+            '<button onclick="editarMensaje(\'' + msg.id + '\')" style="background:none;border:none;color:#d4af37;cursor:pointer;font-size:0.5rem;">✎</button>' +
+            '</div></div>';
     }
 
-    return `
-        <div class="msg-wrapper recibido">
-            <div class="fila">
-                <div class="avatar">◈</div>
-                <div class="burbuja">${contenidoFormateado}</div>
-            </div>
-            <div class="meta">
-                ${hora} ${msg.editado ? '✎' : ''}
-                <button onclick="reportarMensaje('${msg.id}')" style="background:none;border:none;color:#fbbf24;cursor:pointer;font-size:0.5rem;">⚠️</button>
-            </div>
-        </div>
-    `;
+    return '<div class="msg-wrapper recibido">' +
+        '<div class="fila"><div class="avatar">◈</div><div class="burbuja">' + contenidoFormateado + '</div></div>' +
+        '<div class="meta">' + hora + (msg.editado ? ' ✎' : '') +
+        '<button onclick="reportarMensaje(\'' + msg.id + '\')" style="background:none;border:none;color:#fbbf24;cursor:pointer;font-size:0.5rem;">⚠️</button>' +
+        '</div></div>';
 }
 
 function crearMensajeImagen(msg, esEnviado, hora) {
-    const imagenUrl = msg.imagen_url; // ✅ NO usar escapeHTML en URLs de imágenes
+    var imagenUrl = msg.imagen_url;
     if (esEnviado) {
-        return `
-            <div class="msg-wrapper enviado">
-                <div class="burbuja" style="padding:4px;background:transparent;border-radius:12px;">
-                    <img src="${imagenUrl}" style="max-width:200px;border-radius:12px;border:2px solid #d4af37;" />
-                </div>
-                <div class="meta">${hora} ${msg.editado ? '✎' : ''} <span class="leido ${msg.leido ? 'leido' : 'no-leido'}">${msg.leido ? '◆◆' : '◆◇'}</span></div>
-            </div>
-        `;
+        return '<div class="msg-wrapper enviado">' +
+            '<div class="burbuja" style="padding:4px;background:transparent;border-radius:12px;">' +
+            '<img src="' + imagenUrl + '" style="max-width:200px;border-radius:12px;border:2px solid #d4af37;" />' +
+            '</div>' +
+            '<div class="meta">' + hora + (msg.editado ? ' ✎' : '') +
+            '<span class="leido ' + (msg.leido ? 'leido' : 'no-leido') + '">' + (msg.leido ? '◆◆' : '◆◇') + '</span></div></div>';
     }
-    return `
-        <div class="msg-wrapper recibido">
-            <div class="fila">
-                <div class="avatar">◈</div>
-                <div class="burbuja" style="padding:4px;background:transparent;border-radius:12px;border:1px solid rgba(212,175,55,0.15);">
-                    <img src="${imagenUrl}" style="max-width:200px;border-radius:12px;" />
-                </div>
-            </div>
-            <div class="meta">${hora} ${msg.editado ? '✎' : ''}</div>
-        </div>
-    `;
+    return '<div class="msg-wrapper recibido">' +
+        '<div class="fila"><div class="avatar">◈</div>' +
+        '<div class="burbuja" style="padding:4px;background:transparent;border-radius:12px;border:1px solid rgba(212,175,55,0.15);">' +
+        '<img src="' + imagenUrl + '" style="max-width:200px;border-radius:12px;" />' +
+        '</div></div>' +
+        '<div class="meta">' + hora + (msg.editado ? ' ✎' : '') + '</div></div>';
 }
 
 function crearMensajeAudio(msg, esEnviado, hora) {
-    const audioUrl = msg.imagen_url; // ✅ NO usar escapeHTML en URLs de audio
+    var audioUrl = msg.imagen_url;
     if (esEnviado) {
-        return `
-            <div class="msg-wrapper enviado">
-                <div class="burbuja" style="display:flex;align-items:center;gap:8px;">
-                    <span>🎵</span>
-                    <audio controls style="max-width:150px;height:30px;">
-                        <source src="${audioUrl}" type="audio/mpeg">
-                    </audio>
-                </div>
-                <div class="meta">${hora} <span class="leido ${msg.leido ? 'leido' : 'no-leido'}">${msg.leido ? '◆◆' : '◆◇'}</span></div>
-            </div>
-        `;
+        return '<div class="msg-wrapper enviado">' +
+            '<div class="burbuja" style="display:flex;align-items:center;gap:8px;">' +
+            '<span>🎵</span><audio controls style="max-width:150px;height:30px;"><source src="' + audioUrl + '" type="audio/mpeg"></audio>' +
+            '</div>' +
+            '<div class="meta">' + hora +
+            '<span class="leido ' + (msg.leido ? 'leido' : 'no-leido') + '">' + (msg.leido ? '◆◆' : '◆◇') + '</span></div></div>';
     }
-    return `
-        <div class="msg-wrapper recibido">
-            <div class="fila">
-                <div class="avatar">◈</div>
-                <div class="burbuja" style="display:flex;align-items:center;gap:8px;">
-                    <span>🎵</span>
-                    <audio controls style="max-width:150px;height:30px;">
-                        <source src="${audioUrl}" type="audio/mpeg">
-                    </audio>
-                </div>
-            </div>
-            <div class="meta">${hora}</div>
-        </div>
-    `;
+    return '<div class="msg-wrapper recibido">' +
+        '<div class="fila"><div class="avatar">◈</div>' +
+        '<div class="burbuja" style="display:flex;align-items:center;gap:8px;">' +
+        '<span>🎵</span><audio controls style="max-width:150px;height:30px;"><source src="' + audioUrl + '" type="audio/mpeg"></audio>' +
+        '</div></div>' +
+        '<div class="meta">' + hora + '</div></div>';
 }
 
 // ================================================================
+// ================================================================
 // 📨 AGREGAR MENSAJE EN TIEMPO REAL
 // ================================================================
+// ================================================================
+
 function agregarMensajeRealtime(msg) {
-    const container = document.getElementById('chatMessages');
+    var container = document.getElementById('chatMessages');
     if (!container) return;
 
-    const empty = container.querySelector('.empty-chat');
+    var empty = container.querySelector('.empty-chat');
     if (empty) empty.remove();
 
-    if (msg.remitente_id !== conversacionActual?.id && msg.destinatario_id !== conversacionActual?.id) return;
+    if (msg.remitente_id !== (conversacionActual ? conversacionActual.id : null) && 
+        msg.destinatario_id !== (conversacionActual ? conversacionActual.id : null)) return;
 
     container.innerHTML += crearMensajeHTML(msg);
     container.scrollTop = container.scrollHeight;
@@ -558,154 +984,193 @@ function agregarMensajeRealtime(msg) {
 }
 
 // ================================================================
-// 📤 ENVIAR MENSAJE (USA EL BACKEND)
 // ================================================================
-async function enviarMensaje() {
-    const chatInput = document.getElementById('chatInput');
-    const contenido = chatInput.value.trim();
+// 📤 ENVIAR MENSAJE CON RATE LIMITING
+// ================================================================
+// ================================================================
+
+var archivosSeleccionados = [];
+
+function enviarMensaje() {
+    var chatInput = document.getElementById('chatInput');
+    var contenido = chatInput.value.trim();
     if (!contenido && archivosSeleccionados.length === 0) {
         if (!conversacionActual) showToast('⚠️ Selecciona una conversación', 'warning');
         return;
     }
 
-    const session = await getSession();
-    if (!session) {
-        showToast('⚠️ Inicia sesión para enviar mensajes', 'error');
-        return;
-    }
+    if (!rateLimiter.canSend()) return;
 
-    if (!conversacionActual) {
-        showToast('⚠️ Selecciona una conversación', 'error');
-        return;
-    }
-
-    try {
-        if (archivosSeleccionados.length > 0) {
-            for (const file of archivosSeleccionados) {
-                await subirArchivo(file, session);
+    sessionManager.getSession()
+        .then(function(session) {
+            if (!session) {
+                showToast('⚠️ Inicia sesión para enviar mensajes', 'error');
+                return;
             }
-            archivosSeleccionados = [];
-            document.getElementById('filePreview').innerHTML = '';
-            chatInput.value = '';
-            return;
-        }
+            if (!conversacionActual) {
+                showToast('⚠️ Selecciona una conversación', 'error');
+                return;
+            }
 
-        const response = await fetch('/api/mensajes/mensajes', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${session.access_token}`
-            },
-            body: JSON.stringify({
-                destinatario_id: conversacionActual.id,
-                contenido: contenido,
-                tipo: 'texto'
-            })
+            if (archivosSeleccionados.length > 0) {
+                var promises = [];
+                for (var i = 0; i < archivosSeleccionados.length; i++) {
+                    var file = archivosSeleccionados[i];
+                    if (!validarArchivo(file)) return;
+                    promises.push(subirArchivo(file, session));
+                }
+                return Promise.all(promises).then(function() {
+                    archivosSeleccionados = [];
+                    document.getElementById('filePreview').innerHTML = '';
+                    chatInput.value = '';
+                });
+            }
+
+            if (contenido.length > 10000) {
+                showToast('⚠️ El mensaje es demasiado largo (máx 10,000 caracteres)', 'warning');
+                return;
+            }
+
+            showLoading('Enviando mensaje...');
+
+            return llamadaAPI('/api/mensajes/mensajes', {
+                method: 'POST',
+                body: JSON.stringify({
+                    destinatario_id: conversacionActual.id,
+                    contenido: contenido,
+                    tipo: 'texto'
+                })
+            }).then(function(result) {
+                hideLoading();
+                if (!result) return;
+                chatInput.value = '';
+                var counter = document.getElementById('charCounter');
+                if (counter) counter.textContent = '0/10000';
+                return cargarMensajes(conversacionActual.id).then(function() {
+                    return cargarConversaciones();
+                });
+            });
+        })
+        .catch(function(error) {
+            hideLoading();
+            Logger.error('Error enviando mensaje', error);
+            showToast('❌ Error al enviar mensaje', 'error');
         });
-
-        const result = await response.json();
-        if (!result.success) throw new Error(result.error || 'Error al enviar mensaje');
-
-        chatInput.value = '';
-        await cargarMensajes(conversacionActual.id);
-        cargarConversaciones();
-
-    } catch (error) {
-        console.error('Error enviando mensaje:', error);
-        showToast('❌ Error al enviar mensaje', 'error');
-    }
 }
 
 // ================================================================
-// 🖼️ SUBIR ARCHIVO
 // ================================================================
-async function subirArchivo(file, session) {
-    try {
-        const fileExt = file.name.split('.').pop().toLowerCase();
-        const tipo = file.type.startsWith('image/') ? 'imagen' : 'voz';
-        const filePath = `mensajes/${session.user.id}/${Date.now()}.${fileExt}`;
+// 🖼️ SUBIR ARCHIVO CON VALIDACIÓN
+// ================================================================
+// ================================================================
 
-        const { error: uploadError } = await supabase.storage
-            .from('mensajes')
-            .upload(filePath, file, { upsert: true });
+function subirArchivo(file, session) {
+    if (!validarArchivo(file)) return Promise.reject('Archivo inválido');
 
-        if (uploadError) throw uploadError;
+    var fileExt = file.name.split('.').pop().toLowerCase();
+    var tipo = file.type.startsWith('image/') ? 'imagen' : 'voz';
+    var filePath = 'mensajes/' + session.user.id + '/' + Date.now() + '.' + fileExt;
 
-        const { data: urlData } = supabase.storage
-            .from('mensajes')
-            .getPublicUrl(filePath);
+    showLoading('Subiendo archivo...');
 
-        const publicUrl = urlData.publicUrl;
-
-        const response = await fetch('/api/mensajes/mensajes', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${session.access_token}`
-            },
-            body: JSON.stringify({
-                destinatario_id: conversacionActual.id,
-                contenido: file.name,
-                tipo: tipo,
-                imagen_url: publicUrl
-            })
+    return supabase.storage
+        .from('mensajes')
+        .upload(filePath, file, { upsert: true })
+        .then(function(uploadResult) {
+            if (uploadResult.error) throw uploadResult.error;
+            return supabase.storage.from('mensajes').getPublicUrl(filePath);
+        })
+        .then(function(urlResult) {
+            var publicUrl = urlResult.data.publicUrl;
+            return llamadaAPI('/api/mensajes/mensajes', {
+                method: 'POST',
+                body: JSON.stringify({
+                    destinatario_id: conversacionActual.id,
+                    contenido: file.name,
+                    tipo: tipo,
+                    imagen_url: publicUrl
+                })
+            });
+        })
+        .then(function(result) {
+            hideLoading();
+            if (!result) return;
+            showToast('✅ Archivo enviado', 'success');
+            return cargarMensajes(conversacionActual.id).then(function() {
+                return cargarConversaciones();
+            });
+        })
+        .catch(function(error) {
+            hideLoading();
+            Logger.error('Error subiendo archivo', error);
+            showToast('❌ Error al subir archivo', 'error');
+            throw error;
         });
-
-        const result = await response.json();
-        if (!result.success) throw new Error(result.error || 'Error al subir archivo');
-
-        showToast('✅ Archivo enviado', 'success');
-        await cargarMensajes(conversacionActual.id);
-        cargarConversaciones();
-
-    } catch (error) {
-        console.error('Error subiendo archivo:', error);
-        showToast('❌ Error al subir archivo', 'error');
-    }
 }
 
+// ================================================================
 // ================================================================
 // 📎 SELECCIONAR ARCHIVO
 // ================================================================
+// ================================================================
+
 function seleccionarArchivo() {
-    document.getElementById('fileInput')?.click();
+    var input = document.getElementById('fileInput');
+    if (input) input.click();
 }
 
 function handleFileSelect(event) {
-    const files = event.target.files;
+    var files = event.target.files;
     if (!files || files.length === 0) return;
 
-    const preview = document.getElementById('filePreview');
+    if (files.length > MAX_FILES) {
+        showToast('⚠️ Máximo ' + MAX_FILES + ' archivos', 'warning');
+        event.target.value = '';
+        return;
+    }
+
+    var preview = document.getElementById('filePreview');
     preview.innerHTML = '';
 
     archivosSeleccionados = [];
 
-    for (const file of files) {
-        archivosSeleccionados.push(file);
-        const isImage = file.type.startsWith('image/');
-        const isAudio = file.type.startsWith('audio/');
-        const icon = isImage ? '🖼️' : (isAudio ? '🎵' : '📎');
-        const size = (file.size / 1024).toFixed(1);
+    for (var i = 0; i < files.length; i++) {
+        var file = files[i];
+        if (!validarArchivo(file)) {
+            event.target.value = '';
+            archivosSeleccionados = [];
+            preview.innerHTML = '';
+            return;
+        }
 
-        const el = document.createElement('div');
-        el.style.cssText = `
-            display:inline-flex;align-items:center;gap:6px;
-            background:rgba(212,175,55,0.1);padding:4px 12px;
-            border-radius:12px;font-size:0.65rem;color:#8899aa;
-        `;
-        el.innerHTML = `${icon} ${escapeHTML(file.name)} (${size}KB) <span onclick="this.parentElement.remove();archivosSeleccionados=[];" style="cursor:pointer;color:#ef4444;">✕</span>`;
+        archivosSeleccionados.push(file);
+        var isImage = file.type.startsWith('image/');
+        var isAudio = file.type.startsWith('audio/');
+        var icon = isImage ? '🖼️' : (isAudio ? '🎵' : '📎');
+        var size = (file.size / 1024).toFixed(1);
+
+        var el = document.createElement('div');
+        el.style.cssText = 'display:inline-flex;align-items:center;gap:6px;background:rgba(212,175,55,0.1);padding:4px 12px;border-radius:12px;font-size:0.65rem;color:#8899aa;';
+        el.innerHTML = icon + ' ' + escapeHTML(file.name) + ' (' + size + 'KB) <span onclick="this.parentElement.remove();archivosSeleccionados=[];" style="cursor:pointer;color:#ef4444;">✕</span>';
         preview.appendChild(el);
     }
 
     event.target.value = '';
-    showToast(`📎 ${files.length} archivo(s) seleccionado(s)`, 'success');
+    showToast('📎 ' + files.length + ' archivo(s) seleccionado(s)', 'success');
 }
 
 // ================================================================
+// ================================================================
 // 🎙️ GRABACIÓN DE VOZ
 // ================================================================
+// ================================================================
+
+var grabacionActiva = false;
+var mediaRecorder = null;
+var audioChunks = [];
+
 function toggleGrabacionVoz() {
-    const btn = document.getElementById('btnGrabarVoz');
+    var btn = document.getElementById('btnGrabarVoz');
     
     if (!grabacionActiva) {
         iniciarGrabacionVoz(btn);
@@ -714,39 +1179,40 @@ function toggleGrabacionVoz() {
     }
 }
 
-async function iniciarGrabacionVoz(btn) {
-    try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        mediaRecorder = new MediaRecorder(stream);
-        audioChunks = [];
+function iniciarGrabacionVoz(btn) {
+    navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(function(stream) {
+            mediaRecorder = new MediaRecorder(stream);
+            audioChunks = [];
 
-        mediaRecorder.ondataavailable = event => {
-            audioChunks.push(event.data);
-        };
+            mediaRecorder.ondataavailable = function(event) {
+                audioChunks.push(event.data);
+            };
 
-        mediaRecorder.onstop = async () => {
-            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-            const file = new File([audioBlob], `voz_${Date.now()}.webm`, { type: 'audio/webm' });
-            
-            const session = await getSession();
-            if (session && conversacionActual) {
-                archivosSeleccionados = [file];
-                await enviarMensaje();
-            }
-            
-            stream.getTracks().forEach(track => track.stop());
-        };
+            mediaRecorder.onstop = function() {
+                var audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                var file = new File([audioBlob], 'voz_' + Date.now() + '.webm', { type: 'audio/webm' });
+                
+                sessionManager.getSession().then(function(session) {
+                    if (session && conversacionActual) {
+                        archivosSeleccionados = [file];
+                        enviarMensaje();
+                    }
+                });
+                
+                stream.getTracks().forEach(function(track) { track.stop(); });
+            };
 
-        mediaRecorder.start();
-        grabacionActiva = true;
-        btn.textContent = '⏹️';
-        btn.style.color = '#ef4444';
-        showToast('🎙️ Grabando...', '', 2000);
-
-    } catch (error) {
-        console.error('Error iniciando grabación:', error);
-        showToast('❌ Error al acceder al micrófono', 'error');
-    }
+            mediaRecorder.start();
+            grabacionActiva = true;
+            btn.textContent = '⏹️';
+            btn.style.color = '#ef4444';
+            showToast('🎙️ Grabando...', '', 2000);
+        })
+        .catch(function(error) {
+            Logger.error('Error iniciando grabación', error);
+            showToast('❌ Error al acceder al micrófono', 'error');
+        });
 }
 
 function detenerGrabacionVoz(btn) {
@@ -760,85 +1226,121 @@ function detenerGrabacionVoz(btn) {
 }
 
 // ================================================================
-// 🗑️ ELIMINAR MENSAJE (USA EL BACKEND)
 // ================================================================
-async function eliminarMensaje(mensajeId) {
+// 🗑️ ELIMINAR MENSAJE CON VERIFICACIÓN DE PROPIEDAD
+// ================================================================
+// ================================================================
+
+function eliminarMensaje(mensajeId) {
     if (!confirm('¿Eliminar este mensaje?')) return;
+    
+    sessionManager.getSession()
+        .then(function(session) {
+            if (!session) throw new Error('No autenticado');
 
-    try {
-        const session = await getSession();
-        if (!session) {
-            showToast('⚠️ Inicia sesión', 'error');
-            return;
-        }
+            return supabase
+                .from('mensajes_chat')
+                .select('remitente_id, destinatario_id, contenido, created_at')
+                .eq('id', mensajeId)
+                .single()
+                .then(function(mensajeResult) {
+                    if (mensajeResult.error) throw new Error('Mensaje no encontrado');
+                    var mensaje = mensajeResult.data;
+                    if (mensaje.remitente_id !== session.user.id) {
+                        showToast('⚠️ Solo el remitente puede eliminar este mensaje', 'error');
+                        return;
+                    }
 
-        const response = await fetch(`/api/mensajes/mensajes/${mensajeId}`, {
-            method: 'DELETE',
-            headers: {
-                'Authorization': `Bearer ${session.access_token}`
+                    showLoading('Eliminando mensaje...');
+
+                    return supabase
+                        .from('mensajes_chat')
+                        .update({
+                            eliminado: true,
+                            eliminado_por: session.user.id,
+                            eliminado_en: new Date().toISOString()
+                        })
+                        .eq('id', mensajeId)
+                        .eq('remitente_id', session.user.id);
+                });
+        })
+        .then(function(result) {
+            if (!result) return;
+            if (result.error) throw result.error;
+
+            hideLoading();
+            showToast('🗑️ Mensaje eliminado');
+            if (conversacionActual) {
+                messageCache.delete(conversacionActual.id);
+                return cargarMensajes(conversacionActual.id).then(function() {
+                    return cargarConversaciones();
+                });
             }
+            return cargarConversaciones();
+        })
+        .catch(function(error) {
+            hideLoading();
+            Logger.error('Error eliminando mensaje', error);
+            showToast('❌ Error al eliminar mensaje', 'error');
         });
-
-        const result = await response.json();
-        if (!result.success) throw new Error(result.error || 'Error al eliminar mensaje');
-
-        showToast('🗑️ Mensaje eliminado');
-        if (conversacionActual) {
-            await cargarMensajes(conversacionActual.id);
-        }
-        cargarConversaciones();
-
-    } catch (error) {
-        console.error('Error eliminando mensaje:', error);
-        showToast('❌ Error al eliminar mensaje', 'error');
-    }
 }
 
 // ================================================================
-// ✏️ EDITAR MENSAJE (USA EL BACKEND)
 // ================================================================
-async function editarMensaje(mensajeId) {
-    const nuevoContenido = prompt('Edita tu mensaje:');
+// ✏️ EDITAR MENSAJE
+// ================================================================
+// ================================================================
+
+function editarMensaje(mensajeId) {
+    var nuevoContenido = prompt('Edita tu mensaje:');
     if (nuevoContenido === null) return;
     if (!nuevoContenido.trim()) {
         showToast('⚠️ No puedes dejar vacío', 'error');
         return;
     }
-
-    try {
-        const session = await getSession();
-        if (!session) {
-            showToast('⚠️ Inicia sesión', 'error');
-            return;
-        }
-
-        const response = await fetch(`/api/mensajes/mensajes/${mensajeId}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${session.access_token}`
-            },
-            body: JSON.stringify({ contenido: nuevoContenido })
-        });
-
-        const result = await response.json();
-        if (!result.success) throw new Error(result.error || 'Error al editar mensaje');
-
-        showToast('✅ Mensaje editado');
-        if (conversacionActual) {
-            await cargarMensajes(conversacionActual.id);
-        }
-
-    } catch (error) {
-        console.error('Error editando mensaje:', error);
-        showToast('❌ Error al editar mensaje', 'error');
+    if (nuevoContenido.length > 10000) {
+        showToast('⚠️ El mensaje es demasiado largo (máx 10,000 caracteres)', 'warning');
+        return;
     }
+
+    sessionManager.getSession()
+        .then(function(session) {
+            if (!session) {
+                showToast('⚠️ Inicia sesión', 'error');
+                return;
+            }
+
+            showLoading('Editando mensaje...');
+
+            return llamadaAPI('/api/mensajes/mensajes/' + mensajeId, {
+                method: 'PUT',
+                body: JSON.stringify({ contenido: nuevoContenido })
+            });
+        })
+        .then(function(result) {
+            hideLoading();
+            if (!result) return;
+
+            showToast('✅ Mensaje editado');
+            if (conversacionActual) {
+                messageCache.delete(conversacionActual.id);
+                return cargarMensajes(conversacionActual.id);
+            }
+        })
+        .catch(function(error) {
+            hideLoading();
+            Logger.error('Error editando mensaje', error);
+            showToast('❌ Error al editar mensaje', 'error');
+        });
 }
 
 // ================================================================
-// 🗑️ ELIMINAR CONVERSACIÓN
 // ================================================================
-async function eliminarConversacion(contactoId) {
+// 🗑️ ELIMINAR CONVERSACIÓN CON CASCADA
+// ================================================================
+// ================================================================
+
+function eliminarConversacion(contactoId) {
     if (!contactoId) {
         showToast('⚠️ No hay conversación seleccionada', 'error');
         return;
@@ -846,103 +1348,144 @@ async function eliminarConversacion(contactoId) {
     
     if (!confirm('¿Eliminar toda la conversación con este contacto?')) return;
 
-    try {
-        const session = await getSession();
-        if (!session) {
-            showToast('⚠️ Inicia sesión', 'error');
-            return;
-        }
+    sessionManager.getSession()
+        .then(function(session) {
+            if (!session) {
+                showToast('⚠️ Inicia sesión', 'error');
+                return;
+            }
 
-        await supabase
-            .from('mensajes_chat')
-            .update({ eliminado: true })
-            .or(`and(remitente_id.eq.${session.user.id},destinatario_id.eq.${contactoId}),and(remitente_id.eq.${contactoId},destinatario_id.eq.${session.user.id})`);
+            return supabase
+                .from('contactos')
+                .select('id')
+                .eq('usuario_id', session.user.id)
+                .eq('contacto_id', contactoId)
+                .single()
+                .then(function(contactoResult) {
+                    if (contactoResult.error || !contactoResult.data) {
+                        showToast('❌ Contacto no encontrado', 'error');
+                        return;
+                    }
 
-        await supabase
-            .from('contactos')
-            .delete()
-            .eq('usuario_id', session.user.id)
-            .eq('contacto_id', contactoId);
+                    showLoading('Eliminando conversación...');
 
-        if (conversacionActual?.id === contactoId) {
-            conversacionActual = null;
-            document.getElementById('chatNombre').textContent = 'Selecciona una conversación';
-            document.getElementById('chatMessages').innerHTML = `
-                <div class="empty-chat">
-                    <span class="icon">◈</span>
-                    <h3>Conversación eliminada</h3>
-                </div>
-            `;
-        }
+                    return supabase
+                        .from('mensajes_chat')
+                        .select('id')
+                        .or('and(remitente_id.eq.' + session.user.id + ',destinatario_id.eq.' + contactoId + '),and(remitente_id.eq.' + contactoId + ',destinatario_id.eq.' + session.user.id + ')')
+                        .then(function(mensajesResult) {
+                            if (mensajesResult.error) throw mensajesResult.error;
+                            var mensajes = mensajesResult.data || [];
 
-        showToast('🗑️ Conversación eliminada');
-        await cargarConversaciones();
+                            if (mensajes.length > 0) {
+                                var ids = mensajes.map(function(m) { return m.id; });
+                                return supabase
+                                    .from('mensajes_chat')
+                                    .update({
+                                        eliminado: true,
+                                        eliminado_por: session.user.id,
+                                        eliminado_en: new Date().toISOString()
+                                    })
+                                    .in('id', ids);
+                            }
+                            return { error: null };
+                        })
+                        .then(function() {
+                            return supabase
+                                .from('contactos')
+                                .delete()
+                                .eq('usuario_id', session.user.id)
+                                .eq('contacto_id', contactoId);
+                        });
+                });
+        })
+        .then(function(result) {
+            if (!result) return;
+            if (result.error) throw result.error;
 
-    } catch (error) {
-        console.error('Error eliminando conversación:', error);
-        showToast('❌ Error al eliminar conversación', 'error');
-    }
+            hideLoading();
+            messageCache.delete(contactoId);
+
+            if (conversacionActual && conversacionActual.id === contactoId) {
+                conversacionActual = null;
+                window._conversacionActualId = null;
+                document.getElementById('chatNombre').textContent = 'Selecciona una conversación';
+                document.getElementById('chatMessages').innerHTML = '<div class="empty-chat"><span class="icon">◈</span><h3>Conversación eliminada</h3></div>';
+            }
+
+            showToast('🗑️ Conversación eliminada');
+            return cargarConversaciones();
+        })
+        .catch(function(error) {
+            hideLoading();
+            Logger.error('Error eliminando conversación', error);
+            showToast('❌ Error al eliminar conversación', 'error');
+        });
 }
 
+// ================================================================
 // ================================================================
 // 👁️ MARCAR MENSAJES COMO LEÍDOS
 // ================================================================
-async function marcarMensajesLeidos(contactoId) {
-    try {
-        const session = await getSession();
-        if (!session) return;
+// ================================================================
 
-        await supabase
-            .from('mensajes_chat')
-            .update({ leido: true })
-            .eq('remitente_id', contactoId)
-            .eq('destinatario_id', session.user.id)
-            .eq('leido', false)
-            .is('eliminado', false);
+function marcarMensajesLeidos(contactoId) {
+    return sessionManager.getSession()
+        .then(function(session) {
+            if (!session) return;
 
-    } catch (error) {
-        console.error('Error marcando mensajes como leídos:', error);
-    }
+            return supabase
+                .from('mensajes_chat')
+                .update({ leido: true })
+                .eq('remitente_id', contactoId)
+                .eq('destinatario_id', session.user.id)
+                .eq('leido', false)
+                .is('eliminado', false);
+        })
+        .catch(function(error) {
+            Logger.warn('Error marcando mensajes como leídos', error);
+        });
 }
 
+// ================================================================
 // ================================================================
 // ⚠️ REPORTAR MENSAJE
 // ================================================================
-async function reportarMensaje(mensajeId) {
-    const motivo = prompt('¿Por qué reportas este mensaje? (spam, ofensa, acoso, ilegal)');
+// ================================================================
+
+function reportarMensaje(mensajeId) {
+    var motivo = prompt('¿Por qué reportas este mensaje? (spam, ofensa, acoso, ilegal)');
     if (!motivo) return;
 
-    try {
-        const session = await getSession();
-        if (!session) {
-            showToast('⚠️ Inicia sesión para reportar', 'error');
-            return;
-        }
+    sessionManager.getSession()
+        .then(function(session) {
+            if (!session) {
+                showToast('⚠️ Inicia sesión para reportar', 'error');
+                return;
+            }
 
-        const response = await fetch(`/api/mensajes/reportar/${mensajeId}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${session.access_token}`
-            },
-            body: JSON.stringify({ motivo })
+            return llamadaAPI('/api/mensajes/reportar/' + mensajeId, {
+                method: 'POST',
+                body: JSON.stringify({ motivo: motivo })
+            });
+        })
+        .then(function(result) {
+            if (!result) return;
+            showToast('⚠️ Reporte enviado. Gracias por ayudar.', 'warning');
+        })
+        .catch(function(error) {
+            Logger.error('Error reportando mensaje', error);
+            showToast('❌ Error al reportar', 'error');
         });
-
-        const result = await response.json();
-        if (!result.success) throw new Error(result.error || 'Error al reportar');
-
-        showToast('⚠️ Reporte enviado. Gracias por ayudar.', 'warning');
-
-    } catch (error) {
-        console.error('Error reportando mensaje:', error);
-        showToast('❌ Error al reportar', 'error');
-    }
 }
 
 // ================================================================
+// ================================================================
 // 🚫 BLOQUEAR USUARIO
 // ================================================================
-async function bloquearUsuario(usuarioId) {
+// ================================================================
+
+function bloquearUsuario(usuarioId) {
     if (!usuarioId) {
         showToast('⚠️ No hay usuario seleccionado', 'error');
         return;
@@ -950,48 +1493,44 @@ async function bloquearUsuario(usuarioId) {
     
     if (!confirm('¿Bloquear a este usuario? No podrán enviarte mensajes.')) return;
 
-    try {
-        const session = await getSession();
-        if (!session) {
-            showToast('⚠️ Inicia sesión', 'error');
-            return;
-        }
-
-        const response = await fetch(`/api/mensajes/bloquear/${usuarioId}`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${session.access_token}`
+    sessionManager.getSession()
+        .then(function(session) {
+            if (!session) {
+                showToast('⚠️ Inicia sesión', 'error');
+                return;
             }
+
+            return llamadaAPI('/api/mensajes/bloquear/' + usuarioId, {
+                method: 'POST'
+            });
+        })
+        .then(function(result) {
+            if (!result) return;
+
+            showToast('🚫 Usuario bloqueado');
+
+            if (conversacionActual && conversacionActual.id === usuarioId) {
+                conversacionActual = null;
+                window._conversacionActualId = null;
+                document.getElementById('chatNombre').textContent = 'Selecciona una conversación';
+                document.getElementById('chatMessages').innerHTML = '<div class="empty-chat"><span class="icon">◈</span><h3>Usuario bloqueado</h3></div>';
+            }
+
+            return cargarConversaciones();
+        })
+        .catch(function(error) {
+            Logger.error('Error bloqueando usuario', error);
+            showToast('❌ Error al bloquear usuario', 'error');
         });
-
-        const result = await response.json();
-        if (!result.success) throw new Error(result.error || 'Error al bloquear');
-
-        showToast('🚫 Usuario bloqueado');
-
-        if (conversacionActual?.id === usuarioId) {
-            conversacionActual = null;
-            document.getElementById('chatNombre').textContent = 'Selecciona una conversación';
-            document.getElementById('chatMessages').innerHTML = `
-                <div class="empty-chat">
-                    <span class="icon">◈</span>
-                    <h3>Usuario bloqueado</h3>
-                </div>
-            `;
-        }
-
-        await cargarConversaciones();
-
-    } catch (error) {
-        console.error('Error bloqueando usuario:', error);
-        showToast('❌ Error al bloquear usuario', 'error');
-    }
 }
 
 // ================================================================
-// 🔍 BUSCAR EN CONVERSACIÓN (SEGURO)
 // ================================================================
-async function buscarEnConversacion(query) {
+// 🔍 BUSCAR EN CONVERSACIÓN
+// ================================================================
+// ================================================================
+
+function buscarEnConversacion(query) {
     if (!query || !query.trim()) {
         showToast('⚠️ Escribe algo para buscar', 'warning');
         return;
@@ -1002,57 +1541,59 @@ async function buscarEnConversacion(query) {
         return;
     }
 
-    try {
-        const session = await getSession();
-        if (!session) return;
+    sessionManager.getSession()
+        .then(function(session) {
+            if (!session) return;
 
-        const { data, error } = await supabase
-            .rpc('buscar_mensajes_seguro', {
-                p_usuario_id: session.user.id,
-                p_contacto_id: conversacionActual.id,
-                p_query: query.trim()
-            });
+            showLoading('Buscando...');
 
-        if (error) throw error;
+            return supabase
+                .from('mensajes_chat')
+                .select('*')
+                .or('and(remitente_id.eq.' + session.user.id + ',destinatario_id.eq.' + conversacionActual.id + '),and(remitente_id.eq.' + conversacionActual.id + ',destinatario_id.eq.' + session.user.id + ')')
+                .eq('eliminado', false)
+                .ilike('contenido', '%' + query.trim() + '%')
+                .order('created_at', { ascending: true });
+        })
+        .then(function(result) {
+            hideLoading();
+            if (!result) return;
+            if (result.error) throw result.error;
 
-        const container = document.getElementById('chatMessages');
-        if (!data || data.length === 0) {
-            container.innerHTML = `
-                <div class="empty-chat">
-                    <span class="icon">◈</span>
-                    <h3>No se encontraron resultados</h3>
-                    <p>No hay mensajes que coincidan con "${escapeHTML(query)}"</p>
-                    <button onclick="cargarMensajes('${conversacionActual.id}')" 
-                            style="margin-top:12px;padding:8px 20px;background:linear-gradient(135deg,#d4af37,#c49a2a);border:none;border-radius:30px;color:#0b0e14;font-weight:600;cursor:pointer;">
-                        Volver
-                    </button>
-                </div>
-            `;
-            return;
-        }
+            var container = document.getElementById('chatMessages');
+            var data = result.data || [];
 
-        container.innerHTML = data.map(msg => crearMensajeHTML(msg)).join('');
-        container.scrollTop = container.scrollHeight;
-        showToast(`🔍 Encontrados ${data.length} mensajes`, 'success');
+            if (data.length === 0) {
+                container.innerHTML = '<div class="empty-chat"><span class="icon">◈</span><h3>No se encontraron resultados</h3><p>No hay mensajes que coincidan con "' + escapeHTML(query) + '"</p><button onclick="cargarMensajes(\'' + conversacionActual.id + '\')" style="margin-top:12px;padding:8px 20px;background:linear-gradient(135deg,#d4af37,#c49a2a);border:none;border-radius:30px;color:#0b0e14;font-weight:600;cursor:pointer;">Volver</button></div>';
+                return;
+            }
 
-    } catch (error) {
-        console.error('Error buscando:', error);
-        showToast('❌ Error al buscar', 'error');
-    }
+            var html = '';
+            for (var i = 0; i < data.length; i++) {
+                html += crearMensajeHTML(data[i]);
+            }
+            container.innerHTML = html;
+            container.scrollTop = container.scrollHeight;
+            showToast('🔍 Encontrados ' + data.length + ' mensajes', 'success');
+        })
+        .catch(function(error) {
+            hideLoading();
+            Logger.error('Error buscando', error);
+            showToast('❌ Error al buscar', 'error');
+        });
 }
 
 // ================================================================
+// ================================================================
 // ✎ NUEVA CONVERSACIÓN (ABRIR MODAL)
 // ================================================================
+// ================================================================
+
 function nuevaConversacion() {
     document.getElementById('modalNuevoContacto').classList.add('show');
     document.getElementById('searchInputModal').value = '';
-    document.getElementById('resultadosBusqueda').innerHTML = `
-        <div style="padding:20px;text-align:center;color:#667788;font-size:0.75rem;">
-            Escribe al menos 2 caracteres para buscar
-        </div>
-    `;
-    setTimeout(() => {
+    document.getElementById('resultadosBusqueda').innerHTML = '<div style="padding:20px;text-align:center;color:#667788;font-size:0.75rem;">Escribe al menos 2 caracteres para buscar</div>';
+    setTimeout(function() {
         document.getElementById('searchInputModal').focus();
     }, 200);
 }
@@ -1062,12 +1603,15 @@ function cerrarModalNuevoContacto() {
 }
 
 // ================================================================
-// LIMPIEZA DE RECURSOS
 // ================================================================
+// 🧹 LIMPIEZA DE RECURSOS
+// ================================================================
+// ================================================================
+
 function limpiarRecursosMensajes() {
-    if (realtimeChannel) {
-        try { supabase.removeChannel(realtimeChannel); } catch(e) {}
-        realtimeChannel = null;
+    if (currentChannel) {
+        try { supabase.removeChannel(currentChannel); } catch(e) {}
+        currentChannel = null;
     }
     if (mediaRecorder && mediaRecorder.state === 'recording') {
         try { mediaRecorder.stop(); } catch(e) {}
@@ -1077,44 +1621,85 @@ function limpiarRecursosMensajes() {
     }
     archivosSeleccionados = [];
     grabacionActiva = false;
+    hideLoading();
 }
 
 window.addEventListener('beforeunload', limpiarRecursosMensajes);
 
 // ================================================================
+// ================================================================
 // 🔄 INICIALIZACIÓN
 // ================================================================
-document.addEventListener('DOMContentLoaded', async function() {
-    await cargarConversaciones();
+// ================================================================
 
-    document.getElementById('chatInput')?.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') {
-            enviarMensaje();
-        }
-    });
+document.addEventListener('DOMContentLoaded', function() {
+    Logger.info('Sistema de mensajes inicializado');
 
-    document.getElementById('btnEnviar')?.addEventListener('click', enviarMensaje);
+    // CONTADOR DE CARACTERES
+    var input = document.getElementById('chatInput');
+    if (input) {
+        var counter = document.createElement('div');
+        counter.id = 'charCounter';
+        counter.style.cssText = 'font-size:0.6rem;color:#8899aa;text-align:right;padding:4px;';
+        counter.textContent = '0/10000';
+        input.parentNode.appendChild(counter);
+        
+        input.addEventListener('input', function() {
+            var max = 10000;
+            var len = this.value.length;
+            counter.textContent = len + '/' + max;
+            counter.style.color = len > max * 0.9 ? '#ef4444' : '#8899aa';
+            
+            if (len > max) {
+                this.value = this.value.substring(0, max);
+                showToast('⚠️ Límite de 10,000 caracteres', 'warning');
+            }
+        });
+    }
 
-    document.getElementById('searchInput')?.addEventListener('input', function(e) {
-        buscarContactos(e.target.value);
-    });
+    cargarConversaciones();
 
-    document.getElementById('searchInputModal')?.addEventListener('input', function(e) {
-        buscarContactos(e.target.value);
-    });
+    var chatInput = document.getElementById('chatInput');
+    if (chatInput) {
+        chatInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                enviarMensaje();
+            }
+        });
+    }
+
+    var btnEnviar = document.getElementById('btnEnviar');
+    if (btnEnviar) {
+        btnEnviar.addEventListener('click', enviarMensaje);
+    }
+
+    var searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+        searchInput.addEventListener('input', function(e) {
+            buscarContactos(e.target.value);
+        });
+    }
+
+    var searchInputModal = document.getElementById('searchInputModal');
+    if (searchInputModal) {
+        searchInputModal.addEventListener('input', function(e) {
+            buscarContactos(e.target.value);
+        });
+    }
 
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
             cerrarModalNuevoContacto();
         }
     });
-
-    console.log('◈ Sariel\'s - Mensajes (Backend integrado)');
 });
 
 // ================================================================
-// EXPOSICIÓN GLOBAL
 // ================================================================
+// 🎯 EXPOSICIÓN GLOBAL
+// ================================================================
+// ================================================================
+
 window.cargarConversaciones = cargarConversaciones;
 window.abrirConversacion = abrirConversacion;
 window.enviarMensaje = enviarMensaje;
