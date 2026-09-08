@@ -1,11 +1,10 @@
 // ================================================================
-// MENSAJES.JS - SARIEL'S WEB3
+// MENSAJES.JS - SARIEL'S WEB3 (CORREGIDO PARA PRODUCCIÓN)
 // Lógica de Mensajería, Conversaciones y Búsqueda
 // ================================================================
 
 window.conversacionActual = null;
 let suscripcionMensajes = null;
-let archivoAdjunto = null;
 
 // Helper para obtener cliente Supabase
 function getSupabase() {
@@ -50,7 +49,7 @@ async function cargarConversaciones() {
             return;
         }
 
-        // Obtener IDs de conversaciones del usuario
+        // Obtener IDs de conversaciones del usuario actual
         const { data: participaciones, error: partError } = await client
             .from('conversation_participants')
             .select('conversation_id')
@@ -67,10 +66,10 @@ async function cargarConversaciones() {
 
         const convIds = participaciones.map(p => p.conversation_id);
 
-        // Obtener participantes de esas conversaciones (excluyendo al usuario actual)
+        // Obtener participantes de esas conversaciones (excluyendo al usuario actual) conectando con 'usuarios'
         const { data: participantes, error: partOtrosError } = await client
             .from('conversation_participants')
-            .select('conversation_id, user_id, profiles(id, username, avatar_url)')
+            .select('conversation_id, user_id, usuarios(id, username, avatar_url)')
             .in('conversation_id', convIds)
             .neq('user_id', user.id);
 
@@ -78,8 +77,13 @@ async function cargarConversaciones() {
 
         container.innerHTML = '';
 
+        if (!participantes || participantes.length === 0) {
+            container.innerHTML = `<div class="sin-conversaciones"><p>No hay otros participantes en los chats</p></div>`;
+            return;
+        }
+
         participantes.forEach(p => {
-            const perfil = p.profiles || {};
+            const perfil = p.usuarios || {};
             const username = perfil.username || 'Usuario';
             const avatarUrl = perfil.avatar_url;
             const convId = p.conversation_id;
@@ -112,7 +116,6 @@ async function cargarConversaciones() {
 async function abrirConversacion(convId, nombre, avatarUrl) {
     window.conversacionActual = convId;
 
-    // Actualizar encabezado del chat
     const nameEl = document.getElementById('chatUserName');
     const avatarEl = document.getElementById('chatUserAvatar');
 
@@ -123,13 +126,8 @@ async function abrirConversacion(convId, nombre, avatarUrl) {
             : `<span>◈</span>`;
     }
 
-    // Refrescar lista de conversaciones para marcar la activa
     cargarConversaciones();
-
-    // Cargar mensajes
     await cargarMensajes(convId);
-
-    // Suscribirse en tiempo real a mensajes nuevos de esta conversación
     suscribirMensajesTiempoReal(convId);
 }
 
@@ -175,7 +173,7 @@ async function cargarMensajes(convId) {
     }
 }
 
-// Renderizar mensaje individual en el DOM
+// Renderizar mensaje individual en el DOM con soporte real a columnas unificadas
 function renderizarMensaje(msg, esMio) {
     const container = document.getElementById('chatMessages');
     if (!container) return;
@@ -185,21 +183,31 @@ function renderizarMensaje(msg, esMio) {
 
     let adjuntoHTML = '';
     if (msg.media_url) {
-        if (msg.media_type === 'image') {
+        if (msg.tipo === 'imagen') {
             adjuntoHTML = `
                 <div class="message-image">
                     <img src="${escapeHTML(msg.media_url)}" onclick="abrirModalImagen('${escapeHTML(msg.media_url)}')" alt="Imagen"/>
                 </div>`;
-        } else if (msg.media_type === 'audio') {
+        } else if (msg.tipo === 'audio') {
             adjuntoHTML = `
                 <div class="message-audio">
                     <audio controls src="${escapeHTML(msg.media_url)}"></audio>
+                </div>`;
+        } else if (msg.tipo === 'video') {
+            adjuntoHTML = `
+                <div class="message-video">
+                    <video controls src="${escapeHTML(msg.media_url)}" style="max-width:100%; border-radius:8px;"></video>
+                </div>`;
+        } else {
+            adjuntoHTML = `
+                <div class="message-file">
+                    <a href="${escapeHTML(msg.media_url)}" target="_blank" download>📎 ${escapeHTML(msg.nombre_archivo || 'Descargar archivo')}</a>
                 </div>`;
         }
     }
 
     div.innerHTML = `
-        ${msg.content ? `<div class="message-text">${escapeHTML(msg.content)}</div>` : ''}
+        ${msg.contenido ? `<div class="message-text">${escapeHTML(msg.contenido)}</div>` : ''}
         ${adjuntoHTML}
         <div class="message-meta">
             <span>${formatearHora(msg.created_at)}</span>
@@ -211,11 +219,11 @@ function renderizarMensaje(msg, esMio) {
 }
 
 // ----------------------------------------------------------------
-// 3. ENVIAR MENSAJES Y ADJUNTOS
+// 3. ENVIAR MENSAJES Y ADJUNTOS (BUCKETS REALES)
 // ----------------------------------------------------------------
 async function enviarMensaje() {
     if (!window.conversacionActual) {
-        return showToast('Selecciona una conversación primero', 'warning');
+        return alert('Selecciona una conversación primero');
     }
 
     const input = document.getElementById('messageInput');
@@ -224,7 +232,7 @@ async function enviarMensaje() {
     const file = fileInput ? fileInput.files[0] : null;
 
     if (!texto && !file) {
-        return showToast('Escribe un mensaje o selecciona un archivo', 'warning');
+        return alert('Escribe un mensaje o selecciona un archivo');
     }
 
     const btnEnviar = document.getElementById('sendMessageButton');
@@ -235,36 +243,47 @@ async function enviarMensaje() {
     try {
         const { data: { user } } = await client.auth.getUser();
         let mediaUrl = null;
-        let mediaType = null;
+        let tipoMensaje = 'texto';
 
-        // Subir archivo a Supabase Storage si se seleccionó uno
+        // Subir archivo a Supabase Storage usando los buckets reales de producción
         if (file) {
-            const fileExt = file.name.split('.').pop();
-            const filePath = `chat_media/${window.conversacionActual}/${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
+            const fileExt = file.name.split('.').pop().toLowerCase();
+            const esAudio = file.type.startsWith('audio/') || ['mp3', 'wav', 'ogg', 'm4a'].includes(fileExt);
+            const bucketName = esAudio ? 'chat-audio' : 'chat-attachments';
+            const folderPrefix = esAudio ? 'audios' : 'media';
+
+            const filePath = `${folderPrefix}/${window.conversacionActual}/${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
 
             const { data: uploadData, error: uploadError } = await client.storage
-                .from('mensajes-media')
+                .from(bucketName)
                 .upload(filePath, file);
 
             if (uploadError) throw uploadError;
 
             const { data: publicUrlData } = client.storage
-                .from('mensajes-media')
+                .from(bucketName)
                 .getPublicUrl(filePath);
 
             mediaUrl = publicUrlData.publicUrl;
-            mediaType = file.type.startsWith('image/') ? 'image' : (file.type.startsWith('audio/') ? 'audio' : 'file');
+
+            if (file.type.startsWith('image/')) tipoMensaje = 'imagen';
+            else if (file.type.startsWith('video/')) tipoMensaje = 'video';
+            else if (esAudio) tipoMensaje = 'audio';
+            else tipoMensaje = 'archivo';
         }
 
-        // Insertar en la tabla 'messages'
+        // Insertar en la tabla unificada 'messages' con las columnas reales de producción
         const { data: nuevoMensaje, error: sendError } = await client
             .from('messages')
             .insert({
                 conversation_id: window.conversacionActual,
                 sender_id: user.id,
-                content: texto || null,
+                contenido: texto || null,
                 media_url: mediaUrl,
-                media_type: mediaType
+                tipo: tipoMensaje,
+                nombre_archivo: file ? file.name : null,
+                tamano_bytes: file ? file.size : null,
+                mime_type: file ? file.type : null
             })
             .select()
             .single();
@@ -279,7 +298,7 @@ async function enviarMensaje() {
 
     } catch (err) {
         console.error('Error al enviar mensaje:', err);
-        showToast('Error al enviar el mensaje', 'error');
+        alert('Error al enviar el mensaje');
     } finally {
         if (btnEnviar) btnEnviar.disabled = false;
     }
@@ -310,7 +329,6 @@ function suscribirMensajesTiempoReal(convId) {
                 const nuevoMsg = payload.new;
                 const { data: { user } } = await client.auth.getUser();
 
-                // Eliminar vista de "sin mensajes" si está presente
                 const sinMensajesEl = document.querySelector('.chat-messages .sin-mensajes');
                 if (sinMensajesEl) sinMensajesEl.remove();
 
@@ -345,18 +363,22 @@ async function iniciarConversacionConUsuario(targetUserId) {
     const client = getSupabase();
     try {
         const { data: { user } } = await client.auth.getUser();
-        if (!user) return showToast('Inicia sesión para chatear', 'warning');
+        if (!user) return alert('Inicia sesión para chatear');
 
         // Crear una nueva conversación
         const { data: nuevaConv, error: convError } = await client
             .from('conversations')
-            .insert({})
+            .insert({
+                usuario_a_id: user.id,
+                usuario_b_id: targetUserId,
+                tipo: 'directo'
+            })
             .select()
             .single();
 
         if (convError) throw convError;
 
-        // Agregar a ambos usuarios como participantes
+        // Agregar a ambos participantes
         const { error: partError } = await client
             .from('conversation_participants')
             .insert([
@@ -368,9 +390,9 @@ async function iniciarConversacionConUsuario(targetUserId) {
 
         cerrarModalNuevoContacto();
 
-        // Obtener perfil del usuario destino para el título del chat
+        // Obtener perfil del usuario destino desde 'usuarios'
         const { data: targetProfile } = await client
-            .from('profiles')
+            .from('usuarios')
             .select('username, avatar_url')
             .eq('id', targetUserId)
             .single();
@@ -382,7 +404,7 @@ async function iniciarConversacionConUsuario(targetUserId) {
 
     } catch (err) {
         console.error('Error al iniciar conversación:', err);
-        showToast('Error al crear el chat', 'error');
+        alert('Error al crear el chat');
     }
 }
 
@@ -416,7 +438,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (messageInput) {
         messageInput.addEventListener('input', () => {
             actualizarContadorTexto();
-            // Autoajustar altura del textarea
             messageInput.style.height = 'auto';
             messageInput.style.height = Math.min(messageInput.scrollHeight, 100) + 'px';
         });
@@ -448,7 +469,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// Exponer funciones necesarias globalmente
+// Exponer funciones globalmente
 window.cargarConversaciones = cargarConversaciones;
 window.abrirConversacion = abrirConversacion;
 window.enviarMensaje = enviarMensaje;
