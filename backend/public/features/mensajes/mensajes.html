@@ -635,7 +635,6 @@
             <a href="#" class="nav-link active">◈ Mensajes</a>
             <a href="/features/live/live.html" class="nav-link live">◉ Live</a>
             <a href="/features/videos/videos.html" class="nav-link">🎬 Videos</a>
-            <!-- ✅ Ruta a Contactos agregada (igual que en contactos.html) -->
             <a href="/features/contactos/contactos.html" class="nav-link">👥 Contactos</a>
         </nav>
 
@@ -648,7 +647,6 @@
                     <h2>◈ Chats</h2>
                     <div style="display:flex;gap:6px;">
                         <button class="btn btn-gold btn-sm" onclick="nuevaConversacion()">✚ Nuevo</button>
-                        <!-- ✅ Botón para volver a Contactos (misma ruta que contactos.html) -->
                         <button class="back-btn" onclick="irAContactos()" title="Volver a contactos">👥</button>
                     </div>
                 </div>
@@ -776,17 +774,31 @@
     <script>
         // ================================================================
         // SARIEL'S MENSAJES - CÓDIGO COMPLETO CORREGIDO
-        // VERSIÓN CON INTEGRACIÓN TOTAL A SUPABASE
+        // VERSIÓN CON INTEGRACIÓN TOTAL A SUPABASE Y RAILWAY
         // ================================================================
 
         // ================================================================
-        // 1. CONFIGURACIÓN Y ESTADO
+        // 1. CONFIGURACIÓN SUPABASE - DESDE RAILWAY
+        // ================================================================
+        const SUPABASE_URL = 'https://zultnlogdoajehbswlih.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
+
+        // Crear cliente Supabase
+        const supabase = window.supabase?.createClient 
+            ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+            : supabaseJs.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        window.supabase = supabase;
+
+        // ================================================================
+        // 2. CONFIGURACIÓN Y ESTADO
         // ================================================================
         const API_BASE = '/api/mensajes';
         let conversacionActual = null;
         let realtimeChannel = null;
         let ultimoMensajeId = null;
         let archivosSeleccionados = [];
+        let usuarioActual = null;
         
         const callState = {
             active: false, room: null, localTrack: null, audioTrack: null,
@@ -798,9 +810,11 @@
         let audioMuted = false, videoMuted = false, screenSharing = false;
 
         // ================================================================
-        // 2. UTILERÍAS
+        // 3. UTILERÍAS
         // ================================================================
-        function getToken() { return localStorage.getItem('token') || sessionStorage.getItem('token'); }
+        function getToken() { 
+            return localStorage.getItem('token') || sessionStorage.getItem('token'); 
+        }
         
         function headersAutenticados() {
             return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` };
@@ -833,57 +847,102 @@
         }
 
         // ================================================================
-        // 3. NAVEGACIÓN (CON MISMA RUTA QUE CONTACTOS.HTML)
+        // 4. OBTENER SESIÓN - DESDE SUPABASE
         // ================================================================
-        
-        /**
-         * ✅ Función para volver a Contactos
-         * Usa la MISMA ruta que contactos.html
-         */
+        async function getSession() {
+            try {
+                const { data: { session }, error } = await supabase.auth.getSession();
+                if (error) throw error;
+                if (session) {
+                    usuarioActual = session.user;
+                }
+                return session;
+            } catch (error) {
+                console.error('❌ Error obteniendo sesión:', error);
+                return null;
+            }
+        }
+
+        // ================================================================
+        // 5. NAVEGACIÓN
+        // ================================================================
         function irAContactos() {
             window.location.href = '/features/contactos/contactos.html';
         }
 
-        /**
-         * ✅ Función para ir a Contactos desde cualquier lugar
-         * Misma ruta que se usa en contactos.html
-         */
-        function irAContactosDesdeMensajes() {
-            window.location.href = '/features/contactos/contactos.html';
-        }
-
         // ================================================================
-        // 4. CONVERSACIONES
+        // 6. CONVERSACIONES
         // ================================================================
         async function cargarConversaciones() {
             const container = document.getElementById('conversationList');
             if (!container) return;
+            
+            const session = await getSession();
+            if (!session) {
+                container.innerHTML = `<div class="sin-conversaciones"><p>Inicia sesión para ver tus chats</p></div>`;
+                return;
+            }
+
             try {
-                const res = await fetch(`${API_BASE}/conversaciones`, { headers: headersAutenticados() });
-                if (res.status === 401) {
-                    container.innerHTML = `<div class="sin-conversaciones"><p>Inicia sesión para ver tus chats</p></div>`;
-                    return;
-                }
-                if (!res.ok) throw new Error(`Error ${res.status}`);
-                const data = await res.json();
-                if (!data.success || !data.conversaciones?.length) {
+                // Obtener conversaciones usando Supabase directamente
+                const { data: participaciones, error: partError } = await supabase
+                    .from('conversation_participants')
+                    .select('conversation_id')
+                    .eq('user_id', session.user.id);
+
+                if (partError) throw partError;
+
+                if (!participaciones || participaciones.length === 0) {
                     container.innerHTML = `<div class="sin-conversaciones"><span class="icono">💬</span><p>No tienes conversaciones aún</p></div>`;
                     return;
                 }
+
+                const convIds = participaciones.map(p => p.conversation_id);
+
+                const { data: conversaciones, error: convError } = await supabase
+                    .from('conversations')
+                    .select(`
+                        id,
+                        created_at,
+                        updated_at,
+                        conversation_participants (
+                            user_id,
+                            users (id, username, avatar_url)
+                        )
+                    `)
+                    .in('id', convIds)
+                    .order('updated_at', { ascending: false });
+
+                if (convError) throw convError;
+
                 container.innerHTML = '';
-                data.conversaciones.forEach(conv => {
-                    const u = conv.otros_participantes?.[0] || {};
+                
+                for (const conv of conversaciones) {
+                    const { data: ultimoMsg } = await supabase
+                        .from('messages')
+                        .select('id, content, sender_id, created_at, media_url, is_read')
+                        .eq('conversation_id', conv.id)
+                        .eq('is_deleted', false)
+                        .order('created_at', { ascending: false })
+                        .limit(1);
+
+                    const otrosParticipantes = conv.conversation_participants
+                        .filter(p => p.user_id !== session.user.id)
+                        .map(p => p.users || { username: 'Usuario', avatar_url: null });
+
+                    const u = otrosParticipantes[0] || {};
                     const nombre = u.username || 'Usuario';
                     const avatar = u.avatar_url;
+                    
                     const div = document.createElement('div');
                     div.className = `conversation-item ${conversacionActual === conv.id ? 'active' : ''}`;
                     div.onclick = () => abrirConversacion(conv.id, nombre, avatar);
                     div.innerHTML = `
                         <div class="conversation-avatar">${avatar ? `<img src="${escapeHTML(avatar)}"/>` : `<span class="avatar-placeholder">${nombre.charAt(0).toUpperCase()}</span>`}</div>
-                        <div class="conversation-content"><strong>${escapeHTML(nombre)}</strong><span>${escapeHTML(conv.ultimo_mensaje?.content || conv.ultimo_mensaje?.contenido || 'Toca para abrir el chat')} ${conv.ultimo_mensaje ? '· ' + formatearHora(conv.ultimo_mensaje.created_at) : ''}</span></div>
+                        <div class="conversation-content"><strong>${escapeHTML(nombre)}</strong><span>${escapeHTML(ultimoMsg?.[0]?.content || 'Toca para abrir el chat')} ${ultimoMsg?.[0] ? '· ' + formatearHora(ultimoMsg[0].created_at) : ''}</span></div>
                     `;
                     container.appendChild(div);
-                });
+                }
             } catch (e) {
                 console.error('❌ Error cargando conversaciones:', e);
                 container.innerHTML = `<div class="sin-conversaciones"><p>Error al cargar las conversaciones</p></div>`;
@@ -891,7 +950,7 @@
         }
 
         // ================================================================
-        // 5. ABRIR CONVERSACIÓN
+        // 7. ABRIR CONVERSACIÓN
         // ================================================================
         async function abrirConversacion(convId, nombre, avatarUrl) {
             conversacionActual = convId;
@@ -905,23 +964,36 @@
         }
 
         // ================================================================
-        // 6. MENSAJES
+        // 8. MENSAJES
         // ================================================================
         async function cargarMensajes(convId) {
             const container = document.getElementById('chatMessages');
             if (!container) return;
             container.innerHTML = `<div class="loading-mensajes">Cargando mensajes...</div>`;
+            
+            const session = await getSession();
+            if (!session) {
+                container.innerHTML = `<div class="sin-mensajes"><p>Inicia sesión para ver mensajes</p></div>`;
+                return;
+            }
+
             try {
-                const res = await fetch(`${API_BASE}/mensajes/${convId}?limit=50`, { headers: headersAutenticados() });
-                if (!res.ok) throw new Error(`Error ${res.status}`);
-                const data = await res.json();
-                if (!data.success) throw new Error(data.error || 'Error al cargar mensajes');
-                const mensajes = data.mensajes || [];
-                const userId = data.usuario_id;
-                if (!mensajes.length) {
+                const { data: mensajes, error } = await supabase
+                    .from('messages')
+                    .select('*')
+                    .eq('conversation_id', convId)
+                    .eq('is_deleted', false)
+                    .order('created_at', { ascending: true })
+                    .limit(50);
+
+                if (error) throw error;
+
+                const userId = session.user.id;
+                if (!mensajes || mensajes.length === 0) {
                     container.innerHTML = `<div class="sin-mensajes"><span class="icono">💭</span><p>No hay mensajes en este chat</p></div>`;
                     return;
                 }
+
                 container.innerHTML = '';
                 mensajes.forEach(msg => {
                     const esMio = msg.sender_id === userId;
@@ -945,7 +1017,14 @@
                     container.appendChild(div);
                 });
                 container.scrollTop = container.scrollHeight;
-                await fetch(`${API_BASE}/leer/${convId}`, { method: 'POST', headers: headersAutenticados() });
+                
+                // Marcar como leídos
+                await supabase
+                    .from('messages')
+                    .update({ is_read: true })
+                    .eq('conversation_id', convId)
+                    .neq('sender_id', userId);
+                    
             } catch (e) {
                 console.error('❌ Error cargando mensajes:', e);
                 container.innerHTML = `<div class="sin-mensajes"><p>Error al obtener los mensajes</p></div>`;
@@ -953,7 +1032,7 @@
         }
 
         // ================================================================
-        // 7. ENVIAR MENSAJE
+        // 9. ENVIAR MENSAJE
         // ================================================================
         async function enviarMensaje() {
             if (!conversacionActual) { showToast('Selecciona una conversación', 'warning'); return; }
@@ -963,49 +1042,68 @@
             const file = fileInput?.files?.[0] || (archivosSeleccionados.length ? archivosSeleccionados[0] : null);
             if (!texto && !file) { showToast('Escribe un mensaje o selecciona un archivo', 'warning'); return; }
             
+            const session = await getSession();
+            if (!session) { showToast('Inicia sesión para enviar mensajes', 'error'); return; }
+            
             const btn = document.getElementById('btnEnviar');
             if (btn) btn.disabled = true;
+            
             try {
                 let mediaUrl = null, mediaType = 'texto', fileName = null;
+                
                 if (file) {
-                    const fd = new FormData();
-                    fd.append('archivo', file);
-                    fd.append('conversacionId', conversacionActual);
-                    const upRes = await fetch(`${API_BASE}/subir-archivo`, {
-                        method: 'POST',
-                        headers: { 'Authorization': `Bearer ${getToken()}` },
-                        body: fd
-                    });
-                    if (!upRes.ok) throw new Error('Error al subir archivo');
-                    const upData = await upRes.json();
-                    if (!upData.success) throw new Error(upData.error || 'Error al subir archivo');
-                    mediaUrl = upData.url;
-                    mediaType = upData.tipo || 'archivo';
+                    // Subir archivo a Supabase Storage
+                    const filePath = `chat/${Date.now()}_${file.name}`;
+                    const { data: uploadData, error: uploadError } = await supabase.storage
+                        .from('chat-files')
+                        .upload(filePath, file);
+                        
+                    if (uploadError) throw uploadError;
+                    
+                    const { data: urlData } = supabase.storage
+                        .from('chat-files')
+                        .getPublicUrl(filePath);
+                        
+                    mediaUrl = urlData.publicUrl;
+                    mediaType = file.type.startsWith('image/') ? 'imagen' : 
+                               file.type.startsWith('audio/') ? 'audio' :
+                               file.type.startsWith('video/') ? 'video' : 'archivo';
                     fileName = file.name;
                 }
-                const res = await fetch(`${API_BASE}/enviar`, {
-                    method: 'POST',
-                    headers: headersAutenticados(),
-                    body: JSON.stringify({ conversationId: conversacionActual, contenido: texto || null, media_url: mediaUrl, media_type: mediaType, file_name: fileName })
-                });
-                if (!res.ok) throw new Error('Error al enviar mensaje');
-                const data = await res.json();
-                if (!data.success) throw new Error(data.error || 'Error al enviar mensaje');
+
+                const { data: mensaje, error } = await supabase
+                    .from('messages')
+                    .insert({
+                        conversation_id: conversacionActual,
+                        sender_id: session.user.id,
+                        content: texto || null,
+                        media_url: mediaUrl,
+                        tipo: mediaType,
+                        nombre_archivo: fileName,
+                        is_read: false,
+                        is_deleted: false
+                    })
+                    .select()
+                    .single();
+
+                if (error) throw error;
+                
                 if (input) input.value = '';
                 if (fileInput) fileInput.value = '';
                 archivosSeleccionados = [];
                 document.getElementById('archivosSeleccionados').innerHTML = '';
-                if (data.mensaje) {
+                
+                if (mensaje) {
                     const container = document.getElementById('chatMessages');
                     container.querySelector('.sin-mensajes')?.remove();
                     const div = document.createElement('div');
                     div.className = 'message own';
-                    div.dataset.mensajeId = data.mensaje.id;
+                    div.dataset.mensajeId = mensaje.id;
                     div.innerHTML = `
-                        ${data.mensaje.content ? `<div class="message-text">${escapeHTML(data.mensaje.content)}</div>` : ''}
-                        ${data.mensaje.media_url ? `<div class="message-file"><a href="${escapeHTML(data.mensaje.media_url)}" target="_blank">📎 ${escapeHTML(data.mensaje.nombre_archivo || 'Archivo')}</a></div>` : ''}
-                        <div class="message-meta"><span>${formatearHora(data.mensaje.created_at)}</span><span class="estado">✓</span></div>
-                        <div class="message-actions"><button onclick="editarMensaje('${data.mensaje.id}')">✎</button><button onclick="eliminarMensaje('${data.mensaje.id}')">🗑️</button></div>
+                        ${mensaje.content ? `<div class="message-text">${escapeHTML(mensaje.content)}</div>` : ''}
+                        ${mensaje.media_url ? `<div class="message-file"><a href="${escapeHTML(mensaje.media_url)}" target="_blank">📎 ${escapeHTML(mensaje.nombre_archivo || 'Archivo')}</a></div>` : ''}
+                        <div class="message-meta"><span>${formatearHora(mensaje.created_at)}</span><span class="estado">✓</span></div>
+                        <div class="message-actions"><button onclick="editarMensaje('${mensaje.id}')">✎</button><button onclick="eliminarMensaje('${mensaje.id}')">🗑️</button></div>
                     `;
                     container.appendChild(div);
                     container.scrollTop = container.scrollHeight;
@@ -1018,15 +1116,17 @@
         }
 
         // ================================================================
-        // 8. ELIMINAR / EDITAR / REPORTAR MENSAJE
+        // 10. ELIMINAR / EDITAR / REPORTAR MENSAJE
         // ================================================================
         async function eliminarMensaje(id) {
             if (!confirm('¿Eliminar este mensaje?')) return;
             try {
-                const res = await fetch(`${API_BASE}/mensajes/${id}`, { method: 'DELETE', headers: headersAutenticados() });
-                if (!res.ok) throw new Error('Error');
-                const data = await res.json();
-                if (!data.success) throw new Error(data.error || 'Error');
+                const { error } = await supabase
+                    .from('messages')
+                    .update({ is_deleted: true, deleted_at: new Date().toISOString() })
+                    .eq('id', id);
+                    
+                if (error) throw error;
                 document.querySelector(`.message[data-mensaje-id="${id}"]`)?.remove();
                 showToast('Mensaje eliminado', 'success');
             } catch (e) { showToast(e.message || 'Error', 'error'); }
@@ -1040,14 +1140,16 @@
             const nuevo = prompt('Editar mensaje:', textoEl.textContent);
             if (!nuevo || nuevo.trim() === textoEl.textContent) return;
             try {
-                const res = await fetch(`${API_BASE}/mensajes/${id}`, {
-                    method: 'PUT',
-                    headers: headersAutenticados(),
-                    body: JSON.stringify({ contenido: nuevo.trim() })
-                });
-                if (!res.ok) throw new Error('Error');
-                const data = await res.json();
-                if (!data.success) throw new Error(data.error || 'Error');
+                const { error } = await supabase
+                    .from('messages')
+                    .update({
+                        content: nuevo.trim(),
+                        editado: true,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', id);
+                    
+                if (error) throw error;
                 textoEl.textContent = nuevo.trim();
                 el.querySelector('.editado')?.remove();
                 const meta = el.querySelector('.message-meta');
@@ -1060,14 +1162,15 @@
             const motivo = prompt('Motivo del reporte:');
             if (!motivo) return;
             try {
-                const res = await fetch(`${API_BASE}/reportar/${id}`, {
-                    method: 'POST',
-                    headers: headersAutenticados(),
-                    body: JSON.stringify({ motivo: motivo.trim() })
-                });
-                if (!res.ok) throw new Error('Error');
-                const data = await res.json();
-                if (!data.success) throw new Error(data.error || 'Error');
+                const { error } = await supabase
+                    .from('mensajes_reportes')
+                    .insert({
+                        mensaje_id: id,
+                        usuario_id: (await getSession())?.user?.id,
+                        motivo: motivo.trim()
+                    });
+                    
+                if (error) throw error;
                 showToast('Mensaje reportado', 'success');
             } catch (e) { showToast(e.message || 'Error', 'error'); }
         }
@@ -1075,11 +1178,19 @@
         async function eliminarConversacion() {
             if (!conversacionActual) { showToast('Selecciona una conversación', 'warning'); return; }
             if (!confirm('¿Salir de este chat?')) return;
+            
+            const session = await getSession();
+            if (!session) { showToast('Inicia sesión', 'error'); return; }
+            
             try {
-                const res = await fetch(`${API_BASE}/conversacion/${conversacionActual}`, { method: 'DELETE', headers: headersAutenticados() });
-                if (!res.ok) throw new Error('Error');
-                const data = await res.json();
-                if (!data.success) throw new Error(data.error || 'Error');
+                const { error } = await supabase
+                    .from('conversation_participants')
+                    .delete()
+                    .eq('conversation_id', conversacionActual)
+                    .eq('user_id', session.user.id);
+                    
+                if (error) throw error;
+                
                 conversacionActual = null;
                 document.getElementById('chatUserName').textContent = 'Selecciona una conversación';
                 document.getElementById('chatUserAvatar').innerHTML = '<span>◈</span>';
@@ -1091,7 +1202,7 @@
         }
 
         // ================================================================
-        // 9. NUEVA CONVERSACIÓN
+        // 11. NUEVA CONVERSACIÓN
         // ================================================================
         function nuevaConversacion() {
             document.getElementById('modalNuevoContacto').classList.add('show');
@@ -1111,16 +1222,28 @@
                 resultados.innerHTML = '<p style="text-align:center;color:var(--text-muted);font-size:0.75rem;padding:12px;">Escribe al menos 2 caracteres</p>';
                 return;
             }
+            
+            const session = await getSession();
+            if (!session) {
+                resultados.innerHTML = '<p style="text-align:center;color:var(--text-muted);font-size:0.75rem;padding:12px;">Inicia sesión para buscar</p>';
+                return;
+            }
+            
             try {
-                const res = await fetch(`${API_BASE}/usuarios?query=${encodeURIComponent(query)}`, { headers: headersAutenticados() });
-                if (!res.ok) throw new Error('Error');
-                const data = await res.json();
-                if (!data.success) throw new Error(data.error || 'Error');
-                const usuarios = data.usuarios || [];
-                if (!usuarios.length) {
+                const { data: usuarios, error } = await supabase
+                    .from('users')
+                    .select('id, username, avatar_url')
+                    .neq('id', session.user.id)
+                    .ilike('username', `%${query}%`)
+                    .limit(20);
+                    
+                if (error) throw error;
+                
+                if (!usuarios || usuarios.length === 0) {
                     resultados.innerHTML = '<p style="text-align:center;color:var(--text-muted);font-size:0.75rem;padding:12px;">No se encontraron usuarios</p>';
                     return;
                 }
+                
                 resultados.innerHTML = usuarios.map(u => `
                     <div class="contacto-resultado">
                         <div class="contacto-avatar">${u.avatar_url ? `<img src="${escapeHTML(u.avatar_url)}"/>` : '◈'}</div>
@@ -1135,36 +1258,96 @@
         }
 
         async function iniciarConversacionConUsuario(targetUserId) {
+            const session = await getSession();
+            if (!session) { showToast('Inicia sesión', 'error'); return; }
+            
             try {
-                const res = await fetch(`${API_BASE}/conversacion`, {
-                    method: 'POST',
-                    headers: headersAutenticados(),
-                    body: JSON.stringify({ targetUserId })
-                });
-                if (!res.ok) throw new Error('Error');
-                const data = await res.json();
-                if (!data.success) throw new Error(data.error || 'Error');
+                // Verificar si ya existe conversación
+                const { data: existing, error: existError } = await supabase
+                    .from('conversation_participants')
+                    .select('conversation_id')
+                    .eq('user_id', session.user.id);
+                    
+                if (existError) throw existError;
+                
+                const convIds = existing.map(e => e.conversation_id);
+                let convExistente = null;
+                
+                if (convIds.length > 0) {
+                    const { data: participantes, error: partError } = await supabase
+                        .from('conversation_participants')
+                        .select('conversation_id')
+                        .in('conversation_id', convIds)
+                        .eq('user_id', targetUserId);
+                        
+                    if (!partError && participantes && participantes.length > 0) {
+                        convExistente = participantes[0].conversation_id;
+                    }
+                }
+                
+                if (convExistente) {
+                    cerrarModalNuevoContacto();
+                    const { data: users } = await supabase
+                        .from('users')
+                        .select('username, avatar_url')
+                        .eq('id', targetUserId)
+                        .single();
+                        
+                    abrirConversacion(convExistente, users?.username || 'Usuario', users?.avatar_url || null);
+                    showToast('Conversación existente', 'info');
+                    return;
+                }
+                
+                // Crear nueva conversación
+                const { data: conversacion, error: convError } = await supabase
+                    .from('conversations')
+                    .insert({})
+                    .select()
+                    .single();
+                    
+                if (convError) throw convError;
+                
+                await supabase
+                    .from('conversation_participants')
+                    .insert([
+                        { conversation_id: conversacion.id, user_id: session.user.id },
+                        { conversation_id: conversacion.id, user_id: targetUserId }
+                    ]);
+                    
                 cerrarModalNuevoContacto();
-                const conv = data.conversacion;
-                const u = data.otros_participantes?.[0] || {};
-                abrirConversacion(conv.id, u.username || 'Usuario', u.avatar_url || null);
+                const { data: users } = await supabase
+                    .from('users')
+                    .select('username, avatar_url')
+                    .eq('id', targetUserId)
+                    .single();
+                    
+                abrirConversacion(conversacion.id, users?.username || 'Usuario', users?.avatar_url || null);
                 showToast('Conversación creada', 'success');
             } catch (e) { showToast(e.message || 'Error', 'error'); }
         }
 
         // ================================================================
-        // 10. TIEMPO REAL (Polling)
+        // 12. TIEMPO REAL (Polling)
         // ================================================================
         function suscribirMensajesTiempoReal(convId) {
             if (realtimeChannel) { clearInterval(realtimeChannel); realtimeChannel = null; }
             realtimeChannel = setInterval(async () => {
                 try {
-                    const res = await fetch(`${API_BASE}/mensajes/${convId}?since=${ultimoMensajeId || ''}`, { headers: headersAutenticados() });
-                    if (!res.ok) return;
-                    const data = await res.json();
-                    if (!data.success || !data.mensajes) return;
-                    const userId = data.usuario_id;
-                    data.mensajes.forEach(msg => {
+                    const session = await getSession();
+                    if (!session) return;
+                    
+                    const { data: mensajes, error } = await supabase
+                        .from('messages')
+                        .select('*')
+                        .eq('conversation_id', convId)
+                        .eq('is_deleted', false)
+                        .gt('created_at', ultimoMensajeId || '1970-01-01')
+                        .order('created_at', { ascending: true });
+                        
+                    if (error || !mensajes) return;
+                    
+                    const userId = session.user.id;
+                    mensajes.forEach(msg => {
                         if (!document.querySelector(`.message[data-mensaje-id="${msg.id}"]`)) {
                             const container = document.getElementById('chatMessages');
                             container.querySelector('.sin-mensajes')?.remove();
@@ -1196,7 +1379,7 @@
         }
 
         // ================================================================
-        // 11. ARCHIVOS
+        // 13. ARCHIVOS
         // ================================================================
         function seleccionarArchivo() { document.getElementById('fileInput')?.click(); }
         
@@ -1221,7 +1404,7 @@
         }
 
         // ================================================================
-        // 12. MODAL IMAGEN
+        // 14. MODAL IMAGEN
         // ================================================================
         function abrirModalImagen(src) {
             const modal = document.getElementById('modalImagenMensaje');
@@ -1230,7 +1413,7 @@
         }
 
         // ================================================================
-        // 13. IDIOMA
+        // 15. IDIOMA
         // ================================================================
         function cambiarIdioma(idioma) {
             console.log('🌐 Idioma cambiado a:', idioma);
@@ -1238,7 +1421,7 @@
         }
 
         // ================================================================
-        // 14. 🎥 VIDEOLLAMADA - FUNCIONES COMPLETAS
+        // 16. 🎥 VIDEOLLAMADA - FUNCIONES COMPLETAS
         // ================================================================
         async function obtenerTokenLiveKit(roomName, participantName) {
             try {
@@ -1259,22 +1442,31 @@
             if (!conversacionActual) { showToast('Selecciona una conversación para llamar', 'warning'); return; }
             if (callState.active) { mostrarLlamada(); return; }
             try {
-                const session = { user: JSON.parse(localStorage.getItem('user') || '{}') };
-                if (!session.user?.id) { showToast('Inicia sesión para llamar', 'error'); return; }
+                const session = await getSession();
+                if (!session) { showToast('Inicia sesión para llamar', 'error'); return; }
+                
                 const nombre = document.getElementById('chatUserName')?.textContent || 'Usuario';
                 const callId = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).substr(2);
                 const roomName = 'call_' + callId;
                 
-                const res = await fetch(`${API_BASE}/llamada`, {
-                    method: 'POST',
-                    headers: headersAutenticados(),
-                    body: JSON.stringify({ conversationId: conversacionActual, tipo: 'video', roomName })
-                });
-                if (!res.ok) throw new Error('Error al crear llamada');
-                const data = await res.json();
-                if (!data.success) throw new Error(data.error || 'Error');
+                // Crear llamada en BD
+                const { data: llamada, error } = await supabase
+                    .from('llamadas')
+                    .insert({
+                        id: callId,
+                        creador_id: session.user.id,
+                        conversation_id: conversacionActual,
+                        room_name: roomName,
+                        tipo: 'video',
+                        estado: 'ringing',
+                        metadata: { destinatario_id: conversacionActual }
+                    })
+                    .select()
+                    .single();
+                    
+                if (error) throw error;
                 
-                callState.callId = data.llamada.id;
+                callState.callId = callId;
                 callState.isInitiator = true;
                 callState.active = true;
                 mostrarLlamada();
@@ -1319,7 +1511,7 @@
                     if (callState.active) colgarLlamada();
                 });
                 
-                await room.connect(tokenData.wsUrl || tokenData.url, tokenData.token);
+                await room.connect(tokenData.url || tokenData.wsUrl, tokenData.token);
                 await publicarTracksLocales(room);
                 callState.room = room;
                 callState.active = true;
@@ -1480,11 +1672,10 @@
             if (!callState.active && !callState.callId) return;
             try {
                 if (callState.callId) {
-                    await fetch(`${API_BASE}/llamada/${callState.callId}`, {
-                        method: 'PUT',
-                        headers: headersAutenticados(),
-                        body: JSON.stringify({ estado: 'ended' })
-                    });
+                    await supabase
+                        .from('llamadas')
+                        .update({ estado: 'ended', finalizada_at: new Date().toISOString() })
+                        .eq('id', callState.callId);
                 }
                 limpiarRecursosLiveKit();
                 limpiarLlamada();
@@ -1532,7 +1723,7 @@
         }
 
         // ================================================================
-        // 15. LLAMADA ENTRANTE
+        // 17. LLAMADA ENTRANTE
         // ================================================================
         window._aceptarLlamadaEntrante = async function() {
             const incomingEl = document.getElementById('callIncoming');
@@ -1540,18 +1731,28 @@
             try {
                 const callId = callState.incomingCallId;
                 if (!callId) throw new Error('No se encontró la llamada');
-                const res = await fetch(`${API_BASE}/llamada/${callId}`, { headers: headersAutenticados() });
-                if (!res.ok) throw new Error('Error al obtener detalles');
-                const data = await res.json();
-                if (!data.success) throw new Error(data.error || 'Error');
-                const session = { user: JSON.parse(localStorage.getItem('user') || '{}') };
-                if (!session.user?.id) throw new Error('No autenticado');
+                
+                const session = await getSession();
+                if (!session) throw new Error('No autenticado');
+                
+                // Actualizar estado
+                await supabase
+                    .from('llamadas')
+                    .update({ estado: 'active', contestada_at: new Date().toISOString() })
+                    .eq('id', callId);
+                    
+                const { data: llamada } = await supabase
+                    .from('llamadas')
+                    .select('room_name')
+                    .eq('id', callId)
+                    .single();
+                    
                 callState.callId = callId;
                 callState.active = true;
                 callState.isInitiator = false;
                 incomingEl.classList.remove('show');
                 mostrarLlamada();
-                await conectarALiveKit(data.llamada.room_name, session.user.id);
+                await conectarALiveKit(llamada.room_name, session.user.id);
                 iniciarContadorDuracion();
                 showToast('✅ Llamada aceptada', 'success');
             } catch (e) {
@@ -1565,18 +1766,18 @@
         window._rechazarLlamadaEntrante = function() {
             document.getElementById('callIncoming')?.classList.remove('show');
             if (callState.incomingCallId) {
-                fetch(`${API_BASE}/llamada/${callState.incomingCallId}`, {
-                    method: 'PUT',
-                    headers: headersAutenticados(),
-                    body: JSON.stringify({ estado: 'rejected' })
-                }).catch(() => {});
+                supabase
+                    .from('llamadas')
+                    .update({ estado: 'rejected', finalizada_at: new Date().toISOString() })
+                    .eq('id', callState.incomingCallId)
+                    .catch(() => {});
             }
             limpiarLlamada();
             showToast('Llamada rechazada', 'warning');
         };
 
         // ================================================================
-        // 16. ESTRELLAS
+        // 18. ESTRELLAS
         // ================================================================
         (function initStars() {
             const canvas = document.getElementById('stars-canvas');
@@ -1606,20 +1807,24 @@
         })();
 
         // ================================================================
-        // 17. INICIALIZACIÓN
+        // 19. INICIALIZACIÓN
         // ================================================================
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', async function() {
             console.log('◈ Sariel\'s Mensajes - Inicializado correctamente');
+            console.log('📡 Supabase URL:', SUPABASE_URL);
             
-            // ✅ Cargar parámetro de URL (si viene de contactos)
-            const urlParams = new URLSearchParams(window.location.search);
-            const contactoId = urlParams.get('contacto');
+            const session = await getSession();
+            if (session) {
+                console.log('👤 Usuario:', session.user.email);
+                usuarioActual = session.user;
+            }
             
             cargarConversaciones();
             
             // Si viene de contactos con un ID, abrir esa conversación
+            const urlParams = new URLSearchParams(window.location.search);
+            const contactoId = urlParams.get('contacto');
             if (contactoId) {
-                // Buscar y abrir la conversación con ese contacto
                 setTimeout(() => {
                     const items = document.querySelectorAll('.conversation-item');
                     items.forEach(item => {
@@ -1652,7 +1857,7 @@
         });
 
         // ================================================================
-        // 18. EXPOSICIÓN GLOBAL
+        // 20. EXPOSICIÓN GLOBAL
         // ================================================================
         window.cargarConversaciones = cargarConversaciones;
         window.abrirConversacion = abrirConversacion;
@@ -1682,12 +1887,13 @@
         window._aceptarLlamadaEntrante = window._aceptarLlamadaEntrante;
         window._rechazarLlamadaEntrante = window._rechazarLlamadaEntrante;
         window.showToast = showToast;
-        // ✅ Funciones de navegación expuestas globalmente
+        window.getSession = getSession;
         window.irAContactos = irAContactos;
-        window.irAContactosDesdeMensajes = irAContactosDesdeMensajes;
+        window.supabase = supabase;
 
         console.log('✅ Sariel\'s Mensajes - Listo para producción');
         console.log('📁 Ruta a Contactos: /features/contactos/contactos.html');
+        console.log('📡 Supabase conectado correctamente');
     </script>
 
 </body>
