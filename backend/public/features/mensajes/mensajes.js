@@ -158,7 +158,9 @@ async function buscarContactos(query) {
             const yaEsContacto = idsExistentes.includes(usuario.id);
             const nombreSanitizado = escapeHTML(usuario.nombre || 'Usuario');
             const handleSanitizado = escapeHTML(usuario.handle || 'usuario');
-            const avatarHtml = usuario.avatar_url ? `<img src="${escapeHTML(usuario.avatar_url)}" style="width:100%;height:100%;object-fit:cover;">` : (usuario.nombre ? nombreSanitizado[0].toUpperCase() : '◈');
+            const avatarHtml = usuario.avatar_url 
+                ? `<img src="${usuario.avatar_url}" style="width:100%;height:100%;object-fit:cover;">` 
+                : (usuario.nombre ? nombreSanitizado[0].toUpperCase() : '◈');
             
             return `
                 <div class="resultado-item" style="
@@ -247,7 +249,7 @@ async function agregarContacto(contactoId) {
 }
 
 // ================================================================
-// 📋 CARGAR CONVERSACIONES (USA EL BACKEND)
+// 📋 CARGAR CONVERSACIONES (USA EL BACKEND) - CORREGIDO
 // ================================================================
 async function cargarConversaciones() {
     if (!await verificarAutenticacion()) return;
@@ -280,7 +282,11 @@ async function cargarConversaciones() {
         }
 
         convList.innerHTML = conversaciones.map(conv => {
-            const avatar = conv.avatar_url ? `<img src="${escapeHTML(conv.avatar_url)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" />` : (conv.nombre ? conv.nombre[0].toUpperCase() : '✦');
+            // ✅ CORREGIDO - NO usar escapeHTML en avatar_url
+            const avatar = conv.avatar_url 
+                ? `<img src="${conv.avatar_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" />` 
+                : (conv.nombre ? conv.nombre[0].toUpperCase() : '✦');
+            
             const isActive = conversacionActual?.id === conv.id;
             const nombreSanitizado = escapeHTML(conv.nombre);
             const ultimoMensajeSanitizado = escapeHTML(conv.ultimoMensaje);
@@ -479,7 +485,7 @@ function crearMensajeHTML(msg) {
 }
 
 function crearMensajeImagen(msg, esEnviado, hora) {
-    const imagenUrl = escapeHTML(msg.imagen_url);
+    const imagenUrl = msg.imagen_url; // ✅ NO usar escapeHTML en URLs de imágenes
     if (esEnviado) {
         return `
             <div class="msg-wrapper enviado">
@@ -504,7 +510,7 @@ function crearMensajeImagen(msg, esEnviado, hora) {
 }
 
 function crearMensajeAudio(msg, esEnviado, hora) {
-    const audioUrl = escapeHTML(msg.imagen_url);
+    const audioUrl = msg.imagen_url; // ✅ NO usar escapeHTML en URLs de audio
     if (esEnviado) {
         return `
             <div class="msg-wrapper enviado">
