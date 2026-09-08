@@ -1,14 +1,20 @@
-const supabase = require('../config/supabase');
+// ================================================================
+// MENSAJES CONTROLLER - SARIEL'S WEB3
+// VERSIÓN CORREGIDA - ESQUEMA REAL DE SUPABASE
+// ================================================================
 
-// ============================================================
+const { supabaseAdmin } = require('../config/supabase');
+const path = require('path');
+
+// ================================================================
 // OBTENER CONVERSACIONES
-// ============================================================
+// ================================================================
 exports.obtenerConversaciones = async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = req.usuario.id;
 
-        // Obtener IDs de conversaciones en las que participa el usuario
-        const { data: participaciones, error: partError } = await supabase
+        // Obtener IDs de conversaciones donde participa el usuario
+        const { data: participaciones, error: partError } = await supabaseAdmin
             .from('conversation_participants')
             .select('conversation_id')
             .eq('user_id', userId);
@@ -21,68 +27,70 @@ exports.obtenerConversaciones = async (req, res) => {
 
         const convIds = participaciones.map(p => p.conversation_id);
 
-        // Obtener los otros participantes y últimos mensajes
-        const { data: conversaciones, error: convError } = await supabase
+        // Obtener conversaciones con participantes
+        const { data: conversaciones, error: convError } = await supabaseAdmin
             .from('conversations')
             .select(`
                 id,
                 created_at,
-                type,
-                last_message_at,
+                tipo,
+                usuario_a_id,
+                usuario_b_id,
                 participants:conversation_participants!inner(
                     user_id,
                     usuarios(id, username, avatar_url)
-                ),
-                ultimo_mensaje:messages(
-                    contenido,
-                    created_at,
-                    sender_id
                 )
             `)
             .in('id', convIds)
-            .order('last_message_at', { ascending: false });
+            .order('created_at', { ascending: false });
 
         if (convError) throw convError;
 
-        // Formatear respuesta
-        const conversacionesFormateadas = conversaciones.map(conv => {
+        // Obtener último mensaje de cada conversación
+        const conversacionesFormateadas = await Promise.all(conversaciones.map(async (conv) => {
+            const { data: ultimoMensaje, error: msgError } = await supabaseAdmin
+                .from('messages')
+                .select('contenido, created_at, sender_id')
+                .eq('conversation_id', conv.id)
+                .order('created_at', { ascending: false })
+                .limit(1);
+
+            if (msgError) console.error('Error obteniendo último mensaje:', msgError);
+
             const otrosParticipantes = (conv.participants || [])
                 .filter(p => p.user_id !== userId)
                 .map(p => p.usuarios)
                 .filter(u => u !== null);
 
-            const ultimoMensaje = conv.ultimo_mensaje && conv.ultimo_mensaje.length > 0 
-                ? conv.ultimo_mensaje[0] 
-                : null;
-
             return {
                 id: conv.id,
                 created_at: conv.created_at,
-                type: conv.type,
-                last_message_at: conv.last_message_at,
+                tipo: conv.tipo,
+                usuario_a_id: conv.usuario_a_id,
+                usuario_b_id: conv.usuario_b_id,
                 otros_participantes: otrosParticipantes,
-                ultimo_mensaje: ultimoMensaje
+                ultimo_mensaje: ultimoMensaje && ultimoMensaje.length > 0 ? ultimoMensaje[0] : null
             };
-        });
+        }));
 
         res.json({ success: true, conversaciones: conversacionesFormateadas });
 
     } catch (error) {
-        console.error('Error en obtenerConversaciones:', error);
+        console.error('❌ Error en obtenerConversaciones:', error);
         res.status(500).json({ success: false, error: 'Error al obtener conversaciones' });
     }
 };
 
-// ============================================================
+// ================================================================
 // OBTENER MENSAJES
-// ============================================================
+// ================================================================
 exports.obtenerMensajes = async (req, res) => {
     try {
         const { conversacionId } = req.params;
-        const userId = req.user.id;
+        const userId = req.usuario.id;
 
-        // Verificar que el usuario tiene acceso a la conversación
-        const { data: participante, error: accesoError } = await supabase
+        // Verificar acceso
+        const { data: participante, error: accesoError } = await supabaseAdmin
             .from('conversation_participants')
             .select('conversation_id')
             .eq('conversation_id', conversacionId)
@@ -94,10 +102,11 @@ exports.obtenerMensajes = async (req, res) => {
         }
 
         // Obtener mensajes
-        const { data: mensajes, error: msgError } = await supabase
+        const { data: mensajes, error: msgError } = await supabaseAdmin
             .from('messages')
             .select('*')
             .eq('conversation_id', conversacionId)
+            .eq('is_deleted', false)
             .order('created_at', { ascending: true });
 
         if (msgError) throw msgError;
@@ -106,9 +115,12 @@ exports.obtenerMensajes = async (req, res) => {
         const mensajesNoLeidos = mensajes.filter(m => !m.is_read && m.sender_id !== userId);
         if (mensajesNoLeidos.length > 0) {
             const idsNoLeidos = mensajesNoLeidos.map(m => m.id);
-            await supabase
+            await supabaseAdmin
                 .from('messages')
-                .update({ is_read: true })
+                .update({ 
+                    is_read: true,
+                    fecha_leido: new Date().toISOString()
+                })
                 .in('id', idsNoLeidos);
         }
 
@@ -119,17 +131,17 @@ exports.obtenerMensajes = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Error en obtenerMensajes:', error);
+        console.error('❌ Error en obtenerMensajes:', error);
         res.status(500).json({ success: false, error: 'Error al obtener mensajes' });
     }
 };
 
-// ============================================================
+// ================================================================
 // ENVIAR MENSAJE
-// ============================================================
+// ================================================================
 exports.enviarMensaje = async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = req.usuario.id;
         const { 
             conversationId, 
             contenido, 
@@ -137,7 +149,8 @@ exports.enviarMensaje = async (req, res) => {
             media_type,
             file_name,
             file_size,
-            mime_type 
+            mime_type,
+            duracion_segundos
         } = req.body;
 
         if (!conversationId) {
@@ -149,7 +162,7 @@ exports.enviarMensaje = async (req, res) => {
         }
 
         // Verificar participación
-        const { data: participante, error: accesoError } = await supabase
+        const { data: participante, error: accesoError } = await supabaseAdmin
             .from('conversation_participants')
             .select('conversation_id')
             .eq('conversation_id', conversationId)
@@ -160,33 +173,30 @@ exports.enviarMensaje = async (req, res) => {
             return res.status(403).json({ success: false, error: 'No tienes acceso a esta conversación' });
         }
 
-        // Insertar mensaje
+        // Insertar mensaje - USANDO ESQUEMA REAL
         const mensajeData = {
             conversation_id: conversationId,
             sender_id: userId,
             contenido: contenido || null,
             media_url: media_url || null,
-            media_type: media_type || 'texto',
-            file_name: file_name || null,
-            file_size: file_size || null,
-            mime_type: mime_type || null,
+            tipo: media_type || 'texto',          // ✅ REAL: tipo
+            nombre_archivo: file_name || null,    // ✅ REAL: nombre_archivo
+            tamano_bytes: file_size || null,      // ✅ REAL: tamano_bytes
+            mime_type: mime_type || null,         // ✅ REAL: mime_type
+            duracion_segundos: duracion_segundos || null, // ✅ REAL: duracion_segundos
             is_read: false,
-            is_deleted: false
+            is_deleted: false,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
         };
 
-        const { data: mensaje, error: msgError } = await supabase
+        const { data: mensaje, error: msgError } = await supabaseAdmin
             .from('messages')
             .insert(mensajeData)
             .select()
             .single();
 
         if (msgError) throw msgError;
-
-        // Actualizar last_message_at en conversación
-        await supabase
-            .from('conversations')
-            .update({ last_message_at: new Date().toISOString() })
-            .eq('id', conversationId);
 
         res.json({ 
             success: true, 
@@ -195,17 +205,17 @@ exports.enviarMensaje = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Error en enviarMensaje:', error);
+        console.error('❌ Error en enviarMensaje:', error);
         res.status(500).json({ success: false, error: 'Error al enviar mensaje' });
     }
 };
 
-// ============================================================
+// ================================================================
 // CREAR CONVERSACIÓN
-// ============================================================
+// ================================================================
 exports.crearConversacion = async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = req.usuario.id;
         const { targetUserId } = req.body;
 
         if (!targetUserId) {
@@ -217,7 +227,7 @@ exports.crearConversacion = async (req, res) => {
         }
 
         // Verificar que el usuario destino existe
-        const { data: usuarioDestino, error: userError } = await supabase
+        const { data: usuarioDestino, error: userError } = await supabaseAdmin
             .from('usuarios')
             .select('id, username, avatar_url')
             .eq('id', targetUserId)
@@ -227,8 +237,8 @@ exports.crearConversacion = async (req, res) => {
             return res.status(404).json({ success: false, error: 'Usuario no encontrado' });
         }
 
-        // Verificar si ya existe una conversación entre estos usuarios
-        const { data: convExistente, error: existError } = await supabase
+        // Verificar si ya existe conversación entre estos usuarios
+        const { data: convExistente, error: existError } = await supabaseAdmin
             .from('conversation_participants')
             .select('conversation_id')
             .eq('user_id', userId);
@@ -236,18 +246,17 @@ exports.crearConversacion = async (req, res) => {
         if (!existError && convExistente && convExistente.length > 0) {
             const convIds = convExistente.map(p => p.conversation_id);
             
-            const { data: participantes, error: partError } = await supabase
+            const { data: participantes, error: partError } = await supabaseAdmin
                 .from('conversation_participants')
                 .select('conversation_id')
                 .in('conversation_id', convIds)
                 .eq('user_id', targetUserId);
 
             if (!partError && participantes && participantes.length > 0) {
-                // Ya existe una conversación
                 const convId = participantes[0].conversation_id;
-                const { data: conversacion, error: convError } = await supabase
+                const { data: conversacion, error: convError } = await supabaseAdmin
                     .from('conversations')
-                    .select('id, created_at, type')
+                    .select('id, created_at, tipo, usuario_a_id, usuario_b_id')
                     .eq('id', convId)
                     .single();
 
@@ -262,13 +271,14 @@ exports.crearConversacion = async (req, res) => {
             }
         }
 
-        // Crear nueva conversación
-        const { data: conversacion, error: convError } = await supabase
+        // Crear nueva conversación - USANDO ESQUEMA REAL
+        const { data: conversacion, error: convError } = await supabaseAdmin
             .from('conversations')
             .insert({
-                type: 'directo',
-                created_by: userId,
-                last_message_at: new Date().toISOString()
+                tipo: 'directo',              // ✅ REAL: tipo
+                usuario_a_id: userId,         // ✅ REAL: usuario_a_id
+                usuario_b_id: targetUserId,   // ✅ REAL: usuario_b_id
+                created_at: new Date().toISOString()
             })
             .select()
             .single();
@@ -276,7 +286,7 @@ exports.crearConversacion = async (req, res) => {
         if (convError) throw convError;
 
         // Agregar participantes
-        const { error: partError } = await supabase
+        const { error: partError } = await supabaseAdmin
             .from('conversation_participants')
             .insert([
                 { conversation_id: conversacion.id, user_id: userId },
@@ -293,25 +303,25 @@ exports.crearConversacion = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Error en crearConversacion:', error);
+        console.error('❌ Error en crearConversacion:', error);
         res.status(500).json({ success: false, error: 'Error al crear conversación' });
     }
 };
 
-// ============================================================
+// ================================================================
 // SALIR DE CONVERSACIÓN
-// ============================================================
+// ================================================================
 exports.salirConversacion = async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = req.usuario.id;
         const { conversacionId } = req.params;
 
         if (!conversacionId) {
             return res.status(400).json({ success: false, error: 'ID de conversación requerido' });
         }
 
-        // Verificar que el usuario es participante
-        const { data: participante, error: accesoError } = await supabase
+        // Verificar participación
+        const { data: participante, error: accesoError } = await supabaseAdmin
             .from('conversation_participants')
             .select('conversation_id')
             .eq('conversation_id', conversacionId)
@@ -322,8 +332,8 @@ exports.salirConversacion = async (req, res) => {
             return res.status(403).json({ success: false, error: 'No eres participante de esta conversación' });
         }
 
-        // Eliminar al usuario de la conversación
-        const { error: deleteError } = await supabase
+        // Eliminar al usuario
+        const { error: deleteError } = await supabaseAdmin
             .from('conversation_participants')
             .delete()
             .eq('conversation_id', conversacionId)
@@ -332,7 +342,7 @@ exports.salirConversacion = async (req, res) => {
         if (deleteError) throw deleteError;
 
         // Verificar si quedan participantes
-        const { data: participantesRestantes, error: restError } = await supabase
+        const { data: participantesRestantes, error: restError } = await supabaseAdmin
             .from('conversation_participants')
             .select('user_id')
             .eq('conversation_id', conversacionId);
@@ -341,7 +351,7 @@ exports.salirConversacion = async (req, res) => {
 
         // Si no quedan participantes, eliminar la conversación
         if (!participantesRestantes || participantesRestantes.length === 0) {
-            await supabase
+            await supabaseAdmin
                 .from('conversations')
                 .delete()
                 .eq('id', conversacionId);
@@ -350,24 +360,24 @@ exports.salirConversacion = async (req, res) => {
         res.json({ success: true, mensaje: 'Has salido de la conversación' });
 
     } catch (error) {
-        console.error('Error en salirConversacion:', error);
+        console.error('❌ Error en salirConversacion:', error);
         res.status(500).json({ success: false, error: 'Error al salir de la conversación' });
     }
 };
 
-// ============================================================
+// ================================================================
 // BUSCAR USUARIOS
-// ============================================================
+// ================================================================
 exports.buscarUsuarios = async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = req.usuario.id;
         const { query } = req.query;
 
         if (!query || query.length < 2) {
             return res.json({ success: true, usuarios: [] });
         }
 
-        const { data: usuarios, error } = await supabase
+        const { data: usuarios, error } = await supabaseAdmin
             .from('usuarios')
             .select('id, username, avatar_url')
             .ilike('username', `%${query}%`)
@@ -379,17 +389,17 @@ exports.buscarUsuarios = async (req, res) => {
         res.json({ success: true, usuarios: usuarios || [] });
 
     } catch (error) {
-        console.error('Error en buscarUsuarios:', error);
+        console.error('❌ Error en buscarUsuarios:', error);
         res.status(500).json({ success: false, error: 'Error al buscar usuarios' });
     }
 };
 
-// ============================================================
+// ================================================================
 // SUBIR ARCHIVO
-// ============================================================
+// ================================================================
 exports.subirArchivo = async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = req.usuario.id;
         const { conversacionId } = req.body;
         const file = req.file;
 
@@ -401,8 +411,8 @@ exports.subirArchivo = async (req, res) => {
             return res.status(400).json({ success: false, error: 'ID de conversación requerido' });
         }
 
-        // Verificar acceso a la conversación
-        const { data: participante, error: accesoError } = await supabase
+        // Verificar acceso
+        const { data: participante, error: accesoError } = await supabaseAdmin
             .from('conversation_participants')
             .select('conversation_id')
             .eq('conversation_id', conversacionId)
@@ -436,7 +446,7 @@ exports.subirArchivo = async (req, res) => {
         const fileName = `${folder}/${conversacionId}/${Date.now()}_${Math.random().toString(36).substring(2, 8)}${fileExt}`;
 
         // Subir a Supabase Storage
-        const { error: uploadError } = await supabase.storage
+        const { error: uploadError } = await supabaseAdmin.storage
             .from(bucket)
             .upload(fileName, file.buffer, {
                 contentType: file.mimetype,
@@ -446,7 +456,7 @@ exports.subirArchivo = async (req, res) => {
         if (uploadError) throw uploadError;
 
         // Obtener URL pública
-        const { data: urlData } = supabase.storage
+        const { data: urlData } = supabaseAdmin.storage
             .from(bucket)
             .getPublicUrl(fileName);
 
@@ -468,7 +478,21 @@ exports.subirArchivo = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Error en subirArchivo:', error);
+        console.error('❌ Error en subirArchivo:', error);
         res.status(500).json({ success: false, error: 'Error al subir archivo' });
     }
+};
+
+// ================================================================
+// EXPORTAR TODAS LAS FUNCIONES
+// ================================================================
+
+module.exports = {
+    obtenerConversaciones: exports.obtenerConversaciones,
+    obtenerMensajes: exports.obtenerMensajes,
+    enviarMensaje: exports.enviarMensaje,
+    crearConversacion: exports.crearConversacion,
+    salirConversacion: exports.salirConversacion,
+    buscarUsuarios: exports.buscarUsuarios,
+    subirArchivo: exports.subirArchivo
 };
