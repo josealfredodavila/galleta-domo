@@ -1,1745 +1,4001 @@
-// ================================================================
-// MENSAJES - SARIEL'S ECOSYSTEM
-// VERSIÓN FINAL - AUDITORÍA QUIRÚRGICA COMPLETA
-// ================================================================
+/* ================================================================
+   MENSAJES.JS - SARIEL'S ECOSYSTEM
+   VERSIÓN CORREGIDA PARA PRODUCCIÓN
+   ================================================================
+   RESPONSABILIDADES:
+   ✅ Supabase Auth
+   ✅ Sesión segura
+   ✅ Conversaciones
+   ✅ Mensajes
+   ✅ Contactos
+   ✅ Búsqueda
+   ✅ Envío de texto
+   ✅ Envío de imágenes
+   ✅ Envío de audio
+   ✅ Grabación de voz
+   ✅ Edición
+   ✅ Eliminación
+   ✅ Mensajes leídos
+   ✅ Bloqueo
+   ✅ Reportes
+   ✅ Realtime
+   ✅ Cache
+   ✅ Validación de archivos
+   ✅ Protección XSS
+   ✅ LiveKit
+   ================================================================ */
 
-// ================================================================
-// CONFIGURACIÓN SUPABASE - CON VERIFICACIÓN Y REINTENTO
-// ================================================================
+'use strict';
 
-var supabase = null;
-var SUPABASE_READY = false;
+/* ================================================================
+   SUPABASE
+================================================================ */
 
-function obtenerSupabase() {
-    if (typeof window.supabase !== 'undefined' && window.supabase !== null) {
+let supabase = null;
+let SUPABASE_READY = false;
+
+async function obtenerSupabase() {
+
+    if (
+        SUPABASE_READY &&
+        supabase
+    ) {
+        return supabase;
+    }
+
+    if (
+        typeof window !== 'undefined' &&
+        window.supabase
+    ) {
         supabase = window.supabase;
         SUPABASE_READY = true;
-        return true;
+        return supabase;
     }
-    return false;
+
+    for (
+        let intento = 0;
+        intento < 10;
+        intento++
+    ) {
+
+        await new Promise(resolve =>
+            setTimeout(resolve, 200)
+        );
+
+        if (
+            typeof window !== 'undefined' &&
+            window.supabase
+        ) {
+            supabase = window.supabase;
+            SUPABASE_READY = true;
+            return supabase;
+        }
+    }
+
+    throw new Error(
+        'Supabase no está disponible'
+    );
 }
 
-// Intentar obtener Supabase inmediatamente
-if (!obtenerSupabase()) {
-    console.warn('⏳ Supabase no disponible en el momento, esperando...');
+/* ================================================================
+   LOGGER
+================================================================ */
 
-    var intentos = 0;
-    var maxIntentos = 10;
+const Logger = {
 
-    var intervalo = setInterval(function() {
-        intentos++;
-        if (obtenerSupabase()) {
-            clearInterval(intervalo);
-            console.log('✅ Supabase conectado correctamente (intento ' + intentos + ')');
-            return;
-        }
+    prefijo: '[Sariel\'s Mensajes]',
 
-        if (intentos >= maxIntentos) {
-            clearInterval(intervalo);
-            console.error('❌ Supabase no disponible después de ' + maxIntentos + ' intentos');
-            showToast('⚠️ Error de conexión con el servidor', 'error');
-            var container = document.getElementById('conversacionesList');
-            if (container) {
-                container.innerHTML = `
-                    <div style="padding:40px;text-align:center;color:#ef4444;font-size:0.9rem;">
-                        <div style="font-size:2rem;margin-bottom:10px;">⚠️</div>
-                        <p>Error de conexión con Supabase</p>
-                        <p style="font-size:0.7rem;margin-top:8px;color:#667788;">Recarga la página o contacta a soporte</p>
-                        <button onclick="location.reload()" style="margin-top:12px;padding:8px 20px;background:#d4af37;border:none;border-radius:30px;color:#0b0e14;font-weight:600;cursor:pointer;">
-                            🔄 Recargar
-                        </button>
-                    </div>
-                `;
-            }
-        }
-    }, 200);
-}
-
-// ================================================================
-// ================================================================
-// 📋 SISTEMA DE LOGGING ESTRUCTURADO
-// ================================================================
-// ================================================================
-
-var Logger = {
-    levels: {
-        DEBUG: 0,
-        INFO: 1,
-        WARN: 2,
-        ERROR: 3,
-        FATAL: 4
+    info(...args) {
+        console.info(
+            this.prefijo,
+            ...args
+        );
     },
 
-    _level: 1,
-
-    setLevel: function(level) {
-        this._level = this.levels[level] || 1;
+    warn(...args) {
+        console.warn(
+            this.prefijo,
+            ...args
+        );
     },
 
-    _log: function(level, message, data) {
-        data = data || null;
-        var levelName = Object.keys(this.levels).find(function(k) {
-            return this.levels[k] === level;
-        }.bind(this));
-
-        if (level < this._level) return;
-
-        var entry = {
-            timestamp: new Date().toISOString(),
-            level: levelName,
-            message: message,
-            data: data,
-            module: 'mensajes'
-        };
-
-        var prefix = '[' + entry.timestamp + '] [' + levelName + ']';
-        if (level >= this.levels.ERROR) {
-            console.error(prefix, message, data || '');
-        } else if (level >= this.levels.WARN) {
-            console.warn(prefix, message, data || '');
-        } else {
-            console.log(prefix, message, data || '');
-        }
-    },
-
-    debug: function(message, data) { this._log(this.levels.DEBUG, message, data); },
-    info: function(message, data) { this._log(this.levels.INFO, message, data); },
-    warn: function(message, data) { this._log(this.levels.WARN, message, data); },
-    error: function(message, data) { this._log(this.levels.ERROR, message, data); },
-    fatal: function(message, data) { this._log(this.levels.FATAL, message, data); }
+    error(...args) {
+        console.error(
+            this.prefijo,
+            ...args
+        );
+    }
 };
 
-// ================================================================
-// ================================================================
-// 🛡️ SEGURIDAD - ESCAPE HTML
-// ================================================================
-// ================================================================
+/* ================================================================
+   UTILIDADES DOM
+================================================================ */
 
-function escapeHTML(texto) {
-    if (!texto) return '';
-    var div = document.createElement('div');
-    div.textContent = texto;
+function obtenerElemento(...ids) {
+
+    for (
+        const id of ids
+    ) {
+
+        const elemento =
+            document.getElementById(id);
+
+        if (elemento) {
+            return elemento;
+        }
+    }
+
+    return null;
+}
+
+/* ================================================================
+   PROTECCIÓN XSS
+================================================================ */
+
+function escapeHTML(valor) {
+
+    if (
+        valor === null ||
+        valor === undefined
+    ) {
+        return '';
+    }
+
+    const div =
+        document.createElement('div');
+
+    div.textContent =
+        String(valor);
+
     return div.innerHTML;
 }
 
-// ================================================================
-// ================================================================
-// 🛡️ SEGURIDAD - SANITIZACIÓN COMPLETA
-// ================================================================
-// ================================================================
+/* ================================================================
+   SANITIZAR CONTENIDO
+   IMPORTANTE:
+   No hacer doble escape.
+================================================================ */
 
 function sanitizarContenido(texto) {
-    if (!texto) return '';
 
-    var div = document.createElement('div');
-    div.textContent = texto;
-    var sanitizado = div.innerHTML;
-
-    var emojisSeguros = {
-        ':feliz:': '😊',
-        ':risa:': '😂',
-        ':amo:': '❤️',
-        ':fuego:': '🔥',
-        ':estrella:': '⭐',
-        ':genial:': '🤩',
-        ':ok:': '👌',
-        ':visto:': '👀',
-        ':musica:': '🎵',
-        ':pizza:': '🍕',
-        ':cafe:': '☕',
-        ':helado:': '🍦',
-        ':rocket:': '🚀',
-        ':sariel:': '◈'
-    };
-
-    for (var key in emojisSeguros) {
-        if (emojisSeguros.hasOwnProperty(key)) {
-            var pattern = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            sanitizado = sanitizado.replace(new RegExp(pattern, 'g'), emojisSeguros[key]);
-        }
+    if (
+        texto === null ||
+        texto === undefined
+    ) {
+        return '';
     }
 
-    sanitizado = sanitizado.replace(/<a\s+href=["'](javascript:|data:)/gi, '<a href="#"');
-    sanitizado = sanitizado.replace(/on\w+\s*=/gi, 'data-');
+    const temporal =
+        document.createElement('div');
 
-    sanitizado = sanitizado.replace(/&/g, '&amp;')
+    temporal.textContent =
+        String(texto);
+
+    let resultado =
+        temporal.innerHTML;
+
+    /*
+     * Convertir saltos de línea sin
+     * permitir HTML arbitrario.
+     */
+    resultado =
+        resultado.replace(
+            /\r\n|\r|\n/g,
+            '<br>'
+        );
+
+    return resultado;
+}
+
+/* ================================================================
+   ESCAPAR ATRIBUTOS
+================================================================ */
+
+function escaparAtributo(valor) {
+
+    if (
+        valor === null ||
+        valor === undefined
+    ) {
+        return '';
+    }
+
+    return String(valor)
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;')
         .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
-
-    return sanitizado;
+        .replace(/>/g, '&gt;');
 }
 
-// ================================================================
-// ================================================================
-// 📋 TOAST NOTIFICACIONES
-// ================================================================
-// ================================================================
+/* ================================================================
+   VALIDAR URL
+================================================================ */
 
-function showToast(msg, type, duration) {
-    type = type || '';
-    duration = duration || 3500;
+function urlSegura(url) {
+
+    if (
+        !url ||
+        typeof url !== 'string'
+    ) {
+        return '';
+    }
+
     try {
-        var t = document.getElementById('toast');
-        if (!t) {
-            t = document.createElement('div');
-            t.id = 'toast';
-            t.className = 'toast';
-            document.body.appendChild(t);
+
+        const parsed =
+            new URL(
+                url,
+                window.location.origin
+            );
+
+        const protocolosPermitidos = [
+            'http:',
+            'https:'
+        ];
+
+        if (
+            !protocolosPermitidos.includes(
+                parsed.protocol
+            )
+        ) {
+            return '';
         }
-        t.textContent = msg;
-        t.className = 'toast show';
-        if (type === 'error') t.classList.add('error');
-        else if (type === 'warning') t.classList.add('warning');
-        else if (type === 'success') t.classList.add('success');
-        else t.classList.remove('error', 'warning', 'success');
-        clearTimeout(t._timeout);
-        t._timeout = setTimeout(function() { t.classList.remove('show'); }, duration);
-    } catch (e) {
-        Logger.warn('Toast no disponible', e);
-        alert(msg);
+
+        return parsed.href;
+
+    } catch {
+
+        return '';
     }
 }
 
-// ================================================================
-// ================================================================
-// 🔐 SESSION MANAGER - PATRÓN SINGLETON
-// ================================================================
-// ================================================================
+/* ================================================================
+   TOAST
+================================================================ */
 
-function SessionManager() {
-    this._usuario = null;
-    this._session = null;
-    this._lastRefresh = null;
-    this._refreshLock = false;
+function showToast(
+    mensaje,
+    tipo = 'info'
+) {
+
+    let toast =
+        document.getElementById(
+            'sarielsToast'
+        );
+
+    if (!toast) {
+
+        toast =
+            document.createElement('div');
+
+        toast.id =
+            'sarielsToast';
+
+        toast.className =
+            'sariels-toast';
+
+        document.body.appendChild(
+            toast
+        );
+    }
+
+    toast.textContent =
+        mensaje || '';
+
+    toast.dataset.tipo =
+        tipo;
+
+    toast.classList.add(
+        'show'
+    );
+
+    clearTimeout(
+        toast._timeout
+    );
+
+    toast._timeout =
+        setTimeout(() => {
+
+            toast.classList.remove(
+                'show'
+            );
+
+        }, 3500);
 }
 
-SessionManager.prototype = {
-    constructor: SessionManager,
+/* ================================================================
+   LOADING
+================================================================ */
 
-    get usuario() {
-        return this._usuario;
-    },
+function mostrarLoading(
+    mostrar = true
+) {
 
-    get session() {
-        return this._session;
-    },
+    let loading =
+        document.getElementById(
+            'mensajesLoading'
+        );
 
-    get isAuthenticated() {
-        return this._usuario !== null && this._session !== null;
-    },
+    if (!loading) {
 
-    getUsuario: function() {
-        if (this._refreshLock) {
-            return new Promise(function(resolve) {
-                setTimeout(function() { resolve(this._usuario); }.bind(this), 100);
-            }.bind(this));
-        }
+        loading =
+            document.createElement('div');
 
-        if (this._usuario && this._session) {
-            var expiryTime = new Date(this._session.expires_at);
-            var timeUntilExpiry = expiryTime - Date.now();
+        loading.id =
+            'mensajesLoading';
 
-            if (timeUntilExpiry < 300000) {
-                return this._refreshSession();
+        loading.className =
+            'mensajes-loading';
+
+        loading.innerHTML =
+            '<div class="mensajes-loading-spinner"></div>';
+
+        document.body.appendChild(
+            loading
+        );
+    }
+
+    loading.style.display =
+        mostrar
+            ? 'flex'
+            : 'none';
+}
+
+/* ================================================================
+   SESSION MANAGER
+================================================================ */
+
+const SessionManager = {
+
+    _usuario: null,
+    _session: null,
+    _cargando: null,
+
+    async obtenerSesion(
+        forzar = false
+    ) {
+
+        if (
+            this._session &&
+            !forzar
+        ) {
+
+            const exp =
+                this._session.expires_at;
+
+            if (
+                exp &&
+                exp * 1000 >
+                    Date.now() + 5 * 60 * 1000
+            ) {
+                return this._session;
             }
-            return Promise.resolve(this._usuario);
         }
 
-        return this._refreshSession();
-    },
+        if (this._cargando) {
+            return this._cargando;
+        }
 
-    getSession: function() {
-        if (this._session) return Promise.resolve(this._session);
-        return this.getUsuario().then(function() {
-            return this._session;
-        }.bind(this));
-    },
+        this._cargando =
+            (async () => {
 
-    _refreshSession: function() {
-        if (this._refreshLock) return Promise.resolve(this._usuario);
+                const client =
+                    await obtenerSupabase();
 
-        this._refreshLock = true;
-        return supabase.auth.getSession()
-            .then(function(result) {
-                var session = result.data.session;
-                if (!session) {
-                    this._usuario = null;
-                    this._session = null;
-                    return null;
+                const {
+                    data,
+                    error
+                } =
+                    await client.auth.getSession();
+
+                if (error) {
+                    throw error;
                 }
-                this._session = session;
-                this._usuario = session.user;
-                this._lastRefresh = Date.now();
-                return this._usuario;
-            }.bind(this))
-            .catch(function(error) {
-                Logger.error('Error refrescando sesión', error);
-                return null;
-            })
-            .finally(function() {
-                this._refreshLock = false;
-            }.bind(this));
+
+                this._session =
+                    data?.session || null;
+
+                this._usuario =
+                    data?.session?.user || null;
+
+                return this._session;
+
+            })();
+
+        try {
+
+            return await this._cargando;
+
+        } finally {
+
+            this._cargando =
+                null;
+        }
     },
 
-    verificarAutenticacion: function() {
-        return this.getUsuario().then(function(usuario) {
-            if (!usuario) {
-                showToast('⚠️ Inicia sesión para usar mensajería', 'warning');
-                return false;
-            }
-            return true;
-        });
+    async obtenerUsuario() {
+
+        const session =
+            await this.obtenerSesion();
+
+        if (
+            session?.user
+        ) {
+            return session.user;
+        }
+
+        return null;
     },
 
-    logout: function() {
-        this._usuario = null;
-        this._session = null;
-        this._lastRefresh = null;
-        return supabase.auth.signOut();
+    async cerrarSesion() {
+
+        try {
+
+            const client =
+                await obtenerSupabase();
+
+            await client.auth.signOut();
+
+        } catch (error) {
+
+            Logger.error(
+                'Error cerrando sesión:',
+                error
+            );
+
+        } finally {
+
+            this._session = null;
+            this._usuario = null;
+
+            window.location.href =
+                '/login';
+        }
     }
 };
 
-var sessionManager = new SessionManager();
+/* ================================================================
+   LLAMADAS API
+================================================================ */
 
-// ================================================================
-// ================================================================
-// 📡 API CALL - CON MANEJO DE CORS Y TIMEOUT
-// ================================================================
-// ================================================================
+async function llamadaAPI(
+    endpoint,
+    options = {},
+    timeout = 15000
+) {
 
-function llamadaAPI(endpoint, options, timeout) {
-    options = options || {};
-    timeout = timeout || 30000;
+    const session =
+        await SessionManager.obtenerSesion();
 
-    var controller = new AbortController();
-    var timeoutId = setTimeout(function() { controller.abort(); }, timeout);
+    if (
+        !session?.access_token
+    ) {
 
-    return sessionManager.getSession()
-        .then(function(session) {
-            if (!session) throw new Error('No autenticado');
+        throw new Error(
+            'NO_AUTENTICADO'
+        );
+    }
 
-            return fetch(endpoint, {
-                ...options,
-                headers: {
-                    'Authorization': 'Bearer ' + session.access_token,
-                    'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest',
-                    ...options.headers
-                },
-                signal: controller.signal
-            });
-        })
-        .then(function(response) {
-            clearTimeout(timeoutId);
+    const controller =
+        new AbortController();
 
-            if (response.status === 403 || response.status === 401) {
-                showToast('⚠️ Sesión expirada, por favor inicia sesión nuevamente', 'error');
-                return sessionManager.logout().then(function() {
-                    window.location.href = '/login';
-                    return null;
-                });
+    const timer =
+        setTimeout(
+            () => controller.abort(),
+            timeout
+        );
+
+    try {
+
+        const headers = {
+            ...(options.headers || {}),
+            Authorization:
+                `Bearer ${session.access_token}`,
+            'X-Requested-With':
+                'XMLHttpRequest'
+        };
+
+        if (
+            options.body &&
+            !(options.body instanceof FormData)
+        ) {
+
+            headers['Content-Type'] =
+                'application/json';
+        }
+
+        const response =
+            await fetch(
+                endpoint,
+                {
+                    ...options,
+                    headers,
+                    signal:
+                        controller.signal
+                }
+            );
+
+        if (
+            response.status === 401 ||
+            response.status === 403
+        ) {
+
+            SessionManager._session =
+                null;
+
+            SessionManager._usuario =
+                null;
+
+            throw new Error(
+                'NO_AUTORIZADO'
+            );
+        }
+
+        let data = null;
+
+        const contentType =
+            response.headers.get(
+                'content-type'
+            ) || '';
+
+        if (
+            contentType.includes(
+                'application/json'
+            )
+        ) {
+
+            data =
+                await response.json();
+
+        } else {
+
+            const texto =
+                await response.text();
+
+            try {
+
+                data =
+                    JSON.parse(texto);
+
+            } catch {
+
+                data = {
+                    success:
+                        response.ok,
+
+                    message:
+                        texto
+                };
             }
+        }
 
-            if (!response.ok) {
-                return response.json().catch(function() { return {}; }).then(function(errorData) {
-                    throw new Error(errorData.error || 'Error ' + response.status + ': ' + response.statusText);
-                });
-            }
+        if (!response.ok) {
 
-            return response.json();
-        })
-        .catch(function(error) {
-            clearTimeout(timeoutId);
-            if (error.name === 'AbortError') {
-                showToast('⏳ La operación tardó demasiado, intenta de nuevo', 'warning');
-                Logger.warn('Timeout en API', { endpoint: endpoint, timeout: timeout });
-                return null;
-            }
-            if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
-                showToast('❌ Error de conexión con el servidor', 'error');
-                Logger.error('CORS/Network Error', { endpoint: endpoint, error: error.message });
-                return null;
-            }
+            const error =
+                new Error(
+                    data?.error ||
+                    data?.message ||
+                    `HTTP ${response.status}`
+                );
+
+            error.status =
+                response.status;
+
+            error.data =
+                data;
+
             throw error;
-        });
+        }
+
+        return data;
+
+    } catch (error) {
+
+        if (
+            error.name ===
+            'AbortError'
+        ) {
+
+            throw new Error(
+                'La solicitud tardó demasiado'
+            );
+        }
+
+        throw error;
+
+    } finally {
+
+        clearTimeout(timer);
+    }
 }
 
-// ================================================================
-// ================================================================
-// 🚦 RATE LIMITER - CONTROL DE FRECUENCIA
-// ================================================================
-// ================================================================
+/* ================================================================
+   RATE LIMIT CLIENTE
+================================================================ */
 
-var rateLimiter = {
-    _lastSend: 0,
-    _pendingMessages: 0,
-    _MAX_MESSAGES_PER_SECOND: 3,
-    _MAX_PENDING: 5,
+const FrontRateLimiter = {
 
-    canSend: function() {
-        var now = Date.now();
-        var diff = now - this._lastSend;
+    acciones: new Map(),
 
-        if (this._pendingMessages >= this._MAX_PENDING) {
-            showToast('⏳ Demasiados mensajes pendientes, espera un momento', 'warning');
+    permitir(
+        nombre,
+        intervalo = 800
+    ) {
+
+        const ahora =
+            Date.now();
+
+        const anterior =
+            this.acciones.get(
+                nombre
+            ) || 0;
+
+        if (
+            ahora - anterior <
+            intervalo
+        ) {
             return false;
         }
 
-        if (diff < 1000 && this._pendingMessages > 0) {
-            showToast('⏳ Por favor espera antes de enviar más mensajes', 'warning');
-            return false;
-        }
+        this.acciones.set(
+            nombre,
+            ahora
+        );
 
-        if (diff < 300) {
-            showToast('⏳ Demasiado rápido, espera un momento', 'warning');
-            return false;
-        }
-
-        this._lastSend = now;
-        this._pendingMessages++;
-        setTimeout(function() { this._pendingMessages--; }.bind(this), 1000);
         return true;
     }
 };
 
-// ================================================================
-// ================================================================
-// 📁 VALIDACIÓN DE ARCHIVOS
-// ================================================================
-// ================================================================
+/* ================================================================
+   VALIDACIÓN ARCHIVOS
+================================================================ */
 
-var MAX_FILE_SIZE = 10 * 1024 * 1024;
-var MAX_FILES = 5;
-var TIPOS_PERMITIDOS = [
-    'image/jpeg', 'image/png', 'image/gif', 'image/webp',
-    'audio/mpeg', 'audio/webm', 'audio/ogg', 'audio/wav'
-];
-var EXTENSIONES_PERMITIDAS = [
-    'jpg', 'jpeg', 'png', 'gif', 'webp',
-    'mp3', 'webm', 'ogg', 'wav'
-];
+const FILE_CONFIG = {
 
-function validarArchivo(file) {
-    if (file.size > MAX_FILE_SIZE) {
-        showToast('❌ Archivo demasiado grande (máx ' + (MAX_FILE_SIZE / 1024 / 1024) + 'MB)', 'error');
-        return false;
+    maxSize:
+        10 * 1024 * 1024,
+
+    mimeTypes: [
+        'image/jpeg',
+        'image/png',
+        'image/gif',
+        'image/webp',
+        'audio/mpeg',
+        'audio/webm',
+        'audio/ogg',
+        'audio/wav'
+    ],
+
+    extensions: [
+        'jpg',
+        'jpeg',
+        'png',
+        'gif',
+        'webp',
+        'mp3',
+        'webm',
+        'ogg',
+        'wav'
+    ]
+};
+
+function validarArchivo(
+    archivo
+) {
+
+    if (!archivo) {
+
+        return {
+            valido:
+                false,
+            error:
+                'Archivo no válido'
+        };
     }
 
-    if (TIPOS_PERMITIDOS.indexOf(file.type) === -1) {
-        showToast('❌ Tipo de archivo no permitido', 'error');
-        return false;
+    if (
+        archivo.size >
+        FILE_CONFIG.maxSize
+    ) {
+
+        return {
+            valido:
+                false,
+            error:
+                'El archivo supera el límite de 10 MB'
+        };
     }
 
-    var ext = file.name.split('.').pop().toLowerCase();
-    if (EXTENSIONES_PERMITIDAS.indexOf(ext) === -1) {
-        showToast('❌ Extensión de archivo no permitida', 'error');
-        return false;
+    const extension =
+        archivo.name
+            .split('.')
+            .pop()
+            .toLowerCase();
+
+    if (
+        !FILE_CONFIG.extensions.includes(
+            extension
+        )
+    ) {
+
+        return {
+            valido:
+                false,
+            error:
+                'Tipo de archivo no permitido'
+        };
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-        if (!confirm('⚠️ El archivo ' + file.name + ' pesa ' + (file.size / 1024 / 1024).toFixed(1) + 'MB. ¿Continuar?')) {
-            return false;
+    if (
+        archivo.type &&
+        !FILE_CONFIG.mimeTypes.includes(
+            archivo.type
+        )
+    ) {
+
+        return {
+            valido:
+                false,
+            error:
+                'Formato de archivo no permitido'
+        };
+    }
+
+    return {
+        valido:
+            true
+    };
+}
+
+/* ================================================================
+   ESTADO DEL MÓDULO
+================================================================ */
+
+let conversacionActual = null;
+let usuarioActual = null;
+
+let canalRealtime = null;
+
+let archivosSeleccionados = [];
+
+let grabandoAudio = false;
+let mediaRecorder = null;
+let audioChunks = [];
+
+const mensajesCache =
+    new Map();
+
+const CACHE_TTL =
+    5 * 60 * 1000;
+
+/* ================================================================
+   REALTIME
+================================================================ */
+
+function limpiarRealtime() {
+
+    if (
+        canalRealtime &&
+        supabase
+    ) {
+
+        try {
+
+            supabase.removeChannel(
+                canalRealtime
+            );
+
+        } catch (error) {
+
+            Logger.warn(
+                'No se pudo eliminar canal realtime:',
+                error
+            );
         }
     }
 
-    return true;
+    canalRealtime =
+        null;
 }
 
-// ================================================================
-// ================================================================
-// 📡 CANAL REALTIME CON RECONEXIÓN
-// ================================================================
-// ================================================================
+/* ================================================================
+   CREAR REALTIME
+================================================================ */
 
-var currentChannel = null;
-var reconnectAttempts = 0;
-var MAX_RECONNECT_ATTEMPTS = 5;
-var RECONNECT_DELAY = 2000;
+async function crearCanalRealtime(
+    contactoId,
+    onMessage,
+    onUpdate
+) {
 
-function crearCanalRealtime(contactoId, onMessage, onUpdate) {
-    var channel = supabase
-        .channel('chat-' + contactoId)
-        .on('postgres_changes', {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'mensajes_chat',
-            filter: 'remitente_id=eq.' + contactoId
-        }, onMessage)
-        .on('postgres_changes', {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'mensajes_chat'
-        }, onUpdate);
+    limpiarRealtime();
 
-    reconnectAttempts = 0;
-
-    channel.subscribe(function(status) {
-        if (status === 'SUBSCRIBED') {
-            reconnectAttempts = 0;
-            Logger.info('Canal Realtime conectado', { contactoId: contactoId });
-            var statusEl = document.querySelector('.chat-status');
-            if (statusEl) statusEl.classList.remove('desconectado');
-        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-            if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
-                reconnectAttempts++;
-                Logger.warn('Reconectando canal', { contactoId: contactoId, intento: reconnectAttempts });
-                setTimeout(function() {
-                    channel.subscribe();
-                }, RECONNECT_DELAY * reconnectAttempts);
-            } else {
-                Logger.error('Error crítico: no se pudo reconectar', { contactoId: contactoId });
-                showToast('❌ Perdiste conexión con el chat', 'error');
-                var statusEl = document.querySelector('.chat-status');
-                if (statusEl) statusEl.classList.add('desconectado');
-            }
-        }
-    });
-
-    return channel;
-}
-
-// ================================================================
-// ================================================================
-// 📦 CACHE DE MENSAJES
-// ================================================================
-// ================================================================
-
-var messageCache = new Map();
-var CACHE_TTL = 5 * 60 * 1000;
-
-function getCachedMessages(contactoId) {
-    var cached = messageCache.get(contactoId);
-    if (!cached) return null;
-
-    var now = Date.now();
-    if (now - cached.timestamp > CACHE_TTL) {
-        messageCache.delete(contactoId);
-        return null;
-    }
-    return cached.data;
-}
-
-function setCachedMessages(contactoId, messages) {
-    messageCache.set(contactoId, {
-        data: messages,
-        timestamp: Date.now()
-    });
-}
-
-// ================================================================
-// ================================================================
-// 🔄 INDICADOR DE CARGA
-// ================================================================
-// ================================================================
-
-function showLoading(message) {
-    message = message || 'Cargando...';
-    var overlay = document.querySelector('.loading-overlay');
-    if (!overlay) {
-        overlay = document.createElement('div');
-        overlay.className = 'loading-overlay';
-        overlay.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 9999; backdrop-filter: blur(4px);';
-        overlay.innerHTML = '<div style="background: #1a1a2e; padding: 30px 40px; border-radius: 12px; border: 1px solid rgba(212,175,55,0.3); text-align: center;"><div style="width: 40px; height: 40px; border: 3px solid rgba(212,175,55,0.1); border-top-color: #d4af37; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px;"></div><div class="loading-message" style="color: #d4af37; font-weight: 500;">' + message + '</div></div>';
-        document.body.appendChild(overlay);
-
-        if (!document.getElementById('loading-style')) {
-            var style = document.createElement('style');
-            style.id = 'loading-style';
-            style.textContent = '@keyframes spin { to { transform: rotate(360deg); } }';
-            document.head.appendChild(style);
-        }
-    }
-
-    var msgEl = overlay.querySelector('.loading-message');
-    if (msgEl) msgEl.textContent = message;
-    overlay.style.display = 'flex';
-}
-
-function hideLoading() {
-    var overlay = document.querySelector('.loading-overlay');
-    if (overlay) overlay.style.display = 'none';
-}
-
-// ================================================================
-// ================================================================
-// ✏️ FORMATEAR TEXTO CON SANITIZACIÓN
-// ================================================================
-// ================================================================
-
-function formatearTexto(texto) {
-    return sanitizarContenido(texto || '');
-}
-
-// ================================================================
-// ================================================================
-// 🔍 BUSCAR CONTACTOS
-// ================================================================
-// ================================================================
-
-function buscarContactos(query) {
-    if (!query || query.length < 2) {
-        document.getElementById('resultadosBusqueda').innerHTML = '';
+    if (!contactoId) {
         return;
     }
 
-    sessionManager.getSession()
-        .then(function(session) {
-            if (!session) return;
+    const client =
+        await obtenerSupabase();
 
-            return supabase
-                .from('usuarios')
-                .select('id, nombre, handle, avatar_url')
-                .or('nombre.ilike.%' + query + '%,handle.ilike.%' + query + '%')
-                .neq('id', session.user.id)
-                .limit(10);
-        })
-        .then(function(result) {
-            if (!result) return;
-            if (result.error) throw result.error;
+    const usuario =
+        await SessionManager.obtenerUsuario();
 
-            var container = document.getElementById('resultadosBusqueda');
-            if (!container) return;
+    if (!usuario) {
+        return;
+    }
 
-            var data = result.data || [];
-            if (data.length === 0) {
-                container.innerHTML = '<div style="padding:12px;text-align:center;color:#667788;font-size:0.75rem;">No se encontraron usuarios</div>';
-                return;
-            }
+    const nombreCanal =
+        `mensajes-${usuario.id}-${contactoId}-${Date.now()}`;
 
-            return sessionManager.getSession().then(function(session) {
-                return supabase
-                    .from('contactos')
-                    .select('contacto_id')
-                    .eq('usuario_id', session.user.id)
-                    .then(function(contactosResult) {
-                        var idsExistentes = (contactosResult.data || []).map(function(c) { return c.contacto_id; });
-                        return { data: data, idsExistentes: idsExistentes };
-                    });
-            });
-        })
-        .then(function(result) {
-            if (!result) return;
-            var data = result.data;
-            var idsExistentes = result.idsExistentes;
+    const canal =
+        client
+            .channel(nombreCanal)
 
-            var container = document.getElementById('resultadosBusqueda');
-            var html = '';
-            for (var i = 0; i < data.length; i++) {
-                var usuario = data[i];
-                var yaEsContacto = idsExistentes.indexOf(usuario.id) !== -1;
-                var nombreSanitizado = escapeHTML(usuario.nombre || 'Usuario');
-                var handleSanitizado = escapeHTML(usuario.handle || 'usuario');
-                var avatarHtml = usuario.avatar_url ?
-                    '<img src="' + usuario.avatar_url + '" style="width:100%;height:100%;object-fit:cover;">' :
-                    (usuario.nombre ? nombreSanitizado[0].toUpperCase() : '◈');
+            /*
+             * INSERT:
+             * escuchamos todos los mensajes.
+             * El filtro se realiza localmente para
+             * evitar perder mensajes en cualquiera
+             * de las dos direcciones.
+             */
+            .on(
+                'postgres_changes',
+                {
+                    event:
+                        'INSERT',
+                    schema:
+                        'public',
+                    table:
+                        'mensajes_chat'
+                },
+                payload => {
 
-                html += '<div class="resultado-item" style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid rgba(212,175,55,0.05);transition:all 0.2s;">';
-                html += '<div class="avatar" style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#1a2a1a,#d4af37);display:flex;align-items:center;justify-content:center;color:white;font-size:0.8rem;overflow:hidden;">' + avatarHtml + '</div>';
-                html += '<div style="flex:1;"><div style="font-weight:600;font-size:0.8rem;">' + nombreSanitizado + '</div>';
-                html += '<div style="font-size:0.6rem;color:#667788;">@' + handleSanitizado + '</div></div>';
-                if (yaEsContacto) {
-                    html += '<span style="font-size:0.55rem;color:#4ade80;background:rgba(0,214,143,0.1);padding:2px 10px;border-radius:12px;">✓ Contacto</span>';
-                } else {
-                    html += '<button onclick="agregarContacto(\'' + usuario.id + '\')" style="background:linear-gradient(135deg,#d4af37,#c49a2a);color:#0b0e14;border:none;padding:4px 12px;border-radius:12px;font-size:0.6rem;font-weight:600;cursor:pointer;">+ Agregar</button>';
-                }
-                html += '</div>';
-            }
-            container.innerHTML = html;
-        })
-        .catch(function(error) {
-            Logger.error('Error buscando contactos', error);
-        });
-}
+                    const mensaje =
+                        payload.new;
 
-// ================================================================
-// ================================================================
-// ➕ AGREGAR CONTACTO
-// ================================================================
-// ================================================================
-
-function agregarContacto(contactoId) {
-    sessionManager.getSession()
-        .then(function(session) {
-            if (!session) {
-                showToast('⚠️ Inicia sesión para agregar contactos', 'error');
-                return;
-            }
-
-            return supabase
-                .from('contactos')
-                .select('id')
-                .eq('usuario_id', session.user.id)
-                .eq('contacto_id', contactoId)
-                .maybeSingle()
-                .then(function(existeResult) {
-                    if (existeResult.data) {
-                        showToast('⚠️ Este usuario ya es tu contacto', 'warning');
+                    if (!mensaje) {
                         return;
                     }
-                    return supabase
-                        .from('contactos')
-                        .insert({
-                            usuario_id: session.user.id,
-                            contacto_id: contactoId,
-                            estado: 'activo'
-                        });
-                });
-        })
-        .then(function(result) {
-            if (!result) return;
-            if (result.error) throw result.error;
 
-            showToast('✅ Contacto agregado correctamente', 'success');
-            document.getElementById('searchInputModal').value = '';
-            document.getElementById('resultadosBusqueda').innerHTML = '';
-            cerrarModalNuevoContacto();
-            return cargarConversaciones();
-        })
-        .catch(function(error) {
-            Logger.error('Error agregando contacto', error);
-            showToast('❌ Error al agregar contacto', 'error');
-        });
-}
+                    const pertenece =
+                        (
+                            mensaje.remitente_id ===
+                                usuario.id &&
+                            mensaje.destinatario_id ===
+                                contactoId
+                        ) ||
+                        (
+                            mensaje.remitente_id ===
+                                contactoId &&
+                            mensaje.destinatario_id ===
+                                usuario.id
+                        );
 
-// ================================================================
-// ================================================================
-// 📋 CARGAR CONVERSACIONES
-// ================================================================
-// ================================================================
+                    if (
+                        pertenece &&
+                        typeof onMessage ===
+                            'function'
+                    ) {
 
-function cargarConversaciones() {
-    return sessionManager.verificarAutenticacion()
-        .then(function(autenticado) {
-            if (!autenticado) return;
-
-            return llamadaAPI('/api/mensajes/conversaciones');
-        })
-        .then(function(result) {
-            if (!result) return;
-
-            var conversaciones = result.conversaciones || [];
-
-            var convList = document.getElementById('conversacionesList');
-            if (!convList) return;
-
-            if (conversaciones.length === 0) {
-                convList.innerHTML = '<div style="padding:40px;text-align:center;color:#667788;font-size:0.8rem;"><div style="font-size:2rem;margin-bottom:10px;">◈</div><p>Sin contactos agregados</p><p style="font-size:0.6rem;">Busca y agrega contactos arriba</p></div>';
-                return;
-            }
-
-            var usuario = sessionManager.usuario;
-            var html = '';
-            for (var i = 0; i < conversaciones.length; i++) {
-                var conv = conversaciones[i];
-                var avatar = conv.avatar_url ?
-                    '<img src="' + conv.avatar_url + '" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" />' :
-                    (conv.nombre ? conv.nombre[0].toUpperCase() : '✦');
-
-                var isActive = conv.id === (window._conversacionActualId || null);
-                var nombreSanitizado = escapeHTML(conv.nombre);
-                var ultimoMensajeSanitizado = escapeHTML(conv.ultimoMensaje);
-
-                html += '<div class="conv-item' + (isActive ? ' active' : '') + '" data-id="' + conv.id + '" onclick="abrirConversacion(\'' + conv.id + '\')">';
-                html += '<div class="conv-avatar">' + avatar + '</div>';
-                html += '<div class="conv-info"><div class="conv-nombre">' + nombreSanitizado + '</div>';
-                html += '<div class="conv-msg">' + (ultimoMensajeSanitizado.length > 40 ? ultimoMensajeSanitizado.substring(0, 40) + '...' : ultimoMensajeSanitizado) + '</div></div>';
-                html += '<div class="conv-meta">';
-                if (conv.noLeidos > 0) html += '<span class="conv-badge">' + conv.noLeidos + '</span>';
-                if (conv.fecha) html += '<span class="conv-hora">' + new Date(conv.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + '</span>';
-                html += '</div></div>';
-            }
-            convList.innerHTML = html;
-        })
-        .catch(function(error) {
-            Logger.error('Error cargando conversaciones', error);
-            showToast('❌ Error al cargar conversaciones', 'error');
-        });
-}
-
-// ================================================================
-// ================================================================
-// 💬 ABRIR CONVERSACIÓN
-// ================================================================
-// ================================================================
-
-var conversacionActual = null;
-
-function abrirConversacion(contactoId) {
-    sessionManager.getSession()
-        .then(function(session) {
-            if (!session) {
-                showToast('⚠️ Inicia sesión para abrir conversaciones', 'error');
-                return;
-            }
-
-            return supabase
-                .from('usuarios')
-                .select('id, nombre, handle, avatar_url')
-                .eq('id', contactoId)
-                .single()
-                .then(function(contactoResult) {
-                    if (contactoResult.error) throw contactoResult.error;
-                    return { session: session, contacto: contactoResult.data };
-                });
-        })
-        .then(function(result) {
-            if (!result) return;
-            var session = result.session;
-            var contacto = result.contacto;
-
-            conversacionActual = contacto;
-            window._conversacionActualId = contactoId;
-
-            var chatNombre = document.getElementById('chatNombre');
-            if (chatNombre) chatNombre.textContent = contacto.nombre || 'Usuario';
-
-            var chatAvatar = document.querySelector('.chat-avatar');
-            if (chatAvatar) chatAvatar.textContent = contacto.nombre ? contacto.nombre[0].toUpperCase() : '✦';
-
-            return supabase
-                .from('usuarios')
-                .select('online, ultima_conexion')
-                .eq('id', contactoId)
-                .single()
-                .then(function(estadoResult) {
-                    var chatEstado = document.getElementById('chatEstado');
-                    if (!chatEstado) return;
-                    var estadoContacto = estadoResult.data || {};
-                    if (estadoContacto.online) {
-                        chatEstado.textContent = '🟢 En línea';
-                        chatEstado.className = 'chat-estado online';
-                    } else if (estadoContacto.ultima_conexion) {
-                        var diff = Math.floor((Date.now() - new Date(estadoContacto.ultima_conexion)) / 60000);
-                        if (diff < 5) {
-                            chatEstado.textContent = '🟡 Última vez hace unos minutos';
-                        } else if (diff < 60) {
-                            chatEstado.textContent = '🟡 Última vez hace ' + diff + ' min';
-                        } else if (diff < 1440) {
-                            chatEstado.textContent = '🟡 Última vez hace ' + Math.floor(diff / 60) + ' h';
-                        } else {
-                            chatEstado.textContent = '🟡 Última vez hace ' + Math.floor(diff / 1440) + ' d';
-                        }
-                        chatEstado.className = 'chat-estado';
-                    } else {
-                        chatEstado.textContent = '⚪ Desconectado';
-                        chatEstado.className = 'chat-estado';
+                        onMessage(
+                            mensaje
+                        );
                     }
-                    return { session: session, contactoId: contactoId };
-                });
-        })
-        .then(function(result) {
-            if (!result) return;
-            var session = result.session;
-            var contactoId = result.contactoId;
-
-            return marcarMensajesLeidos(contactoId)
-                .then(function() {
-                    return cargarMensajes(contactoId);
-                })
-                .then(function() {
-                    if (currentChannel) {
-                        try { supabase.removeChannel(currentChannel); } catch (e) {}
-                        currentChannel = null;
-                    }
-
-                    currentChannel = crearCanalRealtime(
-                        contactoId,
-                        function(payload) {
-                            if (payload.new.destinatario_id === session.user.id) {
-                                agregarMensajeRealtime(payload.new);
-                                marcarMensajesLeidos(contactoId);
-                            }
-                        },
-                        function() { cargarConversaciones(); }
-                    );
-
-                    return cargarConversaciones();
-                });
-        })
-        .catch(function(error) {
-            Logger.error('Error abriendo conversación', error);
-        });
-}
-
-// ================================================================
-// ================================================================
-// 📖 CARGAR MENSAJES CON CACHE
-// ================================================================
-// ================================================================
-
-function cargarMensajes(contactoId) {
-    return sessionManager.getSession()
-        .then(function(session) {
-            if (!session) return;
-
-            var container = document.getElementById('chatMessages');
-            if (!container) return;
-
-            // Verificar cache
-            var cached = getCachedMessages(contactoId);
-            if (cached) {
-                var html = '';
-                for (var i = 0; i < cached.length; i++) {
-                    html += crearMensajeHTML(cached[i]);
                 }
-                container.innerHTML = html;
-                container.scrollTop = container.scrollHeight;
-                return;
+            )
+
+            /*
+             * UPDATE
+             */
+            .on(
+                'postgres_changes',
+                {
+                    event:
+                        'UPDATE',
+                    schema:
+                        'public',
+                    table:
+                        'mensajes_chat'
+                },
+                payload => {
+
+                    const mensaje =
+                        payload.new;
+
+                    if (!mensaje) {
+                        return;
+                    }
+
+                    const pertenece =
+                        (
+                            mensaje.remitente_id ===
+                                usuario.id &&
+                            mensaje.destinatario_id ===
+                                contactoId
+                        ) ||
+                        (
+                            mensaje.remitente_id ===
+                                contactoId &&
+                            mensaje.destinatario_id ===
+                                usuario.id
+                        );
+
+                    if (
+                        pertenece &&
+                        typeof onUpdate ===
+                            'function'
+                    ) {
+
+                        onUpdate(
+                            mensaje
+                        );
+                    }
+                }
+            );
+
+    canalRealtime =
+        canal;
+
+    canal.subscribe(
+        status => {
+
+            Logger.info(
+                'Realtime:',
+                status
+            );
+
+            if (
+                status ===
+                'CHANNEL_ERROR'
+            ) {
+
+                Logger.warn(
+                    'Error en canal Realtime'
+                );
             }
 
-            return llamadaAPI('/api/mensajes/mensajes/' + contactoId + '?userId=' + session.user.id)
-                .then(function(result) {
-                    if (!result) return;
-                    var mensajes = result.mensajes || [];
+            if (
+                status ===
+                'TIMED_OUT'
+            ) {
 
-                    if (mensajes.length > 0) {
-                        setCachedMessages(contactoId, mensajes);
-                        var html = '';
-                        for (var i = 0; i < mensajes.length; i++) {
-                            html += crearMensajeHTML(mensajes[i]);
-                        }
-                        container.innerHTML = html;
-                        container.scrollTop = container.scrollHeight;
-                    } else {
-                        container.innerHTML = '<div class="empty-chat"><span class="icon">◈</span><h3>Inicia la conversación</h3><p>Envía un mensaje para comenzar</p></div>';
-                    }
-                });
-        })
-        .catch(function(error) {
-            Logger.error('Error cargando mensajes', error);
-            showToast('❌ Error al cargar mensajes', 'error');
-        });
+                Logger.warn(
+                    'Timeout en Realtime'
+                );
+            }
+        }
+    );
+
+    return canal;
 }
 
-// ================================================================
-// ================================================================
-// ✏️ CREAR MENSAJE HTML CON SANITIZACIÓN
-// ================================================================
-// ================================================================
+/* ================================================================
+   FORMATEAR FECHA
+================================================================ */
 
-function crearMensajeHTML(msg) {
-    var usuario = sessionManager.usuario;
-    var esEnviado = msg.remitente_id === (usuario ? usuario.id : null);
-    var fecha = new Date(msg.created_at);
-    var hora = fecha.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    var contenidoFormateado = formatearTexto(msg.contenido || '');
+function formatearFecha(
+    fecha
+) {
 
-    if (msg.tipo === 'imagen' && msg.imagen_url) {
-        return crearMensajeImagen(msg, esEnviado, hora);
+    if (!fecha) {
+        return '';
     }
 
-    if (msg.tipo === 'voz' && msg.imagen_url) {
-        return crearMensajeAudio(msg, esEnviado, hora);
+    const date =
+        new Date(fecha);
+
+    if (
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
+        return '';
     }
 
-    if (esEnviado) {
-        return '<div class="msg-wrapper enviado">' +
-            '<div class="burbuja">' + contenidoFormateado + '</div>' +
-            '<div class="meta">' + hora + (msg.editado ? ' ✎' : '') +
-            '<span class="leido ' + (msg.leido ? 'leido' : 'no-leido') + '">' + (msg.leido ? '◆◆' : '◆◇') + '</span>' +
-            '<button onclick="eliminarMensaje(\'' + msg.id + '\')" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:0.5rem;">✕</button>' +
-            '<button onclick="editarMensaje(\'' + msg.id + '\')" style="background:none;border:none;color:#d4af37;cursor:pointer;font-size:0.5rem;">✎</button>' +
-            '</div></div>';
-    }
-
-    return '<div class="msg-wrapper recibido">' +
-        '<div class="fila"><div class="avatar">◈</div><div class="burbuja">' + contenidoFormateado + '</div></div>' +
-        '<div class="meta">' + hora + (msg.editado ? ' ✎' : '') +
-        '<button onclick="reportarMensaje(\'' + msg.id + '\')" style="background:none;border:none;color:#fbbf24;cursor:pointer;font-size:0.5rem;">⚠️</button>' +
-        '</div></div>';
+    return date.toLocaleString(
+        undefined,
+        {
+            dateStyle:
+                'short',
+            timeStyle:
+                'short'
+        }
+    );
 }
 
-function crearMensajeImagen(msg, esEnviado, hora) {
-    var imagenUrl = msg.imagen_url;
-    if (esEnviado) {
-        return '<div class="msg-wrapper enviado">' +
-            '<div class="burbuja" style="padding:4px;background:transparent;border-radius:12px;">' +
-            '<img src="' + imagenUrl + '" style="max-width:200px;border-radius:12px;border:2px solid #d4af37;" />' +
-            '</div>' +
-            '<div class="meta">' + hora + (msg.editado ? ' ✎' : '') +
-            '<span class="leido ' + (msg.leido ? 'leido' : 'no-leido') + '">' + (msg.leido ? '◆◆' : '◆◇') + '</span></div></div>';
-    }
-    return '<div class="msg-wrapper recibido">' +
-        '<div class="fila"><div class="avatar">◈</div>' +
-        '<div class="burbuja" style="padding:4px;background:transparent;border-radius:12px;border:1px solid rgba(212,175,55,0.15);">' +
-        '<img src="' + imagenUrl + '" style="max-width:200px;border-radius:12px;" />' +
-        '</div></div>' +
-        '<div class="meta">' + hora + (msg.editado ? ' ✎' : '') + '</div></div>';
+/* ================================================================
+   FORMATEAR TEXTO
+================================================================ */
+
+function formatearTexto(
+    texto
+) {
+
+    return sanitizarContenido(
+        texto
+    );
 }
 
-function crearMensajeAudio(msg, esEnviado, hora) {
-    var audioUrl = msg.imagen_url;
-    if (esEnviado) {
-        return '<div class="msg-wrapper enviado">' +
-            '<div class="burbuja" style="display:flex;align-items:center;gap:8px;">' +
-            '<span>🎵</span><audio controls style="max-width:150px;height:30px;"><source src="' + audioUrl + '" type="audio/mpeg"></audio>' +
-            '</div>' +
-            '<div class="meta">' + hora +
-            '<span class="leido ' + (msg.leido ? 'leido' : 'no-leido') + '">' + (msg.leido ? '◆◆' : '◆◇') + '</span></div></div>';
-    }
-    return '<div class="msg-wrapper recibido">' +
-        '<div class="fila"><div class="avatar">◈</div>' +
-        '<div class="burbuja" style="display:flex;align-items:center;gap:8px;">' +
-        '<span>🎵</span><audio controls style="max-width:150px;height:30px;"><source src="' + audioUrl + '" type="audio/mpeg"></audio>' +
-        '</div></div>' +
-        '<div class="meta">' + hora + '</div></div>';
-}
+/* ================================================================
+   BUSCAR CONTACTOS
+================================================================ */
 
-// ================================================================
-// ================================================================
-// 📨 AGREGAR MENSAJE EN TIEMPO REAL
-// ================================================================
-// ================================================================
+async function buscarContactos(
+    query
+) {
 
-function agregarMensajeRealtime(msg) {
-    var container = document.getElementById('chatMessages');
-    if (!container) return;
-
-    var empty = container.querySelector('.empty-chat');
-    if (empty) empty.remove();
-
-    if (msg.remitente_id !== (conversacionActual ? conversacionActual.id : null) &&
-        msg.destinatario_id !== (conversacionActual ? conversacionActual.id : null)) return;
-
-    container.innerHTML += crearMensajeHTML(msg);
-    container.scrollTop = container.scrollHeight;
-    cargarConversaciones();
-}
-
-// ================================================================
-// ================================================================
-// 📤 ENVIAR MENSAJE CON RATE LIMITING
-// ================================================================
-// ================================================================
-
-var archivosSeleccionados = [];
-
-function enviarMensaje() {
-    var chatInput = document.getElementById('chatInput');
-    var contenido = chatInput.value.trim();
-    if (!contenido && archivosSeleccionados.length === 0) {
-        if (!conversacionActual) showToast('⚠️ Selecciona una conversación', 'warning');
+    if (
+        !FrontRateLimiter.permitir(
+            'buscar-contactos',
+            300
+        )
+    ) {
         return;
     }
 
-    if (!rateLimiter.canSend()) return;
+    query =
+        typeof query === 'string'
+            ? query.trim()
+            : '';
 
-    sessionManager.getSession()
-        .then(function(session) {
-            if (!session) {
-                showToast('⚠️ Inicia sesión para enviar mensajes', 'error');
-                return;
-            }
-            if (!conversacionActual) {
-                showToast('⚠️ Selecciona una conversación', 'error');
-                return;
-            }
+    const resultados =
+        obtenerElemento(
+            'resultadosBusqueda',
+            'resultadosBusquedaContactos'
+        );
 
-            if (archivosSeleccionados.length > 0) {
-                var promises = [];
-                for (var i = 0; i < archivosSeleccionados.length; i++) {
-                    var file = archivosSeleccionados[i];
-                    if (!validarArchivo(file)) return;
-                    promises.push(subirArchivo(file, session));
-                }
-                return Promise.all(promises).then(function() {
-                    archivosSeleccionados = [];
-                    document.getElementById('filePreview').innerHTML = '';
-                    chatInput.value = '';
-                });
-            }
-
-            if (contenido.length > 10000) {
-                showToast('⚠️ El mensaje es demasiado largo (máx 10,000 caracteres)', 'warning');
-                return;
-            }
-
-            showLoading('Enviando mensaje...');
-
-            return llamadaAPI('/api/mensajes/mensajes', {
-                method: 'POST',
-                body: JSON.stringify({
-                    destinatario_id: conversacionActual.id,
-                    contenido: contenido,
-                    tipo: 'texto'
-                })
-            }).then(function(result) {
-                hideLoading();
-                if (!result) return;
-                chatInput.value = '';
-                var counter = document.getElementById('charCounter');
-                if (counter) counter.textContent = '0/10000';
-                return cargarMensajes(conversacionActual.id).then(function() {
-                    return cargarConversaciones();
-                });
-            });
-        })
-        .catch(function(error) {
-            hideLoading();
-            Logger.error('Error enviando mensaje', error);
-            showToast('❌ Error al enviar mensaje', 'error');
-        });
-}
-
-// ================================================================
-// ================================================================
-// 🖼️ SUBIR ARCHIVO CON VALIDACIÓN
-// ================================================================
-// ================================================================
-
-function subirArchivo(file, session) {
-    if (!validarArchivo(file)) return Promise.reject('Archivo inválido');
-
-    var fileExt = file.name.split('.').pop().toLowerCase();
-    var tipo = file.type.startsWith('image/') ? 'imagen' : 'voz';
-    var filePath = 'mensajes/' + session.user.id + '/' + Date.now() + '.' + fileExt;
-
-    showLoading('Subiendo archivo...');
-
-    return supabase.storage
-        .from('mensajes')
-        .upload(filePath, file, { upsert: true })
-        .then(function(uploadResult) {
-            if (uploadResult.error) throw uploadResult.error;
-            return supabase.storage.from('mensajes').getPublicUrl(filePath);
-        })
-        .then(function(urlResult) {
-            var publicUrl = urlResult.data.publicUrl;
-            return llamadaAPI('/api/mensajes/mensajes', {
-                method: 'POST',
-                body: JSON.stringify({
-                    destinatario_id: conversacionActual.id,
-                    contenido: file.name,
-                    tipo: tipo,
-                    imagen_url: publicUrl
-                })
-            });
-        })
-        .then(function(result) {
-            hideLoading();
-            if (!result) return;
-            showToast('✅ Archivo enviado', 'success');
-            return cargarMensajes(conversacionActual.id).then(function() {
-                return cargarConversaciones();
-            });
-        })
-        .catch(function(error) {
-            hideLoading();
-            Logger.error('Error subiendo archivo', error);
-            showToast('❌ Error al subir archivo', 'error');
-            throw error;
-        });
-}
-
-// ================================================================
-// ================================================================
-// 📎 SELECCIONAR ARCHIVO
-// ================================================================
-// ================================================================
-
-function seleccionarArchivo() {
-    var input = document.getElementById('fileInput');
-    if (input) input.click();
-}
-
-function handleFileSelect(event) {
-    var files = event.target.files;
-    if (!files || files.length === 0) return;
-
-    if (files.length > MAX_FILES) {
-        showToast('⚠️ Máximo ' + MAX_FILES + ' archivos', 'warning');
-        event.target.value = '';
+    if (!resultados) {
         return;
     }
 
-    var preview = document.getElementById('filePreview');
-    preview.innerHTML = '';
+    if (
+        query.length < 2
+    ) {
 
-    archivosSeleccionados = [];
+        resultados.innerHTML =
+            '<p class="mensaje-ayuda">Escribe al menos 2 caracteres para buscar</p>';
 
-    for (var i = 0; i < files.length; i++) {
-        var file = files[i];
-        if (!validarArchivo(file)) {
-            event.target.value = '';
-            archivosSeleccionados = [];
-            preview.innerHTML = '';
+        return;
+    }
+
+    try {
+
+        const usuario =
+            await SessionManager.obtenerUsuario();
+
+        if (!usuario) {
             return;
         }
 
-        archivosSeleccionados.push(file);
-        var isImage = file.type.startsWith('image/');
-        var isAudio = file.type.startsWith('audio/');
-        var icon = isImage ? '🖼️' : (isAudio ? '🎵' : '📎');
-        var size = (file.size / 1024).toFixed(1);
+        const client =
+            await obtenerSupabase();
 
-        var el = document.createElement('div');
-        el.style.cssText = 'display:inline-flex;align-items:center;gap:6px;background:rgba(212,175,55,0.1);padding:4px 12px;border-radius:12px;font-size:0.65rem;color:#8899aa;';
-        el.innerHTML = icon + ' ' + escapeHTML(file.name) + ' (' + size + 'KB) <span onclick="this.parentElement.remove();archivosSeleccionados=[];" style="cursor:pointer;color:#ef4444;">✕</span>';
-        preview.appendChild(el);
-    }
+        /*
+         * Escapar comodines de ilike.
+         */
+        const querySeguro =
+            query
+                .replace(/\\/g, '\\\\')
+                .replace(/%/g, '\\%')
+                .replace(/_/g, '\\_');
 
-    event.target.value = '';
-    showToast('📎 ' + files.length + ' archivo(s) seleccionado(s)', 'success');
-}
+        const {
+            data,
+            error
+        } =
+            await client
+                .from('usuarios')
+                .select(
+                    'id,nombre,handle,avatar_url'
+                )
+                .or(
+                    `nombre.ilike.%${querySeguro}%,handle.ilike.%${querySeguro}%`
+                )
+                .neq(
+                    'id',
+                    usuario.id
+                )
+                .limit(20);
 
-// ================================================================
-// ================================================================
-// 🎙️ GRABACIÓN DE VOZ
-// ================================================================
-// ================================================================
+        if (error) {
+            throw error;
+        }
 
-var grabacionActiva = false;
-var mediaRecorder = null;
-var audioChunks = [];
+        if (
+            !data ||
+            data.length === 0
+        ) {
 
-function toggleGrabacionVoz() {
-    var btn = document.getElementById('btnGrabarVoz');
+            resultados.innerHTML = `
+                <div class="sin-resultados">
+                    <strong>No se encontraron resultados</strong>
+                    <p>No hay usuarios que coincidan con "${escapeHTML(query)}"</p>
+                </div>
+            `;
 
-    if (!grabacionActiva) {
-        iniciarGrabacionVoz(btn);
-    } else {
-        detenerGrabacionVoz(btn);
-    }
-}
+            return;
+        }
 
-function iniciarGrabacionVoz(btn) {
-    navigator.mediaDevices.getUserMedia({ audio: true })
-        .then(function(stream) {
-            mediaRecorder = new MediaRecorder(stream);
-            audioChunks = [];
+        resultados.innerHTML =
+            data.map(
+                contacto =>
+                    crearContactoHTML(
+                        contacto
+                    )
+            ).join('');
 
-            mediaRecorder.ondataavailable = function(event) {
-                audioChunks.push(event.data);
-            };
+    } catch (error) {
 
-            mediaRecorder.onstop = function() {
-                var audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-                var file = new File([audioBlob], 'voz_' + Date.now() + '.webm', { type: 'audio/webm' });
+        Logger.error(
+            'Error buscando contactos:',
+            error
+        );
 
-                sessionManager.getSession().then(function(session) {
-                    if (session && conversacionActual) {
-                        archivosSeleccionados = [file];
-                        enviarMensaje();
-                    }
-                });
-
-                stream.getTracks().forEach(function(track) { track.stop(); });
-            };
-
-            mediaRecorder.start();
-            grabacionActiva = true;
-            btn.textContent = '⏹️';
-            btn.style.color = '#ef4444';
-            showToast('🎙️ Grabando...', '', 2000);
-        })
-        .catch(function(error) {
-            Logger.error('Error iniciando grabación', error);
-            showToast('❌ Error al acceder al micrófono', 'error');
-        });
-}
-
-function detenerGrabacionVoz(btn) {
-    if (mediaRecorder && mediaRecorder.state === 'recording') {
-        mediaRecorder.stop();
-        grabacionActiva = false;
-        btn.textContent = '🎙️';
-        btn.style.color = '';
-        showToast('✅ Grabación finalizada', 'success');
+        resultados.innerHTML =
+            '<p class="error">No se pudieron buscar los contactos.</p>';
     }
 }
 
-// ================================================================
-// ================================================================
-// 🗑️ ELIMINAR MENSAJE CON VERIFICACIÓN DE PROPIEDAD
-// ================================================================
-// ================================================================
+/* ================================================================
+   HTML CONTACTO
+================================================================ */
 
-function eliminarMensaje(mensajeId) {
-    if (!confirm('¿Eliminar este mensaje?')) return;
+function crearContactoHTML(
+    contacto
+) {
 
-    sessionManager.getSession()
-        .then(function(session) {
-            if (!session) throw new Error('No autenticado');
+    const avatar =
+        urlSegura(
+            contacto.avatar_url
+        );
 
-            return supabase
-                .from('mensajes_chat')
-                .select('remitente_id, destinatario_id, contenido, created_at')
-                .eq('id', mensajeId)
-                .single()
-                .then(function(mensajeResult) {
-                    if (mensajeResult.error) throw new Error('Mensaje no encontrado');
-                    var mensaje = mensajeResult.data;
-                    if (mensaje.remitente_id !== session.user.id) {
-                        showToast('⚠️ Solo el remitente puede eliminar este mensaje', 'error');
-                        return;
-                    }
+    const nombre =
+        escapeHTML(
+            contacto.nombre ||
+            'Usuario'
+        );
 
-                    showLoading('Eliminando mensaje...');
+    const handle =
+        escapeHTML(
+            contacto.handle
+                ? `@${contacto.handle}`
+                : ''
+        );
 
-                    return supabase
-                        .from('mensajes_chat')
-                        .update({
-                            eliminado: true,
-                            eliminado_por: session.user.id,
-                            eliminado_en: new Date().toISOString()
-                        })
-                        .eq('id', mensajeId)
-                        .eq('remitente_id', session.user.id); // ✅ PUNTO Y COMA AGREGADO AQUÍ
-                });
-        })
-        .then(function(result) {
-            if (!result) return;
-            if (result.error) throw result.error;
+    const id =
+        escaparAtributo(
+            contacto.id
+        );
 
-            hideLoading();
-            showToast('🗑️ Mensaje eliminado');
-            if (conversacionActual) {
-                messageCache.delete(conversacionActual.id);
-                return cargarMensajes(conversacionActual.id).then(function() {
-                    return cargarConversaciones();
-                });
-            }
-            return cargarConversaciones();
-        })
-        .catch(function(error) {
-            hideLoading();
-            Logger.error('Error eliminando mensaje', error);
-            showToast('❌ Error al eliminar mensaje', 'error');
-        });
+    const avatarHTML =
+        avatar
+            ? `
+                <img
+                    src="${escaparAtributo(avatar)}"
+                    alt="${nombre}"
+                    loading="lazy"
+                    referrerpolicy="no-referrer"
+                >
+            `
+            : `
+                <div class="avatar-placeholder">
+                    ${escapeHTML(
+                        (
+                            contacto.nombre ||
+                            'U'
+                        ).charAt(0).toUpperCase()
+                    )}
+                </div>
+            `;
+
+    return `
+        <div class="contacto-resultado">
+            <div class="contacto-avatar">
+                ${avatarHTML}
+            </div>
+
+            <div class="contacto-info">
+                <strong>${nombre}</strong>
+                <span>${handle}</span>
+            </div>
+
+            <button
+                type="button"
+                class="btn-agregar-contacto"
+                data-contacto-id="${id}"
+                onclick="agregarContacto('${id}')"
+            >
+                Agregar
+            </button>
+        </div>
+    `;
 }
 
-// ================================================================
-// ================================================================
-// ✏️ EDITAR MENSAJE
-// ================================================================
-// ================================================================
+/* ================================================================
+   AGREGAR CONTACTO
+================================================================ */
 
-function editarMensaje(mensajeId) {
-    var nuevoContenido = prompt('Edita tu mensaje:');
-    if (nuevoContenido === null) return;
-    if (!nuevoContenido.trim()) {
-        showToast('⚠️ No puedes dejar vacío', 'error');
-        return;
-    }
-    if (nuevoContenido.length > 10000) {
-        showToast('⚠️ El mensaje es demasiado largo (máx 10,000 caracteres)', 'warning');
-        return;
-    }
+async function agregarContacto(
+    contactoId
+) {
 
-    sessionManager.getSession()
-        .then(function(session) {
-            if (!session) {
-                showToast('⚠️ Inicia sesión', 'error');
-                return;
-            }
-
-            showLoading('Editando mensaje...');
-
-            return llamadaAPI('/api/mensajes/mensajes/' + mensajeId, {
-                method: 'PUT',
-                body: JSON.stringify({ contenido: nuevoContenido })
-            });
-        })
-        .then(function(result) {
-            hideLoading();
-            if (!result) return;
-
-            showToast('✅ Mensaje editado');
-            if (conversacionActual) {
-                messageCache.delete(conversacionActual.id);
-                return cargarMensajes(conversacionActual.id);
-            }
-        })
-        .catch(function(error) {
-            hideLoading();
-            Logger.error('Error editando mensaje', error);
-            showToast('❌ Error al editar mensaje', 'error');
-        });
-}
-
-// ================================================================
-// ================================================================
-// 🗑️ ELIMINAR CONVERSACIÓN CON CASCADA
-// ================================================================
-// ================================================================
-
-function eliminarConversacion(contactoId) {
-    if (!contactoId) {
-        showToast('⚠️ No hay conversación seleccionada', 'error');
+    if (
+        !contactoId ||
+        !FrontRateLimiter.permitir(
+            'agregar-contacto',
+            1000
+        )
+    ) {
         return;
     }
 
-    if (!confirm('¿Eliminar toda la conversación con este contacto?')) return;
+    try {
 
-    sessionManager.getSession()
-        .then(function(session) {
-            if (!session) {
-                showToast('⚠️ Inicia sesión', 'error');
-                return;
-            }
+        const usuario =
+            await SessionManager.obtenerUsuario();
 
-            return supabase
+        if (!usuario) {
+            throw new Error(
+                'No autenticado'
+            );
+        }
+
+        if (
+            contactoId ===
+            usuario.id
+        ) {
+
+            showToast(
+                'No puedes agregarte a ti mismo',
+                'warning'
+            );
+
+            return;
+        }
+
+        const client =
+            await obtenerSupabase();
+
+        const {
+            error
+        } =
+            await client
                 .from('contactos')
-                .select('id')
-                .eq('usuario_id', session.user.id)
-                .eq('contacto_id', contactoId)
-                .single()
-                .then(function(contactoResult) {
-                    if (contactoResult.error || !contactoResult.data) {
-                        showToast('❌ Contacto no encontrado', 'error');
-                        return;
-                    }
-
-                    showLoading('Eliminando conversación...');
-
-                    return supabase
-                        .from('mensajes_chat')
-                        .select('id')
-                        .or('and(remitente_id.eq.' + session.user.id + ',destinatario_id.eq.' + contactoId + '),and(remitente_id.eq.' + contactoId + ',destinatario_id.eq.' + session.user.id + ')')
-                        .then(function(mensajesResult) {
-                            if (mensajesResult.error) throw mensajesResult.error;
-                            var mensajes = mensajesResult.data || [];
-
-                            if (mensajes.length > 0) {
-                                var ids = mensajes.map(function(m) { return m.id; });
-                                return supabase
-                                    .from('mensajes_chat')
-                                    .update({
-                                        eliminado: true,
-                                        eliminado_por: session.user.id,
-                                        eliminado_en: new Date().toISOString()
-                                    })
-                                    .in('id', ids);
-                            }
-                            return { error: null };
-                        })
-                        .then(function(resultadoActualizacion) {
-                            // ✅ RETURN AGREGADO AQUÍ para que continúe la cadena
-                            return supabase
-                                .from('contactos')
-                                .delete()
-                                .eq('usuario_id', session.user.id)
-                                .eq('contacto_id', contactoId);
-                        });
+                .insert({
+                    usuario_id:
+                        usuario.id,
+                    contacto_id:
+                        contactoId,
+                    estado:
+                        'activo'
                 });
-        })
-        .then(function(result) {
-            if (!result) return;
-            if (result.error) throw result.error;
 
-            hideLoading();
-            messageCache.delete(contactoId);
+        if (error) {
 
-            if (conversacionActual && conversacionActual.id === contactoId) {
-                conversacionActual = null;
-                window._conversacionActualId = null;
-                document.getElementById('chatNombre').textContent = 'Selecciona una conversación';
-                document.getElementById('chatMessages').innerHTML = '<div class="empty-chat"><span class="icon">◈</span><h3>Conversación eliminada</h3></div>';
-            }
+            /*
+             * Posible contacto existente.
+             */
+            if (
+                error.code ===
+                    '23505'
+            ) {
 
-            showToast('🗑️ Conversación eliminada');
-            return cargarConversaciones();
-        })
-        .catch(function(error) {
-            hideLoading();
-            Logger.error('Error eliminando conversación', error);
-            showToast('❌ Error al eliminar conversación', 'error');
-        });
-}
+                showToast(
+                    'Este contacto ya existe',
+                    'info'
+                );
 
-// ================================================================
-// ================================================================
-// 👁️ MARCAR MENSAJES COMO LEÍDOS
-// ================================================================
-// ================================================================
-
-function marcarMensajesLeidos(contactoId) {
-    return sessionManager.getSession()
-        .then(function(session) {
-            if (!session) return;
-
-            return supabase
-                .from('mensajes_chat')
-                .update({ leido: true })
-                .eq('remitente_id', contactoId)
-                .eq('destinatario_id', session.user.id)
-                .eq('leido', false)
-                .is('eliminado', false);
-        })
-        .catch(function(error) {
-            Logger.warn('Error marcando mensajes como leídos', error);
-        });
-}
-
-// ================================================================
-// ================================================================
-// ⚠️ REPORTAR MENSAJE
-// ================================================================
-// ================================================================
-
-function reportarMensaje(mensajeId) {
-    var motivo = prompt('¿Por qué reportas este mensaje? (spam, ofensa, acoso, ilegal)');
-    if (!motivo) return;
-
-    sessionManager.getSession()
-        .then(function(session) {
-            if (!session) {
-                showToast('⚠️ Inicia sesión para reportar', 'error');
                 return;
             }
 
-            return llamadaAPI('/api/mensajes/reportar/' + mensajeId, {
-                method: 'POST',
-                body: JSON.stringify({ motivo: motivo })
-            });
-        })
-        .then(function(result) {
-            if (!result) return;
-            showToast('⚠️ Reporte enviado. Gracias por ayudar.', 'warning');
-        })
-        .catch(function(error) {
-            Logger.error('Error reportando mensaje', error);
-            showToast('❌ Error al reportar', 'error');
-        });
+            throw error;
+        }
+
+        showToast(
+            'Contacto agregado correctamente',
+            'success'
+        );
+
+        await cargarConversaciones();
+
+    } catch (error) {
+
+        Logger.error(
+            'Error agregando contacto:',
+            error
+        );
+
+        showToast(
+            'No se pudo agregar el contacto',
+            'error'
+        );
+    }
 }
 
-// ================================================================
-// ================================================================
-// 🚫 BLOQUEAR USUARIO
-// ================================================================
-// ================================================================
+/* ================================================================
+   CARGAR CONVERSACIONES
+================================================================ */
 
-function bloquearUsuario(usuarioId) {
-    if (!usuarioId) {
-        showToast('⚠️ No hay usuario seleccionado', 'error');
+async function cargarConversaciones() {
+
+    const contenedor =
+        obtenerElemento(
+            'conversationList',
+            'conversaciones',
+            'listaConversaciones'
+        );
+
+    if (!contenedor) {
         return;
     }
 
-    if (!confirm('¿Bloquear a este usuario? No podrán enviarte mensajes.')) return;
+    try {
 
-    sessionManager.getSession()
-        .then(function(session) {
-            if (!session) {
-                showToast('⚠️ Inicia sesión', 'error');
-                return;
-            }
+        const resultado =
+            await llamadaAPI(
+                '/api/mensajes/conversaciones',
+                {
+                    method:
+                        'GET'
+                }
+            );
 
-            return llamadaAPI('/api/mensajes/bloquear/' + usuarioId, {
-                method: 'POST'
-            });
-        })
-        .then(function(result) {
-            if (!result) return;
+        const conversaciones =
+            Array.isArray(
+                resultado?.data
+            )
+                ? resultado.data
+                : Array.isArray(
+                    resultado
+                )
+                    ? resultado
+                    : [];
 
-            showToast('🚫 Usuario bloqueado');
+        if (
+            conversaciones.length === 0
+        ) {
 
-            if (conversacionActual && conversacionActual.id === usuarioId) {
-                conversacionActual = null;
-                window._conversacionActualId = null;
-                document.getElementById('chatNombre').textContent = 'Selecciona una conversación';
-                document.getElementById('chatMessages').innerHTML = '<div class="empty-chat"><span class="icon">◈</span><h3>Usuario bloqueado</h3></div>';
-            }
+            contenedor.innerHTML = `
+                <div class="sin-conversaciones">
+                    <p>No tienes conversaciones todavía.</p>
+                </div>
+            `;
 
-            return cargarConversaciones();
-        })
-        .catch(function(error) {
-            Logger.error('Error bloqueando usuario', error);
-            showToast('❌ Error al bloquear usuario', 'error');
-        });
+            return;
+        }
+
+        contenedor.innerHTML =
+            conversaciones.map(
+                crearConversacionHTML
+            ).join('');
+
+    } catch (error) {
+
+        Logger.error(
+            'Error cargando conversaciones:',
+            error
+        );
+
+        if (
+            error.message ===
+            'NO_AUTORIZADO'
+        ) {
+
+            await SessionManager.cerrarSesion();
+            return;
+        }
+
+        contenedor.innerHTML = `
+            <div class="error">
+                No se pudieron cargar las conversaciones.
+            </div>
+        `;
+    }
 }
 
-// ================================================================
-// ================================================================
-// 🔍 BUSCAR EN CONVERSACIÓN
-// ================================================================
-// ================================================================
+/* ================================================================
+   HTML CONVERSACIÓN
+================================================================ */
 
-function buscarEnConversacion(query) {
-    if (!query || !query.trim()) {
-        showToast('⚠️ Escribe algo para buscar', 'warning');
+function crearConversacionHTML(
+    conversacion
+) {
+
+    const contacto =
+        conversacion.contacto ||
+        conversacion.usuario ||
+        conversacion;
+
+    const contactoId =
+        contacto.id ||
+        conversacion.contacto_id ||
+        conversacion.usuario_id;
+
+    if (!contactoId) {
+        return '';
+    }
+
+    const nombre =
+        escapeHTML(
+            contacto.nombre ||
+            contacto.handle ||
+            'Usuario'
+        );
+
+    const ultimoMensaje =
+        escapeHTML(
+            conversacion.ultimo_mensaje ||
+            conversacion.ultimoMensaje ||
+            ''
+        );
+
+    const avatar =
+        urlSegura(
+            contacto.avatar_url
+        );
+
+    const unread =
+        Number(
+            conversacion.mensajes_no_leidos ||
+            conversacion.no_leidos ||
+            conversacion.unread_count ||
+            0
+        );
+
+    const avatarHTML =
+        avatar
+            ? `
+                <img
+                    src="${escaparAtributo(avatar)}"
+                    alt="${nombre}"
+                    loading="lazy"
+                    referrerpolicy="no-referrer"
+                >
+            `
+            : `
+                <div class="avatar-placeholder">
+                    ${escapeHTML(
+                        (
+                            contacto.nombre ||
+                            'U'
+                        ).charAt(0).toUpperCase()
+                    )}
+                </div>
+            `;
+
+    return `
+        <button
+            type="button"
+            class="conversation-item"
+            data-contacto-id="${escaparAtributo(contactoId)}"
+            onclick="abrirConversacion('${escaparAtributo(contactoId)}')"
+        >
+            <div class="conversation-avatar">
+                ${avatarHTML}
+            </div>
+
+            <div class="conversation-content">
+                <strong>
+                    ${nombre}
+                </strong>
+
+                <span>
+                    ${ultimoMensaje}
+                </span>
+            </div>
+
+            ${
+                unread > 0
+                    ? `
+                        <span class="unread-count">
+                            ${unread > 99 ? '99+' : unread}
+                        </span>
+                    `
+                    : ''
+            }
+        </button>
+    `;
+}
+
+/* ================================================================
+   ABRIR CONVERSACIÓN
+================================================================ */
+
+async function abrirConversacion(
+    contactoId
+) {
+
+    if (!contactoId) {
+        return;
+    }
+
+    try {
+
+        const usuario =
+            await SessionManager.obtenerUsuario();
+
+        if (!usuario) {
+            throw new Error(
+                'No autenticado'
+            );
+        }
+
+        const client =
+            await obtenerSupabase();
+
+        const {
+            data: contacto,
+            error
+        } =
+            await client
+                .from('usuarios')
+                .select(
+                    'id,nombre,handle,avatar_url'
+                )
+                .eq(
+                    'id',
+                    contactoId
+                )
+                .maybeSingle();
+
+        if (error) {
+            throw error;
+        }
+
+        if (!contacto) {
+
+            showToast(
+                'Usuario no encontrado',
+                'error'
+            );
+
+            return;
+        }
+
+        conversacionActual =
+            contactoId;
+
+        mostrarCabeceraConversacion(
+            contacto
+        );
+
+        await marcarMensajesLeidos(
+            contactoId
+        );
+
+        await cargarMensajes(
+            contactoId
+        );
+
+        await crearCanalRealtime(
+            contactoId,
+            mensaje => {
+
+                /*
+                 * Evitar duplicados.
+                 */
+                const existente =
+                    document.querySelector(
+                        `[data-message-id="${CSS.escape(String(mensaje.id))}"]`
+                    );
+
+                if (!existente) {
+
+                    agregarMensajeRealtime(
+                        mensaje
+                    );
+                }
+            },
+            mensaje => {
+
+                actualizarMensajeEnPantalla(
+                    mensaje
+                );
+            }
+        );
+
+        await cargarConversaciones();
+
+    } catch (error) {
+
+        Logger.error(
+            'Error abriendo conversación:',
+            error
+        );
+
+        showToast(
+            'No se pudo abrir la conversación',
+            'error'
+        );
+    }
+}
+
+/* ================================================================
+   CABECERA CONVERSACIÓN
+================================================================ */
+
+function mostrarCabeceraConversacion(
+    contacto
+) {
+
+    const nombre =
+        obtenerElemento(
+            'chatUserName',
+            'nombreContacto',
+            'conversationUserName'
+        );
+
+    const avatar =
+        obtenerElemento(
+            'chatUserAvatar',
+            'avatarContacto',
+            'conversationAvatar'
+        );
+
+    if (nombre) {
+
+        nombre.textContent =
+            contacto.nombre ||
+            contacto.handle ||
+            'Usuario';
+    }
+
+    if (avatar) {
+
+        const url =
+            urlSegura(
+                contacto.avatar_url
+            );
+
+        if (url) {
+
+            avatar.src =
+                url;
+
+            avatar.style.display =
+                '';
+        }
+    }
+}
+
+/* ================================================================
+   CARGAR MENSAJES
+================================================================ */
+
+async function cargarMensajes(
+    contactoId
+) {
+
+    const contenedor =
+        obtenerElemento(
+            'chatMessages',
+            'mensajesChat',
+            'messagesContainer'
+        );
+
+    if (!contenedor) {
+        return;
+    }
+
+    const cache =
+        mensajesCache.get(
+            contactoId
+        );
+
+    if (
+        cache &&
+        Date.now() -
+            cache.timestamp <
+            CACHE_TTL
+    ) {
+
+        renderizarMensajes(
+            cache.data,
+            contenedor
+        );
+
+        return;
+    }
+
+    try {
+
+        contenedor.innerHTML =
+            '<div class="loading-mensajes">Cargando mensajes...</div>';
+
+        const resultado =
+            await llamadaAPI(
+                `/api/mensajes/mensajes/${encodeURIComponent(contactoId)}`,
+                {
+                    method:
+                        'GET'
+                }
+            );
+
+        const mensajes =
+            Array.isArray(
+                resultado?.data
+            )
+                ? resultado.data
+                : Array.isArray(
+                    resultado?.mensajes
+                )
+                    ? resultado.mensajes
+                    : Array.isArray(
+                        resultado
+                    )
+                        ? resultado
+                        : [];
+
+        mensajesCache.set(
+            contactoId,
+            {
+                data:
+                    mensajes,
+                timestamp:
+                    Date.now()
+            }
+        );
+
+        renderizarMensajes(
+            mensajes,
+            contenedor
+        );
+
+    } catch (error) {
+
+        Logger.error(
+            'Error cargando mensajes:',
+            error
+        );
+
+        contenedor.innerHTML =
+            `
+            <div class="error">
+                No se pudieron cargar los mensajes.
+            </div>
+            `;
+    }
+}
+
+/* ================================================================
+   RENDERIZAR MENSAJES
+================================================================ */
+
+function renderizarMensajes(
+    mensajes,
+    contenedor
+) {
+
+    if (
+        !mensajes ||
+        mensajes.length === 0
+    ) {
+
+        contenedor.innerHTML = `
+            <div class="sin-mensajes">
+                <p>No hay mensajes todavía.</p>
+                <span>Inicia la conversación.</span>
+            </div>
+        `;
+
+        return;
+    }
+
+    contenedor.innerHTML =
+        mensajes.map(
+            crearMensajeHTML
+        ).join('');
+
+    desplazarChatAlFinal(
+        contenedor
+    );
+}
+
+/* ================================================================
+   CREAR MENSAJE HTML
+================================================================ */
+
+function crearMensajeHTML(
+    mensaje
+) {
+
+    if (!mensaje) {
+        return '';
+    }
+
+    const usuarioId =
+        usuarioActual?.id;
+
+    const propio =
+        mensaje.remitente_id ===
+        usuarioId;
+
+    const id =
+        escaparAtributo(
+            mensaje.id
+        );
+
+    const clase =
+        propio
+            ? 'message own'
+            : 'message';
+
+    const eliminado =
+        Boolean(
+            mensaje.eliminado ||
+            mensaje.eliminado_at
+        );
+
+    if (eliminado) {
+
+        return `
+            <div
+                class="${clase} deleted"
+                data-message-id="${id}"
+            >
+                <div class="message-content">
+                    <em>Este mensaje fue eliminado.</em>
+                </div>
+            </div>
+        `;
+    }
+
+    let contenido = '';
+
+    const texto =
+        mensaje.contenido ||
+        mensaje.texto ||
+        mensaje.mensaje;
+
+    if (texto) {
+
+        contenido += `
+            <div class="message-text">
+                ${formatearTexto(texto)}
+            </div>
+        `;
+    }
+
+    if (
+        mensaje.imagen_url
+    ) {
+
+        const url =
+            urlSegura(
+                mensaje.imagen_url
+            );
+
+        if (url) {
+
+            const tipo =
+                mensaje.tipo ||
+                '';
+
+            if (
+                tipo === 'audio' ||
+                tipo.startsWith(
+                    'audio/'
+                )
+            ) {
+
+                contenido +=
+                    crearMensajeAudio(
+                        mensaje,
+                        url
+                    );
+
+            } else {
+
+                contenido +=
+                    crearMensajeImagen(
+                        mensaje,
+                        url
+                    );
+            }
+        }
+    }
+
+    if (
+        !contenido
+    ) {
+
+        contenido =
+            '<div class="message-text">Mensaje</div>';
+    }
+
+    const fecha =
+        formatearFecha(
+            mensaje.created_at ||
+            mensaje.fecha_creacion
+        );
+
+    const editado =
+        mensaje.editado
+            ? '<small class="edited">editado</small>'
+            : '';
+
+    return `
+        <div
+            class="${clase}"
+            data-message-id="${id}"
+        >
+            <div class="message-content">
+                ${contenido}
+
+                <div class="message-meta">
+                    <time>
+                        ${escapeHTML(fecha)}
+                    </time>
+                    ${editado}
+                </div>
+            </div>
+
+            ${
+                propio
+                    ? `
+                        <div class="message-actions">
+                            <button
+                                type="button"
+                                onclick="editarMensaje('${id}')"
+                                aria-label="Editar mensaje"
+                            >
+                                ✏️
+                            </button>
+
+                            <button
+                                type="button"
+                                onclick="eliminarMensaje('${id}')"
+                                aria-label="Eliminar mensaje"
+                            >
+                                🗑️
+                            </button>
+                        </div>
+                    `
+                    : ''
+            }
+        </div>
+    `;
+}
+
+/* ================================================================
+   IMAGEN
+================================================================ */
+
+function crearMensajeImagen(
+    mensaje,
+    url
+) {
+
+    return `
+        <div class="message-image">
+            <img
+                src="${escaparAtributo(url)}"
+                alt="Imagen enviada"
+                loading="lazy"
+                decoding="async"
+                referrerpolicy="no-referrer"
+                onclick="abrirImagen('${escaparAtributo(url)}')"
+            >
+        </div>
+    `;
+}
+
+/* ================================================================
+   AUDIO
+================================================================ */
+
+function crearMensajeAudio(
+    mensaje,
+    url
+) {
+
+    const mime =
+        mensaje.mime_type ||
+        mensaje.tipo_mime ||
+        (
+            mensaje.imagen_url &&
+            mensaje.imagen_url
+                .toLowerCase()
+                .includes('.webm')
+                ? 'audio/webm'
+                : 'audio/mpeg'
+        );
+
+    return `
+        <div class="message-audio">
+            <audio
+                controls
+                preload="metadata"
+            >
+                <source
+                    src="${escaparAtributo(url)}"
+                    type="${escaparAtributo(mime)}"
+                >
+                Tu navegador no puede reproducir este audio.
+            </audio>
+        </div>
+    `;
+}
+
+/* ================================================================
+   ABRIR IMAGEN
+================================================================ */
+
+function abrirImagen(
+    url
+) {
+
+    const segura =
+        urlSegura(url);
+
+    if (!segura) {
+        return;
+    }
+
+    let modal =
+        document.getElementById(
+            'modalImagenMensaje'
+        );
+
+    if (!modal) {
+
+        modal =
+            document.createElement('div');
+
+        modal.id =
+            'modalImagenMensaje';
+
+        modal.className =
+            'modal-imagen-mensaje';
+
+        modal.innerHTML = `
+            <button
+                type="button"
+                class="cerrar-modal-imagen"
+                aria-label="Cerrar"
+            >
+                ×
+            </button>
+
+            <img
+                alt="Imagen"
+            >
+        `;
+
+        modal.addEventListener(
+            'click',
+            event => {
+
+                if (
+                    event.target ===
+                    modal ||
+                    event.target.classList.contains(
+                        'cerrar-modal-imagen'
+                    )
+                ) {
+
+                    modal.classList.remove(
+                        'show'
+                    );
+                }
+            }
+        );
+
+        document.body.appendChild(
+            modal
+        );
+    }
+
+    const imagen =
+        modal.querySelector(
+            'img'
+        );
+
+    imagen.src =
+        segura;
+
+    modal.classList.add(
+        'show'
+    );
+}
+
+/* ================================================================
+   SCROLL CHAT
+================================================================ */
+
+function desplazarChatAlFinal(
+    contenedor
+) {
+
+    if (!contenedor) {
+        return;
+    }
+
+    requestAnimationFrame(() => {
+
+        contenedor.scrollTop =
+            contenedor.scrollHeight;
+    });
+}
+
+/* ================================================================
+   AGREGAR MENSAJE REALTIME
+================================================================ */
+
+function agregarMensajeRealtime(
+    mensaje
+) {
+
+    if (
+        !conversacionActual ||
+        !mensaje
+    ) {
+        return;
+    }
+
+    const usuarioId =
+        usuarioActual?.id;
+
+    const pertenece =
+        (
+            mensaje.remitente_id ===
+                usuarioId &&
+            mensaje.destinatario_id ===
+                conversacionActual
+        ) ||
+        (
+            mensaje.remitente_id ===
+                conversacionActual &&
+            mensaje.destinatario_id ===
+                usuarioId
+        );
+
+    if (!pertenece) {
+        return;
+    }
+
+    const contenedor =
+        obtenerElemento(
+            'chatMessages',
+            'mensajesChat',
+            'messagesContainer'
+        );
+
+    if (!contenedor) {
+        return;
+    }
+
+    const id =
+        String(
+            mensaje.id || ''
+        );
+
+    if (!id) {
+        return;
+    }
+
+    const existente =
+        contenedor.querySelector(
+            `[data-message-id="${CSS.escape(id)}"]`
+        );
+
+    if (existente) {
+        return;
+    }
+
+    const vacio =
+        contenedor.querySelector(
+            '.sin-mensajes'
+        );
+
+    if (vacio) {
+        vacio.remove();
+    }
+
+    contenedor.insertAdjacentHTML(
+        'beforeend',
+        crearMensajeHTML(
+            mensaje
+        )
+    );
+
+    desplazarChatAlFinal(
+        contenedor
+    );
+
+    mensajesCache.delete(
+        conversacionActual
+    );
+}
+
+/* ================================================================
+   ACTUALIZAR MENSAJE REALTIME
+================================================================ */
+
+function actualizarMensajeEnPantalla(
+    mensaje
+) {
+
+    if (!mensaje?.id) {
+        return;
+    }
+
+    const elemento =
+        document.querySelector(
+            `[data-message-id="${CSS.escape(String(mensaje.id))}"]`
+        );
+
+    if (!elemento) {
+        return;
+    }
+
+    elemento.outerHTML =
+        crearMensajeHTML(
+            mensaje
+        );
+
+    if (
+        conversacionActual
+    ) {
+
+        mensajesCache.delete(
+            conversacionActual
+        );
+    }
+}
+
+/* ================================================================
+   ENVIAR MENSAJE
+================================================================ */
+
+async function enviarMensaje() {
+
+    if (
+        !FrontRateLimiter.permitir(
+            'enviar-mensaje',
+            250
+        )
+    ) {
         return;
     }
 
     if (!conversacionActual) {
-        showToast('⚠️ Selecciona una conversación', 'error');
+
+        showToast(
+            'Selecciona una conversación',
+            'warning'
+        );
+
         return;
     }
 
-    sessionManager.getSession()
-        .then(function(session) {
-            if (!session) return;
+    const input =
+        obtenerElemento(
+            'messageInput',
+            'mensajeInput',
+            'chatInput'
+        );
 
-            showLoading('Buscando...');
+    const texto =
+        input
+            ? input.value.trim()
+            : '';
 
-            return supabase
-                .from('mensajes_chat')
-                .select('*')
-                .or('and(remitente_id.eq.' + session.user.id + ',destinatario_id.eq.' + conversacionActual.id + '),and(remitente_id.eq.' + conversacionActual.id + ',destinatario_id.eq.' + session.user.id + ')')
-                .eq('eliminado', false)
-                .ilike('contenido', '%' + query.trim() + '%')
-                .order('created_at', { ascending: true });
-        })
-        .then(function(result) {
-            hideLoading();
-            if (!result) return;
-            if (result.error) throw result.error;
+    if (
+        !texto &&
+        archivosSeleccionados.length === 0
+    ) {
+        return;
+    }
 
-            var container = document.getElementById('chatMessages');
-            var data = result.data || [];
+    try {
 
-            if (data.length === 0) {
-                container.innerHTML = '<div class="empty-chat"><span class="icon">◈</span><h3>No se encontraron resultados</h3><p>No hay mensajes que coincidan con "' + escapeHTML(query) + '"</p><button onclick="cargarMensajes(\'' + conversacionActual.id + '\')" style="margin-top:12px;padding:8px 20px;background:linear-gradient(135deg,#d4af37,#c49a2a);border:none;border-radius:30px;color:#0b0e14;font-weight:600;cursor:pointer;">Volver</button></div>';
+        const session =
+            await SessionManager.obtenerSesion();
+
+        if (!session) {
+            throw new Error(
+                'No autenticado'
+            );
+        }
+
+        /*
+         * Archivos
+         */
+        if (
+            archivosSeleccionados.length > 0
+        ) {
+
+            const archivos =
+                [...archivosSeleccionados];
+
+            for (
+                const archivo
+                of archivos
+            ) {
+
+                await subirArchivo(
+                    archivo,
+                    session
+                );
+            }
+
+            archivosSeleccionados =
+                [];
+
+            actualizarVistaArchivos();
+        }
+
+        /*
+         * Texto
+         */
+        if (texto) {
+
+            await llamadaAPI(
+                '/api/mensajes/mensajes',
+                {
+                    method:
+                        'POST',
+
+                    body:
+                        JSON.stringify({
+                            destinatario_id:
+                                conversacionActual,
+
+                            contenido:
+                                texto
+                        })
+                }
+            );
+        }
+
+        if (input) {
+            input.value = '';
+        }
+
+        actualizarContadorCaracteres();
+
+        mensajesCache.delete(
+            conversacionActual
+        );
+
+        await cargarMensajes(
+            conversacionActual
+        );
+
+        await cargarConversaciones();
+
+    } catch (error) {
+
+        Logger.error(
+            'Error enviando mensaje:',
+            error
+        );
+
+        showToast(
+            error.message ||
+            'No se pudo enviar el mensaje',
+            'error'
+        );
+    }
+}
+
+/* ================================================================
+   SUBIR ARCHIVO
+================================================================ */
+
+async function subirArchivo(
+    archivo,
+    session
+) {
+
+    const validacion =
+        validarArchivo(
+            archivo
+        );
+
+    if (
+        !validacion.valido
+    ) {
+
+        throw new Error(
+            validacion.error
+        );
+    }
+
+    if (
+        !session?.user?.id
+    ) {
+
+        throw new Error(
+            'Sesión no válida'
+        );
+    }
+
+    const client =
+        await obtenerSupabase();
+
+    /*
+     * Nombre único.
+     */
+    const extension =
+        archivo.name
+            .split('.')
+            .pop()
+            .toLowerCase();
+
+    const nombreArchivo =
+        `${session.user.id}/${cryptoRandomId()}.${extension}`;
+
+    const {
+        error: uploadError
+    } =
+        await client.storage
+            .from('mensajes')
+            .upload(
+                nombreArchivo,
+                archivo,
+                {
+                    cacheControl:
+                        '3600',
+
+                    upsert:
+                        false,
+
+                    contentType:
+                        archivo.type ||
+                        undefined
+                }
+            );
+
+    if (uploadError) {
+        throw uploadError;
+    }
+
+    const {
+        data: publicData
+    } =
+        client.storage
+            .from('mensajes')
+            .getPublicUrl(
+                nombreArchivo
+            );
+
+    const publicUrl =
+        publicData?.publicUrl;
+
+    if (!publicUrl) {
+
+        throw new Error(
+            'No se pudo obtener la URL del archivo'
+        );
+    }
+
+    await llamadaAPI(
+        '/api/mensajes/mensajes',
+        {
+            method:
+                'POST',
+
+            body:
+                JSON.stringify({
+                    destinatario_id:
+                        conversacionActual,
+
+                    contenido:
+                        '',
+
+                    imagen_url:
+                        publicUrl,
+
+                    tipo:
+                        archivo.type ||
+                        'archivo',
+
+                    mime_type:
+                        archivo.type ||
+                        null
+                })
+        }
+    );
+}
+
+/* ================================================================
+   ID ALEATORIO
+================================================================ */
+
+function cryptoRandomId() {
+
+    if (
+        window.crypto &&
+        typeof window.crypto.randomUUID ===
+            'function'
+    ) {
+
+        return window.crypto.randomUUID();
+    }
+
+    return (
+        Date.now().toString(36) +
+        Math.random()
+            .toString(36)
+            .substring(2)
+    );
+}
+
+/* ================================================================
+   SELECCIÓN DE ARCHIVOS
+================================================================ */
+
+function handleFileSelect(
+    event
+) {
+
+    const archivos =
+        Array.from(
+            event.target.files || []
+        );
+
+    if (
+        archivos.length === 0
+    ) {
+        return;
+    }
+
+    for (
+        const archivo
+        of archivos
+    ) {
+
+        const validacion =
+            validarArchivo(
+                archivo
+            );
+
+        if (
+            !validacion.valido
+        ) {
+
+            showToast(
+                `${archivo.name}: ${validacion.error}`,
+                'error'
+            );
+
+            continue;
+        }
+
+        /*
+         * Evitar duplicados.
+         */
+        const duplicado =
+            archivosSeleccionados.some(
+                existente =>
+                    existente.name ===
+                        archivo.name &&
+                    existente.size ===
+                        archivo.size &&
+                    existente.lastModified ===
+                        archivo.lastModified
+            );
+
+        if (!duplicado) {
+
+            archivosSeleccionados.push(
+                archivo
+            );
+        }
+    }
+
+    actualizarVistaArchivos();
+
+    event.target.value =
+        '';
+}
+
+/* ================================================================
+   MOSTRAR ARCHIVOS SELECCIONADOS
+================================================================ */
+
+function actualizarVistaArchivos() {
+
+    const contenedor =
+        obtenerElemento(
+            'archivosSeleccionados',
+            'selectedFiles'
+        );
+
+    if (!contenedor) {
+        return;
+    }
+
+    if (
+        archivosSeleccionados.length === 0
+    ) {
+
+        contenedor.innerHTML =
+            '';
+
+        return;
+    }
+
+    contenedor.innerHTML =
+        archivosSeleccionados
+            .map(
+                (archivo, indice) => `
+                    <div
+                        class="archivo-seleccionado"
+                        data-file-index="${indice}"
+                    >
+                        <span>
+                            ${escapeHTML(
+                                archivo.name
+                            )}
+                        </span>
+
+                        <button
+                            type="button"
+                            onclick="removerArchivo(${indice})"
+                            aria-label="Eliminar archivo"
+                        >
+                            ×
+                        </button>
+                    </div>
+                `
+            )
+            .join('');
+}
+
+/* ================================================================
+   REMOVER UN ARCHIVO
+================================================================ */
+
+function removerArchivo(
+    indice
+) {
+
+    if (
+        indice < 0 ||
+        indice >=
+            archivosSeleccionados.length
+    ) {
+        return;
+    }
+
+    archivosSeleccionados.splice(
+        indice,
+        1
+    );
+
+    actualizarVistaArchivos();
+}
+
+/* ================================================================
+   GRABACIÓN DE AUDIO
+================================================================ */
+
+async function iniciarGrabacionAudio() {
+
+    if (grabandoAudio) {
+        return;
+    }
+
+    if (
+        !navigator.mediaDevices ||
+        !navigator.mediaDevices.getUserMedia
+    ) {
+
+        showToast(
+            'Tu navegador no permite grabar audio',
+            'error'
+        );
+
+        return;
+    }
+
+    try {
+
+        const stream =
+            await navigator.mediaDevices.getUserMedia({
+                audio:
+                    true
+            });
+
+        let mimeType =
+            '';
+
+        const formatos = [
+            'audio/webm;codecs=opus',
+            'audio/webm',
+            'audio/ogg;codecs=opus'
+        ];
+
+        for (
+            const formato
+            of formatos
+        ) {
+
+            if (
+                MediaRecorder.isTypeSupported(
+                    formato
+                )
+            ) {
+
+                mimeType =
+                    formato;
+
+                break;
+            }
+        }
+
+        mediaRecorder =
+            new MediaRecorder(
+                stream,
+                mimeType
+                    ? {
+                        mimeType
+                    }
+                    : undefined
+            );
+
+        audioChunks =
+            [];
+
+        mediaRecorder.ondataavailable =
+            event => {
+
+                if (
+                    event.data &&
+                    event.data.size > 0
+                ) {
+
+                    audioChunks.push(
+                        event.data
+                    );
+                }
+            };
+
+        mediaRecorder.onstop =
+            async () => {
+
+                try {
+
+                    const tipo =
+                        mediaRecorder.mimeType ||
+                        'audio/webm';
+
+                    const extension =
+                        tipo.includes(
+                            'ogg'
+                        )
+                            ? 'ogg'
+                            : 'webm';
+
+                    const blob =
+                        new Blob(
+                            audioChunks,
+                            {
+                                type:
+                                    tipo
+                            }
+                        );
+
+                    const archivo =
+                        new File(
+                            [
+                                blob
+                            ],
+                            `audio-${Date.now()}.${extension}`,
+                            {
+                                type:
+                                    tipo
+                            }
+                        );
+
+                    archivosSeleccionados.push(
+                        archivo
+                    );
+
+                    await enviarMensaje();
+
+                } catch (error) {
+
+                    Logger.error(
+                        'Error procesando grabación:',
+                        error
+                    );
+
+                    showToast(
+                        'No se pudo enviar el audio',
+                        'error'
+                    );
+
+                } finally {
+
+                    stream
+                        .getTracks()
+                        .forEach(
+                            track =>
+                                track.stop()
+                        );
+
+                    audioChunks =
+                        [];
+
+                    mediaRecorder =
+                        null;
+
+                    grabandoAudio =
+                        false;
+
+                    actualizarEstadoGrabacion();
+                }
+            };
+
+        mediaRecorder.start();
+
+        grabandoAudio =
+            true;
+
+        actualizarEstadoGrabacion();
+
+    } catch (error) {
+
+        Logger.error(
+            'Error iniciando grabación:',
+            error
+        );
+
+        showToast(
+            'No se pudo acceder al micrófono',
+            'error'
+        );
+    }
+}
+
+/* ================================================================
+   DETENER GRABACIÓN
+================================================================ */
+
+function detenerGrabacionAudio() {
+
+    if (
+        !mediaRecorder ||
+        mediaRecorder.state ===
+            'inactive'
+    ) {
+        return;
+    }
+
+    mediaRecorder.stop();
+}
+
+/* ================================================================
+   ESTADO GRABACIÓN
+================================================================ */
+
+function actualizarEstadoGrabacion() {
+
+    const boton =
+        obtenerElemento(
+            'btnGrabarAudio',
+            'recordButton',
+            'btnAudio'
+        );
+
+    if (!boton) {
+        return;
+    }
+
+    if (grabandoAudio) {
+
+        boton.classList.add(
+            'grabando'
+        );
+
+        boton.setAttribute(
+            'aria-label',
+            'Detener grabación'
+        );
+
+        boton.textContent =
+            '⏹️';
+
+    } else {
+
+        boton.classList.remove(
+            'grabando'
+        );
+
+        boton.setAttribute(
+            'aria-label',
+            'Grabar audio'
+        );
+
+        boton.textContent =
+            '🎤';
+    }
+}
+
+/* ================================================================
+   TOGGLE GRABACIÓN
+================================================================ */
+
+async function toggleGrabacionAudio() {
+
+    if (grabandoAudio) {
+
+        detenerGrabacionAudio();
+
+    } else {
+
+        await iniciarGrabacionAudio();
+    }
+}
+
+/* ================================================================
+   ELIMINAR MENSAJE
+================================================================ */
+
+async function eliminarMensaje(
+    mensajeId
+) {
+
+    if (!mensajeId) {
+        return;
+    }
+
+    if (
+        !confirm(
+            '¿Seguro que deseas eliminar este mensaje?'
+        )
+    ) {
+        return;
+    }
+
+    try {
+
+        await llamadaAPI(
+            `/api/mensajes/mensajes/${encodeURIComponent(mensajeId)}`,
+            {
+                method:
+                    'DELETE'
+            }
+        );
+
+        showToast(
+            'Mensaje eliminado',
+            'success'
+        );
+
+        if (
+            conversacionActual
+        ) {
+
+            mensajesCache.delete(
+                conversacionActual
+            );
+
+            await cargarMensajes(
+                conversacionActual
+            );
+        }
+
+    } catch (error) {
+
+        Logger.error(
+            'Error eliminando mensaje:',
+            error
+        );
+
+        showToast(
+            'No se pudo eliminar el mensaje',
+            'error'
+        );
+    }
+}
+
+/* ================================================================
+   EDITAR MENSAJE
+================================================================ */
+
+async function editarMensaje(
+    mensajeId
+) {
+
+    if (!mensajeId) {
+        return;
+    }
+
+    const elemento =
+        document.querySelector(
+            `[data-message-id="${CSS.escape(String(mensajeId))}"]`
+        );
+
+    if (!elemento) {
+        return;
+    }
+
+    const actual =
+        elemento.querySelector(
+            '.message-text'
+        )?.textContent?.trim();
+
+    const nuevo =
+        prompt(
+            'Editar mensaje:',
+            actual || ''
+        );
+
+    if (
+        nuevo === null
+    ) {
+        return;
+    }
+
+    const contenido =
+        nuevo.trim();
+
+    if (!contenido) {
+
+        showToast(
+            'El mensaje no puede quedar vacío',
+            'warning'
+        );
+
+        return;
+    }
+
+    try {
+
+        await llamadaAPI(
+            `/api/mensajes/mensajes/${encodeURIComponent(mensajeId)}`,
+            {
+                method:
+                    'PUT',
+
+                body:
+                    JSON.stringify({
+                        contenido
+                    })
+            }
+        );
+
+        showToast(
+            'Mensaje editado',
+            'success'
+        );
+
+        if (
+            conversacionActual
+        ) {
+
+            mensajesCache.delete(
+                conversacionActual
+            );
+
+            await cargarMensajes(
+                conversacionActual
+            );
+        }
+
+    } catch (error) {
+
+        Logger.error(
+            'Error editando mensaje:',
+            error
+        );
+
+        showToast(
+            'No se pudo editar el mensaje',
+            'error'
+        );
+    }
+}
+
+/* ================================================================
+   ELIMINAR CONVERSACIÓN
+================================================================ */
+
+async function eliminarConversacion() {
+
+    if (!conversacionActual) {
+
+        showToast(
+            'No hay una conversación seleccionada',
+            'warning'
+        );
+
+        return;
+    }
+
+    if (
+        !confirm(
+            '¿Seguro que deseas eliminar esta conversación?'
+        )
+    ) {
+        return;
+    }
+
+    try {
+
+        /*
+         * El servidor debe encargarse de las
+         * operaciones de autorización y eliminación.
+         */
+        await llamadaAPI(
+            `/api/mensajes/conversaciones/${encodeURIComponent(conversacionActual)}`,
+            {
+                method:
+                    'DELETE'
+            }
+        );
+
+        mensajesCache.delete(
+            conversacionActual
+        );
+
+        conversacionActual =
+            null;
+
+        limpiarRealtime();
+
+        const chat =
+            obtenerElemento(
+                'chatMessages',
+                'mensajesChat',
+                'messagesContainer'
+            );
+
+        if (chat) {
+
+            chat.innerHTML = `
+                <div class="sin-conversacion">
+                    <p>Selecciona una conversación.</p>
+                </div>
+            `;
+        }
+
+        await cargarConversaciones();
+
+        showToast(
+            'Conversación eliminada',
+            'success'
+        );
+
+    } catch (error) {
+
+        Logger.error(
+            'Error eliminando conversación:',
+            error
+        );
+
+        showToast(
+            'No se pudo eliminar la conversación',
+            'error'
+        );
+    }
+}
+
+/* ================================================================
+   MARCAR MENSAJES LEÍDOS
+================================================================ */
+
+async function marcarMensajesLeidos(
+    contactoId
+) {
+
+    if (!contactoId) {
+        return;
+    }
+
+    try {
+
+        await llamadaAPI(
+            '/api/mensajes/mensajes/leer',
+            {
+                method:
+                    'PATCH',
+
+                body:
+                    JSON.stringify({
+                        contacto_id:
+                            contactoId
+                    })
+            }
+        );
+
+        mensajesCache.delete(
+            contactoId
+        );
+
+    } catch (error) {
+
+        Logger.warn(
+            'No se pudieron marcar mensajes como leídos:',
+            error
+        );
+    }
+}
+
+/* ================================================================
+   REPORTAR MENSAJE
+================================================================ */
+
+async function reportarMensaje(
+    mensajeId
+) {
+
+    if (!mensajeId) {
+        return;
+    }
+
+    const motivo =
+        prompt(
+            'Indica el motivo del reporte:'
+        );
+
+    if (
+        !motivo ||
+        !motivo.trim()
+    ) {
+        return;
+    }
+
+    try {
+
+        await llamadaAPI(
+            `/api/mensajes/reportar/${encodeURIComponent(mensajeId)}`,
+            {
+                method:
+                    'POST',
+
+                body:
+                    JSON.stringify({
+                        motivo:
+                            motivo.trim()
+                    })
+            }
+        );
+
+        showToast(
+            'Mensaje reportado correctamente',
+            'success'
+        );
+
+    } catch (error) {
+
+        Logger.error(
+            'Error reportando mensaje:',
+            error
+        );
+
+        showToast(
+            'No se pudo reportar el mensaje',
+            'error'
+        );
+    }
+}
+
+/* ================================================================
+   BLOQUEAR USUARIO
+================================================================ */
+
+async function bloquearUsuario(
+    usuarioId
+) {
+
+    if (!usuarioId) {
+        return;
+    }
+
+    if (
+        !confirm(
+            '¿Seguro que deseas bloquear a este usuario?'
+        )
+    ) {
+        return;
+    }
+
+    try {
+
+        await llamadaAPI(
+            `/api/mensajes/bloquear/${encodeURIComponent(usuarioId)}`,
+            {
+                method:
+                    'POST'
+            }
+        );
+
+        showToast(
+            'Usuario bloqueado',
+            'success'
+        );
+
+        if (
+            conversacionActual ===
+            usuarioId
+        ) {
+
+            conversacionActual =
+                null;
+
+            limpiarRealtime();
+        }
+
+        await cargarConversaciones();
+
+    } catch (error) {
+
+        Logger.error(
+            'Error bloqueando usuario:',
+            error
+        );
+
+        showToast(
+            'No se pudo bloquear al usuario',
+            'error'
+        );
+    }
+}
+
+/* ================================================================
+   BUSCAR EN CONVERSACIÓN
+================================================================ */
+
+async function buscarEnConversacion(
+    query
+) {
+
+    if (!conversacionActual) {
+
+        showToast(
+            'Selecciona una conversación',
+            'warning'
+        );
+
+        return;
+    }
+
+    query =
+        typeof query === 'string'
+            ? query.trim()
+            : '';
+
+    if (!query) {
+
+        await cargarMensajes(
+            conversacionActual
+        );
+
+        return;
+    }
+
+    try {
+
+        const resultado =
+            await llamadaAPI(
+                `/api/mensajes/mensajes/${encodeURIComponent(conversacionActual)}?search=${encodeURIComponent(query)}`,
+                {
+                    method:
+                        'GET'
+                }
+            );
+
+        const mensajes =
+            Array.isArray(
+                resultado?.data
+            )
+                ? resultado.data
+                : [];
+
+        const contenedor =
+            obtenerElemento(
+                'chatMessages',
+                'mensajesChat',
+                'messagesContainer'
+            );
+
+        if (!contenedor) {
+            return;
+        }
+
+        if (
+            mensajes.length === 0
+        ) {
+
+            contenedor.innerHTML = `
+                <div class="sin-resultados">
+                    <strong>No se encontraron resultados</strong>
+                    <p>
+                        No hay mensajes que coincidan con
+                        "${escapeHTML(query)}"
+                    </p>
+
+                    <button
+                        type="button"
+                        onclick="cargarMensajes('${escaparAtributo(conversacionActual)}')"
+                    >
+                        Volver
+                    </button>
+                </div>
+            `;
+
+            return;
+        }
+
+        renderizarMensajes(
+            mensajes,
+            contenedor
+        );
+
+    } catch (error) {
+
+        Logger.error(
+            'Error buscando mensajes:',
+            error
+        );
+
+        /*
+         * Fallback local si el backend no
+         * soporta búsqueda.
+         */
+        try {
+
+            const cache =
+                mensajesCache.get(
+                    conversacionActual
+                );
+
+            if (
+                cache?.data
+            ) {
+
+                const encontrados =
+                    cache.data.filter(
+                        mensaje =>
+                            String(
+                                mensaje.contenido ||
+                                mensaje.texto ||
+                                ''
+                            )
+                                .toLowerCase()
+                                .includes(
+                                    query.toLowerCase()
+                                )
+                    );
+
+                const contenedor =
+                    obtenerElemento(
+                        'chatMessages',
+                        'mensajesChat',
+                        'messagesContainer'
+                    );
+
+                renderizarMensajes(
+                    encontrados,
+                    contenedor
+                );
+            }
+
+        } catch (fallbackError) {
+
+            Logger.error(
+                'Error en búsqueda local:',
+                fallbackError
+            );
+        }
+    }
+}
+
+/* ================================================================
+   MODAL NUEVA CONVERSACIÓN
+================================================================ */
+
+function nuevaConversacion() {
+
+    const modal =
+        obtenerElemento(
+            'modalNuevoContacto'
+        );
+
+    if (!modal) {
+        return;
+    }
+
+    const input =
+        obtenerElemento(
+            'searchInputModal'
+        );
+
+    const resultados =
+        obtenerElemento(
+            'resultadosBusqueda'
+        );
+
+    if (resultados) {
+        resultados.innerHTML =
+            '';
+    }
+
+    modal.classList.add(
+        'show'
+    );
+
+    if (input) {
+
+        input.value =
+            '';
+
+        setTimeout(
+            () => input.focus(),
+            200
+        );
+    }
+}
+
+/* ================================================================
+   CERRAR MODAL
+================================================================ */
+
+function cerrarModalNuevoContacto() {
+
+    const modal =
+        obtenerElemento(
+            'modalNuevoContacto'
+        );
+
+    if (modal) {
+
+        modal.classList.remove(
+            'show'
+        );
+    }
+}
+
+/* ================================================================
+   CONTADOR CARACTERES
+================================================================ */
+
+function actualizarContadorCaracteres() {
+
+    const input =
+        obtenerElemento(
+            'messageInput',
+            'mensajeInput',
+            'chatInput'
+        );
+
+    const contador =
+        obtenerElemento(
+            'charCounter',
+            'contadorCaracteres'
+        );
+
+    if (
+        !input ||
+        !contador
+    ) {
+        return;
+    }
+
+    const longitud =
+        input.value.length;
+
+    contador.textContent =
+        `${longitud}/2000`;
+}
+
+/* ================================================================
+   LIMPIAR AL SALIR
+================================================================ */
+
+function limpiarMensajeria() {
+
+    limpiarRealtime();
+
+    if (
+        mediaRecorder &&
+        mediaRecorder.state !==
+            'inactive'
+    ) {
+
+        try {
+            mediaRecorder.stop();
+        } catch {}
+    }
+
+    mediaRecorder =
+        null;
+
+    grabandoAudio =
+        false;
+
+    archivosSeleccionados =
+        [];
+
+    mensajesCache.clear();
+
+    conversacionActual =
+        null;
+}
+
+/* ================================================================
+   EVENTOS DOM
+================================================================ */
+
+document.addEventListener(
+    'DOMContentLoaded',
+    async () => {
+
+        Logger.info(
+            'Inicializando módulo de mensajes...'
+        );
+
+        try {
+
+            usuarioActual =
+                await SessionManager.obtenerUsuario();
+
+            if (!usuarioActual) {
+
+                Logger.warn(
+                    'No existe sesión activa'
+                );
+
                 return;
             }
 
-            var html = '';
-            for (var i = 0; i < data.length; i++) {
-                html += crearMensajeHTML(data[i]);
-            }
-            container.innerHTML = html;
-            container.scrollTop = container.scrollHeight;
-            showToast('🔍 Encontrados ' + data.length + ' mensajes', 'success');
-        })
-        .catch(function(error) {
-            hideLoading();
-            Logger.error('Error buscando', error);
-            showToast('❌ Error al buscar', 'error');
-        });
-}
+            await cargarConversaciones();
 
-// ================================================================
-// ================================================================
-// ✎ NUEVA CONVERSACIÓN (ABRIR MODAL)
-// ================================================================
-// ================================================================
+        } catch (error) {
 
-function nuevaConversacion() {
-    document.getElementById('modalNuevoContacto').classList.add('show');
-    document.getElementById('searchInputModal').value = '';
-    document.getElementById('resultadosBusqueda').innerHTML = '<div style="padding:20px;text-align:center;color:#667788;font-size:0.75rem;">Escribe al menos 2 caracteres para buscar</div>';
-    setTimeout(function() {
-        document.getElementById('searchInputModal').focus();
-    }, 200);
-}
-
-function cerrarModalNuevoContacto() {
-    document.getElementById('modalNuevoContacto').classList.remove('show');
-}
-
-// ================================================================
-// ================================================================
-// 🧹 LIMPIEZA DE RECURSOS
-// ================================================================
-// ================================================================
-
-function limpiarRecursosMensajes() {
-    if (currentChannel) {
-        try { supabase.removeChannel(currentChannel); } catch (e) {}
-        currentChannel = null;
-    }
-    if (mediaRecorder && mediaRecorder.state === 'recording') {
-        try { mediaRecorder.stop(); } catch (e) {}
-    }
-    if (audioChunks.length > 0) {
-        audioChunks = [];
-    }
-    archivosSeleccionados = [];
-    grabacionActiva = false;
-    hideLoading();
-}
-
-window.addEventListener('beforeunload', limpiarRecursosMensajes);
-
-// ================================================================
-// ================================================================
-// 🔄 INICIALIZACIÓN
-// ================================================================
-// ================================================================
-
-document.addEventListener('DOMContentLoaded', function() {
-    Logger.info('Sistema de mensajes inicializado');
-
-    // CONTADOR DE CARACTERES
-    var input = document.getElementById('chatInput');
-    if (input) {
-        var counter = document.createElement('div');
-        counter.id = 'charCounter';
-        counter.style.cssText = 'font-size:0.6rem;color:#8899aa;text-align:right;padding:4px;';
-        counter.textContent = '0/10000';
-        input.parentNode.appendChild(counter);
-
-        input.addEventListener('input', function() {
-            var max = 10000;
-            var len = this.value.length;
-            counter.textContent = len + '/' + max;
-            counter.style.color = len > max * 0.9 ? '#ef4444' : '#8899aa';
-
-            if (len > max) {
-                this.value = this.value.substring(0, max);
-                showToast('⚠️ Límite de 10,000 caracteres', 'warning');
-            }
-        });
-    }
-
-    cargarConversaciones();
-
-    var chatInput = document.getElementById('chatInput');
-    if (chatInput) {
-        chatInput.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') {
-                enviarMensaje();
-            }
-        });
-    }
-
-    var btnEnviar = document.getElementById('btnEnviar');
-    if (btnEnviar) {
-        btnEnviar.addEventListener('click', enviarMensaje);
-    }
-
-    var searchInput = document.getElementById('searchInput');
-    if (searchInput) {
-        searchInput.addEventListener('input', function(e) {
-            buscarContactos(e.target.value);
-        });
-    }
-
-    var searchInputModal = document.getElementById('searchInputModal');
-    if (searchInputModal) {
-        searchInputModal.addEventListener('input', function(e) {
-            buscarContactos(e.target.value);
-        });
-    }
-
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-            cerrarModalNuevoContacto();
+            Logger.error(
+                'Error inicializando mensajería:',
+                error
+            );
         }
-    });
-});
 
-// ================================================================
-// ================================================================
-// 🎯 EXPOSICIÓN GLOBAL
-// ================================================================
-// ================================================================
+        /*
+         * Contador
+         */
+        const input =
+            obtenerElemento(
+                'messageInput',
+                'mensajeInput',
+                'chatInput'
+            );
 
-window.cargarConversaciones = cargarConversaciones;
-window.abrirConversacion = abrirConversacion;
-window.enviarMensaje = enviarMensaje;
-window.eliminarMensaje = eliminarMensaje;
-window.editarMensaje = editarMensaje;
-window.eliminarConversacion = eliminarConversacion;
-window.bloquearUsuario = bloquearUsuario;
-window.reportarMensaje = reportarMensaje;
-window.buscarEnConversacion = buscarEnConversacion;
-window.nuevaConversacion = nuevaConversacion;
-window.cerrarModalNuevoContacto = cerrarModalNuevoContacto;
-window.agregarContacto = agregarContacto;
-window.buscarContactos = buscarContactos;
-window.seleccionarArchivo = seleccionarArchivo;
-window.handleFileSelect = handleFileSelect;
-window.toggleGrabacionVoz = toggleGrabacionVoz;
-window.showToast = showToast;
-window.limpiarRecursosMensajes = limpiarRecursosMensajes;
+        if (input) {
+
+            input.addEventListener(
+                'input',
+                actualizarContadorCaracteres
+            );
+
+            input.addEventListener(
+                'keydown',
+                event => {
+
+                    /*
+                     * Enter envía.
+                     * Shift + Enter permite
+                     * salto de línea.
+                     */
+                    if (
+                        event.key ===
+                            'Enter' &&
+                        !event.shiftKey
+                    ) {
+
+                        event.preventDefault();
+
+                        enviarMensaje();
+                    }
+                }
+            );
+        }
+
+        /*
+         * Botón enviar
+         */
+        const botonEnviar =
+            obtenerElemento(
+                'sendMessageButton',
+                'btnEnviarMensaje',
+                'sendButton'
+            );
+
+        if (botonEnviar) {
+
+            botonEnviar.addEventListener(
+                'click',
+                enviarMensaje
+            );
+        }
+
+        /*
+         * Botón audio
+         */
+        const botonAudio =
+            obtenerElemento(
+                'btnGrabarAudio',
+                'recordButton',
+                'btnAudio'
+            );
+
+        if (botonAudio) {
+
+            botonAudio.addEventListener(
+                'click',
+                toggleGrabacionAudio
+            );
+        }
+
+        /*
+         * Input archivos
+         */
+        const fileInput =
+            obtenerElemento(
+                'fileInput',
+                'archivoInput',
+                'inputArchivo'
+            );
+
+        if (fileInput) {
+
+            fileInput.addEventListener(
+                'change',
+                handleFileSelect
+            );
+        }
+
+        /*
+         * Buscar contactos
+         */
+        const searchInput =
+            obtenerElemento(
+                'searchInputModal'
+            );
+
+        if (searchInput) {
+
+            searchInput.addEventListener(
+                'input',
+                event =>
+                    buscarContactos(
+                        event.target.value
+                    )
+            );
+
+            searchInput.addEventListener(
+                'keydown',
+                event => {
+
+                    if (
+                        event.key ===
+                        'Escape'
+                    ) {
+
+                        cerrarModalNuevoContacto();
+                    }
+                }
+            );
+        }
+
+        /*
+         * Buscar dentro de conversación.
+         */
+        const searchConversation =
+            obtenerElemento(
+                'searchConversationInput',
+                'buscarConversacionInput'
+            );
+
+        if (searchConversation) {
+
+            searchConversation.addEventListener(
+                'keydown',
+                event => {
+
+                    if (
+                        event.key ===
+                        'Enter'
+                    ) {
+
+                        event.preventDefault();
+
+                        buscarEnConversacion(
+                            event.target.value
+                        );
+                    }
+                }
+            );
+        }
+
+        /*
+         * Escape para cerrar modal.
+         */
+        document.addEventListener(
+            'keydown',
+            event => {
+
+                if (
+                    event.key ===
+                    'Escape'
+                ) {
+
+                    cerrarModalNuevoContacto();
+                }
+            }
+        );
+
+        /*
+         * Cerrar modal al pulsar fuera.
+         */
+        const modal =
+            obtenerElemento(
+                'modalNuevoContacto'
+            );
+
+        if (modal) {
+
+            modal.addEventListener(
+                'click',
+                event => {
+
+                    if (
+                        event.target ===
+                        modal
+                    ) {
+
+                        cerrarModalNuevoContacto();
+                    }
+                }
+            );
+        }
+
+        /*
+         * Cambio de sesión.
+         */
+        try {
+
+            const client =
+                await obtenerSupabase();
+
+            client.auth.onAuthStateChange(
+                (
+                    event,
+                    session
+                ) => {
+
+                    SessionManager._session =
+                        session || null;
+
+                    SessionManager._usuario =
+                        session?.user || null;
+
+                    usuarioActual =
+                        session?.user || null;
+
+                    if (
+                        event ===
+                        'SIGNED_OUT'
+                    ) {
+
+                        limpiarMensajeria();
+
+                        window.location.href =
+                            '/login';
+                    }
+                }
+            );
+
+        } catch (error) {
+
+            Logger.warn(
+                'No se pudo registrar listener de Auth:',
+                error
+            );
+        }
+
+        actualizarContadorCaracteres();
+
+        Logger.info(
+            'Módulo de mensajes inicializado correctamente'
+        );
+    }
+);
+
+/* ================================================================
+   LIMPIEZA DE PÁGINA
+================================================================ */
+
+window.addEventListener(
+    'beforeunload',
+    () => {
+
+        limpiarMensajeria();
+    }
+);
+
+/* ================================================================
+   EXPONER FUNCIONES GLOBALES
+   Compatibilidad con mensajes.html
+================================================================ */
+
+window.cargarConversaciones =
+    cargarConversaciones;
+
+window.buscarContactos =
+    buscarContactos;
+
+window.agregarContacto =
+    agregarContacto;
+
+window.abrirConversacion =
+    abrirConversacion;
+
+window.cargarMensajes =
+    cargarMensajes;
+
+window.enviarMensaje =
+    enviarMensaje;
+
+window.subirArchivo =
+    subirArchivo;
+
+window.handleFileSelect =
+    handleFileSelect;
+
+window.removerArchivo =
+    removerArchivo;
+
+window.iniciarGrabacionAudio =
+    iniciarGrabacionAudio;
+
+window.detenerGrabacionAudio =
+    detenerGrabacionAudio;
+
+window.toggleGrabacionAudio =
+    toggleGrabacionAudio;
+
+window.eliminarMensaje =
+    eliminarMensaje;
+
+window.editarMensaje =
+    editarMensaje;
+
+window.eliminarConversacion =
+    eliminarConversacion;
+
+window.marcarMensajesLeidos =
+    marcarMensajesLeidos;
+
+window.reportarMensaje =
+    reportarMensaje;
+
+window.bloquearUsuario =
+    bloquearUsuario;
+
+window.buscarEnConversacion =
+    buscarEnConversacion;
+
+window.nuevaConversacion =
+    nuevaConversacion;
+
+window.cerrarModalNuevoContacto =
+    cerrarModalNuevoContacto;
+
+window.abrirImagen =
+    abrirImagen;
+
+window.showToast =
+    showToast;
+
+window.formatearTexto =
+    formatearTexto;
+
+/* ================================================================
+   FIN MENSAJES.JS
+================================================================ */
