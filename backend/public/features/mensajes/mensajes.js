@@ -4,12 +4,55 @@
 // ================================================================
 
 // ================================================================
-// CONFIGURACIÓN SUPABASE - REUTILIZAR CLIENTE GLOBAL
+// CONFIGURACIÓN SUPABASE - CON VERIFICACIÓN Y REINTENTO
 // ================================================================
-let supabase = window.supabase;
 
-if (typeof supabase === 'undefined') {
-    console.error('❌ Supabase no está disponible');
+var supabase = null;
+var SUPABASE_READY = false;
+
+function obtenerSupabase() {
+    if (typeof window.supabase !== 'undefined' && window.supabase !== null) {
+        supabase = window.supabase;
+        SUPABASE_READY = true;
+        return true;
+    }
+    return false;
+}
+
+// Intentar obtener Supabase inmediatamente
+if (!obtenerSupabase()) {
+    console.warn('⏳ Supabase no disponible en el momento, esperando...');
+
+    var intentos = 0;
+    var maxIntentos = 10;
+
+    var intervalo = setInterval(function() {
+        intentos++;
+        if (obtenerSupabase()) {
+            clearInterval(intervalo);
+            console.log('✅ Supabase conectado correctamente (intento ' + intentos + ')');
+            return;
+        }
+
+        if (intentos >= maxIntentos) {
+            clearInterval(intervalo);
+            console.error('❌ Supabase no disponible después de ' + maxIntentos + ' intentos');
+            showToast('⚠️ Error de conexión con el servidor', 'error');
+            var container = document.getElementById('conversacionesList');
+            if (container) {
+                container.innerHTML = `
+                    <div style="padding:40px;text-align:center;color:#ef4444;font-size:0.9rem;">
+                        <div style="font-size:2rem;margin-bottom:10px;">⚠️</div>
+                        <p>Error de conexión con Supabase</p>
+                        <p style="font-size:0.7rem;margin-top:8px;color:#667788;">Recarga la página o contacta a soporte</p>
+                        <button onclick="location.reload()" style="margin-top:12px;padding:8px 20px;background:#d4af37;border:none;border-radius:30px;color:#0b0e14;font-weight:600;cursor:pointer;">
+                            🔄 Recargar
+                        </button>
+                    </div>
+                `;
+            }
+        }
+    }, 200);
 }
 
 // ================================================================
@@ -18,7 +61,7 @@ if (typeof supabase === 'undefined') {
 // ================================================================
 // ================================================================
 
-const Logger = {
+var Logger = {
     levels: {
         DEBUG: 0,
         INFO: 1,
@@ -26,30 +69,30 @@ const Logger = {
         ERROR: 3,
         FATAL: 4
     },
-    
+
     _level: 1,
-    
+
     setLevel: function(level) {
         this._level = this.levels[level] || 1;
     },
-    
+
     _log: function(level, message, data) {
         data = data || null;
-        const levelName = Object.keys(this.levels).find(
-            function(k) { return this.levels[k] === level; }.bind(this)
-        );
-        
+        var levelName = Object.keys(this.levels).find(function(k) {
+            return this.levels[k] === level;
+        }.bind(this));
+
         if (level < this._level) return;
-        
-        const entry = {
+
+        var entry = {
             timestamp: new Date().toISOString(),
             level: levelName,
             message: message,
             data: data,
             module: 'mensajes'
         };
-        
-        const prefix = '[' + entry.timestamp + '] [' + levelName + ']';
+
+        var prefix = '[' + entry.timestamp + '] [' + levelName + ']';
         if (level >= this.levels.ERROR) {
             console.error(prefix, message, data || '');
         } else if (level >= this.levels.WARN) {
@@ -58,7 +101,7 @@ const Logger = {
             console.log(prefix, message, data || '');
         }
     },
-    
+
     debug: function(message, data) { this._log(this.levels.DEBUG, message, data); },
     info: function(message, data) { this._log(this.levels.INFO, message, data); },
     warn: function(message, data) { this._log(this.levels.WARN, message, data); },
@@ -87,7 +130,7 @@ function escapeHTML(texto) {
 
 function sanitizarContenido(texto) {
     if (!texto) return '';
-    
+
     var div = document.createElement('div');
     div.textContent = texto;
     var sanitizado = div.innerHTML;
@@ -120,9 +163,9 @@ function sanitizarContenido(texto) {
     sanitizado = sanitizado.replace(/on\w+\s*=/gi, 'data-');
 
     sanitizado = sanitizado.replace(/&/g, '&amp;')
-                           .replace(/</g, '&lt;')
-                           .replace(/>/g, '&gt;')
-                           .replace(/"/g, '&quot;');
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
 
     return sanitizado;
 }
@@ -174,17 +217,14 @@ function SessionManager() {
 SessionManager.prototype = {
     constructor: SessionManager,
 
-    /** Obtiene el usuario actual de forma segura */
     get usuario() {
         return this._usuario;
     },
 
-    /** Obtiene la sesión actual de forma segura */
     get session() {
         return this._session;
     },
 
-    /** Verifica si el usuario está autenticado */
     get isAuthenticated() {
         return this._usuario !== null && this._session !== null;
     },
@@ -199,7 +239,7 @@ SessionManager.prototype = {
         if (this._usuario && this._session) {
             var expiryTime = new Date(this._session.expires_at);
             var timeUntilExpiry = expiryTime - Date.now();
-            
+
             if (timeUntilExpiry < 300000) {
                 return this._refreshSession();
             }
@@ -218,7 +258,7 @@ SessionManager.prototype = {
 
     _refreshSession: function() {
         if (this._refreshLock) return Promise.resolve(this._usuario);
-        
+
         this._refreshLock = true;
         return supabase.auth.getSession()
             .then(function(result) {
@@ -268,20 +308,13 @@ var sessionManager = new SessionManager();
 // ================================================================
 // ================================================================
 
-/**
- * Realiza una llamada a la API con manejo de errores, CORS y timeout
- * @param {string} endpoint - URL del endpoint
- * @param {object} options - Opciones de fetch
- * @param {number} timeout - Timeout en milisegundos (default 30000)
- * @returns {Promise<object|null>} Respuesta de la API o null si hay error
- */
 function llamadaAPI(endpoint, options, timeout) {
     options = options || {};
     timeout = timeout || 30000;
-    
+
     var controller = new AbortController();
     var timeoutId = setTimeout(function() { controller.abort(); }, timeout);
-    
+
     return sessionManager.getSession()
         .then(function(session) {
             if (!session) throw new Error('No autenticado');
@@ -347,7 +380,7 @@ var rateLimiter = {
     canSend: function() {
         var now = Date.now();
         var diff = now - this._lastSend;
-        
+
         if (this._pendingMessages >= this._MAX_PENDING) {
             showToast('⏳ Demasiados mensajes pendientes, espera un momento', 'warning');
             return false;
@@ -387,14 +420,9 @@ var EXTENSIONES_PERMITIDAS = [
     'mp3', 'webm', 'ogg', 'wav'
 ];
 
-/**
- * Valida un archivo para subida
- * @param {File} file - Archivo a validar
- * @returns {boolean} true si es válido
- */
 function validarArchivo(file) {
     if (file.size > MAX_FILE_SIZE) {
-        showToast('❌ Archivo demasiado grande (máx ' + (MAX_FILE_SIZE/1024/1024) + 'MB)', 'error');
+        showToast('❌ Archivo demasiado grande (máx ' + (MAX_FILE_SIZE / 1024 / 1024) + 'MB)', 'error');
         return false;
     }
 
@@ -410,7 +438,7 @@ function validarArchivo(file) {
     }
 
     if (file.size > 5 * 1024 * 1024) {
-        if (!confirm('⚠️ El archivo ' + file.name + ' pesa ' + (file.size/1024/1024).toFixed(1) + 'MB. ¿Continuar?')) {
+        if (!confirm('⚠️ El archivo ' + file.name + ' pesa ' + (file.size / 1024 / 1024).toFixed(1) + 'MB. ¿Continuar?')) {
             return false;
         }
     }
@@ -429,24 +457,20 @@ var reconnectAttempts = 0;
 var MAX_RECONNECT_ATTEMPTS = 5;
 var RECONNECT_DELAY = 2000;
 
-/**
- * Crea un canal de Realtime con reconexión automática
- * @param {string} contactoId - ID del contacto
- * @param {Function} onMessage - Callback para mensajes nuevos
- * @param {Function} onUpdate - Callback para actualizaciones
- * @returns {object} Canal de Supabase
- */
 function crearCanalRealtime(contactoId, onMessage, onUpdate) {
     var channel = supabase
         .channel('chat-' + contactoId)
-        .on('postgres_changes', 
-            { event: 'INSERT', schema: 'public', table: 'mensajes_chat', filter: 'remitente_id=eq.' + contactoId },
-            onMessage
-        )
-        .on('postgres_changes',
-            { event: 'UPDATE', schema: 'public', table: 'mensajes_chat' },
-            onUpdate
-        );
+        .on('postgres_changes', {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'mensajes_chat',
+            filter: 'remitente_id=eq.' + contactoId
+        }, onMessage)
+        .on('postgres_changes', {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'mensajes_chat'
+        }, onUpdate);
 
     reconnectAttempts = 0;
 
@@ -487,7 +511,7 @@ var CACHE_TTL = 5 * 60 * 1000;
 function getCachedMessages(contactoId) {
     var cached = messageCache.get(contactoId);
     if (!cached) return null;
-    
+
     var now = Date.now();
     if (now - cached.timestamp > CACHE_TTL) {
         messageCache.delete(contactoId);
@@ -518,7 +542,7 @@ function showLoading(message) {
         overlay.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 9999; backdrop-filter: blur(4px);';
         overlay.innerHTML = '<div style="background: #1a1a2e; padding: 30px 40px; border-radius: 12px; border: 1px solid rgba(212,175,55,0.3); text-align: center;"><div style="width: 40px; height: 40px; border: 3px solid rgba(212,175,55,0.1); border-top-color: #d4af37; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px;"></div><div class="loading-message" style="color: #d4af37; font-weight: 500;">' + message + '</div></div>';
         document.body.appendChild(overlay);
-        
+
         if (!document.getElementById('loading-style')) {
             var style = document.createElement('style');
             style.id = 'loading-style';
@@ -526,7 +550,7 @@ function showLoading(message) {
             document.head.appendChild(style);
         }
     }
-    
+
     var msgEl = overlay.querySelector('.loading-message');
     if (msgEl) msgEl.textContent = message;
     overlay.style.display = 'flex';
@@ -606,10 +630,10 @@ function buscarContactos(query) {
                 var yaEsContacto = idsExistentes.indexOf(usuario.id) !== -1;
                 var nombreSanitizado = escapeHTML(usuario.nombre || 'Usuario');
                 var handleSanitizado = escapeHTML(usuario.handle || 'usuario');
-                var avatarHtml = usuario.avatar_url 
-                    ? '<img src="' + usuario.avatar_url + '" style="width:100%;height:100%;object-fit:cover;">' 
-                    : (usuario.nombre ? nombreSanitizado[0].toUpperCase() : '◈');
-                
+                var avatarHtml = usuario.avatar_url ?
+                    '<img src="' + usuario.avatar_url + '" style="width:100%;height:100%;object-fit:cover;">' :
+                    (usuario.nombre ? nombreSanitizado[0].toUpperCase() : '◈');
+
                 html += '<div class="resultado-item" style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid rgba(212,175,55,0.05);transition:all 0.2s;">';
                 html += '<div class="avatar" style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#1a2a1a,#d4af37);display:flex;align-items:center;justify-content:center;color:white;font-size:0.8rem;overflow:hidden;">' + avatarHtml + '</div>';
                 html += '<div style="flex:1;"><div style="font-weight:600;font-size:0.8rem;">' + nombreSanitizado + '</div>';
@@ -708,10 +732,10 @@ function cargarConversaciones() {
             var html = '';
             for (var i = 0; i < conversaciones.length; i++) {
                 var conv = conversaciones[i];
-                var avatar = conv.avatar_url 
-                    ? '<img src="' + conv.avatar_url + '" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" />' 
-                    : (conv.nombre ? conv.nombre[0].toUpperCase() : '✦');
-                
+                var avatar = conv.avatar_url ?
+                    '<img src="' + conv.avatar_url + '" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" />' :
+                    (conv.nombre ? conv.nombre[0].toUpperCase() : '✦');
+
                 var isActive = conv.id === (window._conversacionActualId || null);
                 var nombreSanitizado = escapeHTML(conv.nombre);
                 var ultimoMensajeSanitizado = escapeHTML(conv.ultimoMensaje);
@@ -722,7 +746,7 @@ function cargarConversaciones() {
                 html += '<div class="conv-msg">' + (ultimoMensajeSanitizado.length > 40 ? ultimoMensajeSanitizado.substring(0, 40) + '...' : ultimoMensajeSanitizado) + '</div></div>';
                 html += '<div class="conv-meta">';
                 if (conv.noLeidos > 0) html += '<span class="conv-badge">' + conv.noLeidos + '</span>';
-                if (conv.fecha) html += '<span class="conv-hora">' + new Date(conv.fecha).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) + '</span>';
+                if (conv.fecha) html += '<span class="conv-hora">' + new Date(conv.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + '</span>';
                 html += '</div></div>';
             }
             convList.innerHTML = html;
@@ -815,7 +839,7 @@ function abrirConversacion(contactoId) {
                 })
                 .then(function() {
                     if (currentChannel) {
-                        try { supabase.removeChannel(currentChannel); } catch(e) {}
+                        try { supabase.removeChannel(currentChannel); } catch (e) {}
                         currentChannel = null;
                     }
 
@@ -975,7 +999,7 @@ function agregarMensajeRealtime(msg) {
     var empty = container.querySelector('.empty-chat');
     if (empty) empty.remove();
 
-    if (msg.remitente_id !== (conversacionActual ? conversacionActual.id : null) && 
+    if (msg.remitente_id !== (conversacionActual ? conversacionActual.id : null) &&
         msg.destinatario_id !== (conversacionActual ? conversacionActual.id : null)) return;
 
     container.innerHTML += crearMensajeHTML(msg);
@@ -1171,7 +1195,7 @@ var audioChunks = [];
 
 function toggleGrabacionVoz() {
     var btn = document.getElementById('btnGrabarVoz');
-    
+
     if (!grabacionActiva) {
         iniciarGrabacionVoz(btn);
     } else {
@@ -1192,14 +1216,14 @@ function iniciarGrabacionVoz(btn) {
             mediaRecorder.onstop = function() {
                 var audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
                 var file = new File([audioBlob], 'voz_' + Date.now() + '.webm', { type: 'audio/webm' });
-                
+
                 sessionManager.getSession().then(function(session) {
                     if (session && conversacionActual) {
                         archivosSeleccionados = [file];
                         enviarMensaje();
                     }
                 });
-                
+
                 stream.getTracks().forEach(function(track) { track.stop(); });
             };
 
@@ -1233,7 +1257,7 @@ function detenerGrabacionVoz(btn) {
 
 function eliminarMensaje(mensajeId) {
     if (!confirm('¿Eliminar este mensaje?')) return;
-    
+
     sessionManager.getSession()
         .then(function(session) {
             if (!session) throw new Error('No autenticado');
@@ -1261,7 +1285,7 @@ function eliminarMensaje(mensajeId) {
                             eliminado_en: new Date().toISOString()
                         })
                         .eq('id', mensajeId)
-                        .eq('remitente_id', session.user.id);
+                        .eq('remitente_id', session.user.id); // ✅ PUNTO Y COMA AGREGADO AQUÍ
                 });
         })
         .then(function(result) {
@@ -1345,7 +1369,7 @@ function eliminarConversacion(contactoId) {
         showToast('⚠️ No hay conversación seleccionada', 'error');
         return;
     }
-    
+
     if (!confirm('¿Eliminar toda la conversación con este contacto?')) return;
 
     sessionManager.getSession()
@@ -1390,7 +1414,8 @@ function eliminarConversacion(contactoId) {
                             }
                             return { error: null };
                         })
-                        .then(function() {
+                        .then(function(resultadoActualizacion) {
+                            // ✅ RETURN AGREGADO AQUÍ para que continúe la cadena
                             return supabase
                                 .from('contactos')
                                 .delete()
@@ -1490,7 +1515,7 @@ function bloquearUsuario(usuarioId) {
         showToast('⚠️ No hay usuario seleccionado', 'error');
         return;
     }
-    
+
     if (!confirm('¿Bloquear a este usuario? No podrán enviarte mensajes.')) return;
 
     sessionManager.getSession()
@@ -1610,11 +1635,11 @@ function cerrarModalNuevoContacto() {
 
 function limpiarRecursosMensajes() {
     if (currentChannel) {
-        try { supabase.removeChannel(currentChannel); } catch(e) {}
+        try { supabase.removeChannel(currentChannel); } catch (e) {}
         currentChannel = null;
     }
     if (mediaRecorder && mediaRecorder.state === 'recording') {
-        try { mediaRecorder.stop(); } catch(e) {}
+        try { mediaRecorder.stop(); } catch (e) {}
     }
     if (audioChunks.length > 0) {
         audioChunks = [];
@@ -1643,13 +1668,13 @@ document.addEventListener('DOMContentLoaded', function() {
         counter.style.cssText = 'font-size:0.6rem;color:#8899aa;text-align:right;padding:4px;';
         counter.textContent = '0/10000';
         input.parentNode.appendChild(counter);
-        
+
         input.addEventListener('input', function() {
             var max = 10000;
             var len = this.value.length;
             counter.textContent = len + '/' + max;
             counter.style.color = len > max * 0.9 ? '#ef4444' : '#8899aa';
-            
+
             if (len > max) {
                 this.value = this.value.substring(0, max);
                 showToast('⚠️ Límite de 10,000 caracteres', 'warning');
