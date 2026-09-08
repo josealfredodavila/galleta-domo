@@ -258,30 +258,6 @@
             color: var(--space);
         }
         .btn-sm { padding: 4px 12px; font-size: 0.6rem; }
-        .btn-danger {
-            background: rgba(255, 51, 102, 0.1);
-            color: var(--danger);
-            border: 1px solid rgba(255, 51, 102, 0.2);
-        }
-        .btn-danger:hover:not(:disabled) {
-            background: rgba(255, 51, 102, 0.2);
-            border-color: var(--danger);
-            color: var(--danger);
-        }
-        .btn-icon {
-            padding: 4px 8px;
-            font-size: 0.9rem;
-            border: none;
-            background: transparent;
-            color: var(--text-muted);
-            cursor: pointer;
-            transition: var(--transition);
-            border-radius: 8px;
-        }
-        .btn-icon:hover {
-            color: var(--gold);
-            background: rgba(212, 175, 55, 0.05);
-        }
 
         /* Panel conversaciones */
         .conversaciones-panel {
@@ -291,14 +267,6 @@
             overflow-y: auto;
             flex: 1;
             min-width: 220px;
-        }
-        .conversaciones-panel .titulo-seccion {
-            font-size: 0.55rem;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            color: var(--text-muted);
-            padding: 8px 4px 4px;
-            font-weight: 600;
         }
 
         /* Items de conversación */
@@ -372,17 +340,6 @@
             overflow: hidden;
             text-overflow: ellipsis;
         }
-        .unread-count {
-            background: var(--gold);
-            color: var(--space);
-            font-size: 0.6rem;
-            font-weight: 700;
-            padding: 2px 8px;
-            border-radius: 20px;
-            min-width: 20px;
-            text-align: center;
-            flex-shrink: 0;
-        }
         .sin-conversaciones {
             padding: 30px 10px;
             text-align: center;
@@ -422,11 +379,6 @@
             justify-content: center;
             font-size: 0.7rem;
             color: var(--text-muted);
-        }
-        .chat-header .avatar img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
         }
         .chat-header .nombre {
             font-weight: 600;
@@ -476,13 +428,6 @@
         .chat-messages .message .message-text {
             word-break: break-word;
         }
-        .chat-messages .message .message-text a {
-            color: var(--gold);
-            text-decoration: none;
-        }
-        .chat-messages .message .message-text a:hover {
-            text-decoration: underline;
-        }
         .chat-messages .message .message-meta {
             display: flex;
             gap: 8px;
@@ -490,37 +435,6 @@
             margin-top: 4px;
             font-size: 0.55rem;
             color: var(--text-muted);
-        }
-        .chat-messages .message .message-meta .edited {
-            font-style: italic;
-            color: var(--text-muted);
-        }
-        .chat-messages .message .message-actions {
-            position: absolute;
-            top: 4px;
-            right: 4px;
-            display: flex;
-            gap: 2px;
-            opacity: 0;
-            transition: var(--transition);
-        }
-        .chat-messages .message:hover .message-actions {
-            opacity: 1;
-        }
-        .chat-messages .message .message-actions button {
-            background: rgba(0,0,0,0.6);
-            border: none;
-            color: var(--text-secondary);
-            border-radius: 6px;
-            padding: 2px 6px;
-            font-size: 0.6rem;
-            cursor: pointer;
-            transition: var(--transition);
-            line-height: 1.4;
-        }
-        .chat-messages .message .message-actions button:hover {
-            color: var(--gold);
-            background: rgba(212, 175, 55, 0.2);
         }
         .chat-messages .message .message-image {
             margin-top: 4px;
@@ -542,12 +456,6 @@
             border-radius: 8px;
             background: rgba(0,0,0,0.3);
         }
-        .chat-messages .message.deleted {
-            opacity: 0.5;
-            font-style: italic;
-            background: rgba(255,0,0,0.04);
-            border-color: rgba(255,0,0,0.1);
-        }
         .chat-messages .sin-mensajes {
             text-align: center;
             color: var(--text-muted);
@@ -560,26 +468,6 @@
             color: var(--text-muted);
             padding: 20px;
             font-size: 0.75rem;
-        }
-        .chat-messages .sin-resultados {
-            text-align: center;
-            padding: 30px 10px;
-            color: var(--text-muted);
-        }
-        .chat-messages .sin-resultados button {
-            margin-top: 10px;
-            padding: 6px 18px;
-            border-radius: 20px;
-            border: 1px solid var(--gold);
-            background: transparent;
-            color: var(--gold);
-            cursor: pointer;
-            font-size: 0.7rem;
-            transition: var(--transition);
-        }
-        .chat-messages .sin-resultados button:hover {
-            background: var(--gold);
-            color: var(--space);
         }
 
         .chat-input-area {
@@ -618,10 +506,6 @@
             border-color: var(--gold);
             box-shadow: 0 0 30px rgba(212, 175, 55, 0.05);
         }
-        .chat-input-area textarea::placeholder {
-            color: var(--text-muted);
-            opacity: 0.7;
-        }
         .chat-input-area .btn-adjunto {
             background: transparent;
             border: none;
@@ -636,14 +520,6 @@
         .chat-input-area .btn-adjunto:hover {
             color: var(--gold);
             background: rgba(212, 175, 55, 0.05);
-        }
-        .chat-input-area .btn-adjunto.grabando {
-            color: var(--danger);
-            animation: pulse-grabando 0.8s ease-in-out infinite;
-        }
-        @keyframes pulse-grabando {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.3; }
         }
         .chat-input-area .btn-enviar {
             padding: 8px 20px;
@@ -661,11 +537,6 @@
         .chat-input-area .btn-enviar:hover:not(:disabled) {
             transform: translateY(-2px);
             box-shadow: var(--shadow-gold);
-        }
-        .chat-input-area .btn-enviar:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
         }
         .chat-input-area .archivos-seleccionados {
             display: flex;
@@ -798,7 +669,6 @@
             font-size: 0.7rem;
             color: var(--gold);
         }
-        .contacto-avatar img { width: 100%; height: 100%; object-fit: cover; }
         .contacto-info { flex: 1; min-width: 0; }
         .contacto-info strong {
             font-size: 0.8rem;
@@ -838,12 +708,6 @@
             font-size: 0.75rem;
             padding: 16px;
             opacity: 0.7;
-        }
-        .error {
-            color: var(--danger);
-            text-align: center;
-            padding: 12px;
-            font-size: 0.75rem;
         }
 
         /* Toast */
@@ -897,10 +761,6 @@
             transition: var(--transition);
             z-index: 10001;
         }
-        .modal-imagen-mensaje .cerrar-modal-imagen:hover {
-            color: var(--gold);
-            transform: rotate(90deg);
-        }
         .modal-imagen-mensaje img {
             max-width: 90%;
             max-height: 85vh;
@@ -928,7 +788,6 @@
         .footer-links a { color: var(--text-muted); text-decoration: none; transition: var(--transition); }
         .footer-links a:hover { color: var(--gold); }
 
-        /* Responsive */
         @media (max-width: 768px) {
             .app { padding: 12px 14px; }
             .mensajes-wrapper { flex-direction: column; }
@@ -936,22 +795,8 @@
                 max-height: 200px;
                 border-right: none;
                 border-bottom: 1px solid var(--glass-border);
-                border-radius: 0;
             }
             .chat-panel { border-radius: 0 0 var(--radius-xl) var(--radius-xl); }
-            .chat-input-area textarea { font-size: 0.75rem; min-height: 34px; }
-            .chat-messages .message { max-width: 88%; }
-            .chat-header .acciones .btn { font-size: 0.55rem; padding: 3px 8px; }
-            .modal-content { padding: 18px; }
-            .mensajes-header h2 { font-size: 0.85rem; }
-        }
-
-        @media (max-width: 480px) {
-            .chat-input-area .input-row { flex-wrap: wrap; }
-            .chat-input-area textarea { min-width: 100px; }
-            .chat-input-area .btn-enviar { padding: 6px 14px; font-size: 0.65rem; }
-            .chat-messages .message .message-image img { max-width: 160px; }
-            .chat-messages .message .message-audio audio { max-width: 170px; }
         }
 
         @keyframes fadeIn {
@@ -997,14 +842,10 @@
             <a href="/features/grupos/grupos.html" class="nav-link">👥 Grupos</a>
         </nav>
 
-        <!-- ============================================================ -->
-        <!-- MENSAJES -->
-        <!-- ============================================================ -->
         <div class="mensajes-wrapper" style="display:flex;flex-direction:row;flex-wrap:wrap;">
 
             <!-- Panel izquierdo: Conversaciones -->
             <div class="conversaciones-panel" style="flex:1;min-width:210px;">
-
                 <div class="mensajes-header" style="border-bottom:1px solid var(--glass-border);padding:8px 4px;">
                     <h2 style="font-size:0.85rem;">◈ Conversaciones</h2>
                     <div class="acciones">
@@ -1013,7 +854,6 @@
                 </div>
 
                 <div id="conversationList" style="padding:4px 0;">
-                    <!-- Se llena desde mensajes.js con cargarConversaciones() -->
                     <div class="sin-conversaciones">
                         <span class="icono">💬</span>
                         <p>Cargando conversaciones...</p>
@@ -1023,23 +863,17 @@
 
             <!-- Panel derecho: Chat -->
             <div class="chat-panel" style="flex:2;min-width:260px;">
-
-                <!-- Cabecera del chat -->
                 <div class="chat-header">
                     <div class="avatar" id="chatUserAvatar">
                         <span style="font-size:0.8rem;">◈</span>
                     </div>
                     <span class="nombre" id="chatUserName">Selecciona una conversación</span>
                     <div class="acciones">
-                        <button class="btn btn-sm" id="btnBuscarChat" onclick="toggleBuscarChat()" title="Buscar en conversación">🔍</button>
-                        <button class="btn btn-sm" onclick="eliminarConversacion()" title="Eliminar conversación" style="color:var(--danger);">🗑️</button>
-                        <input type="text" id="searchConversationInput" placeholder="Buscar..." style="display:none;background:rgba(0,0,0,0.3);border:1px solid var(--glass-border);border-radius:20px;padding:4px 12px;color:var(--text-primary);font-size:0.7rem;outline:none;width:120px;transition:var(--transition);" />
+                        <button class="btn btn-sm" onclick="eliminarConversacion()" title="Salir del chat" style="color:var(--danger);">🗑️ Salir</button>
                     </div>
                 </div>
 
-                <!-- Mensajes -->
                 <div class="chat-messages" id="chatMessages">
-                    <!-- Se llena desde mensajes.js con cargarMensajes() -->
                     <div class="sin-mensajes">
                         <span class="icono">💭</span>
                         <p>Selecciona una conversación</p>
@@ -1047,13 +881,11 @@
                     </div>
                 </div>
 
-                <!-- Área de entrada -->
                 <div class="chat-input-area">
                     <div class="input-row">
                         <button class="btn-adjunto" onclick="document.getElementById('fileInput').click()" title="Adjuntar archivo">📎</button>
-                        <input type="file" id="fileInput" accept="image/*,audio/*" style="display:none;" multiple />
+                        <input type="file" id="fileInput" accept="image/*,audio/*" style="display:none;" />
                         <textarea id="messageInput" rows="1" placeholder="Escribe un mensaje..." maxlength="2000"></textarea>
-                        <button class="btn-adjunto" id="btnGrabarAudio" onclick="toggleGrabacionAudio()" title="Grabar audio">🎤</button>
                         <span class="char-counter" id="charCounter">0/2000</span>
                         <button class="btn-enviar" id="sendMessageButton" onclick="enviarMensaje()">Enviar</button>
                     </div>
@@ -1062,9 +894,6 @@
             </div>
         </div>
 
-        <!-- ============================================================ -->
-        <!-- FOOTER -->
-        <!-- ============================================================ -->
         <footer class="footer">
             <span><span class="brand">◈ Sariel's</span> · Red Social WEB3</span>
             <div class="footer-links">
@@ -1077,136 +906,125 @@
 
     </div>
 
-    <!-- ================================================================ -->
-    <!-- MODAL NUEVO CONTACTO / CONVERSACIÓN -->
-    <!-- ================================================================ -->
+    <!-- MODAL NUEVO CONTACTO -->
     <div class="modal-overlay" id="modalNuevoContacto">
         <div class="modal-content">
             <button class="close-btn" onclick="cerrarModalNuevoContacto()">✕</button>
             <h2>✦ Nueva conversación</h2>
             <p class="subtitle">Busca un usuario para iniciar un chat</p>
-            <input type="text" id="searchInputModal" class="input-buscar" placeholder="Nombre o @handle..." autofocus />
+            <input type="text" id="searchInputModal" class="input-buscar" placeholder="Nombre de usuario..." autofocus />
             <div id="resultadosBusqueda" class="resultados-busqueda">
                 <p class="mensaje-ayuda">Escribe al menos 2 caracteres para buscar</p>
             </div>
         </div>
     </div>
 
-    <!-- ================================================================ -->
-    <!-- MODAL IMAGEN (para ampliar) -->
-    <!-- ================================================================ -->
+    <!-- MODAL IMAGEN -->
     <div class="modal-imagen-mensaje" id="modalImagenMensaje">
         <button class="cerrar-modal-imagen" onclick="document.getElementById('modalImagenMensaje').classList.remove('show')">×</button>
         <img src="" alt="Imagen ampliada" />
     </div>
 
-    <!-- ================================================================ -->
-    <!-- TOAST -->
-    <!-- ================================================================ -->
     <div class="toast" id="toast"></div>
 
-    <!-- ================================================================ -->
-    <!-- SCRIPTS -->
-    <!-- ================================================================ -->
+    <!-- SCRIPTS DE INFRAESTRUCTURA Y LÓGICA -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="/app.js"></script>
     <script src="/features/shared/js/idiomas.js"></script>
     <script src="./mensajes.js"></script>
 
-    <!-- ================================================================ -->
-    <!-- FUNCIONES ADICIONALES PARA EL HTML -->
-    <!-- ================================================================ -->
+    <!-- SCRIPTS DE COMPLEMENTO DE INTERFAZ -->
     <script>
-        /**
-         * Toggle búsqueda dentro del chat
-         */
-        function toggleBuscarChat() {
-            const input = document.getElementById('searchConversationInput');
-            if (!input) return;
-            const isHidden = input.style.display === 'none' || input.style.display === '';
-            input.style.display = isHidden ? 'inline-block' : 'none';
-            if (isHidden) {
-                input.focus();
-                input.addEventListener('keydown', function handler(e) {
-                    if (e.key === 'Enter') {
-                        buscarEnConversacion(this.value);
-                    }
-                    if (e.key === 'Escape') {
-                        this.style.display = 'none';
-                        this.value = '';
-                        cargarMensajes(window.conversacionActual || '');
-                        this.removeEventListener('keydown', handler);
-                    }
-                });
+        // Búsqueda de usuarios en tiempo real dentro del modal
+        document.getElementById('searchInputModal')?.addEventListener('input', async function(e) {
+            const query = e.target.value.trim();
+            const resultados = document.getElementById('resultadosBusqueda');
+            const client = window.supabaseClient || window.supabase;
+            if (!resultados || !client) return;
+
+            if (query.length < 2) {
+                resultados.innerHTML = '<p class="mensaje-ayuda">Escribe al menos 2 caracteres para buscar</p>';
+                return;
+            }
+
+            const { data: usuarios, error } = await client
+                .from('profiles')
+                .select('id, username, avatar_url')
+                .ilike('username', `%${query}%`)
+                .limit(5);
+
+            if (error || !usuarios || usuarios.length === 0) {
+                resultados.innerHTML = '<p class="sin-resultados">No se encontraron usuarios</p>';
+                return;
+            }
+
+            resultados.innerHTML = usuarios.map(u => `
+                <div class="contacto-resultado">
+                    <div class="contacto-avatar">
+                        ${u.avatar_url ? `<img src="${u.avatar_url}"/>` : '◈'}
+                    </div>
+                    <div class="contacto-info">
+                        <strong>${u.username || 'Usuario'}</strong>
+                        <span>ID: ${u.id.substring(0, 8)}...</span>
+                    </div>
+                    <button class="btn-agregar-contacto" onclick="iniciarConversacionConUsuario('${u.id}')">
+                        Chatear
+                    </button>
+                </div>
+            `).join('');
+        });
+
+        // Salir o eliminar de la conversación actual
+        async function eliminarConversacion() {
+            if (!window.conversacionActual) return showToast('Selecciona una conversación primero', 'warning');
+
+            const confirmar = confirm('¿Deseas salir de este chat?');
+            if (!confirmar) return;
+
+            const client = window.supabaseClient || window.supabase;
+            const { data: { user } } = await client.auth.getUser();
+
+            const { error } = await client
+                .from('conversation_participants')
+                .delete()
+                .eq('conversation_id', window.conversacionActual)
+                .eq('user_id', user.id);
+
+            if (error) {
+                showToast('Error al salir del chat', 'error');
             } else {
-                input.value = '';
-                cargarMensajes(window.conversacionActual || '');
+                showToast('Has salido de la conversación', 'success');
+                window.conversacionActual = null;
+                document.getElementById('chatUserName').textContent = 'Selecciona una conversación';
+                document.getElementById('chatMessages').innerHTML = `
+                    <div class="sin-mensajes">
+                        <span class="icono">💭</span>
+                        <p>Selecciona una conversación</p>
+                    </div>`;
+                cargarConversaciones();
             }
         }
 
-        /**
-         * Cerrar modal de imagen con Escape
-         */
+        // Cierre de modales con tecla Escape
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
-                const modal = document.getElementById('modalImagenMensaje');
-                if (modal) modal.classList.remove('show');
+                const modalImg = document.getElementById('modalImagenMensaje');
+                if (modalImg) modalImg.classList.remove('show');
                 cerrarModalNuevoContacto();
             }
         });
 
-        /**
-         * Cerrar modal al hacer clic fuera
-         */
-        document.addEventListener('click', function(e) {
-            const modal = document.getElementById('modalImagenMensaje');
-            if (modal && e.target === modal) {
-                modal.classList.remove('show');
-            }
-        });
-
-        /**
-         * Guardar referencia a conversacionActual para usar desde funciones inline
-         */
-        window.conversacionActual = null;
-
-        // Sobrescribir abrirConversacion para mantener la referencia
-        const originalAbrir = window.abrirConversacion;
-        window.abrirConversacion = function(contactoId) {
-            window.conversacionActual = contactoId;
-            if (typeof originalAbrir === 'function') {
-                return originalAbrir(contactoId);
-            }
-        };
-
-        // Sobrescribir cargarMensajes para mantener la referencia
-        const originalCargar = window.cargarMensajes;
-        window.cargarMensajes = function(contactoId) {
-            window.conversacionActual = contactoId;
-            if (typeof originalCargar === 'function') {
-                return originalCargar(contactoId);
-            }
-        };
-
-        // Inicializar selector de idioma
+        // Eventos al cargar el documento
         document.addEventListener('DOMContentLoaded', function() {
             if (typeof cargarIdiomas === 'function') {
                 cargarIdiomas();
             }
-            // Cargar conversaciones automáticamente
             if (typeof cargarConversaciones === 'function') {
                 cargarConversaciones();
             }
         });
 
-        console.log('📨 Módulo de Mensajes cargado correctamente.');
-        console.log('✅ Funciones disponibles:', Object.keys(window).filter(k => 
-            ['cargarConversaciones','buscarContactos','agregarContacto','abrirConversacion',
-             'cargarMensajes','enviarMensaje','eliminarMensaje','editarMensaje',
-             'eliminarConversacion','nuevaConversacion','cerrarModalNuevoContacto',
-             'toggleGrabacionAudio','buscarEnConversacion','showToast','abrirImagen'].includes(k)
-        ));
+        window.eliminarConversacion = eliminarConversacion;
     </script>
-
 </body>
 </html>
