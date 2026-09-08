@@ -1,6 +1,6 @@
 // ================================================================
-// CONTROLLERS/MENSAJESCONTROLLER.JS
-// MENSAJERÍA - SARIEL'S BACKEND
+// CONTROLLERS/MENSAJESCONTROLLER.JS - SARIEL'S BACKEND (PRODUCCIÓN)
+// Lógica de Mensajería adaptada al nuevo esquema unificado de Supabase
 // ================================================================
 
 const { supabase } = require('../config/supabase');
@@ -11,11 +11,9 @@ const logger = require('../utils/logger');
 // ================================================================
 
 function obtenerCliente(req) {
-    // Si ya tenemos un cliente en req (desde auth.js), usarlo
     if (req.supabase) {
         return req.supabase;
     }
-    // Si no, usar el cliente global
     return supabase;
 }
 
@@ -36,67 +34,86 @@ async function getConversaciones(req, res) {
             });
         }
 
-        const { data, error } = await supabaseClient
-            .from('contactos')
-            .select(`
-                id,
-                estado,
-                created_at,
-                contacto:contacto_id (
-                    id,
-                    nombre,
-                    handle,
-                    avatar_url,
-                    online,
-                    ultima_conexion
-                )
-            `)
-            .eq('usuario_id', userId)
-            .eq('estado', 'activo')
-            .order('created_at', { ascending: false });
+        // 1. Obtener las conversaciones donde participa el usuario actual
+        const { data: participaciones, error: partError } = await supabaseClient
+            .from('conversation_participants')
+            .select('conversation_id')
+            .eq('user_id', userId);
 
-        if (error) {
-            logger.error('getConversaciones:', error);
-            return res.status(500).json({
-                success: false,
-                error: 'Error al obtener conversaciones'
-            });
+        if (partError) {
+            logger.error('getConversaciones participaciones:', partError);
+            return res.status(500).json({ success: false, error: 'Error al obtener conversaciones' });
         }
 
-        // Procesar cada conversación para obtener último mensaje y no leídos
-        const conversaciones = await Promise.all((data || []).map(async (contacto) => {
-            const contactoInfo = contacto.contacto || {};
-            
-            // Obtener último mensaje
+        if (!participaciones || participaciones.length === 0) {
+            return res.json({ success: true, conversaciones: [] });
+        }
+
+        const convIds = participaciones.map(p => p.conversation_id);
+
+        // 2. Obtener los detalles de esas conversaciones
+        const { data: conversacionesList, error: convError } = await supabaseClient
+            .from('conversations')
+            .select('*')
+            .in('id', convIds);
+
+        if (convError) {
+            logger.error('getConversaciones list:', convError);
+            return res.status(500).json({ success: false, error: 'Error al obtener detalles de conversaciones' });
+        }
+
+        // 3. Obtener el otro participante y el último mensaje de cada conversación
+        const conversaciones = await Promise.all((conversacionesList || []).map(async (conv) => {
+            // Buscar el otro usuario en la misma conversación
+            const { data: otroParticipante } = await supabaseClient
+                .from('conversation_participants')
+                .select('user_id, usuarios(id, username, handle, avatar_url, online, ultima_conexion)')
+                .eq('conversation_id', conv.id)
+                .neq('user_id', userId)
+                .maybeSingle();
+
+            const userInfo = otroParticipante?.usuarios || {};
+
+            // Obtener el último mensaje de esta conversación
             const { data: ultimoMensaje } = await supabaseClient
-                .from('mensajes_chat')
-                .select('contenido, created_at, remitente_id, leido')
-                .or(`and(remitente_id.eq.${userId},destinatario_id.eq.${contactoInfo.id}),and(remitente_id.eq.${contactoInfo.id},destinatario_id.eq.${userId})`)
-                .eq('eliminado', false)
+                .from('messages')
+                .select('contenido, created_at, sender_id, is_read, tipo')
+                .eq('conversation_id', conv.id)
+                .eq('is_deleted', false)
                 .order('created_at', { ascending: false })
                 .limit(1)
                 .maybeSingle();
 
-            // Contar no leídos
+            // Contar mensajes no leídos en esta conversación
             const { count: noLeidos } = await supabaseClient
-                .from('mensajes_chat')
+                .from('messages')
                 .select('id', { count: 'exact' })
-                .eq('remitente_id', contactoInfo.id)
-                .eq('destinatario_id', userId)
-                .eq('leido', false)
-                .eq('eliminado', false);
+                .eq('conversation_id', conv.id)
+                .neq('sender_id', userId)
+                .eq('is_read', false)
+                .eq('is_deleted', false);
+
+            let previewTexto = 'Sin mensajes';
+            if (ultimoMensaje) {
+                if (ultimoMensaje.contenido) previewTexto = ultimoMensaje.contenido;
+                else if (ultimoMensaje.tipo === 'imagen') previewTexto = '📷 [Imagen]';
+                else if (ultimoMensaje.tipo === 'video') previewTexto = '🎥 [Video]';
+                else if (ultimoMensaje.tipo === 'audio') previewTexto = '🎙️ [Nota de voz]';
+                else if (ultimoMensaje.tipo === 'archivo') previewTexto = '📎 [Archivo]';
+            }
 
             return {
-                id: contactoInfo.id,
-                nombre: contactoInfo.nombre || 'Usuario',
-                handle: contactoInfo.handle || 'usuario',
-                avatar_url: contactoInfo.avatar_url || null,
-                online: contactoInfo.online || false,
-                ultima_conexion: contactoInfo.ultima_conexion || null,
-                ultimoMensaje: ultimoMensaje?.contenido || 'Sin mensajes',
-                ultimoRemitente: ultimoMensaje?.remitente_id,
+                id: conv.id, // ID de la conversación
+                contacto_id: userInfo.id || null,
+                nombre: userInfo.username || 'Usuario',
+                handle: userInfo.handle || 'usuario',
+                avatar_url: userInfo.avatar_url || null,
+                online: userInfo.online || false,
+                ultima_conexion: userInfo.ultima_conexion || null,
+                ultimoMensaje: previewTexto,
+                ultimoRemitente: ultimoMensaje?.sender_id,
                 noLeidos: noLeidos || 0,
-                fecha: ultimoMensaje?.created_at
+                fecha: ultimoMensaje?.created_at || conv.created_at
             };
         }));
 
@@ -109,11 +126,11 @@ async function getConversaciones(req, res) {
 
         return res.json({
             success: true,
-            conversaciones: conversaciones || []
+            conversaciones
         });
 
     } catch (error) {
-        logger.error('getConversaciones:', error);
+        logger.error('getConversaciones general:', error);
         return res.status(500).json({
             success: false,
             error: 'Error interno del servidor'
@@ -123,7 +140,7 @@ async function getConversaciones(req, res) {
 
 // ================================================================
 // GET /api/mensajes/mensajes/:id
-// OBTENER MENSAJES DE UNA CONVERSACIÓN
+// OBTENER MENSAJES DE UNA CONVERSACIÓN (id = conversation_id)
 // ================================================================
 
 async function getMensajes(req, res) {
@@ -133,35 +150,35 @@ async function getMensajes(req, res) {
         const supabaseClient = obtenerCliente(req);
 
         if (!userId) {
-            return res.status(401).json({
-                success: false,
-                error: 'Usuario no autenticado'
-            });
+            return res.status(401).json({ success: false, error: 'Usuario no autenticado' });
         }
 
         if (!conversacionId) {
-            return res.status(400).json({
-                success: false,
-                error: 'ID de conversación requerido'
-            });
+            return res.status(400).json({ success: false, error: 'ID de conversación requerido' });
+        }
+
+        // Verificar que el usuario pertenezca a esta conversación
+        const { data: miembro, error: miembroError } = await supabaseClient
+            .from('conversation_participants')
+            .select('id')
+            .eq('conversation_id', conversacionId)
+            .eq('user_id', userId)
+            .maybeSingle();
+
+        if (miembroError || !miembro) {
+            return res.status(403).json({ success: false, error: 'No tienes acceso a esta conversación' });
         }
 
         const { data, error } = await supabaseClient
-            .from('mensajes_chat')
+            .from('messages')
             .select('*')
-            .or(
-                `and(remitente_id.eq.${userId},destinatario_id.eq.${conversacionId}),` +
-                `and(remitente_id.eq.${conversacionId},destinatario_id.eq.${userId})`
-            )
-            .eq('eliminado', false)
+            .eq('conversation_id', conversacionId)
+            .eq('is_deleted', false)
             .order('created_at', { ascending: true });
 
         if (error) {
             logger.error('getMensajes:', error);
-            return res.status(500).json({
-                success: false,
-                error: 'Error al obtener mensajes'
-            });
+            return res.status(500).json({ success: false, error: 'Error al obtener mensajes' });
         }
 
         return res.json({
@@ -170,11 +187,8 @@ async function getMensajes(req, res) {
         });
 
     } catch (error) {
-        logger.error('getMensajes:', error);
-        return res.status(500).json({
-            success: false,
-            error: 'Error interno del servidor'
-        });
+        logger.error('getMensajes general:', error);
+        return res.status(500).json({ success: false, error: 'Error interno del servidor' });
     }
 }
 
@@ -187,115 +201,114 @@ async function enviarMensaje(req, res) {
     try {
         const userId = req.usuarioId || req.user?.id;
         const {
-            destinatario_id,
+            conversation_id,
+            destinatario_id, // Por compatibilidad si envían destinatario directo
             contenido,
             tipo = 'texto',
-            imagen_url = null
+            media_url = null,
+            nombre_archivo = null,
+            tamano_bytes = null,
+            mime_type = null
         } = req.body;
 
         const supabaseClient = obtenerCliente(req);
 
         if (!userId) {
-            return res.status(401).json({
-                success: false,
-                error: 'Usuario no autenticado'
-            });
+            return res.status(401).json({ success: false, error: 'Usuario no autenticado' });
         }
 
-        // Validaciones
-        if (!destinatario_id) {
-            return res.status(400).json({
-                success: false,
-                error: 'destinatario_id es obligatorio'
-            });
+        let targetConvId = conversation_id;
+
+        // Si no mandan conversation_id pero mandan destinatario_id, buscamos o creamos la conversación
+        if (!targetConvId && destinatario_id) {
+            if (destinatario_id === userId) {
+                return res.status(400).json({ success: false, error: 'No puedes enviarte mensajes a ti mismo' });
+            }
+
+            // Buscar si ya existe una conversación directa entre ambos
+            const { data: misConves } = await supabaseClient
+                .from('conversation_participants')
+                .select('conversation_id')
+                .eq('user_id', userId);
+
+            if (misConves && misConves.length > 0) {
+                const misIds = misConves.map(m => m.conversation_id);
+                const { data: convCompartida } = await supabaseClient
+                    .from('conversation_participants')
+                    .select('conversation_id')
+                    .eq('user_id', destinatario_id)
+                    .in('conversation_id', misIds)
+                    .maybeSingle();
+
+                if (convCompartida) {
+                    targetConvId = convCompartida.conversation_id;
+                }
+            }
+
+            // Si no existe, la creamos
+            if (!targetConvId) {
+                const { data: nuevaConv, error: createConvErr } = await supabaseClient
+                    .from('conversations')
+                    .insert({
+                        usuario_a_id: userId,
+                        usuario_b_id: destinatario_id,
+                        tipo: 'directo'
+                    })
+                    .select()
+                    .single();
+
+                if (createConvErr) {
+                    logger.error('Error creando conversacion:', createConvErr);
+                    return res.status(500).json({ success: false, error: 'Error al iniciar conversación' });
+                }
+
+                targetConvId = nuevaConv.id;
+
+                await supabaseClient.from('conversation_participants').insert([
+                    { conversation_id: targetConvId, user_id: userId },
+                    { conversation_id: targetConvId, user_id: destinatario_id }
+                ]);
+            }
         }
 
-        if (destinatario_id === userId) {
-            return res.status(400).json({
-                success: false,
-                error: 'No puedes enviarte mensajes a ti mismo'
-            });
+        if (!targetConvId) {
+            return res.status(400).json({ success: false, error: 'conversation_id o destinatario_id es obligatorio' });
         }
 
-        const tiposPermitidos = ['texto', 'imagen', 'voz', 'video'];
+        const tiposPermitidos = ['texto', 'imagen', 'video', 'audio', 'archivo'];
         if (!tiposPermitidos.includes(tipo)) {
-            return res.status(400).json({
-                success: false,
-                error: 'Tipo de mensaje inválido. Permitidos: texto, imagen, voz, video'
-            });
+            return res.status(400).json({ success: false, error: 'Tipo de mensaje inválido' });
         }
 
         if (tipo === 'texto' && (!contenido || !String(contenido).trim())) {
-            return res.status(400).json({
-                success: false,
-                error: 'El contenido es obligatorio para mensajes de texto'
-            });
+            return res.status(400).json({ success: false, error: 'El contenido es obligatorio para texto' });
         }
 
-        // Verificar que el destinatario existe
-        const { data: destinatario, error: destinatarioError } = await supabaseClient
-            .from('usuarios')
-            .select('id')
-            .eq('id', destinatario_id)
-            .maybeSingle();
-
-        if (destinatarioError || !destinatario) {
-            logger.warn(`Destinatario no encontrado: ${destinatario_id}`);
-            return res.status(404).json({
-                success: false,
-                error: 'El destinatario no existe'
-            });
-        }
-
-        // Verificar bloqueo (el destinatario bloqueó al remitente)
-        const { data: bloqueo, error: bloqueoError } = await supabaseClient
-            .from('bloqueos')
-            .select('id')
-            .eq('usuario_id', destinatario_id)
-            .eq('bloqueado_id', userId)
-            .maybeSingle();
-
-        if (bloqueoError) {
-            logger.error('enviarMensaje bloqueo:', bloqueoError);
-            return res.status(500).json({
-                success: false,
-                error: 'No se pudo comprobar el bloqueo'
-            });
-        }
-
-        if (bloqueo) {
-            logger.warn(`Usuario ${userId} bloqueado por ${destinatario_id}`);
-            return res.status(403).json({
-                success: false,
-                error: 'No puedes enviar mensajes a este usuario'
-            });
-        }
-
-        // Insertar mensaje
+        // Insertar en la tabla unificada 'messages'
         const { data, error } = await supabaseClient
-            .from('mensajes_chat')
+            .from('messages')
             .insert({
-                remitente_id: userId,
-                destinatario_id,
+                conversation_id: targetConvId,
+                sender_id: userId,
                 contenido: contenido || null,
                 tipo,
-                imagen_url: imagen_url || null,
-                leido: false,
-                editado: false,
-                eliminado: false
+                media_url: media_url || null,
+                nombre_archivo: nombre_archivo || null,
+                tamano_bytes: tamano_bytes || null,
+                mime_type: mime_type || null,
+                is_read: false,
+                is_deleted: false,
+                editado: false
             })
             .select('*')
             .single();
 
         if (error) {
-            logger.error('enviarMensaje:', error);
-            return res.status(500).json({
-                success: false,
-                error: 'Error al enviar mensaje'
-            });
+            logger.error('enviarMensaje insert:', error);
+            return res.status(500).json({ success: false, error: 'Error al enviar mensaje' });
         }
 
-        logger.info(`Mensaje enviado de ${userId} a ${destinatario_id}`);
+        logger.info(`Mensaje enviado en conv ${targetConvId} por ${userId}`);
 
         return res.status(201).json({
             success: true,
@@ -303,11 +316,8 @@ async function enviarMensaje(req, res) {
         });
 
     } catch (error) {
-        logger.error('enviarMensaje:', error);
-        return res.status(500).json({
-            success: false,
-            error: 'Error interno del servidor'
-        });
+        logger.error('enviarMensaje general:', error);
+        return res.status(500).json({ success: false, error: 'Error interno del servidor' });
     }
 }
 
@@ -323,61 +333,36 @@ async function editarMensaje(req, res) {
         const { contenido } = req.body;
         const supabaseClient = obtenerCliente(req);
 
-        if (!userId) {
-            return res.status(401).json({
-                success: false,
-                error: 'Usuario no autenticado'
-            });
-        }
-
-        if (!contenido || !String(contenido).trim()) {
-            return res.status(400).json({
-                success: false,
-                error: 'El contenido es obligatorio'
-            });
-        }
+        if (!userId) return res.status(401).json({ success: false, error: 'Usuario no autenticado' });
+        if (!contenido) return res.status(400).json({ success: false, error: 'El contenido es obligatorio' });
 
         const { data, error } = await supabaseClient
-            .from('mensajes_chat')
+            .from('messages')
             .update({
                 contenido: String(contenido).trim(),
                 editado: true,
+                fecha_edicion: new Date().toISOString(),
                 updated_at: new Date().toISOString()
             })
             .eq('id', id)
-            .eq('remitente_id', userId)
-            .eq('eliminado', false)
+            .eq('sender_id', userId)
+            .eq('is_deleted', false)
             .select('*')
             .maybeSingle();
 
         if (error) {
             logger.error('editarMensaje:', error);
-            return res.status(500).json({
-                success: false,
-                error: 'Error al editar mensaje'
-            });
+            return res.status(500).json({ success: false, error: 'Error al editar mensaje' });
         }
 
         if (!data) {
-            return res.status(404).json({
-                success: false,
-                error: 'Mensaje no encontrado o no tienes permiso para editarlo'
-            });
+            return res.status(404).json({ success: false, error: 'Mensaje no encontrado o sin permisos' });
         }
 
-        logger.info(`Mensaje ${id} editado por ${userId}`);
-
-        return res.json({
-            success: true,
-            mensaje: data
-        });
-
+        return res.json({ success: true, mensaje: data });
     } catch (error) {
-        logger.error('editarMensaje:', error);
-        return res.status(500).json({
-            success: false,
-            error: 'Error interno del servidor'
-        });
+        logger.error('editarMensaje general:', error);
+        return res.status(500).json({ success: false, error: 'Error interno del servidor' });
     }
 }
 
@@ -392,53 +377,35 @@ async function eliminarMensaje(req, res) {
         const id = req.params.id;
         const supabaseClient = obtenerCliente(req);
 
-        if (!userId) {
-            return res.status(401).json({
-                success: false,
-                error: 'Usuario no autenticado'
-            });
-        }
+        if (!userId) return res.status(401).json({ success: false, error: 'Usuario no autenticado' });
 
         const { data, error } = await supabaseClient
-            .from('mensajes_chat')
+            .from('messages')
             .update({
+                is_deleted: true,
                 eliminado: true,
+                fecha_eliminacion: new Date().toISOString(),
                 updated_at: new Date().toISOString()
             })
             .eq('id', id)
-            .eq('remitente_id', userId)
-            .eq('eliminado', false)
+            .eq('sender_id', userId)
+            .eq('is_deleted', false)
             .select('id')
             .maybeSingle();
 
         if (error) {
             logger.error('eliminarMensaje:', error);
-            return res.status(500).json({
-                success: false,
-                error: 'Error al eliminar mensaje'
-            });
+            return res.status(500).json({ success: false, error: 'Error al eliminar mensaje' });
         }
 
         if (!data) {
-            return res.status(404).json({
-                success: false,
-                error: 'Mensaje no encontrado o no tienes permiso para eliminarlo'
-            });
+            return res.status(404).json({ success: false, error: 'Mensaje no encontrado o sin permisos' });
         }
 
-        logger.info(`Mensaje ${id} eliminado por ${userId}`);
-
-        return res.json({
-            success: true,
-            mensaje: 'Mensaje eliminado correctamente'
-        });
-
+        return res.json({ success: true, mensaje: 'Mensaje eliminado correctamente' });
     } catch (error) {
-        logger.error('eliminarMensaje:', error);
-        return res.status(500).json({
-            success: false,
-            error: 'Error interno del servidor'
-        });
+        logger.error('eliminarMensaje general:', error);
+        return res.status(500).json({ success: false, error: 'Error interno del servidor' });
     }
 }
 
@@ -450,305 +417,34 @@ async function eliminarMensaje(req, res) {
 async function marcarLeidos(req, res) {
     try {
         const userId = req.usuarioId || req.user?.id;
-        const { remitente_id } = req.body;
+        const { conversation_id } = req.body;
         const supabaseClient = obtenerCliente(req);
 
-        if (!userId) {
-            return res.status(401).json({
-                success: false,
-                error: 'Usuario no autenticado'
-            });
-        }
-
-        if (!remitente_id) {
-            return res.status(400).json({
-                success: false,
-                error: 'remitente_id es obligatorio'
-            });
-        }
+        if (!userId) return res.status(401).json({ success: false, error: 'Usuario no autenticado' });
+        if (!conversation_id) return res.status(400).json({ success: false, error: 'conversation_id es obligatorio' });
 
         const { error } = await supabaseClient
-            .from('mensajes_chat')
+            .from('messages')
             .update({
+                is_read: true,
                 leido: true,
+                fecha_leido: new Date().toISOString(),
                 updated_at: new Date().toISOString()
             })
-            .eq('remitente_id', remitente_id)
-            .eq('destinatario_id', userId)
-            .eq('leido', false)
-            .eq('eliminado', false);
+            .eq('conversation_id', conversation_id)
+            .neq('sender_id', userId)
+            .eq('is_read', false)
+            .eq('is_deleted', false);
 
         if (error) {
             logger.error('marcarLeidos:', error);
-            return res.status(500).json({
-                success: false,
-                error: 'Error al marcar mensajes como leídos'
-            });
+            return res.status(500).json({ success: false, error: 'Error al marcar como leídos' });
         }
 
-        return res.json({
-            success: true,
-            mensaje: 'Mensajes marcados como leídos'
-        });
-
+        return res.json({ success: true, mensaje: 'Mensajes marcados como leídos' });
     } catch (error) {
-        logger.error('marcarLeidos:', error);
-        return res.status(500).json({
-            success: false,
-            error: 'Error interno del servidor'
-        });
-    }
-}
-
-// ================================================================
-// POST /api/mensajes/contactos
-// AGREGAR NUEVO CONTACTO
-// ================================================================
-
-async function agregarContacto(req, res) {
-    try {
-        const userId = req.usuarioId || req.user?.id;
-        const { contacto_id } = req.body;
-        const supabaseClient = obtenerCliente(req);
-
-        if (!userId) {
-            return res.status(401).json({
-                success: false,
-                error: 'Usuario no autenticado'
-            });
-        }
-
-        if (!contacto_id) {
-            return res.status(400).json({
-                success: false,
-                error: 'contacto_id es obligatorio'
-            });
-        }
-
-        if (contacto_id === userId) {
-            return res.status(400).json({
-                success: false,
-                error: 'No puedes agregarte a ti mismo'
-            });
-        }
-
-        // Verificar que el usuario existe
-        const { data: usuario, error: usuarioError } = await supabaseClient
-            .from('usuarios')
-            .select('id')
-            .eq('id', contacto_id)
-            .maybeSingle();
-
-        if (usuarioError || !usuario) {
-            return res.status(404).json({
-                success: false,
-                error: 'El usuario no existe'
-            });
-        }
-
-        // Verificar si ya es contacto
-        const { data: existente, error: existenteError } = await supabaseClient
-            .from('contactos')
-            .select('id')
-            .eq('usuario_id', userId)
-            .eq('contacto_id', contacto_id)
-            .maybeSingle();
-
-        if (existenteError) {
-            logger.error('agregarContacto existente:', existenteError);
-            return res.status(500).json({
-                success: false,
-                error: 'Error al comprobar contacto'
-            });
-        }
-
-        if (existente) {
-            return res.status(409).json({
-                success: false,
-                error: 'El contacto ya existe'
-            });
-        }
-
-        const { data, error } = await supabaseClient
-            .from('contactos')
-            .insert({
-                usuario_id: userId,
-                contacto_id,
-                estado: 'activo'
-            })
-            .select('*')
-            .single();
-
-        if (error) {
-            logger.error('agregarContacto:', error);
-            return res.status(500).json({
-                success: false,
-                error: 'Error al agregar contacto'
-            });
-        }
-
-        logger.info(`Contacto agregado: ${userId} -> ${contacto_id}`);
-
-        return res.status(201).json({
-            success: true,
-            contacto: data
-        });
-
-    } catch (error) {
-        logger.error('agregarContacto:', error);
-        return res.status(500).json({
-            success: false,
-            error: 'Error interno del servidor'
-        });
-    }
-}
-
-// ================================================================
-// DELETE /api/mensajes/contactos/:id
-// ELIMINAR CONTACTO
-// ================================================================
-
-async function eliminarContacto(req, res) {
-    try {
-        const userId = req.usuarioId || req.user?.id;
-        const contactoId = req.params.id;
-        const supabaseClient = obtenerCliente(req);
-
-        if (!userId) {
-            return res.status(401).json({
-                success: false,
-                error: 'Usuario no autenticado'
-            });
-        }
-
-        const { error } = await supabaseClient
-            .from('contactos')
-            .delete()
-            .eq('usuario_id', userId)
-            .eq('contacto_id', contactoId);
-
-        if (error) {
-            logger.error('eliminarContacto:', error);
-            return res.status(500).json({
-                success: false,
-                error: 'Error al eliminar contacto'
-            });
-        }
-
-        logger.info(`Contacto eliminado: ${userId} -> ${contactoId}`);
-
-        return res.json({
-            success: true,
-            mensaje: 'Contacto eliminado correctamente'
-        });
-
-    } catch (error) {
-        logger.error('eliminarContacto:', error);
-        return res.status(500).json({
-            success: false,
-            error: 'Error interno del servidor'
-        });
-    }
-}
-
-// ================================================================
-// POST /api/mensajes/bloquear/:id
-// BLOQUEAR USUARIO
-// ================================================================
-
-async function bloquearUsuario(req, res) {
-    try {
-        const userId = req.usuarioId || req.user?.id;
-        const bloqueadoId = req.params.id;
-        const supabaseClient = obtenerCliente(req);
-
-        if (!userId) {
-            return res.status(401).json({
-                success: false,
-                error: 'Usuario no autenticado'
-            });
-        }
-
-        if (bloqueadoId === userId) {
-            return res.status(400).json({
-                success: false,
-                error: 'No puedes bloquearte a ti mismo'
-            });
-        }
-
-        // Verificar que el usuario existe
-        const { data: usuario, error: usuarioError } = await supabaseClient
-            .from('usuarios')
-            .select('id')
-            .eq('id', bloqueadoId)
-            .maybeSingle();
-
-        if (usuarioError || !usuario) {
-            return res.status(404).json({
-                success: false,
-                error: 'El usuario no existe'
-            });
-        }
-
-        // Verificar si ya está bloqueado
-        const { data: bloqueoExistente, error: bloqueoError } = await supabaseClient
-            .from('bloqueos')
-            .select('id')
-            .eq('usuario_id', userId)
-            .eq('bloqueado_id', bloqueadoId)
-            .maybeSingle();
-
-        if (bloqueoError) {
-            logger.error('bloquearUsuario comprobar:', bloqueoError);
-            return res.status(500).json({
-                success: false,
-                error: 'Error al comprobar bloqueo'
-            });
-        }
-
-        if (!bloqueoExistente) {
-            const { error: insertarError } = await supabaseClient
-                .from('bloqueos')
-                .insert({
-                    usuario_id: userId,
-                    bloqueado_id: bloqueadoId
-                });
-
-            if (insertarError) {
-                logger.error('bloquearUsuario insertar:', insertarError);
-                return res.status(500).json({
-                    success: false,
-                    error: 'Error al bloquear usuario'
-                });
-            }
-        }
-
-        // Eliminar contacto si existe (en ambas direcciones)
-        const { error: eliminarContactoError } = await supabaseClient
-            .from('contactos')
-            .delete()
-            .or(
-                `and(usuario_id.eq.${userId},contacto_id.eq.${bloqueadoId}),` +
-                `and(usuario_id.eq.${bloqueadoId},contacto_id.eq.${userId})`
-            );
-
-        if (eliminarContactoError) {
-            logger.error('bloquearUsuario eliminar contacto:', eliminarContactoError);
-        }
-
-        logger.info(`Usuario bloqueado: ${userId} bloqueó a ${bloqueadoId}`);
-
-        return res.json({
-            success: true,
-            mensaje: 'Usuario bloqueado correctamente'
-        });
-
-    } catch (error) {
-        logger.error('bloquearUsuario:', error);
-        return res.status(500).json({
-            success: false,
-            error: 'Error interno del servidor'
-        });
+        logger.error('marcarLeidos general:', error);
+        return res.status(500).json({ success: false, error: 'Error interno del servidor' });
     }
 }
 
@@ -764,69 +460,8 @@ async function reportarMensaje(req, res) {
         const { motivo } = req.body;
         const supabaseClient = obtenerCliente(req);
 
-        if (!userId) {
-            return res.status(401).json({
-                success: false,
-                error: 'Usuario no autenticado'
-            });
-        }
-
-        if (!motivo || !String(motivo).trim()) {
-            return res.status(400).json({
-                success: false,
-                error: 'El motivo es obligatorio'
-            });
-        }
-
-        if (String(motivo).trim().length < 3) {
-            return res.status(400).json({
-                success: false,
-                error: 'El motivo debe tener al menos 3 caracteres'
-            });
-        }
-
-        // Verificar que el mensaje existe y el usuario tiene acceso
-        const { data: mensaje, error: mensajeError } = await supabaseClient
-            .from('mensajes_chat')
-            .select('id, remitente_id, destinatario_id')
-            .eq('id', mensajeId)
-            .or(`remitente_id.eq.${userId},destinatario_id.eq.${userId}`)
-            .eq('eliminado', false)
-            .maybeSingle();
-
-        if (mensajeError) {
-            logger.error('reportarMensaje comprobar:', mensajeError);
-            return res.status(500).json({
-                success: false,
-                error: 'Error al comprobar mensaje'
-            });
-        }
-
-        if (!mensaje) {
-            return res.status(404).json({
-                success: false,
-                error: 'Mensaje no encontrado'
-            });
-        }
-
-        // Verificar si ya reportó este mensaje
-        const { data: reporteExistente, error: reporteExistenteError } = await supabaseClient
-            .from('mensajes_reportes')
-            .select('id')
-            .eq('mensaje_id', mensajeId)
-            .eq('usuario_id', userId)
-            .maybeSingle();
-
-        if (reporteExistenteError) {
-            logger.error('reportarMensaje existente:', reporteExistenteError);
-        }
-
-        if (reporteExistente) {
-            return res.status(409).json({
-                success: false,
-                error: 'Ya reportaste este mensaje'
-            });
-        }
+        if (!userId) return res.status(401).json({ success: false, error: 'Usuario no autenticado' });
+        if (!motivo || !String(motivo).trim()) return res.status(400).json({ success: false, error: 'Motivo obligatorio' });
 
         const { data, error } = await supabaseClient
             .from('mensajes_reportes')
@@ -841,25 +476,13 @@ async function reportarMensaje(req, res) {
 
         if (error) {
             logger.error('reportarMensaje:', error);
-            return res.status(500).json({
-                success: false,
-                error: 'Error al reportar mensaje'
-            });
+            return res.status(500).json({ success: false, error: 'Error al reportar mensaje' });
         }
 
-        logger.info(`Mensaje ${mensajeId} reportado por ${userId}`);
-
-        return res.status(201).json({
-            success: true,
-            reporte: data
-        });
-
+        return res.status(201).json({ success: true, reporte: data });
     } catch (error) {
-        logger.error('reportarMensaje:', error);
-        return res.status(500).json({
-            success: false,
-            error: 'Error interno del servidor'
-        });
+        logger.error('reportarMensaje general:', error);
+        return res.status(500).json({ success: false, error: 'Error interno del servidor' });
     }
 }
 
@@ -874,8 +497,5 @@ module.exports = {
     editarMensaje,
     eliminarMensaje,
     marcarLeidos,
-    agregarContacto,
-    eliminarContacto,
-    bloquearUsuario,
     reportarMensaje
 };
