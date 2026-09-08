@@ -1,1287 +1,639 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>◈ Perfil · Sariel's</title>
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
-    
-    <style>
-        :root {
-            --gold: #D4AF37;
-            --gold-dark: #b8923a;
-            --gold-light: #e8c84a;
-            --gold-bright: #f0d060;
-            --green-deep: #0F2D1A;
-            --green-mid: #1a4a2a;
-            --green-bright: #2a6a3a;
-            --space: #05080f;
-            --text-primary: #f0f4f8;
-            --text-secondary: #c0d8e8;
-            --text-muted: #8aa8b8;
-            --glass-bg: rgba(15, 45, 26, 0.55);
-            --glass-border: rgba(212, 175, 55, 0.15);
-            --shadow-gold: 0 8px 32px rgba(212, 175, 55, 0.25);
-            --shadow-gold-strong: 0 0 60px rgba(212, 175, 55, 0.15);
-            --radius: 16px;
-            --radius-xl: 24px;
-            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            --success: #00d68f;
-            --danger: #ff3366;
-            --warning: #f7d44a;
-            --cyan: #00e5ff;
-            --purple: #a855f7;
-            --pink: #ec4899;
-            --bronze: #CD7F32;
-            --bronze-light: #D4A574;
-            --bronze-dark: #8B5A2B;
-            --bg-card: rgba(15, 45, 26, 0.4);
-            --bg-dark: rgba(5, 8, 15, 0.8);
-            --border-color: rgba(212, 175, 55, 0.08);
-        }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        body {
-            background: var(--space);
-            color: var(--text-primary);
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            min-height: 100vh;
-            line-height: 1.6;
-            background-image: 
-                radial-gradient(ellipse at 20% 50%, rgba(26, 74, 42, 0.4) 0%, transparent 60%),
-                radial-gradient(ellipse at 80% 50%, rgba(212, 175, 55, 0.08) 0%, transparent 60%);
-            padding: 0;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-        }
-
-        #stars-canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 0;
-            pointer-events: none;
-        }
-
-        .nebula {
-            position: fixed;
-            border-radius: 50%;
-            filter: blur(120px);
-            opacity: 0.12;
-            pointer-events: none;
-            z-index: 0;
-            animation: nebula-drift 25s ease-in-out infinite alternate;
-        }
-        .nebula-1 { width: 700px; height: 700px; background: var(--green-bright); top: -15%; right: -15%; }
-        .nebula-2 { width: 600px; height: 600px; background: var(--gold-light); bottom: -15%; left: -15%; animation-delay: -8s; opacity: 0.06; }
-        .nebula-3 { width: 500px; height: 500px; background: var(--purple); top: 50%; left: 50%; transform: translate(-50%, -50%); animation-delay: -15s; opacity: 0.04; }
-
-        @keyframes nebula-drift {
-            0% { transform: translate(0, 0) scale(1); }
-            100% { transform: translate(40px, -30px) scale(1.15); }
-        }
-
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: var(--space); }
-        ::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 2px; }
-
-        .app {
-            position: relative;
-            z-index: 1;
-            max-width: 1100px;
-            margin: 0 auto;
-            padding: 16px 20px 30px;
-        }
-
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 0 14px;
-            border-bottom: 1px solid var(--glass-border);
-            flex-wrap: wrap;
-            gap: 10px;
-            background: rgba(5, 8, 15, 0.92);
-            border-radius: var(--radius) var(--radius) 0 0;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-        .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
-        .logo-hex { font-size: 1.8rem; color: var(--gold); font-weight: 800; font-family: 'Orbitron', monospace; text-shadow: 0 0 30px rgba(212, 175, 55, 0.3); animation: glow-pulse 3s ease-in-out infinite; }
-        @keyframes glow-pulse {
-            0%, 100% { text-shadow: 0 0 30px rgba(212, 175, 55, 0.3); }
-            50% { text-shadow: 0 0 60px rgba(212, 175, 55, 0.6); }
-        }
-        .logo-text { font-family: 'Orbitron', monospace; font-size: 1.2rem; font-weight: 700; color: var(--text-primary); letter-spacing: 2px; }
-        .logo-text span { color: var(--gold); }
-        .logo-badge { font-size: 0.45rem; background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: var(--space); padding: 2px 10px; border-radius: 20px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
-
-        /* ===== SELECTOR DE IDIOMA ===== */
-        .idioma-selector {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 0.65rem;
-            color: var(--text-secondary);
-            background: rgba(0,0,0,0.2);
-            padding: 4px 10px;
-            border-radius: 20px;
-            border: 1px solid var(--glass-border);
-        }
-        .idioma-selector select {
-            background: transparent;
-            border: none;
-            color: var(--gold);
-            font-size: 0.65rem;
-            outline: none;
-            cursor: pointer;
-            font-family: 'Inter', sans-serif;
-            padding: 2px 4px;
-        }
-        .idioma-selector select option {
-            background: var(--space);
-            color: var(--text-primary);
-        }
-
-        .network-badge { display: flex; align-items: center; gap: 6px; font-size: 0.6rem; color: var(--gold); background: rgba(212, 175, 55, 0.1); padding: 4px 12px; border-radius: 20px; border: 1px solid rgba(212, 175, 55, 0.15); }
-        .network-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); animation: pulse-dot 2s infinite; }
-        @keyframes pulse-dot {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.3; transform: scale(0.8); }
-        }
-
-        .main-nav {
-            display: flex;
-            gap: 4px;
-            background: rgba(15, 45, 26, 0.3);
-            border-radius: var(--radius);
-            padding: 4px;
-            border: 1px solid var(--glass-border);
-            margin: 16px 0 20px;
-            overflow-x: auto;
-        }
-        .main-nav .nav-link {
-            padding: 8px 16px;
-            border-radius: 12px;
-            color: var(--text-muted);
-            text-decoration: none;
-            font-size: 0.7rem;
-            font-weight: 500;
-            transition: var(--transition);
-            white-space: nowrap;
-            position: relative;
-        }
-        .main-nav .nav-link::after {
-            content: '';
-            position: absolute;
-            bottom: 2px;
-            left: 50%;
-            width: 0;
-            height: 2px;
-            background: var(--gold);
-            transition: var(--transition);
-            transform: translateX(-50%);
-        }
-        .main-nav .nav-link:hover::after, .main-nav .nav-link.active::after { width: 60%; }
-        .main-nav .nav-link:hover { color: var(--text-primary); background: rgba(212, 175, 55, 0.05); }
-        .main-nav .nav-link.active { background: rgba(212, 175, 55, 0.12); color: var(--gold); }
-        .main-nav .nav-link.live { color: var(--danger); }
-
-        .perfil-container { max-width: 1100px; margin: 0 auto; }
-
-        .perfil-header {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius-xl);
-            padding: 24px 28px;
-            margin-bottom: 24px;
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            display: flex;
-            align-items: center;
-            gap: 24px;
-            flex-wrap: wrap;
-            position: relative;
-            overflow: hidden;
-        }
-        .perfil-header::before {
-            content: '';
-            position: absolute;
-            top: -2px; left: -2px; right: -2px; bottom: -2px;
-            background: linear-gradient(135deg, var(--gold), var(--green-deep), var(--gold));
-            background-size: 300% 300%;
-            border-radius: var(--radius-xl);
-            z-index: -1;
-            opacity: 0.1;
-            animation: border-flow 6s ease-in-out infinite;
-        }
-        @keyframes border-flow {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-
-        .perfil-header .avatar-container { position: relative; flex-shrink: 0; }
-        .perfil-header .avatar {
-            width: 90px;
-            height: 90px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--green-deep), var(--gold));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2.4rem;
-            font-weight: 700;
-            color: white;
-            overflow: hidden;
-            border: 3px solid var(--gold);
-            box-shadow: 0 0 40px rgba(212, 175, 55, 0.15);
-            font-family: 'Orbitron', monospace;
-        }
-        .perfil-header .avatar img { width: 100%; height: 100%; object-fit: cover; }
-        .perfil-header .avatar .edit-badge {
-            position: absolute;
-            bottom: 4px;
-            right: 4px;
-            background: var(--gold);
-            border-radius: 50%;
-            width: 28px;
-            height: 28px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.65rem;
-            color: var(--space);
-            border: 2px solid var(--space);
-            cursor: pointer;
-            transition: var(--transition);
-            box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
-        }
-
-        .perfil-header .info { flex: 1; min-width: 200px; }
-        .perfil-header .info .nombre {
-            font-family: 'Orbitron', monospace;
-            font-size: 1.4rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, var(--gold), var(--text-primary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-        .perfil-header .info .nombre .verified {
-            font-size: 0.5rem;
-            background: rgba(212, 175, 55, 0.15);
-            color: var(--gold);
-            padding: 2px 12px;
-            border-radius: 12px;
-            font-family: 'Orbitron', monospace;
-            border: 1px solid rgba(212, 175, 55, 0.1);
-            -webkit-text-fill-color: var(--gold);
-        }
-        .perfil-header .info .handle { font-size: 0.85rem; color: var(--text-muted); letter-spacing: 0.5px; }
-        .perfil-header .info .bio { font-size: 0.9rem; color: var(--text-secondary); margin-top: 6px; max-width: 500px; line-height: 1.5; }
-        .perfil-header .info .badges { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
-        .perfil-header .info .badges .badge {
-            font-size: 0.55rem;
-            padding: 3px 14px;
-            border-radius: 20px;
-            font-family: 'Orbitron', monospace;
-            border: 1px solid var(--glass-border);
-            color: var(--text-muted);
-            background: rgba(255, 255, 255, 0.03);
-        }
-        .perfil-header .info .badges .badge.gold { border-color: var(--gold); color: var(--gold); background: rgba(212, 175, 55, 0.05); }
-        .perfil-header .info .badges .badge.success { border-color: var(--success); color: var(--success); background: rgba(0, 214, 143, 0.05); }
-
-        .perfil-header .stats { display: flex; gap: 24px; flex-wrap: wrap; margin-left: auto; }
-        .perfil-header .stats .stat { text-align: center; }
-        .perfil-header .stats .stat .number {
-            font-family: 'Orbitron', monospace;
-            font-size: 1.2rem;
-            font-weight: 700;
-            color: var(--gold);
-            text-shadow: 0 0 20px rgba(212, 175, 55, 0.05);
-        }
-        .perfil-header .stats .stat .label { font-size: 0.55rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-family: 'Orbitron', monospace; }
-        .perfil-header .acciones { display: flex; gap: 8px; flex-wrap: wrap; margin-left: 10px; }
-
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 8px 20px;
-            border-radius: 30px;
-            font-size: 0.7rem;
-            font-weight: 600;
-            border: none;
-            cursor: pointer;
-            transition: var(--transition);
-            font-family: 'Inter', sans-serif;
-        }
-        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
-        .btn-gold { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); box-shadow: 0 4px 20px rgba(212, 175, 55, 0.2); }
-        .btn-gold:hover:not(:disabled) { transform: translateY(-2px); box-shadow: var(--shadow-gold); }
-        .btn-outline { background: transparent; color: var(--text-secondary); border: 1px solid var(--glass-border); }
-        .btn-outline:hover:not(:disabled) { border-color: var(--gold); color: var(--gold); box-shadow: 0 0 20px rgba(212, 175, 55, 0.1); }
-        .btn-sm { padding: 4px 12px; font-size: 0.65rem; }
-        .btn-danger { background: rgba(255, 51, 102, 0.1); color: var(--danger); border: 1px solid rgba(255, 51, 102, 0.2); }
-        .btn-danger:hover:not(:disabled) { background: rgba(255, 51, 102, 0.2); }
-        .btn-crypto { background: linear-gradient(135deg, #00ff88, #00b894); color: var(--space); box-shadow: 0 4px 20px rgba(0, 255, 136, 0.2); }
-        .btn-crypto:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 0 40px rgba(0, 255, 136, 0.3); }
-        .btn-wallet { background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: #fff; box-shadow: 0 4px 20px rgba(139, 92, 246, 0.2); }
-        .btn-wallet:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 0 40px rgba(139, 92, 246, 0.3); }
-        .btn-video { background: linear-gradient(135deg, #ff6b6b, #ee5a24); color: #fff; box-shadow: 0 4px 20px rgba(238, 90, 36, 0.2); }
-        .btn-video:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 0 40px rgba(238, 90, 36, 0.3); }
-
-        .perfil-tabs {
-            display: flex;
-            gap: 4px;
-            background: var(--glass-bg);
-            border-radius: var(--radius);
-            padding: 4px;
-            border: 1px solid var(--glass-border);
-            margin-bottom: 20px;
-            overflow-x: auto;
-        }
-        .perfil-tabs .tab-btn {
-            padding: 10px 20px;
-            border: none;
-            background: transparent;
-            color: var(--text-muted);
-            font-family: 'Inter', sans-serif;
-            font-size: 0.7rem;
-            font-weight: 600;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: var(--transition);
-            white-space: nowrap;
-        }
-        .perfil-tabs .tab-btn.active { background: rgba(212, 175, 55, 0.12); color: var(--gold); box-shadow: 0 0 20px rgba(212, 175, 55, 0.05); }
-
-        .tab-content { display: none; animation: fadeIn 0.3s ease; }
-        .tab-content.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        .panel {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius);
-            overflow: hidden;
-            backdrop-filter: blur(10px);
-            transition: var(--transition);
-            margin-bottom: 16px;
-        }
-        .panel-header {
-            padding: 14px 18px;
-            border-bottom: 1px solid var(--glass-border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: rgba(212, 175, 55, 0.03);
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-        .panel-header h3 { font-size: 0.85rem; font-weight: 600; color: var(--gold); }
-        .panel-badge { font-size: 0.6rem; background: rgba(212, 175, 55, 0.12); color: var(--gold); padding: 2px 12px; border-radius: 20px; font-weight: 600; text-transform: uppercase; border: 1px solid rgba(212, 175, 55, 0.08); }
-        .panel-body { padding: 18px; }
-
-        .publicacion-item {
-            background: rgba(0,0,0,0.2);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius);
-            padding: 12px 14px;
-            margin-bottom: 10px;
-            transition: var(--transition);
-            position: relative;
-            overflow: visible;
-            z-index: 1;
-        }
-        .publicacion-item:hover {
-            border-color: rgba(212, 175, 55, 0.2);
-        }
-        .publicacion-item .pub-header {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 6px;
-        }
-        .publicacion-item .pub-header .avatar-mini {
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--green-deep), var(--gold));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.6rem;
-            color: white;
-            overflow: hidden;
-            flex-shrink: 0;
-        }
-        .publicacion-item .pub-header .avatar-mini img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        .publicacion-item .pub-header .pub-nombre {
-            font-weight: 600;
-            font-size: 0.8rem;
-            color: var(--text-primary);
-        }
-        .publicacion-item .pub-header .pub-fecha {
-            font-size: 0.55rem;
-            color: var(--text-muted);
-            margin-left: auto;
-        }
-        .publicacion-item .pub-texto {
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-            margin-bottom: 8px;
-            line-height: 1.5;
-        }
-        .publicacion-item .pub-media {
-            width: 100%;
-            border-radius: 10px;
-            overflow: hidden;
-            max-height: 300px;
-            object-fit: cover;
-            background: var(--space);
-        }
-        .publicacion-item .pub-actions {
-            display: flex;
-            gap: 16px;
-            margin-top: 8px;
-            font-size: 0.65rem;
-            color: var(--text-muted);
-            align-items: center;
-            position: relative;
-            z-index: 10;
-            flex-wrap: wrap;
-        }
-        .publicacion-item .pub-actions .reaccion-btn {
-            cursor: pointer;
-            transition: var(--transition);
-            padding: 4px 8px;
-            border-radius: 8px;
-            position: relative;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            font-size: 1.1rem;
-            background: transparent;
-            border: none;
-            color: var(--text-muted);
-        }
-        .publicacion-item .pub-actions .reaccion-btn:hover {
-            color: var(--gold);
-            background: rgba(212, 175, 55, 0.05);
-        }
-        .publicacion-item .pub-actions .reaccion-btn .count {
-            font-size: 0.65rem;
-            color: var(--text-muted);
-        }
-        .publicacion-item .pub-actions .reaccion-btn .arrow {
-            font-size: 0.55rem;
-            color: var(--text-muted);
-            transition: var(--transition);
-            margin-left: 2px;
-        }
-        .publicacion-item .pub-actions .reaccion-btn .arrow.open {
-            transform: rotate(180deg);
-            color: var(--gold);
-        }
-        .publicacion-item .pub-actions .reaccion-btn:hover .arrow {
-            color: var(--gold);
-        }
-        .publicacion-item .pub-actions .comment-btn {
-            cursor: pointer;
-            transition: var(--transition);
-            padding: 4px 8px;
-            border-radius: 8px;
-            color: var(--text-muted);
-            font-size: 0.65rem;
-        }
-        .publicacion-item .pub-actions .comment-btn:hover {
-            color: var(--gold);
-            background: rgba(212, 175, 55, 0.05);
-        }
-        .publicacion-item .pub-actions .delete-btn {
-            background: transparent;
-            border: none;
-            color: var(--text-muted);
-            cursor: pointer;
-            font-size: 0.7rem;
-            padding: 4px 8px;
-            border-radius: 8px;
-            transition: var(--transition);
-        }
-        .publicacion-item .pub-actions .delete-btn:hover {
-            color: var(--danger);
-            background: rgba(255, 51, 102, 0.1);
-        }
-
-        .reaccion-picker {
-            display: none;
-            position: absolute;
-            bottom: calc(100% + 10px);
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(15, 25, 20, 0.98);
-            border: 1px solid rgba(212, 175, 55, 0.25);
-            border-radius: 30px;
-            padding: 8px 14px;
-            z-index: 9999;
-            box-shadow: 0 0 60px rgba(212, 175, 55, 0.15), 0 0 120px rgba(0,0,0,0.9);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            margin-bottom: 0;
-            white-space: nowrap;
-            min-width: 200px;
-            justify-content: center;
-        }
-        .reaccion-picker.show {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 2px;
-        }
-        .reaccion-picker button {
-            background: transparent;
-            border: none;
-            font-size: 1.6rem;
-            padding: 4px 6px;
-            cursor: pointer;
-            border-radius: 50%;
-            transition: var(--transition);
-            line-height: 1;
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .reaccion-picker button:hover {
-            background: rgba(212, 175, 55, 0.2);
-            transform: scale(1.3);
-        }
-        .reaccion-picker button:active {
-            transform: scale(0.9);
-        }
-
-        .conexion-section {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius);
-            padding: 15px;
-            margin-top: 15px;
-        }
-        .conexion-section .conexion-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-        .conexion-section .conexion-info { display: flex; align-items: center; gap: 10px; }
-        .conexion-section .conexion-info .status { font-weight: 600; font-size: 0.9rem; }
-        .conexion-section .conexion-info .velocidad { color: var(--text-muted); font-size: 0.7rem; }
-        .conexion-section .conexion-info .señal { font-size: 0.7rem; }
-        .conexion-buttons { display: flex; gap: 8px; }
-        .conexion-buttons .btn-conexion {
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-size: 0.65rem;
-            font-weight: 600;
-            border: 1px solid var(--glass-border);
-            background: transparent;
-            color: var(--text-muted);
-            cursor: pointer;
-            transition: var(--transition);
-        }
-        .conexion-buttons .btn-conexion:hover { border-color: var(--gold); color: var(--gold); }
-        .conexion-buttons .btn-conexion.active { border-color: var(--gold); background: rgba(212, 175, 55, 0.15); color: var(--gold); }
-        .conexion-buttons .btn-conexion.wifi.active { border-color: var(--success); background: rgba(0, 214, 143, 0.1); color: var(--success); }
-        .conexion-buttons .btn-conexion.datos.active { border-color: var(--cyan); background: rgba(0, 229, 255, 0.1); color: var(--cyan); }
-
-        .estado-section {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius);
-            padding: 15px;
-            margin-top: 15px;
-        }
-        .estado-section .estado-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
-        .estado-section .estado-info { display: flex; align-items: center; gap: 10px; }
-        .estado-section .estado-info .badge { font-size: 1.2rem; }
-        .estado-section .estado-info .texto { font-weight: 600; }
-        .estado-section .estado-info .amigos-online { font-size: 0.6rem; color: var(--text-muted); }
-        .estado-buttons { display: flex; gap: 8px; }
-        .estado-buttons .btn-estado {
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.6rem;
-            font-weight: 600;
-            border: 1px solid var(--glass-border);
-            background: transparent;
-            color: var(--text-muted);
-            cursor: pointer;
-            transition: var(--transition);
-        }
-        .estado-buttons .btn-estado:hover { border-color: var(--gold); color: var(--gold); }
-        .estado-buttons .btn-estado.online { border-color: var(--success); color: var(--success); }
-        .estado-buttons .btn-estado.online:hover { background: rgba(0, 214, 143, 0.1); }
-        .estado-buttons .btn-estado.offline { border-color: var(--text-muted); color: var(--text-muted); }
-        .estado-buttons .btn-estado.offline:hover { background: rgba(255, 255, 255, 0.05); }
-
-        #solicitudesSection { margin-top: 10px; padding: 10px 0; }
-        #solicitudesSection h4 { color: var(--gold); font-size: 0.85rem; margin-bottom: 8px; }
-
-        #amigosContainer {
-            margin-top: 10px;
-            max-height: 300px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-        #amigosContainer .amigo-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 8px 12px;
-            border-radius: 10px;
-            border: 1px solid var(--glass-border);
-            transition: var(--transition);
-        }
-        #amigosContainer .amigo-item:hover { background: rgba(212, 175, 55, 0.05); }
-        #amigosContainer .amigo-item .avatar-mini {
-            width: 32px; height: 32px; border-radius: 50%; overflow: hidden;
-            border: 2px solid var(--text-muted); flex-shrink: 0;
-            display: flex; align-items: center; justify-content: center; font-size: 0.8rem; background: var(--bg-card);
-        }
-        #amigosContainer .amigo-item.online .avatar-mini { border-color: var(--success); }
-        #amigosContainer .amigo-item .avatar-mini img { width: 100%; height: 100%; object-fit: cover; }
-        #amigosContainer .amigo-item .info { flex: 1; min-width: 0; }
-        #amigosContainer .amigo-item .info .nombre { font-weight: 600; font-size: 0.8rem; }
-        #amigosContainer .amigo-item .info .estado { font-size: 0.6rem; color: var(--text-muted); }
-
-        .nft-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-            gap: 14px;
-        }
-        .nft-card {
-            background: rgba(0,0,0,0.3);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius);
-            padding: 12px;
-            text-align: center;
-            transition: var(--transition);
-        }
-        .nft-card:hover { border-color: var(--gold); transform: translateY(-3px); }
-        .nft-card img { width: 100%; height: 120px; object-fit: cover; border-radius: 10px; margin-bottom: 8px; }
-        .nft-card .title { font-family: 'Orbitron', monospace; font-size: 0.75rem; color: var(--gold); font-weight: 700; }
-        .nft-card .meta { font-size: 0.6rem; color: var(--text-muted); margin-top: 4px; }
-
-        .token-status { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; }
-        .token-status .item { background: rgba(0, 0, 0, 0.2); border: 1px solid var(--glass-border); border-radius: 12px; padding: 14px; text-align: center; transition: var(--transition); }
-        .token-status .item:hover { border-color: var(--gold); transform: translateY(-2px); }
-        .token-status .item .value { font-family: 'Orbitron', monospace; font-size: 1.3rem; font-weight: 700; color: var(--gold); }
-        .token-status .item .label { font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-family: 'Orbitron', monospace; }
-
-        .progress-bar-container { margin-top: 16px; }
-        .progress-bar-container .bar { width: 100%; height: 8px; background: rgba(255, 255, 255, 0.05); border-radius: 10px; overflow: hidden; }
-        .progress-bar-container .bar .fill { height: 100%; background: linear-gradient(90deg, var(--gold), var(--gold-light)); border-radius: 10px; transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1); }
-        .progress-bar-container .label { display: flex; justify-content: space-between; font-size: 0.6rem; color: var(--text-muted); margin-top: 4px; font-family: 'Orbitron', monospace; }
-
-        .config-group { margin-bottom: 16px; }
-        .config-group label { display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px; font-weight: 500; letter-spacing: 0.3px; }
-        .config-group input, .config-group textarea {
-            width: 100%;
-            padding: 10px 14px;
-            background: rgba(0, 0, 0, 0.25);
-            border: 1px solid var(--glass-border);
-            border-radius: 10px;
-            color: var(--text-primary);
-            font-size: 0.9rem;
-            outline: none;
-            transition: var(--transition);
-            font-family: 'Inter', sans-serif;
-        }
-        .config-group input:focus, .config-group textarea:focus { border-color: var(--gold); box-shadow: 0 0 30px rgba(212, 175, 55, 0.05); background: rgba(0, 0, 0, 0.35); }
-        .config-group textarea { resize: vertical; min-height: 80px; }
-        .config-group .hint { font-size: 0.6rem; color: var(--text-muted); margin-top: 4px; }
-
-        .empty-state { text-align: center; padding: 30px 20px; color: var(--text-muted); }
-        .empty-state .icon { font-size: 2.2rem; display: block; margin-bottom: 8px; font-family: 'Orbitron', monospace; color: var(--gold); opacity: 0.4; }
-        .empty-state h4 { font-family: 'Orbitron', monospace; color: var(--text-secondary); font-size: 0.9rem; font-weight: 500; }
-
-        .toast {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            background: var(--green-deep);
-            border: 1px solid var(--gold);
-            color: var(--gold);
-            padding: 12px 24px;
-            border-radius: 12px;
-            font-size: 0.8rem;
-            font-weight: 500;
-            box-shadow: var(--shadow-gold-strong);
-            transform: translateY(100px);
-            opacity: 0;
-            transition: all 0.4s ease;
-            z-index: 9999;
-            max-width: 400px;
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-        }
-        .toast.show { transform: translateY(0); opacity: 1; }
-        .toast.error { border-color: var(--danger); color: var(--danger); }
-        .toast.warning { border-color: var(--warning); color: var(--warning); }
-        .toast.success { border-color: var(--success); color: var(--success); }
-
-        .footer { margin-top: 30px; padding-top: 16px; border-top: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; font-size: 0.7rem; color: var(--text-muted); padding-bottom: 8px; letter-spacing: 0.3px; }
-        .footer .brand { color: var(--gold); font-weight: 600; letter-spacing: 1px; }
-        .footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
-        .footer-links a { color: var(--text-muted); text-decoration: none; transition: var(--transition); }
-        .footer-links a:hover { color: var(--gold); }
-
-        .modal-overlay {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0, 0, 0, 0.85);
-            backdrop-filter: blur(12px);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-            animation: fadeIn 0.3s ease-out;
-        }
-        .modal-overlay.active { display: flex; }
-        .modal-content {
-            background: linear-gradient(135deg, var(--bg-card), var(--bg-dark));
-            border: 2px solid var(--gold);
-            border-radius: 20px;
-            padding: 24px;
-            max-width: 480px;
-            width: 90%;
-            text-align: center;
-            position: relative;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-        .modal-content .close-btn {
-            position: absolute;
-            top: 12px;
-            right: 15px;
-            background: transparent;
-            border: none;
-            color: var(--text-muted);
-            font-size: 1.4rem;
-            cursor: pointer;
-            transition: var(--transition);
-        }
-        .modal-content .close-btn:hover { color: var(--text-primary); transform: rotate(90deg); }
-        .modal-content h2 { color: var(--gold); font-family: 'Orbitron', monospace; font-size: 1.2rem; margin-bottom: 10px; }
-        .modal-content .subtitle { color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 16px; }
-        .modal-content .qr-container { background: white; border-radius: 12px; padding: 15px; margin: 10px 0; display: inline-block; }
-        .modal-content .qr-container img { max-width: 180px; width: 100%; }
-        .modal-content .address-box { background: var(--bg-dark); border-radius: 10px; padding: 12px; margin: 10px 0; word-break: break-all; }
-        .modal-content .address-box .label { font-size: 0.6rem; color: var(--text-muted); }
-        .modal-content .address-box .address { font-family: monospace; font-size: 0.75rem; color: var(--gold); margin-top: 4px; }
-        .modal-content .actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 16px; }
-
-        .crypto-controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-        .crypto-controls .qty-group {
-            display: flex; align-items: center; gap: 10px;
-            background: rgba(0, 0, 0, 0.2); padding: 4px 12px; border-radius: 30px; border: 1px solid var(--glass-border);
-        }
-        .crypto-controls .qty-group .qty-btn {
-            width: 28px; height: 28px; border-radius: 50%; border: none; background: transparent;
-            color: var(--text-primary); font-size: 1.1rem; cursor: pointer; transition: var(--transition);
-        }
-        .crypto-controls .qty-group .qty-btn:hover { background: rgba(212, 175, 55, 0.1); }
-        .crypto-controls .qty-group .qty-value { font-family: 'Orbitron', monospace; font-size: 1rem; font-weight: 600; color: var(--gold); min-width: 20px; text-align: center; }
-        .crypto-total { font-family: 'Orbitron', monospace; font-size: 1.2rem; color: var(--gold); font-weight: 700; }
-
-        #qrReaderContainer { display: none; margin-top: 10px; text-align: center; }
-
-        @media (max-width: 768px) {
-            .app { padding: 12px 14px; }
-            .perfil-header { flex-direction: column; text-align: center; padding: 20px; }
-            .perfil-header .stats { margin-left: 0; justify-content: center; width: 100%; }
-            .perfil-header .acciones { margin-left: 0; justify-content: center; width: 100%; }
-            .perfil-tabs .tab-btn { font-size: 0.6rem; padding: 8px 14px; }
-            .main-nav .nav-link { font-size: 0.6rem; padding: 6px 10px; }
-            .crypto-controls { flex-direction: column; }
-            .reaccion-picker { left: 50%; transform: translateX(-50%); }
-            .reaccion-picker button { font-size: 1.2rem; padding: 3px 4px; width: 32px; height: 32px; }
-        }
-        
-        /* Estilos para el picker de emojis en la publicación */
-        .publicacion-modal-emoji-wrapper {
-            position: relative;
-            display: inline-block;
-        }
-        .emoji-picker {
-            display: none;
-            position: absolute;
-            bottom: calc(100% + 10px);
-            left: 0;
-            background: rgba(15, 25, 20, 0.95);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius);
-            padding: 12px;
-            width: 280px;
-            max-width: 90vw;
-            z-index: 1000;
-            box-shadow: var(--shadow-gold-strong);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            margin-bottom: 8px;
-        }
-        .emoji-picker .titulo {
-            color: var(--text-muted);
-            font-size: 0.6rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 8px;
-            text-align: center;
-            font-family: 'Orbitron', monospace;
-        }
-        .emoji-picker .grid {
-            display: grid;
-            grid-template-columns: repeat(8, 1fr);
-            gap: 4px;
-        }
-        .emoji-picker .grid button {
-            background: transparent;
-            border: none;
-            font-size: 1.4rem;
-            padding: 4px;
-            cursor: pointer;
-            border-radius: 8px;
-            transition: all 0.2s ease;
-            line-height: 1;
-            width: 38px;
-            height: 38px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .emoji-picker .grid button:hover {
-            background: rgba(212, 175, 55, 0.2);
-            transform: scale(1.2);
-        }
-    </style>
-</head>
-<body>
-
-    <canvas id="stars-canvas"></canvas>
-    <div class="nebula nebula-1"></div>
-    <div class="nebula nebula-2"></div>
-    <div class="nebula nebula-3"></div>
-
-    <div class="app">
-
-        <header class="header">
-            <a href="/" class="logo">
-                <span class="logo-hex">◈</span>
-                <span class="logo-text">Sariel<span>'s</span></span>
-                <span class="logo-badge">✦ WEB3</span>
-            </a>
-            <div class="header-actions" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-                <!-- ===== SELECTOR DE IDIOMA ===== -->
-                <div class="idioma-selector">
-                    <span>🌐</span>
-                    <select id="selectorIdioma" onchange="cambiarIdioma(this.value)">
-                        <!-- Se llena dinámicamente desde JavaScript -->
-                    </select>
-                </div>
-                
-                <button class="btn-video" onclick="window.location.href='/videos/videos.html'" style="padding:4px 12px;border-radius:20px;border:none;font-size:0.7rem;cursor:pointer;font-weight:600;">🎬 Videos</button>
-                <button onclick="window.location.href='/muro/muro.html'" style="background:transparent;border:none;color:var(--text-muted);font-size:1.2rem;cursor:pointer;">◇</button>
-                <span class="network-badge"><span class="dot"></span> Polygon</span>
-            </div>
-        </header>
-
-        <nav class="main-nav">
-            <a href="/" class="nav-link">⌂ Inicio</a>
-            <a href="/muro/muro.html" class="nav-link">◇ Muro</a>
-            <a href="/features/perfil/perfil.html" class="nav-link active">◆ Perfil</a>
-            <a href="/mensajes/mensajes.html" class="nav-link">◈ Mensajes</a>
-            <a href="/live/live.html" class="nav-link live">◉ Live</a>
-            <a href="/videos/videos.html" class="nav-link">🎬 Videos</a>
-            <a href="/features/grupos/grupos.html" class="nav-link">👥 Grupos</a>
-        </nav>
-
-        <div class="perfil-container">
-
-            <div class="perfil-header" id="perfilHeader">
-                <div class="avatar-container">
-                    <div class="avatar" id="perfilAvatar">
-                        ◈
-                        <button class="edit-badge" onclick="window.abrirSelectorArchivo()" title="Cambiar foto de perfil">✎</button>
-                    </div>
-                    <input type="file" id="fileInput" accept="image/*" style="display:none;" onchange="window.subirFoto(event)" />
-                </div>
-                <div class="info">
-                    <div class="nombre" id="perfilNombre">Cargando...<span class="verified">✦ VERIFICADO</span></div>
-                    <div class="handle" id="perfilHandle">@cargando</div>
-                    <div class="bio" id="perfilBio">Cargando información del usuario...</div>
-                    <div class="badges">
-                        <span class="badge gold">✦ MIEMBRO</span>
-                        <span class="badge success">● ACTIVO</span>
-                        <span class="badge">◈ WEB3</span>
-                        <span class="badge" id="nivelUsuario" style="border-color:var(--purple);color:var(--purple);background:rgba(168,85,247,0.05);">🌱 Explorador</span>
-                    </div>
-                </div>
-                <div class="stats">
-                    <div class="stat"><div class="number" id="statTokens">0</div><div class="label">◈ Tokens</div></div>
-                    <div class="stat"><div class="number" id="statNFTS">0</div><div class="label">◈ NFTs</div></div>
-                    <div class="stat"><div class="number" id="statSeguidores">0</div><div class="label">◈ Seguidores</div></div>
-                    <div class="stat"><div class="number" id="statSiguiendo">0</div><div class="label">◈ Siguiendo</div></div>
-                </div>
-                <div class="acciones">
-                    <button class="btn btn-gold btn-sm" onclick="window.editarPerfil()">✎ Editar perfil</button>
-                    <button class="btn btn-outline btn-sm" onclick="window.compartirPerfil()">◈ Compartir</button>
-                    <button class="btn btn-outline btn-sm" onclick="window.generarQRPerfil()">📱 QR</button>
-                </div>
-            </div>
-
-            <div class="estado-section">
-                <div class="estado-header">
-                    <div class="estado-info">
-                        <span class="badge" id="estadoBadge">🟢</span>
-                        <span class="texto" id="estadoTexto" style="color:var(--success);">Activo ahora</span>
-                        <span class="amigos-online">· <span id="amigosEnLineaContador">0</span> amigos en línea</span>
-                    </div>
-                    <div class="estado-buttons">
-                        <button class="btn-estado online" onclick="window.cambiarEstado(true)">🟢 Activo</button>
-                        <button class="btn-estado offline" onclick="window.cambiarEstado(false)">⭕ Inactivo</button>
-                    </div>
-                </div>
-                <div id="solicitudesSection">
-                    <h4 style="margin-top:12px;">📨 Solicitudes de Amistad <span id="solicitudesContador" style="font-size:0.7rem;color:var(--warning);">0</span></h4>
-                    <div id="solicitudesContainer" style="max-height:200px;overflow-y:auto;"><div style="text-align:center;padding:10px;color:var(--text-muted);font-size:0.75rem;">Cargando solicitudes...</div></div>
-                </div>
-                <div id="amigosContainer"></div>
-            </div>
-
-            <div class="conexion-section">
-                <div class="conexion-header">
-                    <div class="conexion-info">
-                        <span class="status" id="conexionStatus">🛜 WiFi</span>
-                        <span class="velocidad" id="conexionVelocidad">-- Mbps</span>
-                        <span class="señal" id="conexionSeñal" style="color:var(--success);">████</span>
-                    </div>
-                    <div class="conexion-buttons">
-                        <button class="btn-conexion wifi active" onclick="window.cambiarConexion('wifi')">🛜 WiFi</button>
-                        <button class="btn-conexion datos" onclick="window.cambiarConexion('datos')">📶 Datos</button>
-                    </div>
-                </div>
-                <div style="font-size:0.6rem;color:var(--text-muted);margin-top:6px;">Conexión actual: <span id="conexionTipo">🛜 WiFi</span> · Operador: <span id="conexionOperador">Sariel's Net</span></div>
-            </div>
-
-            <div class="perfil-tabs" role="tablist">
-                <button class="tab-btn active" onclick="window.cambiarTab('actividad')">◈ Actividad</button>
-                <button class="tab-btn" onclick="window.cambiarTab('tokens')">⟡ E.S.TOKS</button>
-                <button class="tab-btn" onclick="window.cambiarTab('nfts')">🎨 NFTs</button>
-                <button class="tab-btn" onclick="window.cambiarTab('esim')">📱 eSIM</button>
-                <button class="tab-btn" onclick="window.cambiarTab('qr')">📷 Escanear QR</button>
-                <button class="tab-btn" onclick="window.cambiarTab('config')">◆ Ajustes</button>
-            </div>
-
-            <!-- ============================================================ -->
-            <!-- TAB ACTIVIDAD -->
-            <!-- ============================================================ -->
-            <div id="tab-actividad" class="tab-content active">
-                <div class="panel">
-                    <div class="panel-header">
-                        <h3 data-clave="perfil_crear_publicacion">📸 Crear Publicación</h3>
-                        <span class="panel-badge" data-clave="perfil_nuevo">Nuevo</span>
-                    </div>
-                    <div class="panel-body">
-                        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
-                            <button class="btn btn-gold" onclick="window.abrirModalPublicacion()" style="flex:1;justify-content:center;padding:10px;" data-clave="perfil_nueva_publicacion_btn">
-                                📸 Nueva Publicación
-                            </button>
-                        </div>
-                        <div style="font-size:0.6rem;color:var(--text-muted);text-align:center;" data-clave="perfil_comparte_comunidad">
-                            Comparte fotos, videos o texto con la comunidad.
-                        </div>
-                    </div>
-                </div>
-
-                <div class="panel">
-                    <div class="panel-header">
-                        <h3 data-clave="perfil_mis_publicaciones">◈ Mis Publicaciones</h3>
-                        <span class="panel-badge" id="postsCount">0</span>
-                    </div>
-                    <div class="panel-body" id="postsList">
-                        <div class="empty-state">
-                            <span class="icon">📝</span>
-                            <h4 data-clave="perfil_sin_publicaciones">Sin publicaciones</h4>
-                            <p data-clave="perfil_crea_primera">Crea tu primera publicación desde el botón "Nueva Publicación".</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- ============================================================ -->
-                <!-- MEMBRESÍA PRO -->
-                <!-- ============================================================ -->
-                <div class="panel" id="membresiaPanel">
-                    <div class="panel-header">
-                        <h3 data-clave="perfil_pro_titulo">✦ Sariel's Pro</h3>
-                        <span class="panel-badge" data-clave="perfil_membresia">Membresía</span>
-                    </div>
-                    <div class="panel-body" id="membresiaContainer">
-                        <div class="empty-state">
-                            <span class="icon">⏳</span>
-                            <h4 data-clave="perfil_cargando_membresia">Cargando membresía...</h4>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ============================================================ -->
-            <!-- TAB TOKENS -->
-            <!-- ============================================================ -->
-            <div id="tab-tokens" class="tab-content">
-                <div class="panel">
-                    <div class="panel-header"><h3 data-clave="perfil_balance_tokens">⟡ Balance E.S.TOKS & Domos</h3><span class="panel-badge" data-clave="perfil_ecosistema">Ecosistema</span></div>
-                    <div class="panel-body">
-                        <div class="token-status">
-                            <div class="item"><div class="value" id="tokenTotal">0</div><div class="label" data-clave="perfil_balance">◈ Balance Tokens</div></div>
-                            <div class="item"><div class="value" id="tokenDisponibles">0</div><div class="label" data-clave="perfil_disponibles">◈ Disponibles</div></div>
-                            <div class="item"><div class="value" id="tokenVendidos">0</div><div class="label" data-clave="perfil_domos_leidos">◈ Domos Leídos</div></div>
-                            <div class="item"><div class="value" id="tokenNFTs">0</div><div class="label" data-clave="perfil_nfts_desbloqueados">◈ NFTs Desbloqueados</div></div>
-                        </div>
-                        <div class="progress-bar-container">
-                            <div class="bar"><div class="fill" id="progressFill" style="width:0%;"></div></div>
-                            <div class="label"><span data-clave="perfil_progreso_meta">Progreso meta 12 E.S.TOKS</span><span id="progressText">0 / 12</span></div>
-                        </div>
-                        <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;">
-                            <button class="btn btn-gold" style="flex:1;justify-content:center;padding:10px;" onclick="window.comprarDomo(1)" data-clave="perfil_registrar_domo">⟡ Registrar Domo • $75 MXN</button>
-                            <button class="btn btn-gold" style="flex:1;justify-content:center;padding:10px;" id="canjearNft" onclick="window.canjearNFT()" disabled data-clave="perfil_canjear_nft">🔒 CANJEAR NFT (Requiere 12 Tokens)</button>
-                        </div>
-                        <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--glass-border);">
-                            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
-                                <span style="font-size:0.8rem;color:var(--gold);font-weight:600;" data-clave="perfil_obtencion_cripto">💳 Obtención vía Cripto</span>
-                                <span style="font-size:0.6rem;color:var(--text-muted);" data-clave="perfil_usdt_trc20">USDT / USDC · Red TRC-20</span>
-                            </div>
-                            <div class="crypto-controls">
-                                <div class="qty-group">
-                                    <button class="qty-btn" id="cryptoDecreaseQty">−</button>
-                                    <span class="qty-value" id="cryptoQuantity">1</span>
-                                    <button class="qty-btn" id="cryptoIncreaseQty">+</button>
-                                </div>
-                                <div style="flex:1;text-align:center;"><span class="crypto-total" id="cryptoTotal">$4.59 USDT</span></div>
-                            </div>
-                            <button class="btn btn-crypto" style="width:100%;justify-content:center;margin-top:10px;padding:10px;" onclick="window.comprarConCripto()" data-clave="perfil_pagar_usdt">💳 Pagar con USDT/USDC</button>
-                        </div>
-                    </div>
-                </div>
-                <div class="panel">
-                    <div class="panel-header"><h3 data-clave="perfil_historial">◈ Historial de E.S.TOKS y Domos</h3><span class="panel-badge" id="historialCount">0</span></div>
-                    <div class="panel-body" id="historialList"><div class="empty-state"><span class="icon">◈</span><h4 data-clave="perfil_sin_registros">Sin registros</h4><p data-clave="perfil_registra_escanea">Registra o escanea Domos para acumular tu historial.</p></div></div>
-                </div>
-            </div>
-
-            <!-- ============================================================ -->
-            <!-- TAB NFTS -->
-            <!-- ============================================================ -->
-            <div id="tab-nfts" class="tab-content">
-                <div class="panel">
-                    <div class="panel-header"><h3 data-clave="perfil_galeria_nfts">🎨 Galería de NFTs Conmemorativos</h3><span class="panel-badge" data-clave="perfil_collection">Sariel's Collection</span></div>
-                    <div class="panel-body">
-                        <div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:14px;" data-clave="perfil_nfts_info">ⓘ Los NFTs de Sariel's son activos digitales conmemorativos e intransferibles emitidos al completar metas dentro de la red.</div>
-                        <div id="nftGalleryContainer" class="nft-grid"><div class="empty-state" style="grid-column:1/-1;"><span class="icon">🎨</span><h4 data-clave="perfil_no_nfts">No posees NFTs conmemorativos</h4><p data-clave="perfil_canjea_nft">Reúne 12 E.S.TOKS para canjear tu primer NFT conmemorativo.</p></div></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ============================================================ -->
-            <!-- TAB ESIM -->
-            <!-- ============================================================ -->
-            <div id="tab-esim" class="tab-content">
-                <div class="panel">
-                    <div class="panel-header"><h3 data-clave="perfil_esim_estado">📱 Estado de eSIM</h3><span class="panel-badge" data-clave="perfil_telnyx">Telnyx Mobile</span></div>
-                    <div class="panel-body">
-                        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;">
-                            <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;border:1px solid var(--glass-border);"><span style="color:var(--text-muted);font-size:0.6rem;" data-clave="perfil_estado_activacion">ESTADO ACTIVACIÓN</span><div id="esimStatus" style="font-weight:600;font-size:0.85rem;">⏳ No asignada</div></div>
-                            <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;border:1px solid var(--glass-border);"><span style="color:var(--text-muted);font-size:0.6rem;" data-clave="perfil_datos_consumidos">DATOS CONSUMIDOS</span><div id="esimDataUsed" style="font-weight:600;font-size:0.85rem;">-- GB</div></div>
-                            <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;border:1px solid var(--glass-border);"><span style="color:var(--text-muted);font-size:0.6rem;" data-clave="perfil_limite_plan">LÍMITE DEL PLAN</span><div id="esimDataLimit" style="font-weight:600;font-size:0.85rem;">-- GB</div></div>
-                            <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;border:1px solid var(--glass-border);"><span style="color:var(--text-muted);font-size:0.6rem;" data-clave="perfil_datos_restantes">DATOS RESTANTES</span><div id="esimDataRestante" style="font-weight:600;font-size:0.85rem;color:var(--success);">-- GB</div></div>
-                        </div>
-                        <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;border:1px solid var(--glass-border);margin-top:10px;"><span style="color:var(--text-muted);font-size:0.6rem;" data-clave="perfil_iccid">ICCID IDENTIFICADOR</span><div id="esimIccid" style="font-weight:600;font-size:0.8rem;font-family:monospace;">--</div></div>
-                        <div style="margin-top:12px;"><div style="background:rgba(0,0,0,0.2);border-radius:10px;height:8px;overflow:hidden;"><div id="esimDataProgress" style="height:100%;width:0%;background:var(--success);transition:width 0.8s;"></div></div></div>
-                        <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;">
-                            <button class="btn btn-gold" style="flex:1;justify-content:center;padding:10px;" onclick="window.comprarESIM(1)" data-clave="perfil_adquirir_esim">📱 Adquirir eSIM</button>
-                            <button class="btn btn-outline" style="flex:1;justify-content:center;padding:10px;" onclick="window.generarQRESIM()" data-clave="perfil_obtener_qr">📲 Obtener QR</button>
-                            <button class="btn btn-outline" style="flex:1;justify-content:center;padding:10px;" onclick="window.sincronizarESIM()" data-clave="perfil_sincronizar">🔄 Sincronizar</button>
-                        </div>
-                        <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
-                            <button class="btn btn-outline btn-sm" onclick="window.activarESIM()" style="border-color:var(--success);color:var(--success);" data-clave="perfil_activar_esim">✅ Activar eSIM</button>
-                            <button class="btn btn-danger btn-sm" onclick="window.desactivarESIM()" data-clave="perfil_desactivar_esim">⛔ Desactivar eSIM</button>
-                        </div>
-                        <div style="margin-top:10px;font-size:0.6rem;color:var(--text-muted);" data-clave="perfil_apn_requerido">APN Requerido: <span id="esimApn" style="font-family:monospace;color:var(--text-secondary);">data00.telnyx</span></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ============================================================ -->
-            <!-- TAB QR -->
-            <!-- ============================================================ -->
-            <div id="tab-qr" class="tab-content">
-                <div class="panel">
-                    <div class="panel-header"><h3 data-clave="perfil_escanear_qr">📱 Escaneo e Ingreso de QR Domo</h3><span class="panel-badge" data-clave="perfil_validacion_real">Validación Real</span></div>
-                    <div class="panel-body">
-                        <form onsubmit="event.preventDefault(); window.escanearQR();" class="config-group">
-                            <label for="qrInput" data-clave="perfil_codigo_qr">Código del QR (Escanea o ingresa manualmente)</label>
-                            <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                                <input type="text" id="qrInput" placeholder="Ej: DOMO-2026-X89A12" required style="flex:1;padding:10px 14px;background:rgba(0,0,0,0.3);border:1px solid var(--glass-border);border-radius:10px;color:var(--text-primary);font-size:0.85rem;outline:none;" data-placeholder="perfil_ejemplo_domo" />
-                                <button type="submit" class="btn btn-gold" data-clave="perfil_validar_codigo">🔍 Validar Código</button>
-                            </div>
-                            <div class="hint" data-clave="perfil_escanea_qr_hint">⚡ Ingresa el identificador único del Domo físico para acumular 1 E.S.TOK real.</div>
-                        </form>
-                        <button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:8px;padding:10px;" onclick="window.abrirCamaraQR()" data-clave="perfil_abrir_camara">📷 Abrir Cámara del Dispositivo</button>
-                        <div id="qrReaderContainer">
-                            <video id="qrVideo" playsinline style="width:100%;max-width:300px;border-radius:10px;background:black;"></video>
-                            <canvas id="qrCanvas" style="display:none;"></canvas>
-                            <div style="margin-top:8px;"><button class="btn btn-danger btn-sm" onclick="window.cerrarCamaraQR()" data-clave="perfil_cerrar_camara">✕ Cerrar cámara</button></div>
-                            <div id="qrCamaraStatus" style="font-size:0.7rem;color:var(--text-muted);margin-top:4px;">Iniciando cámara...</div>
-                        </div>
-                        <div id="qrStatus" style="margin-top:12px;font-size:0.8rem;color:var(--text-muted);min-height:24px;text-align:center;"></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ============================================================ -->
-            <!-- TAB CONFIG -->
-            <!-- ============================================================ -->
-            <div id="tab-config" class="tab-content">
-                <div class="panel">
-                    <div class="panel-header"><h3 data-clave="perfil_editar_perfil">◆ Perfil e Información</h3><span class="panel-badge" data-clave="perfil_editar">Editar</span></div>
-                    <div class="panel-body">
-                        <form onsubmit="event.preventDefault(); window.guardarPerfil();">
-                            <div class="config-group"><label for="editNombre" data-clave="perfil_nombre_usuario">Nombre de Usuario</label><input type="text" id="editNombre" required /></div>
-                            <div class="config-group"><label for="editHandle" data-clave="perfil_handle">Handle / Apodo (@)</label><input type="text" id="editHandle" required /></div>
-                            <div class="config-group"><label for="editBio" data-clave="perfil_biografia">Biografía</label><textarea id="editBio" rows="3"></textarea></div>
-                            <div class="config-group"><label data-clave="perfil_imagen_perfil">Imagen de Perfil</label><button type="button" class="btn btn-outline" style="width:100%;" onclick="window.abrirSelectorArchivo()" data-clave="perfil_subir_foto">📸 Subir nueva foto</button></div>
-                            <button type="submit" class="btn btn-gold" style="width:100%;justify-content:center;padding:10px;" data-clave="perfil_guardar_cambios">◆ Guardar Cambios</button>
-                        </form>
-                    </div>
-                </div>
-                <div class="panel">
-                    <div class="panel-header"><h3 data-clave="perfil_seguridad_wallet">◆ Seguridad y Wallet Web3</h3><span class="panel-badge" data-clave="perfil_conexion">Conexión</span></div>
-                    <div class="panel-body">
-                        <div class="config-group">
-                            <label data-clave="perfil_wallet_conectada">Dirección Wallet Conectada</label>
-                            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px;">
-                                <span id="walletDisplay" style="font-family:monospace;font-size:0.85rem;color:var(--text-secondary);">⚠️ No conectada</span>
-                                <button type="button" class="btn btn-wallet btn-sm" onclick="window.conectarWallet()" data-clave="perfil_conectar_wallet">◈ Conectar Wallet</button>
-                                <button type="button" class="btn btn-danger btn-sm" onclick="window.desconectarWallet()" style="display:none;" data-clave="perfil_desconectar_wallet">✕ Desconectar</button>
-                            </div>
-                            <div class="hint" data-clave="perfil_red_actual">Red Actual: <span id="walletRed">Polygon Mainnet</span></div>
-                        </div>
-                        <button type="button" class="btn btn-danger" style="width:100%;justify-content:center;padding:10px;margin-top:12px;" onclick="window.cerrarSesion()" data-clave="perfil_cerrar_sesion">✕ Cerrar Sesión</button>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-
-        <!-- ============================================================ -->
-        <!-- FOOTER -->
-        <!-- ============================================================ -->
-        <footer class="footer">
-            <span><span class="brand">◈ Sariel's</span> · Red Social WEB3</span>
-            <div class="footer-links">
-                <a href="/terminos" data-clave="perfil_footer_terminos">◈ Términos</a>
-                <a href="/privacidad" data-clave="perfil_footer_privacidad">◈ Privacidad</a>
-                <a href="/cookies" data-clave="perfil_footer_cookies">◈ Cookies</a>
-                <span style="opacity:0.4;">⚡ Powered by Polygon</span>
-            </div>
-        </footer>
-
-    </div>
-
-    <!-- ================================================================ -->
-    <!-- MODALES -->
-    <!-- ================================================================ -->
-    <div class="modal-overlay" id="publicacionModal">
-        <div class="modal-content" style="max-width:560px;text-align:left;position:relative;">
-            <button class="close-btn" onclick="window.cerrarModal('publicacionModal')">✕</button>
-            <h2 style="text-align:center;" data-clave="perfil_nueva_publicacion">📸 Nueva Publicación</h2>
-            <p class="subtitle" style="text-align:center;" data-clave="perfil_comparte_lo_que_pasa">Comparte lo que está pasando</p>
-
-            <div class="config-group">
-                <label data-clave="perfil_texto_publicacion">Texto de la publicación</label>
-                <div style="position:relative;">
-                    <textarea id="pubTexto" rows="4" placeholder="¿Qué estás pensando?" style="width:100%;padding:10px 14px;background:rgba(0,0,0,0.25);border:1px solid var(--glass-border);border-radius:10px;color:var(--text-primary);font-size:0.85rem;outline:none;resize:vertical;min-height:80px;font-family:'Inter',sans-serif;" data-placeholder="perfil_que_piensas"></textarea>
-                    <div class="publicacion-modal-emoji-wrapper" style="position:absolute;bottom:10px;right:10px;z-index:2;">
-                        <button type="button" id="btnEmojiPerfil" onclick="window.toggleEmojiPickerPerfil()" style="background:transparent;border:none;font-size:1.4rem;cursor:pointer;padding:4px 8px;border-radius:8px;transition:all 0.2s ease;">😊</button>
-                        <div class="emoji-picker" id="emojiPickerPerfil">
-                            <div class="titulo" data-clave="perfil_elige_emoji">✦ Elige tu emoji</div>
-                            <div class="grid" id="emojiGridPerfil"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="config-group">
-                <label data-clave="perfil_archivo">Archivo (foto o video)</label>
-                <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-                    <input type="file" id="pubArchivo" accept="image/*,video/*" style="flex:1;padding:8px;background:rgba(0,0,0,0.3);border:1px solid var(--glass-border);border-radius:10px;color:var(--text-primary);font-size:0.7rem;"/>
-                    <span style="font-size:0.55rem;color:var(--text-muted);" data-clave="perfil_foto_video">📸 Foto o 🎬 Video</span>
-                </div>
-                <div id="pubPreview" style="margin-top:10px;display:none;border-radius:10px;overflow:hidden;max-height:200px;background:var(--space);"></div>
-            </div>
-            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;">
-                <button class="btn btn-outline" style="flex:1;justify-content:center;padding:10px;" onclick="window.cerrarModal('publicacionModal')" data-clave="perfil_cancelar">Cancelar</button>
-                <button class="btn btn-gold" style="flex:1;justify-content:center;padding:10px;" id="btnPublicar" onclick="window.publicarContenido()" data-clave="perfil_publicar">🚀 Publicar</button>
-            </div>
-            <div id="pubStatus" style="margin-top:10px;font-size:0.7rem;color:var(--text-muted);text-align:center;min-height:20px;"></div>
-        </div>
-    </div>
-
-    <!-- ================================================================ -->
-    <!-- MODAL DE COMENTARIOS -->
-    <!-- ================================================================ -->
-    <div class="modal-overlay" id="modalComentarios">
-        <div class="modal-content" style="max-width:500px;text-align:left;">
-            <button class="close-btn" onclick="window.cerrarModalComentarios()">✕</button>
-            <h2 style="text-align:center;" data-clave="perfil_comentarios">💬 Comentarios</h2>
-            <div id="comentariosList" style="max-height:300px;overflow-y:auto;margin:12px 0;">
-                <div style="color:var(--text-muted);text-align:center;padding:20px;" data-clave="perfil_cargando_comentarios">Cargando comentarios...</div>
-            </div>
-            <div style="display:flex;gap:8px;margin-top:8px;">
-                <input type="text" id="inputComentario" placeholder="Escribe un comentario..." style="flex:1;padding:8px 14px;background:rgba(0,0,0,0.25);border:1px solid var(--glass-border);border-radius:10px;color:var(--text-primary);font-size:0.85rem;outline:none;" data-placeholder="perfil_escribe_comentario" />
-                <button class="btn btn-gold" onclick="window.enviarComentario()" style="padding:8px 16px;" data-clave="perfil_enviar">Enviar</button>
-            </div>
-        </div>
-    </div>
-
-    <div class="toast" id="toast"></div>
-
-    <!-- ================================================================ -->
-    <!-- SCRIPTS -->
-    <!-- ================================================================ -->
-
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-    <script src="/app.js"></script>
-    <!-- IDIOMAS -->
-    <script src="/features/shared/js/idiomas.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
-    <script src="./perfil.js"></script>
-
-</body>
-</html>
+/**
+ * routes/mensajes.js
+ * API de Mensajería para Sariel's
+ * 
+ * Endpoints:
+ * GET    /api/mensajes/conversaciones        - Lista de conversaciones del usuario
+ * GET    /api/mensajes/mensajes/:contactoId  - Mensajes con un contacto
+ * POST   /api/mensajes/mensajes              - Enviar nuevo mensaje
+ * PATCH  /api/mensajes/mensajes/leer         - Marcar mensajes como leídos
+ * DELETE /api/mensajes/mensajes/:mensajeId   - Eliminar mensaje
+ * PUT    /api/mensajes/mensajes/:mensajeId   - Editar mensaje
+ * DELETE /api/mensajes/conversaciones/:contactoId - Eliminar conversación
+ * POST   /api/mensajes/reportar/:mensajeId   - Reportar mensaje
+ * POST   /api/mensajes/bloquear/:usuarioId   - Bloquear usuario
+ */
+
+const express = require('express');
+const router = express.Router();
+const { createClient } = require('@supabase/supabase-js');
+
+// --- Configuración desde variables de entorno ---
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!supabaseUrl || !supabaseAnonKey) {
+    console.error('❌ Error: Variables de entorno SUPABASE_URL y SUPABASE_ANON_KEY son requeridas');
+    process.exit(1);
+}
+
+// Cliente público para validar tokens
+const supabasePublic = createClient(supabaseUrl, supabaseAnonKey);
+
+// Cliente con Service Role para operaciones de base de datos (se usa en endpoints que requieren permisos elevados)
+const supabaseAdmin = supabaseServiceKey 
+    ? createClient(supabaseUrl, supabaseServiceKey, { auth: { autoRefreshToken: false, persistSession: false } })
+    : supabasePublic;
+
+// --- Middleware: Verificar autenticación ---
+async function verificarAuth(req, res, next) {
+    try {
+        const authHeader = req.headers.authorization;
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            return res.status(401).json({ error: 'Token de autenticación requerido' });
+        }
+
+        const token = authHeader.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ error: 'Token inválido' });
+        }
+
+        // Verificar token con Supabase
+        const { data: { user }, error } = await supabasePublic.auth.getUser(token);
+
+        if (error || !user) {
+            console.warn('⚠️ Auth error:', error?.message);
+            return res.status(401).json({ error: 'No autorizado', details: error?.message });
+        }
+
+        // Adjuntar usuario a la request
+        req.user = user;
+        req.userId = user.id;
+
+        // También guardamos el token para futuras llamadas seguras
+        req.accessToken = token;
+
+        next();
+    } catch (error) {
+        console.error('❌ Error en verificarAuth:', error);
+        return res.status(500).json({ error: 'Error interno de autenticación' });
+    }
+}
+
+// --- Helper: Crear cliente de Supabase con token del usuario ---
+function getSupabaseClient(accessToken) {
+    if (!accessToken) return supabaseAdmin;
+    return createClient(supabaseUrl, supabaseAnonKey, {
+        auth: {
+            autoRefreshToken: false,
+            persistSession: false
+        },
+        global: {
+            headers: {
+                Authorization: `Bearer ${accessToken}`
+            }
+        }
+    });
+}
+
+// --- RUTAS ---
+
+/**
+ * GET /api/mensajes/conversaciones
+ * Obtiene todas las conversaciones del usuario autenticado
+ */
+router.get('/conversaciones', verificarAuth, async (req, res) => {
+    try {
+        const userId = req.userId;
+        const supabase = getSupabaseClient(req.accessToken);
+
+        // Obtener conversaciones: mensajes agrupados por contacto
+        // 1. Obtener todos los mensajes del usuario (enviados y recibidos)
+        const { data: mensajes, error } = await supabase
+            .from('mensajes_chat')
+            .select(`
+                id,
+                remitente_id,
+                destinatario_id,
+                contenido,
+                imagen_url,
+                tipo,
+                mime_type,
+                leido,
+                created_at,
+                editado,
+                eliminado,
+                eliminado_at,
+                remitente:remitente_id(id, nombre, handle, avatar_url),
+                destinatario:destinatario_id(id, nombre, handle, avatar_url)
+            `)
+            .or(`remitente_id.eq.${userId},destinatario_id.eq.${userId}`)
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            console.error('❌ Error en conversaciones:', error);
+            return res.status(500).json({ error: 'Error al obtener conversaciones', details: error.message });
+        }
+
+        if (!mensajes || mensajes.length === 0) {
+            return res.json({ data: [] });
+        }
+
+        // Agrupar por contacto (la otra persona)
+        const conversacionesMap = new Map();
+
+        for (const msg of mensajes) {
+            const contactoId = msg.remitente_id === userId ? msg.destinatario_id : msg.remitente_id;
+            const contacto = msg.remitente_id === userId ? msg.destinatario : msg.remitente;
+
+            if (!conversacionesMap.has(contactoId)) {
+                conversacionesMap.set(contactoId, {
+                    contacto_id: contactoId,
+                    contacto: contacto || { id: contactoId, nombre: 'Usuario', handle: null },
+                    ultimo_mensaje: msg.contenido || '[Archivo]',
+                    ultimo_mensaje_fecha: msg.created_at,
+                    mensajes_no_leidos: 0,
+                    mensajes: []
+                });
+            }
+
+            const conv = conversacionesMap.get(contactoId);
+            conv.mensajes.push(msg);
+
+            // Contar no leídos (mensajes que no son del usuario y no están leídos)
+            if (msg.remitente_id !== userId && !msg.leido) {
+                conv.mensajes_no_leidos += 1;
+            }
+        }
+
+        // Convertir a array y ordenar por último mensaje
+        const conversaciones = Array.from(conversacionesMap.values())
+            .map(conv => ({
+                ...conv,
+                // Tomar el mensaje más reciente como último
+                ultimo_mensaje: conv.mensajes[0]?.contenido || '[Archivo]',
+                ultimo_mensaje_fecha: conv.mensajes[0]?.created_at,
+                mensajes_no_leidos: conv.mensajes_no_leidos
+            }))
+            .sort((a, b) => new Date(b.ultimo_mensaje_fecha) - new Date(a.ultimo_mensaje_fecha))
+            .map(({ mensajes, ...rest }) => rest); // Remover array de mensajes
+
+        res.json({ data: conversaciones });
+    } catch (error) {
+        console.error('❌ Error en GET /conversaciones:', error);
+        res.status(500).json({ error: 'Error interno del servidor' });
+    }
+});
+
+/**
+ * GET /api/mensajes/mensajes/:contactoId
+ * Obtiene los mensajes con un contacto específico
+ */
+router.get('/mensajes/:contactoId', verificarAuth, async (req, res) => {
+    try {
+        const userId = req.userId;
+        const { contactoId } = req.params;
+        const { search } = req.query;
+
+        if (!contactoId) {
+            return res.status(400).json({ error: 'ID de contacto requerido' });
+        }
+
+        const supabase = getSupabaseClient(req.accessToken);
+
+        let query = supabase
+            .from('mensajes_chat')
+            .select(`
+                id,
+                remitente_id,
+                destinatario_id,
+                contenido,
+                imagen_url,
+                tipo,
+                mime_type,
+                leido,
+                created_at,
+                editado,
+                eliminado,
+                eliminado_at
+            `)
+            .or(`and(remitente_id.eq.${userId},destinatario_id.eq.${contactoId}),and(remitente_id.eq.${contactoId},destinatario_id.eq.${userId})`)
+            .order('created_at', { ascending: true });
+
+        // Búsqueda por contenido si se proporciona
+        if (search && search.trim().length > 0) {
+            query = query.ilike('contenido', `%${search.trim()}%`);
+        }
+
+        const { data, error } = await query;
+
+        if (error) {
+            console.error('❌ Error en mensajes:', error);
+            return res.status(500).json({ error: 'Error al obtener mensajes', details: error.message });
+        }
+
+        res.json({ data: data || [] });
+    } catch (error) {
+        console.error('❌ Error en GET /mensajes/:contactoId:', error);
+        res.status(500).json({ error: 'Error interno del servidor' });
+    }
+});
+
+/**
+ * POST /api/mensajes/mensajes
+ * Envía un nuevo mensaje
+ */
+router.post('/mensajes', verificarAuth, async (req, res) => {
+    try {
+        const userId = req.userId;
+        const { destinatario_id, contenido, imagen_url, tipo, mime_type } = req.body;
+
+        if (!destinatario_id) {
+            return res.status(400).json({ error: 'Destinatario requerido' });
+        }
+
+        if (!contenido && !imagen_url) {
+            return res.status(400).json({ error: 'Se requiere contenido o archivo' });
+        }
+
+        // Validar que el destinatario existe
+        const supabase = getSupabaseClient(req.accessToken);
+        const { data: usuario, error: userError } = await supabase
+            .from('usuarios')
+            .select('id')
+            .eq('id', destinatario_id)
+            .single();
+
+        if (userError || !usuario) {
+            return res.status(404).json({ error: 'Destinatario no encontrado' });
+        }
+
+        // Verificar que el usuario no esté bloqueado
+        const { data: bloqueado, error: blockError } = await supabase
+            .from('bloqueos')
+            .select('id')
+            .or(`and(bloqueador_id.eq.${userId},bloqueado_id.eq.${destinatario_id}),and(bloqueador_id.eq.${destinatario_id},bloqueado_id.eq.${userId})`)
+            .maybeSingle();
+
+        if (bloqueado) {
+            return res.status(403).json({ error: 'No puedes enviar mensajes a este usuario' });
+        }
+
+        // Crear mensaje
+        const nuevoMensaje = {
+            remitente_id: userId,
+            destinatario_id,
+            contenido: contenido || '',
+            imagen_url: imagen_url || null,
+            tipo: tipo || 'texto',
+            mime_type: mime_type || null,
+            leido: false,
+            editado: false,
+            eliminado: false,
+            created_at: new Date().toISOString()
+        };
+
+        const { data, error } = await supabase
+            .from('mensajes_chat')
+            .insert(nuevoMensaje)
+            .select()
+            .single();
+
+        if (error) {
+            console.error('❌ Error al enviar mensaje:', error);
+            return res.status(500).json({ error: 'Error al enviar mensaje', details: error.message });
+        }
+
+        res.status(201).json({ data });
+    } catch (error) {
+        console.error('❌ Error en POST /mensajes:', error);
+        res.status(500).json({ error: 'Error interno del servidor' });
+    }
+});
+
+/**
+ * PATCH /api/mensajes/mensajes/leer
+ * Marca todos los mensajes de una conversación como leídos
+ */
+router.patch('/mensajes/leer', verificarAuth, async (req, res) => {
+    try {
+        const userId = req.userId;
+        const { contacto_id } = req.body;
+
+        if (!contacto_id) {
+            return res.status(400).json({ error: 'ID de contacto requerido' });
+        }
+
+        const supabase = getSupabaseClient(req.accessToken);
+
+        // Actualizar mensajes no leídos del contacto que han sido enviados al usuario
+        const { data, error } = await supabase
+            .from('mensajes_chat')
+            .update({ leido: true })
+            .eq('remitente_id', contacto_id)
+            .eq('destinatario_id', userId)
+            .eq('leido', false)
+            .select();
+
+        if (error) {
+            console.error('❌ Error al marcar leídos:', error);
+            return res.status(500).json({ error: 'Error al marcar mensajes como leídos', details: error.message });
+        }
+
+        res.json({ data: { actualizados: data?.length || 0 } });
+    } catch (error) {
+        console.error('❌ Error en PATCH /mensajes/leer:', error);
+        res.status(500).json({ error: 'Error interno del servidor' });
+    }
+});
+
+/**
+ * DELETE /api/mensajes/mensajes/:mensajeId
+ * Elimina un mensaje (soft delete)
+ */
+router.delete('/mensajes/:mensajeId', verificarAuth, async (req, res) => {
+    try {
+        const userId = req.userId;
+        const { mensajeId } = req.params;
+
+        if (!mensajeId) {
+            return res.status(400).json({ error: 'ID de mensaje requerido' });
+        }
+
+        const supabase = getSupabaseClient(req.accessToken);
+
+        // Verificar que el mensaje existe y pertenece al usuario
+        const { data: mensaje, error: findError } = await supabase
+            .from('mensajes_chat')
+            .select('id, remitente_id')
+            .eq('id', mensajeId)
+            .single();
+
+        if (findError || !mensaje) {
+            return res.status(404).json({ error: 'Mensaje no encontrado' });
+        }
+
+        if (mensaje.remitente_id !== userId) {
+            return res.status(403).json({ error: 'No puedes eliminar este mensaje' });
+        }
+
+        // Soft delete
+        const { data, error } = await supabase
+            .from('mensajes_chat')
+            .update({ 
+                eliminado: true, 
+                eliminado_at: new Date().toISOString(),
+                contenido: null,
+                imagen_url: null
+            })
+            .eq('id', mensajeId)
+            .select()
+            .single();
+
+        if (error) {
+            console.error('❌ Error al eliminar mensaje:', error);
+            return res.status(500).json({ error: 'Error al eliminar mensaje', details: error.message });
+        }
+
+        res.json({ data });
+    } catch (error) {
+        console.error('❌ Error en DELETE /mensajes/:mensajeId:', error);
+        res.status(500).json({ error: 'Error interno del servidor' });
+    }
+});
+
+/**
+ * PUT /api/mensajes/mensajes/:mensajeId
+ * Edita un mensaje existente
+ */
+router.put('/mensajes/:mensajeId', verificarAuth, async (req, res) => {
+    try {
+        const userId = req.userId;
+        const { mensajeId } = req.params;
+        const { contenido } = req.body;
+
+        if (!mensajeId) {
+            return res.status(400).json({ error: 'ID de mensaje requerido' });
+        }
+
+        if (!contenido || contenido.trim().length === 0) {
+            return res.status(400).json({ error: 'El contenido no puede estar vacío' });
+        }
+
+        const supabase = getSupabaseClient(req.accessToken);
+
+        // Verificar que el mensaje existe y pertenece al usuario
+        const { data: mensaje, error: findError } = await supabase
+            .from('mensajes_chat')
+            .select('id, remitente_id, eliminado')
+            .eq('id', mensajeId)
+            .single();
+
+        if (findError || !mensaje) {
+            return res.status(404).json({ error: 'Mensaje no encontrado' });
+        }
+
+        if (mensaje.remitente_id !== userId) {
+            return res.status(403).json({ error: 'No puedes editar este mensaje' });
+        }
+
+        if (mensaje.eliminado) {
+            return res.status(400).json({ error: 'No puedes editar un mensaje eliminado' });
+        }
+
+        // Actualizar mensaje
+        const { data, error } = await supabase
+            .from('mensajes_chat')
+            .update({ 
+                contenido: contenido.trim(),
+                editado: true,
+                editado_at: new Date().toISOString()
+            })
+            .eq('id', mensajeId)
+            .select()
+            .single();
+
+        if (error) {
+            console.error('❌ Error al editar mensaje:', error);
+            return res.status(500).json({ error: 'Error al editar mensaje', details: error.message });
+        }
+
+        res.json({ data });
+    } catch (error) {
+        console.error('❌ Error en PUT /mensajes/:mensajeId:', error);
+        res.status(500).json({ error: 'Error interno del servidor' });
+    }
+});
+
+/**
+ * DELETE /api/mensajes/conversaciones/:contactoId
+ * Elimina toda la conversación con un contacto
+ */
+router.delete('/conversaciones/:contactoId', verificarAuth, async (req, res) => {
+    try {
+        const userId = req.userId;
+        const { contactoId } = req.params;
+
+        if (!contactoId) {
+            return res.status(400).json({ error: 'ID de contacto requerido' });
+        }
+
+        const supabase = getSupabaseClient(req.accessToken);
+
+        // Soft delete de todos los mensajes de la conversación
+        const { data, error } = await supabase
+            .from('mensajes_chat')
+            .update({ 
+                eliminado: true, 
+                eliminado_at: new Date().toISOString(),
+                contenido: null,
+                imagen_url: null
+            })
+            .or(`and(remitente_id.eq.${userId},destinatario_id.eq.${contactoId}),and(remitente_id.eq.${contactoId},destinatario_id.eq.${userId})`)
+            .select();
+
+        if (error) {
+            console.error('❌ Error al eliminar conversación:', error);
+            return res.status(500).json({ error: 'Error al eliminar conversación', details: error.message });
+        }
+
+        res.json({ data: { eliminados: data?.length || 0 } });
+    } catch (error) {
+        console.error('❌ Error en DELETE /conversaciones/:contactoId:', error);
+        res.status(500).json({ error: 'Error interno del servidor' });
+    }
+});
+
+/**
+ * POST /api/mensajes/reportar/:mensajeId
+ * Reporta un mensaje
+ */
+router.post('/reportar/:mensajeId', verificarAuth, async (req, res) => {
+    try {
+        const userId = req.userId;
+        const { mensajeId } = req.params;
+        const { motivo } = req.body;
+
+        if (!mensajeId) {
+            return res.status(400).json({ error: 'ID de mensaje requerido' });
+        }
+
+        if (!motivo || motivo.trim().length < 3) {
+            return res.status(400).json({ error: 'Motivo de reporte requerido (mínimo 3 caracteres)' });
+        }
+
+        const supabase = getSupabaseClient(req.accessToken);
+
+        // Verificar que el mensaje existe
+        const { data: mensaje, error: findError } = await supabase
+            .from('mensajes_chat')
+            .select('id, remitente_id, destinatario_id')
+            .eq('id', mensajeId)
+            .single();
+
+        if (findError || !mensaje) {
+            return res.status(404).json({ error: 'Mensaje no encontrado' });
+        }
+
+        // Verificar que el usuario es parte de la conversación
+        if (mensaje.remitente_id !== userId && mensaje.destinatario_id !== userId) {
+            return res.status(403).json({ error: 'No puedes reportar este mensaje' });
+        }
+
+        // Crear reporte
+        const reporte = {
+            mensaje_id: mensajeId,
+            reportado_por: userId,
+            motivo: motivo.trim(),
+            estado: 'pendiente',
+            created_at: new Date().toISOString()
+        };
+
+        const { data, error } = await supabase
+            .from('reportes_mensajes')
+            .insert(reporte)
+            .select()
+            .single();
+
+        if (error) {
+            console.error('❌ Error al reportar mensaje:', error);
+            return res.status(500).json({ error: 'Error al reportar mensaje', details: error.message });
+        }
+
+        res.status(201).json({ data });
+    } catch (error) {
+        console.error('❌ Error en POST /reportar/:mensajeId:', error);
+        res.status(500).json({ error: 'Error interno del servidor' });
+    }
+});
+
+/**
+ * POST /api/mensajes/bloquear/:usuarioId
+ * Bloquea a un usuario
+ */
+router.post('/bloquear/:usuarioId', verificarAuth, async (req, res) => {
+    try {
+        const userId = req.userId;
+        const { usuarioId } = req.params;
+
+        if (!usuarioId) {
+            return res.status(400).json({ error: 'ID de usuario requerido' });
+        }
+
+        if (usuarioId === userId) {
+            return res.status(400).json({ error: 'No puedes bloquearte a ti mismo' });
+        }
+
+        const supabase = getSupabaseClient(req.accessToken);
+
+        // Verificar que el usuario existe
+        const { data: usuario, error: userError } = await supabase
+            .from('usuarios')
+            .select('id')
+            .eq('id', usuarioId)
+            .single();
+
+        if (userError || !usuario) {
+            return res.status(404).json({ error: 'Usuario no encontrado' });
+        }
+
+        // Verificar si ya está bloqueado
+        const { data: existente, error: existError } = await supabase
+            .from('bloqueos')
+            .select('id')
+            .eq('bloqueador_id', userId)
+            .eq('bloqueado_id', usuarioId)
+            .maybeSingle();
+
+        if (existente) {
+            return res.status(400).json({ error: 'Este usuario ya está bloqueado' });
+        }
+
+        // Crear bloqueo
+        const bloqueo = {
+            bloqueador_id: userId,
+            bloqueado_id: usuarioId,
+            created_at: new Date().toISOString()
+        };
+
+        const { data, error } = await supabase
+            .from('bloqueos')
+            .insert(bloqueo)
+            .select()
+            .single();
+
+        if (error) {
+            console.error('❌ Error al bloquear usuario:', error);
+            return res.status(500).json({ error: 'Error al bloquear usuario', details: error.message });
+        }
+
+        // Eliminar mensajes de la conversación (soft delete)
+        await supabase
+            .from('mensajes_chat')
+            .update({ 
+                eliminado: true, 
+                eliminado_at: new Date().toISOString(),
+                contenido: null,
+                imagen_url: null
+            })
+            .or(`and(remitente_id.eq.${userId},destinatario_id.eq.${usuarioId}),and(remitente_id.eq.${usuarioId},destinatario_id.eq.${userId})`);
+
+        res.status(201).json({ data });
+    } catch (error) {
+        console.error('❌ Error en POST /bloquear/:usuarioId:', error);
+        res.status(500).json({ error: 'Error interno del servidor' });
+    }
+});
+
+module.exports = router;
