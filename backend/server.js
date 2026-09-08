@@ -17,6 +17,7 @@
    ✅ SISTEMA SEGURO DE ELIMINACIÓN DE CUENTA
    ✅ CLOUDFLARE TURNSTILE SERVER-SIDE
    ✅ VIDEOLLAMADA LIVEKIT
+   ✅ MENSAJERÍA (NUEVO)
 ================================================================ */
 
 const express = require('express');
@@ -2338,6 +2339,24 @@ app.use(
 );
 
 /* ================================================================
+   ═══════════════════════════════════════════════════════════════
+   ✅ NUEVO: RUTAS DE MENSAJERÍA
+   ═══════════════════════════════════════════════════════════════
+   Solo se agregaron 2 líneas:
+   1. Importación de las rutas (const mensajesRoutes = ...)
+   2. Montaje de las rutas (app.use('/api/mensajes', ...))
+   ═══════════════════════════════════════════════════════════════
+================================================================ */
+
+const mensajesRoutes =
+    require('./routes/mensajes');
+
+app.use(
+    '/api/mensajes',
+    mensajesRoutes
+);
+
+/* ================================================================
    RUTAS HTML
 ================================================================ */
 
@@ -2749,6 +2768,45 @@ app.get(
 
                 endpoint:
                     '/api/livekit/token'
+            },
+
+            // ═══════════════════════════════════════════════════════
+            // ✅ NUEVO: MENSAJERÍA EN HEALTH CHECK
+            // ═══════════════════════════════════════════════════════
+
+            mensajeria: {
+
+                enabled:
+                    true,
+
+                endpoints: {
+                    conversaciones:
+                        '/api/mensajes/conversaciones',
+
+                    mensajes:
+                        '/api/mensajes/mensajes/:id',
+
+                    enviar:
+                        '/api/mensajes/mensajes',
+
+                    editar:
+                        '/api/mensajes/mensajes/:id',
+
+                    eliminar:
+                        '/api/mensajes/mensajes/:id',
+
+                    leer:
+                        '/api/mensajes/mensajes/leer',
+
+                    contactos:
+                        '/api/mensajes/contactos',
+
+                    bloquear:
+                        '/api/mensajes/bloquear/:id',
+
+                    reportar:
+                        '/api/mensajes/reportar/:id'
+                }
             }
         });
     }
@@ -2906,6 +2964,14 @@ app.listen(
 
         console.log(
             `✨ Membresía router: ✅ /api/payments/membresia`
+        );
+
+        // ═══════════════════════════════════════════════════════════
+        // ✅ NUEVO: MENSAJERÍA EN LOG
+        // ═══════════════════════════════════════════════════════════
+
+        console.log(
+            `💬 Mensajería router: ✅ /api/mensajes`
         );
 
         console.log(
