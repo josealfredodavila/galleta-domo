@@ -18,6 +18,7 @@
    ✅ CLOUDFLARE TURNSTILE SERVER-SIDE
    ✅ VIDEOLLAMADA LIVEKIT
    ✅ MENSAJERÍA (NUEVO)
+   ✅ CONTENT-TYPE CORREGIDO PARA JS
 ================================================================ */
 
 const express = require('express');
@@ -2219,6 +2220,22 @@ if (
 }
 
 /* ================================================================
+   ═══════════════════════════════════════════════════════════════
+   ✅ NUEVO: MIDDLEWARE PARA FORZAR CONTENT-TYPE DE .JS
+   ═══════════════════════════════════════════════════════════════
+   Esto evita que los archivos .js se sirvan como texto plano
+   ═══════════════════════════════════════════════════════════════
+================================================================ */
+
+app.use((req, res, next) => {
+    if (req.path.endsWith('.js')) {
+        res.setHeader('Content-Type', 'application/javascript');
+        res.setHeader('Cache-Control', 'no-cache');
+    }
+    next();
+});
+
+/* ================================================================
    RUTAS DE FEATURES
 ================================================================ */
 
@@ -2295,6 +2312,20 @@ app.use(
 );
 
 /* ================================================================
+   ═══════════════════════════════════════════════════════════════
+   ✅ RUTA EXPLÍCITA PARA MENSAJES.JS
+   ═══════════════════════════════════════════════════════════════
+   Garantiza que mensajes.js se sirva con el Content-Type correcto
+   ═══════════════════════════════════════════════════════════════
+================================================================ */
+
+app.get('/features/mensajes/mensajes.js', (req, res) => {
+    res.setHeader('Content-Type', 'application/javascript');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.sendFile(path.join(__dirname, 'public', 'features', 'mensajes', 'mensajes.js'));
+});
+
+/* ================================================================
    RUTAS DE AUTENTICACIÓN
 ================================================================ */
 
@@ -2340,11 +2371,7 @@ app.use(
 
 /* ================================================================
    ═══════════════════════════════════════════════════════════════
-   ✅ NUEVO: RUTAS DE MENSAJERÍA
-   ═══════════════════════════════════════════════════════════════
-   Solo se agregaron 2 líneas:
-   1. Importación de las rutas (const mensajesRoutes = ...)
-   2. Montaje de las rutas (app.use('/api/mensajes', ...))
+   ✅ RUTAS DE MENSAJERÍA (MOVIDAS AQUÍ CON LAS OTRAS RUTAS)
    ═══════════════════════════════════════════════════════════════
 ================================================================ */
 
@@ -2770,10 +2797,6 @@ app.get(
                     '/api/livekit/token'
             },
 
-            // ═══════════════════════════════════════════════════════
-            // ✅ NUEVO: MENSAJERÍA EN HEALTH CHECK
-            // ═══════════════════════════════════════════════════════
-
             mensajeria: {
 
                 enabled:
@@ -2965,10 +2988,6 @@ app.listen(
         console.log(
             `✨ Membresía router: ✅ /api/payments/membresia`
         );
-
-        // ═══════════════════════════════════════════════════════════
-        // ✅ NUEVO: MENSAJERÍA EN LOG
-        // ═══════════════════════════════════════════════════════════
 
         console.log(
             `💬 Mensajería router: ✅ /api/mensajes`
