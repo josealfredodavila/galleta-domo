@@ -1,1600 +1,1784 @@
 // ================================================================
-// PERFIL.JS - SARIEL'S ECOSYSTEM
-// VERSIÓN CORREGIDA CON IDIOMAS
+// MENSAJES - SARIEL'S ECOSYSTEM
+// VERSIÓN FINAL - CORREGIDA (BUGS ARREGLADOS)
 // ================================================================
 
-// ===== VARIABLES GLOBALES =====
-let sessionUser = null;
-let perfilUsuario = null;
-let membresiaActual = null;
-let REACCIONES = ['❤️', '😊', '🔥', '👏', '🎉', '💎', '🤩', '😍', '😂'];
+// ================================================================
+// CONFIGURACIÓN SUPABASE - CON VERIFICACIÓN Y REINTENTO
+// ================================================================
 
-// ===== TOAST =====
-function showToast(msg, type) {
-    let t = document.getElementById('toast');
-    if (!t) {
-        t = document.createElement('div');
-        t.id = 'toast';
-        t.className = 'toast';
-        document.body.appendChild(t);
+var supabase = null;
+var SUPABASE_READY = false;
+
+function obtenerSupabase() {
+    if (typeof window.supabase !== 'undefined' && window.supabase !== null) {
+        supabase = window.supabase;
+        SUPABASE_READY = true;
+        return true;
     }
-    t.textContent = msg;
-    t.className = 'toast show';
-    if (type === 'error') t.classList.add('error');
-    else if (type === 'warning') t.classList.add('warning');
-    else if (type === 'success') t.classList.add('success');
-    else t.classList.remove('error', 'warning', 'success');
-    clearTimeout(t._timeout);
-    t._timeout = setTimeout(() => t.classList.remove('show'), 3500);
+    return false;
 }
 
-// ================================================================
-// 🆕 INICIALIZAR IDIOMAS - FUNCIÓN AGREGADA
-// ================================================================
-async function inicializarIdiomasModulo() {
-    try {
-        console.log('🔄 inicializarIdiomasModulo() iniciado...');
-        
-        // 1. Obtener idioma del usuario
-        if (typeof window.obtenerIdiomaUsuario === 'function') {
-            const idioma = await window.obtenerIdiomaUsuario();
-            console.log('🌐 Idioma obtenido:', idioma);
-            
-            if (idioma) {
-                // 2. Cargar traducciones
-                if (typeof window.cargarTraducciones === 'function') {
-                    await window.cargarTraducciones(idioma.id);
-                    console.log('✅ Traducciones cargadas para:', idioma.id);
-                }
-                
-                // 3. Aplicar traducciones
-                if (typeof window.aplicarTraducciones === 'function') {
-                    window.aplicarTraducciones();
-                    console.log('✅ Traducciones aplicadas');
-                }
+// Intentar obtener Supabase inmediatamente
+if (!obtenerSupabase()) {
+    console.warn('⏳ Supabase no disponible en el momento, esperando...');
+
+    var intentos = 0;
+    var maxIntentos = 10;
+
+    var intervalo = setInterval(function() {
+        intentos++;
+        if (obtenerSupabase()) {
+            clearInterval(intervalo);
+            console.log('✅ Supabase conectado correctamente (intento ' + intentos + ')');
+            return;
+        }
+
+        if (intentos >= maxIntentos) {
+            clearInterval(intervalo);
+            console.error('❌ Supabase no disponible después de ' + maxIntentos + ' intentos');
+            showToast('⚠️ Error de conexión con el servidor', 'error');
+            var container = document.getElementById('conversacionesList');
+            if (container) {
+                container.innerHTML = `
+                    <div style="padding:40px;text-align:center;color:#ef4444;font-size:0.9rem;">
+                        <div style="font-size:2rem;margin-bottom:10px;">⚠️</div>
+                        <p>Error de conexión con Supabase</p>
+                        <p style="font-size:0.7rem;margin-top:8px;color:#667788;">Recarga la página o contacta a soporte</p>
+                        <button onclick="location.reload()" style="margin-top:12px;padding:8px 20px;background:#d4af37;border:none;border-radius:30px;color:#0b0e14;font-weight:600;cursor:pointer;">
+                            🔄 Recargar
+                        </button>
+                    </div>
+                `;
             }
+        }
+    }, 200);
+}
+
+// ================================================================
+// ================================================================
+// 🛡️ SEGURIDAD - SANITIZAR QUERY PARA SUPABASE
+// ================================================================
+// ================================================================
+
+function sanitizarQuery(input) {
+    if (!input) return '';
+    // Eliminar caracteres peligrosos que podrían manipular el filtro
+    return String(input).replace(/[(),'"]/g, '').trim();
+}
+
+// ================================================================
+// ================================================================
+// 📋 SISTEMA DE LOGGING ESTRUCTURADO
+// ================================================================
+// ================================================================
+
+var Logger = {
+    levels: {
+        DEBUG: 0,
+        INFO: 1,
+        WARN: 2,
+        ERROR: 3,
+        FATAL: 4
+    },
+
+    _level: 1,
+
+    setLevel: function(level) {
+        this._level = this.levels[level] || 1;
+    },
+
+    _log: function(level, message, data) {
+        data = data || null;
+        var levelName = Object.keys(this.levels).find(function(k) {
+            return this.levels[k] === level;
+        }.bind(this));
+
+        if (level < this._level) return;
+
+        var entry = {
+            timestamp: new Date().toISOString(),
+            level: levelName,
+            message: message,
+            data: data,
+            module: 'mensajes'
+        };
+
+        var prefix = '[' + entry.timestamp + '] [' + levelName + ']';
+        if (level >= this.levels.ERROR) {
+            console.error(prefix, message, data || '');
+        } else if (level >= this.levels.WARN) {
+            console.warn(prefix, message, data || '');
         } else {
-            console.warn('⚠️ window.obtenerIdiomaUsuario no está disponible');
+            console.log(prefix, message, data || '');
         }
-        
-        // 4. Cargar selector de idiomas
-        if (typeof window.cargarSelectorIdiomas === 'function') {
-            await window.cargarSelectorIdiomas();
-            console.log('✅ Selector de idiomas cargado');
+    },
+
+    debug: function(message, data) { this._log(this.levels.DEBUG, message, data); },
+    info: function(message, data) { this._log(this.levels.INFO, message, data); },
+    warn: function(message, data) { this._log(this.levels.WARN, message, data); },
+    error: function(message, data) { this._log(this.levels.ERROR, message, data); },
+    fatal: function(message, data) { this._log(this.levels.FATAL, message, data); }
+};
+
+// ================================================================
+// ================================================================
+// 🛡️ SEGURIDAD - ESCAPE HTML
+// ================================================================
+// ================================================================
+
+function escapeHTML(texto) {
+    if (!texto) return '';
+    var div = document.createElement('div');
+    div.textContent = texto;
+    return div.innerHTML;
+}
+
+// ================================================================
+// ================================================================
+// 🛡️ SEGURIDAD - SANITIZACIÓN COMPLETA
+// ================================================================
+// ================================================================
+
+function sanitizarContenido(texto) {
+    if (!texto) return '';
+
+    var div = document.createElement('div');
+    div.textContent = texto;
+    var sanitizado = div.innerHTML;
+
+    var emojisSeguros = {
+        ':feliz:': '😊',
+        ':risa:': '😂',
+        ':amo:': '❤️',
+        ':fuego:': '🔥',
+        ':estrella:': '⭐',
+        ':genial:': '🤩',
+        ':ok:': '👌',
+        ':visto:': '👀',
+        ':musica:': '🎵',
+        ':pizza:': '🍕',
+        ':cafe:': '☕',
+        ':helado:': '🍦',
+        ':rocket:': '🚀',
+        ':sariel:': '◈'
+    };
+
+    for (var key in emojisSeguros) {
+        if (emojisSeguros.hasOwnProperty(key)) {
+            var pattern = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            sanitizado = sanitizado.replace(new RegExp(pattern, 'g'), emojisSeguros[key]);
         }
-        
-        console.log('✅ Idiomas inicializados en Perfil');
-    } catch (error) {
-        console.warn('⚠️ Error inicializando idiomas en Perfil:', error);
+    }
+
+    sanitizado = sanitizado.replace(/<a\s+href=["'](javascript:|data:)/gi, '<a href="#"');
+    sanitizado = sanitizado.replace(/on\w+\s*=/gi, 'data-');
+
+    // ✅ ELIMINADO: doble escape de HTML (ya fue escapado con div.innerHTML)
+    // sanitizado = sanitizado.replace(/&/g, '&amp;')
+    //     .replace(/</g, '&lt;')
+    //     .replace(/>/g, '&gt;')
+    //     .replace(/"/g, '&quot;');
+
+    return sanitizado;
+}
+
+// ================================================================
+// ================================================================
+// 📋 TOAST NOTIFICACIONES
+// ================================================================
+// ================================================================
+
+function showToast(msg, type, duration) {
+    type = type || '';
+    duration = duration || 3500;
+    try {
+        var t = document.getElementById('toast');
+        if (!t) {
+            t = document.createElement('div');
+            t.id = 'toast';
+            t.className = 'toast';
+            document.body.appendChild(t);
+        }
+        t.textContent = msg;
+        t.className = 'toast show';
+        if (type === 'error') t.classList.add('error');
+        else if (type === 'warning') t.classList.add('warning');
+        else if (type === 'success') t.classList.add('success');
+        else t.classList.remove('error', 'warning', 'success');
+        clearTimeout(t._timeout);
+        t._timeout = setTimeout(function() { t.classList.remove('show'); }, duration);
+    } catch (e) {
+        Logger.warn('Toast no disponible', e);
+        alert(msg);
     }
 }
 
 // ================================================================
-// 😊 RENDERIZAR EMOJIS EN EL PICKER DEL PERFIL
+// ================================================================
+// 🔐 SESSION MANAGER - PATRÓN SINGLETON
+// ================================================================
 // ================================================================
 
-function renderizarEmojisPerfil() {
-    const grid = document.getElementById('emojiGridPerfil');
-    if (!grid) {
-        console.warn('⚠️ No se encontró #emojiGridPerfil en el DOM');
-        return;
-    }
+function SessionManager() {
+    this._usuario = null;
+    this._session = null;
+    this._lastRefresh = null;
+    this._refreshLock = false;
+}
 
-    grid.innerHTML = '';
+SessionManager.prototype = {
+    constructor: SessionManager,
 
-    if (!REACCIONES || REACCIONES.length === 0) {
-        console.warn('⚠️ REACCIONES vacío, usando emojis por defecto');
-        REACCIONES = ['❤️', '😊', '🔥', '👏', '🎉', '💎', '🤩', '😍', '😂'];
-    }
+    get usuario() {
+        return this._usuario;
+    },
 
-    console.log('😊 Renderizando emojis:', REACCIONES);
+    get session() {
+        return this._session;
+    },
 
-    REACCIONES.forEach(emoji => {
-        const btn = document.createElement('button');
-        btn.textContent = emoji;
-        btn.type = 'button';
-        btn.style.cssText = `
-            background: transparent;
-            border: none;
-            font-size: 1.4rem;
-            padding: 4px;
-            cursor: pointer;
-            border-radius: 8px;
-            transition: all 0.2s ease;
-            line-height: 1;
-            width: 38px;
-            height: 38px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        `;
-        
-        btn.onmouseenter = function() {
-            this.style.background = 'rgba(212, 175, 55, 0.2)';
-            this.style.transform = 'scale(1.2)';
-        };
-        btn.onmouseleave = function() {
-            this.style.background = 'transparent';
-            this.style.transform = 'scale(1)';
-        };
-        
-        btn.onclick = function(e) {
-            e.stopPropagation();
-            const textarea = document.getElementById('pubTexto');
-            if (textarea) {
-                const start = textarea.selectionStart;
-                const end = textarea.selectionEnd;
-                const text = textarea.value;
-                textarea.value = text.substring(0, start) + emoji + text.substring(end);
-                textarea.focus();
-                textarea.selectionStart = textarea.selectionEnd = start + emoji.length;
-                textarea.dispatchEvent(new Event('input'));
+    get isAuthenticated() {
+        return this._usuario !== null && this._session !== null;
+    },
+
+    getUsuario: function() {
+        if (this._refreshLock) {
+            return new Promise(function(resolve) {
+                setTimeout(function() { resolve(this._usuario); }.bind(this), 100);
+            }.bind(this));
+        }
+
+        if (this._usuario && this._session) {
+            var expiryTime = new Date(this._session.expires_at);
+            var timeUntilExpiry = expiryTime - Date.now();
+
+            if (timeUntilExpiry < 300000) {
+                return this._refreshSession();
             }
-            const picker = document.getElementById('emojiPickerPerfil');
-            if (picker) picker.style.display = 'none';
-        };
-        
-        grid.appendChild(btn);
-    });
+            return Promise.resolve(this._usuario);
+        }
 
-    console.log('😊 Emojis renderizados en el picker del perfil:', REACCIONES.length);
-}
+        return this._refreshSession();
+    },
 
-// ================================================================
-// 😊 TOGGLE EMOJI PICKER
-// ================================================================
+    getSession: function() {
+        if (this._session) return Promise.resolve(this._session);
+        return this.getUsuario().then(function() {
+            return this._session;
+        }.bind(this));
+    },
 
-function toggleEmojiPickerPerfil() {
-    console.log('🔄 toggleEmojiPickerPerfil() llamado');
-    
-    const picker = document.getElementById('emojiPickerPerfil');
-    if (!picker) {
-        console.warn('⚠️ No se encontró #emojiPickerPerfil');
-        return;
+    _refreshSession: function() {
+        if (this._refreshLock) return Promise.resolve(this._usuario);
+
+        this._refreshLock = true;
+        return supabase.auth.getSession()
+            .then(function(result) {
+                var session = result.data.session;
+                if (!session) {
+                    this._usuario = null;
+                    this._session = null;
+                    return null;
+                }
+                this._session = session;
+                this._usuario = session.user;
+                this._lastRefresh = Date.now();
+                return this._usuario;
+            }.bind(this))
+            .catch(function(error) {
+                Logger.error('Error refrescando sesión', error);
+                return null;
+            })
+            .finally(function() {
+                this._refreshLock = false;
+            }.bind(this));
+    },
+
+    verificarAutenticacion: function() {
+        return this.getUsuario().then(function(usuario) {
+            if (!usuario) {
+                showToast('⚠️ Inicia sesión para usar mensajería', 'warning');
+                return false;
+            }
+            return true;
+        });
+    },
+
+    logout: function() {
+        this._usuario = null;
+        this._session = null;
+        this._lastRefresh = null;
+        return supabase.auth.signOut();
     }
+};
 
-    if (picker.style.display === 'block') {
-        console.log('🔽 Ocultando picker');
-        picker.style.display = 'none';
-        return;
-    }
-
-    console.log('🔼 Mostrando picker');
-    
-    const grid = document.getElementById('emojiGridPerfil');
-    if (grid && grid.children.length === 0) {
-        console.log('🔄 Grid vacío, renderizando emojis...');
-        renderizarEmojisPerfil();
-    }
-
-    picker.style.display = 'block';
-    console.log('✅ Picker mostrado');
-}
+var sessionManager = new SessionManager();
 
 // ================================================================
-// CARGAR EMOJIS DESDE SUPABASE
+// ================================================================
+// 📡 API CALL - CON MANEJO DE CORS Y TIMEOUT
+// ================================================================
 // ================================================================
 
-async function cargarEmojis() {
-    try {
-        console.log('😊 Cargando emojis desde Supabase...');
-        
-        const { data, error } = await window.supabase
-            .from('emojis_reaccion')
-            .select('codigo')
-            .eq('activo', true)
-            .order('orden', { ascending: true });
+function llamadaAPI(endpoint, options, timeout) {
+    options = options || {};
+    timeout = timeout || 30000;
 
-        if (error) {
-            console.warn('⚠️ Error cargando emojis, usando emojis por defecto:', error);
-            REACCIONES = ['❤️', '😊', '🔥', '👏', '🎉', '💎', '🤩', '😍', '😂'];
-            return;
-        }
+    var controller = new AbortController();
+    var timeoutId = setTimeout(function() { controller.abort(); }, timeout);
 
-        if (data && data.length > 0) {
-            REACCIONES = data.map(e => e.codigo);
-            console.log('😊 Emojis cargados desde Supabase:', REACCIONES);
-        } else {
-            REACCIONES = ['❤️', '😊', '🔥', '👏', '🎉', '💎', '🤩', '😍', '😂'];
-            console.log('😊 Usando emojis por defecto (tabla vacía)');
-        }
-        
-        renderizarEmojisPerfil();
-        
-    } catch (error) {
-        console.error('❌ Error cargando emojis:', error);
-        REACCIONES = ['❤️', '😊', '🔥', '👏', '🎉', '💎', '🤩', '😍', '😂'];
-        renderizarEmojisPerfil();
-    }
-}
+    return sessionManager.getSession()
+        .then(function(session) {
+            if (!session) throw new Error('No autenticado');
 
-// ================================================================
-// CARGAR PERFIL - CORREGIDO CON IDIOMAS
-// ================================================================
+            return fetch(endpoint, {
+                ...options,
+                headers: {
+                    'Authorization': 'Bearer ' + session.access_token,
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    ...options.headers
+                },
+                signal: controller.signal
+            });
+        })
+        .then(function(response) {
+            clearTimeout(timeoutId);
 
-async function cargarPerfil() {
-    try {
-        console.log('🔄 cargarPerfil() iniciado...');
-
-        // 🆕 INICIALIZAR IDIOMAS PRIMERO
-        await inicializarIdiomasModulo();
-
-        const { data: { user }, error: userError } = await window.supabase.auth.getUser();
-
-        if (userError || !user) {
-            console.warn('⚠️ No hay usuario autenticado:', userError);
-            const nombreEl = document.getElementById('perfilNombre');
-            if (nombreEl) nombreEl.innerHTML = 'Inicia sesión';
-            const handleEl = document.getElementById('perfilHandle');
-            if (handleEl) handleEl.textContent = '@usuario';
-            const bioEl = document.getElementById('perfilBio');
-            if (bioEl) bioEl.textContent = 'Inicia sesión para ver tu perfil';
-            
-            await cargarEmojis();
-            return;
-        }
-
-        sessionUser = user;
-        console.log('🔐 Usuario autenticado:', sessionUser.id);
-
-        const { data: userData, error: userDataError } = await window.supabase
-            .from('usuarios')
-            .select('*')
-            .eq('id', sessionUser.id)
-            .single();
-
-        if (userDataError) {
-            console.error('❌ Error cargando usuario:', userDataError);
-            showToast('❌ Error al cargar datos de usuario', 'error');
-            return;
-        }
-
-        perfilUsuario = userData;
-        console.log('✅ Datos de usuario cargados');
-        actualizarUI(perfilUsuario);
-
-        await cargarEmojis();
-        await cargarPublicaciones();
-        await cargarMembresia();
-        verificarEstadoPago();
-
-        showToast('✅ ¡Bienvenido ' + (perfilUsuario.nombre || 'Usuario') + '!', 'success');
-
-    } catch (error) {
-        console.error('❌ Error en cargarPerfil:', error);
-        showToast('❌ Error al cargar perfil: ' + error.message, 'error');
-    }
-}
-
-// ================================================================
-// ACTUALIZAR UI
-// ================================================================
-
-function actualizarUI(data) {
-    if (!data) return;
-
-    console.log('🎨 Actualizando UI...');
-
-    const nombreEl = document.getElementById('perfilNombre');
-    if (nombreEl) {
-        const verificado = data.verificado ? ' <span class="verified">✦ VERIFICADO</span>' : '';
-        nombreEl.innerHTML = (data.nombre || 'Usuario') + verificado;
-    }
-
-    const handleEl = document.getElementById('perfilHandle');
-    if (handleEl) handleEl.textContent = '@' + (data.handle || 'usuario');
-
-    const bioEl = document.getElementById('perfilBio');
-    if (bioEl) {
-        bioEl.textContent = data.bio || 'Sin biografía';
-        // ✅ AGREGADO: data-clave para "Sin biografía"
-        if (!data.bio || data.bio.trim() === '') {
-            bioEl.setAttribute('data-clave', 'perfil_sin_biografia');
-        } else {
-            bioEl.removeAttribute('data-clave');
-        }
-    }
-
-    const avatarEl = document.getElementById('perfilAvatar');
-    if (avatarEl) {
-        if (data.avatar_url && data.avatar_url.trim() !== '') {
-            avatarEl.innerHTML = `<img src="${data.avatar_url}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;"/>`;
-        } else {
-            avatarEl.innerHTML = '◈';
-        }
-    }
-
-    const statTokens = document.getElementById('statTokens');
-    if (statTokens) statTokens.textContent = data.tokens || 0;
-
-    const tokenTotal = document.getElementById('tokenTotal');
-    if (tokenTotal) tokenTotal.textContent = data.tokens || 0;
-
-    const estadoBadge = document.getElementById('estadoBadge');
-    const estadoTexto = document.getElementById('estadoTexto');
-    if (estadoBadge && estadoTexto) {
-        if (data.online) {
-            estadoBadge.textContent = '🟢';
-            estadoTexto.textContent = 'Activo ahora';
-            estadoTexto.style.color = 'var(--success)';
-        } else {
-            estadoBadge.textContent = '⭕';
-            estadoTexto.textContent = 'Inactivo';
-            estadoTexto.style.color = 'var(--text-muted)';
-        }
-    }
-
-    const editNombre = document.getElementById('editNombre');
-    const editHandle = document.getElementById('editHandle');
-    const editBio = document.getElementById('editBio');
-    if (editNombre) editNombre.value = data.nombre || '';
-    if (editHandle) editHandle.value = data.handle || '';
-    if (editBio) editBio.value = data.bio || '';
-}
-
-// ================================================================
-// CARGAR PUBLICACIONES
-// ================================================================
-
-async function cargarPublicaciones() {
-    try {
-        if (!sessionUser) {
-            console.warn('⚠️ No hay sesión para cargar publicaciones');
-            return;
-        }
-
-        console.log('📝 Cargando publicaciones para:', sessionUser.id);
-
-        const { data, error } = await window.supabase
-            .from('publicaciones')
-            .select('*')
-            .eq('usuario_id', sessionUser.id)
-            .eq('estado', 'publicado')
-            .order('created_at', { ascending: false });
-
-        if (error) {
-            console.error('❌ Error cargando publicaciones:', error);
-            throw error;
-        }
-
-        console.log('📝 Publicaciones encontradas:', data ? data.length : 0);
-
-        const container = document.getElementById('postsList');
-        if (!container) return;
-
-        const publicaciones = data || [];
-
-        const countEl = document.getElementById('postsCount');
-        if (countEl) countEl.textContent = publicaciones.length;
-
-        if (publicaciones.length === 0) {
-            container.innerHTML = `
-                <div class="empty-state">
-                    <span class="icon">📝</span>
-                    <h4 data-clave="perfil_sin_publicaciones">Sin publicaciones</h4>
-                    <p data-clave="perfil_crea_primera">Crea tu primera publicación desde el botón "Nueva Publicación".</p>
-                </div>
-            `;
-            return;
-        }
-
-        let nombreUsuario = perfilUsuario?.nombre || 'Usuario';
-        let avatarUsuario = perfilUsuario?.avatar_url 
-            ? `<img src="${perfilUsuario.avatar_url}" style="width:100%;height:100%;object-fit:cover;">` 
-            : '◈';
-
-        const reaccionesMap = {};
-        const publicacionIds = publicaciones.map(p => p.id);
-
-        if (publicacionIds.length > 0) {
-            const reaccionesResult = await window.supabase
-                .from('publicaciones_reacciones')
-                .select('publicacion_id, tipo, usuario_id')
-                .in('publicacion_id', publicacionIds);
-
-            if (!reaccionesResult.error) {
-                reaccionesResult.data.forEach(r => {
-                    if (!reaccionesMap[r.publicacion_id]) {
-                        reaccionesMap[r.publicacion_id] = { total: 0, emojis: {}, usuarios: {} };
-                    }
-                    reaccionesMap[r.publicacion_id].total++;
-                    reaccionesMap[r.publicacion_id].emojis[r.tipo] = (reaccionesMap[r.publicacion_id].emojis[r.tipo] || 0) + 1;
-                    reaccionesMap[r.publicacion_id].usuarios[r.usuario_id] = r.tipo;
+            if (response.status === 403 || response.status === 401) {
+                showToast('⚠️ Sesión expirada, por favor inicia sesión nuevamente', 'error');
+                return sessionManager.logout().then(function() {
+                    window.location.href = '/login';
+                    return null;
                 });
             }
-        }
 
-        container.innerHTML = publicaciones.map(p => {
-            const fecha = p.created_at ? new Date(p.created_at).toLocaleString() : '';
-            let mediaHtml = '';
-
-            if (p.media_url) {
-                if (p.media_type === 'imagen') {
-                    mediaHtml = `<img src="${p.media_url}" class="pub-media" loading="lazy" onerror="this.style.display='none'" />`;
-                } else if (p.media_type === 'video') {
-                    mediaHtml = `<video src="${p.media_url}" class="pub-media" controls preload="metadata"></video>`;
-                }
+            if (!response.ok) {
+                return response.json().catch(function() { return {}; }).then(function(errorData) {
+                    throw new Error(errorData.error || 'Error ' + response.status + ': ' + response.statusText);
+                });
             }
 
-            const contenido = p.contenido ? `<div class="pub-texto">${p.contenido}</div>` : '';
-
-            const miReaccion = reaccionesMap[p.id]?.usuarios[sessionUser.id] || null;
-            const reaccionEmoji = miReaccion || '❤️';
-            const reaccionTotal = reaccionesMap[p.id]?.total || 0;
-
-            return `
-                <div class="publicacion-item" data-id="${p.id}">
-                    <div class="pub-header">
-                        <div class="avatar-mini">${avatarUsuario}</div>
-                        <span class="pub-nombre">${nombreUsuario}</span>
-                        <span class="pub-fecha">${fecha}</span>
-                    </div>
-                    ${contenido}
-                    ${mediaHtml}
-                    <div class="pub-actions">
-                        <button class="reaccion-btn" data-id="${p.id}" onclick="toggleReaccion('${p.id}', event)">
-                            <span class="reaccion-emoji">${reaccionEmoji}</span>
-                            <span class="count">${reaccionTotal}</span>
-                            <span class="arrow" id="arrow-${p.id}">▼</span>
-                        </button>
-                        <span class="comment-btn" onclick="abrirModalComentarios('${p.id}')">
-                            💬 <span>${p.comentarios || 0}</span>
-                        </span>
-                        <button class="delete-btn" onclick="eliminarPublicacion('${p.id}')" title="Eliminar publicación">🗑️</button>
-                    </div>
-                    <div class="reaccion-picker" id="reaccionPicker-${p.id}">
-                        ${REACCIONES.map(r => `<button onclick="seleccionarReaccion('${p.id}', '${r}', event)">${r}</button>`).join('')}
-                    </div>
-                </div>
-            `;
-        }).join('');
-
-        console.log('✅ Publicaciones renderizadas con reacciones');
-
-    } catch (error) {
-        console.error('❌ Error cargando publicaciones:', error);
-        const container = document.getElementById('postsList');
-        if (container) {
-            container.innerHTML = `
-                <div class="empty-state">
-                    <span class="icon">⚠️</span>
-                    <h4>Error al cargar publicaciones</h4>
-                    <p>${error.message || 'Intenta nuevamente.'}</p>
-                </div>
-            `;
-        }
-    }
+            return response.json();
+        })
+        .catch(function(error) {
+            clearTimeout(timeoutId);
+            if (error.name === 'AbortError') {
+                showToast('⏳ La operación tardó demasiado, intenta de nuevo', 'warning');
+                Logger.warn('Timeout en API', { endpoint: endpoint, timeout: timeout });
+                return null;
+            }
+            if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+                showToast('❌ Error de conexión con el servidor', 'error');
+                Logger.error('CORS/Network Error', { endpoint: endpoint, error: error.message });
+                return null;
+            }
+            throw error;
+        });
 }
 
 // ================================================================
-// CARGAR MEMBRESÍA
+// ================================================================
+// 🚦 RATE LIMITER - CONTROL DE FRECUENCIA
+// ================================================================
 // ================================================================
 
-async function cargarMembresia() {
-    const container = document.getElementById('membresiaContainer');
+var rateLimiter = {
+    _lastSend: 0,
+    _pendingMessages: 0,
+    _MAX_MESSAGES_PER_SECOND: 3,
+    _MAX_PENDING: 5,
+
+    canSend: function() {
+        var now = Date.now();
+        var diff = now - this._lastSend;
+
+        if (this._pendingMessages >= this._MAX_PENDING) {
+            showToast('⏳ Demasiados mensajes pendientes, espera un momento', 'warning');
+            return false;
+        }
+
+        if (diff < 1000 && this._pendingMessages > 0) {
+            showToast('⏳ Por favor espera antes de enviar más mensajes', 'warning');
+            return false;
+        }
+
+        if (diff < 300) {
+            showToast('⏳ Demasiado rápido, espera un momento', 'warning');
+            return false;
+        }
+
+        this._lastSend = now;
+        this._pendingMessages++;
+        setTimeout(function() { this._pendingMessages--; }.bind(this), 1000);
+        return true;
+    }
+};
+
+// ================================================================
+// ================================================================
+// 📁 VALIDACIÓN DE ARCHIVOS
+// ================================================================
+// ================================================================
+
+var MAX_FILE_SIZE = 10 * 1024 * 1024;
+var MAX_FILES = 5;
+var TIPOS_PERMITIDOS = [
+    'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+    'audio/mpeg', 'audio/webm', 'audio/ogg', 'audio/wav'
+];
+var EXTENSIONES_PERMITIDAS = [
+    'jpg', 'jpeg', 'png', 'gif', 'webp',
+    'mp3', 'webm', 'ogg', 'wav'
+];
+
+function validarArchivo(file) {
+    if (file.size > MAX_FILE_SIZE) {
+        showToast('❌ Archivo demasiado grande (máx ' + (MAX_FILE_SIZE / 1024 / 1024) + 'MB)', 'error');
+        return false;
+    }
+
+    if (TIPOS_PERMITIDOS.indexOf(file.type) === -1) {
+        showToast('❌ Tipo de archivo no permitido', 'error');
+        return false;
+    }
+
+    var ext = file.name.split('.').pop().toLowerCase();
+    if (EXTENSIONES_PERMITIDAS.indexOf(ext) === -1) {
+        showToast('❌ Extensión de archivo no permitida', 'error');
+        return false;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+        if (!confirm('⚠️ El archivo ' + file.name + ' pesa ' + (file.size / 1024 / 1024).toFixed(1) + 'MB. ¿Continuar?')) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+// ================================================================
+// ================================================================
+// 📡 CANAL REALTIME CON RECONEXIÓN
+// ================================================================
+// ================================================================
+
+var currentChannel = null;
+var reconnectAttempts = 0;
+var MAX_RECONNECT_ATTEMPTS = 5;
+var RECONNECT_DELAY = 2000;
+
+function crearCanalRealtime(contactoId, onMessage, onUpdate) {
+    var channel = supabase
+        .channel('chat-' + contactoId)
+        .on('postgres_changes', {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'mensajes_chat',
+            filter: 'remitente_id=eq.' + contactoId
+        }, onMessage)
+        // ✅ FILTRO PARA UPDATE: escuchar solo cambios en la conversación
+        .on('postgres_changes', {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'mensajes_chat',
+            filter: 'remitente_id=eq.' + contactoId
+        }, function(payload) {
+            // Verificar si el mensaje afecta a la conversación actual
+            if (payload.new.remitente_id === contactoId || payload.new.destinatario_id === contactoId) {
+                onUpdate(payload);
+            }
+        })
+        .on('postgres_changes', {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'mensajes_chat',
+            filter: 'destinatario_id=eq.' + contactoId
+        }, function(payload) {
+            // Verificar si el mensaje afecta a la conversación actual
+            if (payload.new.remitente_id === contactoId || payload.new.destinatario_id === contactoId) {
+                onUpdate(payload);
+            }
+        });
+
+    reconnectAttempts = 0;
+
+    channel.subscribe(function(status) {
+        if (status === 'SUBSCRIBED') {
+            reconnectAttempts = 0;
+            Logger.info('Canal Realtime conectado', { contactoId: contactoId });
+            var statusEl = document.querySelector('.chat-status');
+            if (statusEl) statusEl.classList.remove('desconectado');
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+            if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+                reconnectAttempts++;
+                Logger.warn('Reconectando canal', { contactoId: contactoId, intento: reconnectAttempts });
+                setTimeout(function() {
+                    channel.subscribe();
+                }, RECONNECT_DELAY * reconnectAttempts);
+            } else {
+                Logger.error('Error crítico: no se pudo reconectar', { contactoId: contactoId });
+                showToast('❌ Perdiste conexión con el chat', 'error');
+                var statusEl = document.querySelector('.chat-status');
+                if (statusEl) statusEl.classList.add('desconectado');
+            }
+        }
+    });
+
+    return channel;
+}
+
+// ================================================================
+// ================================================================
+// 📦 CACHE DE MENSAJES
+// ================================================================
+// ================================================================
+
+var messageCache = new Map();
+var CACHE_TTL = 5 * 60 * 1000;
+
+function getCachedMessages(contactoId) {
+    var cached = messageCache.get(contactoId);
+    if (!cached) return null;
+
+    var now = Date.now();
+    if (now - cached.timestamp > CACHE_TTL) {
+        messageCache.delete(contactoId);
+        return null;
+    }
+    return cached.data;
+}
+
+function setCachedMessages(contactoId, messages) {
+    messageCache.set(contactoId, {
+        data: messages,
+        timestamp: Date.now()
+    });
+}
+
+// ================================================================
+// ================================================================
+// 🔄 INDICADOR DE CARGA
+// ================================================================
+// ================================================================
+
+function showLoading(message) {
+    message = message || 'Cargando...';
+    var overlay = document.querySelector('.loading-overlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.className = 'loading-overlay';
+        overlay.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 9999; backdrop-filter: blur(4px);';
+        overlay.innerHTML = '<div style="background: #1a1a2e; padding: 30px 40px; border-radius: 12px; border: 1px solid rgba(212,175,55,0.3); text-align: center;"><div style="width: 40px; height: 40px; border: 3px solid rgba(212,175,55,0.1); border-top-color: #d4af37; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px;"></div><div class="loading-message" style="color: #d4af37; font-weight: 500;">' + message + '</div></div>';
+        document.body.appendChild(overlay);
+
+        if (!document.getElementById('loading-style')) {
+            var style = document.createElement('style');
+            style.id = 'loading-style';
+            style.textContent = '@keyframes spin { to { transform: rotate(360deg); } }';
+            document.head.appendChild(style);
+        }
+    }
+
+    var msgEl = overlay.querySelector('.loading-message');
+    if (msgEl) msgEl.textContent = message;
+    overlay.style.display = 'flex';
+}
+
+function hideLoading() {
+    var overlay = document.querySelector('.loading-overlay');
+    if (overlay) overlay.style.display = 'none';
+}
+
+// ================================================================
+// ================================================================
+// ✏️ FORMATEAR TEXTO CON SANITIZACIÓN
+// ================================================================
+// ================================================================
+
+function formatearTexto(texto) {
+    return sanitizarContenido(texto || '');
+}
+
+// ================================================================
+// ================================================================
+// 🔍 BUSCAR CONTACTOS
+// ================================================================
+// ================================================================
+
+function buscarContactos(query) {
+    var querySanitizada = sanitizarQuery(query);
+    if (!querySanitizada || querySanitizada.length < 2) {
+        document.getElementById('resultadosBusqueda').innerHTML = '';
+        return;
+    }
+
+    sessionManager.getSession()
+        .then(function(session) {
+            if (!session) return;
+
+            return supabase
+                .from('usuarios')
+                .select('id, nombre, handle, avatar_url')
+                .or('nombre.ilike.%' + querySanitizada + '%,handle.ilike.%' + querySanitizada + '%')
+                .neq('id', session.user.id)
+                .limit(10);
+        })
+        .then(function(result) {
+            if (!result) return;
+            if (result.error) throw result.error;
+
+            var container = document.getElementById('resultadosBusqueda');
+            if (!container) return;
+
+            var data = result.data || [];
+            if (data.length === 0) {
+                container.innerHTML = '<div style="padding:12px;text-align:center;color:#667788;font-size:0.75rem;">No se encontraron usuarios</div>';
+                return;
+            }
+
+            return sessionManager.getSession().then(function(session) {
+                return supabase
+                    .from('contactos')
+                    .select('contacto_id')
+                    .eq('usuario_id', session.user.id)
+                    .then(function(contactosResult) {
+                        var idsExistentes = (contactosResult.data || []).map(function(c) { return c.contacto_id; });
+                        return { data: data, idsExistentes: idsExistentes };
+                    });
+            });
+        })
+        .then(function(result) {
+            if (!result) return;
+            var data = result.data;
+            var idsExistentes = result.idsExistentes;
+
+            var container = document.getElementById('resultadosBusqueda');
+            var html = '';
+            for (var i = 0; i < data.length; i++) {
+                var usuario = data[i];
+                var yaEsContacto = idsExistentes.indexOf(usuario.id) !== -1;
+                var nombreSanitizado = escapeHTML(usuario.nombre || 'Usuario');
+                var handleSanitizado = escapeHTML(usuario.handle || 'usuario');
+                var avatarHtml = usuario.avatar_url ?
+                    '<img src="' + usuario.avatar_url + '" style="width:100%;height:100%;object-fit:cover;">' :
+                    (usuario.nombre ? nombreSanitizado[0].toUpperCase() : '◈');
+
+                html += '<div class="resultado-item" style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid rgba(212,175,55,0.05);transition:all 0.2s;">';
+                html += '<div class="avatar" style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#1a2a1a,#d4af37);display:flex;align-items:center;justify-content:center;color:white;font-size:0.8rem;overflow:hidden;">' + avatarHtml + '</div>';
+                html += '<div style="flex:1;"><div style="font-weight:600;font-size:0.8rem;">' + nombreSanitizado + '</div>';
+                html += '<div style="font-size:0.6rem;color:#667788;">@' + handleSanitizado + '</div></div>';
+                if (yaEsContacto) {
+                    html += '<span style="font-size:0.55rem;color:#4ade80;background:rgba(0,214,143,0.1);padding:2px 10px;border-radius:12px;">✓ Contacto</span>';
+                } else {
+                    html += '<button onclick="agregarContacto(\'' + usuario.id + '\')" style="background:linear-gradient(135deg,#d4af37,#c49a2a);color:#0b0e14;border:none;padding:4px 12px;border-radius:12px;font-size:0.6rem;font-weight:600;cursor:pointer;">+ Agregar</button>';
+                }
+                html += '</div>';
+            }
+            container.innerHTML = html;
+        })
+        .catch(function(error) {
+            Logger.error('Error buscando contactos', error);
+        });
+}
+
+// ================================================================
+// ================================================================
+// ➕ AGREGAR CONTACTO
+// ================================================================
+// ================================================================
+
+function agregarContacto(contactoId) {
+    sessionManager.getSession()
+        .then(function(session) {
+            if (!session) {
+                showToast('⚠️ Inicia sesión para agregar contactos', 'error');
+                return;
+            }
+
+            return supabase
+                .from('contactos')
+                .select('id')
+                .eq('usuario_id', session.user.id)
+                .eq('contacto_id', contactoId)
+                .maybeSingle()
+                .then(function(existeResult) {
+                    if (existeResult.data) {
+                        showToast('⚠️ Este usuario ya es tu contacto', 'warning');
+                        return;
+                    }
+                    return supabase
+                        .from('contactos')
+                        .insert({
+                            usuario_id: session.user.id,
+                            contacto_id: contactoId,
+                            estado: 'activo'
+                        });
+                });
+        })
+        .then(function(result) {
+            if (!result) return;
+            if (result.error) throw result.error;
+
+            showToast('✅ Contacto agregado correctamente', 'success');
+            document.getElementById('searchInputModal').value = '';
+            document.getElementById('resultadosBusqueda').innerHTML = '';
+            cerrarModalNuevoContacto();
+            return cargarConversaciones();
+        })
+        .catch(function(error) {
+            Logger.error('Error agregando contacto', error);
+            showToast('❌ Error al agregar contacto', 'error');
+        });
+}
+
+// ================================================================
+// ================================================================
+// 📋 CARGAR CONVERSACIONES
+// ================================================================
+// ================================================================
+
+function cargarConversaciones() {
+    return sessionManager.verificarAutenticacion()
+        .then(function(autenticado) {
+            if (!autenticado) return;
+
+            return llamadaAPI('/api/mensajes/conversaciones');
+        })
+        .then(function(result) {
+            if (!result) return;
+
+            var conversaciones = result.conversaciones || [];
+
+            var convList = document.getElementById('conversacionesList');
+            if (!convList) return;
+
+            if (conversaciones.length === 0) {
+                convList.innerHTML = '<div style="padding:40px;text-align:center;color:#667788;font-size:0.8rem;"><div style="font-size:2rem;margin-bottom:10px;">◈</div><p>Sin contactos agregados</p><p style="font-size:0.6rem;">Busca y agrega contactos arriba</p></div>';
+                return;
+            }
+
+            var usuario = sessionManager.usuario;
+            var html = '';
+            for (var i = 0; i < conversaciones.length; i++) {
+                var conv = conversaciones[i];
+                var avatar = conv.avatar_url ?
+                    '<img src="' + conv.avatar_url + '" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" />' :
+                    (conv.nombre ? conv.nombre[0].toUpperCase() : '✦');
+
+                var isActive = conv.id === (window._conversacionActualId || null);
+                var nombreSanitizado = escapeHTML(conv.nombre);
+                var ultimoMensajeSanitizado = escapeHTML(conv.ultimoMensaje);
+
+                html += '<div class="conv-item' + (isActive ? ' active' : '') + '" data-id="' + conv.id + '" onclick="abrirConversacion(\'' + conv.id + '\')">';
+                html += '<div class="conv-avatar">' + avatar + '</div>';
+                html += '<div class="conv-info"><div class="conv-nombre">' + nombreSanitizado + '</div>';
+                html += '<div class="conv-msg">' + (ultimoMensajeSanitizado.length > 40 ? ultimoMensajeSanitizado.substring(0, 40) + '...' : ultimoMensajeSanitizado) + '</div></div>';
+                html += '<div class="conv-meta">';
+                if (conv.noLeidos > 0) html += '<span class="conv-badge">' + conv.noLeidos + '</span>';
+                if (conv.fecha) html += '<span class="conv-hora">' + new Date(conv.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + '</span>';
+                html += '</div></div>';
+            }
+            convList.innerHTML = html;
+        })
+        .catch(function(error) {
+            Logger.error('Error cargando conversaciones', error);
+            showToast('❌ Error al cargar conversaciones', 'error');
+        });
+}
+
+// ================================================================
+// ================================================================
+// 💬 ABRIR CONVERSACIÓN
+// ================================================================
+// ================================================================
+
+var conversacionActual = null;
+
+function abrirConversacion(contactoId) {
+    sessionManager.getSession()
+        .then(function(session) {
+            if (!session) {
+                showToast('⚠️ Inicia sesión para abrir conversaciones', 'error');
+                return;
+            }
+
+            return supabase
+                .from('usuarios')
+                .select('id, nombre, handle, avatar_url')
+                .eq('id', contactoId)
+                .single()
+                .then(function(contactoResult) {
+                    if (contactoResult.error) throw contactoResult.error;
+                    return { session: session, contacto: contactoResult.data };
+                });
+        })
+        .then(function(result) {
+            if (!result) return;
+            var session = result.session;
+            var contacto = result.contacto;
+
+            conversacionActual = contacto;
+            window._conversacionActualId = contactoId;
+
+            var chatNombre = document.getElementById('chatNombre');
+            if (chatNombre) chatNombre.textContent = contacto.nombre || 'Usuario';
+
+            var chatAvatar = document.querySelector('.chat-avatar');
+            if (chatAvatar) chatAvatar.textContent = contacto.nombre ? contacto.nombre[0].toUpperCase() : '✦';
+
+            return supabase
+                .from('usuarios')
+                .select('online, ultima_conexion')
+                .eq('id', contactoId)
+                .single()
+                .then(function(estadoResult) {
+                    var chatEstado = document.getElementById('chatEstado');
+                    if (!chatEstado) return;
+                    var estadoContacto = estadoResult.data || {};
+                    if (estadoContacto.online) {
+                        chatEstado.textContent = '🟢 En línea';
+                        chatEstado.className = 'chat-estado online';
+                    } else if (estadoContacto.ultima_conexion) {
+                        var diff = Math.floor((Date.now() - new Date(estadoContacto.ultima_conexion)) / 60000);
+                        if (diff < 5) {
+                            chatEstado.textContent = '🟡 Última vez hace unos minutos';
+                        } else if (diff < 60) {
+                            chatEstado.textContent = '🟡 Última vez hace ' + diff + ' min';
+                        } else if (diff < 1440) {
+                            chatEstado.textContent = '🟡 Última vez hace ' + Math.floor(diff / 60) + ' h';
+                        } else {
+                            chatEstado.textContent = '🟡 Última vez hace ' + Math.floor(diff / 1440) + ' d';
+                        }
+                        chatEstado.className = 'chat-estado';
+                    } else {
+                        chatEstado.textContent = '⚪ Desconectado';
+                        chatEstado.className = 'chat-estado';
+                    }
+                    return { session: session, contactoId: contactoId };
+                });
+        })
+        .then(function(result) {
+            if (!result) return;
+            var session = result.session;
+            var contactoId = result.contactoId;
+
+            return marcarMensajesLeidos(contactoId)
+                .then(function() {
+                    return cargarMensajes(contactoId);
+                })
+                .then(function() {
+                    if (currentChannel) {
+                        try { supabase.removeChannel(currentChannel); } catch (e) {}
+                        currentChannel = null;
+                    }
+
+                    currentChannel = crearCanalRealtime(
+                        contactoId,
+                        function(payload) {
+                            if (payload.new.destinatario_id === session.user.id) {
+                                agregarMensajeRealtime(payload.new);
+                                marcarMensajesLeidos(contactoId);
+                            }
+                        },
+                        function() { cargarConversaciones(); }
+                    );
+
+                    return cargarConversaciones();
+                });
+        })
+        .catch(function(error) {
+            Logger.error('Error abriendo conversación', error);
+        });
+}
+
+// ================================================================
+// ================================================================
+// 📖 CARGAR MENSAJES CON CACHE
+// ================================================================
+// ================================================================
+
+function cargarMensajes(contactoId) {
+    return sessionManager.getSession()
+        .then(function(session) {
+            if (!session) return;
+
+            var container = document.getElementById('chatMessages');
+            if (!container) return;
+
+            // Verificar cache
+            var cached = getCachedMessages(contactoId);
+            if (cached) {
+                var html = '';
+                for (var i = 0; i < cached.length; i++) {
+                    html += crearMensajeHTML(cached[i]);
+                }
+                container.innerHTML = html;
+                container.scrollTop = container.scrollHeight;
+                return;
+            }
+
+            return llamadaAPI('/api/mensajes/mensajes/' + contactoId + '?userId=' + session.user.id)
+                .then(function(result) {
+                    if (!result) return;
+                    var mensajes = result.mensajes || [];
+
+                    if (mensajes.length > 0) {
+                        setCachedMessages(contactoId, mensajes);
+                        var html = '';
+                        for (var i = 0; i < mensajes.length; i++) {
+                            html += crearMensajeHTML(mensajes[i]);
+                        }
+                        container.innerHTML = html;
+                        container.scrollTop = container.scrollHeight;
+                    } else {
+                        container.innerHTML = '<div class="empty-chat"><span class="icon">◈</span><h3>Inicia la conversación</h3><p>Envía un mensaje para comenzar</p></div>';
+                    }
+                });
+        })
+        .catch(function(error) {
+            Logger.error('Error cargando mensajes', error);
+            showToast('❌ Error al cargar mensajes', 'error');
+        });
+}
+
+// ================================================================
+// ================================================================
+// ✏️ CREAR MENSAJE HTML CON SANITIZACIÓN
+// ================================================================
+// ================================================================
+
+function crearMensajeHTML(msg) {
+    var usuario = sessionManager.usuario;
+    var esEnviado = msg.remitente_id === (usuario ? usuario.id : null);
+    var fecha = new Date(msg.created_at);
+    var hora = fecha.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    var contenidoFormateado = formatearTexto(msg.contenido || '');
+
+    if (msg.tipo === 'imagen' && msg.imagen_url) {
+        return crearMensajeImagen(msg, esEnviado, hora);
+    }
+
+    if (msg.tipo === 'voz' && msg.imagen_url) {
+        return crearMensajeAudio(msg, esEnviado, hora);
+    }
+
+    if (esEnviado) {
+        return '<div class="msg-wrapper enviado">' +
+            '<div class="burbuja">' + contenidoFormateado + '</div>' +
+            '<div class="meta">' + hora + (msg.editado ? ' ✎' : '') +
+            '<span class="leido ' + (msg.leido ? 'leido' : 'no-leido') + '">' + (msg.leido ? '◆◆' : '◆◇') + '</span>' +
+            '<button onclick="eliminarMensaje(\'' + msg.id + '\')" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:0.5rem;">✕</button>' +
+            '<button onclick="editarMensaje(\'' + msg.id + '\')" style="background:none;border:none;color:#d4af37;cursor:pointer;font-size:0.5rem;">✎</button>' +
+            '</div></div>';
+    }
+
+    return '<div class="msg-wrapper recibido">' +
+        '<div class="fila"><div class="avatar">◈</div><div class="burbuja">' + contenidoFormateado + '</div></div>' +
+        '<div class="meta">' + hora + (msg.editado ? ' ✎' : '') +
+        '<button onclick="reportarMensaje(\'' + msg.id + '\')" style="background:none;border:none;color:#fbbf24;cursor:pointer;font-size:0.5rem;">⚠️</button>' +
+        '</div></div>';
+}
+
+function crearMensajeImagen(msg, esEnviado, hora) {
+    var imagenUrl = msg.imagen_url;
+    if (esEnviado) {
+        return '<div class="msg-wrapper enviado">' +
+            '<div class="burbuja" style="padding:4px;background:transparent;border-radius:12px;">' +
+            '<img src="' + imagenUrl + '" style="max-width:200px;border-radius:12px;border:2px solid #d4af37;" />' +
+            '</div>' +
+            '<div class="meta">' + hora + (msg.editado ? ' ✎' : '') +
+            '<span class="leido ' + (msg.leido ? 'leido' : 'no-leido') + '">' + (msg.leido ? '◆◆' : '◆◇') + '</span></div></div>';
+    }
+    return '<div class="msg-wrapper recibido">' +
+        '<div class="fila"><div class="avatar">◈</div>' +
+        '<div class="burbuja" style="padding:4px;background:transparent;border-radius:12px;border:1px solid rgba(212,175,55,0.15);">' +
+        '<img src="' + imagenUrl + '" style="max-width:200px;border-radius:12px;" />' +
+        '</div></div>' +
+        '<div class="meta">' + hora + (msg.editado ? ' ✎' : '') + '</div></div>';
+}
+
+function crearMensajeAudio(msg, esEnviado, hora) {
+    var audioUrl = msg.imagen_url;
+    if (esEnviado) {
+        return '<div class="msg-wrapper enviado">' +
+            '<div class="burbuja" style="display:flex;align-items:center;gap:8px;">' +
+            '<span>🎵</span><audio controls style="max-width:150px;height:30px;"><source src="' + audioUrl + '" type="audio/mpeg"></audio>' +
+            '</div>' +
+            '<div class="meta">' + hora +
+            '<span class="leido ' + (msg.leido ? 'leido' : 'no-leido') + '">' + (msg.leido ? '◆◆' : '◆◇') + '</span></div></div>';
+    }
+    return '<div class="msg-wrapper recibido">' +
+        '<div class="fila"><div class="avatar">◈</div>' +
+        '<div class="burbuja" style="display:flex;align-items:center;gap:8px;">' +
+        '<span>🎵</span><audio controls style="max-width:150px;height:30px;"><source src="' + audioUrl + '" type="audio/mpeg"></audio>' +
+        '</div></div>' +
+        '<div class="meta">' + hora + '</div></div>';
+}
+
+// ================================================================
+// ================================================================
+// 📨 AGREGAR MENSAJE EN TIEMPO REAL
+// ================================================================
+// ================================================================
+
+function agregarMensajeRealtime(msg) {
+    var container = document.getElementById('chatMessages');
     if (!container) return;
 
-    container.innerHTML = `
-        <div class="empty-state">
-            <span class="icon">⏳</span>
-            <h4 data-clave="perfil_cargando_membresia">Cargando membresía...</h4>
-        </div>
-    `;
+    var empty = container.querySelector('.empty-chat');
+    if (empty) empty.remove();
 
-    if (!sessionUser) {
-        container.innerHTML = `
-            <div style="text-align:center;padding:16px;color:var(--text-muted);">
-                ⚠️ Inicia sesión para ver tu membresía.
-            </div>
-        `;
-        return;
-    }
+    if (msg.remitente_id !== (conversacionActual ? conversacionActual.id : null) &&
+        msg.destinatario_id !== (conversacionActual ? conversacionActual.id : null)) return;
 
-    try {
-        console.log('✦ Cargando membresía para:', sessionUser.id);
-
-        const { data: membresiaData, error: membresiaError } = await window.supabase
-            .from('membresias_usuarios')
-            .select('*, planes_membresia(*)')
-            .eq('usuario_id', sessionUser.id)
-            .eq('activa', true)
-            .order('vence_at', { ascending: false })
-            .limit(1);
-
-        if (membresiaError) {
-            console.warn('⚠️ Error consultando membresía:', membresiaError);
-            mostrarMembresiaGratis(container);
-            return;
-        }
-
-        const membresia = membresiaData && membresiaData.length > 0 ? membresiaData[0] : null;
-
-        if (!membresia) {
-            mostrarMembresiaGratis(container);
-            return;
-        }
-
-        const plan = membresia.planes_membresia || {};
-        const planId = plan.id || 'free';
-
-        if (planId === 'free') {
-            mostrarMembresiaGratis(container);
-            return;
-        }
-
-        if (planId === 'pro') {
-            const esActiva = membresia.activa || false;
-            mostrarMembresiaPro(container, membresia, plan, esActiva);
-            membresiaActual = membresia;
-            return;
-        }
-
-        container.innerHTML = `
-            <div style="text-align:center;padding:16px;color:var(--text-muted);">
-                ⚠️ Estado de membresía desconocido.
-                <br>
-                <button class="btn btn-outline btn-sm" onclick="cargarMembresia()" style="margin-top:8px;">
-                    🔄 Reintentar
-                </button>
-            </div>
-        `;
-
-    } catch (error) {
-        console.error('❌ Error cargando membresía:', error);
-        container.innerHTML = `
-            <div style="text-align:center;padding:16px;color:var(--text-muted);">
-                ⚠️ No se pudo cargar la membresía.
-                <br>
-                <button class="btn btn-outline btn-sm" onclick="cargarMembresia()" style="margin-top:8px;">
-                    🔄 Reintentar
-                </button>
-            </div>
-        `;
-        showToast('❌ Error al cargar membresía', 'error');
-    }
-}
-
-function mostrarMembresiaGratis(container) {
-    container.innerHTML = `
-        <div style="display:flex;flex-direction:column;gap:12px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
-                <div>
-                    <span style="font-size:0.8rem;color:var(--text-secondary);">Plan actual:</span>
-                    <span style="font-weight:700;color:var(--text-primary);">Gratis</span>
-                </div>
-                <span style="font-size:0.6rem;color:var(--text-muted);">1 GB · 90 días</span>
-            </div>
-            <div style="background:rgba(212,175,55,0.05);border:1px solid var(--gold);border-radius:12px;padding:14px;text-align:center;">
-                <div style="font-family:'Orbitron',monospace;font-size:1.2rem;color:var(--gold);font-weight:700;">✦ Sariel's Pro</div>
-                <div style="font-size:0.8rem;color:var(--text-secondary);margin:4px 0;">$20 MXN / 30 días</div>
-                <div style="font-size:0.6rem;color:var(--text-muted);margin-bottom:10px;">Conservación ampliada · 5 GB</div>
-                <button class="btn btn-gold" onclick="contratarPro()" style="width:100%;justify-content:center;padding:10px;">
-                    🚀 Contratar Pro por $20 MXN
-                </button>
-            </div>
-        </div>
-    `;
-}
-
-function mostrarMembresiaPro(container, membresia, plan, esActiva) {
-    const diasRestantes = membresia.dias_restantes || 0;
-    const venceAt = membresia.vence_at ? new Date(membresia.vence_at).toLocaleDateString() : '--';
-    const planNombre = plan.nombre || 'Pro';
-
-    if (esActiva) {
-        container.innerHTML = `
-            <div style="display:flex;flex-direction:column;gap:12px;">
-                <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
-                    <div>
-                        <span style="font-size:0.8rem;color:var(--text-secondary);">Plan actual:</span>
-                        <span style="font-weight:700;color:var(--gold);">✦ ${planNombre}</span>
-                    </div>
-                    <span style="font-size:0.6rem;color:var(--success);">✅ Activa</span>
-                </div>
-                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:8px;">
-                    <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;text-align:center;">
-                        <div style="font-size:1.2rem;font-weight:700;color:var(--gold);">${diasRestantes}</div>
-                        <div style="font-size:0.5rem;color:var(--text-muted);">DÍAS RESTANTES</div>
-                    </div>
-                    <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;text-align:center;">
-                        <div style="font-size:0.8rem;color:var(--text-secondary);">${venceAt}</div>
-                        <div style="font-size:0.5rem;color:var(--text-muted);">VENCE EL</div>
-                    </div>
-                    <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;text-align:center;">
-                        <div style="font-size:0.8rem;color:var(--text-secondary);">${plan.almacenamiento_gb || 5} GB</div>
-                        <div style="font-size:0.5rem;color:var(--text-muted);">ALMACENAMIENTO</div>
-                    </div>
-                </div>
-                <button class="btn btn-outline" onclick="renovarPro()" style="width:100%;justify-content:center;padding:10px;">
-                    🔄 Renovar Pro por $20 MXN
-                </button>
-            </div>
-        `;
-    } else {
-        container.innerHTML = `
-            <div style="display:flex;flex-direction:column;gap:12px;">
-                <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
-                    <div>
-                        <span style="font-size:0.8rem;color:var(--text-secondary);">Plan actual:</span>
-                        <span style="font-weight:700;color:var(--gold);">✦ ${planNombre}</span>
-                    </div>
-                    <span style="font-size:0.6rem;color:var(--text-muted);">⏳ Inactiva</span>
-                </div>
-                <div style="background:rgba(212,175,55,0.05);border:1px solid var(--gold);border-radius:12px;padding:14px;text-align:center;">
-                    <div style="font-family:'Orbitron',monospace;font-size:1.2rem;color:var(--gold);font-weight:700;">✦ Sariel's Pro</div>
-                    <div style="font-size:0.8rem;color:var(--text-secondary);margin:4px 0;">$20 MXN / 30 días</div>
-                    <div style="font-size:0.6rem;color:var(--text-muted);margin-bottom:10px;">Conservación ampliada · 5 GB</div>
-                    <button class="btn btn-gold" onclick="contratarPro()" style="width:100%;justify-content:center;padding:10px;">
-                        🚀 Contratar Pro por $20 MXN
-                    </button>
-                </div>
-            </div>
-        `;
-    }
+    container.innerHTML += crearMensajeHTML(msg);
+    container.scrollTop = container.scrollHeight;
+    cargarConversaciones();
 }
 
 // ================================================================
-// REACCIONES Y COMENTARIOS
+// ================================================================
+// 📤 ENVIAR MENSAJE CON RATE LIMITING
+// ================================================================
 // ================================================================
 
-function toggleReaccion(publicacionId, event) {
-    if (!sessionUser) {
-        showToast('⚠️ Inicia sesión para reaccionar', 'warning');
+var archivosSeleccionados = [];
+
+function enviarMensaje() {
+    var chatInput = document.getElementById('chatInput');
+    var contenido = chatInput.value.trim();
+    if (!contenido && archivosSeleccionados.length === 0) {
+        if (!conversacionActual) showToast('⚠️ Selecciona una conversación', 'warning');
         return;
     }
 
-    const btn = event.currentTarget;
-    const item = btn.closest('.publicacion-item');
-    if (!item) return;
+    if (!rateLimiter.canSend()) return;
 
-    const picker = item.querySelector('.reaccion-picker');
-    if (!picker) return;
-
-    document.querySelectorAll('.reaccion-picker.show').forEach(el => {
-        if (el !== picker) el.classList.remove('show');
-        const arrow = document.querySelector('#arrow-' + el.id.replace('reaccionPicker-', ''));
-        if (arrow) arrow.classList.remove('open');
-    });
-
-    picker.classList.toggle('show');
-    const arrow = document.getElementById('arrow-' + publicacionId);
-    if (arrow) arrow.classList.toggle('open');
-
-    event.stopPropagation();
-}
-
-async function seleccionarReaccion(publicacionId, tipo, event) {
-    if (!sessionUser) {
-        showToast('⚠️ Inicia sesión para reaccionar', 'error');
-        return;
-    }
-
-    const picker = document.getElementById('reaccionPicker-' + publicacionId);
-    if (picker) {
-        picker.classList.remove('show');
-        const arrow = document.getElementById('arrow-' + publicacionId);
-        if (arrow) arrow.classList.remove('open');
-    }
-
-    try {
-        const { data: existing } = await window.supabase
-            .from('publicaciones_reacciones')
-            .select('tipo')
-            .eq('publicacion_id', publicacionId)
-            .eq('usuario_id', sessionUser.id)
-            .maybeSingle();
-
-        if (existing && existing.tipo === tipo) {
-            await window.supabase
-                .from('publicaciones_reacciones')
-                .delete()
-                .eq('publicacion_id', publicacionId)
-                .eq('usuario_id', sessionUser.id);
-        } else {
-            if (existing) {
-                await window.supabase
-                    .from('publicaciones_reacciones')
-                    .delete()
-                    .eq('publicacion_id', publicacionId)
-                    .eq('usuario_id', sessionUser.id);
+    sessionManager.getSession()
+        .then(function(session) {
+            if (!session) {
+                showToast('⚠️ Inicia sesión para enviar mensajes', 'error');
+                return;
             }
-            await window.supabase
-                .from('publicaciones_reacciones')
-                .insert({
-                    publicacion_id: publicacionId,
-                    usuario_id: sessionUser.id,
-                    tipo: tipo
+            if (!conversacionActual) {
+                showToast('⚠️ Selecciona una conversación', 'error');
+                return;
+            }
+
+            if (archivosSeleccionados.length > 0) {
+                var promises = [];
+                for (var i = 0; i < archivosSeleccionados.length; i++) {
+                    var file = archivosSeleccionados[i];
+                    if (!validarArchivo(file)) return;
+                    promises.push(subirArchivo(file, session));
+                }
+                return Promise.all(promises).then(function() {
+                    archivosSeleccionados = [];
+                    document.getElementById('filePreview').innerHTML = '';
+                    chatInput.value = '';
                 });
-        }
+            }
 
-        await cargarPublicaciones();
+            if (contenido.length > 10000) {
+                showToast('⚠️ El mensaje es demasiado largo (máx 10,000 caracteres)', 'warning');
+                return;
+            }
 
-    } catch (error) {
-        console.error('Error seleccionando reacción:', error);
-        showToast('❌ Error al procesar reacción', 'error');
-    }
-}
+            showLoading('Enviando mensaje...');
 
-async function abrirModalComentarios(publicacionId) {
-    if (!sessionUser) {
-        showToast('⚠️ Inicia sesión para comentar', 'error');
-        return;
-    }
-
-    let modal = document.getElementById('modalComentarios');
-    if (!modal) {
-        modal = document.createElement('div');
-        modal.id = 'modalComentarios';
-        modal.className = 'modal-overlay';
-        modal.innerHTML = `
-            <div class="modal-content" style="max-width:500px;text-align:left;">
-                <button class="close-btn" onclick="cerrarModalComentarios()">✕</button>
-                <h2 style="text-align:center;" data-clave="perfil_comentarios">💬 Comentarios</h2>
-                <div id="comentariosList" style="max-height:300px;overflow-y:auto;margin:12px 0;">
-                    <div style="color:var(--text-muted);text-align:center;padding:20px;" data-clave="perfil_cargando_comentarios">Cargando comentarios...</div>
-                </div>
-                <div style="display:flex;gap:8px;margin-top:8px;">
-                    <input type="text" id="inputComentario" placeholder="Escribe un comentario..." style="flex:1;padding:8px 14px;background:rgba(0,0,0,0.25);border:1px solid var(--glass-border);border-radius:10px;color:var(--text-primary);font-size:0.85rem;outline:none;" data-placeholder="perfil_escribe_comentario" />
-                    <button class="btn btn-gold" onclick="enviarComentario()" style="padding:8px 16px;" data-clave="perfil_enviar">Enviar</button>
-                </div>
-            </div>
-        `;
-        document.body.appendChild(modal);
-    }
-
-    modal.classList.add('active');
-    modal.dataset.publicacionId = publicacionId;
-
-    await cargarComentarios(publicacionId);
-}
-
-async function cargarComentarios(publicacionId) {
-    try {
-        const { data, error } = await window.supabase
-            .from('publicaciones_comentarios')
-            .select('*, usuarios:usuario_id (id, nombre, handle, avatar_url)')
-            .eq('publicacion_id', publicacionId)
-            .order('created_at', { ascending: true });
-
-        if (error) throw error;
-
-        const container = document.getElementById('comentariosList');
-        if (!container) return;
-
-        if (!data || data.length === 0) {
-            container.innerHTML = '<div style="color:var(--text-muted);text-align:center;padding:20px;" data-clave="perfil_sin_comentarios">Sin comentarios. Sé el primero.</div>';
-            return;
-        }
-
-        container.innerHTML = data.map(c => {
-            const u = c.usuarios || {};
-            const avatar = u.avatar_url ? `<img src="${u.avatar_url}" style="width:100%;height:100%;object-fit:cover;">` : '◈';
-            const nombre = u.nombre || 'Usuario';
-            const fecha = new Date(c.created_at).toLocaleString();
-            return `
-                <div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid rgba(212,175,55,0.04);">
-                    <div style="width:28px;height:28px;border-radius:50%;overflow:hidden;background:linear-gradient(135deg,var(--green-deep),var(--gold));display:flex;align-items:center;justify-content:center;font-size:0.6rem;color:white;flex-shrink:0;">${avatar}</div>
-                    <div style="flex:1;">
-                        <strong style="color:var(--gold);font-size:0.75rem;">${nombre}</strong>
-                        <span style="font-size:0.6rem;color:var(--text-muted);margin-left:6px;">${fecha}</span>
-                        <div style="font-size:0.8rem;color:var(--text-secondary);">${c.contenido}</div>
-                    </div>
-                </div>
-            `;
-        }).join('');
-
-    } catch (error) {
-        console.error('Error cargando comentarios:', error);
-        const container = document.getElementById('comentariosList');
-        if (container) {
-            container.innerHTML = '<div style="color:var(--danger);text-align:center;padding:20px;" data-clave="perfil_error_comentarios">Error al cargar comentarios</div>';
-        }
-    }
-}
-
-async function enviarComentario() {
-    const input = document.getElementById('inputComentario');
-    const texto = input.value.trim();
-
-    if (!texto) {
-        showToast('⚠️ Escribe un comentario', 'warning');
-        return;
-    }
-
-    if (!sessionUser) {
-        showToast('⚠️ Inicia sesión para comentar', 'error');
-        return;
-    }
-
-    const modal = document.getElementById('modalComentarios');
-    const publicacionId = modal?.dataset?.publicacionId;
-
-    if (!publicacionId) {
-        showToast('⚠️ No hay publicación seleccionada', 'error');
-        return;
-    }
-
-    try {
-        const { error } = await window.supabase
-            .from('publicaciones_comentarios')
-            .insert({
-                publicacion_id: publicacionId,
-                usuario_id: sessionUser.id,
-                contenido: texto
+            return llamadaAPI('/api/mensajes/mensajes', {
+                method: 'POST',
+                body: JSON.stringify({
+                    destinatario_id: conversacionActual.id,
+                    contenido: contenido,
+                    tipo: 'texto'
+                })
+            }).then(function(result) {
+                hideLoading();
+                if (!result) return;
+                chatInput.value = '';
+                var counter = document.getElementById('charCounter');
+                if (counter) counter.textContent = '0/10000';
+                return cargarMensajes(conversacionActual.id).then(function() {
+                    return cargarConversaciones();
+                });
             });
-
-        if (error) throw error;
-
-        input.value = '';
-        showToast('✅ Comentario agregado', 'success');
-        await cargarComentarios(publicacionId);
-
-    } catch (error) {
-        console.error('Error enviando comentario:', error);
-        showToast('❌ Error al enviar comentario: ' + error.message, 'error');
-    }
-}
-
-function cerrarModalComentarios() {
-    const modal = document.getElementById('modalComentarios');
-    if (modal) modal.classList.remove('active');
-}
-
-// ================================================================
-// ELIMINAR PUBLICACIÓN
-// ================================================================
-
-async function eliminarPublicacion(publicacionId) {
-    if (!sessionUser) {
-        showToast('⚠️ Inicia sesión para eliminar', 'error');
-        return;
-    }
-
-    if (!confirm('¿Eliminar esta publicación permanentemente?')) return;
-
-    showToast('⏳ Eliminando publicación...', '');
-
-    try {
-        const { data: pub, error: pubError } = await window.supabase
-            .from('publicaciones')
-            .select('media_url')
-            .eq('id', publicacionId)
-            .eq('usuario_id', sessionUser.id)
-            .single();
-
-        if (pubError) throw pubError;
-
-        if (pub?.media_url) {
-            const match = pub.media_url.match(/\/publicaciones\/(.+)$/);
-            if (match && match[1]) {
-                await window.supabase.storage.from('publicaciones').remove([match[1]]);
-            }
-        }
-
-        await window.supabase
-            .from('publicaciones')
-            .delete()
-            .eq('id', publicacionId)
-            .eq('usuario_id', sessionUser.id);
-
-        showToast('✅ Publicación eliminada', 'success');
-        await cargarPublicaciones();
-
-    } catch (error) {
-        console.error('Error eliminando publicación:', error);
-        showToast('❌ Error al eliminar publicación', 'error');
-    }
-}
-
-// ================================================================
-// CONTRATAR PRO
-// ================================================================
-
-function contratarPro() {
-    if (!sessionUser) {
-        showToast('⚠️ Inicia sesión para contratar Pro', 'error');
-        return;
-    }
-    mostrarModalPrivacidad('contratar');
-}
-
-function renovarPro() {
-    if (!sessionUser) {
-        showToast('⚠️ Inicia sesión para renovar Pro', 'error');
-        return;
-    }
-    mostrarModalPrivacidad('renovar');
-}
-
-// ================================================================
-// MODAL DE PRIVACIDAD
-// ================================================================
-
-function mostrarModalPrivacidad(accion) {
-    let modal = document.getElementById('modalPrivacidad');
-    if (!modal) {
-        modal = document.createElement('div');
-        modal.id = 'modalPrivacidad';
-        modal.className = 'modal-overlay';
-        modal.innerHTML = `
-            <div class="modal-content" style="max-width:520px;text-align:left;">
-                <button class="close-btn" onclick="cerrarModalPrivacidad()">✕</button>
-                <h2 style="text-align:center;color:var(--gold);" data-clave="perfil_aviso_privacidad">📋 AVISO DE PRIVACIDAD</h2>
-                <div style="font-size:0.8rem;color:var(--text-secondary);margin:12px 0;line-height:1.6;max-height:250px;overflow-y:auto;padding:8px 4px;">
-                    <p style="margin-bottom:10px;" data-clave="perfil_privacidad_texto_1">Al contratar Sariel's Pro, tus datos de cuenta, perfil y contenido podrán ser tratados para prestar el servicio, conservar tu contenido conforme al plan contratado, procesar pagos, mantener la seguridad y cumplir obligaciones legales.</p>
-                    <p style="margin-bottom:10px;"><strong data-clave="perfil_privacidad_texto_2">✦ Sariel's Pro - $20 MXN / 30 días</strong></p>
-                    <p style="margin-bottom:4px;" data-clave="perfil_privacidad_texto_3">💾 5 GB de almacenamiento</p>
-                    <p style="margin-bottom:10px;" data-clave="perfil_privacidad_texto_4">♻️ Conservación ampliada mientras Pro esté activa</p>
-                    <p style="margin-bottom:10px;font-size:0.75rem;color:var(--text-muted);border-top:1px solid var(--glass-border);padding-top:10px;" data-clave="perfil_privacidad_texto_5">
-                        ⚠️ Puedes cancelar cuando quieras y borrar tu contenido en cualquier momento desde tu cuenta. 
-                        Si no renuevas tu membresía Pro, tu contenido se conservará por <strong>15 días</strong> adicionales 
-                        y luego será eliminado de forma permanente.
-                    </p>
-                    <p style="font-size:0.7rem;color:var(--text-muted);margin-top:6px;" data-clave="perfil_privacidad_texto_6">Consulta el aviso de privacidad integral para conocer tus derechos y mecanismos de atención.</p>
-                </div>
-                <div style="display:flex;align-items:center;gap:10px;margin:12px 0;">
-                    <input type="checkbox" id="aceptaPrivacidad" style="width:18px;height:18px;accent-color:var(--gold);">
-                    <label for="aceptaPrivacidad" style="font-size:0.75rem;color:var(--text-secondary);" data-clave="perfil_acepto_privacidad">
-                        He leído y acepto el aviso de privacidad
-                    </label>
-                </div>
-                <button id="btnContinuarPago" class="btn btn-gold" style="width:100%;justify-content:center;padding:12px;opacity:0.5;pointer-events:none;" onclick="procesarContratacion()">
-                    ${accion === 'renovar' ? '🔄 Renovar Pro' : '🚀 Continuar al pago'}
-                </button>
-                <div id="privacidadStatus" style="margin-top:8px;font-size:0.7rem;color:var(--text-muted);text-align:center;"></div>
-            </div>
-        `;
-        document.body.appendChild(modal);
-
-        document.getElementById('aceptaPrivacidad').addEventListener('change', function() {
-            const btn = document.getElementById('btnContinuarPago');
-            if (this.checked) {
-                btn.style.opacity = '1';
-                btn.style.pointerEvents = 'auto';
-            } else {
-                btn.style.opacity = '0.5';
-                btn.style.pointerEvents = 'none';
-            }
+        })
+        .catch(function(error) {
+            hideLoading();
+            Logger.error('Error enviando mensaje', error);
+            showToast('❌ Error al enviar mensaje', 'error');
         });
-    }
-
-    modal.dataset.accion = accion || 'contratar';
-    modal.classList.add('active');
-}
-
-function cerrarModalPrivacidad() {
-    const modal = document.getElementById('modalPrivacidad');
-    if (modal) modal.classList.remove('active');
-    document.getElementById('aceptaPrivacidad').checked = false;
-    const btn = document.getElementById('btnContinuarPago');
-    btn.style.opacity = '0.5';
-    btn.style.pointerEvents = 'none';
-    document.getElementById('privacidadStatus').textContent = '';
-}
-
-function procesarContratacion() {
-    const modal = document.getElementById('modalPrivacidad');
-    const accion = modal.dataset.accion || 'contratar';
-    const acepta = document.getElementById('aceptaPrivacidad').checked;
-    const status = document.getElementById('privacidadStatus');
-
-    if (!acepta) {
-        status.textContent = '⚠️ Debes aceptar el aviso de privacidad';
-        status.style.color = 'var(--danger)';
-        return;
-    }
-
-    cerrarModalPrivacidad();
-
-    if (accion === 'renovar') {
-        ejecutarRenovacion();
-    } else {
-        ejecutarContratacion();
-    }
-}
-
-async function ejecutarContratacion() {
-    showToast('⏳ Creando orden de pago...', '');
-
-    try {
-        const session = await window.supabase.auth.getSession();
-        const token = session.data.session?.access_token;
-
-        const response = await fetch('/api/payments/membresia/create', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ privacy_version: '1.0' })
-        });
-
-        const data = await response.json();
-
-        if (!data.success) {
-            throw new Error(data.error || 'Error al crear la orden');
-        }
-
-        showToast('✅ Orden creada. Redirigiendo al pago...', 'success');
-
-        sessionStorage.setItem('pro_order_id', data.order_id);
-
-        if (data.payment_url) {
-            window.location.href = data.payment_url;
-        } else {
-            showToast('📋 Pago pendiente. Revisa tu correo.', '');
-        }
-
-    } catch (error) {
-        console.error('❌ Error contratando Pro:', error);
-        showToast('❌ Error: ' + error.message, 'error');
-    }
-}
-
-async function ejecutarRenovacion() {
-    showToast('⏳ Creando orden de renovación...', '');
-
-    try {
-        const session = await window.supabase.auth.getSession();
-        const token = session.data.session?.access_token;
-
-        const response = await fetch('/api/payments/membresia/create', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-                renovar: true,
-                privacy_version: '1.0'
-            })
-        });
-
-        const data = await response.json();
-
-        if (!data.success) {
-            throw new Error(data.error || 'Error al crear la orden');
-        }
-
-        showToast('✅ Orden de renovación creada. Redirigiendo...', 'success');
-
-        sessionStorage.setItem('pro_order_id', data.order_id);
-
-        if (data.payment_url) {
-            window.location.href = data.payment_url;
-        }
-
-    } catch (error) {
-        console.error('❌ Error renovando Pro:', error);
-        showToast('❌ Error: ' + error.message, 'error');
-    }
-}
-
-function verificarEstadoPago() {
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('payment') === 'success') {
-        showToast('⏳ Procesando pago...', '');
-        setTimeout(() => {
-            cargarMembresia();
-            showToast('✅ Pago procesado correctamente', 'success');
-            window.history.replaceState({}, document.title, window.location.pathname);
-        }, 2000);
-    }
 }
 
 // ================================================================
-// FUNCIONES PARA ONCLICK DEL HTML
+// ================================================================
+// 🖼️ SUBIR ARCHIVO CON VALIDACIÓN
+// ================================================================
 // ================================================================
 
-function cambiarTab(tab) {
-    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-    const tabContent = document.getElementById('tab-' + tab);
-    if (tabContent) tabContent.classList.add('active');
-    const tabBtn = document.querySelector('.tab-btn[onclick*="' + tab + '"]');
-    if (tabBtn) tabBtn.classList.add('active');
+function subirArchivo(file, session) {
+    if (!validarArchivo(file)) return Promise.reject('Archivo inválido');
+
+    var fileExt = file.name.split('.').pop().toLowerCase();
+    var tipo = file.type.startsWith('image/') ? 'imagen' : 'voz';
+    var filePath = 'mensajes/' + session.user.id + '/' + Date.now() + '.' + fileExt;
+
+    showLoading('Subiendo archivo...');
+
+    return supabase.storage
+        .from('mensajes')
+        .upload(filePath, file, { upsert: true })
+        .then(function(uploadResult) {
+            if (uploadResult.error) throw uploadResult.error;
+            return supabase.storage.from('mensajes').getPublicUrl(filePath);
+        })
+        .then(function(urlResult) {
+            var publicUrl = urlResult.data.publicUrl;
+            return llamadaAPI('/api/mensajes/mensajes', {
+                method: 'POST',
+                body: JSON.stringify({
+                    destinatario_id: conversacionActual.id,
+                    contenido: file.name,
+                    tipo: tipo,
+                    imagen_url: publicUrl
+                })
+            });
+        })
+        .then(function(result) {
+            hideLoading();
+            if (!result) return;
+            showToast('✅ Archivo enviado', 'success');
+            return cargarMensajes(conversacionActual.id).then(function() {
+                return cargarConversaciones();
+            });
+        })
+        .catch(function(error) {
+            hideLoading();
+            Logger.error('Error subiendo archivo', error);
+            showToast('❌ Error al subir archivo', 'error');
+            throw error;
+        });
 }
 
-function editarPerfil() {
-    cambiarTab('config');
-    showToast('✏️ Edita tu perfil en la pestaña Ajustes', '');
-}
+// ================================================================
+// ================================================================
+// 📎 SELECCIONAR ARCHIVO
+// ================================================================
+// ================================================================
 
-function compartirPerfil() {
-    const url = window.location.href;
-    if (navigator.share) {
-        navigator.share({ title: 'Mi perfil en Sariel\'s', text: '◈ Mira mi perfil en Sariel\'s Ecosystem', url: url })
-            .catch(() => {});
-    } else {
-        navigator.clipboard.writeText(url).then(() => showToast('📋 Enlace copiado', 'success'))
-            .catch(() => showToast('📋 Copia el enlace: ' + url, ''));
-    }
-}
-
-function generarQRPerfil() {
-    const modal = document.getElementById('qrPerfilModal');
-    if (!modal) { showToast('⚠️ Modal de QR no disponible', 'error'); return; }
-    const url = window.location.href;
-    const qrImg = document.getElementById('qrPerfilImage');
-    if (qrImg) {
-        qrImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(url);
-    }
-    modal.classList.add('active');
-}
-
-function abrirSelectorArchivo() {
-    const input = document.getElementById('fileInput');
+function seleccionarArchivo() {
+    var input = document.getElementById('fileInput');
     if (input) input.click();
 }
 
-async function subirFoto(event) {
-    const file = event.target.files[0];
-    if (!file) { showToast('⚠️ No se seleccionó ningún archivo', 'warning'); return; }
-    if (!file.type.startsWith('image/')) { showToast('⚠️ Solo se permiten imágenes', 'error'); return; }
-    if (file.size > 5 * 1024 * 1024) { showToast('⚠️ La imagen no puede superar los 5MB', 'error'); return; }
+function handleFileSelect(event) {
+    var files = event.target.files;
+    if (!files || files.length === 0) return;
 
-    const sessionResult = await window.supabase.auth.getSession();
-    if (!sessionResult.data.session) { showToast('⚠️ Inicia sesión para subir foto', 'error'); return; }
-
-    const userId = sessionResult.data.session.user.id;
-    showToast('⏳ Subiendo foto...', '');
-
-    try {
-        const fileExt = file.name.split('.').pop();
-        const filePath = userId + '/' + Date.now() + '.' + fileExt;
-        const uploadResult = await window.supabase.storage.from('avatars').upload(filePath, file, { cacheControl: '3600', upsert: true });
-        if (uploadResult.error) throw uploadResult.error;
-        const urlData = window.supabase.storage.from('avatars').getPublicUrl(filePath);
-        const avatarUrl = urlData.data.publicUrl;
-        const updateResult = await window.supabase.from('usuarios').update({ avatar_url: avatarUrl }).eq('id', userId);
-        if (updateResult.error) throw updateResult.error;
-        const avatarEl = document.getElementById('perfilAvatar');
-        if (avatarEl) avatarEl.innerHTML = `<img src="${avatarUrl}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;"/>`;
-        showToast('✅ Foto de perfil actualizada', 'success');
-        await cargarPerfil();
-    } catch (error) {
-        console.error('Error subiendo foto:', error);
-        showToast('❌ Error al subir foto: ' + error.message, 'error');
-    }
-}
-
-async function guardarPerfil() {
-    const nombre = document.getElementById('editNombre')?.value?.trim();
-    const handle = document.getElementById('editHandle')?.value?.trim().replace('@', '');
-    const bio = document.getElementById('editBio')?.value?.trim();
-
-    if (!nombre) { showToast('⚠️ El nombre no puede estar vacío', 'error'); return; }
-    if (!handle || handle.length < 3) { showToast('⚠️ El handle debe tener al menos 3 caracteres', 'error'); return; }
-
-    showToast('⏳ Guardando perfil...', '');
-    try {
-        const result = await window.supabase.rpc('actualizar_perfil', {
-            p_nombre: nombre,
-            p_handle: handle,
-            p_bio: bio || ''
-        });
-        if (result.error) throw result.error;
-        showToast('✅ Perfil actualizado correctamente', 'success');
-        await cargarPerfil();
-    } catch (error) {
-        console.error('Error guardando perfil:', error);
-        showToast('❌ Error al guardar perfil: ' + error.message, 'error');
-    }
-}
-
-async function cambiarEstado(activo) {
-    if (!sessionUser) { showToast('⚠️ Inicia sesión', 'error'); return; }
-    showToast('⏳ Actualizando estado...', '');
-    try {
-        const result = await window.supabase.rpc('cambiar_estado', { p_online: activo });
-        if (result.error) throw result.error;
-        showToast(activo ? '✅ Estado: Activo' : '⭕ Estado: Inactivo', 'success');
-        await cargarPerfil();
-    } catch (error) {
-        console.error('Error cambiando estado:', error);
-        showToast('❌ Error al cambiar estado', 'error');
-    }
-}
-
-function cambiarConexion(tipo) {
-    showToast(tipo === 'wifi' ? '🛜 Conectado a WiFi' : '📶 Conectado a datos móviles', 'success');
-}
-
-async function comprarDomo(cantidad) {
-    const sessionResult = await window.supabase.auth.getSession();
-    if (!sessionResult.data.session) { showToast('⚠️ Inicia sesión para comprar', 'error'); return; }
-    showToast('⏳ Procesando compra de Domo...', '');
-    try {
-        const result = await window.supabase.rpc('comprar_domo', { p_cantidad: cantidad || 1 });
-        if (result.error) throw result.error;
-        showToast('✅ Domo registrado correctamente', 'success');
-        await cargarPerfil();
-    } catch (error) {
-        console.error('Error comprando Domo:', error);
-        showToast('❌ Error al comprar Domo: ' + error.message, 'error');
-    }
-}
-
-async function canjearNFT() {
-    const sessionResult = await window.supabase.auth.getSession();
-    if (!sessionResult.data.session) { showToast('⚠️ Inicia sesión para canjear NFT', 'error'); return; }
-    showToast('⏳ Canjeando NFT...', '');
-    try {
-        const result = await window.supabase.rpc('canjear_nft');
-        if (result.error) throw result.error;
-        showToast('🎉 NFT canjeado exitosamente', 'success');
-        await cargarPerfil();
-    } catch (error) {
-        console.error('Error canjeando NFT:', error);
-        showToast('❌ Error al canjear NFT: ' + error.message, 'error');
-    }
-}
-
-function comprarConCripto() {
-    const modal = document.getElementById('cryptoPaymentModal');
-    if (modal) modal.classList.add('active');
-    showToast('💳 Abriendo pago con cripto', '');
-}
-
-function verificarPagoCrypto() {
-    showToast('🔍 Verificando pago...', '');
-    setTimeout(() => showToast('✅ Pago verificado correctamente', 'success'), 2000);
-}
-
-function copiarDireccion() {
-    showToast('📋 Dirección copiada al portapapeles', 'success');
-}
-
-async function conectarWallet() {
-    if (typeof window.ethereum === 'undefined') {
-        showToast('⚠️ Instala MetaMask para continuar', 'warning');
-        if (confirm('¿Quieres ir a descargar MetaMask?')) {
-            window.open('https://metamask.io/download/', '_blank');
-        }
+    if (files.length > MAX_FILES) {
+        showToast('⚠️ Máximo ' + MAX_FILES + ' archivos', 'warning');
+        event.target.value = '';
         return;
     }
-    try {
-        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-        if (!accounts || accounts.length === 0) return;
-        const address = accounts[0];
-        const chainId = await window.ethereum.request({ method: 'eth_chainId' });
-        showToast('⏳ Vinculando wallet...', '');
-        const result = await window.supabase.rpc('vincular_wallet', {
-            p_wallet_address: address,
-            p_chain_id: chainId,
-            p_network_name: 'Polygon Mainnet'
+
+    var preview = document.getElementById('filePreview');
+    preview.innerHTML = '';
+
+    archivosSeleccionados = [];
+
+    for (var i = 0; i < files.length; i++) {
+        var file = files[i];
+        if (!validarArchivo(file)) {
+            event.target.value = '';
+            archivosSeleccionados = [];
+            preview.innerHTML = '';
+            return;
+        }
+
+        archivosSeleccionados.push(file);
+        var isImage = file.type.startsWith('image/');
+        var isAudio = file.type.startsWith('audio/');
+        var icon = isImage ? '🖼️' : (isAudio ? '🎵' : '📎');
+        var size = (file.size / 1024).toFixed(1);
+
+        var el = document.createElement('div');
+        el.style.cssText = 'display:inline-flex;align-items:center;gap:6px;background:rgba(212,175,55,0.1);padding:4px 12px;border-radius:12px;font-size:0.65rem;color:#8899aa;';
+        el.innerHTML = icon + ' ' + escapeHTML(file.name) + ' (' + size + 'KB) <span onclick="this.parentElement.remove();archivosSeleccionados=[];" style="cursor:pointer;color:#ef4444;">✕</span>';
+        preview.appendChild(el);
+    }
+
+    event.target.value = '';
+    showToast('📎 ' + files.length + ' archivo(s) seleccionado(s)', 'success');
+}
+
+// ================================================================
+// ================================================================
+// 🎙️ GRABACIÓN DE VOZ
+// ================================================================
+// ================================================================
+
+var grabacionActiva = false;
+var mediaRecorder = null;
+var audioChunks = [];
+
+function toggleGrabacionVoz() {
+    var btn = document.getElementById('btnGrabarVoz');
+
+    if (!grabacionActiva) {
+        iniciarGrabacionVoz(btn);
+    } else {
+        detenerGrabacionVoz(btn);
+    }
+}
+
+function iniciarGrabacionVoz(btn) {
+    navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(function(stream) {
+            mediaRecorder = new MediaRecorder(stream);
+            audioChunks = [];
+
+            mediaRecorder.ondataavailable = function(event) {
+                audioChunks.push(event.data);
+            };
+
+            mediaRecorder.onstop = function() {
+                var audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                var file = new File([audioBlob], 'voz_' + Date.now() + '.webm', { type: 'audio/webm' });
+
+                sessionManager.getSession().then(function(session) {
+                    if (session && conversacionActual) {
+                        archivosSeleccionados = [file];
+                        enviarMensaje();
+                    }
+                });
+
+                stream.getTracks().forEach(function(track) { track.stop(); });
+            };
+
+            mediaRecorder.start();
+            grabacionActiva = true;
+            btn.textContent = '⏹️';
+            btn.style.color = '#ef4444';
+            showToast('🎙️ Grabando...', '', 2000);
+        })
+        .catch(function(error) {
+            Logger.error('Error iniciando grabación', error);
+            showToast('❌ Error al acceder al micrófono', 'error');
         });
-        if (result.error) throw result.error;
-        const walletDisplay = document.getElementById('walletDisplay');
-        if (walletDisplay) {
-            walletDisplay.textContent = address.slice(0, 6) + '...' + address.slice(-4);
-            walletDisplay.style.color = 'var(--success)';
-        }
-        showToast('✅ Wallet conectada correctamente', 'success');
-    } catch (error) {
-        console.error('Error conectando wallet:', error);
-        showToast('❌ Error al conectar wallet: ' + error.message, 'error');
+}
+
+function detenerGrabacionVoz(btn) {
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+        mediaRecorder.stop();
+        grabacionActiva = false;
+        btn.textContent = '🎙️';
+        btn.style.color = '';
+        showToast('✅ Grabación finalizada', 'success');
     }
 }
 
-async function desconectarWallet() {
-    if (!confirm('¿Seguro que quieres desconectar tu wallet?')) return;
-    showToast('⏳ Desconectando wallet...', '');
-    try {
-        const result = await window.supabase.rpc('desvincular_wallet');
-        if (result.error) throw result.error;
-        const walletDisplay = document.getElementById('walletDisplay');
-        if (walletDisplay) {
-            walletDisplay.textContent = '⚠️ No conectada';
-            walletDisplay.style.color = 'var(--text-muted)';
-        }
-        showToast('🔌 Wallet desconectada', 'warning');
-    } catch (error) {
-        console.error('Error desconectando wallet:', error);
-        showToast('❌ Error al desconectar wallet', 'error');
-    }
-}
+// ================================================================
+// ================================================================
+// 🗑️ ELIMINAR MENSAJE CON VERIFICACIÓN DE PROPIEDAD
+// ================================================================
+// ================================================================
 
-async function comprarESIM(cantidad) {
-    const sessionResult = await window.supabase.auth.getSession();
-    if (!sessionResult.data.session) { showToast('⚠️ Inicia sesión para adquirir eSIM', 'error'); return; }
-    showToast('⏳ Procesando adquisición de eSIM...', '');
-    try {
-        const planesResult = await window.supabase.from('planes_esim').select('id').eq('activo', true).limit(1);
-        if (planesResult.error) throw planesResult.error;
-        if (!planesResult.data || planesResult.data.length === 0) { showToast('⚠️ No hay planes eSIM disponibles', 'error'); return; }
-        const planId = planesResult.data[0].id;
-        const idempotencyKey = 'esim_' + sessionResult.data.session.user.id + '_' + Date.now();
-        const result = await window.supabase.rpc('crear_orden_esim', {
-            p_plan_id: planId,
-            p_idempotency_key: idempotencyKey
-        });
-        if (result.error) throw result.error;
-        if (result.data && result.data.success) {
-            showToast('✅ Orden eSIM creada correctamente', 'success');
-            await cargarPerfil();
-        } else {
-            showToast('❌ Error al crear orden eSIM', 'error');
-        }
-    } catch (error) {
-        console.error('Error comprando eSIM:', error);
-        showToast('❌ Error al adquirir eSIM: ' + error.message, 'error');
-    }
-}
+function eliminarMensaje(mensajeId) {
+    if (!confirm('¿Eliminar este mensaje?')) return;
 
-async function activarESIM() {
-    showToast('⏳ Activando eSIM...', '');
-    const sessionResult = await window.supabase.auth.getSession();
-    if (!sessionResult.data.session) { showToast('⚠️ Inicia sesión para activar eSIM', 'error'); return; }
-    try {
-        const userResult = await window.supabase.from('usuarios').select('esim_iccid').eq('id', sessionResult.data.session.user.id).single();
-        if (userResult.error) throw userResult.error;
-        if (!userResult.data || !userResult.data.esim_iccid) { showToast('⚠️ No tienes una eSIM para activar', 'warning'); return; }
-        await window.supabase.from('usuarios').update({ esim_status: 'activa' }).eq('id', sessionResult.data.session.user.id);
-        showToast('✅ eSIM activada', 'success');
-        await cargarPerfil();
-    } catch (error) {
-        console.error('Error activando eSIM:', error);
-        showToast('❌ Error al activar eSIM', 'error');
-    }
-}
+    sessionManager.getSession()
+        .then(function(session) {
+            if (!session) throw new Error('No autenticado');
 
-async function desactivarESIM() {
-    if (!confirm('¿Seguro que quieres desactivar tu eSIM?')) return;
-    showToast('⏳ Desactivando eSIM...', '');
-    const sessionResult = await window.supabase.auth.getSession();
-    if (!sessionResult.data.session) { showToast('⚠️ Inicia sesión para desactivar eSIM', 'error'); return; }
-    try {
-        await window.supabase.from('usuarios').update({ esim_status: 'inactiva', esim_iccid: null }).eq('id', sessionResult.data.session.user.id);
-        showToast('✅ eSIM desactivada', 'success');
-        await cargarPerfil();
-    } catch (error) {
-        console.error('Error desactivando eSIM:', error);
-        showToast('❌ Error al desactivar eSIM', 'error');
-    }
-}
+            return supabase
+                .from('mensajes_chat')
+                .select('remitente_id, destinatario_id, contenido, created_at')
+                .eq('id', mensajeId)
+                .single()
+                .then(function(mensajeResult) {
+                    if (mensajeResult.error) throw new Error('Mensaje no encontrado');
+                    var mensaje = mensajeResult.data;
+                    if (mensaje.remitente_id !== session.user.id) {
+                        showToast('⚠️ Solo el remitente puede eliminar este mensaje', 'error');
+                        return;
+                    }
 
-function generarQRESIM() {
-    showToast('📲 Escanea el QR desde la pestaña eSIM', '');
-    cambiarTab('esim');
-    setTimeout(() => {
-        document.getElementById('tab-esim')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 300);
-}
+                    showLoading('Eliminando mensaje...');
 
-async function sincronizarESIM() {
-    showToast('⏳ Sincronizando eSIM...', '');
-    const sessionResult = await window.supabase.auth.getSession();
-    if (!sessionResult.data.session) { showToast('⚠️ Inicia sesión para sincronizar eSIM', 'error'); return; }
-    try {
-        showToast('✅ eSIM sincronizada', 'success');
-        await cargarPerfil();
-    } catch (error) {
-        console.error('Error sincronizando eSIM:', error);
-        showToast('⚠️ Error al sincronizar eSIM', 'error');
-    }
-}
+                    return supabase
+                        .from('mensajes_chat')
+                        .update({
+                            eliminado: true,
+                            eliminado_por: session.user.id,
+                            eliminado_en: new Date().toISOString()
+                        })
+                        .eq('id', mensajeId)
+                        .eq('remitente_id', session.user.id);
+                });
+        })
+        .then(function(result) {
+            if (!result) return;
+            if (result.error) throw result.error;
 
-async function escanearQR() {
-    const input = document.getElementById('qrInput');
-    if (!input) return;
-    const codigo = input.value.trim();
-    if (!codigo) { showToast('⚠️ Ingresa un código QR', 'warning'); return; }
-    const sessionResult = await window.supabase.auth.getSession();
-    if (!sessionResult.data.session) { showToast('⚠️ Inicia sesión para escanear QR', 'error'); return; }
-    showToast('⏳ Validando QR...', '');
-    try {
-        const result = await window.supabase.rpc('registrar_escaneo_domo', { p_codigo: codigo });
-        if (result.error) throw result.error;
-        if (result.data && result.data.ok) {
-            showToast('🎉 QR escaneado correctamente! +1 E.S.TOK', 'success');
-            input.value = '';
-            await cargarPerfil();
-        } else {
-            showToast('❌ QR inválido o ya utilizado', 'error');
-        }
-    } catch (error) {
-        console.error('Error escaneando QR:', error);
-        showToast('❌ Error al escanear QR: ' + error.message, 'error');
-    }
-}
-
-function abrirCamaraQR() {
-    showToast('📷 Abriendo cámara...', '');
-}
-
-function cerrarCamaraQR() {
-    showToast('📷 Cámara cerrada', '');
-}
-
-function cerrarModal(modalId) {
-    const modal = document.getElementById(modalId);
-    if (modal) modal.classList.remove('active');
-}
-
-function abrirModalNft(nftId) {
-    const modal = document.getElementById('nftModal');
-    if (modal) {
-        document.getElementById('nftModalTitle').textContent = 'NFT #' + nftId;
-        modal.classList.add('active');
-    }
-}
-
-function abrirModalPublicacion() {
-    const modal = document.getElementById('publicacionModal');
-    if (!modal) return;
-    document.getElementById('pubTexto').value = '';
-    document.getElementById('pubArchivo').value = '';
-    document.getElementById('pubPreview').style.display = 'none';
-    document.getElementById('pubPreview').innerHTML = '';
-    document.getElementById('pubStatus').textContent = '';
-    modal.classList.add('active');
-
-    document.getElementById('pubArchivo').onchange = function(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-        const preview = document.getElementById('pubPreview');
-        const reader = new FileReader();
-        reader.onload = function(ev) {
-            preview.style.display = 'block';
-            if (file.type.startsWith('image/')) {
-                preview.innerHTML = '<img src="' + ev.target.result + '" style="width:100%;max-height:200px;object-fit:cover;" />';
-            } else if (file.type.startsWith('video/')) {
-                preview.innerHTML = '<video src="' + ev.target.result + '" style="width:100%;max-height:200px;object-fit:cover;" controls></video>';
+            hideLoading();
+            showToast('🗑️ Mensaje eliminado');
+            if (conversacionActual) {
+                messageCache.delete(conversacionActual.id);
+                return cargarMensajes(conversacionActual.id).then(function() {
+                    return cargarConversaciones();
+                });
             }
-        };
-        reader.readAsDataURL(file);
-    };
-}
-
-async function publicarContenido() {
-    const texto = document.getElementById('pubTexto').value.trim();
-    const fileInput = document.getElementById('pubArchivo');
-    const btn = document.getElementById('btnPublicar');
-    const status = document.getElementById('pubStatus');
-
-    if (!texto && !fileInput.files.length) {
-        status.textContent = '⚠️ Escribe algo o selecciona un archivo';
-        return;
-    }
-
-    const sessionResult = await window.supabase.auth.getSession();
-    if (!sessionResult.data.session) {
-        status.textContent = '⚠️ Inicia sesión para publicar';
-        return;
-    }
-
-    btn.disabled = true;
-    btn.textContent = '⏳ Publicando...';
-    status.textContent = '⏳ Subiendo archivo...';
-
-    try {
-        const userId = sessionResult.data.session.user.id;
-        let mediaUrl = null;
-        let mediaType = null;
-
-        if (fileInput.files.length > 0) {
-            const file = fileInput.files[0];
-            const fileExt = file.name.split('.').pop();
-            const filePath = userId + '/' + Date.now() + '.' + fileExt;
-            const uploadResult = await window.supabase.storage.from('publicaciones').upload(filePath, file, { cacheControl: '3600', upsert: true });
-            if (uploadResult.error) throw uploadResult.error;
-            const urlData = window.supabase.storage.from('publicaciones').getPublicUrl(filePath);
-            mediaUrl = urlData.data.publicUrl;
-            mediaType = file.type.startsWith('image/') ? 'imagen' : 'video';
-        }
-
-        const insertResult = await window.supabase.from('publicaciones').insert({
-            contenido: texto || null,
-            media_url: mediaUrl,
-            media_type: mediaType,
-            estado: 'publicado'
+            return cargarConversaciones();
+        })
+        .catch(function(error) {
+            hideLoading();
+            Logger.error('Error eliminando mensaje', error);
+            showToast('❌ Error al eliminar mensaje', 'error');
         });
-
-        if (insertResult.error) throw insertResult.error;
-
-        status.textContent = '✅ Publicación creada!';
-        showToast('📸 Publicación subida correctamente', 'success');
-        cerrarModal('publicacionModal');
-        await cargarPublicaciones();
-
-    } catch (error) {
-        console.error('Error publicando:', error);
-        status.textContent = '❌ Error: ' + error.message;
-        showToast('❌ Error al publicar: ' + error.message, 'error');
-    } finally {
-        btn.disabled = false;
-        btn.textContent = '🚀 Publicar';
-    }
-}
-
-function cerrarSesion() {
-    if (confirm('¿Seguro que quieres cerrar sesión?')) {
-        showToast('👋 Sesión cerrada', 'success');
-        setTimeout(() => { window.location.href = '/'; }, 1000);
-    }
 }
 
 // ================================================================
-// CERRAR EMOJI PICKER AL HACER CLICK FUERA
+// ================================================================
+// ✏️ EDITAR MENSAJE
+// ================================================================
 // ================================================================
 
-document.addEventListener('click', function(e) {
-    const picker = document.getElementById('emojiPickerPerfil');
-    const btn = document.getElementById('btnEmojiPerfil');
-    if (!picker || !btn) return;
-    
-    if (!picker.contains(e.target) && !btn.contains(e.target)) {
-        picker.style.display = 'none';
+function editarMensaje(mensajeId) {
+    var nuevoContenido = prompt('Edita tu mensaje:');
+    if (nuevoContenido === null) return;
+    if (!nuevoContenido.trim()) {
+        showToast('⚠️ No puedes dejar vacío', 'error');
+        return;
     }
-});
+    if (nuevoContenido.length > 10000) {
+        showToast('⚠️ El mensaje es demasiado largo (máx 10,000 caracteres)', 'warning');
+        return;
+    }
+
+    sessionManager.getSession()
+        .then(function(session) {
+            if (!session) {
+                showToast('⚠️ Inicia sesión', 'error');
+                return;
+            }
+
+            showLoading('Editando mensaje...');
+
+            return llamadaAPI('/api/mensajes/mensajes/' + mensajeId, {
+                method: 'PUT',
+                body: JSON.stringify({ contenido: nuevoContenido })
+            });
+        })
+        .then(function(result) {
+            hideLoading();
+            if (!result) return;
+
+            showToast('✅ Mensaje editado');
+            if (conversacionActual) {
+                messageCache.delete(conversacionActual.id);
+                return cargarMensajes(conversacionActual.id);
+            }
+        })
+        .catch(function(error) {
+            hideLoading();
+            Logger.error('Error editando mensaje', error);
+            showToast('❌ Error al editar mensaje', 'error');
+        });
+}
 
 // ================================================================
-// INICIALIZACIÓN
+// ================================================================
+// 🗑️ ELIMINAR CONVERSACIÓN CON CASCADA
+// ================================================================
+// ================================================================
+
+function eliminarConversacion(contactoId) {
+    if (!contactoId) {
+        showToast('⚠️ No hay conversación seleccionada', 'error');
+        return;
+    }
+
+    if (!confirm('¿Eliminar toda la conversación con este contacto?')) return;
+
+    // contactoId es un UUID validado por el sistema, no necesita sanitización adicional
+    // pero aseguramos que sea solo letras, números y guiones (formato UUID)
+    if (typeof contactoId !== 'string' || !contactoId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+        showToast('❌ ID de contacto inválido', 'error');
+        return;
+    }
+
+    sessionManager.getSession()
+        .then(function(session) {
+            if (!session) {
+                showToast('⚠️ Inicia sesión', 'error');
+                return;
+            }
+
+            return supabase
+                .from('contactos')
+                .select('id')
+                .eq('usuario_id', session.user.id)
+                .eq('contacto_id', contactoId)
+                .single()
+                .then(function(contactoResult) {
+                    if (contactoResult.error || !contactoResult.data) {
+                        showToast('❌ Contacto no encontrado', 'error');
+                        return;
+                    }
+
+                    showLoading('Eliminando conversación...');
+
+                    return supabase
+                        .from('mensajes_chat')
+                        .select('id')
+                        .or('and(remitente_id.eq.' + session.user.id + ',destinatario_id.eq.' + contactoId + '),and(remitente_id.eq.' + contactoId + ',destinatario_id.eq.' + session.user.id + ')')
+                        .then(function(mensajesResult) {
+                            if (mensajesResult.error) throw mensajesResult.error;
+                            var mensajes = mensajesResult.data || [];
+
+                            if (mensajes.length > 0) {
+                                var ids = mensajes.map(function(m) { return m.id; });
+                                return supabase
+                                    .from('mensajes_chat')
+                                    .update({
+                                        eliminado: true,
+                                        eliminado_por: session.user.id,
+                                        eliminado_en: new Date().toISOString()
+                                    })
+                                    .in('id', ids);
+                            }
+                            return { error: null };
+                        })
+                        .then(function() {
+                            return supabase
+                                .from('contactos')
+                                .delete()
+                                .eq('usuario_id', session.user.id)
+                                .eq('contacto_id', contactoId);
+                        });
+                });
+        })
+        .then(function(result) {
+            if (!result) return;
+            if (result.error) throw result.error;
+
+            hideLoading();
+            messageCache.delete(contactoId);
+
+            if (conversacionActual && conversacionActual.id === contactoId) {
+                conversacionActual = null;
+                window._conversacionActualId = null;
+                document.getElementById('chatNombre').textContent = 'Selecciona una conversación';
+                document.getElementById('chatMessages').innerHTML = '<div class="empty-chat"><span class="icon">◈</span><h3>Conversación eliminada</h3></div>';
+            }
+
+            showToast('🗑️ Conversación eliminada');
+            return cargarConversaciones();
+        })
+        .catch(function(error) {
+            hideLoading();
+            Logger.error('Error eliminando conversación', error);
+            showToast('❌ Error al eliminar conversación', 'error');
+        });
+}
+
+// ================================================================
+// ================================================================
+// 👁️ MARCAR MENSAJES COMO LEÍDOS
+// ================================================================
+// ================================================================
+
+function marcarMensajesLeidos(contactoId) {
+    return sessionManager.getSession()
+        .then(function(session) {
+            if (!session) return;
+
+            return supabase
+                .from('mensajes_chat')
+                .update({ leido: true })
+                .eq('remitente_id', contactoId)
+                .eq('destinatario_id', session.user.id)
+                .eq('leido', false)
+                .is('eliminado', false);
+        })
+        .catch(function(error) {
+            Logger.warn('Error marcando mensajes como leídos', error);
+        });
+}
+
+// ================================================================
+// ================================================================
+// ⚠️ REPORTAR MENSAJE
+// ================================================================
+// ================================================================
+
+function reportarMensaje(mensajeId) {
+    var motivo = prompt('¿Por qué reportas este mensaje? (spam, ofensa, acoso, ilegal)');
+    if (!motivo) return;
+
+    sessionManager.getSession()
+        .then(function(session) {
+            if (!session) {
+                showToast('⚠️ Inicia sesión para reportar', 'error');
+                return;
+            }
+
+            return llamadaAPI('/api/mensajes/reportar/' + mensajeId, {
+                method: 'POST',
+                body: JSON.stringify({ motivo: motivo })
+            });
+        })
+        .then(function(result) {
+            if (!result) return;
+            showToast('⚠️ Reporte enviado. Gracias por ayudar.', 'warning');
+        })
+        .catch(function(error) {
+            Logger.error('Error reportando mensaje', error);
+            showToast('❌ Error al reportar', 'error');
+        });
+}
+
+// ================================================================
+// ================================================================
+// 🚫 BLOQUEAR USUARIO
+// ================================================================
+// ================================================================
+
+function bloquearUsuario(usuarioId) {
+    if (!usuarioId) {
+        showToast('⚠️ No hay usuario seleccionado', 'error');
+        return;
+    }
+
+    if (!confirm('¿Bloquear a este usuario? No podrán enviarte mensajes.')) return;
+
+    sessionManager.getSession()
+        .then(function(session) {
+            if (!session) {
+                showToast('⚠️ Inicia sesión', 'error');
+                return;
+            }
+
+            return llamadaAPI('/api/mensajes/bloquear/' + usuarioId, {
+                method: 'POST'
+            });
+        })
+        .then(function(result) {
+            if (!result) return;
+
+            showToast('🚫 Usuario bloqueado');
+
+            if (conversacionActual && conversacionActual.id === usuarioId) {
+                conversacionActual = null;
+                window._conversacionActualId = null;
+                document.getElementById('chatNombre').textContent = 'Selecciona una conversación';
+                document.getElementById('chatMessages').innerHTML = '<div class="empty-chat"><span class="icon">◈</span><h3>Usuario bloqueado</h3></div>';
+            }
+
+            return cargarConversaciones();
+        })
+        .catch(function(error) {
+            Logger.error('Error bloqueando usuario', error);
+            showToast('❌ Error al bloquear usuario', 'error');
+        });
+}
+
+// ================================================================
+// ================================================================
+// 🔍 BUSCAR EN CONVERSACIÓN
+// ================================================================
+// ================================================================
+
+function buscarEnConversacion(query) {
+    var querySanitizada = sanitizarQuery(query);
+    if (!querySanitizada || !querySanitizada.trim()) {
+        showToast('⚠️ Escribe algo para buscar', 'warning');
+        return;
+    }
+
+    if (!conversacionActual) {
+        showToast('⚠️ Selecciona una conversación', 'error');
+        return;
+    }
+
+    sessionManager.getSession()
+        .then(function(session) {
+            if (!session) return;
+
+            showLoading('Buscando...');
+
+            return supabase
+                .from('mensajes_chat')
+                .select('*')
+                .or('and(remitente_id.eq.' + session.user.id + ',destinatario_id.eq.' + conversacionActual.id + '),and(remitente_id.eq.' + conversacionActual.id + ',destinatario_id.eq.' + session.user.id + ')')
+                .eq('eliminado', false)
+                .ilike('contenido', '%' + querySanitizada.trim() + '%')
+                .order('created_at', { ascending: true });
+        })
+        .then(function(result) {
+            hideLoading();
+            if (!result) return;
+            if (result.error) throw result.error;
+
+            var container = document.getElementById('chatMessages');
+            var data = result.data || [];
+
+            if (data.length === 0) {
+                container.innerHTML = '<div class="empty-chat"><span class="icon">◈</span><h3>No se encontraron resultados</h3><p>No hay mensajes que coincidan con "' + escapeHTML(querySanitizada) + '"</p><button onclick="cargarMensajes(\'' + conversacionActual.id + '\')" style="margin-top:12px;padding:8px 20px;background:linear-gradient(135deg,#d4af37,#c49a2a);border:none;border-radius:30px;color:#0b0e14;font-weight:600;cursor:pointer;">Volver</button></div>';
+                return;
+            }
+
+            var html = '';
+            for (var i = 0; i < data.length; i++) {
+                html += crearMensajeHTML(data[i]);
+            }
+            container.innerHTML = html;
+            container.scrollTop = container.scrollHeight;
+            showToast('🔍 Encontrados ' + data.length + ' mensajes', 'success');
+        })
+        .catch(function(error) {
+            hideLoading();
+            Logger.error('Error buscando', error);
+            showToast('❌ Error al buscar', 'error');
+        });
+}
+
+// ================================================================
+// ================================================================
+// ✎ NUEVA CONVERSACIÓN (ABRIR MODAL)
+// ================================================================
+// ================================================================
+
+function nuevaConversacion() {
+    document.getElementById('modalNuevoContacto').classList.add('show');
+    document.getElementById('searchInputModal').value = '';
+    document.getElementById('resultadosBusqueda').innerHTML = '<div style="padding:20px;text-align:center;color:#667788;font-size:0.75rem;">Escribe al menos 2 caracteres para buscar</div>';
+    setTimeout(function() {
+        document.getElementById('searchInputModal').focus();
+    }, 200);
+}
+
+function cerrarModalNuevoContacto() {
+    document.getElementById('modalNuevoContacto').classList.remove('show');
+}
+
+// ================================================================
+// ================================================================
+// 🧹 LIMPIEZA DE RECURSOS
+// ================================================================
+// ================================================================
+
+function limpiarRecursosMensajes() {
+    if (currentChannel) {
+        try { supabase.removeChannel(currentChannel); } catch (e) {}
+        currentChannel = null;
+    }
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+        try { mediaRecorder.stop(); } catch (e) {}
+    }
+    if (audioChunks.length > 0) {
+        audioChunks = [];
+    }
+    archivosSeleccionados = [];
+    grabacionActiva = false;
+    hideLoading();
+}
+
+window.addEventListener('beforeunload', limpiarRecursosMensajes);
+
+// ================================================================
+// ================================================================
+// 🔄 INICIALIZACIÓN
+// ================================================================
 // ================================================================
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('✅ perfil.js cargado (versión completa con idiomas)');
-    if (typeof window.supabase !== 'undefined') {
-        cargarPerfil();
-    } else {
-        console.error('❌ Supabase no está disponible');
-        showToast('❌ Error: Supabase no está disponible', 'error');
+    Logger.info('Sistema de mensajes inicializado');
+
+    // CONTADOR DE CARACTERES
+    var input = document.getElementById('chatInput');
+    if (input) {
+        var counter = document.createElement('div');
+        counter.id = 'charCounter';
+        counter.style.cssText = 'font-size:0.6rem;color:#8899aa;text-align:right;padding:4px;';
+        counter.textContent = '0/10000';
+        input.parentNode.appendChild(counter);
+
+        input.addEventListener('input', function() {
+            var max = 10000;
+            var len = this.value.length;
+            counter.textContent = len + '/' + max;
+            counter.style.color = len > max * 0.9 ? '#ef4444' : '#8899aa';
+
+            if (len > max) {
+                this.value = this.value.substring(0, max);
+                showToast('⚠️ Límite de 10,000 caracteres', 'warning');
+            }
+        });
     }
+
+    cargarConversaciones();
+
+    var chatInput = document.getElementById('chatInput');
+    if (chatInput) {
+        chatInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                enviarMensaje();
+            }
+        });
+    }
+
+    var btnEnviar = document.getElementById('btnEnviar');
+    if (btnEnviar) {
+        btnEnviar.addEventListener('click', enviarMensaje);
+    }
+
+    var searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+        searchInput.addEventListener('input', function(e) {
+            buscarContactos(e.target.value);
+        });
+    }
+
+    var searchInputModal = document.getElementById('searchInputModal');
+    if (searchInputModal) {
+        searchInputModal.addEventListener('input', function(e) {
+            buscarContactos(e.target.value);
+        });
+    }
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            cerrarModalNuevoContacto();
+        }
+    });
 });
 
 // ================================================================
-// EXPOSICIÓN GLOBAL - TODAS LAS FUNCIONES EXPUESTAS
+// ================================================================
+// 🎯 EXPOSICIÓN GLOBAL
+// ================================================================
 // ================================================================
 
-window.inicializarIdiomasModulo = inicializarIdiomasModulo;
-window.cargarPerfil = cargarPerfil;
-window.cargarPublicaciones = cargarPublicaciones;
-window.cargarMembresia = cargarMembresia;
-window.cargarEmojis = cargarEmojis;
-window.renderizarEmojisPerfil = renderizarEmojisPerfil;
-window.toggleEmojiPickerPerfil = toggleEmojiPickerPerfil;
-window.cambiarTab = cambiarTab;
-window.editarPerfil = editarPerfil;
-window.compartirPerfil = compartirPerfil;
-window.generarQRPerfil = generarQRPerfil;
-window.abrirSelectorArchivo = abrirSelectorArchivo;
-window.subirFoto = subirFoto;
-window.guardarPerfil = guardarPerfil;
-window.cambiarEstado = cambiarEstado;
-window.cambiarConexion = cambiarConexion;
-window.comprarDomo = comprarDomo;
-window.canjearNFT = canjearNFT;
-window.comprarConCripto = comprarConCripto;
-window.verificarPagoCrypto = verificarPagoCrypto;
-window.copiarDireccion = copiarDireccion;
-window.conectarWallet = conectarWallet;
-window.desconectarWallet = desconectarWallet;
-window.comprarESIM = comprarESIM;
-window.activarESIM = activarESIM;
-window.desactivarESIM = desactivarESIM;
-window.generarQRESIM = generarQRESIM;
-window.sincronizarESIM = sincronizarESIM;
-window.escanearQR = escanearQR;
-window.abrirCamaraQR = abrirCamaraQR;
-window.cerrarCamaraQR = cerrarCamaraQR;
-window.cerrarModal = cerrarModal;
-window.abrirModalNft = abrirModalNft;
-window.abrirModalPublicacion = abrirModalPublicacion;
-window.publicarContenido = publicarContenido;
-window.cerrarSesion = cerrarSesion;
-window.contratarPro = contratarPro;
-window.renovarPro = renovarPro;
-window.mostrarModalPrivacidad = mostrarModalPrivacidad;
-window.cerrarModalPrivacidad = cerrarModalPrivacidad;
-window.procesarContratacion = procesarContratacion;
-window.toggleReaccion = toggleReaccion;
-window.seleccionarReaccion = seleccionarReaccion;
-window.abrirModalComentarios = abrirModalComentarios;
-window.cargarComentarios = cargarComentarios;
-window.enviarComentario = enviarComentario;
-window.cerrarModalComentarios = cerrarModalComentarios;
-window.eliminarPublicacion = eliminarPublicacion;
+window.cargarConversaciones = cargarConversaciones;
+window.abrirConversacion = abrirConversacion;
+window.enviarMensaje = enviarMensaje;
+window.eliminarMensaje = eliminarMensaje;
+window.editarMensaje = editarMensaje;
+window.eliminarConversacion = eliminarConversacion;
+window.bloquearUsuario = bloquearUsuario;
+window.reportarMensaje = reportarMensaje;
+window.buscarEnConversacion = buscarEnConversacion;
+window.nuevaConversacion = nuevaConversacion;
+window.cerrarModalNuevoContacto = cerrarModalNuevoContacto;
+window.agregarContacto = agregarContacto;
+window.buscarContactos = buscarContactos;
+window.seleccionarArchivo = seleccionarArchivo;
+window.handleFileSelect = handleFileSelect;
+window.toggleGrabacionVoz = toggleGrabacionVoz;
 window.showToast = showToast;
-
-console.log('✅ Todas las funciones expuestas globalmente');
+window.limpiarRecursosMensajes = limpiarRecursosMensajes;
