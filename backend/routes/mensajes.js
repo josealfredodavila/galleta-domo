@@ -1,6 +1,6 @@
 // ================================================================
-// ROUTES/MENSAJES.JS
-// RUTAS DE MENSAJERÍA - SARIEL'S BACKEND
+// ROUTES/MENSAJES.JS - SARIEL'S BACKEND (PRODUCCIÓN)
+// RUTAS DE MENSAJERÍA
 // ================================================================
 
 const express = require('express');
@@ -9,7 +9,7 @@ const router = express.Router();
 const { verificarToken } = require('../middleware/auth');
 const mensajesController = require('../controllers/mensajesController');
 
-// Extraemos los métodos asegurando fallbacks para evitar undefined
+// Extraemos los métodos del controlador unificado de producción
 const {
     getConversaciones,
     getMensajes,
@@ -17,9 +17,6 @@ const {
     editarMensaje,
     eliminarMensaje,
     marcarLeidos,
-    agregarContacto,
-    eliminarContacto,
-    bloquearUsuario,
     reportarMensaje
 } = mensajesController;
 
@@ -44,8 +41,8 @@ router.get(
 
 /**
  * @route   PATCH /api/mensajes/mensajes/leer
- * @desc    Marcar mensajes como leídos
- * @body    { remitente_id }
+ * @desc    Marcar mensajes de una conversación como leídos
+ * @body    { conversation_id }
  * @access  Private (requiere token)
  */
 router.patch(
@@ -56,8 +53,8 @@ router.patch(
 
 /**
  * @route   POST /api/mensajes/mensajes
- * @desc    Enviar un nuevo mensaje
- * @body    { destinatario_id, contenido, tipo, imagen_url }
+ * @desc    Enviar un nuevo mensaje o iniciar chat
+ * @body    { conversation_id, destinatario_id, contenido, tipo, media_url, nombre_archivo, tamano_bytes, mime_type }
  * @access  Private (requiere token)
  */
 router.post(
@@ -72,8 +69,8 @@ router.post(
 
 /**
  * @route   GET /api/mensajes/mensajes/:id
- * @desc    Obtener mensajes de una conversación específica
- * @param   {string} id - ID del contacto/conversación
+ * @desc    Obtener mensajes de una conversación específica (id = conversation_id)
+ * @param   {string} id - ID de la conversación
  * @access  Private (requiere token)
  */
 router.get(
@@ -105,50 +102,6 @@ router.delete(
     '/mensajes/:id',
     verificarToken,
     eliminarMensaje
-);
-
-// ================================================================
-// CONTACTOS
-// ================================================================
-
-/**
- * @route   POST /api/mensajes/contactos
- * @desc    Agregar un nuevo contacto
- * @body    { contacto_id }
- * @access  Private (requiere token)
- */
-router.post(
-    '/contactos',
-    verificarToken,
-    agregarContacto
-);
-
-/**
- * @route   DELETE /api/mensajes/contactos/:id
- * @desc    Eliminar un contacto
- * @param   {string} id - ID del contacto a eliminar
- * @access  Private (requiere token)
- */
-router.delete(
-    '/contactos/:id',
-    verificarToken,
-    eliminarContacto
-);
-
-// ================================================================
-// BLOQUEOS
-// ================================================================
-
-/**
- * @route   POST /api/mensajes/bloquear/:id
- * @desc    Bloquear un usuario
- * @param   {string} id - ID del usuario a bloquear
- * @access  Private (requiere token)
- */
-router.post(
-    '/bloquear/:id',
-    verificarToken,
-    bloquearUsuario
 );
 
 // ================================================================
