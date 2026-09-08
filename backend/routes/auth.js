@@ -1,114 +1,189 @@
 // ================================================================
-// RUTAS DE AUTENTICACIÓN
+// MIDDLEWARE/AUTH.JS
+// AUTENTICACIÓN - SARIEL'S BACKEND
 // ================================================================
 
-const express = require('express');
-const router = express.Router();
-const { supabase } = require('../config/supabase');
-const { validarRegistro, validarLogin, verificarErrores } = require('../middleware/validation');
-const { limitadorAuth } = require('../middleware/rateLimit');
+const {
+    supabase
+} = require('../config/supabase');
+
 const logger = require('../utils/logger');
 
-// Registro de usuario
-router.post('/register', limitadorAuth, validarRegistro, verificarErrores, async (req, res) => {
-    try {
-        const { email, password, nombre } = req.body;
+// ================================================================
+// VERIFICAR TOKEN SUPABASE
+// ================================================================
 
-        const { data, error } = await supabase.auth.signUp({
-            email,
-            password,
-            options: {
-                data: { nombre: nombre || 'Explorador' }
+async function verificarToken(req, res, next) {
+    try {
+        const authHeader = req.headers.authorization;
+
+        // --------------------------------------------------------
+        // COMPROBAR HEADER
+        // --------------------------------------------------------
+
+        if (
+            !authHeader ||
+            !authHeader.startsWith('Bearer ')
+        ) {
+            return res.status(401).json({
+                success: false,
+                error: 'Token no proporcionado'
+            });
+        }
+
+        const token =
+            authHeader.substring(7).trim();
+
+        if (!token) {
+            return res.status(401).json({
+                success: false,
+                error: 'Token vacío'
+            });
+        }
+
+        // --------------------------------------------------------
+        // VALIDAR TOKEN CON SUPABASE
+        // --------------------------------------------------------
+
+        const {
+            data,
+            error
+        } = await supabase.auth.getUser(token);
+
+        if (error || !data?.user) {
+            logger.warn(
+                `Token Supabase inválido: ${
+                    error?.message || 'usuario no encontrado'
+                }`
+            );
+
+            return res.status(401).json({
+                success: false,
+                error: 'Token inválido o expirado'
+            });
+        }
+
+        // --------------------------------------------------------
+        // USUARIO AUTENTICADO
+        // --------------------------------------------------------
+
+        // ═══════════════════════════════════════════════════════════
+        // ✅ VERSIÓN ORIGINAL (TU CÓDIGO) - NO TOCAR
+        // ═══════════════════════════════════════════════════════════
+
+        req.usuario = data.user;
+        req.usuarioId = data.user.id;
+
+        // ═══════════════════════════════════════════════════════════
+        // ✅ NUEVO: COMPATIBILIDAD CON mensajesController
+        // SOLO AGREGAMOS 2 PROPIEDADES ADICIONALES
+        // NO MODIFICAMOS NADA DE LO EXISTENTE
+        // ═══════════════════════════════════════════════════════════
+
+        req.user = data.user;        // ← Compatibilidad con nuevo código
+        req.supabase = supabase;     // ← Compatibilidad con nuevo código
+
+        // ═══════════════════════════════════════════════════════════
+
+        return next();
+
+    } catch (error) {
+
+        logger.error(
+            `Error verificando token: ${error.message}`
+        );
+
+        return res.status(401).json({
+            success: false,
+            error: 'Token inválido o expirado'
+        });
+    }
+}
+
+// ================================================================
+// VERIFICAR ROL
+// ================================================================
+
+function verificarRol(rolesPermitidos = []) {
+
+    return (req, res, next) => {
+
+        try {
+
+            if (!req.usuario) {
+                return res.status(401).json({
+                    success: false,
+                    error: 'No autenticado'
+                });
             }
-        });
 
-        if (error) throw error;
+            if (!Array.isArray(rolesPermitidos)) {
+                return res.status(500).json({
+                    success: false,
+                    error: 'Configuración de roles inválida'
+                });
+            }
 
-        logger.info(`Usuario registrado: ${email}`);
-        res.json({
-            success: true,
-            message: 'Usuario registrado correctamente',
-            user: data.user
-        });
-    } catch (error) {
-        logger.error(`Error en registro: ${error.message}`);
-        res.status(400).json({
-            success: false,
-            error: error.message
-        });
-    }
-});
+            // ----------------------------------------------------
+            // OBTENER ROL
+            // ----------------------------------------------------
 
-// Login de usuario
-router.post('/login', limitadorAuth, validarLogin, verificarErrores, async (req, res) => {
-    try {
-        const { email, password } = req.body;
+            const userRole =
+                req.usuario.user_metadata?.role ||
+                'user';
 
-        const { data, error } = await supabase.auth.signInWithPassword({
-            email,
-            password
-        });
+            // ----------------------------------------------------
+            // COMPROBAR PERMISO
+            // ----------------------------------------------------
 
-        if (error) throw error;
+            if (
+                rolesPermitidos.length === 0 ||
+                !rolesPermitidos.includes(userRole)
+            ) {
+                logger.warn(
+                    `Acceso denegado por rol. Usuario: ${
+                        req.usuario.id
+                    }, rol: ${userRole}`
+                );
 
-        logger.info(`Usuario logueado: ${email}`);
-        res.json({
-            success: true,
-            message: 'Login exitoso',
-            session: data.session
-        });
-    } catch (error) {
-        logger.error(`Error en login: ${error.message}`);
-        res.status(400).json({
-            success: false,
-            error: error.message
-        });
-    }
-});
+                return res.status(403).json({
+                    success: false,
+                    error: 'No tienes permisos para esta acción'
+                });
+            }
 
-// Cerrar sesión
-router.post('/logout', async (req, res) => {
-    try {
-        const { data, error } = await supabase.auth.signOut();
-        if (error) throw error;
+            return next();
 
-        logger.info('Usuario cerró sesión');
-        res.json({
-            success: true,
-            message: 'Sesión cerrada'
-        });
-    } catch (error) {
-        logger.error(`Error en logout: ${error.message}`);
-        res.status(400).json({
-            success: false,
-            error: error.message
-        });
-    }
-});
+        } catch (error) {
 
-// Recuperar contraseña
-router.post('/recover-password', async (req, res) => {
-    try {
-        const { email } = req.body;
+            logger.error(
+                `Error verificando rol: ${error.message}`
+            );
 
-        const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-            redirectTo: `${process.env.DOMINIO_FRONTEND}/actualizar-contraseña.html`
-        });
+            return res.status(500).json({
+                success: false,
+                error: 'Error verificando permisos'
+            });
+        }
+    };
+}
 
-        if (error) throw error;
+// ================================================================
+// ════════════════════════════════════════════════════════════════
+// ✅ NUEVO: ALIAS PARA COMPATIBILIDAD
+// ════════════════════════════════════════════════════════════════
+// Esto permite que el código de mensajesController use
+// verificarAutenticacion sin romper nada existente.
+// ════════════════════════════════════════════════════════════════
 
-        logger.info(`Recuperación de contraseña para: ${email}`);
-        res.json({
-            success: true,
-            message: 'Correo de recuperación enviado'
-        });
-    } catch (error) {
-        logger.error(`Error en recuperación: ${error.message}`);
-        res.status(400).json({
-            success: false,
-            error: error.message
-        });
-    }
-});
+const verificarAutenticacion = verificarToken;
 
-module.exports = router;
+// ================================================================
+// EXPORTACIONES
+// ================================================================
+
+module.exports = {
+    verificarToken,
+    verificarAutenticacion,  // ✅ NUEVO: Exportado para compatibilidad
+    verificarRol
+};
