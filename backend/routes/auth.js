@@ -1,189 +1,34 @@
 // ================================================================
-// MIDDLEWARE/AUTH.JS
-// AUTENTICACIÓN - SARIEL'S BACKEND
+// ROUTES/AUTH.JS - SARIEL'S BACKEND
 // ================================================================
 
-const {
-    supabase
-} = require('../config/supabase');
+const express = require('express');
+const router = express.Router();
 
-const logger = require('../utils/logger');
+const AuthController = require('../controllers/authController');
+const { verificarToken } = require('../middleware/auth');
 
-// ================================================================
-// VERIFICAR TOKEN SUPABASE
-// ================================================================
+/**
+ * @route   POST /api/auth/register
+ * @desc    Registrar un nuevo usuario
+ * @body    { email, password, nombre }
+ * @access  Public
+ */
+router.post('/register', AuthController.register);
 
-async function verificarToken(req, res, next) {
-    try {
-        const authHeader = req.headers.authorization;
+/**
+ * @route   POST /api/auth/login
+ * @desc    Iniciar sesión
+ * @body    { email, password }
+ * @access  Public
+ */
+router.post('/login', AuthController.login);
 
-        // --------------------------------------------------------
-        // COMPROBAR HEADER
-        // --------------------------------------------------------
+/**
+ * @route   POST /api/auth/logout
+ * @desc    Cerrar sesión
+ * @access  Public
+ */
+router.post('/logout', AuthController.logout);
 
-        if (
-            !authHeader ||
-            !authHeader.startsWith('Bearer ')
-        ) {
-            return res.status(401).json({
-                success: false,
-                error: 'Token no proporcionado'
-            });
-        }
-
-        const token =
-            authHeader.substring(7).trim();
-
-        if (!token) {
-            return res.status(401).json({
-                success: false,
-                error: 'Token vacío'
-            });
-        }
-
-        // --------------------------------------------------------
-        // VALIDAR TOKEN CON SUPABASE
-        // --------------------------------------------------------
-
-        const {
-            data,
-            error
-        } = await supabase.auth.getUser(token);
-
-        if (error || !data?.user) {
-            logger.warn(
-                `Token Supabase inválido: ${
-                    error?.message || 'usuario no encontrado'
-                }`
-            );
-
-            return res.status(401).json({
-                success: false,
-                error: 'Token inválido o expirado'
-            });
-        }
-
-        // --------------------------------------------------------
-        // USUARIO AUTENTICADO
-        // --------------------------------------------------------
-
-        // ═══════════════════════════════════════════════════════════
-        // ✅ VERSIÓN ORIGINAL (TU CÓDIGO) - NO TOCAR
-        // ═══════════════════════════════════════════════════════════
-
-        req.usuario = data.user;
-        req.usuarioId = data.user.id;
-
-        // ═══════════════════════════════════════════════════════════
-        // ✅ NUEVO: COMPATIBILIDAD CON mensajesController
-        // SOLO AGREGAMOS 2 PROPIEDADES ADICIONALES
-        // NO MODIFICAMOS NADA DE LO EXISTENTE
-        // ═══════════════════════════════════════════════════════════
-
-        req.user = data.user;        // ← Compatibilidad con nuevo código
-        req.supabase = supabase;     // ← Compatibilidad con nuevo código
-
-        // ═══════════════════════════════════════════════════════════
-
-        return next();
-
-    } catch (error) {
-
-        logger.error(
-            `Error verificando token: ${error.message}`
-        );
-
-        return res.status(401).json({
-            success: false,
-            error: 'Token inválido o expirado'
-        });
-    }
-}
-
-// ================================================================
-// VERIFICAR ROL
-// ================================================================
-
-function verificarRol(rolesPermitidos = []) {
-
-    return (req, res, next) => {
-
-        try {
-
-            if (!req.usuario) {
-                return res.status(401).json({
-                    success: false,
-                    error: 'No autenticado'
-                });
-            }
-
-            if (!Array.isArray(rolesPermitidos)) {
-                return res.status(500).json({
-                    success: false,
-                    error: 'Configuración de roles inválida'
-                });
-            }
-
-            // ----------------------------------------------------
-            // OBTENER ROL
-            // ----------------------------------------------------
-
-            const userRole =
-                req.usuario.user_metadata?.role ||
-                'user';
-
-            // ----------------------------------------------------
-            // COMPROBAR PERMISO
-            // ----------------------------------------------------
-
-            if (
-                rolesPermitidos.length === 0 ||
-                !rolesPermitidos.includes(userRole)
-            ) {
-                logger.warn(
-                    `Acceso denegado por rol. Usuario: ${
-                        req.usuario.id
-                    }, rol: ${userRole}`
-                );
-
-                return res.status(403).json({
-                    success: false,
-                    error: 'No tienes permisos para esta acción'
-                });
-            }
-
-            return next();
-
-        } catch (error) {
-
-            logger.error(
-                `Error verificando rol: ${error.message}`
-            );
-
-            return res.status(500).json({
-                success: false,
-                error: 'Error verificando permisos'
-            });
-        }
-    };
-}
-
-// ================================================================
-// ════════════════════════════════════════════════════════════════
-// ✅ NUEVO: ALIAS PARA COMPATIBILIDAD
-// ════════════════════════════════════════════════════════════════
-// Esto permite que el código de mensajesController use
-// verificarAutenticacion sin romper nada existente.
-// ════════════════════════════════════════════════════════════════
-
-const verificarAutenticacion = verificarToken;
-
-// ================================================================
-// EXPORTACIONES
-// ================================================================
-
-module.exports = {
-    verificarToken,
-    verificarAutenticacion,  // ✅ NUEVO: Exportado para compatibilidad
-    verificarRol
-};
+/**
