@@ -1,1118 +1,763 @@
-            } catch (e) {
-                console.error('Error bloqueando usuario:', e);
-                showToast('❌ Error al bloquear usuario', 'error');
-            }
-        }
-
-        // ================================================================
-        // 🔍 BUSCAR EN CONVERSACIÓN
-        // ================================================================
-        async function buscarEnConversacion(query) {
-            if (!query || !query.trim()) {
-                showToast('⚠️ Escribe algo para buscar', 'warning');
-                return;
-            }
-
-            if (!conversacionActual) {
-                showToast('⚠️ Selecciona una conversación', 'error');
-                return;
-            }
-
-            try {
-                var session = await getSession();
-                if (!session) return;
-
-                var result = await window.supabase
-                    .from('mensajes_chat')
-                    .select('*')
-                    .or('and(remitente_id.eq.' + session.user.id + ',destinatario_id.eq.' + conversacionActual.id + '),and(remitente_id.eq.' + conversacionActual.id + ',destinatario_id.eq.' + session.user.id + ')')
-                    .ilike('contenido', '%' + query + '%')
-                    .order('created_at', { ascending: true });
-
-                if (result.error) throw result.error;
-
-                var container = document.getElementById('chatMessages');
-                if (!result.data || result.data.length === 0) {
-                    container.innerHTML = '<div class="empty-chat"><span class="icon">◈</span><h3 data-clave="mensajes_sin_resultados">No se encontraron resultados</h3><p>No hay mensajes que coincidan con "' + escapeHTML(query) + '"</p><button onclick="cargarMensajes(\'' + conversacionActual.id + '\')" style="margin-top:12px;padding:8px 20px;background:linear-gradient(135deg,var(--gold),var(--gold-dark));border:none;border-radius:30px;color:var(--space);font-weight:600;cursor:pointer;" data-clave="mensajes_volver">Volver</button></div>';
-                    return;
-                }
-
-                var html = '';
-                for (var i = 0; i < result.data.length; i++) {
-                    html += crearMensajeHTML(result.data[i]);
-                }
-                container.innerHTML = html;
-                container.scrollTop = container.scrollHeight;
-                showToast('🔍 Encontrados ' + result.data.length + ' mensajes', 'success');
-
-            } catch (e) {
-                console.error('Error buscando:', e);
-                showToast('❌ Error al buscar', 'error');
-            }
-        }
-
-        // ================================================================
-        // ✎ NUEVA CONVERSACIÓN (ABRIR MODAL)
-        // ================================================================
-        function nuevaConversacion() {
-            document.getElementById('modalNuevoContacto').classList.add('show');
-            document.getElementById('searchInputModal').value = '';
-            document.getElementById('resultadosBusqueda').innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:0.75rem;" data-clave="mensajes_buscar_minimo">Escribe al menos 2 caracteres para buscar</div>';
-            setTimeout(function() {
-                document.getElementById('searchInputModal').focus();
-            }, 200);
-        }
-
-        function cerrarModalNuevoContacto() {
-            document.getElementById('modalNuevoContacto').classList.remove('show');
-        }
-
-        // ================================================================
-        // ================================================================
-        // 🎥 VIDEOLLAMADA - FUNCIONES PRINCIPALES
-        // ================================================================
-        // ================================================================
-
-        // ================================================================
-        // OBTENER TOKEN LIVEKIT DESDE EL SERVIDOR
-        // ================================================================
-        async function obtenerTokenLiveKit(roomName, participantName) {
-            try {
-                var session = await getSession();
-                if (!session) {
-                    throw new Error('No autenticado');
-                }
-
-                var response = await fetch('/api/livekit/token', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + session.access_token
-                    },
-                    body: JSON.stringify({
-                        roomName: roomName,
-                        participantName: participantName
-                    })
-                });
-
-                if (!response.ok) {
-                    var errorData = await response.json();
-                    throw new Error(errorData.error || 'Error al obtener token');
-                }
-
-                var data = await response.json();
-                return data;
-
-            } catch (e) {
-                console.error('Error obteniendo token LiveKit:', e);
-                throw e;
-            }
-        }
-
-        // ================================================================
-        // INICIAR VIDEOLLAMADA
-        // ================================================================
-        async function iniciarVideollamada() {
-            if (!conversacionActual) {
-                showToast('⚠️ Selecciona una conversación para llamar', 'warning');
-                return;
-            }
-
-            if (callState.active) {
-                mostrarLlamada();
-                return;
-            }
-
-            try {
-                var session = await getSession();
-                if (!session) {
-                    showToast('⚠️ Inicia sesión para llamar', 'error');
-                    return;
-                }
-
-                // Verificar si el otro usuario existe
-                var usuarioResult = await window.supabase
-                    .from('usuarios')
-                    .select('id, nombre')
-                    .eq('id', conversacionActual.id)
-                    .single();
-
-                if (usuarioResult.error) {
-                    showToast('❌ Usuario no encontrado', 'error');
-                    return;
-                }
-
-                // Verificar si ya hay una llamada activa
-                // NOTA: 'llamadas' no tiene columna 'usuario_destino'; el destinatario
-                // se guarda dentro de metadata (jsonb) como metadata.destinatario_id.
-                var llamadaActiva = await window.supabase
-                    .from('llamadas')
-                    .select('id, estado')
-                    .or('and(creador_id.eq.' + session.user.id + ',metadata->>destinatario_id.eq.' + conversacionActual.id + '),and(creador_id.eq.' + conversacionActual.id + ',metadata->>destinatario_id.eq.' + session.user.id + ')')
-                    .in('estado', ['ringing', 'active'])
-                    .maybeSingle();
-
-                if (llamadaActiva.data) {
-                    showToast('⚠️ Ya hay una llamada en curso con este usuario', 'warning');
-                    return;
-                }
-
-                // Crear la llamada en la BD
-                var callId = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).substr(2);
-                var roomName = 'call_' + callId;
-
-                var crearLlamada = await window.supabase
-                    .from('llamadas')
-                    .insert({
-                        id: callId,
-                        creador_id: session.user.id,
-                        tipo: 'video',
-                        estado: 'ringing',
-                        room_name: roomName,
-                        metadata: { destinatario_id: conversacionActual.id }
-                    });
-
-                if (crearLlamada.error) throw crearLlamada.error;
-
-                // Registrar participante origen
-                await window.supabase
-                    .from('llamadas_participantes')
-                    .insert({
-                        llamada_id: callId,
-                        usuario_id: session.user.id,
-                        rol: 'creador',
-                        estado: 'conectado',
-                        entro_at: new Date().toISOString()
-                    });
-
-                // Guardar estado de la llamada
-                callState.callId = callId;
-                callState.isInitiator = true;
-                callState.active = true;
-
-                // Mostrar la interfaz de llamada
-                mostrarLlamada();
-
-                // Obtener y conectar a LiveKit
-                await conectarALiveKit(roomName, session.user.id, callId);
-
-                // Iniciar el temporizador de duración
-                iniciarContadorDuracion();
-
-                // Suscribirse a cambios en la llamada
-                suscribirseALlamada(callId);
-
-                // Mostrar estado
-                showToast('📞 Llamando a ' + (conversacionActual.nombre || 'usuario') + '...', '');
-
-                // Actualizar botón
-                var btnCall = document.getElementById('btnVideoCall');
-                if (btnCall) {
-                    btnCall.textContent = '📞';
-                    btnCall.classList.add('active-call');
-                }
-
-            } catch (e) {
-                console.error('Error iniciando videollamada:', e);
-                showToast('❌ Error al iniciar llamada: ' + e.message, 'error');
-                limpiarLlamada();
-            }
-        }
-
-        // ================================================================
-        // CONECTAR A LIVEKIT
-        // ================================================================
-        async function conectarALiveKit(roomName, participantId, callId) {
-            try {
-                // Obtener token del servidor
-                var tokenData = await obtenerTokenLiveKit(roomName, participantId);
-
-                // Conectar a LiveKit
-                var room = new LivekitClient.Room();
-
-                room.on(LivekitClient.RoomEvent.TrackSubscribed, function(track, publication, participant) {
-                    if (track.kind === 'video' && !track.isLocal) {
-                        var videoElement = document.getElementById('remoteVideo');
-                        if (videoElement) {
-                            track.attach(videoElement);
-                            document.getElementById('remoteAvatarPlaceholder').style.display = 'none';
-                            document.getElementById('remoteLabel').textContent = participant.name || 'Participante';
-                        }
-                    }
-                    if (track.kind === 'audio' && !track.isLocal) {
-                        track.attach();
-                    }
-                });
-
-                room.on(LivekitClient.RoomEvent.ParticipantConnected, function(participant) {
-                    actualizarParticipantes(room);
-                    showToast('👤 ' + (participant.name || 'Usuario') + ' se unió a la llamada', 'success');
-                });
-
-                room.on(LivekitClient.RoomEvent.ParticipantDisconnected, function(participant) {
-                    actualizarParticipantes(room);
-                    showToast('👤 ' + (participant.name || 'Usuario') + ' abandonó la llamada', 'warning');
-                });
-
-                room.on(LivekitClient.RoomEvent.Disconnected, function() {
-                    if (callState.active) {
-                        colgarLlamada();
-                    }
-                });
-
-                room.on(LivekitClient.RoomEvent.ConnectionStateChanged, function(state) {
-                    console.log('Estado de conexión LiveKit:', state);
-                });
-
-                await room.connect(tokenData.url, tokenData.token);
-
-                // Publicar tracks locales
-                await publicarTracksLocales(room);
-
-                callState.room = room;
-                callState.active = true;
-
-                // Actualizar participantes iniciales
-                actualizarParticipantes(room);
-
-                showToast('✅ Conectado a la videollamada', 'success');
-
-            } catch (e) {
-                console.error('Error conectando a LiveKit:', e);
-                showToast('❌ Error al conectar a la videollamada: ' + e.message, 'error');
-                colgarLlamada();
-                throw e;
-            }
-        }
-
-        // ================================================================
-        // PUBLICAR TRACKS LOCALES
-        // ================================================================
-        async function publicarTracksLocales(room) {
-            try {
-                // Obtener permisos de cámara y micrófono
-                var stream = await navigator.mediaDevices.getUserMedia({
-                    audio: true,
-                    video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }
-                });
-
-                // Publicar audio
-                var audioTrack = stream.getAudioTracks()[0];
-                if (audioTrack) {
-                    var audioPublication = await room.localParticipant.publishTrack(audioTrack, {
-                        name: 'microphone',
-                        source: LivekitClient.TrackSource.Microphone
-                    });
-                    callState.audioTrack = audioTrack;
-                }
-
-                // Publicar video
-                var videoTrack = stream.getVideoTracks()[0];
-                if (videoTrack) {
-                    var videoPublication = await room.localParticipant.publishTrack(videoTrack, {
-                        name: 'camera',
-                        source: LivekitClient.TrackSource.Camera
-                    });
-                    callState.localTrack = videoTrack;
-
-                    // Mostrar video local
-                    var localVideo = document.getElementById('localVideo');
-                    if (localVideo) {
-                        localVideo.srcObject = new MediaStream([videoTrack]);
-                        document.getElementById('localAvatarPlaceholder').style.display = 'none';
-                    }
-                }
-
-                return stream;
-
-            } catch (e) {
-                console.error('Error publicando tracks locales:', e);
-
-                // Intentar publicar solo audio si la cámara falla
-                try {
-                    var audioOnly = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    var audioTrack = audioOnly.getAudioTracks()[0];
-                    if (audioTrack) {
-                        await room.localParticipant.publishTrack(audioTrack, {
-                            name: 'microphone',
-                            source: LivekitClient.TrackSource.Microphone
-                        });
-                        callState.audioTrack = audioTrack;
-                        showToast('🎤 Audio disponible (cámara no accesible)', 'warning');
-                    }
-                } catch (audioError) {
-                    showToast('⚠️ No se pudo acceder a cámara ni micrófono', 'error');
-                }
-            }
-        }
-
-        // ================================================================
-        // MOSTRAR INTERFAZ DE LLAMADA
-        // ================================================================
-        function mostrarLlamada() {
-            var overlay = document.getElementById('callOverlay');
-            if (overlay) {
-                overlay.classList.add('show');
-            }
-
-            // Ocultar placeholders
-            document.getElementById('remoteAvatarPlaceholder').style.display = 'block';
-            document.getElementById('localAvatarPlaceholder').style.display = 'block';
-            document.getElementById('remoteVideo').srcObject = null;
-            document.getElementById('localVideo').srcObject = null;
-        }
-
-        function ocultarLlamada() {
-            var overlay = document.getElementById('callOverlay');
-            if (overlay) {
-                overlay.classList.remove('show');
-            }
-        }
-
-        function minimizarLlamada() {
-            ocultarLlamada();
-            showToast('📹 Llamada minimizada', '');
-        }
-
-        // ================================================================
-        // CONTADOR DE DURACIÓN
-        // ================================================================
-        function iniciarContadorDuracion() {
-            callState.startTime = Date.now();
-            if (callState.durationInterval) {
-                clearInterval(callState.durationInterval);
-            }
-            callState.durationInterval = setInterval(function() {
-                if (!callState.active) {
-                    clearInterval(callState.durationInterval);
-                    return;
-                }
-                var elapsed = Math.floor((Date.now() - callState.startTime) / 1000);
-                var mins = String(Math.floor(elapsed / 60)).padStart(2, '0');
-                var secs = String(elapsed % 60).padStart(2, '0');
-                var durationEl = document.getElementById('callDuration');
-                if (durationEl) {
-                    durationEl.textContent = mins + ':' + secs;
-                }
-            }, 1000);
-        }
-
-        // ================================================================
-        // SUSCRIBIRSE A CAMBIOS DE LLAMADA
-        // ================================================================
-        function suscribirseALlamada(callId) {
-            if (callChannel) {
-                try { window.supabase.removeChannel(callChannel); } catch (e) {}
-                callChannel = null;
-            }
-
-            callChannel = window.supabase
-                .channel('call-' + callId)
-                .on('postgres_changes', {
-                    event: 'UPDATE',
-                    schema: 'public',
-                    table: 'llamadas',
-                    filter: 'id=eq.' + callId
-                }, function(payload) {
-                    manejarCambioLlamada(payload.new);
-                })
-                .subscribe();
-        }
-
-        function manejarCambioLlamada(data) {
-            console.log('Cambio en llamada:', data);
-
-            if (data.estado === 'ended' || data.estado === 'rejected' || data.estado === 'missed') {
-                if (callState.active) {
-                    showToast('📞 La llamada ha terminado', 'warning');
-                    colgarLlamada();
-                }
-            }
-
-            if (data.estado === 'active' && callState.isInitiator) {
-                showToast('✅ Llamada conectada', 'success');
-            }
-        }
-
-        // ================================================================
-        // SUSCRIBIRSE A LLAMADAS ENTRANTES
-        // ================================================================
-        function suscribirseALlamadas() {
-            // Limpiar listeners anteriores
-            callListeners.forEach(function(listener) {
-                try { window.supabase.removeChannel(listener); } catch (e) {}
-            });
-            callListeners = [];
-
-            var session = getSession();
-            if (!session) return;
-
-            // NOTA: 'llamadas' no tiene columna 'usuario_destino', por lo que el filtro
-            // de Realtime no puede aplicarse sobre esa columna (ni sobre metadata->>).
-            // Escuchamos todos los INSERT y filtramos en el cliente contra
-            // payload.new.metadata.destinatario_id.
-            var channel = window.supabase
-                .channel('llamadas-entrantes')
-                .on('postgres_changes', {
-                    event: 'INSERT',
-                    schema: 'public',
-                    table: 'llamadas'
-                }, function(payload) {
-                    var destinatarioId = payload.new.metadata && payload.new.metadata.destinatario_id;
-                    if (payload.new.estado === 'ringing' && usuarioActual && destinatarioId === usuarioActual.id) {
-                        mostrarLlamadaEntrante(payload.new);
-                    }
-                })
-                .subscribe();
-
-            callListeners.push(channel);
-        }
-
-        // ================================================================
-        // MOSTRAR LLAMADA ENTRANTE
-        // ================================================================
-        function mostrarLlamadaEntrante(data) {
-            // No mostrar si ya hay una llamada activa
-            if (callState.active) {
-                rechazarLlamada(data.id);
-                return;
-            }
-
-            // No mostrar si ya se está mostrando
-            if (document.getElementById('callIncoming').classList.contains('show')) {
-                return;
-            }
-
-            callState.incomingCallId = data.id;
-            callState.incomingFrom = data.creador_id;
-
-            // Obtener información del usuario
-            window.supabase
-                .from('usuarios')
-                .select('nombre, avatar_url')
-                .eq('id', data.creador_id)
-                .single()
-                .then(function(result) {
-                    if (!result.error && result.data) {
-                        document.getElementById('callerName').textContent = result.data.nombre || 'Usuario';
-                        var avatar = document.getElementById('callerAvatar');
-                        if (result.data.avatar_url) {
-                            avatar.innerHTML = '<img src="' + escapeHTML(result.data.avatar_url) + '" />';
-                        } else {
-                            avatar.textContent = (result.data.nombre || 'U')[0].toUpperCase();
-                        }
-                    }
-                });
-
-            document.getElementById('callIncoming').classList.add('show');
-
-            // Reproducir sonido de llamada (opcional)
-            try {
-                var audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                var oscillator = audioContext.createOscillator();
-                var gainNode = audioContext.createGain();
-                oscillator.connect(gainNode);
-                gainNode.connect(audioContext.destination);
-                oscillator.frequency.value = 440;
-                oscillator.type = 'sine';
-                gainNode.gain.value = 0.15;
-                oscillator.start();
-                oscillator.stop(audioContext.currentTime + 0.3);
-
-                // Repetir cada 2 segundos
-                var interval = setInterval(function() {
-                    if (!document.getElementById('callIncoming').classList.contains('show')) {
-                        clearInterval(interval);
-                        return;
-                    }
-                    var osc = audioContext.createOscillator();
-                    var gain = audioContext.createGain();
-                    osc.connect(gain);
-                    gain.connect(audioContext.destination);
-                    osc.frequency.value = 440;
-                    osc.type = 'sine';
-                    gain.gain.value = 0.15;
-                    osc.start();
-                    osc.stop(audioContext.currentTime + 0.3);
-                }, 2000);
-
-                callState._ringInterval = interval;
-
-            } catch (e) {
-                // Silencio si no se puede reproducir sonido
-            }
-        }
-
-        // ================================================================
-        // ACEPTAR LLAMADA ENTRANTE
-        // ================================================================
-        async function aceptarLlamadaEntrante() {
-            var callId = callState.incomingCallId;
-            if (!callId) return;
-
-            try {
-                var session = await getSession();
-                if (!session) {
-                    showToast('⚠️ Inicia sesión para aceptar', 'error');
-                    return;
-                }
-
-                // Actualizar estado de la llamada
-                await window.supabase
-                    .from('llamadas')
-                    .update({
-                        estado: 'active',
-                        contestada_at: new Date().toISOString()
-                    })
-                    .eq('id', callId);
-
-                // Registrar participante destino
-                await window.supabase
-                    .from('llamadas_participantes')
-                    .insert({
-                        llamada_id: callId,
-                        usuario_id: session.user.id,
-                        rol: 'invitado',
-                        estado: 'conectado',
-                        entro_at: new Date().toISOString()
-                    });
-
-                // Obtener datos de la llamada
-                var llamadaData = await window.supabase
-                    .from('llamadas')
-                    .select('room_name, creador_id')
-                    .eq('id', callId)
-                    .single();
-
-                if (llamadaData.error) throw llamadaData.error;
-
-                // Configurar estado
-                callState.callId = callId;
-                callState.isInitiator = false;
-                callState.active = true;
-
-                // Ocultar incoming y mostrar llamada
-                document.getElementById('callIncoming').classList.remove('show');
-                mostrarLlamada();
-
-                // Conectar a LiveKit
-                await conectarALiveKit(llamadaData.data.room_name, session.user.id, callId);
-
-                // Iniciar contador
-                iniciarContadorDuracion();
-
-                // Suscribirse a cambios
-                suscribirseALlamada(callId);
-
-                // Limpiar ring interval
-                if (callState._ringInterval) {
-                    clearInterval(callState._ringInterval);
-                    callState._ringInterval = null;
-                }
-
-                showToast('✅ Llamada aceptada', 'success');
-
-                // Actualizar botón
-                var btnCall = document.getElementById('btnVideoCall');
-                if (btnCall) {
-                    btnCall.textContent = '📞';
-                    btnCall.classList.add('active-call');
-                }
-
-            } catch (e) {
-                console.error('Error aceptando llamada:', e);
-                showToast('❌ Error al aceptar llamada: ' + e.message, 'error');
-                limpiarLlamada();
-            }
-        }
-
-        // ================================================================
-        // RECHAZAR LLAMADA ENTRANTE
-        // ================================================================
-        async function rechazarLlamadaEntrante() {
-            var callId = callState.incomingCallId;
-            if (!callId) return;
-
-            try {
-                await rechazarLlamada(callId);
-
-                document.getElementById('callIncoming').classList.remove('show');
-
-                if (callState._ringInterval) {
-                    clearInterval(callState._ringInterval);
-                    callState._ringInterval = null;
-                }
-
-                showToast('❌ Llamada rechazada', 'warning');
-
-            } catch (e) {
-                console.error('Error rechazando llamada:', e);
-            }
-        }
-
-        async function rechazarLlamada(callId) {
-            try {
-                await window.supabase
-                    .from('llamadas')
-                    .update({
-                        estado: 'rejected',
-                        finalizada_at: new Date().toISOString()
-                    })
-                    .eq('id', callId);
-            } catch (e) {
-                console.error('Error rechazando llamada:', e);
-            }
-        }
-
-        // ================================================================
-        // COLGAR LLAMADA
-        // ================================================================
-        async function colgarLlamada() {
-            if (!callState.active && !callState.callId) return;
-
-            try {
-                var session = await getSession();
-
-                // Actualizar estado en BD
-                if (callState.callId) {
-                    await window.supabase
-                        .from('llamadas')
-                        .update({
-                            estado: 'ended',
-                            finalizada_at: new Date().toISOString()
-                        })
-                        .eq('id', callState.callId);
-
-                    // Actualizar participantes
-                    if (session) {
-                        await window.supabase
-                            .from('llamadas_participantes')
-                            .update({
-                                estado: 'desconectado',
-                                salio_at: new Date().toISOString()
-                            })
-                            .eq('llamada_id', callState.callId)
-                            .eq('usuario_id', session.user.id)
-                            .eq('estado', 'conectado');
-                    }
-                }
-
-                // Limpiar recursos LiveKit
-                limpiarRecursosLiveKit();
-
-                // Limpiar estado
-                limpiarLlamada();
-
-                // Ocultar UI
-                ocultarLlamada();
-                document.getElementById('callIncoming').classList.remove('show');
-
-                // Actualizar botón
-                var btnCall = document.getElementById('btnVideoCall');
-                if (btnCall) {
-                    btnCall.textContent = '📹';
-                    btnCall.classList.remove('active-call');
-                }
-
-                showToast('📞 Llamada finalizada', '');
-
-            } catch (e) {
-                console.error('Error colgando llamada:', e);
-                // Forzar limpieza
-                limpiarRecursosLiveKit();
-                limpiarLlamada();
-                ocultarLlamada();
-            }
-        }
-
-        // ================================================================
-        // LIMPIAR RECURSOS LIVEKIT
-        // ================================================================
-        function limpiarRecursosLiveKit() {
-            try {
-                if (callState.room) {
-                    callState.room.disconnect();
-                    callState.room = null;
-                }
-
-                // Detener tracks locales
-                if (callState.localTrack) {
-                    callState.localTrack.stop();
-                    callState.localTrack = null;
-                }
-
-                if (callState.audioTrack) {
-                    callState.audioTrack.stop();
-                    callState.audioTrack = null;
-                }
-
-                if (callState.screenTrack) {
-                    callState.screenTrack.stop();
-                    callState.screenTrack = null;
-                }
-
-                // Limpiar elementos de video
-                var remoteVideo = document.getElementById('remoteVideo');
-                if (remoteVideo) {
-                    remoteVideo.srcObject = null;
-                }
-                var localVideo = document.getElementById('localVideo');
-                if (localVideo) {
-                    localVideo.srcObject = null;
-                }
-
-                // Mostrar placeholders
-                document.getElementById('remoteAvatarPlaceholder').style.display = 'block';
-                document.getElementById('localAvatarPlaceholder').style.display = 'block';
-
-                // Cerrar canales
-                if (callChannel) {
-                    try { window.supabase.removeChannel(callChannel); } catch (e) {}
-                    callChannel = null;
-                }
-
-                // Detener contador
-                if (callState.durationInterval) {
-                    clearInterval(callState.durationInterval);
-                    callState.durationInterval = null;
-                }
-
-                if (callState._ringInterval) {
-                    clearInterval(callState._ringInterval);
-                    callState._ringInterval = null;
-                }
-
-            } catch (e) {
-                console.error('Error limpiando recursos LiveKit:', e);
-            }
-        }
-
-        // ================================================================
-        // LIMPIAR ESTADO DE LLAMADA
-        // ================================================================
-        function limpiarLlamada() {
-            callState.active = false;
-            callState.room = null;
-            callState.localTrack = null;
-            callState.audioTrack = null;
-            callState.screenTrack = null;
-            callState.callId = null;
-            callState.isInitiator = false;
-            callState.startTime = null;
-            callState.incomingCallId = null;
-            callState.incomingFrom = null;
-            callState.participants = [];
-
-            // Limpiar lista de participantes
-            document.getElementById('participantsList').innerHTML = '';
-            document.getElementById('participantsCount').textContent = '0';
-
-            // Resetear duración
-            document.getElementById('callDuration').textContent = '00:00';
-        }
-
-        // ================================================================
-        // ACTUALIZAR PARTICIPANTES
-        // ================================================================
-        function actualizarParticipantes(room) {
-            if (!room) return;
-
-            var participants = [];
-            var localIdentity = room.localParticipant.identity;
-
-            // Participante local
-            participants.push({
-                identity: localIdentity,
-                name: room.localParticipant.name || 'Tú',
-                isLocal: true
-            });
-
-            // Participantes remotos
-            room.participants.forEach(function(p) {
-                participants.push({
-                    identity: p.identity,
-                    name: p.name || 'Participante',
-                    isLocal: false
-                });
-            });
-
-            callState.participants = participants;
-
-            // Actualizar UI
-            var list = document.getElementById('participantsList');
-            var count = document.getElementById('participantsCount');
-
-            if (list) {
-                list.innerHTML = participants.map(function(p) {
-                    return '<div class="participant-item">' +
-                        '<span class="status-dot online"></span>' +
-                        escapeHTML(p.name) + (p.isLocal ? ' (Tú)' : '') +
-                        '</div>';
-                }).join('');
-            }
-
-            if (count) {
-                count.textContent = participants.length;
-            }
-        }
-
-        // ================================================================
-        // CONTROLES DE LLAMADA
-        // ================================================================
-        var audioMuted = false;
-        var videoMuted = false;
-        var screenSharing = false;
-
-        function toggleAudio() {
-            var btn = document.getElementById('btnToggleAudio');
-            if (!callState.room) return;
-
-            try {
-                audioMuted = !audioMuted;
-                if (callState.audioTrack) {
-                    callState.audioTrack.enabled = !audioMuted;
-                }
-
-                if (audioMuted) {
-                    btn.classList.add('muted');
-                    btn.textContent = '🔇';
-                    document.getElementById('localMuteIndicator').classList.add('show');
-                } else {
-                    btn.classList.remove('muted');
-                    btn.textContent = '🎤';
-                    document.getElementById('localMuteIndicator').classList.remove('show');
-                }
-
-                showToast(audioMuted ? '🔇 Micrófono silenciado' : '🎤 Micrófono activado', '');
-
-            } catch (e) {
-                console.error('Error toggling audio:', e);
-            }
-        }
-
-        function toggleVideo() {
-            var btn = document.getElementById('btnToggleVideo');
-            if (!callState.room) return;
-
-            try {
-                videoMuted = !videoMuted;
-                if (callState.localTrack) {
-                    callState.localTrack.enabled = !videoMuted;
-                }
-
-                if (videoMuted) {
-                    btn.classList.add('muted');
-                    btn.textContent = '📷❌';
-                    document.getElementById('localVideo').style.display = 'none';
-                    document.getElementById('localAvatarPlaceholder').style.display = 'block';
-                } else {
-                    btn.classList.remove('muted');
-                    btn.textContent = '📷';
-                    document.getElementById('localVideo').style.display = 'block';
-                    document.getElementById('localAvatarPlaceholder').style.display = 'none';
-                }
-
-                showToast(videoMuted ? '📷 Cámara desactivada' : '📷 Cámara activada', '');
-
-            } catch (e) {
-                console.error('Error toggling video:', e);
-            }
-        }
-
-        async function toggleScreenShare() {
-            var btn = document.getElementById('btnToggleScreen');
-            if (!callState.room) return;
-
-            try {
-                if (!screenSharing) {
-                    // Iniciar compartir pantalla
-                    var stream = await navigator.mediaDevices.getDisplayMedia({
-                        video: { cursor: 'always' },
-                        audio: true
-                    });
-
-                    var videoTrack = stream.getVideoTracks()[0];
-                    if (videoTrack) {
-                        var publication = await callState.room.localParticipant.publishTrack(videoTrack, {
-                            name: 'screen',
-                            source: LivekitClient.TrackSource.ScreenShare
-                        });
-                        callState.screenTrack = videoTrack;
-                        screenSharing = true;
-                        btn.classList.add('active');
-                        btn.textContent = '🖥️⏹️';
-
-                        // Cuando el usuario detiene el compartir desde el navegador
-                        videoTrack.onended = function() {
-                            detenerScreenShare();
-                        };
-
-                        showToast('🖥️ Compartiendo pantalla', 'success');
-                    }
-                } else {
-                    detenerScreenShare();
-                }
-
-            } catch (e) {
-                console.error('Error toggling screen share:', e);
-                if (e.name === 'NotAllowedError') {
-                    showToast('⚠️ Permiso denegado para compartir pantalla', 'warning');
-                } else {
-                    showToast('❌ Error al compartir pantalla: ' + e.message, 'error');
-                }
-            }
-        }
-
-        async function detenerScreenShare() {
-            try {
-                if (callState.screenTrack) {
-                    await callState.room.localParticipant.unpublishTrack(callState.screenTrack);
-                    callState.screenTrack.stop();
-                    callState.screenTrack = null;
-                }
-                screenSharing = false;
-                var btn = document.getElementById('btnToggleScreen');
-                if (btn) {
-                    btn.classList.remove('active');
-                    btn.textContent = '🖥️';
-                }
-                showToast('🖥️ Compartir pantalla detenido', '');
-            } catch (e) {
-                console.error('Error deteniendo screen share:', e);
-            }
-        }
-
-        function toggleParticipantsPanel() {
-            var panel = document.getElementById('participantsPanel');
-            if (panel) {
-                panel.classList.toggle('show');
-            }
-        }
-
-        // ================================================================
-        // LIMPIEZA DE RECURSOS
-        // ================================================================
-        function limpiarRecursosMensajes() {
-            if (realtimeChannel) {
-                try { window.supabase.removeChannel(realtimeChannel); } catch (e) {}
-                realtimeChannel = null;
-            }
-            if (mediaRecorder && mediaRecorder.state === 'recording') {
-                try { mediaRecorder.stop(); } catch (e) {}
-            }
-            if (audioChunks.length > 0) {
-                audioChunks = [];
-            }
-            archivosSeleccionados = [];
-            grabacionActiva = false;
-
-            // Limpiar recursos de llamada
-            limpiarRecursosLiveKit();
-            callListeners.forEach(function(listener) {
-                try { window.supabase.removeChannel(listener); } catch (e) {}
-            });
-            callListeners = [];
-        }
-
-        window.addEventListener('beforeunload', function() {
-            if (callState.active) {
-                colgarLlamada();
-            }
-            limpiarRecursosMensajes();
-        });
-
-        // ================================================================
-        // 🔄 INICIALIZACIÓN
-        // ================================================================
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('◈ Sariel\'s - Mensajes con Videollamada');
-            console.log('✅ Inicializando...');
-
-            cargarConversaciones();
-
-            var chatInput = document.getElementById('chatInput');
-            if (chatInput) {
-                chatInput.addEventListener('keydown', function(e) {
-                    if (e.key === 'Enter') {
-                        enviarMensaje();
-                    }
-                });
-            }
-
-            var btnEnviar = document.getElementById('btnEnviar');
-            if (btnEnviar) {
-                btnEnviar.addEventListener('click', enviarMensaje);
-            }
-
-            var searchInput = document.getElementById('searchInput');
-            if (searchInput) {
-                searchInput.addEventListener('input', function(e) {
-                    buscarContactos(e.target.value);
-                });
-            }
-
-            var searchInputModal = document.getElementById('searchInputModal');
-            if (searchInputModal) {
-                searchInputModal.addEventListener('input', function(e) {
-                    buscarContactos(e.target.value);
-                });
-            }
-
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape') {
-                    cerrarModalNuevoContacto();
-                    var incoming = document.getElementById('callIncoming');
-                    if (incoming && incoming.classList.contains('show')) {
-                        rechazarLlamadaEntrante();
-                    }
-                }
-            });
-
-            // Inicializar suscripción a llamadas
-            setTimeout(function() {
-                verificarAutenticacion().then(function(ok) {
-                    if (ok) {
-                        suscribirseALlamadas();
-                    }
-                });
-            }, 2000);
-        });
-
-        // ================================================================
-        // 🎯 EXPOSICIÓN GLOBAL
-        // ================================================================
-        window.cargarConversaciones = cargarConversaciones;
-        window.abrirConversacion = abrirConversacion;
-        window.enviarMensaje = enviarMensaje;
-        window.eliminarMensaje = eliminarMensaje;
-        window.editarMensaje = editarMensaje;
-        window.eliminarConversacion = eliminarConversacion;
-        window.bloquearUsuario = bloquearUsuario;
-        window.reportarMensaje = reportarMensaje;
-        window.buscarEnConversacion = buscarEnConversacion;
-        window.nuevaConversacion = nuevaConversacion;
-        window.cerrarModalNuevoContacto = cerrarModalNuevoContacto;
-        window.agregarContacto = agregarContacto;
-        window.buscarContactos = buscarContactos;
-        window.seleccionarArchivo = seleccionarArchivo;
-        window.handleFileSelect = handleFileSelect;
-        window.toggleGrabacionVoz = toggleGrabacionVoz;
-        window.showToast = showToast;
-        window.limpiarRecursosMensajes = limpiarRecursosMensajes;
-
-        // Videollamada
-        window.iniciarVideollamada = iniciarVideollamada;
-        window.aceptarLlamadaEntrante = aceptarLlamadaEntrante;
-        window.rechazarLlamadaEntrante = rechazarLlamadaEntrante;
-        window.colgarLlamada = colgarLlamada;
-        window.minimizarLlamada = minimizarLlamada;
-        window.toggleAudio = toggleAudio;
-        window.toggleVideo = toggleVideo;
-        window.toggleScreenShare = toggleScreenShare;
-        window.toggleParticipantsPanel = toggleParticipantsPanel;
-        window.mostrarLlamada = mostrarLlamada;
-        window.ocultarLlamada = ocultarLlamada;
-    </script>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sariel · Mensajes</title>
+
+  <!-- ============================================
+  ESTILOS GLOBALES (no rompen nada)
+  ============================================ -->
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #0b0e14;
+      color: #e8edf5;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .chat-container {
+      display: flex;
+      width: 100%;
+      max-width: 1300px;
+      height: 95vh;
+      background: #131a24;
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+      border: 1px solid rgba(212, 175, 55, 0.15);
+    }
+
+    /* === SIDEBAR === */
+    .sidebar {
+      width: 320px;
+      background: #0f161e;
+      border-right: 1px solid rgba(212, 175, 55, 0.1);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+
+    .sidebar-header {
+      padding: 18px 20px 12px;
+      border-bottom: 1px solid rgba(212, 175, 55, 0.08);
+    }
+
+    .sidebar-header h2 {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: #d4af37;
+      letter-spacing: 0.5px;
+    }
+
+    .sidebar-header h2 span {
+      opacity: 0.4;
+      font-weight: 300;
+    }
+
+    .search-box {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .search-box input {
+      flex: 1;
+      padding: 8px 14px;
+      border-radius: 30px;
+      border: 1px solid rgba(212, 175, 55, 0.2);
+      background: #1a232e;
+      color: #e8edf5;
+      font-size: 0.8rem;
+      outline: none;
+      transition: 0.25s;
+    }
+
+    .search-box input:focus {
+      border-color: #d4af37;
+      box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.15);
+    }
+
+    .search-box button {
+      background: #d4af37;
+      border: none;
+      border-radius: 30px;
+      padding: 0 16px;
+      font-weight: 600;
+      font-size: 0.75rem;
+      color: #0b0e14;
+      cursor: pointer;
+      transition: 0.2s;
+      white-space: nowrap;
+    }
+
+    .search-box button:hover {
+      background: #c49a2a;
+      transform: scale(0.97);
+    }
+
+    /* === LISTA DE CONVERSACIONES === */
+    .conversaciones {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 6px;
+    }
+
+    .conversaciones::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .conversaciones::-webkit-scrollbar-thumb {
+      background: #d4af37;
+      border-radius: 10px;
+    }
+
+    .conv-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      border-radius: 16px;
+      cursor: pointer;
+      transition: 0.2s;
+      margin-bottom: 2px;
+      border: 1px solid transparent;
+    }
+
+    .conv-item:hover {
+      background: #1a232e;
+      border-color: rgba(212, 175, 55, 0.06);
+    }
+
+    .conv-item.active {
+      background: #1e293b;
+      border-color: rgba(212, 175, 55, 0.25);
+    }
+
+    .conv-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #1a2a1a, #d4af37);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: #fff;
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+
+    .conv-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .conv-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .conv-nombre {
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: #e8edf5;
+    }
+
+    .conv-msg {
+      font-size: 0.75rem;
+      color: #8899aa;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .conv-meta {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    .conv-badge {
+      background: #d4af37;
+      color: #0b0e14;
+      font-size: 0.6rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 30px;
+      min-width: 18px;
+      text-align: center;
+    }
+
+    .conv-hora {
+      font-size: 0.55rem;
+      color: #667788;
+    }
+
+    /* === CHAT PRINCIPAL === */
+    .chat-main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: #0f161e;
+    }
+
+    .chat-header {
+      padding: 14px 22px;
+      border-bottom: 1px solid rgba(212, 175, 55, 0.08);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: #0f161e;
+      flex-shrink: 0;
+    }
+
+    .chat-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #1a2a1a, #d4af37);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      color: #fff;
+      flex-shrink: 0;
+    }
+
+    .chat-info {
+      flex: 1;
+    }
+
+    .chat-nombre {
+      font-weight: 600;
+      font-size: 1rem;
+    }
+
+    .chat-estado {
+      font-size: 0.7rem;
+      color: #667788;
+    }
+
+    .chat-estado.online {
+      color: #4ade80;
+    }
+
+    .chat-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .chat-actions button {
+      background: transparent;
+      border: none;
+      color: #8899aa;
+      font-size: 1.2rem;
+      cursor: pointer;
+      padding: 6px 8px;
+      border-radius: 30px;
+      transition: 0.2s;
+    }
+
+    .chat-actions button:hover {
+      background: #1a232e;
+      color: #d4af37;
+    }
+
+    /* === MENSAJES === */
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .chat-messages::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .chat-messages::-webkit-scrollbar-thumb {
+      background: #d4af37;
+      border-radius: 10px;
+    }
+
+    .empty-chat {
+      text-align: center;
+      margin: auto;
+      color: #556677;
+    }
+
+    .empty-chat .icon {
+      font-size: 3rem;
+      display: block;
+      margin-bottom: 12px;
+      opacity: 0.3;
+    }
+
+    .empty-chat h3 {
+      font-weight: 400;
+      font-size: 1.1rem;
+    }
+
+    .empty-chat p {
+      font-size: 0.8rem;
+      opacity: 0.6;
+    }
+
+    /* === BURBUJAS === */
+    .msg-wrapper {
+      display: flex;
+      flex-direction: column;
+      max-width: 75%;
+    }
+
+    .msg-wrapper.enviado {
+      align-self: flex-end;
+      align-items: flex-end;
+    }
+
+    .msg-wrapper.recibido {
+      align-self: flex-start;
+      align-items: flex-start;
+    }
+
+    .burbuja {
+      background: #1a232e;
+      padding: 10px 16px;
+      border-radius: 18px 18px 18px 4px;
+      font-size: 0.9rem;
+      line-height: 1.5;
+      word-break: break-word;
+      border: 1px solid rgba(212, 175, 55, 0.05);
+    }
+
+    .msg-wrapper.enviado .burbuja {
+      background: #d4af37;
+      color: #0b0e14;
+      border-radius: 18px 18px 4px 18px;
+    }
+
+    .msg-wrapper .fila {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+    }
+
+    .msg-wrapper .avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #1a232e;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      color: #d4af37;
+      border: 1px solid rgba(212, 175, 55, 0.15);
+      flex-shrink: 0;
+    }
+
+    .meta {
+      font-size: 0.55rem;
+      color: #667788;
+      margin-top: 2px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .meta button {
+      background: none;
+      border: none;
+      color: #667788;
+      cursor: pointer;
+      font-size: 0.55rem;
+      padding: 0 2px;
+    }
+
+    .meta button:hover {
+      color: #d4af37;
+    }
+
+    .leido.leido {
+      color: #4ade80;
+    }
+
+    .leido.no-leido {
+      color: #667788;
+    }
+
+    /* === INPUT === */
+    .chat-input-area {
+      padding: 12px 20px 16px;
+      border-top: 1px solid rgba(212, 175, 55, 0.06);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      background: #0f161e;
+      flex-shrink: 0;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .input-row input {
+      flex: 1;
+      padding: 10px 16px;
+      border-radius: 30px;
+      border: 1px solid rgba(212, 175, 55, 0.12);
+      background: #1a232e;
+      color: #e8edf5;
+      font-size: 0.85rem;
+      outline: none;
+      transition: 0.25s;
+    }
+
+    .input-row input:focus {
+      border-color: #d4af37;
+      box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.08);
+    }
+
+    .input-row button {
+      background: #d4af37;
+      border: none;
+      border-radius: 30px;
+      width: 42px;
+      height: 42px;
+      font-size: 1.1rem;
+      color: #0b0e14;
+      cursor: pointer;
+      transition: 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .input-row button:hover {
+      background: #c49a2a;
+      transform: scale(0.95);
+    }
+
+    .input-row button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .input-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .input-actions button {
+      background: transparent;
+      border: none;
+      color: #667788;
+      font-size: 1.1rem;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 30px;
+      transition: 0.2s;
+    }
+
+    .input-actions button:hover {
+      background: #1a232e;
+      color: #d4af37;
+    }
+
+    .file-preview {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 4px 0;
+    }
+
+    /* === MODAL === */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(6px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+    }
+
+    .modal-overlay.show {
+      display: flex;
+    }
+
+    .modal {
+      background: #131a24;
+      border-radius: 28px;
+      padding: 28px 32px;
+      max-width: 440px;
+      width: 90%;
+      border: 1px solid rgba(212, 175, 55, 0.15);
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.9);
+    }
+
+    .modal h3 {
+      font-size: 1.1rem;
+      margin-bottom: 16px;
+      color: #d4af37;
+    }
+
+    .modal input {
+      width: 100%;
+      padding: 10px 16px;
+      border-radius: 30px;
+      border: 1px solid rgba(212, 175, 55, 0.15);
+      background: #1a232e;
+      color: #e8edf5;
+      font-size: 0.85rem;
+      outline: none;
+    }
+
+    .modal input:focus {
+      border-color: #d4af37;
+    }
+
+    .modal-close {
+      margin-top: 16px;
+      background: #1a232e;
+      border: none;
+      padding: 8px 20px;
+      border-radius: 30px;
+      color: #8899aa;
+      cursor: pointer;
+      font-size: 0.8rem;
+      transition: 0.2s;
+    }
+
+    .modal-close:hover {
+      background: #2a3344;
+      color: #fff;
+    }
+
+    .resultados-busqueda {
+      margin-top: 12px;
+      max-height: 260px;
+      overflow-y: auto;
+    }
+
+    .resultados-busqueda::-webkit-scrollbar {
+      width: 3px;
+    }
+
+    .resultados-busqueda::-webkit-scrollbar-thumb {
+      background: #d4af37;
+      border-radius: 10px;
+    }
+
+    /* === TOAST === */
+    .toast {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1a232e;
+      color: #e8edf5;
+      padding: 10px 24px;
+      border-radius: 60px;
+      font-size: 0.8rem;
+      border: 1px solid rgba(212, 175, 55, 0.1);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7);
+      opacity: 0;
+      transition: 0.35s ease;
+      pointer-events: none;
+      z-index: 9999;
+      backdrop-filter: blur(8px);
+    }
+
+    .toast.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .toast.error {
+      border-color: #ef4444;
+    }
+
+    .toast.success {
+      border-color: #4ade80;
+    }
+
+    .toast.warning {
+      border-color: #fbbf24;
+    }
+
+    /* === RESPONSIVE === */
+    @media (max-width: 700px) {
+      .sidebar {
+        width: 72px;
+      }
+      .sidebar-header h2 span,
+      .conv-info,
+      .conv-meta .conv-hora,
+      .conv-meta .conv-badge {
+        display: none;
+      }
+      .conv-item {
+        justify-content: center;
+        padding: 10px 4px;
+      }
+      .chat-container {
+        border-radius: 0;
+        height: 100vh;
+      }
+      .chat-messages {
+        padding: 12px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ============================================
+  TOAST
+  ============================================ -->
+  <div id="toast" class="toast"></div>
+
+  <!-- ============================================
+  MODAL NUEVO CONTACTO
+  ============================================ -->
+  <div id="modalNuevoContacto" class="modal-overlay">
+    <div class="modal">
+      <h3>◈ Nuevo contacto</h3>
+      <input
+        type="text"
+        id="searchInputModal"
+        placeholder="Buscar por nombre o usuario..."
+        autocomplete="off"
+      />
+      <div id="resultadosBusqueda" class="resultados-busqueda">
+        <div style="padding:20px;text-align:center;color:#667788;font-size:0.75rem;">
+          Escribe al menos 2 caracteres
+        </div>
+      </div>
+      <button class="modal-close" onclick="cerrarModalNuevoContacto()">✕ Cerrar</button>
+    </div>
+  </div>
+
+  <!-- ============================================
+  CHAT PRINCIPAL
+  ============================================ -->
+  <div class="chat-container">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h2>◈ <span>mensajes</span></h2>
+        <div class="search-box">
+          <input
+            type="text"
+            id="searchInput"
+            placeholder="Buscar contacto..."
+            autocomplete="off"
+          />
+          <button onclick="nuevaConversacion()">+</button>
+        </div>
+      </div>
+
+      <div id="conversacionesList" class="conversaciones">
+        <!-- renderizado por JS -->
+        <div style="padding:40px 20px;text-align:center;color:#667788;font-size:0.8rem;">
+          <div style="font-size:2rem;margin-bottom:10px;">◈</div>
+          <p>Cargando conversaciones...</p>
+        </div>
+      </div>
+    </aside>
+
+    <!-- CHAT -->
+    <main class="chat-main">
+
+      <!-- HEADER -->
+      <div class="chat-header">
+        <div class="chat-avatar">◈</div>
+        <div class="chat-info">
+          <div class="chat-nombre" id="chatNombre">Selecciona un chat</div>
+          <div class="chat-estado" id="chatEstado">⚪ Desconectado</div>
+        </div>
+        <div class="chat-actions">
+          <button id="btnVideoCall" onclick="iniciarVideollamada()" title="Videollamada">📹</button>
+          <button onclick="buscarEnConversacion(prompt('🔍 Buscar en esta conversación:'))" title="Buscar">🔍</button>
+          <button onclick="if(conversacionActual)eliminarConversacion(conversacionActual.id)" title="Eliminar conversación">🗑️</button>
+        </div>
+      </div>
+
+      <!-- MENSAJES -->
+      <div id="chatMessages" class="chat-messages">
+        <div class="empty-chat">
+          <span class="icon">◈</span>
+          <h3>Selecciona una conversación</h3>
+          <p>Elige un contacto para empezar</p>
+        </div>
+      </div>
+
+      <!-- INPUT -->
+      <div class="chat-input-area">
+        <div class="file-preview" id="filePreview"></div>
+        <div class="input-row">
+          <input
+            type="text"
+            id="chatInput"
+            placeholder="Escribe un mensaje..."
+            autocomplete="off"
+          />
+          <div class="input-actions">
+            <button onclick="toggleGrabacionVoz()" id="btnGrabarVoz" title="Grabar voz">🎙️</button>
+            <button onclick="seleccionarArchivo()" title="Adjuntar archivo">📎</button>
+            <input
+              type="file"
+              id="fileInput"
+              multiple
+              accept="image/*,audio/*"
+              style="display:none"
+              onchange="handleFileSelect(event)"
+            />
+            <button id="btnEnviar" title="Enviar">➤</button>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- ============================================
+  SCRIPTS
+  ============================================ -->
+
+  <!-- LiveKit (SDK) -->
+  <script src="https://cdn.jsdelivr.net/npm/livekit-client@2/dist/livekit-client.umd.min.js">
+  </script>
+
+  <!-- Supabase (global) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js">
+  </script>
+
+  <!-- ✅ MENSAJES JS (CORREGIDO) -->
+  <script src="/features/mensajes/mensajes.js"></script>
 
 </body>
 </html>
