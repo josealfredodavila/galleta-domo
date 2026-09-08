@@ -1,24 +1,19 @@
 // ================================================================
-// MENSAJES.JS - SARIEL'S WEB3 (CORREGIDO PARA PRODUCCIÓN)
-// Lógica de Mensajería, Conversaciones y Búsqueda
+// MENSAJES.JS - SARIEL'S WEB3 (PRODUCCIÓN)
 // ================================================================
 
 window.conversacionActual = null;
 let suscripcionMensajes = null;
 
-// Helper para obtener cliente Supabase
 function getSupabase() {
     return window.supabaseClient || window.supabase;
 }
 
-// Helper para formatear horas
 function formatearHora(fechaIso) {
     if (!fechaIso) return '';
-    const fecha = new Date(fechaIso);
-    return fecha.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return new Date(fechaIso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-// Sanitizar texto para evitar XSS
 function escapeHTML(str) {
     if (!str) return '';
     return str
@@ -29,9 +24,6 @@ function escapeHTML(str) {
         .replace(/'/g, '&#039;');
 }
 
-// ----------------------------------------------------------------
-// 1. CARGAR Y LISTAR CONVERSACIONES
-// ----------------------------------------------------------------
 async function cargarConversaciones() {
     const container = document.getElementById('conversationList');
     if (!container) return;
@@ -49,7 +41,6 @@ async function cargarConversaciones() {
             return;
         }
 
-        // Obtener IDs de conversaciones del usuario actual
         const { data: participaciones, error: partError } = await client
             .from('conversation_participants')
             .select('conversation_id')
@@ -66,7 +57,6 @@ async function cargarConversaciones() {
 
         const convIds = participaciones.map(p => p.conversation_id);
 
-        // Obtener participantes de esas conversaciones (excluyendo al usuario actual) conectando con 'usuarios'
         const { data: participantes, error: partOtrosError } = await client
             .from('conversation_participants')
             .select('conversation_id, user_id, usuarios(id, username, avatar_url)')
@@ -110,9 +100,6 @@ async function cargarConversaciones() {
     }
 }
 
-// ----------------------------------------------------------------
-// 2. ABRIR CONVERSACIÓN Y CARGAR MENSAJES
-// ----------------------------------------------------------------
 async function abrirConversacion(convId, nombre, avatarUrl) {
     window.conversacionActual = convId;
 
@@ -173,7 +160,6 @@ async function cargarMensajes(convId) {
     }
 }
 
-// Renderizar mensaje individual en el DOM con soporte real a columnas unificadas
 function renderizarMensaje(msg, esMio) {
     const container = document.getElementById('chatMessages');
     if (!container) return;
@@ -218,9 +204,6 @@ function renderizarMensaje(msg, esMio) {
     container.scrollTop = container.scrollHeight;
 }
 
-// ----------------------------------------------------------------
-// 3. ENVIAR MENSAJES Y ADJUNTOS (BUCKETS REALES)
-// ----------------------------------------------------------------
 async function enviarMensaje() {
     if (!window.conversacionActual) {
         return alert('Selecciona una conversación primero');
@@ -245,7 +228,6 @@ async function enviarMensaje() {
         let mediaUrl = null;
         let tipoMensaje = 'texto';
 
-        // Subir archivo a Supabase Storage usando los buckets reales de producción
         if (file) {
             const fileExt = file.name.split('.').pop().toLowerCase();
             const esAudio = file.type.startsWith('audio/') || ['mp3', 'wav', 'ogg', 'm4a'].includes(fileExt);
@@ -254,7 +236,7 @@ async function enviarMensaje() {
 
             const filePath = `${folderPrefix}/${window.conversacionActual}/${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
 
-            const { data: uploadData, error: uploadError } = await client.storage
+            const { error: uploadError } = await client.storage
                 .from(bucketName)
                 .upload(filePath, file);
 
@@ -272,8 +254,7 @@ async function enviarMensaje() {
             else tipoMensaje = 'archivo';
         }
 
-        // Insertar en la tabla unificada 'messages' con las columnas reales de producción
-        const { data: nuevoMensaje, error: sendError } = await client
+        const { error: sendError } = await client
             .from('messages')
             .insert({
                 conversation_id: window.conversacionActual,
@@ -290,7 +271,6 @@ async function enviarMensaje() {
 
         if (sendError) throw sendError;
 
-        // Limpiar controles
         if (input) input.value = '';
         if (fileInput) fileInput.value = '';
         limpiarArchivosSeleccionados();
@@ -304,9 +284,6 @@ async function enviarMensaje() {
     }
 }
 
-// ----------------------------------------------------------------
-// 4. SUSCRIPCIÓN EN TIEMPO REAL (REALTIME)
-// ----------------------------------------------------------------
 function suscribirMensajesTiempoReal(convId) {
     const client = getSupabase();
     if (!client) return;
@@ -339,9 +316,6 @@ function suscribirMensajesTiempoReal(convId) {
         .subscribe();
 }
 
-// ----------------------------------------------------------------
-// 5. GESTIÓN DE MODALES Y COMPONENTES VISUALES
-// ----------------------------------------------------------------
 function nuevaConversacion() {
     const modal = document.getElementById('modalNuevoContacto');
     if (modal) {
@@ -365,7 +339,6 @@ async function iniciarConversacionConUsuario(targetUserId) {
         const { data: { user } } = await client.auth.getUser();
         if (!user) return alert('Inicia sesión para chatear');
 
-        // Crear una nueva conversación
         const { data: nuevaConv, error: convError } = await client
             .from('conversations')
             .insert({
@@ -378,7 +351,6 @@ async function iniciarConversacionConUsuario(targetUserId) {
 
         if (convError) throw convError;
 
-        // Agregar a ambos participantes
         const { error: partError } = await client
             .from('conversation_participants')
             .insert([
@@ -390,7 +362,6 @@ async function iniciarConversacionConUsuario(targetUserId) {
 
         cerrarModalNuevoContacto();
 
-        // Obtener perfil del usuario destino desde 'usuarios'
         const { data: targetProfile } = await client
             .from('usuarios')
             .select('username, avatar_url')
@@ -430,7 +401,6 @@ function actualizarContadorTexto() {
     }
 }
 
-// Event Listeners para entradas
 document.addEventListener('DOMContentLoaded', () => {
     const messageInput = document.getElementById('messageInput');
     const fileInput = document.getElementById('fileInput');
@@ -469,7 +439,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// Exponer funciones globalmente
 window.cargarConversaciones = cargarConversaciones;
 window.abrirConversacion = abrirConversacion;
 window.enviarMensaje = enviarMensaje;
