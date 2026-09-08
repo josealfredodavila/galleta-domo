@@ -244,11 +244,11 @@
 
         <nav class="main-nav">
             <a href="/" class="nav-link">⌂ Inicio</a>
-            <a href="/muro/muro.html" class="nav-link">◇ Muro</a>
+            <a href="/features/muro/muro.html" class="nav-link">◇ Muro</a>
             <a href="/features/perfil/perfil.html" class="nav-link">◆ Perfil</a>
-            <a href="/mensajes/mensajes.html" class="nav-link active">◈ Mensajes</a>
-            <a href="/live/live.html" class="nav-link live">◉ Live</a>
-            <a href="/videos/videos.html" class="nav-link">🎬 Videos</a>
+            <a href="/features/mensajes/mensajes.html" class="nav-link active">◈ Mensajes</a>
+            <a href="/features/live/live.html" class="nav-link live">◉ Live</a>
+            <a href="/features/videos/videos.html" class="nav-link">🎬 Videos</a>
         </nav>
 
         <div class="mensajes-wrapper">
@@ -325,59 +325,40 @@
     <script src="./mensajes.js"></script>
 
     <script>
+        // Evento de búsqueda de usuarios usando el endpoint API
         document.getElementById('searchInputModal')?.addEventListener('input', async function(e) {
             const query = e.target.value.trim();
             const resultados = document.getElementById('resultadosBusqueda');
-            const client = window.supabaseClient || window.supabase;
-            if (!resultados || !client) return;
+            if (!resultados) return;
 
             if (query.length < 2) {
                 resultados.innerHTML = '<p style="text-align:center;color:var(--text-muted);font-size:0.75rem;padding:12px;">Escribe al menos 2 caracteres</p>';
                 return;
             }
 
-            const { data: usuarios, error } = await client
-                .from('profiles')
-                .select('id, username, avatar_url')
-                .ilike('username', `%${query}%`)
-                .limit(5);
+            try {
+                const response = await fetch(`/api/mensajes/usuarios?query=${encodeURIComponent(query)}`);
+                const data = await response.json();
 
-            if (error || !usuarios || usuarios.length === 0) {
-                resultados.innerHTML = '<p style="text-align:center;color:var(--text-muted);font-size:0.75rem;padding:12px;">No se encontraron usuarios</p>';
-                return;
-            }
+                if (!data.success || !data.usuarios || data.usuarios.length === 0) {
+                    resultados.innerHTML = '<p style="text-align:center;color:var(--text-muted);font-size:0.75rem;padding:12px;">No se encontraron usuarios</p>';
+                    return;
+                }
 
-            resultados.innerHTML = usuarios.map(u => `
-                <div class="contacto-resultado">
-                    <div class="contacto-avatar">${u.avatar_url ? `<img src="${u.avatar_url}" style="width:100%;height:100%;object-fit:cover;"/>` : '◈'}</div>
-                    <div class="contacto-info">
-                        <strong>${u.username || 'Usuario'}</strong>
+                resultados.innerHTML = data.usuarios.map(u => `
+                    <div class="contacto-resultado">
+                        <div class="contacto-avatar">${u.avatar_url ? `<img src="${u.avatar_url}" style="width:100%;height:100%;object-fit:cover;"/>` : '◈'}</div>
+                        <div class="contacto-info">
+                            <strong>${u.username || 'Usuario'}</strong>
+                        </div>
+                        <button class="btn-agregar-contacto" onclick="iniciarConversacionConUsuario('${u.id}')">Chatear</button>
                     </div>
-                    <button class="btn-agregar-contacto" onclick="iniciarConversacionConUsuario('${u.id}')">Chatear</button>
-                </div>
-            `).join('');
-        });
-
-        async function eliminarConversacion() {
-            if (!window.conversacionActual) return alert('Selecciona una conversación primero');
-            if (!confirm('¿Deseas salir de este chat?')) return;
-
-            const client = window.supabaseClient || window.supabase;
-            const { data: { user } } = await client.auth.getUser();
-
-            const { error } = await client
-                .from('conversation_participants')
-                .delete()
-                .eq('conversation_id', window.conversacionActual)
-                .eq('user_id', user.id);
-
-            if (!error) {
-                window.conversacionActual = null;
-                document.getElementById('chatUserName').textContent = 'Selecciona una conversación';
-                document.getElementById('chatMessages').innerHTML = `<div class="sin-mensajes"><span class="icono">💭</span><p>Selecciona una conversación</p></div>`;
-                cargarConversaciones();
+                `).join('');
+            } catch (error) {
+                console.error('Error en búsqueda de usuarios:', error);
+                resultados.innerHTML = '<p style="text-align:center;color:var(--text-muted);font-size:0.75rem;padding:12px;">Error al buscar usuarios</p>';
             }
-        }
+        });
 
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
@@ -390,8 +371,6 @@
             if (typeof cargarIdiomas === 'function') cargarIdiomas();
             if (typeof cargarConversaciones === 'function') cargarConversaciones();
         });
-
-        window.eliminarConversacion = eliminarConversacion;
     </script>
 </body>
 </html>
