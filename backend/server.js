@@ -1,6 +1,7 @@
 /* ================================================================
    SERVER.JS - SARIEL'S ECOSYSTEM
    VERSIÓN PRODUCCIÓN - RAILWAY
+   ================================================================
    INCLUYE:
    ✅ Express
    ✅ Supabase Auth
@@ -9,19 +10,19 @@
    ✅ Payments
    ✅ Webhooks
    ✅ Membresía
-   ✅ Seguridad / Helmet
+   ✅ Helmet
    ✅ CORS
    ✅ Rate Limit
    ✅ Compresión
    ✅ I18N
-   ✅ SISTEMA SEGURO DE ELIMINACIÓN DE CUENTA
-   ✅ CLOUDFLARE TURNSTILE SERVER-SIDE
-   ✅ VIDEOLLAMADA LIVEKIT
-   ✅ MENSAJERÍA (NUEVO)
-   ✅ CONTENT-TYPE CORREGIDO PARA JS
-   ✅ MIDDLEWARES EN ORDEN CORRECTO
-   ✅ SOPORTE PARA SALAS LIVE_
-================================================================ */
+   ✅ Eliminación segura de cuenta
+   ✅ Cloudflare Turnstile
+   ✅ Videollamada LiveKit
+   ✅ Streaming LIVE_
+   ✅ Mensajería
+   ✅ Content-Type correcto para JS
+   ✅ Middleware en orden correcto
+   ================================================================ */
 
 const express = require('express');
 const { AccessToken } = require('livekit-server-sdk');
@@ -39,13 +40,19 @@ const fs = require('fs');
 require('dotenv').config();
 
 /* ================================================================
-   CONFIGURACIÓN
+   APP
 ================================================================ */
 
 const app = express();
 
+app.disable('x-powered-by');
+
 const PORT =
     Number(process.env.PORT) || 8080;
+
+/* ================================================================
+   SUPABASE
+================================================================ */
 
 const SUPABASE_URL =
     process.env.SUPABASE_URL;
@@ -57,7 +64,7 @@ const SUPABASE_SERVICE_ROLE_KEY =
     process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 /* ================================================================
-   LIVEKIT CONFIGURACIÓN
+   LIVEKIT
 ================================================================ */
 
 const LIVEKIT_API_KEY =
@@ -70,7 +77,7 @@ const LIVEKIT_URL =
     process.env.LIVEKIT_URL;
 
 /* ================================================================
-   CLOUDFLARE TURNSTILE
+   TURNSTILE
 ================================================================ */
 
 const TURNSTILE_SECRET_KEY =
@@ -89,7 +96,7 @@ const TURNSTILE_EXPECTED_HOSTNAME =
     'galleta-domo-production.up.railway.app';
 
 /* ================================================================
-   EDGE FUNCTIONS DE ELIMINACIÓN
+   EDGE FUNCTIONS
 ================================================================ */
 
 const ACCOUNT_DELETION_REQUEST_FUNCTION =
@@ -99,47 +106,41 @@ const ACCOUNT_DELETION_PROCESS_FUNCTION =
     'process-account-deletion';
 
 /* ================================================================
-   VALIDACIÓN DE VARIABLES
+   VALIDACIÓN DE CONFIGURACIÓN
 ================================================================ */
 
 if (!SUPABASE_URL) {
-    console.error(
-        '❌ Falta SUPABASE_URL'
-    );
+    console.error('❌ Falta SUPABASE_URL');
 }
 
 if (!SUPABASE_ANON_KEY) {
-    console.error(
-        '❌ Falta SUPABASE_ANON_KEY'
-    );
+    console.error('❌ Falta SUPABASE_ANON_KEY');
 }
 
 if (!SUPABASE_SERVICE_ROLE_KEY) {
-    console.error(
-        '❌ Falta SUPABASE_SERVICE_ROLE_KEY'
-    );
+    console.error('❌ Falta SUPABASE_SERVICE_ROLE_KEY');
 }
 
 if (!TURNSTILE_SECRET_KEY) {
-    console.error(
-        '⚠️ Falta TURNSTILE_SECRET_KEY'
-    );
+    console.warn('⚠️ Falta TURNSTILE_SECRET_KEY');
 }
 
 if (!TURNSTILE_SITE_KEY) {
-    console.warn(
-        '⚠️ Falta TURNSTILE_SITE_KEY'
-    );
+    console.warn('⚠️ Falta TURNSTILE_SITE_KEY');
 }
 
-if (!LIVEKIT_API_KEY || !LIVEKIT_API_SECRET || !LIVEKIT_URL) {
+if (
+    !LIVEKIT_API_KEY ||
+    !LIVEKIT_API_SECRET ||
+    !LIVEKIT_URL
+) {
     console.warn(
-        '⚠️ LiveKit no configurado correctamente. Las videollamadas no funcionarán.'
+        '⚠️ LiveKit no está configurado completamente.'
     );
 }
 
 /* ================================================================
-   CLIENTE SUPABASE ADMIN
+   SUPABASE ADMIN
 ================================================================ */
 
 const supabaseAdmin =
@@ -151,7 +152,8 @@ const supabaseAdmin =
             {
                 auth: {
                     autoRefreshToken: false,
-                    persistSession: false
+                    persistSession: false,
+                    detectSessionInUrl: false
                 }
             }
         )
@@ -176,9 +178,7 @@ function clienteDelUsuario(req) {
         req.headers.authorization || '';
 
     if (
-        authorization.startsWith(
-            'Bearer '
-        )
+        authorization.startsWith('Bearer ')
     ) {
 
         const token =
@@ -194,7 +194,8 @@ function clienteDelUsuario(req) {
                 {
                     auth: {
                         autoRefreshToken: false,
-                        persistSession: false
+                        persistSession: false,
+                        detectSessionInUrl: false
                     },
                     global: {
                         headers: {
@@ -213,14 +214,15 @@ function clienteDelUsuario(req) {
         {
             auth: {
                 autoRefreshToken: false,
-                persistSession: false
+                persistSession: false,
+                detectSessionInUrl: false
             }
         }
     );
 }
 
 /* ================================================================
-   AUTENTICACIÓN
+   OBTENER USUARIO AUTENTICADO
 ================================================================ */
 
 async function obtenerUsuario(req) {
@@ -269,7 +271,7 @@ async function verificarAutenticacion(
 
         req.user = user;
 
-        next();
+        return next();
 
     } catch (error) {
 
@@ -286,7 +288,7 @@ async function verificarAutenticacion(
 }
 
 /* ================================================================
-   ADMINISTRADOR
+   ADMIN
 ================================================================ */
 
 async function verificarAdmin(
@@ -324,14 +326,8 @@ async function verificarAdmin(
             await supabaseAdmin
                 .from('user_roles')
                 .select('role')
-                .eq(
-                    'user_id',
-                    user.id
-                )
-                .eq(
-                    'role',
-                    'admin'
-                )
+                .eq('user_id', user.id)
+                .eq('role', 'admin')
                 .maybeSingle();
 
         if (
@@ -347,7 +343,7 @@ async function verificarAdmin(
 
         req.user = user;
 
-        next();
+        return next();
 
     } catch (error) {
 
@@ -365,21 +361,12 @@ async function verificarAdmin(
 }
 
 /* ================================================================
-   ═══════════════════════════════════════════════════════════════
-   ✅ MOVIDO: MIDDLEWARES DE SEGURIDAD (AHORA AL INICIO)
-   ═══════════════════════════════════════════════════════════════
-   Esto asegura que todas las rutas pasen por CORS, Rate Limit y Body Parser
-   ═══════════════════════════════════════════════════════════════
+   SEGURIDAD
 ================================================================ */
-
-app.disable(
-    'x-powered-by'
-);
 
 app.use(
     helmet({
-        contentSecurityPolicy:
-            false
+        contentSecurityPolicy: false
     })
 );
 
@@ -388,8 +375,11 @@ app.use(
 );
 
 const isProduction =
-    process.env.NODE_ENV ===
-    'production';
+    process.env.NODE_ENV === 'production';
+
+/* ================================================================
+   CORS
+================================================================ */
 
 const corsOrigins =
     (
@@ -397,81 +387,102 @@ const corsOrigins =
         ''
     )
         .split(',')
-        .map(origin =>
-            origin.trim()
-        )
+        .map(origin => origin.trim())
         .filter(Boolean);
+
+/*
+ * En producción permitimos:
+ *
+ * 1. Los orígenes explícitamente configurados.
+ * 2. El propio dominio Railway de producción.
+ *
+ * Esto evita bloquear las peticiones normales del mismo sitio
+ * cuando CORS_ORIGINS no contiene explícitamente el dominio.
+ */
+
+const DEFAULT_PRODUCTION_ORIGINS = [
+    'https://galleta-domo-production.up.railway.app'
+];
+
+const allowedCorsOrigins =
+    Array.from(
+        new Set([
+            ...corsOrigins,
+            ...DEFAULT_PRODUCTION_ORIGINS
+        ])
+    );
 
 app.use(
     cors({
-        origin:
-            function (
-                origin,
-                callback
+        origin: function (
+            origin,
+            callback
+        ) {
+
+            /*
+             * Requests sin Origin:
+             * curl, health checks, server-to-server, etc.
+             */
+            if (!origin) {
+                return callback(null, true);
+            }
+
+            /*
+             * Desarrollo:
+             * permitimos localhost y cualquier origen.
+             */
+            if (!isProduction) {
+                return callback(null, true);
+            }
+
+            if (
+                allowedCorsOrigins.includes(origin)
             ) {
+                return callback(null, true);
+            }
 
-                if (!origin) {
-                    return callback(
-                        null,
-                        true
-                    );
-                }
+            console.warn(
+                `⚠️ CORS rechazó origen: ${origin}`
+            );
 
-                if (!isProduction) {
-                    return callback(
-                        null,
-                        true
-                    );
-                }
+            return callback(
+                new Error(
+                    'Origen no permitido por CORS'
+                )
+            );
+        },
 
-                if (
-                    corsOrigins.length ===
-                    0
-                ) {
+        credentials: true,
 
-                    console.warn(
-                        '⚠️ CORS_ORIGINS no configurado en producción'
-                    );
+        methods: [
+            'GET',
+            'POST',
+            'PUT',
+            'PATCH',
+            'DELETE',
+            'OPTIONS'
+        ],
 
-                    return callback(
-                        new Error(
-                            'Origen no permitido por CORS'
-                        )
-                    );
-                }
-
-                if (
-                    corsOrigins.includes(
-                        origin
-                    )
-                ) {
-
-                    return callback(
-                        null,
-                        true
-                    );
-                }
-
-                return callback(
-                    new Error(
-                        'Origen no permitido por CORS'
-                    )
-                );
-            },
-
-        credentials:
-            true
+        allowedHeaders: [
+            'Origin',
+            'X-Requested-With',
+            'Content-Type',
+            'Accept',
+            'Authorization'
+        ]
     })
 );
+
+/* ================================================================
+   LOG
+================================================================ */
 
 app.use(
     morgan('combined')
 );
 
 /* ================================================================
-   ═══════════════════════════════════════════════════════════════
-   ✅ MOVIDO: RATE LIMIT GENERAL API (AHORA AL INICIO)
-   ═══════════════════════════════════════════════════════════════
+   RATE LIMIT API
 ================================================================ */
 
 const apiLimiter =
@@ -489,11 +500,9 @@ const apiLimiter =
             false,
 
         message: {
-            success:
-                false,
-
+            success: false,
             error:
-                'Demasiadas peticiones'
+                'Demasiadas peticiones. Intenta nuevamente más tarde.'
         }
     });
 
@@ -501,15 +510,20 @@ app.use(
     '/api/',
     (req, res, next) => {
 
+        /*
+         * Webhooks no deben quedar bloqueados
+         * por el rate limit general.
+         */
         if (
-            req.path.startsWith(
-                '/webhook/'
-            )
+            req.path.startsWith('/webhook/')
         ) {
             return next();
         }
 
-        // Excepción para LiveKit para no limitar demasiado
+        /*
+         * LiveKit necesita permitir varias
+         * solicitudes durante llamadas.
+         */
         if (
             req.path === '/livekit/token'
         ) {
@@ -525,57 +539,47 @@ app.use(
 );
 
 /* ================================================================
-   ═══════════════════════════════════════════════════════════════
-   ✅ MOVIDO: BODY PARSER (AHORA AL INICIO)
-   ═══════════════════════════════════════════════════════════════
-   Ahora req.body llega correctamente a /api/livekit/token y PATCH /api/usuarios/idioma
-   ═══════════════════════════════════════════════════════════════
+   BODY PARSER
 ================================================================ */
 
 app.use(
     express.json({
-        limit:
-            '2mb',
+        limit: '2mb',
 
-        verify:
-            (
-                req,
-                res,
-                buf
-            ) => {
+        verify: (
+            req,
+            res,
+            buf
+        ) => {
 
-                req.rawBody =
-                    Buffer.from(buf);
-            }
+            req.rawBody =
+                Buffer.from(buf);
+        }
     })
 );
 
 app.use(
     express.urlencoded({
-        extended:
-            true,
+        extended: true,
+        limit: '2mb',
 
-        limit:
-            '2mb',
+        verify: (
+            req,
+            res,
+            buf
+        ) => {
 
-        verify:
-            (
-                req,
-                res,
-                buf
-            ) => {
+            if (!req.rawBody) {
 
-                if (!req.rawBody) {
-
-                    req.rawBody =
-                        Buffer.from(buf);
-                }
+                req.rawBody =
+                    Buffer.from(buf);
             }
+        }
     })
 );
 
 /* ================================================================
-   SISTEMA MULTIIDIOMA / I18N
+   I18N
 ================================================================ */
 
 const IDIOMAS_VALIDOS = [
@@ -603,7 +607,7 @@ const CACHE_TTL =
     5 * 60 * 1000;
 
 /* ================================================================
-   CARGAR CATÁLOGO DE IDIOMAS
+   OBTENER IDIOMAS
 ================================================================ */
 
 async function obtenerIdiomas() {
@@ -640,10 +644,7 @@ async function obtenerIdiomas() {
                 activo,
                 created_at
             `)
-            .eq(
-                'activo',
-                true
-            )
+            .eq('activo', true)
             .order(
                 'nombre_nativo',
                 {
@@ -665,7 +666,7 @@ async function obtenerIdiomas() {
 }
 
 /* ================================================================
-   BUSCAR IDIOMA POR CÓDIGO
+   BUSCAR IDIOMA
 ================================================================ */
 
 async function obtenerIdiomaPorCodigo(
@@ -688,7 +689,7 @@ async function obtenerIdiomaPorCodigo(
 }
 
 /* ================================================================
-   DETECTAR IDIOMA DESDE ACCEPT-LANGUAGE
+   DETECTAR IDIOMA
 ================================================================ */
 
 function detectarIdiomaDesdeHeader(
@@ -696,9 +697,7 @@ function detectarIdiomaDesdeHeader(
 ) {
 
     const header =
-        req.headers[
-            'accept-language'
-        ];
+        req.headers['accept-language'];
 
     if (!header) {
         return IDIOMA_POR_DEFECTO;
@@ -723,9 +722,7 @@ function detectarIdiomaDesdeHeader(
 
                     prioridad:
                         prioridad
-                            ? Number(
-                                prioridad
-                            )
+                            ? Number(prioridad)
                             : 1
                 };
             })
@@ -777,7 +774,7 @@ function detectarIdiomaDesdeHeader(
 }
 
 /* ================================================================
-   OBTENER TRADUCCIONES
+   TRADUCCIONES
 ================================================================ */
 
 async function obtenerTraducciones(
@@ -859,8 +856,7 @@ async function obtenerTraducciones(
         throw error;
     }
 
-    const traducciones =
-        {};
+    const traducciones = {};
 
     for (
         const item
@@ -870,7 +866,6 @@ async function obtenerTraducciones(
         traducciones[
             item.clave
         ] = {
-
             valor:
                 item.valor,
 
@@ -892,8 +887,7 @@ async function obtenerTraducciones(
                 traducciones,
 
             expiresAt:
-                ahora +
-                CACHE_TTL
+                ahora + CACHE_TTL
         }
     );
 
@@ -901,7 +895,7 @@ async function obtenerTraducciones(
 }
 
 /* ================================================================
-   RESOLVER IDIOMA DEL USUARIO
+   IDIOMA DEL USUARIO
 ================================================================ */
 
 async function resolverIdiomaUsuario(
@@ -961,7 +955,7 @@ async function resolverIdiomaUsuario(
 }
 
 /* ================================================================
-   RUTA: LISTAR IDIOMAS
+   API IDIOMAS
 ================================================================ */
 
 app.get(
@@ -995,7 +989,7 @@ app.get(
 );
 
 /* ================================================================
-   RUTA: OBTENER TRADUCCIONES
+   API TRADUCCIONES
 ================================================================ */
 
 app.get(
@@ -1040,15 +1034,24 @@ app.get(
 
             return res.status(200).json({
                 success: true,
+
                 idioma: {
-                    id: idioma.id,
-                    codigo: idioma.codigo,
-                    nombre: idioma.nombre,
+                    id:
+                        idioma.id,
+
+                    codigo:
+                        idioma.codigo,
+
+                    nombre:
+                        idioma.nombre,
+
                     nombre_nativo:
                         idioma.nombre_nativo,
+
                     bandera:
                         idioma.bandera
                 },
+
                 traducciones
             });
 
@@ -1069,7 +1072,7 @@ app.get(
 );
 
 /* ================================================================
-   RUTA: I18N COMPLETO
+   API I18N
 ================================================================ */
 
 app.get(
@@ -1133,7 +1136,7 @@ app.get(
 );
 
 /* ================================================================
-   RUTA: ACTUALIZAR IDIOMA DEL USUARIO
+   ACTUALIZAR IDIOMA
 ================================================================ */
 
 app.patch(
@@ -1205,14 +1208,23 @@ app.patch(
 
             return res.status(200).json({
                 success: true,
+
                 message:
                     'Idioma actualizado correctamente',
+
                 idioma: {
-                    id: idioma.id,
-                    codigo: idioma.codigo,
-                    nombre: idioma.nombre,
+                    id:
+                        idioma.id,
+
+                    codigo:
+                        idioma.codigo,
+
+                    nombre:
+                        idioma.nombre,
+
                     nombre_nativo:
                         idioma.nombre_nativo,
+
                     bandera:
                         idioma.bandera
                 }
@@ -1235,10 +1247,8 @@ app.patch(
 );
 
 /* ================================================================
-   ================================================================
-   🎥 LIVEKIT - GENERAR TOKEN DE ACCESO
-   ================================================================
-   ================================================================ */
+   LIVEKIT
+================================================================ */
 
 app.post(
     '/api/livekit/token',
@@ -1247,30 +1257,20 @@ app.post(
 
         try {
 
-            /* ----------------------------------------------------
-               1. VALIDAR CONFIGURACIÓN DE LIVEKIT
-            ---------------------------------------------------- */
-
             if (
                 !LIVEKIT_API_KEY ||
                 !LIVEKIT_API_SECRET ||
                 !LIVEKIT_URL
             ) {
 
-                console.error(
-                    '❌ LiveKit no configurado correctamente'
-                );
-
                 return res.status(503).json({
                     success: false,
-                    error: 'SERVICIO_NO_DISPONIBLE',
-                    message: 'El servicio de videollamadas no está configurado'
+                    error:
+                        'SERVICIO_NO_DISPONIBLE',
+                    message:
+                        'El servicio de videollamadas no está configurado'
                 });
             }
-
-            /* ----------------------------------------------------
-               2. VALIDAR PARÁMETROS DE LA SOLICITUD
-            ---------------------------------------------------- */
 
             const {
                 roomName,
@@ -1280,89 +1280,115 @@ app.post(
             if (
                 !roomName ||
                 typeof roomName !== 'string' ||
-                roomName.length < 3
+                roomName.length < 3 ||
+                roomName.length > 200
             ) {
 
                 return res.status(400).json({
                     success: false,
-                    error: 'ROOM_INVALIDA',
-                    message: 'El nombre de la sala es obligatorio y debe tener al menos 3 caracteres'
+                    error:
+                        'ROOM_INVALIDA',
+                    message:
+                        'El nombre de la sala no es válido'
                 });
             }
 
             if (
                 !participantName ||
-                typeof participantName !== 'string' ||
-                participantName.length < 1
+                typeof participantName !== 'string'
             ) {
 
                 return res.status(400).json({
                     success: false,
-                    error: 'PARTICIPANTE_INVALIDO',
-                    message: 'El nombre del participante es obligatorio'
+                    error:
+                        'PARTICIPANTE_INVALIDO',
+                    message:
+                        'El participante es obligatorio'
                 });
             }
-
-            /* ----------------------------------------------------
-               3. VERIFICAR QUE EL USUARIO SOLICITA SU PROPIO TOKEN
-            ---------------------------------------------------- */
 
             const userId =
                 req.user.id;
 
+            /*
+             * El participante debe ser siempre
+             * el usuario autenticado.
+             */
             if (
                 participantName !== userId
             ) {
 
-                console.warn(
-                    `⚠️ Intento de suplantación: ${participantName} intentó usar token de ${userId}`
-                );
-
                 return res.status(403).json({
                     success: false,
-                    error: 'NO_AUTORIZADO',
-                    message: 'No puedes generar un token para otro usuario'
+                    error:
+                        'NO_AUTORIZADO',
+                    message:
+                        'No puedes generar un token para otro usuario'
                 });
             }
 
-            /* ----------------------------------------------------
-               4. VERIFICAR QUE EL USUARIO ESTÁ AUTORIZADO EN LA LLAMADA O STREAM
-            ---------------------------------------------------- */
-
-            // Extraer el ID de la llamada o stream del roomName
             const callIdMatch =
-                roomName.match(/^call_(.+)$/);
+                roomName.match(/^call_([0-9a-fA-F-]{36})$/);
 
             const liveIdMatch =
-                roomName.match(/^live_(.+)$/);
+                roomName.match(/^live_([0-9a-fA-F-]{36})$/);
 
             let callId = null;
             let liveId = null;
-            let isCall = false;
-            let isLive = false;
 
-            if (callIdMatch) {
-                callId = callIdMatch[1];
-                isCall = true;
-            } else if (liveIdMatch) {
-                liveId = liveIdMatch[1];
-                isLive = true;
+            const isCall =
+                Boolean(callIdMatch);
+
+            const isLive =
+                Boolean(liveIdMatch);
+
+            if (isCall) {
+
+                callId =
+                    callIdMatch[1];
+
+            } else if (isLive) {
+
+                liveId =
+                    liveIdMatch[1];
+
             } else {
-                // ═══════════════════════════════════════════════════════════
-                // ✅ NUEVO: Soporte para salas live_ (streaming en vivo)
-                // ═══════════════════════════════════════════════════════════
+
                 return res.status(400).json({
                     success: false,
-                    error: 'FORMATO_INVALIDO',
-                    message: 'El nombre de la sala debe comenzar con "call_" o "live_"'
+                    error:
+                        'FORMATO_INVALIDO',
+                    message:
+                        'El nombre debe comenzar con call_ o live_ y contener un UUID válido'
                 });
             }
 
-            // ──────────────────────────────────────────────────────────────
-            // VERIFICAR AUTORIZACIÓN PARA CALL (videollamadas)
-            // ──────────────────────────────────────────────────────────────
+            /* ====================================================
+               AUTORIZACIÓN DE VIDEOLLAMADA
 
-            if (isCall && callId) {
+               ESQUEMA REAL:
+               llamadas:
+                 id
+                 creador_id
+                 estado
+
+               llamadas_participantes:
+                 llamada_id
+                 usuario_id
+                 rol
+                 estado
+            ==================================================== */
+
+            if (isCall) {
+
+                if (!supabaseAdmin) {
+
+                    return res.status(500).json({
+                        success: false,
+                        error:
+                            'SUPABASE_ADMIN_NO_CONFIGURADO'
+                    });
+                }
 
                 const {
                     data: llamada,
@@ -1370,64 +1396,175 @@ app.post(
                 } =
                     await supabaseAdmin
                         .from('llamadas')
-                        .select('usuario_origen, usuario_destino, estado')
-                        .eq('id', callId)
+                        .select(`
+                            id,
+                            creador_id,
+                            estado
+                        `)
+                        .eq(
+                            'id',
+                            callId
+                        )
                         .maybeSingle();
 
-                if (llamadaError || !llamada) {
+                if (
+                    llamadaError
+                ) {
 
-                    console.warn(
-                        `⚠️ Llamada no encontrada: ${callId}`
+                    console.error(
+                        '❌ Error consultando llamada:',
+                        llamadaError
                     );
+
+                    return res.status(500).json({
+                        success: false,
+                        error:
+                            'ERROR_CONSULTANDO_LLAMADA'
+                    });
+                }
+
+                if (!llamada) {
 
                     return res.status(404).json({
                         success: false,
-                        error: 'LLAMADA_NO_ENCONTRADA',
-                        message: 'La llamada no existe'
+                        error:
+                            'LLAMADA_NO_ENCONTRADA',
+                        message:
+                            'La llamada no existe'
                     });
                 }
 
-                const esOrigen =
-                    llamada.usuario_origen === userId;
-
-                const esDestino =
-                    llamada.usuario_destino === userId;
-
-                if (!esOrigen && !esDestino) {
-
-                    console.warn(
-                        `⚠️ Usuario ${userId} no autorizado en llamada ${callId}`
-                    );
-
-                    return res.status(403).json({
-                        success: false,
-                        error: 'NO_AUTORIZADO',
-                        message: 'No estás autorizado para unirte a esta llamada'
-                    });
-                }
-
+                /*
+                 * La llamada debe estar disponible.
+                 */
                 if (
                     llamada.estado !== 'active' &&
                     llamada.estado !== 'ringing'
                 ) {
 
-                    console.warn(
-                        `⚠️ Llamada ${callId} en estado ${llamada.estado}`
-                    );
-
                     return res.status(400).json({
                         success: false,
-                        error: 'LLAMADA_NO_DISPONIBLE',
-                        message: 'La llamada no está disponible'
+                        error:
+                            'LLAMADA_NO_DISPONIBLE',
+                        message:
+                            'La llamada no está disponible'
+                    });
+                }
+
+                /*
+                 * El creador siempre está autorizado.
+                 */
+                const esCreador =
+                    llamada.creador_id === userId;
+
+                /*
+                 * Los demás usuarios deben aparecer
+                 * expresamente como participantes.
+                 */
+                let esParticipante =
+                    false;
+
+                if (!esCreador) {
+
+                    const {
+                        data: participante,
+                        error:
+                            participanteError
+                    } =
+                        await supabaseAdmin
+                            .from(
+                                'llamadas_participantes'
+                            )
+                            .select(
+                                'id, usuario_id, estado'
+                            )
+                            .eq(
+                                'llamada_id',
+                                callId
+                            )
+                            .eq(
+                                'usuario_id',
+                                userId
+                            )
+                            .maybeSingle();
+
+                    if (
+                        participanteError
+                    ) {
+
+                        console.error(
+                            '❌ Error consultando participante:',
+                            participanteError
+                        );
+
+                        return res.status(500).json({
+                            success: false,
+                            error:
+                                'ERROR_CONSULTANDO_PARTICIPANTE'
+                        });
+                    }
+
+                    /*
+                     * Si existe el registro, el usuario
+                     * está autorizado.
+                     */
+                    esParticipante =
+                        Boolean(
+                            participante
+                        );
+
+                    /*
+                     * Si el participante fue explícitamente
+                     * rechazado/cancelado, no entra.
+                     */
+                    if (
+                        participante &&
+                        (
+                            participante.estado ===
+                                'rejected' ||
+                            participante.estado ===
+                                'cancelled'
+                        )
+                    ) {
+
+                        esParticipante =
+                            false;
+                    }
+                }
+
+                if (
+                    !esCreador &&
+                    !esParticipante
+                ) {
+
+                    console.warn(
+                        `⚠️ Usuario ${userId} intentó entrar a llamada ${callId} sin autorización`
+                    );
+
+                    return res.status(403).json({
+                        success: false,
+                        error:
+                            'NO_AUTORIZADO',
+                        message:
+                            'No estás autorizado para unirte a esta llamada'
                     });
                 }
             }
 
-            // ──────────────────────────────────────────────────────────────
-            // ✅ NUEVO: VERIFICAR AUTORIZACIÓN PARA LIVE (streaming en vivo)
-            // ──────────────────────────────────────────────────────────────
+            /* ====================================================
+               AUTORIZACIÓN DE LIVE
+            ==================================================== */
 
-            if (isLive && liveId) {
+            if (isLive) {
+
+                if (!supabaseAdmin) {
+
+                    return res.status(500).json({
+                        success: false,
+                        error:
+                            'SUPABASE_ADMIN_NO_CONFIGURADO'
+                    });
+                }
 
                 const {
                     data: stream,
@@ -1435,95 +1572,125 @@ app.post(
                 } =
                     await supabaseAdmin
                         .from('streams')
-                        .select('usuario_id, estado')
-                        .eq('id', liveId)
+                        .select(
+                            'usuario_id, estado'
+                        )
+                        .eq(
+                            'id',
+                            liveId
+                        )
                         .maybeSingle();
 
-                if (streamError || !stream) {
+                if (streamError) {
 
-                    console.warn(
-                        `⚠️ Stream no encontrado: ${liveId}`
+                    console.error(
+                        '❌ Error consultando stream:',
+                        streamError
                     );
+
+                    return res.status(500).json({
+                        success: false,
+                        error:
+                            'ERROR_CONSULTANDO_STREAM'
+                    });
+                }
+
+                if (!stream) {
 
                     return res.status(404).json({
                         success: false,
-                        error: 'STREAM_NO_ENCONTRADO',
-                        message: 'El stream no existe'
+                        error:
+                            'STREAM_NO_ENCONTRADO',
+                        message:
+                            'El stream no existe'
                     });
                 }
 
-                // Solo el creador del stream puede transmitir
-                if (stream.usuario_id !== userId) {
-
-                    console.warn(
-                        `⚠️ Usuario ${userId} no autorizado en stream ${liveId}`
-                    );
+                /*
+                 * Actualmente este endpoint mantiene
+                 * el modelo original: solamente el creador
+                 * puede solicitar el token de publicación.
+                 */
+                if (
+                    stream.usuario_id !== userId
+                ) {
 
                     return res.status(403).json({
                         success: false,
-                        error: 'NO_AUTORIZADO',
-                        message: 'No eres el creador de este stream'
+                        error:
+                            'NO_AUTORIZADO',
+                        message:
+                            'No eres el creador de este stream'
                     });
                 }
 
-                // Verificar que el stream está activo
                 if (
                     stream.estado !== 'active' &&
                     stream.estado !== 'live' &&
                     stream.estado !== 'starting'
                 ) {
 
-                    console.warn(
-                        `⚠️ Stream ${liveId} en estado ${stream.estado}`
-                    );
-
                     return res.status(400).json({
                         success: false,
-                        error: 'STREAM_NO_DISPONIBLE',
-                        message: 'El stream no está disponible'
+                        error:
+                            'STREAM_NO_DISPONIBLE',
+                        message:
+                            'El stream no está disponible'
                     });
                 }
             }
 
-            /* ----------------------------------------------------
-               5. OBTENER NOMBRE DE USUARIO
-            ---------------------------------------------------- */
+            /* ====================================================
+               NOMBRE DEL USUARIO
+            ==================================================== */
 
             let nombreUsuario =
                 req.user.user_metadata?.nombre ||
                 req.user.email ||
                 'Usuario';
 
-            const {
-                data: usuarioData,
-                error: usuarioError
-            } =
-                await supabaseAdmin
-                    .from('usuarios')
-                    .select('nombre')
-                    .eq('id', userId)
-                    .maybeSingle();
+            if (supabaseAdmin) {
 
-            if (
-                !usuarioError &&
-                usuarioData?.nombre
-            ) {
-                nombreUsuario =
-                    usuarioData.nombre;
+                const {
+                    data: usuarioData,
+                    error: usuarioError
+                } =
+                    await supabaseAdmin
+                        .from('usuarios')
+                        .select('nombre')
+                        .eq(
+                            'id',
+                            userId
+                        )
+                        .maybeSingle();
+
+                if (
+                    !usuarioError &&
+                    usuarioData?.nombre
+                ) {
+
+                    nombreUsuario =
+                        usuarioData.nombre;
+                }
             }
 
-            /* ----------------------------------------------------
-               6. GENERAR TOKEN LIVEKIT
-            ---------------------------------------------------- */
+            /* ====================================================
+               TOKEN
+            ==================================================== */
 
             const token =
                 new AccessToken(
                     LIVEKIT_API_KEY,
                     LIVEKIT_API_SECRET,
                     {
-                        identity: userId,
-                        ttl: 3600, // 1 hora
-                        name: nombreUsuario
+                        identity:
+                            userId,
+
+                        ttl:
+                            3600,
+
+                        name:
+                            nombreUsuario
                     }
                 );
 
@@ -1540,7 +1707,7 @@ app.post(
                 token.toJwt();
 
             console.log(
-                `✅ Token LiveKit generado para ${userId} en sala ${roomName} (tipo: ${isCall ? 'call' : 'live'})`
+                `✅ LiveKit token generado: ${userId} → ${roomName}`
             );
 
             return res.status(200).json({
@@ -1548,7 +1715,7 @@ app.post(
                 token: jwt,
                 url: LIVEKIT_URL,
                 identity: userId,
-                roomName: roomName
+                roomName
             });
 
         } catch (error) {
@@ -1560,16 +1727,17 @@ app.post(
 
             return res.status(500).json({
                 success: false,
-                error: 'ERROR_INTERNO',
-                message: 'Error al generar el token de videollamada'
+                error:
+                    'ERROR_INTERNO',
+                message:
+                    'Error al generar el token de videollamada'
             });
         }
     }
 );
 
 /* ================================================================
-   FUNCIÓN AUXILIAR:
-   VALIDAR TOKEN TURNSTILE
+   TURNSTILE
 ================================================================ */
 
 async function verificarTurnstile(
@@ -1588,8 +1756,7 @@ async function verificarTurnstile(
 
     if (
         !token ||
-        typeof token !==
-            'string'
+        typeof token !== 'string'
     ) {
 
         return {
@@ -1643,7 +1810,6 @@ async function verificarTurnstile(
                         'Content-Type':
                             'application/x-www-form-urlencoded'
                     },
-
                     timeout:
                         10000
                 }
@@ -1653,23 +1819,13 @@ async function verificarTurnstile(
             response.data || {};
 
         if (
-            result.success !==
-            true
+            result.success !== true
         ) {
 
-            console.warn(
-                '⚠️ Turnstile rechazó la solicitud:',
-                result['error-codes'] ||
-                    []
-            );
-
             return {
-                success:
-                    false,
-
+                success: false,
                 error:
                     'TURNSTILE_FAILED',
-
                 details:
                     result[
                         'error-codes'
@@ -1683,15 +1839,8 @@ async function verificarTurnstile(
                 TURNSTILE_EXPECTED_ACTION
         ) {
 
-            console.warn(
-                '⚠️ Acción Turnstile inválida:',
-                result.action
-            );
-
             return {
-                success:
-                    false,
-
+                success: false,
                 error:
                     'TURNSTILE_ACTION_INVALID'
             };
@@ -1703,31 +1852,19 @@ async function verificarTurnstile(
                 TURNSTILE_EXPECTED_HOSTNAME
         ) {
 
-            console.warn(
-                '⚠️ Hostname Turnstile inválido:',
-                result.hostname
-            );
-
             return {
-                success:
-                    false,
-
+                success: false,
                 error:
                     'TURNSTILE_HOSTNAME_INVALID'
             };
         }
 
         return {
-            success:
-                true,
-
+            success: true,
             hostname:
-                result.hostname ||
-                null,
-
+                result.hostname || null,
             action:
-                result.action ||
-                null
+                result.action || null
         };
 
     } catch (error) {
@@ -1738,9 +1875,7 @@ async function verificarTurnstile(
         );
 
         return {
-            success:
-                false,
-
+            success: false,
             error:
                 'TURNSTILE_VERIFY_ERROR'
         };
@@ -1748,8 +1883,7 @@ async function verificarTurnstile(
 }
 
 /* ================================================================
-   FUNCIÓN AUXILIAR:
-   OBTENER TOKEN DE AUTORIZACIÓN
+   AUTHORIZATION HEADER
 ================================================================ */
 
 function obtenerAuthorizationHeader(
@@ -1760,16 +1894,13 @@ function obtenerAuthorizationHeader(
         req.headers.authorization;
 
     if (
-        typeof authorization !==
-        'string'
+        typeof authorization !== 'string'
     ) {
         return null;
     }
 
     if (
-        !authorization.startsWith(
-            'Bearer '
-        )
+        !authorization.startsWith('Bearer ')
     ) {
         return null;
     }
@@ -1787,8 +1918,7 @@ function obtenerAuthorizationHeader(
 }
 
 /* ================================================================
-   FUNCIÓN AUXILIAR:
-   LLAMAR EDGE FUNCTION
+   EDGE FUNCTION
 ================================================================ */
 
 async function llamarEdgeFunction(
@@ -1815,7 +1945,6 @@ async function llamarEdgeFunction(
             {},
             {
                 headers: {
-
                     Authorization:
                         authorization,
 
@@ -1841,14 +1970,16 @@ async function llamarEdgeFunction(
         response.data;
 
     if (
-        typeof data ===
-        'string'
+        typeof data === 'string'
     ) {
 
         try {
+
             data =
                 JSON.parse(data);
+
         } catch {
+
             data = {
                 raw:
                     data
@@ -1879,8 +2010,7 @@ async function llamarEdgeFunction(
 }
 
 /* ================================================================
-   RUTA:
-   ELIMINACIÓN SEGURA DE CUENTA
+   ELIMINACIÓN DE CUENTA
 ================================================================ */
 
 app.post(
@@ -1893,26 +2023,16 @@ app.post(
         try {
 
             console.log(
-                `🗑️ Solicitud de eliminación recibida [${requestId}]`
+                `🗑️ Solicitud de eliminación [${requestId}]`
             );
-
-            /* ----------------------------------------------------
-               1. VALIDAR CONFIGURACIÓN
-            ---------------------------------------------------- */
 
             if (
                 !SUPABASE_URL ||
                 !SUPABASE_ANON_KEY
             ) {
 
-                console.error(
-                    `[${requestId}] Supabase no configurado`
-                );
-
                 return res.status(500).json({
-                    success:
-                        false,
-
+                    success: false,
                     error:
                         'SERVIDOR_NO_CONFIGURADO'
                 });
@@ -1922,22 +2042,12 @@ app.post(
                 !TURNSTILE_SECRET_KEY
             ) {
 
-                console.error(
-                    `[${requestId}] Turnstile Secret no configurado`
-                );
-
                 return res.status(503).json({
-                    success:
-                        false,
-
+                    success: false,
                     error:
                         'SEGURIDAD_NO_CONFIGURADA'
                 });
             }
-
-            /* ----------------------------------------------------
-               2. AUTORIZACIÓN
-            ---------------------------------------------------- */
 
             const authorization =
                 obtenerAuthorizationHeader(
@@ -1946,128 +2056,73 @@ app.post(
 
             if (!authorization) {
 
-                console.warn(
-                    `[${requestId}] Solicitud sin Bearer token`
-                );
-
                 return res.status(401).json({
-                    success:
-                        false,
-
+                    success: false,
                     error:
                         'NO_AUTENTICADO'
                 });
             }
 
-            /* ----------------------------------------------------
-               3. OBTENER USUARIO
-            ---------------------------------------------------- */
-
             const user =
-                await obtenerUsuario(
-                    req
-                );
+                await obtenerUsuario(req);
 
             if (!user) {
 
-                console.warn(
-                    `[${requestId}] Token inválido o usuario inexistente`
-                );
-
                 return res.status(401).json({
-                    success:
-                        false,
-
+                    success: false,
                     error:
                         'NO_AUTENTICADO'
                 });
             }
 
-            /* ----------------------------------------------------
-               4. VALIDAR CONFIRMACIÓN
-            ---------------------------------------------------- */
-
             const confirmation =
-                typeof req.body
-                    ?.confirmation ===
+                typeof req.body?.confirmation ===
                     'string'
-                    ? req.body
-                        .confirmation
-                        .trim()
+                    ? req.body.confirmation.trim()
                     : '';
 
             if (
-                confirmation !==
-                'ELIMINAR'
+                confirmation !== 'ELIMINAR'
             ) {
 
-                console.warn(
-                    `[${requestId}] Confirmación inválida para usuario ${user.id}`
-                );
-
                 return res.status(400).json({
-                    success:
-                        false,
-
+                    success: false,
                     error:
                         'CONFIRMACION_INVALIDA'
                 });
             }
 
-            /* ----------------------------------------------------
-               5. VALIDAR ACTION
-            ---------------------------------------------------- */
-
             const action =
-                typeof req.body
-                    ?.action ===
+                typeof req.body?.action ===
                     'string'
-                    ? req.body
-                        .action
-                        .trim()
+                    ? req.body.action.trim()
                     : '';
 
             if (
-                action !==
-                'delete_account'
+                action !== 'delete_account'
             ) {
 
                 return res.status(400).json({
-                    success:
-                        false,
-
+                    success: false,
                     error:
                         'ACCION_INVALIDA'
                 });
             }
 
-            /* ----------------------------------------------------
-               6. OBTENER TOKEN TURNSTILE
-            ---------------------------------------------------- */
-
             const turnstileToken =
-                typeof req.body
-                    ?.turnstile_token ===
+                typeof req.body?.turnstile_token ===
                     'string'
-                    ? req.body
-                        .turnstile_token
-                        .trim()
+                    ? req.body.turnstile_token.trim()
                     : '';
 
             if (!turnstileToken) {
 
                 return res.status(400).json({
-                    success:
-                        false,
-
+                    success: false,
                     error:
                         'VERIFICACION_SEGURIDAD_REQUERIDA'
                 });
             }
-
-            /* ----------------------------------------------------
-               7. VALIDAR TURNSTILE
-            ---------------------------------------------------- */
 
             const turnstile =
                 await verificarTurnstile(
@@ -2079,26 +2134,12 @@ app.post(
                 !turnstile.success
             ) {
 
-                console.warn(
-                    `[${requestId}] Turnstile rechazado para usuario ${user.id}: ${turnstile.error}`
-                );
-
                 return res.status(403).json({
-                    success:
-                        false,
-
+                    success: false,
                     error:
                         'VERIFICACION_SEGURIDAD_FALLIDA'
                 });
             }
-
-            /* ----------------------------------------------------
-               8. CREAR SOLICITUD
-            ---------------------------------------------------- */
-
-            console.log(
-                `📝 [${requestId}] Creando solicitud de eliminación para ${user.id}`
-            );
 
             let deletionRequest;
 
@@ -2113,36 +2154,23 @@ app.post(
             } catch (error) {
 
                 console.error(
-                    `❌ [${requestId}] Error request-account-deletion:`,
+                    `❌ [${requestId}] request-account-deletion:`,
                     error.data ||
                         error.message
                 );
 
                 return res.status(
-                    error.status ===
-                        401
+                    error.status === 401
                         ? 401
                         : 500
                 ).json({
-
-                    success:
-                        false,
-
+                    success: false,
                     error:
                         'NO_SE_PUDO_CREAR_SOLICITUD_ELIMINACION',
-
                     request_id:
                         requestId
                 });
             }
-
-            /* ----------------------------------------------------
-               9. PROCESAR ELIMINACIÓN
-            ---------------------------------------------------- */
-
-            console.log(
-                `⚙️ [${requestId}] Procesando eliminación para ${user.id}`
-            );
 
             let deletionResult;
 
@@ -2157,70 +2185,48 @@ app.post(
             } catch (error) {
 
                 console.error(
-                    `❌ [${requestId}] Error process-account-deletion:`,
+                    `❌ [${requestId}] process-account-deletion:`,
                     error.data ||
                         error.message
                 );
 
                 return res.status(
-                    error.status ===
-                        401
+                    error.status === 401
                         ? 401
                         : 500
                 ).json({
-
-                    success:
-                        false,
-
+                    success: false,
                     error:
                         'NO_SE_PUDO_PROCESAR_ELIMINACION',
-
                     request_id:
                         requestId
                 });
             }
-
-            /* ----------------------------------------------------
-               10. VERIFICAR RESULTADO
-            ---------------------------------------------------- */
 
             if (
                 !deletionResult ||
-                deletionResult.success !==
-                    true
+                deletionResult.success !== true
             ) {
 
                 console.error(
-                    `❌ [${requestId}] Eliminación no completada:`,
-                    deletionResult
+                    `❌ [${requestId}] Eliminación incompleta`
                 );
 
                 return res.status(500).json({
-
-                    success:
-                        false,
-
+                    success: false,
                     error:
                         'ELIMINACION_NO_COMPLETADA',
-
                     request_id:
                         requestId
                 });
             }
 
-            /* ----------------------------------------------------
-               11. RESPUESTA FINAL
-            ---------------------------------------------------- */
-
             console.log(
-                `✅ [${requestId}] Cuenta eliminada correctamente: ${user.id}`
+                `✅ [${requestId}] Cuenta eliminada`
             );
 
             return res.status(200).json({
-
-                success:
-                    true,
-
+                success: true,
                 status:
                     'completed',
 
@@ -2240,18 +2246,14 @@ app.post(
         } catch (error) {
 
             console.error(
-                `❌ [${requestId}] Error inesperado en eliminación:`,
+                `❌ [${requestId}] Error eliminación:`,
                 error
             );
 
             return res.status(500).json({
-
-                success:
-                    false,
-
+                success: false,
                 error:
                     'ERROR_INTERNO_ELIMINACION',
-
                 request_id:
                     requestId
             });
@@ -2270,145 +2272,195 @@ const publicPath =
     );
 
 if (
-    fs.existsSync(
-        publicPath
-    )
+    fs.existsSync(publicPath)
 ) {
+
+    /*
+     * IMPORTANTE:
+     *
+     * El Content-Type se establece AQUÍ,
+     * antes de que express.static responda.
+     *
+     * El middleware anterior estaba después de
+     * express.static(), por lo que podía no ejecutarse.
+     */
+    const staticOptions = {
+
+        setHeaders: (
+            res,
+            filePath
+        ) => {
+
+            if (
+                filePath
+                    .toLowerCase()
+                    .endsWith('.js')
+            ) {
+
+                res.setHeader(
+                    'Content-Type',
+                    'application/javascript; charset=utf-8'
+                );
+
+                res.setHeader(
+                    'Cache-Control',
+                    'no-cache, no-store, must-revalidate'
+                );
+
+                res.setHeader(
+                    'Pragma',
+                    'no-cache'
+                );
+            }
+        }
+    };
 
     app.use(
         express.static(
-            publicPath
+            publicPath,
+            staticOptions
         )
     );
 
     console.log(
-        '✅ Sirviendo archivos estáticos desde:',
+        '✅ Archivos estáticos:',
         publicPath
     );
 
 } else {
 
     console.warn(
-        '⚠️ No se encontró la carpeta public/:',
+        '⚠️ No se encontró public/:',
         publicPath
-    );
-
-    console.log(
-        '📁 Archivos en /app:',
-        fs.readdirSync(
-            __dirname
-        ).join(', ')
     );
 }
 
 /* ================================================================
-   ═══════════════════════════════════════════════════════════════
-   ✅ NUEVO: MIDDLEWARE PARA FORZAR CONTENT-TYPE DE .JS
-   ═══════════════════════════════════════════════════════════════
-   Esto evita que los archivos .js se sirvan como texto plano
-   ═══════════════════════════════════════════════════════════════
+   FEATURES ESTÁTICOS
 ================================================================ */
 
-app.use((req, res, next) => {
-    if (req.path.endsWith('.js')) {
-        res.setHeader('Content-Type', 'application/javascript');
-        res.setHeader('Cache-Control', 'no-cache');
-    }
-    next();
-});
+function servirFeature(
+    ruta,
+    carpeta
+) {
 
-/* ================================================================
-   RUTAS DE FEATURES
-================================================================ */
+    const featurePath =
+        path.join(
+            publicPath,
+            'features',
+            carpeta
+        );
 
-app.use(
+    app.use(
+        ruta,
+        express.static(
+            featurePath,
+            {
+                setHeaders: (
+                    res,
+                    filePath
+                ) => {
+
+                    if (
+                        filePath
+                            .toLowerCase()
+                            .endsWith('.js')
+                    ) {
+
+                        res.setHeader(
+                            'Content-Type',
+                            'application/javascript; charset=utf-8'
+                        );
+
+                        res.setHeader(
+                            'Cache-Control',
+                            'no-cache, no-store, must-revalidate'
+                        );
+                    }
+                }
+            }
+        )
+    );
+}
+
+servirFeature(
     '/live',
-    express.static(
-        path.join(
-            __dirname,
-            'public',
-            'features',
-            'live'
-        )
-    )
+    'live'
 );
 
-app.use(
+servirFeature(
     '/videos',
-    express.static(
-        path.join(
-            __dirname,
-            'public',
-            'features',
-            'videos'
-        )
-    )
+    'videos'
 );
 
-app.use(
+servirFeature(
     '/muro',
-    express.static(
-        path.join(
-            __dirname,
-            'public',
-            'features',
-            'muro'
-        )
-    )
+    'muro'
 );
 
-app.use(
+servirFeature(
     '/perfil',
-    express.static(
-        path.join(
-            __dirname,
-            'public',
-            'features',
-            'perfil'
-        )
-    )
+    'perfil'
 );
 
-app.use(
+servirFeature(
     '/mensajes',
-    express.static(
-        path.join(
-            __dirname,
-            'public',
-            'features',
-            'mensajes'
-        )
-    )
+    'mensajes'
 );
 
-app.use(
+servirFeature(
     '/internet',
-    express.static(
-        path.join(
-            __dirname,
-            'public',
-            'features',
-            'internet'
-        )
-    )
+    'internet'
 );
 
 /* ================================================================
-   ═══════════════════════════════════════════════════════════════
-   ✅ RUTA EXPLÍCITA PARA MENSAJES.JS
-   ═══════════════════════════════════════════════════════════════
-   Garantiza que mensajes.js se sirva con el Content-Type correcto
-   ═══════════════════════════════════════════════════════════════
+   RUTA EXPLÍCITA MENSAJES.JS
 ================================================================ */
 
-app.get('/features/mensajes/mensajes.js', (req, res) => {
-    res.setHeader('Content-Type', 'application/javascript');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.sendFile(path.join(__dirname, 'public', 'features', 'mensajes', 'mensajes.js'));
-});
+app.get(
+    '/features/mensajes/mensajes.js',
+    (req, res) => {
+
+        const archivo =
+            path.join(
+                publicPath,
+                'features',
+                'mensajes',
+                'mensajes.js'
+            );
+
+        if (
+            !fs.existsSync(archivo)
+        ) {
+
+            return res.status(404).send(
+                'Archivo mensajes.js no encontrado'
+            );
+        }
+
+        res.setHeader(
+            'Content-Type',
+            'application/javascript; charset=utf-8'
+        );
+
+        res.setHeader(
+            'Cache-Control',
+            'no-cache, no-store, must-revalidate'
+        );
+
+        res.setHeader(
+            'Pragma',
+            'no-cache'
+        );
+
+        return res.sendFile(
+            archivo
+        );
+    }
+);
 
 /* ================================================================
-   RUTAS DE AUTENTICACIÓN
+   ROUTERS
 ================================================================ */
 
 const authRoutes =
@@ -2419,29 +2471,21 @@ app.use(
     authRoutes
 );
 
-/* ================================================================
-   RUTAS DE PAGOS Y WEBHOOK
-================================================================ */
-
 const paymentsRoutes =
     require('./routes/payments');
-
-const webhooksRoutes =
-    require('./routes/webhooks');
 
 app.use(
     '/api/payments',
     paymentsRoutes
 );
 
+const webhooksRoutes =
+    require('./routes/webhooks');
+
 app.use(
     '/api/webhook',
     webhooksRoutes
 );
-
-/* ================================================================
-   RUTA DE MEMBRESÍA
-================================================================ */
 
 const membresiaRoutes =
     require('./routes/membresia');
@@ -2452,9 +2496,7 @@ app.use(
 );
 
 /* ================================================================
-   ═══════════════════════════════════════════════════════════════
-   ✅ RUTAS DE MENSAJERÍA
-   ═══════════════════════════════════════════════════════════════
+   MENSAJERÍA
 ================================================================ */
 
 const mensajesRoutes =
@@ -2469,130 +2511,90 @@ app.use(
    RUTAS HTML
 ================================================================ */
 
+function enviarHTML(
+    archivo
+) {
+
+    return (
+        req,
+        res
+    ) => {
+
+        const ruta =
+            path.join(
+                publicPath,
+                archivo
+            );
+
+        if (
+            !fs.existsSync(ruta)
+        ) {
+
+            return res.status(404).send(
+                'Página no encontrada'
+            );
+        }
+
+        return res.sendFile(ruta);
+    };
+}
+
+/* ================================================================
+   PRINCIPALES
+================================================================ */
+
 app.get(
     '/',
-    (req, res) => {
-
-        res.sendFile(
-            path.join(
-                __dirname,
-                'public',
-                'index.html'
-            )
-        );
-    }
+    enviarHTML('index.html')
 );
 
 app.get(
     '/features/muro/muro.html',
-    (req, res) => {
-
-        res.sendFile(
-            path.join(
-                __dirname,
-                'public',
-                'features',
-                'muro',
-                'muro.html'
-            )
-        );
-    }
+    enviarHTML(
+        'features/muro/muro.html'
+    )
 );
 
 app.get(
     '/features/perfil/perfil.html',
-    (req, res) => {
-
-        res.sendFile(
-            path.join(
-                __dirname,
-                'public',
-                'features',
-                'perfil',
-                'perfil.html'
-            )
-        );
-    }
+    enviarHTML(
+        'features/perfil/perfil.html'
+    )
 );
 
 app.get(
     '/features/mensajes/mensajes.html',
-    (req, res) => {
-
-        res.sendFile(
-            path.join(
-                __dirname,
-                'public',
-                'features',
-                'mensajes',
-                'mensajes.html'
-            )
-        );
-    }
+    enviarHTML(
+        'features/mensajes/mensajes.html'
+    )
 );
 
 app.get(
     '/features/mensajes/contactos.html',
-    (req, res) => {
-
-        res.sendFile(
-            path.join(
-                __dirname,
-                'public',
-                'features',
-                'mensajes',
-                'contactos.html'
-            )
-        );
-    }
+    enviarHTML(
+        'features/mensajes/contactos.html'
+    )
 );
 
 app.get(
     '/features/live/live.html',
-    (req, res) => {
-
-        res.sendFile(
-            path.join(
-                __dirname,
-                'public',
-                'features',
-                'live',
-                'live.html'
-            )
-        );
-    }
+    enviarHTML(
+        'features/live/live.html'
+    )
 );
 
 app.get(
     '/features/internet/internet.html',
-    (req, res) => {
-
-        res.sendFile(
-            path.join(
-                __dirname,
-                'public',
-                'features',
-                'internet',
-                'internet.html'
-            )
-        );
-    }
+    enviarHTML(
+        'features/internet/internet.html'
+    )
 );
 
 app.get(
     '/features/videos/videos.html',
-    (req, res) => {
-
-        res.sendFile(
-            path.join(
-                __dirname,
-                'public',
-                'features',
-                'videos',
-                'videos.html'
-            )
-        );
-    }
+    enviarHTML(
+        'features/videos/videos.html'
+    )
 );
 
 /* ================================================================
@@ -2601,216 +2603,92 @@ app.get(
 
 app.get(
     '/muro',
-    (req, res) => {
-
-        res.sendFile(
-            path.join(
-                __dirname,
-                'public',
-                'features',
-                'muro',
-                'muro.html'
-            )
-        );
-    }
+    enviarHTML(
+        'features/muro/muro.html'
+    )
 );
 
 app.get(
     '/perfil',
-    (req, res) => {
-
-        res.sendFile(
-            path.join(
-                __dirname,
-                'public',
-                'features',
-                'perfil',
-                'perfil.html'
-            )
-        );
-    }
+    enviarHTML(
+        'features/perfil/perfil.html'
+    )
 );
 
 app.get(
     '/mensajes',
-    (req, res) => {
-
-        res.sendFile(
-            path.join(
-                __dirname,
-                'public',
-                'features',
-                'mensajes',
-                'mensajes.html'
-            )
-        );
-    }
+    enviarHTML(
+        'features/mensajes/mensajes.html'
+    )
 );
 
 app.get(
     '/contactos',
-    (req, res) => {
-
-        res.sendFile(
-            path.join(
-                __dirname,
-                'public',
-                'features',
-                'mensajes',
-                'contactos.html'
-            )
-        );
-    }
+    enviarHTML(
+        'features/mensajes/contactos.html'
+    )
 );
 
 app.get(
     '/live',
-    (req, res) => {
-
-        res.sendFile(
-            path.join(
-                __dirname,
-                'public',
-                'features',
-                'live',
-                'live.html'
-            )
-        );
-    }
+    enviarHTML(
+        'features/live/live.html'
+    )
 );
 
 app.get(
     '/internet',
-    (req, res) => {
-
-        res.sendFile(
-            path.join(
-                __dirname,
-                'public',
-                'features',
-                'internet',
-                'internet.html'
-            )
-        );
-    }
+    enviarHTML(
+        'features/internet/internet.html'
+    )
 );
 
 app.get(
     '/videos',
-    (req, res) => {
-
-        res.sendFile(
-            path.join(
-                __dirname,
-                'public',
-                'features',
-                'videos',
-                'videos.html'
-            )
-        );
-    }
+    enviarHTML(
+        'features/videos/videos.html'
+    )
 );
 
 /* ================================================================
-   OTRAS RUTAS
+   OTRAS PÁGINAS
 ================================================================ */
 
 app.get(
     '/admin.html',
-    (req, res) => {
-
-        res.sendFile(
-            path.join(
-                __dirname,
-                'public',
-                'admin.html'
-            )
-        );
-    }
+    enviarHTML('admin.html')
 );
 
 app.get(
     '/qr',
-    (req, res) => {
-
-        res.sendFile(
-            path.join(
-                __dirname,
-                'public',
-                'qr-generator.html'
-            )
-        );
-    }
+    enviarHTML('qr-generator.html')
 );
 
 app.get(
     '/actualizar-contrasena',
-    (req, res) => {
-
-        res.sendFile(
-            path.join(
-                __dirname,
-                'public',
-                'actualizar-contrasena.html'
-            )
-        );
-    }
+    enviarHTML(
+        'actualizar-contrasena.html'
+    )
 );
 
 app.get(
     '/terminos',
-    (req, res) => {
-
-        res.sendFile(
-            path.join(
-                __dirname,
-                'public',
-                'terminos.html'
-            )
-        );
-    }
+    enviarHTML('terminos.html')
 );
 
 app.get(
     '/privacidad',
-    (req, res) => {
-
-        res.sendFile(
-            path.join(
-                __dirname,
-                'public',
-                'privacidad.html'
-            )
-        );
-    }
+    enviarHTML('privacidad.html')
 );
 
 app.get(
     '/cookies',
-    (req, res) => {
-
-        res.sendFile(
-            path.join(
-                __dirname,
-                'public',
-                'cookies.html'
-            )
-        );
-    }
+    enviarHTML('cookies.html')
 );
 
 app.get(
     '/live-terminos',
-    (req, res) => {
-
-        res.sendFile(
-            path.join(
-                __dirname,
-                'public',
-                'live-terminos.html'
-            )
-        );
-    }
+    enviarHTML('live-terminos.html')
 );
 
 /* ================================================================
@@ -2821,14 +2699,13 @@ app.get(
     '/api/health',
     (req, res) => {
 
-        res.status(200).json({
+        return res.status(200).json({
 
             status:
                 'healthy',
 
             timestamp:
-                new Date()
-                    .toISOString(),
+                new Date().toISOString(),
 
             environment:
                 process.env.NODE_ENV ||
@@ -2885,6 +2762,7 @@ app.get(
                     true,
 
                 endpoints: {
+
                     conversaciones:
                         '/api/mensajes/conversaciones',
 
@@ -2921,57 +2799,67 @@ app.get(
    SPA FALLBACK
 ================================================================ */
 
-app.get(
-    '*',
+/*
+ * NO usamos:
+ *
+ * app.get('*', ...)
+ *
+ * porque Express 5 cambió la sintaxis de wildcards.
+ *
+ * Usamos middleware sin patrón de ruta.
+ * Esto funciona independientemente de la sintaxis de path-to-regexp.
+ */
+
+app.use(
     (req, res, next) => {
 
+        /*
+         * Las APIs nunca deben recibir index.html.
+         */
         if (
-            req.path.startsWith(
-                '/api/'
-            ) ||
-            req.path.startsWith(
-                '/webhook/'
-            )
+            req.path.startsWith('/api/')
         ) {
-
             return next();
         }
 
         if (
-            path.extname(
-                req.path
-            ) !== ''
+            req.path.startsWith('/webhook/')
         ) {
+            return next();
+        }
 
+        /*
+         * Si parece un archivo solicitado,
+         * dejamos que el 404 correspondiente
+         * continúe.
+         */
+        if (
+            path.extname(req.path) !== ''
+        ) {
             return next();
         }
 
         const indexPath =
             path.join(
-                __dirname,
-                'public',
+                publicPath,
                 'index.html'
             );
 
         if (
-            fs.existsSync(
-                indexPath
-            )
+            fs.existsSync(indexPath)
         ) {
 
-            res.sendFile(
+            return res.sendFile(
                 indexPath
             );
-
-        } else {
-
-            next();
         }
+
+        return next();
     }
 );
 
 /* ================================================================
-   MANEJO DE ERRORES - API
+   404 API
 ================================================================ */
 
 app.use(
@@ -2979,15 +2867,16 @@ app.use(
     (req, res) => {
 
         return res.status(404).json({
-
-            success:
-                false,
-
+            success: false,
             error:
                 'Endpoint no encontrado'
         });
     }
 );
+
+/* ================================================================
+   ERROR HANDLER
+================================================================ */
 
 app.use(
     (
@@ -3015,8 +2904,7 @@ app.use(
                 false,
 
             error:
-                process.env.NODE_ENV ===
-                'production'
+                isProduction
                     ? 'Error interno del servidor'
                     : err.message
         });
@@ -3024,7 +2912,7 @@ app.use(
 );
 
 /* ================================================================
-   INICIAR SERVIDOR
+   SERVIDOR
 ================================================================ */
 
 app.listen(
@@ -3056,71 +2944,51 @@ app.listen(
         );
 
         console.log(
-            `🔐 Auth router: ✅ /api/auth`
+            '🔐 Auth router: ✅ /api/auth'
         );
 
         console.log(
-            `💳 Payments router: ✅ /api/payments`
+            '💳 Payments router: ✅ /api/payments'
         );
 
         console.log(
-            `📡 Webhook router: ✅ /api/webhook`
+            '📡 Webhook router: ✅ /api/webhook'
         );
 
         console.log(
-            `✨ Membresía router: ✅ /api/payments/membresia`
+            '✨ Membresía router: ✅ /api/payments/membresia'
         );
 
         console.log(
-            `💬 Mensajería router: ✅ /api/mensajes`
+            '💬 Mensajería router: ✅ /api/mensajes'
         );
 
         console.log(
-            `🌎 I18N: ✅ /api/idiomas`
+            '🌎 I18N: ✅ /api/idiomas'
         );
 
         console.log(
-            `📝 Traducciones: ✅ /api/traducciones`
+            '📝 Traducciones: ✅ /api/traducciones'
         );
 
         console.log(
-            `🌐 I18N completo: ✅ /api/i18n`
+            '🌐 I18N completo: ✅ /api/i18n'
         );
 
         console.log(
-            `👤 Idioma usuario: ✅ /api/usuarios/idioma`
+            '👤 Idioma usuario: ✅ /api/usuarios/idioma'
         );
 
         console.log(
-            `🗑️ Eliminación de cuenta: ✅ /api/account/delete`
+            '🗑️ Eliminación de cuenta: ✅ /api/account/delete'
         );
 
         console.log(
-            `🛡️ Turnstile eliminación: ${
+            `🛡️ Turnstile: ${
                 TURNSTILE_SECRET_KEY
                     ? '✅ Configurado'
                     : '❌ No configurado'
             }`
-        );
-
-        console.log(
-            `📝 Request deletion function: ${
-                ACCOUNT_DELETION_REQUEST_FUNCTION
-            }`
-        );
-
-        console.log(
-            `⚙️ Process deletion function: ${
-                ACCOUNT_DELETION_PROCESS_FUNCTION
-            }`
-        );
-
-        console.log(
-            `🌎 Idioma por defecto: ${IDIOMA_POR_DEFECTO}`
-        );
-
-        console.log(
-            `🌍 Idiomas soportados: ${IDIOMAS_VALIDOS.join(', ')}`
         );
 
         console.log(
@@ -3141,10 +3009,20 @@ app.listen(
 
         console.log(
             `🎥 LiveKit: ${
-                LIVEKIT_API_KEY && LIVEKIT_API_SECRET && LIVEKIT_URL
+                LIVEKIT_API_KEY &&
+                LIVEKIT_API_SECRET &&
+                LIVEKIT_URL
                     ? '✅ Configurado'
                     : '❌ No configurado'
             }`
+        );
+
+        console.log(
+            `🌎 Idioma por defecto: ${IDIOMA_POR_DEFECTO}`
+        );
+
+        console.log(
+            `🌍 Idiomas: ${IDIOMAS_VALIDOS.join(', ')}`
         );
 
         console.log(
