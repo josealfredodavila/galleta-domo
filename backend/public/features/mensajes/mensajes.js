@@ -1,1420 +1,420 @@
-/* ================================================================
-   MENSAJES.JS - SARIEL'S ECOSYSTEM
-   VERSIÓN CORREGIDA Y OPTIMIZADA
-   ================================================================ */
-
-'use strict';
-
-/* ================================================================
-   SUPABASE
-================================================================ */
-
-let supabase = null;
-let SUPABASE_READY = false;
-
-async function obtenerSupabase() {
-    if (SUPABASE_READY && supabase) {
-        return supabase;
-    }
-
-    if (typeof window !== 'undefined' && window.supabase) {
-        supabase = window.supabase;
-        SUPABASE_READY = true;
-        return supabase;
-    }
-
-    for (let intento = 0; intento < 10; intento++) {
-        await new Promise(resolve => setTimeout(resolve, 200));
-        if (typeof window !== 'undefined' && window.supabase) {
-            supabase = window.supabase;
-            SUPABASE_READY = true;
-            return supabase;
-        }
-    }
-
-    throw new Error('Supabase no está disponible');
-}
-
-/* ================================================================
-   LOGGER
-================================================================ */
-
-const Logger = {
-    prefijo: '[Sariel\'s Mensajes]',
-    info(...args) { console.info(this.prefijo, ...args); },
-    warn(...args) { console.warn(this.prefijo, ...args); },
-    error(...args) { console.error(this.prefijo, ...args); }
-};
-
-/* ================================================================
-   UTILIDADES DOM
-================================================================ */
-
-function obtenerElemento(...ids) {
-    for (const id of ids) {
-        const elemento = document.getElementById(id);
-        if (elemento) return elemento;
-    }
-    return null;
-}
-
-/* ================================================================
-   PROTECCIÓN XSS & SANITIZACIÓN
-================================================================ */
-
-function escapeHTML(valor) {
-    if (valor === null || valor === undefined) return '';
-    const div = document.createElement('div');
-    div.textContent = String(valor);
-    return div.innerHTML;
-}
-
-function sanitizarContenido(texto) {
-    if (texto === null || texto === undefined) return '';
-    const temporal = document.createElement('div');
-    temporal.textContent = String(texto);
-    return temporal.innerHTML.replace(/\r\n|\r|\n/g, '<br>');
-}
-
-function escaparAtributo(valor) {
-    if (valor === null || valor === undefined) return '';
-    return String(valor)
-        .replace(/&/g, '&amp;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
-}
-
-function urlSegura(url) {
-    if (!url || typeof url !== 'string') return '';
-    try {
-        const parsed = new URL(url, window.location.origin);
-        if (!['http:', 'https:'].includes(parsed.protocol)) return '';
-        return parsed.href;
-    } catch {
-        return '';
-    }
-}
-
-/* ================================================================
-   NOTIFICACIONES & CARGA
-================================================================ */
-
-function showToast(mensaje, tipo = 'info') {
-    let toast = document.getElementById('sarielsToast');
-    if (!toast) {
-        toast = document.createElement('div');
-        toast.id = 'sarielsToast';
-        toast.className = 'sariels-toast';
-        document.body.appendChild(toast);
-    }
-    toast.textContent = mensaje || '';
-    toast.dataset.tipo = tipo;
-    toast.classList.add('show');
-    clearTimeout(toast._timeout);
-    toast._timeout = setTimeout(() => {
-        toast.classList.remove('show');
-    }, 3500);
-}
-
-function mostrarLoading(mostrar = true) {
-    let loading = document.getElementById('mensajesLoading');
-    if (!loading) {
-        loading = document.createElement('div');
-        loading.id = 'mensajesLoading';
-        loading.className = 'mensajes-loading';
-        loading.innerHTML = '<div class="mensajes-loading-spinner"></div>';
-        document.body.appendChild(loading);
-    }
-    loading.style.display = mostrar ? 'flex' : 'none';
-}
-
-/* ================================================================
-   SESSION MANAGER
-================================================================ */
-
-const SessionManager = {
-    _usuario: null,
-    _session: null,
-    _cargando: null,
-
-    async obtenerSesion(forzar = false) {
-        if (this._session && !forzar) {
-            const exp = this._session.expires_at;
-            if (exp && exp * 1000 > Date.now() + 5 * 60 * 1000) {
-                return this._session;
-            }
-        }
-
-        if (this._cargando) return this._cargando;
-
-        this._cargando = (async () => {
-            const client = await obtenerSupabase();
-            const { data, error } = await client.auth.getSession();
-            if (error) throw error;
-            this._session = data?.session || null;
-            this._usuario = data?.session?.user || null;
-            return this._session;
-        })();
-
-        try {
-            return await this._cargando;
-        } finally {
-            this._cargando = null;
-        }
-    },
-
-    async obtenerUsuario() {
-        const session = await this.obtenerSesion();
-        return session?.user || null;
-    },
-
-    async cerrarSesion() {
-        try {
-            const client = await obtenerSupabase();
-            await client.auth.signOut();
-        } catch (error) {
-            Logger.error('Error cerrando sesión:', error);
-        } finally {
-            this._session = null;
-            this._usuario = null;
-            window.location.href = '/login';
-        }
-    }
-};
-
-/* ================================================================
-   PETICIONES API
-================================================================ */
-
-async function llamadaAPI(endpoint, options = {}, timeout = 15000) {
-    const session = await SessionManager.obtenerSesion();
-    if (!session?.access_token) {
-        throw new Error('NO_AUTENTICADO');
-    }
-
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeout);
-
-    try {
-        const headers = {
-            ...(options.headers || {}),
-            Authorization: `Bearer ${session.access_token}`,
-            'X-Requested-With': 'XMLHttpRequest'
-        };
-
-        if (options.body && !(options.body instanceof FormData)) {
-            headers['Content-Type'] = 'application/json';
-        }
-
-        const response = await fetch(endpoint, {
-            ...options,
-            headers,
-            signal: controller.signal
-        });
-
-        if (response.status === 401 || response.status === 403) {
-            SessionManager._session = null;
-            SessionManager._usuario = null;
-            throw new Error('NO_AUTORIZADO');
-        }
-
-        let data = null;
-        const contentType = response.headers.get('content-type') || '';
-
-        if (contentType.includes('application/json')) {
-            data = await response.json();
-        } else {
-            const texto = await response.text();
-            try {
-                data = JSON.parse(texto);
-            } catch {
-                data = { success: response.ok, message: texto };
-            }
-        }
-
-        if (!response.ok) {
-            const error = new Error(data?.error || data?.message || `HTTP ${response.status}`);
-            error.status = response.status;
-            error.data = data;
-            throw error;
-        }
-
-        return data;
-    } catch (error) {
-        if (error.name === 'AbortError') {
-            throw new Error('La solicitud tardó demasiado');
-        }
-        throw error;
-    } finally {
-        clearTimeout(timer);
-    }
-}
-
-/* ================================================================
-   LIMITADOR DE FRECUENCIA DE PETICIONES
-================================================================ */
-
-const FrontRateLimiter = {
-    acciones: new Map(),
-    permitir(nombre, intervalo = 800) {
-        const ahora = Date.now();
-        const anterior = this.acciones.get(nombre) || 0;
-        if (ahora - anterior < intervalo) return false;
-        this.acciones.set(nombre, ahora);
-        return true;
-    }
-};
-
-/* ================================================================
-   VALIDACIÓN DE ARCHIVOS
-================================================================ */
-
-const FILE_CONFIG = {
-    maxSize: 10 * 1024 * 1024,
-    mimeTypes: [
-        'image/jpeg', 'image/png', 'image/gif', 'image/webp',
-        'audio/mpeg', 'audio/webm', 'audio/ogg', 'audio/wav'
-    ],
-    extensions: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'mp3', 'webm', 'ogg', 'wav']
-};
-
-function validarArchivo(archivo) {
-    if (!archivo) return { valido: false, error: 'Archivo no válido' };
-
-    if (archivo.size > FILE_CONFIG.maxSize) {
-        return { valido: false, error: 'El archivo supera el límite de 10 MB' };
-    }
-
-    const extension = archivo.name.split('.').pop().toLowerCase();
-    if (!FILE_CONFIG.extensions.includes(extension)) {
-        return { valido: false, error: 'Tipo de archivo no permitido' };
-    }
-
-    if (archivo.type && !FILE_CONFIG.mimeTypes.includes(archivo.type)) {
-        return { valido: false, error: 'Formato de archivo no permitido' };
-    }
-
-    return { valido: true };
-}
-
-/* ================================================================
-   ESTADO DEL MÓDULO
-================================================================ */
-
-let conversacionActual = null;
-let usuarioActual = null;
-let canalRealtime = null;
-let archivosSeleccionados = [];
-let grabandoAudio = false;
-let mediaRecorder = null;
-let audioChunks = [];
-
-const mensajesCache = new Map();
-const CACHE_TTL = 5 * 60 * 1000;
-
-/* ================================================================
-   REALTIME
-================================================================ */
-
-function limpiarRealtime() {
-    if (canalRealtime && supabase) {
-        try {
-            supabase.removeChannel(canalRealtime);
-        } catch (error) {
-            Logger.warn('No se pudo eliminar canal realtime:', error);
-        }
-    }
-    canalRealtime = null;
-}
-
-async function crearCanalRealtime(contactoId, onMessage, onUpdate) {
-    limpiarRealtime();
-    if (!contactoId) return;
-
-    const client = await obtenerSupabase();
-    const usuario = await SessionManager.obtenerUsuario();
-    if (!usuario) return;
-
-    const nombreCanal = `mensajes-${usuario.id}-${contactoId}-${Date.now()}`;
-
-    const canal = client
-        .channel(nombreCanal)
-        .on(
-            'postgres_changes',
-            { event: 'INSERT', schema: 'public', table: 'mensajes_chat' },
-            payload => {
-                const mensaje = payload.new;
-                if (!mensaje) return;
-
-                const pertenece =
-                    (mensaje.remitente_id === usuario.id && mensaje.destinatario_id === contactoId) ||
-                    (mensaje.remitente_id === contactoId && mensaje.destinatario_id === usuario.id);
-
-                if (pertenece && typeof onMessage === 'function') {
-                    onMessage(mensaje);
-                }
-            }
-        )
-        .on(
-            'postgres_changes',
-            { event: 'UPDATE', schema: 'public', table: 'mensajes_chat' },
-            payload => {
-                const mensaje = payload.new;
-                if (!mensaje) return;
-
-                const pertenece =
-                    (mensaje.remitente_id === usuario.id && mensaje.destinatario_id === contactoId) ||
-                    (mensaje.remitente_id === contactoId && mensaje.destinatario_id === usuario.id);
-
-                if (pertenece && typeof onUpdate === 'function') {
-                    onUpdate(mensaje);
-                }
-            }
-        );
-
-    canalRealtime = canal;
-    canal.subscribe(status => {
-        Logger.info('Realtime status:', status);
-    });
-
-    return canal;
-}
-
-/* ================================================================
-   FORMATEO Y BÚSQUEDA
-================================================================ */
-
-function formatearFecha(fecha) {
-    if (!fecha) return '';
-    const date = new Date(fecha);
-    if (Number.isNaN(date.getTime())) return '';
-    return date.toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' });
-}
-
-function formatearTexto(texto) {
-    return sanitizarContenido(texto);
-}
-
-async function buscarContactos(query) {
-    if (!FrontRateLimiter.permitir('buscar-contactos', 300)) return;
-
-    query = typeof query === 'string' ? query.trim() : '';
-    const resultados = obtenerElemento('resultadosBusqueda', 'resultadosBusquedaContactos');
-    if (!resultados) return;
-
-    if (query.length < 2) {
-        resultados.innerHTML = '<p class="mensaje-ayuda">Escribe al menos 2 caracteres para buscar</p>';
-        return;
-    }
-
-    try {
-        const usuario = await SessionManager.obtenerUsuario();
-        if (!usuario) return;
-
-        const client = await obtenerSupabase();
-        const querySeguro = query.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
-
-        const { data, error } = await client
-            .from('usuarios')
-            .select('id,nombre,handle,avatar_url')
-            .or(`nombre.ilike.%${querySeguro}%,handle.ilike.%${querySeguro}%`)
-            .neq('id', usuario.id)
-            .limit(20);
-
-        if (error) throw error;
-
-        if (!data || data.length === 0) {
-            resultados.innerHTML = `
-                <div class="sin-resultados">
-                    <strong>No se encontraron resultados</strong>
-                    <p>No hay usuarios que coincidan con "${escapeHTML(query)}"</p>
-                </div>
-            `;
-            return;
-        }
-
-        resultados.innerHTML = data.map(contacto => crearContactoHTML(contacto)).join('');
-
-    } catch (error) {
-        Logger.error('Error buscando contactos:', error);
-        resultados.innerHTML = '<p class="error">No se pudieron buscar los contactos.</p>';
-    }
-}
-
-function crearContactoHTML(contacto) {
-    const avatar = urlSegura(contacto.avatar_url);
-    const nombre = escapeHTML(contacto.nombre || 'Usuario');
-    const handle = escapeHTML(contacto.handle ? `@${contacto.handle}` : '');
-    const id = escaparAtributo(contacto.id);
-
-    const avatarHTML = avatar
-        ? `<img src="${escaparAtributo(avatar)}" alt="${nombre}" loading="lazy" referrerpolicy="no-referrer">`
-        : `<div class="avatar-placeholder">${escapeHTML((contacto.nombre || 'U').charAt(0).toUpperCase())}</div>`;
-
-    return `
-        <div class="contacto-resultado">
-            <div class="contacto-avatar">${avatarHTML}</div>
-            <div class="contacto-info">
-                <strong>${nombre}</strong>
-                <span>${handle}</span>
-            </div>
-            <button type="button" class="btn-agregar-contacto" data-contacto-id="${id}" onclick="agregarContacto('${id}')">
-                Agregar
-            </button>
-        </div>
-    `;
-}
-
-async function agregarContacto(contactoId) {
-    if (!contactoId || !FrontRateLimiter.permitir('agregar-contacto', 1000)) return;
-
-    try {
-        const usuario = await SessionManager.obtenerUsuario();
-        if (!usuario) throw new Error('No autenticado');
-
-        if (contactoId === usuario.id) {
-            showToast('No puedes agregarte a ti mismo', 'warning');
-            return;
-        }
-
-        const client = await obtenerSupabase();
-        const { error } = await client
-            .from('contactos')
-            .insert({ usuario_id: usuario.id, contacto_id: contactoId, estado: 'activo' });
-
-        if (error) {
-            if (error.code === '23505') {
-                showToast('Este contacto ya existe', 'info');
-                return;
-            }
-            throw error;
-        }
-
-        showToast('Contacto agregado correctamente', 'success');
-        await cargarConversaciones();
-
-    } catch (error) {
-        Logger.error('Error agregando contacto:', error);
-        showToast('No se pudo agregar el contacto', 'error');
-    }
-}
-
-/* ================================================================
-   CARGA DE CONVERSACIONES
-================================================================ */
-
+// ================================================================
+// MENSAJES.JS - SARIEL'S WEB3
+// Módulo de mensajería en tiempo real con Supabase
+// ================================================================
+
+// Obtener la instancia del cliente público de Supabase expuesta en el entorno global
+const supabase = window.supabaseClient || window.supabase;
+
+// Variables de estado global
+window.conversacionActual = null;
+let suscripcionRealtime = null;
+
+// ================================================================
+// 1. CARGAR Y LISTAR CONVERSACIONES
+// ================================================================
+
+/**
+ * Carga las conversaciones del usuario autenticado
+ */
 async function cargarConversaciones() {
-    const contenedor = obtenerElemento('conversationList', 'conversaciones', 'listaConversaciones');
-    if (!contenedor) return;
+    const container = document.getElementById('conversationList');
+    if (!container) return;
 
-    try {
-        const resultado = await llamadaAPI('/api/mensajes/conversaciones', { method: 'GET' });
-        const conversaciones = Array.isArray(resultado?.data)
-            ? resultado.data
-            : Array.isArray(resultado) ? resultado : [];
-
-        if (conversaciones.length === 0) {
-            contenedor.innerHTML = `
-                <div class="sin-conversaciones">
-                    <p>No tienes conversaciones todavía.</p>
-                </div>
-            `;
-            return;
-        }
-
-        contenedor.innerHTML = conversaciones.map(crearConversacionHTML).join('');
-
-    } catch (error) {
-        Logger.error('Error cargando conversaciones:', error);
-        if (error.message === 'NO_AUTORIZADO') {
-            await SessionManager.cerrarSesion();
-            return;
-        }
-        contenedor.innerHTML = '<div class="error">No se pudieron cargar las conversaciones.</div>';
+    if (!supabase) {
+        console.error('❌ Cliente de Supabase no inicializado.');
+        return;
     }
-}
 
-function crearConversacionHTML(conversacion) {
-    const contacto = conversacion.contacto || conversacion.usuario || conversacion;
-    const contactoId = contacto.id || conversacion.contacto_id || conversacion.usuario_id;
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+        container.innerHTML = `
+            <div class="sin-conversaciones">
+                <span class="icono">🔒</span>
+                <p>Inicia sesión para ver tus mensajes</p>
+            </div>`;
+        return;
+    }
 
-    if (!contactoId) return '';
+    // Consultar chats donde participa el usuario actual
+    const { data: participaciones, error } = await supabase
+        .from('conversation_participants')
+        .select('conversation_id, conversations(created_at)')
+        .eq('user_id', user.id);
 
-    const nombre = escapeHTML(contacto.nombre || contacto.handle || 'Usuario');
-    const ultimoMensaje = escapeHTML(conversacion.ultimo_mensaje || conversacion.ultimoMensaje || '');
-    const avatar = urlSegura(contacto.avatar_url);
-    const unread = Number(conversacion.mensajes_no_leidos || conversacion.no_leidos || conversacion.unread_count || 0);
+    if (error) {
+        console.error('Error al obtener conversaciones:', error);
+        showToast('Error al cargar conversaciones', 'error');
+        return;
+    }
 
-    const avatarHTML = avatar
-        ? `<img src="${escaparAtributo(avatar)}" alt="${nombre}" loading="lazy" referrerpolicy="no-referrer">`
-        : `<div class="avatar-placeholder">${escapeHTML((contacto.nombre || 'U').charAt(0).toUpperCase())}</div>`;
+    if (!participaciones || participaciones.length === 0) {
+        container.innerHTML = `
+            <div class="sin-conversaciones">
+                <span class="icono">💬</span>
+                <p>No tienes conversaciones activas</p>
+            </div>`;
+        return;
+    }
 
-    return `
-        <button type="button" class="conversation-item" data-contacto-id="${escaparAtributo(contactoId)}" onclick="abrirConversacion('${escaparAtributo(contactoId)}')">
-            <div class="conversation-avatar">${avatarHTML}</div>
+    container.innerHTML = '';
+
+    // Renderizar cada conversación
+    for (const item of participaciones) {
+        const convId = item.conversation_id;
+
+        const div = document.createElement('button');
+        div.className = `conversation-item ${window.conversacionActual === convId ? 'active' : ''}`;
+        div.onclick = () => abrirConversacion(convId);
+
+        div.innerHTML = `
+            <div class="conversation-avatar">
+                <span class="avatar-placeholder">◈</span>
+            </div>
             <div class="conversation-content">
-                <strong>${nombre}</strong>
-                <span>${ultimoMensaje}</span>
+                <strong>Chat #${convId.substring(0, 8)}</strong>
+                <span>Haz clic para abrir la sala</span>
             </div>
-            ${unread > 0 ? `<span class="unread-count">${unread > 99 ? '99+' : unread}</span>` : ''}
-        </button>
-    `;
-}
-
-/* ================================================================
-   ABRIR Y RENDERIZAR CHAT
-================================================================ */
-
-async function abrirConversacion(contactoId) {
-    if (!contactoId) return;
-
-    try {
-        const usuario = await SessionManager.obtenerUsuario();
-        if (!usuario) throw new Error('No autenticado');
-
-        const client = await obtenerSupabase();
-        const { data: contacto, error } = await client
-            .from('usuarios')
-            .select('id,nombre,handle,avatar_url')
-            .eq('id', contactoId)
-            .maybeSingle();
-
-        if (error) throw error;
-        if (!contacto) {
-            showToast('Usuario no encontrado', 'error');
-            return;
-        }
-
-        conversacionActual = contactoId;
-        mostrarCabeceraConversacion(contacto);
-
-        await marcarMensajesLeidos(contactoId);
-        await cargarMensajes(contactoId);
-
-        await crearCanalRealtime(
-            contactoId,
-            mensaje => {
-                const safeId = String(mensaje.id || '').replace(/"/g, '\\"');
-                const existente = document.querySelector(`[data-message-id="${safeId}"]`);
-                if (!existente) {
-                    agregarMensajeRealtime(mensaje);
-                }
-            },
-            mensaje => {
-                actualizarMensajeEnPantalla(mensaje);
-            }
-        );
-
-        await cargarConversaciones();
-
-    } catch (error) {
-        Logger.error('Error abriendo conversación:', error);
-        showToast('No se pudo abrir la conversación', 'error');
+        `;
+        container.appendChild(div);
     }
 }
 
-function mostrarCabeceraConversacion(contacto) {
-    const nombre = obtenerElemento('chatUserName', 'nombreContacto', 'conversationUserName');
-    const avatar = obtenerElemento('chatUserAvatar', 'avatarContacto', 'conversationAvatar');
+/**
+ * Selecciona una conversación y carga sus mensajes
+ */
+async function abrirConversacion(conversationId) {
+    window.conversacionActual = conversationId;
 
-    if (nombre) {
-        nombre.textContent = contacto.nombre || contacto.handle || 'Usuario';
+    // Actualizar estado visual de la lista
+    document.querySelectorAll('.conversation-item').forEach(el => el.classList.remove('active'));
+    
+    const chatTitle = document.getElementById('chatUserName');
+    if (chatTitle) {
+        chatTitle.textContent = `Chat #${conversationId.substring(0, 8)}`;
     }
 
-    if (avatar) {
-        const url = urlSegura(contacto.avatar_url);
-        if (url) {
-            avatar.src = url;
-            avatar.style.display = '';
-        }
-    }
+    await cargarMensajes(conversationId);
 }
 
-async function cargarMensajes(contactoId) {
-    const contenedor = obtenerElemento('chatMessages', 'mensajesChat', 'messagesContainer');
-    if (!contenedor) return;
+// ================================================================
+// 2. CARGAR Y ESCUCHAR MENSAJES EN TIEMPO REAL
+// ================================================================
 
-    const cache = mensajesCache.get(contactoId);
-    if (cache && Date.now() - cache.timestamp < CACHE_TTL) {
-        renderizarMensajes(cache.data, contenedor);
+/**
+ * Consulta los mensajes de una conversación específica
+ */
+async function cargarMensajes(conversationId) {
+    if (!conversationId) return;
+
+    window.conversacionActual = conversationId;
+    const chatContainer = document.getElementById('chatMessages');
+    if (!chatContainer) return;
+
+    chatContainer.innerHTML = '<div class="loading-mensajes">Cargando mensajes...</div>';
+
+    const { data: mensajes, error } = await supabase
+        .from('messages')
+        .select('*')
+        .eq('conversation_id', conversationId)
+        .eq('is_deleted', false)
+        .order('created_at', { ascending: true });
+
+    if (error) {
+        console.error('Error al consultar mensajes:', error);
+        showToast('Error al cargar los mensajes', 'error');
         return;
     }
 
-    try {
-        contenedor.innerHTML = '<div class="loading-mensajes">Cargando mensajes...</div>';
-
-        const resultado = await llamadaAPI(`/api/mensajes/mensajes/${encodeURIComponent(contactoId)}`, { method: 'GET' });
-        const mensajes = Array.isArray(resultado?.data)
-            ? resultado.data
-            : Array.isArray(resultado?.mensajes)
-                ? resultado.mensajes
-                : Array.isArray(resultado) ? resultado : [];
-
-        mensajesCache.set(contactoId, { data: mensajes, timestamp: Date.now() });
-        renderizarMensajes(mensajes, contenedor);
-
-    } catch (error) {
-        Logger.error('Error cargando mensajes:', error);
-        contenedor.innerHTML = '<div class="error">No se pudieron cargar los mensajes.</div>';
-    }
+    renderizarMensajes(mensajes);
+    suscribirseAChat(conversationId);
 }
 
-function renderizarMensajes(mensajes, contenedor) {
-    if (!mensajes || mensajes.length === 0) {
-        contenedor.innerHTML = `
-            <div class="sin-mensajes">
-                <p>No hay mensajes todavía.</p>
-                <span>Inicia la conversación.</span>
-            </div>
-        `;
-        return;
+/**
+ * Habilita la recepción en tiempo real mediante WebSockets
+ */
+function suscribirseAChat(conversationId) {
+    if (suscripcionRealtime) {
+        supabase.removeChannel(suscripcionRealtime);
     }
 
-    contenedor.innerHTML = mensajes.map(crearMensajeHTML).join('');
-    desplazarChatAlFinal(contenedor);
-}
-
-function crearMensajeHTML(mensaje) {
-    if (!mensaje) return '';
-
-    const currentUserId = usuarioActual?.id || SessionManager._usuario?.id;
-    const propio = mensaje.remitente_id === currentUserId;
-    const id = escaparAtributo(mensaje.id);
-    const clase = propio ? 'message own' : 'message';
-    const eliminado = Boolean(mensaje.eliminado || mensaje.eliminado_at);
-
-    if (eliminado) {
-        return `
-            <div class="${clase} deleted" data-message-id="${id}">
-                <div class="message-content">
-                    <em>Este mensaje fue eliminado.</em>
-                </div>
-            </div>
-        `;
-    }
-
-    let contenido = '';
-    const texto = mensaje.contenido || mensaje.texto || mensaje.mensaje;
-
-    if (texto) {
-        contenido += `<div class="message-text">${formatearTexto(texto)}</div>`;
-    }
-
-    if (mensaje.imagen_url) {
-        const url = urlSegura(mensaje.imagen_url);
-        if (url) {
-            const tipo = mensaje.tipo || '';
-            if (tipo === 'audio' || tipo.startsWith('audio/')) {
-                contenido += crearMensajeAudio(mensaje, url);
-            } else {
-                contenido += crearMensajeImagen(mensaje, url);
-            }
-        }
-    }
-
-    if (!contenido) {
-        contenido = '<div class="message-text">Mensaje</div>';
-    }
-
-    const fecha = formatearFecha(mensaje.created_at || mensaje.fecha_creacion);
-    const editado = mensaje.editado ? '<small class="edited">editado</small>' : '';
-
-    return `
-        <div class="${clase}" data-message-id="${id}">
-            <div class="message-content">
-                ${contenido}
-                <div class="message-meta">
-                    <time>${escapeHTML(fecha)}</time>
-                    ${editado}
-                </div>
-            </div>
-            ${propio ? `
-                <div class="message-actions">
-                    <button type="button" onclick="editarMensaje('${id}')" aria-label="Editar mensaje">✏️</button>
-                    <button type="button" onclick="eliminarMensaje('${id}')" aria-label="Eliminar mensaje">🗑️</button>
-                </div>
-            ` : ''}
-        </div>
-    `;
-}
-
-function crearMensajeImagen(mensaje, url) {
-    return `
-        <div class="message-image">
-            <img src="${escaparAtributo(url)}" alt="Imagen enviada" loading="lazy" decoding="async" referrerpolicy="no-referrer" onclick="abrirImagen('${escaparAtributo(url)}')">
-        </div>
-    `;
-}
-
-function crearMensajeAudio(mensaje, url) {
-    const mime = mensaje.mime_type || mensaje.tipo_mime || (mensaje.imagen_url && mensaje.imagen_url.toLowerCase().includes('.webm') ? 'audio/webm' : 'audio/mpeg');
-    return `
-        <div class="message-audio">
-            <audio controls preload="metadata">
-                <source src="${escaparAtributo(url)}" type="${escaparAtributo(mime)}">
-                Tu navegador no puede reproducir este audio.
-            </audio>
-        </div>
-    `;
-}
-
-function abrirImagen(url) {
-    const segura = urlSegura(url);
-    if (!segura) return;
-
-    let modal = document.getElementById('modalImagenMensaje');
-    if (!modal) {
-        modal = document.createElement('div');
-        modal.id = 'modalImagenMensaje';
-        modal.className = 'modal-imagen-mensaje';
-        modal.innerHTML = `
-            <button type="button" class="cerrar-modal-imagen" aria-label="Cerrar">×</button>
-            <img alt="Imagen">
-        `;
-        modal.addEventListener('click', event => {
-            if (event.target === modal || event.target.classList.contains('cerrar-modal-imagen')) {
-                modal.classList.remove('show');
-            }
-        });
-        document.body.appendChild(modal);
-    }
-
-    modal.querySelector('img').src = segura;
-    modal.classList.add('show');
-}
-
-function desplazarChatAlFinal(contenedor) {
-    if (!contenedor) return;
-    requestAnimationFrame(() => {
-        contenedor.scrollTop = contenedor.scrollHeight;
-    });
-}
-
-function agregarMensajeRealtime(mensaje) {
-    if (!conversacionActual || !mensaje) return;
-
-    const currentUserId = usuarioActual?.id || SessionManager._usuario?.id;
-    const pertenece =
-        (mensaje.remitente_id === currentUserId && mensaje.destinatario_id === conversacionActual) ||
-        (mensaje.remitente_id === conversacionActual && mensaje.destinatario_id === currentUserId);
-
-    if (!pertenece) return;
-
-    const contenedor = obtenerElemento('chatMessages', 'mensajesChat', 'messagesContainer');
-    if (!contenedor) return;
-
-    const id = String(mensaje.id || '');
-    if (!id) return;
-
-    const safeId = id.replace(/"/g, '\\"');
-    if (contenedor.querySelector(`[data-message-id="${safeId}"]`)) return;
-
-    const vacio = contenedor.querySelector('.sin-mensajes');
-    if (vacio) vacio.remove();
-
-    contenedor.insertAdjacentHTML('beforeend', crearMensajeHTML(mensaje));
-    desplazarChatAlFinal(contenedor);
-    mensajesCache.delete(conversacionActual);
-}
-
-function actualizarMensajeEnPantalla(mensaje) {
-    if (!mensaje?.id) return;
-    const safeId = String(mensaje.id).replace(/"/g, '\\"');
-    const elemento = document.querySelector(`[data-message-id="${safeId}"]`);
-    if (!elemento) return;
-
-    elemento.outerHTML = crearMensajeHTML(mensaje);
-    if (conversacionActual) {
-        mensajesCache.delete(conversacionActual);
-    }
-}
-
-/* ================================================================
-   ENVÍO Y GESTIÓN DE ARCHIVOS
-================================================================ */
-
-async function enviarMensaje() {
-    if (!FrontRateLimiter.permitir('enviar-mensaje', 250)) return;
-
-    if (!conversacionActual) {
-        showToast('Selecciona una conversación', 'warning');
-        return;
-    }
-
-    const input = obtenerElemento('messageInput', 'mensajeInput', 'chatInput');
-    const texto = input ? input.value.trim() : '';
-
-    if (!texto && archivosSeleccionados.length === 0) return;
-
-    try {
-        const session = await SessionManager.obtenerSesion();
-        if (!session) throw new Error('No autenticado');
-
-        if (archivosSeleccionados.length > 0) {
-            const archivos = [...archivosSeleccionados];
-            for (const archivo of archivos) {
-                await subirArchivo(archivo, session);
-            }
-            archivosSeleccionados = [];
-            actualizarVistaArchivos();
-        }
-
-        if (texto) {
-            await llamadaAPI('/api/mensajes/mensajes', {
-                method: 'POST',
-                body: JSON.stringify({
-                    destinatario_id: conversacionActual,
-                    contenido: texto
-                })
-            });
-        }
-
-        if (input) input.value = '';
-        actualizarContadorCaracteres();
-        mensajesCache.delete(conversacionActual);
-
-        await cargarMensajes(conversacionActual);
-        await cargarConversaciones();
-
-    } catch (error) {
-        Logger.error('Error enviando mensaje:', error);
-        showToast(error.message || 'No se pudo enviar el mensaje', 'error');
-    }
-}
-
-async function subirArchivo(archivo, session) {
-    const validacion = validarArchivo(archivo);
-    if (!validacion.valido) throw new Error(validacion.error);
-    if (!session?.user?.id) throw new Error('Sesión no válida');
-
-    const client = await obtenerSupabase();
-    const extension = archivo.name.split('.').pop().toLowerCase();
-    const nombreArchivo = `${session.user.id}/${cryptoRandomId()}.${extension}`;
-
-    const { error: uploadError } = await client.storage
-        .from('mensajes')
-        .upload(nombreArchivo, archivo, {
-            cacheControl: '3600',
-            upsert: false,
-            contentType: archivo.type || undefined
-        });
-
-    if (uploadError) throw uploadError;
-
-    const { data: publicData } = client.storage
-        .from('mensajes')
-        .getPublicUrl(nombreArchivo);
-
-    const publicUrl = publicData?.publicUrl;
-    if (!publicUrl) throw new Error('No se pudo obtener la URL del archivo');
-
-    await llamadaAPI('/api/mensajes/mensajes', {
-        method: 'POST',
-        body: JSON.stringify({
-            destinatario_id: conversacionActual,
-            contenido: '',
-            imagen_url: publicUrl,
-            tipo: archivo.type || 'archivo',
-            mime_type: archivo.type || null
+    suscripcionRealtime = supabase
+        .channel(`chat:${conversationId}`)
+        .on('postgres_changes', {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'messages',
+            filter: `conversation_id=eq.${conversationId}`
+        }, payload => {
+            agregarMensajeAUI(payload.new);
         })
-    });
+        .subscribe();
 }
 
-function cryptoRandomId() {
-    if (window.crypto && typeof window.crypto.randomUUID === 'function') {
-        return window.crypto.randomUUID();
-    }
-    return Date.now().toString(36) + Math.random().toString(36).substring(2);
-}
+// ================================================================
+// 3. ENVIAR MENSAJES Y ADJUNTOS
+// ================================================================
 
-function handleFileSelect(event) {
-    const archivos = Array.from(event.target.files || []);
-    if (archivos.length === 0) return;
+/**
+ * Envía un mensaje de texto o archivo adjunto
+ */
+async function enviarMensaje() {
+    const input = document.getElementById('messageInput');
+    const fileInput = document.getElementById('fileInput');
+    if (!input || !fileInput) return;
 
-    for (const archivo of archivos) {
-        const validacion = validarArchivo(archivo);
-        if (!validacion.valido) {
-            showToast(`${archivo.name}: ${validacion.error}`, 'error');
-            continue;
-        }
+    const text = input.value.trim();
+    if (!text && fileInput.files.length === 0) return;
 
-        const duplicado = archivosSeleccionados.some(
-            existente => existente.name === archivo.name && existente.size === archivo.size && existente.lastModified === archivo.lastModified
-        );
-
-        if (!duplicado) {
-            archivosSeleccionados.push(archivo);
-        }
-    }
-
-    actualizarVistaArchivos();
-    event.target.value = '';
-}
-
-function actualizarVistaArchivos() {
-    const contenedor = obtenerElemento('archivosSeleccionados', 'selectedFiles');
-    if (!contenedor) return;
-
-    if (archivosSeleccionados.length === 0) {
-        contenedor.innerHTML = '';
+    if (!window.conversacionActual) {
+        showToast('Selecciona una conversación primero', 'warning');
         return;
     }
 
-    contenedor.innerHTML = archivosSeleccionados.map((archivo, indice) => `
-        <div class="archivo-seleccionado" data-file-index="${indice}">
-            <span>${escapeHTML(archivo.name)}</span>
-            <button type="button" onclick="removerArchivo(${indice})" aria-label="Eliminar archivo">×</button>
-        </div>
-    `).join('');
-}
-
-function removerArchivo(indice) {
-    if (indice < 0 || indice >= archivosSeleccionados.length) return;
-    archivosSeleccionados.splice(indice, 1);
-    actualizarVistaArchivos();
-}
-
-/* ================================================================
-   GRABACIÓN DE AUDIO
-================================================================ */
-
-async function iniciarGrabacionAudio() {
-    if (grabandoAudio) return;
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        showToast('Tu navegador no permite grabar audio', 'error');
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+        showToast('Debes iniciar sesión para responder', 'error');
         return;
     }
 
-    try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        let mimeType = '';
-        const formatos = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus'];
+    let mediaUrl = null;
+    let mediaType = null;
 
-        for (const formato of formatos) {
-            if (MediaRecorder.isTypeSupported(formato)) {
-                mimeType = formato;
-                break;
-            }
-        }
+    // Subida de archivos al bucket de almacenamiento 'chat-attachments'
+    if (fileInput.files.length > 0) {
+        const file = fileInput.files[0];
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${user.id}/${Date.now()}.${fileExt}`;
 
-        mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
-        audioChunks = [];
+        const { error: uploadError } = await supabase
+            .storage
+            .from('chat-attachments')
+            .upload(fileName, file);
 
-        mediaRecorder.ondataavailable = event => {
-            if (event.data && event.data.size > 0) {
-                audioChunks.push(event.data);
-            }
-        };
-
-        mediaRecorder.onstop = async () => {
-            try {
-                const tipo = mediaRecorder.mimeType || 'audio/webm';
-                const extension = tipo.includes('ogg') ? 'ogg' : 'webm';
-                const blob = new Blob(audioChunks, { type: tipo });
-                const archivo = new File([blob], `audio-${Date.now()}.${extension}`, { type: tipo });
-
-                archivosSeleccionados.push(archivo);
-                await enviarMensaje();
-            } catch (error) {
-                Logger.error('Error procesando grabación:', error);
-                showToast('No se pudo enviar el audio', 'error');
-            } finally {
-                stream.getTracks().forEach(track => track.stop());
-                audioChunks = [];
-                mediaRecorder = null;
-                grabandoAudio = false;
-                actualizarEstadoGrabacion();
-            }
-        };
-
-        mediaRecorder.start();
-        grabandoAudio = true;
-        actualizarEstadoGrabacion();
-
-    } catch (error) {
-        Logger.error('Error iniciando grabación:', error);
-        showToast('No se pudo acceder al micrófono', 'error');
-    }
-}
-
-function detenerGrabacionAudio() {
-    if (!mediaRecorder || mediaRecorder.state === 'inactive') return;
-    mediaRecorder.stop();
-}
-
-function actualizarEstadoGrabacion() {
-    const boton = obtenerElemento('btnGrabarAudio', 'recordButton', 'btnAudio');
-    if (!boton) return;
-
-    if (grabandoAudio) {
-        boton.classList.add('grabando');
-        boton.setAttribute('aria-label', 'Detener grabación');
-        boton.textContent = '⏹️';
-    } else {
-        boton.classList.remove('grabando');
-        boton.setAttribute('aria-label', 'Grabar audio');
-        boton.textContent = '🎤';
-    }
-}
-
-async function toggleGrabacionAudio() {
-    if (grabandoAudio) {
-        detenerGrabacionAudio();
-    } else {
-        await iniciarGrabacionAudio();
-    }
-}
-
-/* ================================================================
-   ACCIONES DE MENSAJES Y CONVERSACIONES
-================================================================ */
-
-async function eliminarMensaje(mensajeId) {
-    if (!mensajeId) return;
-    if (!confirm('¿Seguro que deseas eliminar este mensaje?')) return;
-
-    try {
-        await llamadaAPI(`/api/mensajes/mensajes/${encodeURIComponent(mensajeId)}`, { method: 'DELETE' });
-        showToast('Mensaje eliminado', 'success');
-
-        if (conversacionActual) {
-            mensajesCache.delete(conversacionActual);
-            await cargarMensajes(conversacionActual);
-        }
-    } catch (error) {
-        Logger.error('Error eliminando mensaje:', error);
-        showToast('No se pudo eliminar el mensaje', 'error');
-    }
-}
-
-async function editarMensaje(mensajeId) {
-    if (!mensajeId) return;
-
-    const safeId = String(mensajeId).replace(/"/g, '\\"');
-    const elemento = document.querySelector(`[data-message-id="${safeId}"]`);
-    if (!elemento) return;
-
-    const actual = elemento.querySelector('.message-text')?.textContent?.trim();
-    const nuevo = prompt('Editar mensaje:', actual || '');
-
-    if (nuevo === null) return;
-    const contenido = nuevo.trim();
-
-    if (!contenido) {
-        showToast('El mensaje no puede quedar vacío', 'warning');
-        return;
-    }
-
-    try {
-        await llamadaAPI(`/api/mensajes/mensajes/${encodeURIComponent(mensajeId)}`, {
-            method: 'PUT',
-            body: JSON.stringify({ contenido })
-        });
-
-        showToast('Mensaje editado', 'success');
-        if (conversacionActual) {
-            mensajesCache.delete(conversacionActual);
-            await cargarMensajes(conversacionActual);
-        }
-    } catch (error) {
-        Logger.error('Error editando mensaje:', error);
-        showToast('No se pudo editar el mensaje', 'error');
-    }
-}
-
-async function eliminarConversacion() {
-    if (!conversacionActual) {
-        showToast('No hay una conversación seleccionada', 'warning');
-        return;
-    }
-
-    if (!confirm('¿Seguro que deseas eliminar esta conversación?')) return;
-
-    try {
-        await llamadaAPI(`/api/mensajes/conversaciones/${encodeURIComponent(conversacionActual)}`, { method: 'DELETE' });
-
-        mensajesCache.delete(conversacionActual);
-        conversacionActual = null;
-        limpiarRealtime();
-
-        const chat = obtenerElemento('chatMessages', 'mensajesChat', 'messagesContainer');
-        if (chat) {
-            chat.innerHTML = '<div class="sin-conversacion"><p>Selecciona una conversación.</p></div>';
-        }
-
-        await cargarConversaciones();
-        showToast('Conversación eliminada', 'success');
-
-    } catch (error) {
-        Logger.error('Error eliminando conversación:', error);
-        showToast('No se pudo eliminar la conversación', 'error');
-    }
-}
-
-async function marcarMensajesLeidos(contactoId) {
-    if (!contactoId) return;
-
-    try {
-        await llamadaAPI('/api/mensajes/mensajes/leer', {
-            method: 'PATCH',
-            body: JSON.stringify({ remitente_id: contactoId })
-        });
-        mensajesCache.delete(contactoId);
-    } catch (error) {
-        Logger.warn('No se pudieron marcar mensajes como leídos:', error);
-    }
-}
-
-async function reportarMensaje(mensajeId) {
-    if (!mensajeId) return;
-    const motivo = prompt('Indica el motivo del reporte:');
-    if (!motivo || !motivo.trim()) return;
-
-    try {
-        await llamadaAPI(`/api/mensajes/reportar/${encodeURIComponent(mensajeId)}`, {
-            method: 'POST',
-            body: JSON.stringify({ motivo: motivo.trim() })
-        });
-        showToast('Mensaje reportado correctamente', 'success');
-    } catch (error) {
-        Logger.error('Error reportando mensaje:', error);
-        showToast('No se pudo reportar el mensaje', 'error');
-    }
-}
-
-async function bloquearUsuario(usuarioId) {
-    if (!usuarioId) return;
-    if (!confirm('¿Seguro que deseas bloquear a este usuario?')) return;
-
-    try {
-        await llamadaAPI(`/api/mensajes/bloquear/${encodeURIComponent(usuarioId)}`, { method: 'POST' });
-        showToast('Usuario bloqueado', 'success');
-
-        if (conversacionActual === usuarioId) {
-            conversacionActual = null;
-            limpiarRealtime();
-        }
-
-        await cargarConversaciones();
-    } catch (error) {
-        Logger.error('Error bloqueando usuario:', error);
-        showToast('No se pudo bloquear al usuario', 'error');
-    }
-}
-
-async function buscarEnConversacion(query) {
-    if (!conversacionActual) {
-        showToast('Selecciona una conversación', 'warning');
-        return;
-    }
-
-    query = typeof query === 'string' ? query.trim() : '';
-
-    if (!query) {
-        await cargarMensajes(conversacionActual);
-        return;
-    }
-
-    try {
-        const resultado = await llamadaAPI(`/api/mensajes/mensajes/${encodeURIComponent(conversacionActual)}?search=${encodeURIComponent(query)}`, { method: 'GET' });
-        const mensajes = Array.isArray(resultado?.data) ? resultado.data : [];
-        const contenedor = obtenerElemento('chatMessages', 'mensajesChat', 'messagesContainer');
-
-        if (!contenedor) return;
-
-        if (mensajes.length === 0) {
-            contenedor.innerHTML = `
-                <div class="sin-resultados">
-                    <strong>No se encontraron resultados</strong>
-                    <p>No hay mensajes que coincidan con "${escapeHTML(query)}"</p>
-                    <button type="button" onclick="cargarMensajes('${escaparAtributo(conversacionActual)}')">Volver</button>
-                </div>
-            `;
+        if (uploadError) {
+            console.error('Error al subir archivo:', uploadError);
+            showToast('Error al subir el archivo adjunto', 'error');
             return;
         }
 
-        renderizarMensajes(mensajes, contenedor);
+        const { data: publicUrlData } = supabase
+            .storage
+            .from('chat-attachments')
+            .getPublicUrl(fileName);
 
-    } catch (error) {
-        Logger.error('Error buscando mensajes:', error);
-        try {
-            const cache = mensajesCache.get(conversacionActual);
-            if (cache?.data) {
-                const encontrados = cache.data.filter(mensaje =>
-                    String(mensaje.contenido || mensaje.texto || '').toLowerCase().includes(query.toLowerCase())
-                );
-                const contenedor = obtenerElemento('chatMessages', 'mensajesChat', 'messagesContainer');
-                renderizarMensajes(encontrados, contenedor);
-            }
-        } catch (fallbackError) {
-            Logger.error('Error en búsqueda local:', fallbackError);
-        }
+        mediaUrl = publicUrlData.publicUrl;
+        mediaType = file.type.startsWith('image/') ? 'image' : 'audio';
+    }
+
+    // Inserción en la base de datos
+    const { error } = await supabase
+        .from('messages')
+        .insert({
+            conversation_id: window.conversacionActual,
+            sender_id: user.id,
+            content: text,
+            media_url: mediaUrl,
+            media_type: mediaType
+        });
+
+    if (error) {
+        console.error('Error al enviar mensaje:', error);
+        showToast('No se pudo enviar el mensaje', 'error');
+    } else {
+        input.value = '';
+        fileInput.value = '';
+        input.style.height = 'auto';
+        
+        const counter = document.getElementById('charCounter');
+        if (counter) counter.textContent = '0/2000';
+        
+        const listaArchivos = document.getElementById('archivosSeleccionados');
+        if (listaArchivos) listaArchivos.innerHTML = '';
     }
 }
 
-/* ================================================================
-   MODALES Y CONTADORES
-================================================================ */
+// ================================================================
+// 4. RENDERS Y UTILIDADES DE UI
+// ================================================================
+
+function renderizarMensajes(mensajes) {
+    const container = document.getElementById('chatMessages');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    if (!mensajes || mensajes.length === 0) {
+        container.innerHTML = `
+            <div class="sin-mensajes">
+                <span class="icono">💭</span>
+                <p>No hay mensajes en este chat</p>
+                <span style="font-size:0.7rem;opacity:0.7;">¡Envía el primer mensaje!</span>
+            </div>`;
+        return;
+    }
+
+    mensajes.forEach(msg => agregarMensajeAUI(msg));
+}
+
+async function agregarMensajeAUI(msg) {
+    const container = document.getElementById('chatMessages');
+    if (!container) return;
+
+    // Limpiar pantalla inicial si no hay mensajes
+    if (container.querySelector('.sin-mensajes')) {
+        container.innerHTML = '';
+    }
+
+    const { data: { user } } = await supabase.auth.getUser();
+    const isOwn = msg.sender_id === user?.id;
+
+    const div = document.createElement('div');
+    div.className = `message ${isOwn ? 'own' : ''}`;
+
+    let mediaHTML = '';
+    if (msg.media_url) {
+        if (msg.media_type === 'image') {
+            mediaHTML = `<div class="message-image"><img src="${msg.media_url}" alt="Adjunto" onclick="abrirImagen('${msg.media_url}')" /></div>`;
+        } else if (msg.media_type === 'audio') {
+            mediaHTML = `<div class="message-audio"><audio controls src="${msg.media_url}"></audio></div>`;
+        }
+    }
+
+    const hora = new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    div.innerHTML = `
+        <div class="message-text">${msg.content ? escapeHTML(msg.content) : ''}</div>
+        ${mediaHTML}
+        <div class="message-meta">
+            <span>${hora}</span>
+        </div>
+    `;
+
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+}
+
+// ================================================================
+// 5. MODALES Y CONTACTOS
+// ================================================================
 
 function nuevaConversacion() {
-    const modal = obtenerElemento('modalNuevoContacto');
-    if (!modal) return;
-
-    const input = obtenerElemento('searchInputModal');
-    const resultados = obtenerElemento('resultadosBusqueda');
-
-    if (resultados) resultados.innerHTML = '';
-    modal.classList.add('show');
-
-    if (input) {
-        input.value = '';
-        setTimeout(() => input.focus(), 200);
-    }
+    const modal = document.getElementById('modalNuevoContacto');
+    if (modal) modal.classList.add('show');
 }
 
 function cerrarModalNuevoContacto() {
-    const modal = obtenerElemento('modalNuevoContacto');
+    const modal = document.getElementById('modalNuevoContacto');
     if (modal) modal.classList.remove('show');
 }
 
-function actualizarContadorCaracteres() {
-    const input = obtenerElemento('messageInput', 'mensajeInput', 'chatInput');
-    const contador = obtenerElemento('charCounter', 'contadorCaracteres');
+async function iniciarConversacionConUsuario(targetUserId) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return showToast('Debes iniciar sesión', 'error');
 
-    if (!input || !contador) return;
-    contador.textContent = `${input.value.length}/2000`;
+    // 1. Crear registro en conversations
+    const { data: nuevaConv, error: errConv } = await supabase
+        .from('conversations')
+        .insert({})
+        .select()
+        .single();
+
+    if (errConv) return showToast('Error al crear la sala', 'error');
+
+    // 2. Insertar participantes
+    const { error: errPart } = await supabase
+        .from('conversation_participants')
+        .insert([
+            { conversation_id: nuevaConv.id, user_id: user.id },
+            { conversation_id: nuevaConv.id, user_id: targetUserId }
+        ]);
+
+    if (errPart) return showToast('Error al añadir participantes', 'error');
+
+    // 3. Abrir la nueva conversación
+    cerrarModalNuevoContacto();
+    await cargarConversaciones();
+    abrirConversacion(nuevaConv.id);
 }
 
-function limpiarMensajeria() {
-    limpiarRealtime();
-    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-        try { mediaRecorder.stop(); } catch {}
-    }
-    mediaRecorder = null;
-    grabandoAudio = false;
-    archivosSeleccionados = [];
-    mensajesCache.clear();
-    conversacionActual = null;
+function showToast(mensaje, tipo = 'success') {
+    const toast = document.getElementById('toast');
+    if (!toast) return;
+
+    toast.className = `toast ${tipo} show`;
+    toast.textContent = mensaje;
+    setTimeout(() => toast.classList.remove('show'), 3000);
 }
 
-/* ================================================================
-   INICIALIZACIÓN DE EVENTOS DOM
-================================================================ */
+function abrirImagen(url) {
+    const modal = document.getElementById('modalImagenMensaje');
+    if (!modal) return;
+    const img = modal.querySelector('img');
+    if (img) img.src = url;
+    modal.classList.add('show');
+}
 
-document.addEventListener('DOMContentLoaded', async () => {
-    Logger.info('Inicializando módulo de mensajes...');
+function escapeHTML(str) {
+    return str.replace(/[&<>'"]/g, 
+        tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+    );
+}
 
-    try {
-        usuarioActual = await SessionManager.obtenerUsuario();
-        if (usuarioActual) {
-            await cargarConversaciones();
-        } else {
-            Logger.warn('No existe sesión activa');
-        }
-    } catch (error) {
-        Logger.error('Error inicializando mensajería:', error);
-    }
+// ================================================================
+// 6. EVENTOS DE INICIALIZACIÓN DOM
+// ================================================================
 
-    const input = obtenerElemento('messageInput', 'mensajeInput', 'chatInput');
-    if (input) {
-        input.addEventListener('input', actualizarContadorCaracteres);
-        input.addEventListener('keydown', event => {
-            if (event.key === 'Enter' && !event.shiftKey) {
-                event.preventDefault();
+document.addEventListener('DOMContentLoaded', () => {
+    const messageInput = document.getElementById('messageInput');
+    const charCounter = document.getElementById('charCounter');
+    const fileInput = document.getElementById('fileInput');
+
+    // Manejo de auto-resize y contador
+    if (messageInput) {
+        messageInput.addEventListener('input', () => {
+            messageInput.style.height = 'auto';
+            messageInput.style.height = `${messageInput.scrollHeight}px`;
+
+            if (charCounter) {
+                charCounter.textContent = `${messageInput.value.length}/2000`;
+            }
+        });
+
+        messageInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
                 enviarMensaje();
             }
         });
     }
 
-    const botonEnviar = obtenerElemento('sendMessageButton', 'btnEnviarMensaje', 'sendButton');
-    if (botonEnviar) botonEnviar.addEventListener('click', enviarMensaje);
+    // Preview de archivos adjuntos
+    if (fileInput) {
+        fileInput.addEventListener('change', () => {
+            const container = document.getElementById('archivosSeleccionados');
+            if (!container) return;
+            container.innerHTML = '';
 
-    const botonAudio = obtenerElemento('btnGrabarAudio', 'recordButton', 'btnAudio');
-    if (botonAudio) botonAudio.addEventListener('click', toggleGrabacionAudio);
-
-    const fileInput = obtenerElemento('fileInput', 'archivoInput', 'inputArchivo');
-    if (fileInput) fileInput.addEventListener('change', handleFileSelect);
-
-    const searchInput = obtenerElemento('searchInputModal');
-    if (searchInput) {
-        searchInput.addEventListener('input', event => buscarContactos(event.target.value));
-        searchInput.addEventListener('keydown', event => {
-            if (event.key === 'Escape') cerrarModalNuevoContacto();
+            Array.from(fileInput.files).forEach(file => {
+                const badge = document.createElement('div');
+                badge.className = 'archivo-seleccionado';
+                badge.innerHTML = `📎 ${file.name} <button onclick="this.parentElement.remove()">✕</button>`;
+                container.appendChild(badge);
+            });
         });
     }
 
-    const searchConversation = obtenerElemento('searchConversationInput', 'buscarConversacionInput');
-    if (searchConversation) {
-        searchConversation.addEventListener('keydown', event => {
-            if (event.key === 'Enter') {
-                event.preventDefault();
-                buscarEnConversacion(event.target.value);
-            }
-        });
-    }
-
-    document.addEventListener('keydown', event => {
-        if (event.key === 'Escape') cerrarModalNuevoContacto();
-    });
-
-    const modal = obtenerElemento('modalNuevoContacto');
-    if (modal) {
-        modal.addEventListener('click', event => {
-            if (event.target === modal) cerrarModalNuevoContacto();
-        });
-    }
-
-    try {
-        const client = await obtenerSupabase();
-        client.auth.onAuthStateChange((event, session) => {
-            SessionManager._session = session || null;
-            SessionManager._usuario = session?.user || null;
-            usuarioActual = session?.user || null;
-
-            if (event === 'SIGNED_OUT') {
-                limpiarMensajeria();
-                window.location.href = '/login';
-            }
-        });
-    } catch (error) {
-        Logger.warn('No se pudo registrar listener de Auth:', error);
-    }
-
-    actualizarContadorCaracteres();
-    Logger.info('Módulo de mensajes inicializado correctamente');
+    // Cargar historial inicial de chats
+    cargarConversaciones();
 });
 
-window.addEventListener('beforeunload', () => {
-    limpiarMensajeria();
-});
-
-/* ================================================================
-   EXPORTACIÓN AL ÁMBITO GLOBAL
-================================================================ */
-
+// Exponer funciones necesarias al scope global (window) para los bindings del HTML
 window.cargarConversaciones = cargarConversaciones;
-window.buscarContactos = buscarContactos;
-window.agregarContacto = agregarContacto;
 window.abrirConversacion = abrirConversacion;
 window.cargarMensajes = cargarMensajes;
 window.enviarMensaje = enviarMensaje;
-window.subirArchivo = subirArchivo;
-window.handleFileSelect = handleFileSelect;
-window.removerArchivo = removerArchivo;
-window.iniciarGrabacionAudio = iniciarGrabacionAudio;
-window.detenerGrabacionAudio = detenerGrabacionAudio;
-window.toggleGrabacionAudio = toggleGrabacionAudio;
-window.eliminarMensaje = eliminarMensaje;
-window.editarMensaje = editarMensaje;
-window.eliminarConversacion = eliminarConversacion;
-window.marcarMensajesLeidos = marcarMensajesLeidos;
-window.reportarMensaje = reportarMensaje;
-window.bloquearUsuario = bloquearUsuario;
-window.buscarEnConversacion = buscarEnConversacion;
 window.nuevaConversacion = nuevaConversacion;
 window.cerrarModalNuevoContacto = cerrarModalNuevoContacto;
-window.abrirImagen = abrirImagen;
+window.iniciarConversacionConUsuario = iniciarConversacionConUsuario;
 window.showToast = showToast;
-window.formatearTexto = formatearTexto;
+window.abrirImagen = abrirImagen;
