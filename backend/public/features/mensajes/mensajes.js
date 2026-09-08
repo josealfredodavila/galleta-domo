@@ -1,12 +1,11 @@
-/* ================================================================
-   MENSAJES - SARIEL'S ECOSYSTEM
-   VERSIÓN CORREGIDA - USANDO window.supabase (SINGLETON GLOBAL)
-   ================================================================ */
+// ================================================================
+// MENSAJES - SARIEL'S ECOSYSTEM
+// VERSIÓN CORREGIDA - COMPATIBLE CON BACKEND
+// ================================================================
 
 // ================================================================
-// CONFIGURACIÓN SUPABASE - REUTILIZAR EL CLIENTE GLOBAL
+// CONFIGURACIÓN SUPABASE - REUTILIZAR CLIENTE GLOBAL
 // ================================================================
-// ✅ Usamos window.supabase que es creado por app.js
 let supabase = window.supabase;
 
 if (typeof supabase === 'undefined') {
@@ -24,7 +23,7 @@ function escapeHTML(texto) {
 }
 
 // ================================================================
-// TOAST NOTIFICACIONES - CON FALLBACK SEGURO
+// TOAST NOTIFICACIONES
 // ================================================================
 function showToast(msg, type = '', duration = 3500) {
     try {
@@ -63,17 +62,6 @@ async function getSession() {
 }
 
 // ================================================================
-// VARIABLES GLOBALES
-// ================================================================
-let usuarioActual = null;
-let conversacionActual = null;
-let realtimeChannel = null;
-let archivosSeleccionados = [];
-let grabacionActiva = false;
-let mediaRecorder = null;
-let audioChunks = [];
-
-// ================================================================
 // VERIFICAR AUTENTICACIÓN
 // ================================================================
 async function verificarAutenticacion() {
@@ -87,14 +75,22 @@ async function verificarAutenticacion() {
 }
 
 // ================================================================
+// VARIABLES GLOBALES
+// ================================================================
+let usuarioActual = null;
+let conversacionActual = null;
+let realtimeChannel = null;
+let archivosSeleccionados = [];
+let grabacionActiva = false;
+let mediaRecorder = null;
+let audioChunks = [];
+
+// ================================================================
 // FORMATEAR TEXTO (Emojis) - CON ESCAPE HTML
 // ================================================================
 function formatearTexto(texto) {
     if (!texto) return '';
-    
-    // Primero escapar HTML para prevenir XSS
     let textoFormateado = escapeHTML(texto);
-    
     const emojis = {
         ':feliz:': '😊',
         ':risa:': '😂',
@@ -111,11 +107,9 @@ function formatearTexto(texto) {
         ':rocket:': '🚀',
         ':sariel:': '◈'
     };
-    
     for (const [key, value] of Object.entries(emojis)) {
         textoFormateado = textoFormateado.replaceAll(key, value);
     }
-    
     return textoFormateado;
 }
 
@@ -146,7 +140,7 @@ async function buscarContactos(query) {
 
         if (!data || data.length === 0) {
             container.innerHTML = `
-                <div style="padding:12px;text-align:center;color:var(--text-muted);font-size:0.75rem;">
+                <div style="padding:12px;text-align:center;color:#667788;font-size:0.75rem;">
                     No se encontraron usuarios
                 </div>
             `;
@@ -174,7 +168,7 @@ async function buscarContactos(query) {
                 ">
                     <div class="avatar" style="
                         width:36px;height:36px;border-radius:50%;
-                        background:linear-gradient(135deg,var(--green-deep),var(--gold));
+                        background:linear-gradient(135deg,#1a2a1a,#d4af37);
                         display:flex;align-items:center;justify-content:center;
                         color:white;font-size:0.8rem;overflow:hidden;
                     ">
@@ -182,16 +176,16 @@ async function buscarContactos(query) {
                     </div>
                     <div style="flex:1;">
                         <div style="font-weight:600;font-size:0.8rem;">${nombreSanitizado}</div>
-                        <div style="font-size:0.6rem;color:var(--text-muted);">@${handleSanitizado}</div>
+                        <div style="font-size:0.6rem;color:#667788;">@${handleSanitizado}</div>
                     </div>
                     ${yaEsContacto ? `
-                        <span style="font-size:0.55rem;color:var(--success);background:rgba(0,214,143,0.1);padding:2px 10px;border-radius:12px;">
+                        <span style="font-size:0.55rem;color:#4ade80;background:rgba(0,214,143,0.1);padding:2px 10px;border-radius:12px;">
                             ✓ Contacto
                         </span>
                     ` : `
                         <button onclick="agregarContacto('${usuario.id}')" style="
-                            background:linear-gradient(135deg,var(--gold),var(--gold-dark));
-                            color:var(--space);border:none;padding:4px 12px;border-radius:12px;
+                            background:linear-gradient(135deg,#d4af37,#c49a2a);
+                            color:#0b0e14;border:none;padding:4px 12px;border-radius:12px;
                             font-size:0.6rem;font-weight:600;cursor:pointer;
                         ">
                             + Agregar
@@ -253,102 +247,64 @@ async function agregarContacto(contactoId) {
 }
 
 // ================================================================
-// 📋 CARGAR CONVERSACIONES
+// 📋 CARGAR CONVERSACIONES (USA EL BACKEND)
 // ================================================================
 async function cargarConversaciones() {
     if (!await verificarAutenticacion()) return;
 
     try {
-        const { data: contactos, error } = await supabase
-            .from('contactos')
-            .select('*, usuarios!contactos_contacto_id_fkey(id, nombre, handle, avatar_url)')
-            .eq('usuario_id', usuarioActual.id)
-            .eq('estado', 'activo');
-
-        if (error) throw error;
-
-        if (!contactos || contactos.length === 0) {
-            const convList = document.getElementById('conversacionesList');
-            if (convList) {
-                convList.innerHTML = `
-                    <div style="padding:40px;text-align:center;color:var(--text-muted);font-size:0.8rem;">
-                        <div style="font-size:2rem;margin-bottom:10px;">◈</div>
-                        <p>Sin contactos agregados</p>
-                        <p style="font-size:0.6rem;">Busca y agrega contactos arriba</p>
-                    </div>
-                `;
+        const session = await getSession();
+        const response = await fetch('/api/mensajes/conversaciones', {
+            headers: {
+                'Authorization': `Bearer ${session.access_token}`
             }
+        });
+
+        const result = await response.json();
+        if (!result.success) throw new Error(result.error || 'Error al cargar conversaciones');
+
+        const conversaciones = result.conversaciones || [];
+
+        const convList = document.getElementById('conversacionesList');
+        if (!convList) return;
+
+        if (conversaciones.length === 0) {
+            convList.innerHTML = `
+                <div style="padding:40px;text-align:center;color:#667788;font-size:0.8rem;">
+                    <div style="font-size:2rem;margin-bottom:10px;">◈</div>
+                    <p>Sin contactos agregados</p>
+                    <p style="font-size:0.6rem;">Busca y agrega contactos arriba</p>
+                </div>
+            `;
             return;
         }
 
-        const conversaciones = await Promise.all(contactos.map(async (contacto) => {
-            const contactoInfo = contacto.usuarios || {};
-            const { data: ultimoMensaje } = await supabase
-                .from('mensajes_chat')
-                .select('contenido, created_at, leido, remitente_id')
-                .or(`and(remitente_id.eq.${usuarioActual.id},destinatario_id.eq.${contactoInfo.id}),and(remitente_id.eq.${contactoInfo.id},destinatario_id.eq.${usuarioActual.id})`)
-                .order('created_at', { ascending: false })
-                .limit(1)
-                .maybeSingle();
+        convList.innerHTML = conversaciones.map(conv => {
+            const avatar = conv.avatar_url ? `<img src="${escapeHTML(conv.avatar_url)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" />` : (conv.nombre ? conv.nombre[0].toUpperCase() : '✦');
+            const isActive = conversacionActual?.id === conv.id;
+            const nombreSanitizado = escapeHTML(conv.nombre);
+            const ultimoMensajeSanitizado = escapeHTML(conv.ultimoMensaje);
 
-            const { count: noLeidos } = await supabase
-                .from('mensajes_chat')
-                .select('id', { count: 'exact' })
-                .eq('remitente_id', contactoInfo.id)
-                .eq('destinatario_id', usuarioActual.id)
-                .eq('leido', false)
-                .is('eliminado', false);
-
-            return {
-                id: contactoInfo.id,
-                nombre: contactoInfo.nombre || 'Usuario',
-                avatar_url: contactoInfo.avatar_url || null,
-                ultimoMensaje: ultimoMensaje?.contenido || 'Sin mensajes',
-                ultimoRemitente: ultimoMensaje?.remitente_id,
-                noLeidos: noLeidos || 0,
-                fecha: ultimoMensaje?.created_at
-            };
-        }));
-
-        conversaciones.sort((a, b) => {
-            if (!a.fecha) return 1;
-            if (!b.fecha) return -1;
-            return new Date(b.fecha) - new Date(a.fecha);
-        });
-
-        const convList = document.getElementById('conversacionesList');
-        if (convList) {
-            convList.innerHTML = conversaciones.map(conv => {
-                const avatar = conv.avatar_url ? `<img src="${escapeHTML(conv.avatar_url)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" />` : (conv.nombre ? conv.nombre[0].toUpperCase() : '✦');
-                const isActive = conversacionActual?.id === conv.id;
-                const nombreSanitizado = escapeHTML(conv.nombre);
-                const ultimoMensajeSanitizado = escapeHTML(conv.ultimoMensaje);
-
-                return `
-                    <div class="conv-item ${isActive ? 'active' : ''}" 
-                         data-id="${conv.id}" 
-                         onclick="abrirConversacion('${conv.id}')">
-                        <div class="conv-avatar">${avatar}</div>
-                        <div class="conv-info">
-                            <div class="conv-nombre">${nombreSanitizado}</div>
-                            <div class="conv-msg">${ultimoMensajeSanitizado.length > 40 ? ultimoMensajeSanitizado.substring(0, 40) + '...' : ultimoMensajeSanitizado}</div>
-                        </div>
-                        <div class="conv-meta">
-                            ${conv.noLeidos > 0 ? `<span class="conv-badge">${conv.noLeidos}</span>` : ''}
-                            ${conv.fecha ? `<span class="conv-hora">${new Date(conv.fecha).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</span>` : ''}
-                        </div>
-                        <div style="display:flex;gap:4px;flex-shrink:0;">
-                            <button onclick="event.stopPropagation();eliminarConversacion('${conv.id}')" 
-                                    style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.6rem;">
-                                ✕
-                            </button>
-                        </div>
+            return `
+                <div class="conv-item ${isActive ? 'active' : ''}" 
+                     data-id="${conv.id}" 
+                     onclick="abrirConversacion('${conv.id}')">
+                    <div class="conv-avatar">${avatar}</div>
+                    <div class="conv-info">
+                        <div class="conv-nombre">${nombreSanitizado}</div>
+                        <div class="conv-msg">${ultimoMensajeSanitizado.length > 40 ? ultimoMensajeSanitizado.substring(0, 40) + '...' : ultimoMensajeSanitizado}</div>
                     </div>
-                `;
-            }).join('');
-        }
+                    <div class="conv-meta">
+                        ${conv.noLeidos > 0 ? `<span class="conv-badge">${conv.noLeidos}</span>` : ''}
+                        ${conv.fecha ? `<span class="conv-hora">${new Date(conv.fecha).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</span>` : ''}
+                    </div>
+                </div>
+            `;
+        }).join('');
+
     } catch (error) {
         console.error('Error cargando conversaciones:', error);
+        showToast('❌ Error al cargar conversaciones', 'error');
     }
 }
 
@@ -438,7 +394,7 @@ async function abrirConversacion(contactoId) {
 }
 
 // ================================================================
-// 📖 CARGAR MENSAJES
+// 📖 CARGAR MENSAJES (USA EL BACKEND)
 // ================================================================
 async function cargarMensajes(contactoId) {
     const session = await getSession();
@@ -447,28 +403,33 @@ async function cargarMensajes(contactoId) {
     const container = document.getElementById('chatMessages');
     if (!container) return;
 
-    const { data: mensajes, error } = await supabase
-        .from('mensajes_chat')
-        .select('*')
-        .or(`and(remitente_id.eq.${session.user.id},destinatario_id.eq.${contactoId}),and(remitente_id.eq.${contactoId},destinatario_id.eq.${session.user.id})`)
-        .order('created_at', { ascending: true });
+    try {
+        const response = await fetch(`/api/mensajes/mensajes/${contactoId}?userId=${session.user.id}`, {
+            headers: {
+                'Authorization': `Bearer ${session.access_token}`
+            }
+        });
 
-    if (error) {
+        const result = await response.json();
+        if (!result.success) throw new Error(result.error || 'Error al cargar mensajes');
+
+        const mensajes = result.mensajes || [];
+
+        if (mensajes.length > 0) {
+            container.innerHTML = mensajes.map(msg => crearMensajeHTML(msg)).join('');
+            container.scrollTop = container.scrollHeight;
+        } else {
+            container.innerHTML = `
+                <div class="empty-chat">
+                    <span class="icon">◈</span>
+                    <h3>Inicia la conversación</h3>
+                    <p>Envía un mensaje para comenzar</p>
+                </div>
+            `;
+        }
+    } catch (error) {
         console.error('Error cargando mensajes:', error);
-        return;
-    }
-
-    if (mensajes && mensajes.length > 0) {
-        container.innerHTML = mensajes.map(msg => crearMensajeHTML(msg)).join('');
-        container.scrollTop = container.scrollHeight;
-    } else {
-        container.innerHTML = `
-            <div class="empty-chat">
-                <span class="icon">◈</span>
-                <h3>Inicia la conversación</h3>
-                <p>Envía un mensaje para comenzar</p>
-            </div>
-        `;
+        showToast('❌ Error al cargar mensajes', 'error');
     }
 }
 
@@ -496,8 +457,8 @@ function crearMensajeHTML(msg) {
                 <div class="meta">
                     ${hora} ${msg.editado ? '✎' : ''}
                     <span class="leido ${msg.leido ? 'leido' : 'no-leido'}">${msg.leido ? '◆◆' : '◆◇'}</span>
-                    <button onclick="eliminarMensaje('${msg.id}')" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:0.5rem;">✕</button>
-                    <button onclick="editarMensaje('${msg.id}')" style="background:none;border:none;color:var(--gold);cursor:pointer;font-size:0.5rem;">✎</button>
+                    <button onclick="eliminarMensaje('${msg.id}')" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:0.5rem;">✕</button>
+                    <button onclick="editarMensaje('${msg.id}')" style="background:none;border:none;color:#d4af37;cursor:pointer;font-size:0.5rem;">✎</button>
                 </div>
             </div>
         `;
@@ -506,12 +467,12 @@ function crearMensajeHTML(msg) {
     return `
         <div class="msg-wrapper recibido">
             <div class="fila">
-                <div class="avatar estado-conectado">◈</div>
+                <div class="avatar">◈</div>
                 <div class="burbuja">${contenidoFormateado}</div>
             </div>
             <div class="meta">
                 ${hora} ${msg.editado ? '✎' : ''}
-                <button onclick="reportarMensaje('${msg.id}')" style="background:none;border:none;color:var(--warning);cursor:pointer;font-size:0.5rem;">⚠️</button>
+                <button onclick="reportarMensaje('${msg.id}')" style="background:none;border:none;color:#fbbf24;cursor:pointer;font-size:0.5rem;">⚠️</button>
             </div>
         </div>
     `;
@@ -523,7 +484,7 @@ function crearMensajeImagen(msg, esEnviado, hora) {
         return `
             <div class="msg-wrapper enviado">
                 <div class="burbuja" style="padding:4px;background:transparent;border-radius:12px;">
-                    <img src="${imagenUrl}" style="max-width:200px;border-radius:12px;border:2px solid var(--gold);" />
+                    <img src="${imagenUrl}" style="max-width:200px;border-radius:12px;border:2px solid #d4af37;" />
                 </div>
                 <div class="meta">${hora} ${msg.editado ? '✎' : ''} <span class="leido ${msg.leido ? 'leido' : 'no-leido'}">${msg.leido ? '◆◆' : '◆◇'}</span></div>
             </div>
@@ -532,8 +493,8 @@ function crearMensajeImagen(msg, esEnviado, hora) {
     return `
         <div class="msg-wrapper recibido">
             <div class="fila">
-                <div class="avatar estado-conectado">◈</div>
-                <div class="burbuja" style="padding:4px;background:transparent;border-radius:12px;border:1px solid var(--glass-border);">
+                <div class="avatar">◈</div>
+                <div class="burbuja" style="padding:4px;background:transparent;border-radius:12px;border:1px solid rgba(212,175,55,0.15);">
                     <img src="${imagenUrl}" style="max-width:200px;border-radius:12px;" />
                 </div>
             </div>
@@ -560,7 +521,7 @@ function crearMensajeAudio(msg, esEnviado, hora) {
     return `
         <div class="msg-wrapper recibido">
             <div class="fila">
-                <div class="avatar estado-conectado">◈</div>
+                <div class="avatar">◈</div>
                 <div class="burbuja" style="display:flex;align-items:center;gap:8px;">
                     <span>🎵</span>
                     <audio controls style="max-width:150px;height:30px;">
@@ -591,7 +552,7 @@ function agregarMensajeRealtime(msg) {
 }
 
 // ================================================================
-// 📤 ENVIAR MENSAJE
+// 📤 ENVIAR MENSAJE (USA EL BACKEND)
 // ================================================================
 async function enviarMensaje() {
     const chatInput = document.getElementById('chatInput');
@@ -623,20 +584,26 @@ async function enviarMensaje() {
             return;
         }
 
-        const { error } = await supabase
-            .from('mensajes_chat')
-            .insert({
-                remitente_id: session.user.id,
+        const response = await fetch('/api/mensajes/mensajes', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.access_token}`
+            },
+            body: JSON.stringify({
                 destinatario_id: conversacionActual.id,
                 contenido: contenido,
                 tipo: 'texto'
-            });
+            })
+        });
 
-        if (error) throw error;
+        const result = await response.json();
+        if (!result.success) throw new Error(result.error || 'Error al enviar mensaje');
 
         chatInput.value = '';
         await cargarMensajes(conversacionActual.id);
         cargarConversaciones();
+
     } catch (error) {
         console.error('Error enviando mensaje:', error);
         showToast('❌ Error al enviar mensaje', 'error');
@@ -664,17 +631,22 @@ async function subirArchivo(file, session) {
 
         const publicUrl = urlData.publicUrl;
 
-        const { error } = await supabase
-            .from('mensajes_chat')
-            .insert({
-                remitente_id: session.user.id,
+        const response = await fetch('/api/mensajes/mensajes', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.access_token}`
+            },
+            body: JSON.stringify({
                 destinatario_id: conversacionActual.id,
                 contenido: file.name,
                 tipo: tipo,
                 imagen_url: publicUrl
-            });
+            })
+        });
 
-        if (error) throw error;
+        const result = await response.json();
+        if (!result.success) throw new Error(result.error || 'Error al subir archivo');
 
         showToast('✅ Archivo enviado', 'success');
         await cargarMensajes(conversacionActual.id);
@@ -713,9 +685,9 @@ function handleFileSelect(event) {
         el.style.cssText = `
             display:inline-flex;align-items:center;gap:6px;
             background:rgba(212,175,55,0.1);padding:4px 12px;
-            border-radius:12px;font-size:0.65rem;color:var(--text-secondary);
+            border-radius:12px;font-size:0.65rem;color:#8899aa;
         `;
-        el.innerHTML = `${icon} ${escapeHTML(file.name)} (${size}KB) <span onclick="this.parentElement.remove();archivosSeleccionados=[];" style="cursor:pointer;color:var(--danger);">✕</span>`;
+        el.innerHTML = `${icon} ${escapeHTML(file.name)} (${size}KB) <span onclick="this.parentElement.remove();archivosSeleccionados=[];" style="cursor:pointer;color:#ef4444;">✕</span>`;
         preview.appendChild(el);
     }
 
@@ -762,7 +734,7 @@ async function iniciarGrabacionVoz(btn) {
         mediaRecorder.start();
         grabacionActiva = true;
         btn.textContent = '⏹️';
-        btn.style.color = 'var(--danger)';
+        btn.style.color = '#ef4444';
         showToast('🎙️ Grabando...', '', 2000);
 
     } catch (error) {
@@ -782,7 +754,7 @@ function detenerGrabacionVoz(btn) {
 }
 
 // ================================================================
-// 🗑️ ELIMINAR MENSAJE
+// 🗑️ ELIMINAR MENSAJE (USA EL BACKEND)
 // ================================================================
 async function eliminarMensaje(mensajeId) {
     if (!confirm('¿Eliminar este mensaje?')) return;
@@ -794,13 +766,15 @@ async function eliminarMensaje(mensajeId) {
             return;
         }
 
-        const { error } = await supabase
-            .from('mensajes_chat')
-            .update({ eliminado: true })
-            .eq('id', mensajeId)
-            .eq('remitente_id', session.user.id);
+        const response = await fetch(`/api/mensajes/mensajes/${mensajeId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${session.access_token}`
+            }
+        });
 
-        if (error) throw error;
+        const result = await response.json();
+        if (!result.success) throw new Error(result.error || 'Error al eliminar mensaje');
 
         showToast('🗑️ Mensaje eliminado');
         if (conversacionActual) {
@@ -815,7 +789,7 @@ async function eliminarMensaje(mensajeId) {
 }
 
 // ================================================================
-// ✏️ EDITAR MENSAJE
+// ✏️ EDITAR MENSAJE (USA EL BACKEND)
 // ================================================================
 async function editarMensaje(mensajeId) {
     const nuevoContenido = prompt('Edita tu mensaje:');
@@ -832,16 +806,17 @@ async function editarMensaje(mensajeId) {
             return;
         }
 
-        const { error } = await supabase
-            .from('mensajes_chat')
-            .update({
-                contenido: nuevoContenido,
-                editado: true
-            })
-            .eq('id', mensajeId)
-            .eq('remitente_id', session.user.id);
+        const response = await fetch(`/api/mensajes/mensajes/${mensajeId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.access_token}`
+            },
+            body: JSON.stringify({ contenido: nuevoContenido })
+        });
 
-        if (error) throw error;
+        const result = await response.json();
+        if (!result.success) throw new Error(result.error || 'Error al editar mensaje');
 
         showToast('✅ Mensaje editado');
         if (conversacionActual) {
@@ -904,23 +879,20 @@ async function eliminarConversacion(contactoId) {
 }
 
 // ================================================================
-// 👁️ MARCAR MENSAJES COMO LEÍDOS - CORREGIDO (SIN RPC)
+// 👁️ MARCAR MENSAJES COMO LEÍDOS
 // ================================================================
 async function marcarMensajesLeidos(contactoId) {
     try {
         const session = await getSession();
         if (!session) return;
 
-        // ✅ MARCAR DIRECTAMENTE (SIN RPC)
-        const { error } = await supabase
+        await supabase
             .from('mensajes_chat')
             .update({ leido: true })
             .eq('remitente_id', contactoId)
             .eq('destinatario_id', session.user.id)
             .eq('leido', false)
             .is('eliminado', false);
-
-        if (error) throw error;
 
     } catch (error) {
         console.error('Error marcando mensajes como leídos:', error);
@@ -941,21 +913,17 @@ async function reportarMensaje(mensajeId) {
             return;
         }
 
-        const { error } = await supabase
-            .from('mensajes_reportes')
-            .insert({
-                mensaje_id: mensajeId,
-                usuario_id: session.user.id,
-                motivo: motivo
-            });
+        const response = await fetch(`/api/mensajes/reportar/${mensajeId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.access_token}`
+            },
+            body: JSON.stringify({ motivo })
+        });
 
-        if (error) {
-            if (error.code === '42P01') {
-                showToast('⚠️ La tabla de reportes no está configurada', 'warning');
-                return;
-            }
-            throw error;
-        }
+        const result = await response.json();
+        if (!result.success) throw new Error(result.error || 'Error al reportar');
 
         showToast('⚠️ Reporte enviado. Gracias por ayudar.', 'warning');
 
@@ -983,26 +951,15 @@ async function bloquearUsuario(usuarioId) {
             return;
         }
 
-        try {
-            await supabase
-                .from('bloqueos')
-                .insert({
-                    usuario_id: session.user.id,
-                    bloqueado_id: usuarioId
-                });
-        } catch (insertError) {
-            if (insertError.code === '42P01') {
-                showToast('⚠️ La tabla de bloqueos no está configurada', 'warning');
-                return;
+        const response = await fetch(`/api/mensajes/bloquear/${usuarioId}`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${session.access_token}`
             }
-            throw insertError;
-        }
+        });
 
-        await supabase
-            .from('contactos')
-            .delete()
-            .eq('usuario_id', session.user.id)
-            .eq('contacto_id', usuarioId);
+        const result = await response.json();
+        if (!result.success) throw new Error(result.error || 'Error al bloquear');
 
         showToast('🚫 Usuario bloqueado');
 
@@ -1026,7 +983,7 @@ async function bloquearUsuario(usuarioId) {
 }
 
 // ================================================================
-// 🔍 BUSCAR EN CONVERSACIÓN
+// 🔍 BUSCAR EN CONVERSACIÓN (SEGURO)
 // ================================================================
 async function buscarEnConversacion(query) {
     if (!query || !query.trim()) {
@@ -1044,11 +1001,11 @@ async function buscarEnConversacion(query) {
         if (!session) return;
 
         const { data, error } = await supabase
-            .from('mensajes_chat')
-            .select('*')
-            .or(`and(remitente_id.eq.${session.user.id},destinatario_id.eq.${conversacionActual.id}),and(remitente_id.eq.${conversacionActual.id},destinatario_id.eq.${session.user.id})`)
-            .ilike('contenido', `%${query}%`)
-            .order('created_at', { ascending: true });
+            .rpc('buscar_mensajes_seguro', {
+                p_usuario_id: session.user.id,
+                p_contacto_id: conversacionActual.id,
+                p_query: query.trim()
+            });
 
         if (error) throw error;
 
@@ -1059,7 +1016,8 @@ async function buscarEnConversacion(query) {
                     <span class="icon">◈</span>
                     <h3>No se encontraron resultados</h3>
                     <p>No hay mensajes que coincidan con "${escapeHTML(query)}"</p>
-                    <button onclick="cargarMensajes('${conversacionActual.id}')" style="margin-top:12px;padding:8px 20px;background:linear-gradient(135deg,var(--gold),var(--gold-dark));border:none;border-radius:30px;color:var(--space);font-weight:600;cursor:pointer;">
+                    <button onclick="cargarMensajes('${conversacionActual.id}')" 
+                            style="margin-top:12px;padding:8px 20px;background:linear-gradient(135deg,#d4af37,#c49a2a);border:none;border-radius:30px;color:#0b0e14;font-weight:600;cursor:pointer;">
                         Volver
                     </button>
                 </div>
@@ -1084,7 +1042,7 @@ function nuevaConversacion() {
     document.getElementById('modalNuevoContacto').classList.add('show');
     document.getElementById('searchInputModal').value = '';
     document.getElementById('resultadosBusqueda').innerHTML = `
-        <div style="padding:20px;text-align:center;color:var(--text-muted);font-size:0.75rem;">
+        <div style="padding:20px;text-align:center;color:#667788;font-size:0.75rem;">
             Escribe al menos 2 caracteres para buscar
         </div>
     `;
@@ -1145,11 +1103,11 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     });
 
-    console.log('◈ Sariel\'s - Mensajes');
+    console.log('◈ Sariel\'s - Mensajes (Backend integrado)');
 });
 
 // ================================================================
-// EXPOSICIÓN DE FUNCIONES GLOBALES
+// EXPOSICIÓN GLOBAL
 // ================================================================
 window.cargarConversaciones = cargarConversaciones;
 window.abrirConversacion = abrirConversacion;
