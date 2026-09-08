@@ -208,6 +208,20 @@
             flex-shrink: 0;
         }
         .conversaciones-panel .mensajes-header h2 { font-size: 0.85rem; font-weight: 700; color: var(--text-secondary); }
+        .conversaciones-panel .mensajes-header .back-btn {
+            background: transparent;
+            border: 1px solid var(--glass-border);
+            color: var(--text-muted);
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .conversaciones-panel .mensajes-header .back-btn:hover {
+            border-color: var(--gold);
+            color: var(--gold);
+        }
         #conversationList { flex: 1; overflow-y: auto; padding: 8px 0; }
         #conversationList::-webkit-scrollbar { width: 4px; }
         #conversationList::-webkit-scrollbar-thumb { background: var(--gold-dark); border-radius: 4px; }
@@ -431,17 +445,17 @@
         .modal-imagen-mensaje img { max-width: 90%; max-height: 85vh; border-radius: var(--radius); object-fit: contain; border: 1px solid var(--glass-border); }
 
         /* ===== TOAST ===== */
-        .toast-notification {
+        .toast {
             position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(100px);
             padding: 12px 24px; border-radius: var(--radius); background: var(--bg-dark);
             border: 1px solid var(--glass-border); color: var(--text-primary); font-size: 0.85rem;
             z-index: 9999; opacity: 0; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             pointer-events: none; backdrop-filter: blur(12px); max-width: 90%; text-align: center;
         }
-        .toast-notification.show { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
-        .toast-notification.success { border-color: var(--success); }
-        .toast-notification.error { border-color: var(--danger); }
-        .toast-notification.warning { border-color: var(--gold); }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
+        .toast.success { border-color: var(--success); }
+        .toast.error { border-color: var(--danger); }
+        .toast.warning { border-color: var(--gold); }
 
         /* ===== VIDEOLLAMADA ===== */
         .call-overlay {
@@ -621,6 +635,8 @@
             <a href="#" class="nav-link active">◈ Mensajes</a>
             <a href="/features/live/live.html" class="nav-link live">◉ Live</a>
             <a href="/features/videos/videos.html" class="nav-link">🎬 Videos</a>
+            <!-- ✅ Ruta a Contactos agregada (igual que en contactos.html) -->
+            <a href="/features/contactos/contactos.html" class="nav-link">👥 Contactos</a>
         </nav>
 
         <!-- ===== MAIN ===== -->
@@ -630,7 +646,11 @@
             <div class="conversaciones-panel">
                 <div class="mensajes-header">
                     <h2>◈ Chats</h2>
-                    <button class="btn btn-gold btn-sm" onclick="nuevaConversacion()">✚ Nuevo</button>
+                    <div style="display:flex;gap:6px;">
+                        <button class="btn btn-gold btn-sm" onclick="nuevaConversacion()">✚ Nuevo</button>
+                        <!-- ✅ Botón para volver a Contactos (misma ruta que contactos.html) -->
+                        <button class="back-btn" onclick="irAContactos()" title="Volver a contactos">👥</button>
+                    </div>
                 </div>
                 <div id="conversationList">
                     <div class="sin-conversaciones">
@@ -798,22 +818,42 @@
         }
 
         function showToast(msg, tipo = 'info') {
-            let toast = document.getElementById('toastNotification');
+            let toast = document.getElementById('toast');
             if (!toast) {
                 toast = document.createElement('div');
-                toast.id = 'toastNotification';
-                toast.className = 'toast-notification';
+                toast.id = 'toast';
+                toast.className = 'toast';
                 document.body.appendChild(toast);
             }
             const iconos = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
             toast.innerHTML = `${iconos[tipo] || 'ℹ️'} ${msg}`;
-            toast.className = `toast-notification show ${tipo}`;
+            toast.className = `toast show ${tipo}`;
             clearTimeout(toast._timeout);
             toast._timeout = setTimeout(() => toast.classList.remove('show'), 3000);
         }
 
         // ================================================================
-        // 3. CONVERSACIONES
+        // 3. NAVEGACIÓN (CON MISMA RUTA QUE CONTACTOS.HTML)
+        // ================================================================
+        
+        /**
+         * ✅ Función para volver a Contactos
+         * Usa la MISMA ruta que contactos.html
+         */
+        function irAContactos() {
+            window.location.href = '/features/contactos/contactos.html';
+        }
+
+        /**
+         * ✅ Función para ir a Contactos desde cualquier lugar
+         * Misma ruta que se usa en contactos.html
+         */
+        function irAContactosDesdeMensajes() {
+            window.location.href = '/features/contactos/contactos.html';
+        }
+
+        // ================================================================
+        // 4. CONVERSACIONES
         // ================================================================
         async function cargarConversaciones() {
             const container = document.getElementById('conversationList');
@@ -851,7 +891,7 @@
         }
 
         // ================================================================
-        // 4. ABRIR CONVERSACIÓN
+        // 5. ABRIR CONVERSACIÓN
         // ================================================================
         async function abrirConversacion(convId, nombre, avatarUrl) {
             conversacionActual = convId;
@@ -865,7 +905,7 @@
         }
 
         // ================================================================
-        // 5. MENSAJES
+        // 6. MENSAJES
         // ================================================================
         async function cargarMensajes(convId) {
             const container = document.getElementById('chatMessages');
@@ -913,7 +953,7 @@
         }
 
         // ================================================================
-        // 6. ENVIAR MENSAJE
+        // 7. ENVIAR MENSAJE
         // ================================================================
         async function enviarMensaje() {
             if (!conversacionActual) { showToast('Selecciona una conversación', 'warning'); return; }
@@ -978,7 +1018,7 @@
         }
 
         // ================================================================
-        // 7. ELIMINAR / EDITAR / REPORTAR MENSAJE
+        // 8. ELIMINAR / EDITAR / REPORTAR MENSAJE
         // ================================================================
         async function eliminarMensaje(id) {
             if (!confirm('¿Eliminar este mensaje?')) return;
@@ -1051,7 +1091,7 @@
         }
 
         // ================================================================
-        // 8. NUEVA CONVERSACIÓN
+        // 9. NUEVA CONVERSACIÓN
         // ================================================================
         function nuevaConversacion() {
             document.getElementById('modalNuevoContacto').classList.add('show');
@@ -1113,7 +1153,7 @@
         }
 
         // ================================================================
-        // 9. TIEMPO REAL (Polling)
+        // 10. TIEMPO REAL (Polling)
         // ================================================================
         function suscribirMensajesTiempoReal(convId) {
             if (realtimeChannel) { clearInterval(realtimeChannel); realtimeChannel = null; }
@@ -1156,7 +1196,7 @@
         }
 
         // ================================================================
-        // 10. ARCHIVOS
+        // 11. ARCHIVOS
         // ================================================================
         function seleccionarArchivo() { document.getElementById('fileInput')?.click(); }
         
@@ -1181,7 +1221,7 @@
         }
 
         // ================================================================
-        // 11. MODAL IMAGEN
+        // 12. MODAL IMAGEN
         // ================================================================
         function abrirModalImagen(src) {
             const modal = document.getElementById('modalImagenMensaje');
@@ -1190,7 +1230,7 @@
         }
 
         // ================================================================
-        // 12. IDIOMA
+        // 13. IDIOMA
         // ================================================================
         function cambiarIdioma(idioma) {
             console.log('🌐 Idioma cambiado a:', idioma);
@@ -1198,7 +1238,7 @@
         }
 
         // ================================================================
-        // 13. 🎥 VIDEOLLAMADA - FUNCIONES COMPLETAS
+        // 14. 🎥 VIDEOLLAMADA - FUNCIONES COMPLETAS
         // ================================================================
         async function obtenerTokenLiveKit(roomName, participantName) {
             try {
@@ -1492,7 +1532,7 @@
         }
 
         // ================================================================
-        // 14. LLAMADA ENTRANTE
+        // 15. LLAMADA ENTRANTE
         // ================================================================
         window._aceptarLlamadaEntrante = async function() {
             const incomingEl = document.getElementById('callIncoming');
@@ -1536,7 +1576,7 @@
         };
 
         // ================================================================
-        // 15. ESTRELLAS
+        // 16. ESTRELLAS
         // ================================================================
         (function initStars() {
             const canvas = document.getElementById('stars-canvas');
@@ -1566,11 +1606,29 @@
         })();
 
         // ================================================================
-        // 16. INICIALIZACIÓN
+        // 17. INICIALIZACIÓN
         // ================================================================
         document.addEventListener('DOMContentLoaded', function() {
             console.log('◈ Sariel\'s Mensajes - Inicializado correctamente');
+            
+            // ✅ Cargar parámetro de URL (si viene de contactos)
+            const urlParams = new URLSearchParams(window.location.search);
+            const contactoId = urlParams.get('contacto');
+            
             cargarConversaciones();
+            
+            // Si viene de contactos con un ID, abrir esa conversación
+            if (contactoId) {
+                // Buscar y abrir la conversación con ese contacto
+                setTimeout(() => {
+                    const items = document.querySelectorAll('.conversation-item');
+                    items.forEach(item => {
+                        if (item.dataset?.contactoId === contactoId) {
+                            item.click();
+                        }
+                    });
+                }, 1000);
+            }
             
             document.getElementById('chatInput')?.addEventListener('keydown', function(e) {
                 if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviarMensaje(); }
@@ -1594,7 +1652,7 @@
         });
 
         // ================================================================
-        // 17. EXPOSICIÓN GLOBAL
+        // 18. EXPOSICIÓN GLOBAL
         // ================================================================
         window.cargarConversaciones = cargarConversaciones;
         window.abrirConversacion = abrirConversacion;
@@ -1624,8 +1682,12 @@
         window._aceptarLlamadaEntrante = window._aceptarLlamadaEntrante;
         window._rechazarLlamadaEntrante = window._rechazarLlamadaEntrante;
         window.showToast = showToast;
+        // ✅ Funciones de navegación expuestas globalmente
+        window.irAContactos = irAContactos;
+        window.irAContactosDesdeMensajes = irAContactosDesdeMensajes;
 
         console.log('✅ Sariel\'s Mensajes - Listo para producción');
+        console.log('📁 Ruta a Contactos: /features/contactos/contactos.html');
     </script>
 
 </body>
