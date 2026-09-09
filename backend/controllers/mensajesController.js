@@ -1,6 +1,7 @@
 // ================================================================
 // MENSAJES CONTROLLER - SARIEL'S WEB3
 // VERSIÓN COMPLETA CON RPC Y ESQUEMA REAL DE SUPABASE
+// CORREGIDO: BUCKETS CORRECTOS Y URLs FIRMADAS
 // ================================================================
 
 const { supabaseAdmin } = require('../config/supabase');
@@ -345,7 +346,10 @@ exports.buscarUsuarios = async (req, res) => {
 };
 
 // ================================================================
-// SUBIR ARCHIVO
+// SUBIR ARCHIVO - CORREGIDO
+// ================================================================
+// ✅ AHORA USA LOS BUCKETS CORRECTOS: chat-attachments y chat-audio
+// ✅ GENERA URLS FIRMADAS EN VEZ DE URLS PÚBLICAS
 // ================================================================
 exports.subirArchivo = async (req, res) => {
     try {
@@ -363,12 +367,17 @@ exports.subirArchivo = async (req, res) => {
 
         const ext = path.extname(file.originalname);
         const filename = `${uuidv4()}${ext}`;
-        const folder = getFolderByMime(file.mimetype);
-        const filePath = `${folder}/${filename}`;
+        
+        // Determinar bucket según tipo de archivo
+        const esAudio = file.mimetype.startsWith('audio/');
+        const bucket = esAudio ? 'chat-audio' : 'chat-attachments';
+        
+        // Ruta: userId/mensajes/filename
+        const filePath = `${userId}/mensajes/${filename}`;
 
         // Subir a Supabase Storage
         const { data, error } = await supabaseAdmin.storage
-            .from('chat-files')
+            .from(bucket)
             .upload(filePath, file.buffer, {
                 contentType: file.mimetype,
                 cacheControl: '3600',
@@ -377,18 +386,23 @@ exports.subirArchivo = async (req, res) => {
 
         if (error) throw error;
 
-        // Obtener URL pública
-        const { data: publicUrl } = supabaseAdmin.storage
-            .from('chat-files')
-            .getPublicUrl(filePath);
+        // ✅ GENERAR URL FIRMADA (NO URL PÚBLICA)
+        const { data: signedData, error: signedError } = await supabaseAdmin.storage
+            .from(bucket)
+            .createSignedUrl(filePath, 3600); // 1 hora de expiración
+
+        if (signedError) throw signedError;
 
         const tipo = getTipoByMime(file.mimetype);
 
         res.json({
             success: true,
-            url: publicUrl.publicUrl,
+            url: signedData.signedUrl,  // URL FIRMADA
             tipo: tipo,
-            nombre: file.originalname
+            nombre: file.originalname,
+            bucket: bucket,
+            filePath: filePath,
+            expiresIn: 3600
         });
     } catch (error) {
         console.error('❌ Error en subirArchivo:', error);
