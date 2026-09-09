@@ -361,18 +361,13 @@
     <script>
         // ================================================================
         // SARIEL'S - MENSAJES COMPLETO
-        // VERSIÓN FINAL - URLs FIRMADAS CON BACKEND
+        // VERSIÓN CORREGIDA - perfiles_publicos
         // ================================================================
-        // CAMBIOS DE ESTA REVISIÓN:
-        // 1) cargarConversaciones(): RPC obtener_conversaciones_usuario
-        //    devuelve campos planos (otro_usuario_id/otro_usuario_nombre/
-        //    otro_usuario_avatar), no un arreglo otros_participantes.
-        // 2) subirArchivo(): usa endpoint /api/storage/signed-url para
-        //    generar URLs firmadas con expiración de 1 hora (3600s).
-        // 3) subirArchivo(): la ruta del archivo empieza con el UID del
-        //    usuario (requisito de las políticas RLS de Storage).
-        // 4) RLS activado en blocked_users (ChatGPT ya lo hizo).
-        // ================================================================
+
+        // CAMBIOS APLICADOS:
+        // 1) buscarContactos(): .from('usuarios') → .from('perfiles_publicos')
+        // 2) abrirConversacion(): .from('usuarios') → .from('perfiles_publicos')
+        // 3) Estado online en abrirConversacion(): .from('usuarios') → .from('perfiles_publicos')
 
         var API_URL = window.location.origin;
         var SUPABASE_URL = 'https://zultnlogdoajehbswlih.supabase.co';
@@ -482,7 +477,7 @@
         }
 
         // ================================================================
-        // CARGAR CONVERSACIONES (RPC)
+        // CARGAR CONVERSACIONES
         // ================================================================
 
         async function cargarConversaciones() {
@@ -568,7 +563,7 @@
         }
 
         // ================================================================
-        // ABRIR CONVERSACIÓN (RPC)
+        // ABRIR CONVERSACIÓN - CORREGIDO (usa perfiles_publicos)
         // ================================================================
 
         async function abrirConversacion(conversacionId) {
@@ -583,31 +578,45 @@
                 var selected = document.querySelector('.conv-item[data-id="' + conversacionId + '"]');
                 if (selected) selected.classList.add('active');
 
+                // ✅ CORREGIDO: usar perfiles_publicos para datos del contacto
                 var otroResult = await supabase
-                    .from('conversation_participants')
-                    .select('user_id, usuarios(nombre, avatar_url)')
-                    .eq('conversation_id', conversacionId)
-                    .neq('user_id', usuarioActual.id)
+                    .from('perfiles_publicos')
+                    .select('id, nombre, handle, avatar_url')
+                    .eq('id', conversacionId)
                     .single();
 
                 if (otroResult.error && otroResult.error.code !== 'PGRST116') {
                     throw otroResult.error;
                 }
 
-                var otro = null;
-                if (otroResult.data) {
-                    otro = otroResult.data.usuarios || { nombre: 'Usuario', avatar_url: null };
-                    otro.id = otroResult.data.user_id;
-                }
+                var otro = otroResult.data || { nombre: 'Usuario', avatar_url: null };
 
                 conversacionActual = {
                     id: conversacionId,
-                    otro: otro || { id: null, nombre: 'Usuario', avatar_url: null }
+                    otro: otro
                 };
 
                 if (otro) {
                     document.getElementById('chatNombre').textContent = otro.nombre || 'Usuario';
                     document.getElementById('chatAvatar').textContent = otro.nombre ? otro.nombre.charAt(0).toUpperCase() : '◈';
+                }
+
+                // ✅ CORREGIDO: usar perfiles_publicos para estado online
+                var estadoResult = await supabase
+                    .from('perfiles_publicos')
+                    .select('online, ultima_conexion')
+                    .eq('id', conversacionId)
+                    .single();
+
+                if (estadoResult.data) {
+                    var chatEstado = document.getElementById('chatEstado');
+                    if (estadoResult.data.online) {
+                        chatEstado.textContent = '◉ En línea';
+                        chatEstado.className = 'chat-estado online';
+                    } else {
+                        chatEstado.textContent = '◈ Desconectado';
+                        chatEstado.className = 'chat-estado';
+                    }
                 }
 
                 var mensajesResult = await supabase.rpc('obtener_mensajes_conversacion', {
@@ -1035,6 +1044,10 @@
             }
         }
 
+        // ================================================================
+        // BUSCAR CONTACTOS - CORREGIDO (usa perfiles_publicos)
+        // ================================================================
+
         async function buscarContactos(query) {
             if (!query || query.length < 2) {
                 var resultados = document.getElementById('resultadosBusqueda');
@@ -1048,11 +1061,12 @@
                 var session = await getSession();
                 if (!session) return;
 
+                // ✅ CORREGIDO: usar perfiles_publicos para buscar usuarios
                 var result = await supabase
-                    .from('usuarios')
-                    .select('id, nombre, email, avatar_url')
+                    .from('perfiles_publicos')
+                    .select('id, nombre, handle, avatar_url')
+                    .or('nombre.ilike.%' + query + '%,handle.ilike.%' + query + '%')
                     .neq('id', session.user.id)
-                    .or('nombre.ilike.%' + query + '%,email.ilike.%' + query + '%')
                     .limit(10);
 
                 if (result.error) throw result.error;
@@ -1080,7 +1094,7 @@
                             </div>
                             <div style="flex:1;">
                                 <div style="font-weight:600;color:var(--text-primary);">${escapeHTML(user.nombre || 'Usuario')}</div>
-                                <div style="font-size:0.7rem;color:var(--text-muted);">${escapeHTML(user.email || '')}</div>
+                                <div style="font-size:0.7rem;color:var(--text-muted);">@${escapeHTML(user.handle || 'usuario')}</div>
                             </div>
                             <button style="padding:6px 12px;background:var(--gold);color:var(--space);border:none;border-radius:8px;cursor:pointer;font-size:0.7rem;font-weight:600;">
                                 ✎ Iniciar chat
@@ -1144,14 +1158,6 @@
             event.target.value = '';
         }
 
-        // ================================================================
-        // SUBIR ARCHIVO - CON URLs FIRMADAS (BACKEND)
-        // ================================================================
-        // ✅ USA EL ENDPOINT /api/storage/signed-url PARA GENERAR URLs FIRMADAS
-        //    Las URLs tienen expiración de 1 hora (3600 segundos)
-        //    Esto permite acceder a archivos en buckets PRIVADOS
-        // ================================================================
-
         async function subirArchivo(file) {
             try {
                 var ok = await verificarAutenticacion();
@@ -1178,7 +1184,6 @@
                 var bucket = tipo === 'audio' ? 'chat-audio' : 'chat-attachments';
                 var filePath = usuarioActual.id + '/mensajes/' + fileName;
 
-                // 1. SUBIR ARCHIVO A STORAGE
                 var uploadResult = await supabase.storage
                     .from(bucket)
                     .upload(filePath, file, {
@@ -1189,30 +1194,14 @@
 
                 if (uploadResult.error) throw uploadResult.error;
 
-                // 2. GENERAR URL FIRMADA USANDO EL BACKEND
-                var session = await getSession();
-                var response = await fetch('/api/storage/signed-url', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + session.access_token
-                    },
-                    body: JSON.stringify({
-                        bucket: bucket,
-                        filePath: filePath,
-                        expiresIn: 3600
-                    })
-                });
+                var signedUrlResult = await supabase.storage
+                    .from(bucket)
+                    .createSignedUrl(filePath, 3600);
 
-                if (!response.ok) {
-                    var errorData = await response.json();
-                    throw new Error(errorData.error || 'Error generando URL firmada');
-                }
+                if (signedUrlResult.error) throw signedUrlResult.error;
 
-                var data = await response.json();
-                var mediaUrl = data.signedUrl;
+                var mediaUrl = signedUrlResult.data.signedUrl;
 
-                // 3. GUARDAR MENSAJE CON URL FIRMADA
                 var mensaje = {
                     conversation_id: conversacionActual.id,
                     sender_id: usuarioActual.id,
@@ -1355,7 +1344,7 @@
                 }
 
                 var usuarioResult = await supabase
-                    .from('usuarios')
+                    .from('perfiles_publicos')
                     .select('id, nombre')
                     .eq('id', conversacionActual.otro.id)
                     .single();
@@ -1673,7 +1662,7 @@
             callState.incomingFrom = data.creador_id;
 
             supabase
-                .from('usuarios')
+                .from('perfiles_publicos')
                 .select('nombre, avatar_url')
                 .eq('id', data.creador_id)
                 .single()
@@ -2199,7 +2188,6 @@
         window.toggleGrabacionVoz = toggleGrabacionVoz;
         window.showToast = showToast;
         window.limpiarRecursosMensajes = limpiarRecursosMensajes;
-        window.escapeHTML = escapeHTML;
 
         window.iniciarVideollamada = iniciarVideollamada;
         window.aceptarLlamadaEntrante = aceptarLlamadaEntrante;
