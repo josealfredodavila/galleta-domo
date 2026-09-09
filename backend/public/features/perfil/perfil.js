@@ -1,1784 +1,2651 @@
-// ================================================================
-// MENSAJES - SARIEL'S ECOSYSTEM
-// VERSIÓN FINAL - CORREGIDA (BUGS ARREGLADOS)
-// ================================================================
+/* ================================================================
+   PERFIL.JS - SARIEL'S ECOSYSTEM
+   VERSIÓN FUNCIONAL - INTEGRACIÓN COMPLETA CON SERVER.JS + SUPABASE + TELNYX
+   ================================================================ */
 
 // ================================================================
-// CONFIGURACIÓN SUPABASE - CON VERIFICACIÓN Y REINTENTO
+// CONFIGURACIÓN SUPABASE
 // ================================================================
+const supabase = window.supabase.createClient(
+    'https://zultnlogdoajehbswlih.supabase.co',
+    'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
+);
 
-var supabase = null;
-var SUPABASE_READY = false;
+// ================================================================
+// CONFIGURACIÓN DE ENTORNO
+// ================================================================
+const ENV = {
+    isProduction: window.location.hostname !== 'localhost' && !window.location.hostname.includes('127.0.0.1'),
+    isTestnet: true,
+    networkName: 'Polygon Amoy Testnet',
+    networkChainId: '0x13882',
+    networkCurrency: 'MATIC',
+    networkRPC: 'https://rpc-amoy.polygon.technology/',
+    networkExplorer: 'https://www.oklink.com/amoy'
+};
 
-function obtenerSupabase() {
-    if (typeof window.supabase !== 'undefined' && window.supabase !== null) {
-        supabase = window.supabase;
-        SUPABASE_READY = true;
-        return true;
+// ================================================================
+// BACKEND ENDPOINTS
+// ================================================================
+const BACKEND_URL = window.location.origin;
+const API_ENDPOINTS = {
+    esim: `${BACKEND_URL}/api/esim`,
+    pagos: `${BACKEND_URL}/api/pagos`,
+    webhook: `${BACKEND_URL}/api/webhooks/nowpayments`,
+    perfil: `${BACKEND_URL}/api/perfil`,
+    estado: `${BACKEND_URL}/api/estado`,
+    contactos: `${BACKEND_URL}/api/contactos`,
+    mensajes: `${BACKEND_URL}/api/mensajes`,
+    tokens: `${BACKEND_URL}/api/tokens`,
+    muro: `${BACKEND_URL}/api/muro`,
+    live: `${BACKEND_URL}/api/live`,
+    qr: `${BACKEND_URL}/api/qr`
+};
+
+// ================================================================
+// TOAST NOTIFICACIONES
+// ================================================================
+function showToast(msg, type = '', duration = 3500) {
+    let t = document.getElementById('toast');
+    if (!t) {
+        t = document.createElement('div');
+        t.id = 'toast';
+        t.className = 'toast';
+        document.body.appendChild(t);
     }
-    return false;
+    t.textContent = msg;
+    t.className = 'toast show';
+    t.style.animation = 'none';
+    t.offsetHeight;
+    t.style.animation = 'slideInRight 0.3s ease-out';
+    
+    if (type === 'error') t.classList.add('error');
+    else if (type === 'warning') t.classList.add('warning');
+    else if (type === 'success') t.classList.add('success');
+    else t.classList.remove('error', 'warning', 'success');
+    
+    clearTimeout(t._timeout);
+    t._timeout = setTimeout(() => {
+        t.style.animation = 'slideOutRight 0.3s ease-in';
+        setTimeout(() => t.classList.remove('show'), 300);
+    }, duration);
 }
 
-// Intentar obtener Supabase inmediatamente
-if (!obtenerSupabase()) {
-    console.warn('⏳ Supabase no disponible en el momento, esperando...');
+// ================================================================
+// NAVEGACIÓN Y SESIÓN
+// ================================================================
+function cambiarTab(tab) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    const tabContent = document.getElementById('tab-' + tab);
+    if (tabContent) {
+        tabContent.classList.add('active');
+        tabContent.style.animation = 'fadeIn 0.3s ease-out';
+    }
+    const tabBtn = document.querySelector(`.tab-btn[onclick="cambiarTab('${tab}')"]`);
+    if (tabBtn) tabBtn.classList.add('active');
+}
 
-    var intentos = 0;
-    var maxIntentos = 10;
+async function getSession() {
+    const { data: { session } } = await supabase.auth.getSession();
+    return session;
+}
 
-    var intervalo = setInterval(function() {
-        intentos++;
-        if (obtenerSupabase()) {
-            clearInterval(intervalo);
-            console.log('✅ Supabase conectado correctamente (intento ' + intentos + ')');
+// ================================================================
+// FORMATEO DE TEXTO
+// ================================================================
+function formatearTexto(texto) {
+    if (!texto) return '';
+    return texto
+        .replace(/#(\w+)/g, '<a href="/features/muro/muro.html?tag=$1" class="hashtag" style="color:var(--gold);text-decoration:none;font-weight:600;">#$1</a>')
+        .replace(/@(\w+)/g, '<a href="/perfil/$1" class="mencion" style="color:var(--cyan);text-decoration:none;font-weight:600;">@$1</a>')
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/__(.*?)__/g, '<em>$1</em>')
+        .replace(/~~(.*?)~~/g, '<del>$1</del>')
+        .replace(/`(.*?)`/g, '<code style="background:var(--bg-card);padding:2px 6px;border-radius:4px;font-family:monospace;">$1</code>');
+}
+
+// ================================================================
+// CARGA DE PERFIL - RPC obtener_mi_perfil
+// ================================================================
+let perfilCache = null;
+let ultimaActualizacion = 0;
+const CACHE_DURATION = 30000;
+
+async function cargarPerfil(forzarActualizacion = false) {
+    try {
+        const session = await getSession();
+        if (!session) {
+            window.location.href = '/';
             return;
         }
 
-        if (intentos >= maxIntentos) {
-            clearInterval(intervalo);
-            console.error('❌ Supabase no disponible después de ' + maxIntentos + ' intentos');
-            showToast('⚠️ Error de conexión con el servidor', 'error');
-            var container = document.getElementById('conversacionesList');
-            if (container) {
-                container.innerHTML = `
-                    <div style="padding:40px;text-align:center;color:#ef4444;font-size:0.9rem;">
-                        <div style="font-size:2rem;margin-bottom:10px;">⚠️</div>
-                        <p>Error de conexión con Supabase</p>
-                        <p style="font-size:0.7rem;margin-top:8px;color:#667788;">Recarga la página o contacta a soporte</p>
-                        <button onclick="location.reload()" style="margin-top:12px;padding:8px 20px;background:#d4af37;border:none;border-radius:30px;color:#0b0e14;font-weight:600;cursor:pointer;">
-                            🔄 Recargar
-                        </button>
-                    </div>
-                `;
+        const ahora = Date.now();
+        if (!forzarActualizacion && perfilCache && (ahora - ultimaActualizacion) < CACHE_DURATION) {
+            actualizarUI(perfilCache);
+            return;
+        }
+
+        const { data, error } = await supabase.rpc('obtener_mi_perfil');
+
+        if (error) throw error;
+
+        const perfil = data && data.length > 0 ? data[0] : null;
+
+        if (perfil) {
+            perfilCache = perfil;
+            ultimaActualizacion = ahora;
+            await actualizarEstadoEnLinea(true);
+            actualizarUI(perfil);
+            
+            if (perfil.esim_iccid) {
+                await cargarDatosESIM(perfil.esim_iccid);
             }
-        }
-    }, 200);
-}
-
-// ================================================================
-// ================================================================
-// 🛡️ SEGURIDAD - SANITIZAR QUERY PARA SUPABASE
-// ================================================================
-// ================================================================
-
-function sanitizarQuery(input) {
-    if (!input) return '';
-    // Eliminar caracteres peligrosos que podrían manipular el filtro
-    return String(input).replace(/[(),'"]/g, '').trim();
-}
-
-// ================================================================
-// ================================================================
-// 📋 SISTEMA DE LOGGING ESTRUCTURADO
-// ================================================================
-// ================================================================
-
-var Logger = {
-    levels: {
-        DEBUG: 0,
-        INFO: 1,
-        WARN: 2,
-        ERROR: 3,
-        FATAL: 4
-    },
-
-    _level: 1,
-
-    setLevel: function(level) {
-        this._level = this.levels[level] || 1;
-    },
-
-    _log: function(level, message, data) {
-        data = data || null;
-        var levelName = Object.keys(this.levels).find(function(k) {
-            return this.levels[k] === level;
-        }.bind(this));
-
-        if (level < this._level) return;
-
-        var entry = {
-            timestamp: new Date().toISOString(),
-            level: levelName,
-            message: message,
-            data: data,
-            module: 'mensajes'
-        };
-
-        var prefix = '[' + entry.timestamp + '] [' + levelName + ']';
-        if (level >= this.levels.ERROR) {
-            console.error(prefix, message, data || '');
-        } else if (level >= this.levels.WARN) {
-            console.warn(prefix, message, data || '');
+            
+            await cargarEstadoConexion();
+            await cargarAmigosEnLinea();
+            await cargarHistorialQR();
         } else {
-            console.log(prefix, message, data || '');
+            const defaultData = {
+                nombre: session.user.user_metadata?.nombre || 'Explorador',
+                handle: session.user.email?.split('@')[0] || 'explorador',
+                bio: 'Explorando el ecosistema Sariel\'s · WEB3 · Comunidad',
+                avatar_url: null,
+                tokens: 0,
+                progreso_canje: 0,
+                puede_canjear: false,
+                wallet_address: null,
+                esim_iccid: null,
+                esim_status: null,
+                esim_data_used: 0,
+                esim_data_limit: 0,
+                conexion_tipo: 'wifi',
+                conexion_activa: true,
+                online: true
+            };
+            perfilCache = defaultData;
+            ultimaActualizacion = ahora;
+            await actualizarEstadoEnLinea(true);
+            actualizarUI(defaultData);
         }
-    },
-
-    debug: function(message, data) { this._log(this.levels.DEBUG, message, data); },
-    info: function(message, data) { this._log(this.levels.INFO, message, data); },
-    warn: function(message, data) { this._log(this.levels.WARN, message, data); },
-    error: function(message, data) { this._log(this.levels.ERROR, message, data); },
-    fatal: function(message, data) { this._log(this.levels.FATAL, message, data); }
-};
-
-// ================================================================
-// ================================================================
-// 🛡️ SEGURIDAD - ESCAPE HTML
-// ================================================================
-// ================================================================
-
-function escapeHTML(texto) {
-    if (!texto) return '';
-    var div = document.createElement('div');
-    div.textContent = texto;
-    return div.innerHTML;
+    } catch (error) {
+        console.error('Error cargando perfil:', error);
+        showToast('❌ Error al cargar perfil', 'error');
+    }
 }
 
 // ================================================================
+// ESTADO ACTIVO/INACTIVO
 // ================================================================
-// 🛡️ SEGURIDAD - SANITIZACIÓN COMPLETA
-// ================================================================
-// ================================================================
+async function actualizarEstadoEnLinea(online) {
+    try {
+        const session = await getSession();
+        if (!session) return;
 
-function sanitizarContenido(texto) {
-    if (!texto) return '';
+        const response = await fetch(`${API_ENDPOINTS.estado}/online`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.access_token}`
+            },
+            body: JSON.stringify({ online })
+        });
 
-    var div = document.createElement('div');
-    div.textContent = texto;
-    var sanitizado = div.innerHTML;
+        const result = await response.json();
 
-    var emojisSeguros = {
-        ':feliz:': '😊',
-        ':risa:': '😂',
-        ':amo:': '❤️',
-        ':fuego:': '🔥',
-        ':estrella:': '⭐',
-        ':genial:': '🤩',
-        ':ok:': '👌',
-        ':visto:': '👀',
-        ':musica:': '🎵',
-        ':pizza:': '🍕',
-        ':cafe:': '☕',
-        ':helado:': '🍦',
-        ':rocket:': '🚀',
-        ':sariel:': '◈'
+        if (!result.success) throw new Error(result.error || 'Error actualizando estado');
+
+        if (perfilCache) {
+            perfilCache.online = online;
+        }
+        
+        actualizarUIEstado(online);
+        return true;
+    } catch (error) {
+        console.error('Error actualizando estado en línea:', error);
+        return false;
+    }
+}
+
+function actualizarUIEstado(online) {
+    const estadoBadge = document.getElementById('estadoBadge');
+    const estadoTexto = document.getElementById('estadoTexto');
+    
+    if (estadoBadge) {
+        estadoBadge.innerHTML = online ? '🟢' : '⭕';
+        estadoBadge.style.color = online ? 'var(--success)' : 'var(--text-muted)';
+    }
+    
+    if (estadoTexto) {
+        estadoTexto.textContent = online ? 'Activo ahora' : 'Inactivo';
+        estadoTexto.style.color = online ? 'var(--success)' : 'var(--text-muted)';
+    }
+}
+
+let tiempoInactividad = 0;
+let maxInactividad = 300000;
+
+function iniciarDetectorInactividad() {
+    const resetInactividad = () => {
+        tiempoInactividad = 0;
+        if (perfilCache && !perfilCache.online) {
+            actualizarEstadoEnLinea(true);
+        }
     };
 
-    for (var key in emojisSeguros) {
-        if (emojisSeguros.hasOwnProperty(key)) {
-            var pattern = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            sanitizado = sanitizado.replace(new RegExp(pattern, 'g'), emojisSeguros[key]);
+    const eventos = ['mousemove', 'mousedown', 'click', 'scroll', 'keydown', 'touchstart', 'touchmove'];
+    eventos.forEach(evento => {
+        document.addEventListener(evento, resetInactividad);
+    });
+
+    setInterval(async () => {
+        tiempoInactividad += 30000;
+        
+        if (tiempoInactividad >= maxInactividad && perfilCache && perfilCache.online) {
+            await actualizarEstadoEnLinea(false);
+            showToast('⭕ Marcado como inactivo por inactividad', 'warning');
         }
-    }
-
-    sanitizado = sanitizado.replace(/<a\s+href=["'](javascript:|data:)/gi, '<a href="#"');
-    sanitizado = sanitizado.replace(/on\w+\s*=/gi, 'data-');
-
-    // ✅ ELIMINADO: doble escape de HTML (ya fue escapado con div.innerHTML)
-    // sanitizado = sanitizado.replace(/&/g, '&amp;')
-    //     .replace(/</g, '&lt;')
-    //     .replace(/>/g, '&gt;')
-    //     .replace(/"/g, '&quot;');
-
-    return sanitizado;
+    }, 30000);
 }
 
-// ================================================================
-// ================================================================
-// 📋 TOAST NOTIFICACIONES
-// ================================================================
-// ================================================================
-
-function showToast(msg, type, duration) {
-    type = type || '';
-    duration = duration || 3500;
+async function cambiarEstado(online) {
     try {
-        var t = document.getElementById('toast');
-        if (!t) {
-            t = document.createElement('div');
-            t.id = 'toast';
-            t.className = 'toast';
-            document.body.appendChild(t);
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ Inicia sesión', 'error');
+            return;
         }
-        t.textContent = msg;
-        t.className = 'toast show';
-        if (type === 'error') t.classList.add('error');
-        else if (type === 'warning') t.classList.add('warning');
-        else if (type === 'success') t.classList.add('success');
-        else t.classList.remove('error', 'warning', 'success');
-        clearTimeout(t._timeout);
-        t._timeout = setTimeout(function() { t.classList.remove('show'); }, duration);
-    } catch (e) {
-        Logger.warn('Toast no disponible', e);
-        alert(msg);
+
+        await actualizarEstadoEnLinea(online);
+        
+        if (online) {
+            showToast('🟢 Te has marcado como activo', 'success');
+        } else {
+            showToast('⭕ Te has marcado como inactivo', 'warning');
+        }
+        
+        await notificarCambioEstado(online);
+        
+    } catch (error) {
+        console.error('Error cambiando estado:', error);
+        showToast('❌ Error al cambiar estado', 'error');
     }
 }
 
 // ================================================================
+// AMIGOS EN TIEMPO REAL (CORREGIDO: usa perfiles_publicos)
 // ================================================================
-// 🔐 SESSION MANAGER - PATRÓN SINGLETON
-// ================================================================
-// ================================================================
+let canalAmigos = null;
 
-function SessionManager() {
-    this._usuario = null;
-    this._session = null;
-    this._lastRefresh = null;
-    this._refreshLock = false;
+function iniciarEscuchaAmigos() {
+    if (canalAmigos) {
+        supabase.removeChannel(canalAmigos);
+    }
+
+    canalAmigos = supabase
+        .channel('amigos_online')
+        .on('postgres_changes', {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'usuarios',
+            filter: 'online=eq.true'
+        }, (payload) => {
+            const usuario = payload.new;
+            if (usuario.id !== perfilCache?.id) {
+                actualizarListaAmigos();
+            }
+        })
+        .subscribe();
+
+    return canalAmigos;
 }
 
-SessionManager.prototype = {
-    constructor: SessionManager,
+// ✅ CORREGIDO: usa perfiles_publicos en lugar de usuarios
+async function cargarAmigosEnLinea() {
+    try {
+        const session = await getSession();
+        if (!session) return;
 
-    get usuario() {
-        return this._usuario;
-    },
-
-    get session() {
-        return this._session;
-    },
-
-    get isAuthenticated() {
-        return this._usuario !== null && this._session !== null;
-    },
-
-    getUsuario: function() {
-        if (this._refreshLock) {
-            return new Promise(function(resolve) {
-                setTimeout(function() { resolve(this._usuario); }.bind(this), 100);
-            }.bind(this));
-        }
-
-        if (this._usuario && this._session) {
-            var expiryTime = new Date(this._session.expires_at);
-            var timeUntilExpiry = expiryTime - Date.now();
-
-            if (timeUntilExpiry < 300000) {
-                return this._refreshSession();
+        const response = await fetch(`${API_ENDPOINTS.contactos}`, {
+            headers: {
+                'Authorization': `Bearer ${session.access_token}`
             }
-            return Promise.resolve(this._usuario);
+        });
+
+        const result = await response.json();
+
+        if (!result.success) throw new Error(result.error || 'Error cargando contactos');
+
+        const contactos = result.contactos || [];
+
+        if (contactos.length === 0) {
+            actualizarUIAmigos([]);
+            return;
         }
 
-        return this._refreshSession();
-    },
+        const idsContactos = contactos.map(c => c.contacto_id);
 
-    getSession: function() {
-        if (this._session) return Promise.resolve(this._session);
-        return this.getUsuario().then(function() {
-            return this._session;
-        }.bind(this));
-    },
+        // ✅ CORREGIDO: usar perfiles_publicos
+        const { data: enLinea, error: enLineaError } = await supabase
+            .from('perfiles_publicos')
+            .select('id, nombre, handle, avatar_url, online, ultima_conexion')
+            .in('id', idsContactos)
+            .eq('online', true);
 
-    _refreshSession: function() {
-        if (this._refreshLock) return Promise.resolve(this._usuario);
+        if (enLineaError) throw enLineaError;
 
-        this._refreshLock = true;
-        return supabase.auth.getSession()
-            .then(function(result) {
-                var session = result.data.session;
-                if (!session) {
-                    this._usuario = null;
-                    this._session = null;
-                    return null;
+        // ✅ CORREGIDO: usar perfiles_publicos
+        const { data: todosContactos, error: todosError } = await supabase
+            .from('perfiles_publicos')
+            .select('id, nombre, handle, avatar_url, online, ultima_conexion')
+            .in('id', idsContactos);
+
+        if (todosError) throw todosError;
+
+        actualizarUIAmigos(todosContactos || [], enLinea || []);
+
+        return { enLinea, todosContactos };
+
+    } catch (error) {
+        console.error('Error cargando amigos en línea:', error);
+        return null;
+    }
+}
+
+function actualizarUIAmigos(todosAmigos = [], enLinea = []) {
+    const container = document.getElementById('amigosContainer');
+    const contador = document.getElementById('amigosEnLineaContador');
+    
+    if (contador) {
+        contador.textContent = enLinea.length;
+        contador.style.color = enLinea.length > 0 ? 'var(--success)' : 'var(--text-muted)';
+    }
+
+    if (!container) return;
+
+    if (!todosAmigos || todosAmigos.length === 0) {
+        container.innerHTML = `
+            <div style="text-align:center; padding:20px; color:var(--text-muted); font-size:0.8rem;">
+                <span style="font-size:2rem;">👥</span>
+                <p style="margin-top:8px;">Aún no tienes amigos agregados</p>
+                <p style="font-size:0.6rem;">Explora el muro para conectar con otros</p>
+            </div>
+        `;
+        return;
+    }
+
+    const enLineaIds = enLinea.map(a => a.id);
+    const ordenados = [
+        ...todosAmigos.filter(a => enLineaIds.includes(a.id)),
+        ...todosAmigos.filter(a => !enLineaIds.includes(a.id))
+    ];
+
+    container.innerHTML = ordenados.map(amigo => {
+        const estaEnLinea = enLineaIds.includes(amigo.id);
+        return `
+            <div class="amigo-item ${estaEnLinea ? 'online' : ''}" onclick="window.location.href='/perfil/${amigo.handle}'">
+                <div class="avatar-mini">
+                    ${amigo.avatar_url ? `<img src="${amigo.avatar_url}">` : '◈'}
+                </div>
+                <div class="info">
+                    <div class="nombre" style="color:${estaEnLinea ? 'var(--text-primary)' : 'var(--text-muted)'}">
+                        ${amigo.nombre || amigo.handle}
+                    </div>
+                    <div class="estado" style="color:${estaEnLinea ? 'var(--success)' : 'var(--text-muted)'}">
+                        ${estaEnLinea ? '🟢 Activo ahora' : '⭕ Desconectado'}
+                        ${!estaEnLinea && amigo.ultima_conexion ? ` · ${haceTiempo(amigo.ultima_conexion)}` : ''}
+                    </div>
+                </div>
+                ${estaEnLinea ? '<div class="badge-online">EN LÍNEA</div>' : ''}
+            </div>
+        `;
+    }).join('');
+}
+
+async function actualizarListaAmigos() {
+    await cargarAmigosEnLinea();
+}
+
+async function notificarCambioEstado(online) {
+    try {
+        const session = await getSession();
+        if (!session) return;
+
+        const { data: contactos, error } = await supabase
+            .from('contactos')
+            .select('contacto_id')
+            .eq('usuario_id', session.user.id)
+            .eq('estado', 'aceptado');
+
+        if (error || !contactos) return;
+
+        for (const contacto of contactos) {
+            await supabase
+                .from('notificaciones')
+                .insert({
+                    user_id: contacto.contacto_id,
+                    tipo: 'estado',
+                    mensaje: `${perfilCache?.nombre || 'Un usuario'} está ${online ? '🟢 activo' : '⭕ inactivo'}`,
+                    emisor_id: session.user.id,
+                    leida: false,
+                    fecha: new Date().toISOString()
+                });
+        }
+
+    } catch (error) {
+        console.error('Error notificando cambio de estado:', error);
+    }
+}
+
+function haceTiempo(fecha) {
+    if (!fecha) return 'hace tiempo';
+    const ahora = new Date();
+    const entonces = new Date(fecha);
+    const diffMs = ahora - entonces;
+    const diffMin = Math.floor(diffMs / 60000);
+    
+    if (diffMin < 1) return 'hace un momento';
+    if (diffMin < 60) return `hace ${diffMin} min`;
+    if (diffMin < 1440) return `hace ${Math.floor(diffMin / 60)} h`;
+    return `hace ${Math.floor(diffMin / 1440)} d`;
+}
+
+// ================================================================
+// GESTIÓN DE CONEXIÓN (WiFi / Datos Móviles)
+// ================================================================
+let estadoConexion = {
+    tipo: 'wifi',
+    activa: true,
+    velocidad: '0 Mbps',
+    señal: 100,
+    operador: 'Sariel\'s Net',
+    datos_usados: 0,
+    datos_limite: 0,
+    datos_restantes: 0
+};
+
+async function cargarEstadoConexion() {
+    try {
+        const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+        
+        if (connection) {
+            const tipo = connection.effectiveType || 'unknown';
+            const velocidad = connection.downlink ? `${connection.downlink} Mbps` : '0 Mbps';
+            
+            let tipoConexion = 'wifi';
+            if (connection.type) {
+                if (connection.type === 'cellular' || connection.type === '4g' || connection.type === '3g') {
+                    tipoConexion = 'datos';
+                } else if (connection.type === 'wifi') {
+                    tipoConexion = 'wifi';
+                } else {
+                    tipoConexion = 'wifi';
                 }
-                this._session = session;
-                this._usuario = session.user;
-                this._lastRefresh = Date.now();
-                return this._usuario;
-            }.bind(this))
-            .catch(function(error) {
-                Logger.error('Error refrescando sesión', error);
-                return null;
+            } else {
+                if (connection.downlink && connection.downlink < 10) {
+                    tipoConexion = 'datos';
+                }
+            }
+            
+            estadoConexion = {
+                ...estadoConexion,
+                tipo: tipoConexion,
+                activa: navigator.onLine,
+                velocidad: velocidad,
+                señal: Math.min(Math.round((connection.downlink || 50) * 2), 100)
+            };
+            
+            actualizarUIConexion(estadoConexion);
+            await guardarEstadoConexion(estadoConexion);
+        } else {
+            estadoConexion = {
+                ...estadoConexion,
+                activa: navigator.onLine
+            };
+            actualizarUIConexion(estadoConexion);
+        }
+        
+        return estadoConexion;
+        
+    } catch (error) {
+        console.error('Error cargando estado de conexión:', error);
+        estadoConexion = {
+            ...estadoConexion,
+            activa: navigator.onLine
+        };
+        actualizarUIConexion(estadoConexion);
+        return estadoConexion;
+    }
+}
+
+async function cambiarConexion(tipo) {
+    try {
+        if (!['wifi', 'datos'].includes(tipo)) {
+            showToast('❌ Tipo de conexión no válido', 'error');
+            return;
+        }
+
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ Inicia sesión para cambiar conexión', 'error');
+            return;
+        }
+
+        if (tipo === 'datos') {
+            const perfil = await getPerfilActual();
+            if (!perfil || !perfil.esim_iccid) {
+                showToast('⚠️ No tienes una eSIM activa. Compra una primero.', 'warning');
+                return;
+            }
+            if (perfil.esim_status !== 'enabled') {
+                showToast('⚠️ Tu eSIM no está activa. Actívala primero.', 'warning');
+                return;
+            }
+        }
+
+        const { error } = await supabase
+            .from('usuarios')
+            .update({
+                conexion_tipo: tipo,
+                conexion_activa: true,
+                conexion_ultimo_cambio: new Date().toISOString()
             })
-            .finally(function() {
-                this._refreshLock = false;
-            }.bind(this));
-    },
+            .eq('id', session.user.id);
 
-    verificarAutenticacion: function() {
-        return this.getUsuario().then(function(usuario) {
-            if (!usuario) {
-                showToast('⚠️ Inicia sesión para usar mensajería', 'warning');
-                return false;
-            }
-            return true;
-        });
-    },
+        if (error) throw error;
 
-    logout: function() {
-        this._usuario = null;
-        this._session = null;
-        this._lastRefresh = null;
-        return supabase.auth.signOut();
+        estadoConexion.tipo = tipo;
+        estadoConexion.activa = true;
+        
+        actualizarUIConexion(estadoConexion);
+        
+        if (tipo === 'wifi') {
+            showToast('🛜 Cambiado a WiFi', 'success');
+        } else {
+            showToast('📶 Cambiado a Datos Móviles', 'success');
+        }
+        
+        await cargarPerfil(true);
+        
+        if (tipo === 'datos') {
+            await cargarDatosESIM(perfilCache?.esim_iccid);
+        }
+        
+    } catch (error) {
+        console.error('Error cambiando conexión:', error);
+        showToast('❌ Error al cambiar conexión: ' + error.message, 'error');
     }
-};
+}
 
-var sessionManager = new SessionManager();
+function getPerfilActual() {
+    return perfilCache;
+}
+
+async function guardarEstadoConexion(estado) {
+    try {
+        const session = await getSession();
+        if (!session) return;
+
+        const { error } = await supabase
+            .from('usuarios')
+            .update({
+                conexion_tipo: estado.tipo,
+                conexion_activa: estado.activa,
+                conexion_velocidad: estado.velocidad,
+                conexion_señal: estado.señal
+            })
+            .eq('id', session.user.id);
+
+        if (error) throw error;
+        
+    } catch (error) {
+        console.error('Error guardando estado de conexión:', error);
+    }
+}
+
+function actualizarUIConexion(estado) {
+    const conexionStatus = document.getElementById('conexionStatus');
+    const conexionTipo = document.getElementById('conexionTipo');
+    const conexionVelocidad = document.getElementById('conexionVelocidad');
+    const conexionSeñal = document.getElementById('conexionSeñal');
+    const wifiBtn = document.getElementById('btnWifi');
+    const datosBtn = document.getElementById('btnDatos');
+
+    if (conexionStatus) {
+        if (!estado.activa) {
+            conexionStatus.innerHTML = '⛔ Sin conexión';
+            conexionStatus.style.color = 'var(--danger)';
+        } else if (estado.tipo === 'wifi') {
+            conexionStatus.innerHTML = '🛜 WiFi';
+            conexionStatus.style.color = 'var(--success)';
+        } else {
+            conexionStatus.innerHTML = '📶 Datos Móviles';
+            conexionStatus.style.color = 'var(--quantum)';
+        }
+    }
+
+    if (conexionTipo) {
+        conexionTipo.textContent = estado.tipo === 'wifi' ? '🛜 WiFi' : '📶 Datos Móviles';
+    }
+
+    if (conexionVelocidad) {
+        conexionVelocidad.textContent = estado.velocidad;
+    }
+
+    if (conexionSeñal) {
+        const barras = Math.round((estado.señal / 100) * 4);
+        conexionSeñal.textContent = '█'.repeat(barras) + '░'.repeat(4 - barras);
+        conexionSeñal.style.color = estado.señal > 50 ? 'var(--success)' : 'var(--warning)';
+    }
+
+    if (wifiBtn) {
+        wifiBtn.style.borderColor = estado.tipo === 'wifi' ? 'var(--gold)' : 'var(--glass-border)';
+        wifiBtn.style.background = estado.tipo === 'wifi' ? 'rgba(212,175,55,0.15)' : 'transparent';
+    }
+    if (datosBtn) {
+        datosBtn.style.borderColor = estado.tipo === 'datos' ? 'var(--gold)' : 'var(--glass-border)';
+        datosBtn.style.background = estado.tipo === 'datos' ? 'rgba(212,175,55,0.15)' : 'transparent';
+    }
+}
+
+function iniciarEscuchaConexion() {
+    window.addEventListener('online', () => {
+        estadoConexion.activa = true;
+        actualizarUIConexion(estadoConexion);
+        guardarEstadoConexion(estadoConexion);
+        showToast('🛜 Conexión restablecida', 'success');
+    });
+
+    window.addEventListener('offline', () => {
+        estadoConexion.activa = false;
+        actualizarUIConexion(estadoConexion);
+        guardarEstadoConexion(estadoConexion);
+        showToast('⛔ Sin conexión', 'error');
+    });
+
+    if (navigator.connection) {
+        navigator.connection.addEventListener('change', async () => {
+            await cargarEstadoConexion();
+        });
+    }
+}
 
 // ================================================================
-// ================================================================
-// 📡 API CALL - CON MANEJO DE CORS Y TIMEOUT
-// ================================================================
+// eSIM - TELNYX FUNCTIONS (INTEGRACIÓN CON SERVER.JS)
 // ================================================================
 
-function llamadaAPI(endpoint, options, timeout) {
-    options = options || {};
-    timeout = timeout || 30000;
+function actualizarUIESIM(data) {
+    const esimStatus = document.getElementById('esimStatus');
+    const esimDataUsed = document.getElementById('esimDataUsed');
+    const esimDataLimit = document.getElementById('esimDataLimit');
+    const esimDataProgress = document.getElementById('esimDataProgress');
+    const esimIccid = document.getElementById('esimIccid');
+    const esimApn = document.getElementById('esimApn');
+    const esimRestante = document.getElementById('esimDataRestante');
 
-    var controller = new AbortController();
-    var timeoutId = setTimeout(function() { controller.abort(); }, timeout);
+    if (esimStatus) {
+        const statusMap = {
+            'enabled': '✅ Activo',
+            'active': '✅ Activo',
+            'disabled': '❌ Inactivo',
+            'inactive': '❌ Inactivo',
+            'standby': '⏳ En espera',
+            'pending': '🔄 Pendiente',
+            'unknown': '❓ Desconocido'
+        };
+        esimStatus.textContent = data.esim_status ? (statusMap[data.esim_status] || data.esim_status) : '⏳ Sin eSIM';
+        esimStatus.style.color = (data.esim_status === 'enabled' || data.esim_status === 'active') 
+            ? 'var(--success)' 
+            : 'var(--warning)';
+    }
 
-    return sessionManager.getSession()
-        .then(function(session) {
-            if (!session) throw new Error('No autenticado');
+    if (esimDataUsed) {
+        const used = (data.esim_data_used || 0) / 1024 / 1024 / 1024;
+        esimDataUsed.textContent = used.toFixed(2) + ' GB';
+    }
 
-            return fetch(endpoint, {
-                ...options,
-                headers: {
-                    'Authorization': 'Bearer ' + session.access_token,
-                    'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest',
-                    ...options.headers
-                },
-                signal: controller.signal
+    if (esimDataLimit) {
+        const limit = (data.esim_data_limit || 0) / 1024 / 1024 / 1024;
+        esimDataLimit.textContent = limit.toFixed(2) + ' GB';
+    }
+
+    if (esimRestante) {
+        const usado = (data.esim_data_used || 0) / 1024 / 1024 / 1024;
+        const limite = (data.esim_data_limit || 0) / 1024 / 1024 / 1024;
+        const restante = Math.max(limite - usado, 0);
+        esimRestante.textContent = restante.toFixed(2) + ' GB';
+        esimRestante.style.color = restante < 1 ? 'var(--danger)' : 'var(--success)';
+    }
+
+    if (esimDataProgress && data.esim_data_limit > 0) {
+        const porcentaje = ((data.esim_data_used || 0) / (data.esim_data_limit || 1)) * 100;
+        esimDataProgress.style.width = Math.min(porcentaje, 100) + '%';
+        esimDataProgress.style.transition = 'width 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
+        
+        if (porcentaje > 80) {
+            esimDataProgress.style.background = 'var(--danger)';
+        } else if (porcentaje > 50) {
+            esimDataProgress.style.background = 'var(--warning)';
+        } else {
+            esimDataProgress.style.background = 'var(--success)';
+        }
+    }
+
+    if (esimIccid) {
+        const iccid = data.esim_iccid || 'No asignado';
+        esimIccid.textContent = iccid.length > 10 ? iccid.slice(0, 10) + '...' + iccid.slice(-4) : iccid;
+    }
+
+    if (esimApn) {
+        esimApn.textContent = data.esim_apn || 'data00.telnyx';
+    }
+}
+
+function mostrarSinESIM() {
+    actualizarUIESIM({
+        esim_iccid: 'No asignado',
+        esim_status: 'disabled',
+        esim_data_used: 0,
+        esim_data_limit: 0,
+        esim_apn: 'data00.telnyx'
+    });
+    const esimStatus = document.getElementById('esimStatus');
+    if (esimStatus) {
+        esimStatus.textContent = '⏳ Sin eSIM';
+        esimStatus.style.color = 'var(--text-muted)';
+    }
+}
+
+/**
+ * Cargar datos reales de eSIM desde el backend
+ */
+async function cargarDatosESIM(iccid) {
+    if (!iccid) {
+        console.warn('⚠️ No hay ICCID para cargar datos eSIM');
+        mostrarSinESIM();
+        return null;
+    }
+
+    try {
+        const session = await getSession();
+        if (!session) {
+            console.warn('⚠️ No hay sesión para cargar datos eSIM');
+            return null;
+        }
+
+        showToast('⏳ Actualizando datos de eSIM...', '', 3000);
+
+        const response = await fetch(`${API_ENDPOINTS.esim}/profile`, {
+            headers: {
+                'Authorization': `Bearer ${session.access_token}`
+            }
+        });
+
+        const result = await response.json();
+
+        if (!result.success) {
+            throw new Error(result.error || 'Error al cargar datos eSIM');
+        }
+
+        const data = result.data;
+
+        if (!data.has_esim) {
+            mostrarSinESIM();
+            return null;
+        }
+
+        actualizarUIESIM({
+            esim_iccid: data.iccid,
+            esim_status: data.status,
+            esim_data_used: data.data_used_bytes || 0,
+            esim_data_limit: data.data_limit_bytes || 0,
+            esim_apn: data.apn || 'data00.telnyx',
+            esim_activated_at: data.activated_at,
+            esim_expires_at: data.expires_at,
+            esim_operator: data.operator || 'Telnyx',
+            esim_network: data.network || '4G/5G'
+        });
+
+        if (data.telnyx_error) {
+            showToast('⚠️ No se pudo actualizar la información de la eSIM. Mostrando último estado conocido.', 'warning', 5000);
+        }
+
+        return data;
+
+    } catch (error) {
+        console.error('Error cargando datos eSIM:', error);
+        showToast('❌ Error al cargar datos de eSIM: ' + error.message, 'error');
+        await cargarDatosESIMLocal(iccid);
+        return null;
+    }
+}
+
+/**
+ * Fallback: Cargar datos locales de Supabase
+ */
+async function cargarDatosESIMLocal(iccid) {
+    try {
+        const session = await getSession();
+        if (!session) return;
+
+        const { data: usuario, error } = await supabase
+            .from('usuarios')
+            .select('esim_iccid, esim_status, esim_data_used, esim_data_limit, esim_apn')
+            .eq('id', session.user.id)
+            .single();
+
+        if (error) throw error;
+
+        if (usuario && usuario.esim_iccid) {
+            actualizarUIESIM({
+                esim_iccid: usuario.esim_iccid,
+                esim_status: usuario.esim_status || 'disabled',
+                esim_data_used: usuario.esim_data_used || 0,
+                esim_data_limit: usuario.esim_data_limit || 0,
+                esim_apn: usuario.esim_apn || 'data00.telnyx'
             });
-        })
-        .then(function(response) {
-            clearTimeout(timeoutId);
+            showToast('ℹ️ Mostrando datos guardados localmente', 'warning', 3000);
+        }
+    } catch (error) {
+        console.error('Error cargando datos locales:', error);
+        mostrarSinESIM();
+    }
+}
 
-            if (response.status === 403 || response.status === 401) {
-                showToast('⚠️ Sesión expirada, por favor inicia sesión nuevamente', 'error');
-                return sessionManager.logout().then(function() {
-                    window.location.href = '/login';
-                    return null;
-                });
-            }
+/**
+ * Sincronizar eSIM manualmente con Telnyx
+ */
+async function sincronizarESIM() {
+    try {
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ Inicia sesión para sincronizar', 'error');
+            return;
+        }
 
-            if (!response.ok) {
-                return response.json().catch(function() { return {}; }).then(function(errorData) {
-                    throw new Error(errorData.error || 'Error ' + response.status + ': ' + response.statusText);
-                });
-            }
+        showToast('⏳ Sincronizando con Telnyx...', '', 5000);
 
-            return response.json();
-        })
-        .catch(function(error) {
-            clearTimeout(timeoutId);
-            if (error.name === 'AbortError') {
-                showToast('⏳ La operación tardó demasiado, intenta de nuevo', 'warning');
-                Logger.warn('Timeout en API', { endpoint: endpoint, timeout: timeout });
-                return null;
+        const response = await fetch(`${API_ENDPOINTS.esim}/sync`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.access_token}`
             }
-            if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
-                showToast('❌ Error de conexión con el servidor', 'error');
-                Logger.error('CORS/Network Error', { endpoint: endpoint, error: error.message });
-                return null;
-            }
-            throw error;
         });
+
+        const result = await response.json();
+
+        if (!result.success) {
+            throw new Error(result.error || 'Error al sincronizar');
+        }
+
+        showToast('✅ Datos sincronizados correctamente', 'success');
+        await cargarPerfil(true);
+
+    } catch (error) {
+        console.error('Error sincronizando eSIM:', error);
+        showToast('❌ Error al sincronizar: ' + error.message, 'error');
+    }
+}
+
+/**
+ * Comprar eSIM
+ */
+async function comprarESIM(planId) {
+    try {
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ Inicia sesión para comprar eSIM', 'error');
+            return;
+        }
+
+        const { data: plan, error } = await supabase
+            .from('planes_esim')
+            .select('*')
+            .eq('id', planId)
+            .single();
+
+        if (error) throw error;
+
+        showToast('⏳ Creando orden de compra...', '', 5000);
+
+        const response = await fetch(`${API_ENDPOINTS.pagos}/crear`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.access_token}`
+            },
+            body: JSON.stringify({
+                transmisionId: null,
+                tipo: 'esim',
+                planId: plan.id,
+                idempotency_key: `esim_${session.user.id}_${planId}_${Date.now()}`
+            })
+        });
+
+        const result = await response.json();
+
+        if (!result.success) {
+            throw new Error(result.error || 'Error al crear la orden');
+        }
+
+        if (result.data && result.data.payment_url) {
+            mostrarModalPagoReal(result.data.payment_url, result.data.id, plan);
+        } else {
+            const qrData = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent('Orden: ' + result.data.id)}`;
+            mostrarModalPagoSimulado(qrData, result.data.id, plan);
+        }
+
+    } catch (error) {
+        console.error('Error comprando eSIM:', error);
+        showToast('❌ Error al comprar eSIM: ' + error.message, 'error');
+    }
+}
+
+/**
+ * Activar eSIM
+ */
+async function activarESIM(iccid) {
+    try {
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ Inicia sesión', 'error');
+            return;
+        }
+
+        const iccidParam = iccid || perfilCache?.esim_iccid;
+        if (!iccidParam) {
+            showToast('⚠️ No hay eSIM para activar', 'error');
+            return;
+        }
+
+        showToast('⏳ Activando eSIM...', '', 5000);
+
+        const response = await fetch(`${API_ENDPOINTS.esim}/activar`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.access_token}`
+            },
+            body: JSON.stringify({ iccid: iccidParam })
+        });
+
+        const result = await response.json();
+
+        if (!result.success) {
+            throw new Error(result.error || 'Error al activar eSIM');
+        }
+
+        showToast('✅ eSIM activada correctamente', 'success');
+        await cargarPerfil(true);
+
+    } catch (error) {
+        console.error('Error activando eSIM:', error);
+        showToast('❌ Error al activar eSIM: ' + error.message, 'error');
+    }
+}
+
+/**
+ * Desactivar eSIM
+ */
+async function desactivarESIM(iccid) {
+    try {
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ Inicia sesión', 'error');
+            return;
+        }
+
+        const iccidParam = iccid || perfilCache?.esim_iccid;
+        if (!iccidParam) {
+            showToast('⚠️ No hay eSIM para desactivar', 'error');
+            return;
+        }
+
+        if (!confirm('¿Seguro que quieres desactivar tu eSIM?')) return;
+
+        showToast('⏳ Desactivando eSIM...', '', 5000);
+
+        const response = await fetch(`${API_ENDPOINTS.esim}/desactivar`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.access_token}`
+            },
+            body: JSON.stringify({ iccid: iccidParam })
+        });
+
+        const result = await response.json();
+
+        if (!result.success) {
+            throw new Error(result.error || 'Error al desactivar eSIM');
+        }
+
+        showToast('🔌 eSIM desactivada', 'warning');
+        await cargarPerfil(true);
+
+    } catch (error) {
+        console.error('Error desactivando eSIM:', error);
+        showToast('❌ Error al desactivar eSIM: ' + error.message, 'error');
+    }
+}
+
+/**
+ * Generar QR de activación eSIM
+ */
+async function generarQRESIM(iccid) {
+    try {
+        const iccidParam = iccid || perfilCache?.esim_iccid;
+        if (!iccidParam) {
+            showToast('⚠️ No hay eSIM para generar QR', 'error');
+            return;
+        }
+        const qrData = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent('LPA:1$' + iccidParam + '$Sariel\'s')}`;
+        mostrarModalQR(qrData);
+    } catch (error) {
+        console.error('Error generando QR:', error);
+        showToast('❌ Error al generar QR: ' + error.message, 'error');
+    }
+}
+
+/**
+ * Obtener estado de eSIM
+ */
+async function obtenerEstadoESIM() {
+    try {
+        const session = await getSession();
+        if (!session) return null;
+
+        const response = await fetch(`${API_ENDPOINTS.esim}/status`, {
+            headers: {
+                'Authorization': `Bearer ${session.access_token}`
+            }
+        });
+
+        const result = await response.json();
+        return result.success ? result.data : null;
+
+    } catch (error) {
+        console.error('Error obteniendo estado:', error);
+        return null;
+    }
+}
+
+/**
+ * Obtener planes eSIM
+ */
+async function obtenerPlanesESIM() {
+    try {
+        const { data, error } = await supabase
+            .from('planes_esim')
+            .select('*')
+            .eq('activo', true)
+            .order('precio_mxn', { ascending: true });
+
+        if (error) throw error;
+        return data || [];
+
+    } catch (error) {
+        console.error('Error obteniendo planes:', error);
+        return [];
+    }
 }
 
 // ================================================================
-// ================================================================
-// 🚦 RATE LIMITER - CONTROL DE FRECUENCIA
-// ================================================================
+// MODALES DE PAGO
 // ================================================================
 
-var rateLimiter = {
-    _lastSend: 0,
-    _pendingMessages: 0,
-    _MAX_MESSAGES_PER_SECOND: 3,
-    _MAX_PENDING: 5,
+function mostrarModalPagoReal(paymentUrl, ordenId, plan) {
+    const modal = document.createElement('div');
+    modal.id = 'pagoModal';
+    modal.style.cssText = `
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.85);
+        backdrop-filter: blur(10px);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        animation: fadeIn 0.3s ease-out;
+    `;
+    modal.innerHTML = `
+        <div style="
+            background: linear-gradient(135deg, var(--bg-card), var(--bg-dark));
+            border: 2px solid var(--gold);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 450px;
+            width: 90%;
+            text-align: center;
+            animation: scaleIn 0.3s ease-out;
+        ">
+            <h2 style="color: var(--gold); margin-bottom: 10px;">📱 Compra eSIM</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 20px;">
+                ${plan.nombre} - ${plan.datos_gb} GB por ${plan.duracion_dias} días
+            </p>
+            <p style="color: var(--gold); font-size: 1.2rem; font-weight: bold;">
+                $${plan.precio_usdt} USDT
+            </p>
+            <p style="color: var(--text-muted); font-size: 0.8rem; margin: 10px 0;">
+                💳 Paga con NOWPayments (USDT en TRC-20)
+            </p>
+            <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin: 15px 0;">
+                <a href="${paymentUrl}" target="_blank" 
+                   style="background: linear-gradient(135deg, var(--gold), #f7971e); border: none; color: #fff; padding: 12px 30px; border-radius: 10px; font-weight: 600; cursor: pointer; text-decoration: none;">
+                    💳 Ir a pagar
+                </a>
+                <button onclick="verificarPago('${ordenId}')"
+                        style="background: var(--bg-card); border: 1px solid var(--cyan); color: var(--cyan); padding: 12px 30px; border-radius: 10px; font-weight: 600; cursor: pointer;">
+                    ✅ Verificar pago
+                </button>
+                <button onclick="this.parentElement.parentElement.parentElement.remove()"
+                        style="background: transparent; border: 1px solid var(--text-muted); color: var(--text-muted); padding: 12px 30px; border-radius: 10px; cursor: pointer;">
+                    Cerrar
+                </button>
+            </div>
+            <div id="pagoStatus" style="margin-top: 10px; font-size: 0.8rem; color: var(--text-secondary);"></div>
+            <p style="color: var(--text-muted); font-size: 0.6rem; margin-top: 10px;">
+                ⏳ El pago se confirmará automáticamente vía webhook
+            </p>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
 
-    canSend: function() {
-        var now = Date.now();
-        var diff = now - this._lastSend;
+function mostrarModalPagoSimulado(qrData, ordenId, plan) {
+    const modal = document.createElement('div');
+    modal.id = 'pagoModal';
+    modal.style.cssText = `
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.85);
+        backdrop-filter: blur(10px);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        animation: fadeIn 0.3s ease-out;
+    `;
+    modal.innerHTML = `
+        <div style="
+            background: linear-gradient(135deg, var(--bg-card), var(--bg-dark));
+            border: 2px solid var(--gold);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 450px;
+            width: 90%;
+            text-align: center;
+            animation: scaleIn 0.3s ease-out;
+        ">
+            <h2 style="color: var(--gold); margin-bottom: 10px;">📱 Compra eSIM</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 20px;">
+                ${plan.nombre} - ${plan.datos_gb} GB por ${plan.duracion_dias} días
+            </p>
+            <div style="background: white; border-radius: 10px; padding: 15px; margin: 10px 0;">
+                <img src="${qrData}" alt="QR de pago" style="max-width: 200px; width: 100%;">
+            </div>
+            <p style="color: var(--gold); font-size: 1.2rem; font-weight: bold;">
+                $${plan.precio_usdt} USDT
+            </p>
+            <p style="color: var(--text-muted); font-size: 0.7rem; margin: 10px 0;">
+                ⏳ Escanea el QR para pagar. Se activará automáticamente.
+            </p>
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button onclick="verificarPago('${ordenId}')"
+                        style="background: linear-gradient(135deg, var(--gold), #f7971e); border: none; color: #fff; padding: 10px 30px; border-radius: 10px; font-weight: 600; cursor: pointer;">
+                    ✅ Verificar pago
+                </button>
+                <button onclick="this.parentElement.parentElement.parentElement.remove()"
+                        style="background: transparent; border: 1px solid var(--text-muted); color: var(--text-muted); padding: 10px 30px; border-radius: 10px; cursor: pointer;">
+                    Cerrar
+                </button>
+            </div>
+            <div id="pagoStatus" style="margin-top: 10px; font-size: 0.8rem; color: var(--text-secondary);"></div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
 
-        if (this._pendingMessages >= this._MAX_PENDING) {
-            showToast('⏳ Demasiados mensajes pendientes, espera un momento', 'warning');
-            return false;
+function mostrarModalQR(qrData) {
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.85);
+        backdrop-filter: blur(10px);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        animation: fadeIn 0.3s ease-out;
+    `;
+    modal.innerHTML = `
+        <div style="background: linear-gradient(135deg, var(--bg-card), var(--bg-dark)); border: 2px solid var(--gold); border-radius: 20px; padding: 30px; max-width: 400px; width: 90%; text-align: center; animation: scaleIn 0.3s ease-out;">
+            <h2 style="color: var(--gold); margin-bottom: 10px;">📱 Activa tu eSIM</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 20px;">Escanea con la cámara de tu móvil</p>
+            <div style="background: white; border-radius: 10px; padding: 15px; margin: 10px 0;">
+                <img src="${qrData}" alt="QR de activación" style="max-width: 200px; width: 100%;">
+            </div>
+            <p style="color: var(--text-muted); font-size: 0.7rem;">📲 Ve a Ajustes > Datos Móviles > Añadir eSIM</p>
+            <button onclick="this.parentElement.parentElement.remove()"
+                    style="margin-top: 15px; background: var(--gold); border: none; color: #fff; padding: 10px 30px; border-radius: 10px; cursor: pointer;">
+                Listo
+            </button>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+async function verificarPago(ordenId) {
+    const statusEl = document.getElementById('pagoStatus');
+    if (!statusEl) return;
+
+    statusEl.textContent = '⏳ Verificando pago...';
+
+    try {
+        const session = await getSession();
+        if (!session) {
+            statusEl.textContent = '❌ Inicia sesión nuevamente';
+            return;
         }
 
-        if (diff < 1000 && this._pendingMessages > 0) {
-            showToast('⏳ Por favor espera antes de enviar más mensajes', 'warning');
-            return false;
+        const response = await fetch(`${API_ENDPOINTS.pagos}/estado/${ordenId}`, {
+            headers: {
+                'Authorization': `Bearer ${session.access_token}`
+            }
+        });
+
+        const result = await response.json();
+
+        if (!result.success) {
+            throw new Error(result.error || 'Error al verificar pago');
         }
 
-        if (diff < 300) {
-            showToast('⏳ Demasiado rápido, espera un momento', 'warning');
-            return false;
+        const orden = result.data;
+
+        if (orden.estado === 'completado' || orden.estado === 'finished' || orden.estado === 'confirmed') {
+            statusEl.textContent = '✅ ¡Pago confirmado! Activando eSIM...';
+            showToast('🎉 ¡eSIM activada exitosamente!', 'success');
+            
+            await cargarPerfil(true);
+            
+            setTimeout(() => {
+                document.getElementById('pagoModal')?.remove();
+            }, 2000);
+            
+        } else if (orden.estado === 'pendiente') {
+            statusEl.textContent = '⏳ Aún no se confirma el pago. Espera unos minutos.';
+            setTimeout(() => verificarPago(ordenId), 10000);
+        } else {
+            statusEl.textContent = `❌ Estado: ${orden.estado}`;
         }
 
-        this._lastSend = now;
-        this._pendingMessages++;
-        setTimeout(function() { this._pendingMessages--; }.bind(this), 1000);
-        return true;
+    } catch (error) {
+        console.error('Error verificando pago:', error);
+        statusEl.textContent = '❌ Error al verificar: ' + error.message;
     }
-};
-
-// ================================================================
-// ================================================================
-// 📁 VALIDACIÓN DE ARCHIVOS
-// ================================================================
-// ================================================================
-
-var MAX_FILE_SIZE = 10 * 1024 * 1024;
-var MAX_FILES = 5;
-var TIPOS_PERMITIDOS = [
-    'image/jpeg', 'image/png', 'image/gif', 'image/webp',
-    'audio/mpeg', 'audio/webm', 'audio/ogg', 'audio/wav'
-];
-var EXTENSIONES_PERMITIDAS = [
-    'jpg', 'jpeg', 'png', 'gif', 'webp',
-    'mp3', 'webm', 'ogg', 'wav'
-];
-
-function validarArchivo(file) {
-    if (file.size > MAX_FILE_SIZE) {
-        showToast('❌ Archivo demasiado grande (máx ' + (MAX_FILE_SIZE / 1024 / 1024) + 'MB)', 'error');
-        return false;
-    }
-
-    if (TIPOS_PERMITIDOS.indexOf(file.type) === -1) {
-        showToast('❌ Tipo de archivo no permitido', 'error');
-        return false;
-    }
-
-    var ext = file.name.split('.').pop().toLowerCase();
-    if (EXTENSIONES_PERMITIDAS.indexOf(ext) === -1) {
-        showToast('❌ Extensión de archivo no permitida', 'error');
-        return false;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-        if (!confirm('⚠️ El archivo ' + file.name + ' pesa ' + (file.size / 1024 / 1024).toFixed(1) + 'MB. ¿Continuar?')) {
-            return false;
-        }
-    }
-
-    return true;
 }
 
 // ================================================================
-// ================================================================
-// 📡 CANAL REALTIME CON RECONEXIÓN
-// ================================================================
+// ESCANEO QR
 // ================================================================
 
-var currentChannel = null;
-var reconnectAttempts = 0;
-var MAX_RECONNECT_ATTEMPTS = 5;
-var RECONNECT_DELAY = 2000;
+let qrScannerInterval = null;
+let scannerActive = false;
+let qrHistorial = [];
+let qrScanningLock = false;
 
-function crearCanalRealtime(contactoId, onMessage, onUpdate) {
-    var channel = supabase
-        .channel('chat-' + contactoId)
+async function abrirCamaraQR() {
+    const container = document.getElementById('qrReaderContainer');
+    const video = document.getElementById('qrVideo');
+    const status = document.getElementById('qrCamaraStatus');
+    const canvas = document.getElementById('qrCanvas');
+    const ctx = canvas?.getContext('2d');
+    
+    if (scannerActive) {
+        cerrarCamaraQR();
+        return;
+    }
+
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 480 } }
+        });
+        
+        video.srcObject = stream;
+        await video.play();
+        container.style.display = 'block';
+        scannerActive = true;
+        status.textContent = '📷 Enfoca el QR...';
+
+        const leerQR = async () => {
+            if (!scannerActive || !video.readyState || video.readyState < 2) return;
+            
+            try {
+                if (!canvas || !ctx) return;
+                
+                canvas.width = video.videoWidth || 400;
+                canvas.height = video.videoHeight || 300;
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                
+                if (typeof jsQR !== 'undefined') {
+                    const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                        inversionAttempts: "dontInvert",
+                    });
+                    
+                    if (code && code.data) {
+                        const qrData = code.data;
+                        status.textContent = '✅ QR detectado: ' + qrData.slice(0, 30) + '...';
+                        
+                        const input = document.getElementById('qrInput');
+                        if (input) {
+                            input.value = qrData;
+                            setTimeout(async () => {
+                                await procesarQR(qrData);
+                            }, 1000);
+                        }
+                        cerrarCamaraQR();
+                        return;
+                    }
+                } else {
+                    status.textContent = '📱 Escanea el QR o ingresa el código manualmente';
+                }
+                
+            } catch (error) {
+                console.error('Error leyendo QR:', error);
+            }
+        };
+
+        if (qrScannerInterval) {
+            clearInterval(qrScannerInterval);
+        }
+        qrScannerInterval = setInterval(leerQR, 500);
+
+        showToast('📷 Apunta la cámara al QR', 'warning');
+
+    } catch (error) {
+        console.error('Error abriendo cámara:', error);
+        status.textContent = '❌ No se pudo acceder a la cámara';
+        showToast('❌ No se pudo acceder a la cámara', 'error');
+    }
+}
+
+function cerrarCamaraQR() {
+    const container = document.getElementById('qrReaderContainer');
+    const video = document.getElementById('qrVideo');
+    const status = document.getElementById('qrCamaraStatus');
+    
+    if (video.srcObject) {
+        video.srcObject.getTracks().forEach(track => track.stop());
+    }
+    video.srcObject = null;
+    if (container) container.style.display = 'none';
+    scannerActive = false;
+    if (status) status.textContent = '';
+    
+    if (qrScannerInterval) {
+        clearInterval(qrScannerInterval);
+        qrScannerInterval = null;
+    }
+}
+
+async function procesarQR(codigo) {
+    if (qrScanningLock) {
+        showToast('⏳ Procesando otro QR...', 'warning');
+        return;
+    }
+    
+    qrScanningLock = true;
+    const status = document.getElementById('qrStatus');
+    const input = document.getElementById('qrInput');
+    
+    try {
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ Inicia sesión para escanear QR', 'error');
+            qrScanningLock = false;
+            return;
+        }
+
+        if (status) status.textContent = '⏳ Validando QR...';
+        showToast('⏳ Verificando QR...', '', 5000);
+
+        const { data, error } = await supabase.rpc('reclamar_qr_domo', {
+            p_codigo: codigo
+        });
+
+        if (error) {
+            if (error.message.includes('already used')) {
+                showToast('❌ Este QR ya fue usado', 'error');
+                if (status) status.textContent = '❌ QR ya utilizado';
+            } else if (error.message.includes('invalid code')) {
+                showToast('❌ QR inválido', 'error');
+                if (status) status.textContent = '❌ QR inválido';
+            } else if (error.message.includes('not a domo')) {
+                showToast('❌ Este QR no es para un domo', 'error');
+                if (status) status.textContent = '❌ QR no es domo';
+            } else {
+                throw error;
+            }
+            qrScanningLock = false;
+            return;
+        }
+
+        if (!data.success) {
+            showToast('❌ ' + (data.error || 'Error al reclamar QR'), 'error');
+            if (status) status.textContent = '❌ ' + data.error;
+            qrScanningLock = false;
+            return;
+        }
+
+        if (status) status.textContent = '✅ ¡QR reclamado exitosamente!';
+        if (input) input.value = '';
+        
+        showToast('🎉 ¡QR escaneado! +1 Es.stok', 'success');
+        
+        await cargarPerfil(true);
+        await cargarHistorialQR();
+        mostrarCelebracion();
+
+    } catch (error) {
+        console.error('Error procesando QR:', error);
+        if (status) status.textContent = '❌ Error al procesar QR';
+        showToast('❌ Error al escanear QR: ' + error.message, 'error');
+    } finally {
+        qrScanningLock = false;
+    }
+}
+
+async function escanearQR() {
+    const input = document.getElementById('qrInput');
+    const qrCode = input?.value?.trim();
+
+    if (!qrCode) {
+        showToast('⚠️ Escribe o escanea el código QR', 'error');
+        return;
+    }
+
+    await procesarQR(qrCode);
+}
+
+async function cargarHistorialQR() {
+    try {
+        const session = await getSession();
+        if (!session) return;
+
+        const { data, error } = await supabase
+            .from('qr_historial')
+            .select('*')
+            .eq('user_id', session.user.id)
+            .order('fecha', { ascending: false })
+            .limit(10);
+
+        if (error) throw error;
+
+        qrHistorial = data || [];
+        actualizarUIHistorialQR(qrHistorial);
+
+    } catch (error) {
+        console.error('Error cargando historial QR:', error);
+    }
+}
+
+function actualizarUIHistorialQR(historial = []) {
+    const container = document.getElementById('qrHistorialList');
+    const contador = document.getElementById('qrHistorialCount');
+
+    if (contador) {
+        contador.textContent = `${historial.length} escaneos`;
+    }
+
+    if (!container) return;
+
+    if (!historial || historial.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state" style="padding:10px;">
+                <span class="icon" style="font-size:1.5rem;">◈</span>
+                <p style="font-size:0.7rem;">Sin escaneos recientes</p>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = historial.map(item => `
+        <div style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+            border-bottom: 1px solid rgba(212,175,55,0.05);
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        ">
+            <span>📱 QR: ${item.qr_id?.slice(0, 15) || 'N/A'}</span>
+            <span>${new Date(item.fecha).toLocaleDateString()} ${new Date(item.fecha).toLocaleTimeString()}</span>
+        </div>
+    `).join('');
+}
+
+// ================================================================
+// ACTUALIZAR UI PRINCIPAL
+// ================================================================
+function actualizarUI(data) {
+    const nombreEl = document.getElementById('perfilNombre');
+    const handleEl = document.getElementById('perfilHandle');
+    const bioEl = document.getElementById('perfilBio');
+    const avatarEl = document.getElementById('perfilAvatar');
+    const walletDisplay = document.getElementById('walletDisplay');
+
+    if (nombreEl) {
+        const verificado = data.verificado ? '<span class="verified">✦ VERIFICADO</span>' : '';
+        nombreEl.innerHTML = `${data.nombre || 'Explorador'} ${verificado}`;
+    }
+    
+    if (handleEl) handleEl.textContent = '@' + (data.handle || 'explorador');
+    if (bioEl) bioEl.innerHTML = formatearTexto(data.bio || 'Explorando el ecosistema Sariel\'s · WEB3 · Comunidad');
+
+    if (avatarEl) {
+        if (data.avatar_url) {
+            avatarEl.innerHTML = `
+                <img src="${data.avatar_url}" alt="Avatar" style="animation: fadeIn 0.5s ease-out;" 
+                     onerror="this.style.display='none';this.parentElement.innerHTML='◈<span class=\\'edit-badge\\' onclick=\\'abrirSelectorArchivo()\\' title=\\'Cambiar avatar\\'>✎</span>'"/>
+                <span class="edit-badge" onclick="abrirSelectorArchivo()" title="Cambiar avatar">✎</span>
+            `;
+        } else {
+            avatarEl.innerHTML = `◈<span class="edit-badge" onclick="abrirSelectorArchivo()" title="Cambiar avatar">✎</span>`;
+        }
+    }
+
+    if (walletDisplay && data.wallet_address) {
+        walletDisplay.textContent = data.wallet_address.slice(0, 6) + '...' + data.wallet_address.slice(-4);
+        walletDisplay.style.color = 'var(--success)';
+        document.getElementById('btnConectarWallet').style.display = 'none';
+        document.getElementById('btnDesconectarWallet').style.display = 'inline-flex';
+    } else if (walletDisplay) {
+        walletDisplay.textContent = '⚠️ No conectada';
+        walletDisplay.style.color = 'var(--text-muted)';
+        document.getElementById('btnConectarWallet').style.display = 'inline-flex';
+        document.getElementById('btnDesconectarWallet').style.display = 'none';
+    }
+
+    const stats = [
+        { id: 'statTokens', value: data.tokens || 0 },
+        { id: 'statNFTS', value: data.nfts || 0 },
+        { id: 'statSeguidores', value: data.seguidores || 0 },
+        { id: 'statSiguiendo', value: data.siguiendo || 0 }
+    ];
+
+    stats.forEach(stat => {
+        const el = document.getElementById(stat.id);
+        if (el && el.textContent !== String(stat.value)) {
+            animarContador(el, parseInt(el.textContent) || 0, stat.value);
+        }
+    });
+
+    const tokens = data.tokens || 0;
+    const progreso = Math.min(tokens, 12);
+    const puedeCanjear = data.puede_canjear || false;
+
+    const progressFill = document.getElementById('progressFill');
+    const progressText = document.getElementById('progressText');
+
+    if (progressFill) {
+        const porcentaje = (progreso / 12) * 100;
+        progressFill.style.width = `${porcentaje}%`;
+        progressFill.style.transition = 'width 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
+    }
+    if (progressText) {
+        progressText.textContent = `${progreso} / 12`;
+        if (progreso >= 12) {
+            progressText.style.color = 'var(--gold)';
+            progressText.innerHTML += ' 🎯';
+        }
+    }
+
+    const tokenTotal = document.getElementById('tokenTotal');
+    const tokenDisponibles = document.getElementById('tokenDisponibles');
+    const tokenNFTs = document.getElementById('tokenNFTs');
+
+    if (tokenTotal) tokenTotal.textContent = tokens;
+    if (tokenDisponibles) tokenDisponibles.textContent = tokens;
+    if (tokenNFTs) tokenNFTs.textContent = data.progreso_canje || 0;
+
+    const editNombre = document.getElementById('editNombre');
+    const editHandle = document.getElementById('editHandle');
+    const editBio = document.getElementById('editBio');
+
+    if (editNombre) editNombre.value = data.nombre || 'Explorador';
+    if (editHandle) editHandle.value = (data.handle || 'explorador');
+    if (editBio) editBio.value = data.bio || 'Explorando el ecosistema Sariel\'s · WEB3 · Comunidad';
+
+    const btnCanjear = document.getElementById('canjearNft');
+    if (btnCanjear) {
+        btnCanjear.disabled = !puedeCanjear;
+        if (puedeCanjear) {
+            btnCanjear.style.background = 'linear-gradient(135deg, var(--gold), #f7971e)';
+            btnCanjear.style.border = 'none';
+            btnCanjear.style.color = '#fff';
+            btnCanjear.innerHTML = '🎁 CANJEAR NFT';
+        } else {
+            btnCanjear.style.background = 'var(--bg-card)';
+            btnCanjear.style.border = '1px solid var(--text-muted)';
+            btnCanjear.style.color = 'var(--text-muted)';
+            btnCanjear.innerHTML = '🔒 NECESITAS 12 TOKENS';
+        }
+    }
+
+    actualizarUIESIM(data);
+    actualizarUIConexion(estadoConexion);
+    actualizarUIEstado(data.online !== false);
+}
+
+function animarContador(elemento, inicio, fin) {
+    if (!elemento || inicio === fin) return;
+    const duracion = 800;
+    const paso = 20;
+    const incremento = (fin - inicio) / (duracion / paso);
+    let actual = inicio;
+    const intervalo = setInterval(() => {
+        actual += incremento;
+        if ((incremento > 0 && actual >= fin) || (incremento < 0 && actual <= fin)) {
+            actual = fin;
+            clearInterval(intervalo);
+        }
+        elemento.textContent = Math.round(actual);
+    }, paso);
+}
+
+// ================================================================
+// WALLET
+// ================================================================
+async function conectarWallet() {
+    if (typeof window.ethereum === 'undefined') {
+        showToast('⚠️ Instala MetaMask para conectar tu wallet', 'error');
+        return;
+    }
+
+    try {
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ Inicia sesión para vincular wallet', 'error');
+            return;
+        }
+
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        const cuenta = accounts[0];
+
+        const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+        
+        if (chainId !== ENV.networkChainId) {
+            try {
+                await window.ethereum.request({
+                    method: 'wallet_switchEthereumChain',
+                    params: [{ chainId: ENV.networkChainId }]
+                });
+            } catch (switchError) {
+                if (switchError.code === 4902) {
+                    await window.ethereum.request({
+                        method: 'wallet_addEthereumChain',
+                        params: [{
+                            chainId: ENV.networkChainId,
+                            chainName: ENV.networkName,
+                            nativeCurrency: { name: ENV.networkCurrency, symbol: ENV.networkCurrency, decimals: 18 },
+                            rpcUrls: [ENV.networkRPC],
+                            blockExplorerUrls: [ENV.networkExplorer]
+                        }]
+                    });
+                } else {
+                    throw switchError;
+                }
+            }
+        }
+
+        const { error } = await supabase.rpc('vincular_wallet', { p_wallet_address: cuenta });
+        if (error) throw error;
+
+        const walletDisplay = document.getElementById('walletDisplay');
+        const btnConectar = document.getElementById('btnConectarWallet');
+        const btnDesconectar = document.getElementById('btnDesconectarWallet');
+
+        if (walletDisplay) {
+            walletDisplay.textContent = cuenta.slice(0, 6) + '...' + cuenta.slice(-4);
+            walletDisplay.style.color = 'var(--success)';
+        }
+        if (btnConectar) btnConectar.style.display = 'none';
+        if (btnDesconectar) btnDesconectar.style.display = 'inline-flex';
+
+        showToast(`✅ Wallet conectada a ${ENV.networkName}`, 'success');
+        await cargarPerfil(true);
+        
+    } catch (error) {
+        console.error('Error conectando wallet:', error);
+        showToast('❌ Error al conectar wallet: ' + error.message, 'error');
+    }
+}
+
+async function desconectarWallet() {
+    try {
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ Inicia sesión', 'error');
+            return;
+        }
+
+        const { error } = await supabase.rpc('desvincular_wallet');
+        if (error) console.warn('RPC desvincular_wallet no encontrada:', error);
+
+        const walletDisplay = document.getElementById('walletDisplay');
+        const btnConectar = document.getElementById('btnConectarWallet');
+        const btnDesconectar = document.getElementById('btnDesconectarWallet');
+
+        if (walletDisplay) {
+            walletDisplay.textContent = '⚠️ No conectada';
+            walletDisplay.style.color = 'var(--text-muted)';
+        }
+        if (btnConectar) btnConectar.style.display = 'inline-flex';
+        if (btnDesconectar) btnDesconectar.style.display = 'none';
+
+        showToast('🔌 Wallet desconectada', 'warning');
+        await cargarPerfil(true);
+        
+    } catch (error) {
+        console.error('Error desconectando wallet:', error);
+        showToast('❌ Error al desconectar wallet', 'error');
+    }
+}
+
+// ================================================================
+// COMPRAR DOMO
+// ================================================================
+async function comprarDomo(cantidad = 1) {
+    try {
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ Inicia sesión para comprar domos', 'error');
+            return;
+        }
+
+        cantidad = Math.max(1, Math.floor(cantidad));
+        if (cantidad > 10) {
+            showToast('⚠️ Máximo 10 domos por transacción', 'warning');
+            return;
+        }
+
+        showToast('⏳ Procesando compra de ' + cantidad + ' domo(s)...', '', 5000);
+
+        const { data, error } = await supabase.rpc('comprar_domo', { p_cantidad: cantidad });
+
+        if (error) {
+            if (error.message.includes('insufficient')) {
+                showToast('❌ Fondos insuficientes para comprar domos', 'error');
+            } else {
+                throw error;
+            }
+            return;
+        }
+
+        showToast(`🎉 ¡${cantidad} Domo(s) comprado(s) exitosamente!`, 'success', 5000);
+        await cargarPerfil(true);
+        mostrarCelebracion();
+
+    } catch (error) {
+        console.error('Error al comprar domo:', error);
+        showToast('❌ Error en la compra: ' + error.message, 'error');
+    }
+}
+
+// ================================================================
+// COMPRAR CON CRIPTO
+// ================================================================
+async function comprarConCripto() {
+    const session = await getSession();
+    if (!session) {
+        showToast('⚠️ Inicia sesión para comprar', 'error');
+        return;
+    }
+
+    const qty = parseInt(document.getElementById('cryptoQuantity').textContent);
+    if (qty < 1 || qty > 10) {
+        showToast('⚠️ Cantidad inválida (1-10)', 'warning');
+        return;
+    }
+
+    const precioUnitario = 4.50;
+    const total = qty * precioUnitario;
+    const comision = total * 0.02;
+    const totalConComision = total + comision;
+
+    const modal = document.getElementById('cryptoPaymentModal');
+    const qrImg = document.getElementById('cryptoQR');
+    const addressEl = document.getElementById('cryptoAddress');
+    const montoEl = document.getElementById('cryptoMonto');
+    const monedaEl = document.getElementById('cryptoMoneda');
+    const statusEl = document.getElementById('cryptoStatus');
+
+    modal.classList.add('active');
+
+    const response = await fetch(`${API_ENDPOINTS.pagos}/crear`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+            transmisionId: null,
+            tipo: 'domo',
+            cantidad: qty,
+            idempotency_key: `domo_${session.user.id}_${qty}_${Date.now()}`
+        })
+    });
+
+    const result = await response.json();
+
+    if (!result.success) {
+        showToast('❌ Error al crear pago: ' + (result.error || 'Error desconocido'), 'error');
+        modal.classList.remove('active');
+        return;
+    }
+
+    const pagoData = result.data;
+    montoEl.textContent = totalConComision.toFixed(2);
+    monedaEl.textContent = 'USDT';
+    addressEl.textContent = pagoData.payment_address || '0x...';
+    statusEl.textContent = '⏳ Esperando confirmación de pago...';
+
+    if (pagoData.payment_url) {
+        qrImg.src = pagoData.payment_url;
+    } else {
+        qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent('Orden: ' + pagoData.id)}`;
+    }
+
+    window._ordenPagoId = pagoData.id;
+
+    showToast('💳 QR generado. Escanea para pagar.', 'success');
+}
+
+async function verificarPagoCrypto() {
+    const statusEl = document.getElementById('cryptoStatus');
+    const ordenId = window._ordenPagoId;
+
+    if (!ordenId) {
+        statusEl.textContent = '❌ No hay orden para verificar';
+        return;
+    }
+
+    statusEl.textContent = '⏳ Verificando pago...';
+
+    try {
+        const session = await getSession();
+        if (!session) {
+            statusEl.textContent = '❌ Inicia sesión nuevamente';
+            return;
+        }
+
+        const response = await fetch(`${API_ENDPOINTS.pagos}/estado/${ordenId}`, {
+            headers: {
+                'Authorization': `Bearer ${session.access_token}`
+            }
+        });
+
+        const result = await response.json();
+
+        if (!result.success) {
+            throw new Error(result.error || 'Error al verificar pago');
+        }
+
+        const orden = result.data;
+
+        if (orden.estado === 'completado' || orden.estado === 'finished' || orden.estado === 'confirmed') {
+            statusEl.textContent = '✅ ¡Pago confirmado! Procesando compra...';
+            showToast('🎉 ¡Compra exitosa!', 'success');
+            
+            await cargarPerfil(true);
+            setTimeout(() => cerrarModalPago(), 2000);
+        } else if (orden.estado === 'pendiente') {
+            statusEl.textContent = '⏳ Aún no se confirma el pago. Espera unos minutos.';
+            setTimeout(() => verificarPagoCrypto(), 10000);
+        } else {
+            statusEl.textContent = `❌ Estado: ${orden.estado}`;
+        }
+
+    } catch (error) {
+        console.error('Error verificando pago:', error);
+        statusEl.textContent = '❌ Error al verificar: ' + error.message;
+    }
+}
+
+function copiarDireccion() {
+    const addressEl = document.getElementById('cryptoAddress');
+    const address = addressEl.textContent;
+
+    if (address && address !== 'Cargando dirección...') {
+        navigator.clipboard.writeText(address).then(() => {
+            showToast('📋 Dirección copiada al portapapeles', 'success');
+        }).catch(() => {
+            const textArea = document.createElement('textarea');
+            textArea.value = address;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            textArea.remove();
+            showToast('📋 Dirección copiada al portapapeles', 'success');
+        });
+    }
+}
+
+function cerrarModalPago() {
+    const modal = document.getElementById('cryptoPaymentModal');
+    modal.classList.remove('active');
+    window._ordenPagoId = null;
+}
+
+// ================================================================
+// CANJEAR NFT
+// ================================================================
+async function canjearNFT() {
+    try {
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ Inicia sesión para canjear tu NFT', 'error');
+            return;
+        }
+
+        showToast('⏳ Verificando tokens para canje...', '', 4000);
+
+        const { data, error } = await supabase.rpc('canjear_nft');
+
+        if (error) {
+            if (error.message.includes('insufficient tokens')) {
+                showToast('❌ Necesitas exactamente 12 Es.stoks para canjear', 'error');
+            } else if (error.message.includes('already redeemed')) {
+                showToast('⚠️ Ya has canjeado tu NFT', 'warning');
+            } else {
+                throw error;
+            }
+            return;
+        }
+
+        showToast('🎁 ¡NFT Canjeado Exitosamente! Tienes 30 días para reclamar.', 'success', 8000);
+        await cargarPerfil(true);
+        mostrarModalNFT(data);
+
+    } catch (error) {
+        console.error('Error al canjear NFT:', error);
+        showToast('❌ Error al canjear NFT: ' + error.message, 'error');
+    }
+}
+
+// ================================================================
+// EFECTO CONFETI Y MODALES
+// ================================================================
+function crearConfeti() {
+    const colores = ['#ff6b6b', '#feca57', '#48dbfb', '#ff9ff3', '#54a0ff', '#5f27cd'];
+    for (let i = 0; i < 50; i++) {
+        setTimeout(() => {
+            const confeti = document.createElement('div');
+            confeti.style.cssText = `
+                position: fixed;
+                width: 10px;
+                height: 10px;
+                background: ${colores[Math.floor(Math.random() * colores.length)]};
+                left: ${Math.random() * 100}vw;
+                top: -10px;
+                border-radius: ${Math.random() > 0.5 ? '50%' : '2px'};
+                animation: confetiFall ${2 + Math.random() * 3}s linear forwards;
+                transform: rotate(${Math.random() * 360}deg);
+                z-index: 9998;
+                pointer-events: none;
+            `;
+            document.body.appendChild(confeti);
+            setTimeout(() => confeti.remove(), 5000);
+        }, i * 50);
+    }
+}
+
+function mostrarCelebracion() {
+    crearConfeti();
+    showToast('🎉 ¡Transacción exitosa!', 'success');
+}
+
+function compartirLogro() {
+    const texto = '🎁 ¡Acabo de canjear mi NFT en Sariel\'s! Únete al ecosistema. #Sariels #WEB3 #NFT';
+    if (navigator.share) {
+        navigator.share({ title: 'Mi logro en Sariel\'s', text: texto });
+    } else {
+        navigator.clipboard.writeText(texto).then(() => {
+            showToast('📋 Copiado al portapapeles', 'success');
+        });
+    }
+}
+
+function mostrarModalNFT(data) {
+    const modal = document.createElement('div');
+    modal.id = 'nftModal';
+    modal.style.cssText = `
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.8);
+        backdrop-filter: blur(10px);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        animation: fadeIn 0.5s ease-out;
+    `;
+    
+    modal.innerHTML = `
+        <div style="background: linear-gradient(135deg, var(--bg-card), var(--bg-dark)); border: 2px solid var(--gold); border-radius: 20px; padding: 40px; max-width: 500px; width: 90%; text-align: center; animation: scaleIn 0.5s ease-out;">
+            <div style="font-size: 80px; margin-bottom: 20px;">🎁</div>
+            <h2 style="color: var(--gold); font-size: 28px; margin-bottom: 10px;">¡NFT Canjeado!</h2>
+            <p style="color: var(--text-primary); margin-bottom: 20px; font-size: 18px;">Tu Domo físico te espera</p>
+            <div style="background: var(--bg-dark); border-radius: 10px; padding: 15px; margin-bottom: 20px;">
+                <p style="color: var(--text-muted); font-size: 14px;">⏳ Vigencia: 30 días para reclamar</p>
+                <p style="color: var(--cyan); font-size: 12px; margin-top: 5px;">ID: ${data?.nft_id || 'NFT-' + Date.now().toString().slice(-6)}</p>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button onclick="this.parentElement.parentElement.parentElement.remove()" 
+                        style="background: linear-gradient(135deg, var(--gold), #f7971e); border: none; color: #fff; padding: 12px 30px; border-radius: 10px; font-weight: 600; cursor: pointer;">
+                    ✅ Entendido
+                </button>
+                <button onclick="compartirLogro()"
+                        style="background: transparent; border: 2px solid var(--cyan); color: var(--cyan); padding: 12px 30px; border-radius: 10px; font-weight: 600; cursor: pointer;">
+                    📤 Compartir
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    crearConfeti();
+}
+
+// ================================================================
+// GESTIÓN DE PERFIL
+// ================================================================
+function editarPerfil() {
+    cambiarTab('config');
+    setTimeout(() => {
+        const input = document.getElementById('editNombre');
+        if (input) {
+            input.focus();
+            input.select();
+        }
+    }, 300);
+}
+
+async function guardarPerfil() {
+    const session = await getSession();
+    if (!session) {
+        showToast('⚠️ Inicia sesión para guardar', 'error');
+        return;
+    }
+
+    const perfil = {
+        nombre: document.getElementById('editNombre').value.trim() || 'Explorador',
+        handle: document.getElementById('editHandle').value.trim().replace('@', '') || 'explorador',
+        bio: document.getElementById('editBio').value.trim() || 'Explorando el ecosistema Sariel\'s · WEB3 · Comunidad'
+    };
+
+    if (!/^[a-zA-Z0-9_]+$/.test(perfil.handle)) {
+        showToast('❌ El handle solo puede contener letras, números y _', 'error');
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_ENDPOINTS.perfil}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.access_token}`
+            },
+            body: JSON.stringify(perfil)
+        });
+
+        const result = await response.json();
+
+        if (!result.success) {
+            throw new Error(result.error || 'Error guardando perfil');
+        }
+
+        showToast('✅ Perfil guardado correctamente', 'success');
+        await cargarPerfil(true);
+        
+    } catch (error) {
+        console.error('Error guardando perfil:', error);
+        showToast('❌ Error al guardar: ' + error.message, 'error');
+    }
+}
+
+function compartirPerfil() {
+    const nombre = document.getElementById('perfilNombre')?.textContent.split(' ')[0] || 'Explorador';
+    const handle = document.getElementById('perfilHandle')?.textContent.replace('@', '') || 'explorador';
+    const url = `${window.location.origin}/perfil/${handle}`;
+    const texto = `◈ Perfil de ${nombre} en Sariel's\n◈ ${url}\n\n#Sariels #WEB3 #NFT #Comunidad`;
+
+    if (navigator.share) {
+        navigator.share({ title: `Perfil de ${nombre} en Sariel's`, text: texto, url: url }).catch(() => {});
+    } else {
+        navigator.clipboard.writeText(texto).then(() => {
+            showToast('◈ Copiado al portapapeles', 'success');
+        }).catch(() => {
+            prompt('Copia este enlace:', url);
+        });
+    }
+}
+
+function irAMuro() {
+    window.location.href = '/features/muro/muro.html';
+}
+
+function abrirSelectorArchivo() {
+    const input = document.getElementById('fileInput');
+    if (input) input.click();
+}
+
+async function subirFoto(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const session = await getSession();
+    if (!session) {
+        showToast('⚠️ Inicia sesión para subir foto', 'error');
+        return;
+    }
+
+    const fileExt = file.name.split('.').pop().toLowerCase();
+    const filePath = `${session.user.id}/avatar.${fileExt}`;
+
+    try {
+        showToast('⏳ Subiendo foto...', '', 5000);
+
+        const { error: uploadError } = await supabase.storage
+            .from('sariels-avatars')
+            .upload(filePath, file, { upsert: true });
+
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = supabase.storage
+            .from('sariels-avatars')
+            .getPublicUrl(filePath);
+
+        const publicUrl = urlData.publicUrl;
+
+        const { error: updateError } = await supabase
+            .from('usuarios')
+            .update({ avatar_url: publicUrl })
+            .eq('id', session.user.id);
+
+        if (updateError) throw updateError;
+
+        showToast('✅ Foto actualizada correctamente', 'success');
+        event.target.value = '';
+        await cargarPerfil(true);
+        
+    } catch (error) {
+        console.error('Error al subir foto:', error);
+        showToast('❌ Error al subir foto', 'error');
+    }
+}
+
+// ================================================================
+// INTERACCIONES SOCIALES
+// ================================================================
+async function reaccionarPublicacion(postId, tipoReaccion) {
+    try {
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ Debes iniciar sesión', 'error');
+            return;
+        }
+
+        const { error } = await supabase
+            .from('reacciones')
+            .upsert({
+                post_id: postId,
+                usuario_id: session.user.id,
+                tipo: tipoReaccion
+            }, { onConflict: 'post_id, usuario_id' });
+
+        if (error) throw error;
+        showToast(`❤️ Reaccionaste con ${tipoReaccion}`, 'success');
+    } catch (error) {
+        console.error('Error al reaccionar:', error);
+        showToast('❌ Error al reaccionar', 'error');
+    }
+}
+
+async function comentarPublicacion(postId, contenido) {
+    try {
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ Inicia sesión para comentar', 'error');
+            return;
+        }
+        if (!contenido.trim()) {
+            showToast('⚠️ Escribe un comentario', 'warning');
+            return;
+        }
+
+        const textoFormateado = formatearTexto(contenido);
+
+        const { error } = await supabase
+            .from('muro_comentarios')
+            .insert({
+                post_id: postId,
+                usuario_id: session.user.id,
+                contenido: textoFormateado
+            });
+
+        if (error) throw error;
+        showToast('💬 Comentario publicado', 'success');
+        
+    } catch (error) {
+        console.error('Error al comentar:', error);
+        showToast('❌ Error al enviar comentario', 'error');
+    }
+}
+
+// ================================================================
+// SISTEMA DE AMIGOS
+// ================================================================
+async function agregarAmigo(amigoId) {
+    try {
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ Inicia sesión para agregar amigos', 'error');
+            return;
+        }
+
+        const { error } = await supabase
+            .from('contactos')
+            .insert({
+                usuario_id: session.user.id,
+                contacto_id: amigoId,
+                estado: 'pendiente'
+            });
+
+        if (error) {
+            if (error.code === '23505') {
+                showToast('⚠️ Ya enviaste solicitud a este usuario', 'warning');
+            } else {
+                throw error;
+            }
+            return;
+        }
+
+        showToast('🤝 Solicitud de amistad enviada', 'success');
+        
+    } catch (error) {
+        console.error('Error al agregar amigo:', error);
+        showToast('❌ No se pudo enviar la solicitud', 'error');
+    }
+}
+
+// ================================================================
+// GENERAR QR PERFIL
+// ================================================================
+async function generarQRPerfil() {
+    try {
+        const session = await getSession();
+        if (!session) return;
+        
+        const handle = document.getElementById('perfilHandle')?.textContent.replace('@', '') || 'explorador';
+        const url = `${window.location.origin}/perfil/${handle}`;
+        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}`;
+        
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(10px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            animation: fadeIn 0.3s ease-out;
+        `;
+        modal.innerHTML = `
+            <div style="background: var(--bg-card); border-radius: 20px; padding: 30px; text-align: center; animation: scaleIn 0.3s ease-out;">
+                <h3 style="color: var(--gold); margin-bottom: 20px;">📱 Escanea mi perfil</h3>
+                <img src="${qrUrl}" alt="QR Code" style="border-radius: 10px; max-width: 200px;">
+                <p style="color: var(--text-muted); margin-top: 15px; font-size: 12px;">${url}</p>
+                <button onclick="this.parentElement.parentElement.remove()"
+                        style="margin-top: 20px; background: var(--gold); border: none; color: #fff; padding: 10px 30px; border-radius: 10px; cursor: pointer;">
+                    Cerrar
+                </button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        
+    } catch (error) {
+        console.error('Error generando QR:', error);
+        showToast('❌ Error al generar QR', 'error');
+    }
+}
+
+// ================================================================
+// NIVEL Y ESTADÍSTICAS
+// ================================================================
+function calcularNivel(tokens) {
+    const niveles = [
+        { min: 0, max: 4, nombre: '🌱 Explorador', emoji: '🌱' },
+        { min: 5, max: 9, nombre: '⚡ Cazador', emoji: '⚡' },
+        { min: 10, max: 14, nombre: '🏆 Leyenda', emoji: '🏆' },
+        { min: 15, max: 19, nombre: '👑 Maestro', emoji: '👑' },
+        { min: 20, max: Infinity, nombre: '✨ Inmortal', emoji: '✨' }
+    ];
+    
+    for (const nivel of niveles) {
+        if (tokens >= nivel.min && tokens <= nivel.max) {
+            return nivel;
+        }
+    }
+    return niveles[0];
+}
+
+async function obtenerEstadisticas() {
+    try {
+        const session = await getSession();
+        if (!session) return;
+
+        const { data, error } = await supabase
+            .from('estadisticas_usuarios')
+            .select('*')
+            .eq('user_id', session.user.id)
+            .single();
+
+        if (error) throw error;
+        return data;
+    } catch (error) {
+        console.error('Error obteniendo estadísticas:', error);
+        return null;
+    }
+}
+
+async function subirVideo(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const session = await getSession();
+    if (!session) {
+        showToast('⚠️ Inicia sesión para subir videos', 'error');
+        return;
+    }
+
+    if (!file.type.startsWith('video/')) {
+        showToast('❌ Formato no válido', 'error');
+        return;
+    }
+
+    if (file.size > 50 * 1024 * 1024) {
+        showToast('❌ El video excede 50MB', 'error');
+        return;
+    }
+
+    try {
+        showToast('⏳ Subiendo video... 0%', '', 10000);
+        
+        const fileExt = file.name.split('.').pop();
+        const filePath = `${session.user.id}/video_${Date.now()}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+            .from('posts')
+            .upload(filePath, file, {
+                onProgress: (progress) => {
+                    const percent = Math.round((progress.loaded / progress.total) * 100);
+                    showToast(`⏳ Subiendo video... ${percent}%`, '', 10000);
+                }
+            });
+
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = supabase.storage
+            .from('posts')
+            .getPublicUrl(filePath);
+
+        showToast('✅ Video subido con éxito', 'success');
+        return urlData.publicUrl;
+        
+    } catch (error) {
+        console.error('Error al subir video:', error);
+        showToast('❌ Error al subir el video: ' + error.message, 'error');
+    }
+}
+
+// ================================================================
+// CERRAR SESIÓN
+// ================================================================
+async function cerrarSesion() {
+    if (!confirm('¿Seguro que quieres cerrar sesión?')) return;
+    
+    try {
+        await actualizarEstadoEnLinea(false);
+        await supabase.auth.signOut();
+        window.location.href = '/';
+        showToast('🔌 Sesión cerrada', 'success');
+    } catch (error) {
+        console.error('Error cerrando sesión:', error);
+        showToast('❌ Error al cerrar sesión', 'error');
+    }
+}
+
+// ================================================================
+// NOTIFICACIONES EN TIEMPO REAL
+// ================================================================
+function iniciarNotificacionesRealtime() {
+    const channel = supabase
+        .channel('notificaciones')
         .on('postgres_changes', {
             event: 'INSERT',
             schema: 'public',
-            table: 'mensajes_chat',
-            filter: 'remitente_id=eq.' + contactoId
-        }, onMessage)
-        // ✅ FILTRO PARA UPDATE: escuchar solo cambios en la conversación
-        .on('postgres_changes', {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'mensajes_chat',
-            filter: 'remitente_id=eq.' + contactoId
-        }, function(payload) {
-            // Verificar si el mensaje afecta a la conversación actual
-            if (payload.new.remitente_id === contactoId || payload.new.destinatario_id === contactoId) {
-                onUpdate(payload);
+            table: 'notificaciones'
+        }, (payload) => {
+            const notificacion = payload.new;
+            if (notificacion.user_id === perfilCache?.id) {
+                showToast(`🔔 ${notificacion.mensaje}`, 'warning', 4000);
+                
+                try {
+                    const audio = new Audio('/sound/notification.mp3');
+                    audio.play().catch(() => {});
+                } catch (e) {}
             }
         })
-        .on('postgres_changes', {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'mensajes_chat',
-            filter: 'destinatario_id=eq.' + contactoId
-        }, function(payload) {
-            // Verificar si el mensaje afecta a la conversación actual
-            if (payload.new.remitente_id === contactoId || payload.new.destinatario_id === contactoId) {
-                onUpdate(payload);
-            }
-        });
-
-    reconnectAttempts = 0;
-
-    channel.subscribe(function(status) {
-        if (status === 'SUBSCRIBED') {
-            reconnectAttempts = 0;
-            Logger.info('Canal Realtime conectado', { contactoId: contactoId });
-            var statusEl = document.querySelector('.chat-status');
-            if (statusEl) statusEl.classList.remove('desconectado');
-        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-            if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
-                reconnectAttempts++;
-                Logger.warn('Reconectando canal', { contactoId: contactoId, intento: reconnectAttempts });
-                setTimeout(function() {
-                    channel.subscribe();
-                }, RECONNECT_DELAY * reconnectAttempts);
-            } else {
-                Logger.error('Error crítico: no se pudo reconectar', { contactoId: contactoId });
-                showToast('❌ Perdiste conexión con el chat', 'error');
-                var statusEl = document.querySelector('.chat-status');
-                if (statusEl) statusEl.classList.add('desconectado');
-            }
-        }
-    });
+        .subscribe();
 
     return channel;
 }
 
 // ================================================================
+// INICIALIZACIÓN
 // ================================================================
-// 📦 CACHE DE MENSAJES
-// ================================================================
-// ================================================================
-
-var messageCache = new Map();
-var CACHE_TTL = 5 * 60 * 1000;
-
-function getCachedMessages(contactoId) {
-    var cached = messageCache.get(contactoId);
-    if (!cached) return null;
-
-    var now = Date.now();
-    if (now - cached.timestamp > CACHE_TTL) {
-        messageCache.delete(contactoId);
-        return null;
+document.addEventListener('DOMContentLoaded', async function() {
+    if (typeof jsQR === 'undefined') {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js';
+        document.head.appendChild(script);
+        await new Promise(resolve => script.onload = resolve);
     }
-    return cached.data;
-}
-
-function setCachedMessages(contactoId, messages) {
-    messageCache.set(contactoId, {
-        data: messages,
-        timestamp: Date.now()
-    });
-}
-
-// ================================================================
-// ================================================================
-// 🔄 INDICADOR DE CARGA
-// ================================================================
-// ================================================================
-
-function showLoading(message) {
-    message = message || 'Cargando...';
-    var overlay = document.querySelector('.loading-overlay');
-    if (!overlay) {
-        overlay = document.createElement('div');
-        overlay.className = 'loading-overlay';
-        overlay.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 9999; backdrop-filter: blur(4px);';
-        overlay.innerHTML = '<div style="background: #1a1a2e; padding: 30px 40px; border-radius: 12px; border: 1px solid rgba(212,175,55,0.3); text-align: center;"><div style="width: 40px; height: 40px; border: 3px solid rgba(212,175,55,0.1); border-top-color: #d4af37; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px;"></div><div class="loading-message" style="color: #d4af37; font-weight: 500;">' + message + '</div></div>';
-        document.body.appendChild(overlay);
-
-        if (!document.getElementById('loading-style')) {
-            var style = document.createElement('style');
-            style.id = 'loading-style';
-            style.textContent = '@keyframes spin { to { transform: rotate(360deg); } }';
-            document.head.appendChild(style);
+    
+    await cargarPerfil();
+    
+    const stats = await obtenerEstadisticas();
+    if (stats) {
+        const nivel = calcularNivel(stats.tokens_actuales || 0);
+        const nivelEl = document.getElementById('nivelUsuario');
+        if (nivelEl) {
+            nivelEl.textContent = `${nivel.emoji} ${nivel.nombre}`;
         }
     }
+    
+    iniciarNotificacionesRealtime();
+    iniciarEscuchaConexion();
+    iniciarEscuchaAmigos();
+    iniciarDetectorInactividad();
+    await cargarHistorialQR();
 
-    var msgEl = overlay.querySelector('.loading-message');
-    if (msgEl) msgEl.textContent = message;
-    overlay.style.display = 'flex';
-}
-
-function hideLoading() {
-    var overlay = document.querySelector('.loading-overlay');
-    if (overlay) overlay.style.display = 'none';
-}
-
-// ================================================================
-// ================================================================
-// ✏️ FORMATEAR TEXTO CON SANITIZACIÓN
-// ================================================================
-// ================================================================
-
-function formatearTexto(texto) {
-    return sanitizarContenido(texto || '');
-}
-
-// ================================================================
-// ================================================================
-// 🔍 BUSCAR CONTACTOS
-// ================================================================
-// ================================================================
-
-function buscarContactos(query) {
-    var querySanitizada = sanitizarQuery(query);
-    if (!querySanitizada || querySanitizada.length < 2) {
-        document.getElementById('resultadosBusqueda').innerHTML = '';
-        return;
+    if (perfilCache?.esim_iccid) {
+        setInterval(() => {
+            cargarDatosESIM(perfilCache.esim_iccid);
+        }, 30000);
     }
 
-    sessionManager.getSession()
-        .then(function(session) {
-            if (!session) return;
+    setInterval(() => {
+        cargarEstadoConexion();
+    }, 10000);
 
-            return supabase
-                .from('usuarios')
-                .select('id, nombre, handle, avatar_url')
-                .or('nombre.ilike.%' + querySanitizada + '%,handle.ilike.%' + querySanitizada + '%')
-                .neq('id', session.user.id)
-                .limit(10);
-        })
-        .then(function(result) {
-            if (!result) return;
-            if (result.error) throw result.error;
+    setInterval(() => {
+        cargarAmigosEnLinea();
+    }, 15000);
 
-            var container = document.getElementById('resultadosBusqueda');
-            if (!container) return;
-
-            var data = result.data || [];
-            if (data.length === 0) {
-                container.innerHTML = '<div style="padding:12px;text-align:center;color:#667788;font-size:0.75rem;">No se encontraron usuarios</div>';
-                return;
+    // Controles de cantidad crypto
+    const cryptoQty = document.getElementById('cryptoQuantity');
+    if (cryptoQty) {
+        document.getElementById('cryptoDecreaseQty').addEventListener('click', () => {
+            let val = parseInt(cryptoQty.textContent);
+            if (val > 1) {
+                cryptoQty.textContent = val - 1;
+                actualizarCryptoTotal();
             }
-
-            return sessionManager.getSession().then(function(session) {
-                return supabase
-                    .from('contactos')
-                    .select('contacto_id')
-                    .eq('usuario_id', session.user.id)
-                    .then(function(contactosResult) {
-                        var idsExistentes = (contactosResult.data || []).map(function(c) { return c.contacto_id; });
-                        return { data: data, idsExistentes: idsExistentes };
-                    });
-            });
-        })
-        .then(function(result) {
-            if (!result) return;
-            var data = result.data;
-            var idsExistentes = result.idsExistentes;
-
-            var container = document.getElementById('resultadosBusqueda');
-            var html = '';
-            for (var i = 0; i < data.length; i++) {
-                var usuario = data[i];
-                var yaEsContacto = idsExistentes.indexOf(usuario.id) !== -1;
-                var nombreSanitizado = escapeHTML(usuario.nombre || 'Usuario');
-                var handleSanitizado = escapeHTML(usuario.handle || 'usuario');
-                var avatarHtml = usuario.avatar_url ?
-                    '<img src="' + usuario.avatar_url + '" style="width:100%;height:100%;object-fit:cover;">' :
-                    (usuario.nombre ? nombreSanitizado[0].toUpperCase() : '◈');
-
-                html += '<div class="resultado-item" style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid rgba(212,175,55,0.05);transition:all 0.2s;">';
-                html += '<div class="avatar" style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#1a2a1a,#d4af37);display:flex;align-items:center;justify-content:center;color:white;font-size:0.8rem;overflow:hidden;">' + avatarHtml + '</div>';
-                html += '<div style="flex:1;"><div style="font-weight:600;font-size:0.8rem;">' + nombreSanitizado + '</div>';
-                html += '<div style="font-size:0.6rem;color:#667788;">@' + handleSanitizado + '</div></div>';
-                if (yaEsContacto) {
-                    html += '<span style="font-size:0.55rem;color:#4ade80;background:rgba(0,214,143,0.1);padding:2px 10px;border-radius:12px;">✓ Contacto</span>';
-                } else {
-                    html += '<button onclick="agregarContacto(\'' + usuario.id + '\')" style="background:linear-gradient(135deg,#d4af37,#c49a2a);color:#0b0e14;border:none;padding:4px 12px;border-radius:12px;font-size:0.6rem;font-weight:600;cursor:pointer;">+ Agregar</button>';
-                }
-                html += '</div>';
-            }
-            container.innerHTML = html;
-        })
-        .catch(function(error) {
-            Logger.error('Error buscando contactos', error);
         });
-}
-
-// ================================================================
-// ================================================================
-// ➕ AGREGAR CONTACTO
-// ================================================================
-// ================================================================
-
-function agregarContacto(contactoId) {
-    sessionManager.getSession()
-        .then(function(session) {
-            if (!session) {
-                showToast('⚠️ Inicia sesión para agregar contactos', 'error');
-                return;
+        document.getElementById('cryptoIncreaseQty').addEventListener('click', () => {
+            let val = parseInt(cryptoQty.textContent);
+            if (val < 10) {
+                cryptoQty.textContent = val + 1;
+                actualizarCryptoTotal();
             }
-
-            return supabase
-                .from('contactos')
-                .select('id')
-                .eq('usuario_id', session.user.id)
-                .eq('contacto_id', contactoId)
-                .maybeSingle()
-                .then(function(existeResult) {
-                    if (existeResult.data) {
-                        showToast('⚠️ Este usuario ya es tu contacto', 'warning');
-                        return;
-                    }
-                    return supabase
-                        .from('contactos')
-                        .insert({
-                            usuario_id: session.user.id,
-                            contacto_id: contactoId,
-                            estado: 'activo'
-                        });
-                });
-        })
-        .then(function(result) {
-            if (!result) return;
-            if (result.error) throw result.error;
-
-            showToast('✅ Contacto agregado correctamente', 'success');
-            document.getElementById('searchInputModal').value = '';
-            document.getElementById('resultadosBusqueda').innerHTML = '';
-            cerrarModalNuevoContacto();
-            return cargarConversaciones();
-        })
-        .catch(function(error) {
-            Logger.error('Error agregando contacto', error);
-            showToast('❌ Error al agregar contacto', 'error');
         });
-}
-
-// ================================================================
-// ================================================================
-// 📋 CARGAR CONVERSACIONES
-// ================================================================
-// ================================================================
-
-function cargarConversaciones() {
-    return sessionManager.verificarAutenticacion()
-        .then(function(autenticado) {
-            if (!autenticado) return;
-
-            return llamadaAPI('/api/mensajes/conversaciones');
-        })
-        .then(function(result) {
-            if (!result) return;
-
-            var conversaciones = result.conversaciones || [];
-
-            var convList = document.getElementById('conversacionesList');
-            if (!convList) return;
-
-            if (conversaciones.length === 0) {
-                convList.innerHTML = '<div style="padding:40px;text-align:center;color:#667788;font-size:0.8rem;"><div style="font-size:2rem;margin-bottom:10px;">◈</div><p>Sin contactos agregados</p><p style="font-size:0.6rem;">Busca y agrega contactos arriba</p></div>';
-                return;
-            }
-
-            var usuario = sessionManager.usuario;
-            var html = '';
-            for (var i = 0; i < conversaciones.length; i++) {
-                var conv = conversaciones[i];
-                var avatar = conv.avatar_url ?
-                    '<img src="' + conv.avatar_url + '" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" />' :
-                    (conv.nombre ? conv.nombre[0].toUpperCase() : '✦');
-
-                var isActive = conv.id === (window._conversacionActualId || null);
-                var nombreSanitizado = escapeHTML(conv.nombre);
-                var ultimoMensajeSanitizado = escapeHTML(conv.ultimoMensaje);
-
-                html += '<div class="conv-item' + (isActive ? ' active' : '') + '" data-id="' + conv.id + '" onclick="abrirConversacion(\'' + conv.id + '\')">';
-                html += '<div class="conv-avatar">' + avatar + '</div>';
-                html += '<div class="conv-info"><div class="conv-nombre">' + nombreSanitizado + '</div>';
-                html += '<div class="conv-msg">' + (ultimoMensajeSanitizado.length > 40 ? ultimoMensajeSanitizado.substring(0, 40) + '...' : ultimoMensajeSanitizado) + '</div></div>';
-                html += '<div class="conv-meta">';
-                if (conv.noLeidos > 0) html += '<span class="conv-badge">' + conv.noLeidos + '</span>';
-                if (conv.fecha) html += '<span class="conv-hora">' + new Date(conv.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + '</span>';
-                html += '</div></div>';
-            }
-            convList.innerHTML = html;
-        })
-        .catch(function(error) {
-            Logger.error('Error cargando conversaciones', error);
-            showToast('❌ Error al cargar conversaciones', 'error');
-        });
-}
-
-// ================================================================
-// ================================================================
-// 💬 ABRIR CONVERSACIÓN
-// ================================================================
-// ================================================================
-
-var conversacionActual = null;
-
-function abrirConversacion(contactoId) {
-    sessionManager.getSession()
-        .then(function(session) {
-            if (!session) {
-                showToast('⚠️ Inicia sesión para abrir conversaciones', 'error');
-                return;
-            }
-
-            return supabase
-                .from('usuarios')
-                .select('id, nombre, handle, avatar_url')
-                .eq('id', contactoId)
-                .single()
-                .then(function(contactoResult) {
-                    if (contactoResult.error) throw contactoResult.error;
-                    return { session: session, contacto: contactoResult.data };
-                });
-        })
-        .then(function(result) {
-            if (!result) return;
-            var session = result.session;
-            var contacto = result.contacto;
-
-            conversacionActual = contacto;
-            window._conversacionActualId = contactoId;
-
-            var chatNombre = document.getElementById('chatNombre');
-            if (chatNombre) chatNombre.textContent = contacto.nombre || 'Usuario';
-
-            var chatAvatar = document.querySelector('.chat-avatar');
-            if (chatAvatar) chatAvatar.textContent = contacto.nombre ? contacto.nombre[0].toUpperCase() : '✦';
-
-            return supabase
-                .from('usuarios')
-                .select('online, ultima_conexion')
-                .eq('id', contactoId)
-                .single()
-                .then(function(estadoResult) {
-                    var chatEstado = document.getElementById('chatEstado');
-                    if (!chatEstado) return;
-                    var estadoContacto = estadoResult.data || {};
-                    if (estadoContacto.online) {
-                        chatEstado.textContent = '🟢 En línea';
-                        chatEstado.className = 'chat-estado online';
-                    } else if (estadoContacto.ultima_conexion) {
-                        var diff = Math.floor((Date.now() - new Date(estadoContacto.ultima_conexion)) / 60000);
-                        if (diff < 5) {
-                            chatEstado.textContent = '🟡 Última vez hace unos minutos';
-                        } else if (diff < 60) {
-                            chatEstado.textContent = '🟡 Última vez hace ' + diff + ' min';
-                        } else if (diff < 1440) {
-                            chatEstado.textContent = '🟡 Última vez hace ' + Math.floor(diff / 60) + ' h';
-                        } else {
-                            chatEstado.textContent = '🟡 Última vez hace ' + Math.floor(diff / 1440) + ' d';
-                        }
-                        chatEstado.className = 'chat-estado';
-                    } else {
-                        chatEstado.textContent = '⚪ Desconectado';
-                        chatEstado.className = 'chat-estado';
-                    }
-                    return { session: session, contactoId: contactoId };
-                });
-        })
-        .then(function(result) {
-            if (!result) return;
-            var session = result.session;
-            var contactoId = result.contactoId;
-
-            return marcarMensajesLeidos(contactoId)
-                .then(function() {
-                    return cargarMensajes(contactoId);
-                })
-                .then(function() {
-                    if (currentChannel) {
-                        try { supabase.removeChannel(currentChannel); } catch (e) {}
-                        currentChannel = null;
-                    }
-
-                    currentChannel = crearCanalRealtime(
-                        contactoId,
-                        function(payload) {
-                            if (payload.new.destinatario_id === session.user.id) {
-                                agregarMensajeRealtime(payload.new);
-                                marcarMensajesLeidos(contactoId);
-                            }
-                        },
-                        function() { cargarConversaciones(); }
-                    );
-
-                    return cargarConversaciones();
-                });
-        })
-        .catch(function(error) {
-            Logger.error('Error abriendo conversación', error);
-        });
-}
-
-// ================================================================
-// ================================================================
-// 📖 CARGAR MENSAJES CON CACHE
-// ================================================================
-// ================================================================
-
-function cargarMensajes(contactoId) {
-    return sessionManager.getSession()
-        .then(function(session) {
-            if (!session) return;
-
-            var container = document.getElementById('chatMessages');
-            if (!container) return;
-
-            // Verificar cache
-            var cached = getCachedMessages(contactoId);
-            if (cached) {
-                var html = '';
-                for (var i = 0; i < cached.length; i++) {
-                    html += crearMensajeHTML(cached[i]);
-                }
-                container.innerHTML = html;
-                container.scrollTop = container.scrollHeight;
-                return;
-            }
-
-            return llamadaAPI('/api/mensajes/mensajes/' + contactoId + '?userId=' + session.user.id)
-                .then(function(result) {
-                    if (!result) return;
-                    var mensajes = result.mensajes || [];
-
-                    if (mensajes.length > 0) {
-                        setCachedMessages(contactoId, mensajes);
-                        var html = '';
-                        for (var i = 0; i < mensajes.length; i++) {
-                            html += crearMensajeHTML(mensajes[i]);
-                        }
-                        container.innerHTML = html;
-                        container.scrollTop = container.scrollHeight;
-                    } else {
-                        container.innerHTML = '<div class="empty-chat"><span class="icon">◈</span><h3>Inicia la conversación</h3><p>Envía un mensaje para comenzar</p></div>';
-                    }
-                });
-        })
-        .catch(function(error) {
-            Logger.error('Error cargando mensajes', error);
-            showToast('❌ Error al cargar mensajes', 'error');
-        });
-}
-
-// ================================================================
-// ================================================================
-// ✏️ CREAR MENSAJE HTML CON SANITIZACIÓN
-// ================================================================
-// ================================================================
-
-function crearMensajeHTML(msg) {
-    var usuario = sessionManager.usuario;
-    var esEnviado = msg.remitente_id === (usuario ? usuario.id : null);
-    var fecha = new Date(msg.created_at);
-    var hora = fecha.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    var contenidoFormateado = formatearTexto(msg.contenido || '');
-
-    if (msg.tipo === 'imagen' && msg.imagen_url) {
-        return crearMensajeImagen(msg, esEnviado, hora);
     }
 
-    if (msg.tipo === 'voz' && msg.imagen_url) {
-        return crearMensajeAudio(msg, esEnviado, hora);
-    }
-
-    if (esEnviado) {
-        return '<div class="msg-wrapper enviado">' +
-            '<div class="burbuja">' + contenidoFormateado + '</div>' +
-            '<div class="meta">' + hora + (msg.editado ? ' ✎' : '') +
-            '<span class="leido ' + (msg.leido ? 'leido' : 'no-leido') + '">' + (msg.leido ? '◆◆' : '◆◇') + '</span>' +
-            '<button onclick="eliminarMensaje(\'' + msg.id + '\')" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:0.5rem;">✕</button>' +
-            '<button onclick="editarMensaje(\'' + msg.id + '\')" style="background:none;border:none;color:#d4af37;cursor:pointer;font-size:0.5rem;">✎</button>' +
-            '</div></div>';
-    }
-
-    return '<div class="msg-wrapper recibido">' +
-        '<div class="fila"><div class="avatar">◈</div><div class="burbuja">' + contenidoFormateado + '</div></div>' +
-        '<div class="meta">' + hora + (msg.editado ? ' ✎' : '') +
-        '<button onclick="reportarMensaje(\'' + msg.id + '\')" style="background:none;border:none;color:#fbbf24;cursor:pointer;font-size:0.5rem;">⚠️</button>' +
-        '</div></div>';
-}
-
-function crearMensajeImagen(msg, esEnviado, hora) {
-    var imagenUrl = msg.imagen_url;
-    if (esEnviado) {
-        return '<div class="msg-wrapper enviado">' +
-            '<div class="burbuja" style="padding:4px;background:transparent;border-radius:12px;">' +
-            '<img src="' + imagenUrl + '" style="max-width:200px;border-radius:12px;border:2px solid #d4af37;" />' +
-            '</div>' +
-            '<div class="meta">' + hora + (msg.editado ? ' ✎' : '') +
-            '<span class="leido ' + (msg.leido ? 'leido' : 'no-leido') + '">' + (msg.leido ? '◆◆' : '◆◇') + '</span></div></div>';
-    }
-    return '<div class="msg-wrapper recibido">' +
-        '<div class="fila"><div class="avatar">◈</div>' +
-        '<div class="burbuja" style="padding:4px;background:transparent;border-radius:12px;border:1px solid rgba(212,175,55,0.15);">' +
-        '<img src="' + imagenUrl + '" style="max-width:200px;border-radius:12px;" />' +
-        '</div></div>' +
-        '<div class="meta">' + hora + (msg.editado ? ' ✎' : '') + '</div></div>';
-}
-
-function crearMensajeAudio(msg, esEnviado, hora) {
-    var audioUrl = msg.imagen_url;
-    if (esEnviado) {
-        return '<div class="msg-wrapper enviado">' +
-            '<div class="burbuja" style="display:flex;align-items:center;gap:8px;">' +
-            '<span>🎵</span><audio controls style="max-width:150px;height:30px;"><source src="' + audioUrl + '" type="audio/mpeg"></audio>' +
-            '</div>' +
-            '<div class="meta">' + hora +
-            '<span class="leido ' + (msg.leido ? 'leido' : 'no-leido') + '">' + (msg.leido ? '◆◆' : '◆◇') + '</span></div></div>';
-    }
-    return '<div class="msg-wrapper recibido">' +
-        '<div class="fila"><div class="avatar">◈</div>' +
-        '<div class="burbuja" style="display:flex;align-items:center;gap:8px;">' +
-        '<span>🎵</span><audio controls style="max-width:150px;height:30px;"><source src="' + audioUrl + '" type="audio/mpeg"></audio>' +
-        '</div></div>' +
-        '<div class="meta">' + hora + '</div></div>';
-}
-
-// ================================================================
-// ================================================================
-// 📨 AGREGAR MENSAJE EN TIEMPO REAL
-// ================================================================
-// ================================================================
-
-function agregarMensajeRealtime(msg) {
-    var container = document.getElementById('chatMessages');
-    if (!container) return;
-
-    var empty = container.querySelector('.empty-chat');
-    if (empty) empty.remove();
-
-    if (msg.remitente_id !== (conversacionActual ? conversacionActual.id : null) &&
-        msg.destinatario_id !== (conversacionActual ? conversacionActual.id : null)) return;
-
-    container.innerHTML += crearMensajeHTML(msg);
-    container.scrollTop = container.scrollHeight;
-    cargarConversaciones();
-}
-
-// ================================================================
-// ================================================================
-// 📤 ENVIAR MENSAJE CON RATE LIMITING
-// ================================================================
-// ================================================================
-
-var archivosSeleccionados = [];
-
-function enviarMensaje() {
-    var chatInput = document.getElementById('chatInput');
-    var contenido = chatInput.value.trim();
-    if (!contenido && archivosSeleccionados.length === 0) {
-        if (!conversacionActual) showToast('⚠️ Selecciona una conversación', 'warning');
-        return;
-    }
-
-    if (!rateLimiter.canSend()) return;
-
-    sessionManager.getSession()
-        .then(function(session) {
-            if (!session) {
-                showToast('⚠️ Inicia sesión para enviar mensajes', 'error');
-                return;
-            }
-            if (!conversacionActual) {
-                showToast('⚠️ Selecciona una conversación', 'error');
-                return;
-            }
-
-            if (archivosSeleccionados.length > 0) {
-                var promises = [];
-                for (var i = 0; i < archivosSeleccionados.length; i++) {
-                    var file = archivosSeleccionados[i];
-                    if (!validarArchivo(file)) return;
-                    promises.push(subirArchivo(file, session));
-                }
-                return Promise.all(promises).then(function() {
-                    archivosSeleccionados = [];
-                    document.getElementById('filePreview').innerHTML = '';
-                    chatInput.value = '';
-                });
-            }
-
-            if (contenido.length > 10000) {
-                showToast('⚠️ El mensaje es demasiado largo (máx 10,000 caracteres)', 'warning');
-                return;
-            }
-
-            showLoading('Enviando mensaje...');
-
-            return llamadaAPI('/api/mensajes/mensajes', {
-                method: 'POST',
-                body: JSON.stringify({
-                    destinatario_id: conversacionActual.id,
-                    contenido: contenido,
-                    tipo: 'texto'
-                })
-            }).then(function(result) {
-                hideLoading();
-                if (!result) return;
-                chatInput.value = '';
-                var counter = document.getElementById('charCounter');
-                if (counter) counter.textContent = '0/10000';
-                return cargarMensajes(conversacionActual.id).then(function() {
-                    return cargarConversaciones();
-                });
-            });
-        })
-        .catch(function(error) {
-            hideLoading();
-            Logger.error('Error enviando mensaje', error);
-            showToast('❌ Error al enviar mensaje', 'error');
-        });
-}
-
-// ================================================================
-// ================================================================
-// 🖼️ SUBIR ARCHIVO CON VALIDACIÓN
-// ================================================================
-// ================================================================
-
-function subirArchivo(file, session) {
-    if (!validarArchivo(file)) return Promise.reject('Archivo inválido');
-
-    var fileExt = file.name.split('.').pop().toLowerCase();
-    var tipo = file.type.startsWith('image/') ? 'imagen' : 'voz';
-    var filePath = 'mensajes/' + session.user.id + '/' + Date.now() + '.' + fileExt;
-
-    showLoading('Subiendo archivo...');
-
-    return supabase.storage
-        .from('mensajes')
-        .upload(filePath, file, { upsert: true })
-        .then(function(uploadResult) {
-            if (uploadResult.error) throw uploadResult.error;
-            return supabase.storage.from('mensajes').getPublicUrl(filePath);
-        })
-        .then(function(urlResult) {
-            var publicUrl = urlResult.data.publicUrl;
-            return llamadaAPI('/api/mensajes/mensajes', {
-                method: 'POST',
-                body: JSON.stringify({
-                    destinatario_id: conversacionActual.id,
-                    contenido: file.name,
-                    tipo: tipo,
-                    imagen_url: publicUrl
-                })
-            });
-        })
-        .then(function(result) {
-            hideLoading();
-            if (!result) return;
-            showToast('✅ Archivo enviado', 'success');
-            return cargarMensajes(conversacionActual.id).then(function() {
-                return cargarConversaciones();
-            });
-        })
-        .catch(function(error) {
-            hideLoading();
-            Logger.error('Error subiendo archivo', error);
-            showToast('❌ Error al subir archivo', 'error');
-            throw error;
-        });
-}
-
-// ================================================================
-// ================================================================
-// 📎 SELECCIONAR ARCHIVO
-// ================================================================
-// ================================================================
-
-function seleccionarArchivo() {
-    var input = document.getElementById('fileInput');
-    if (input) input.click();
-}
-
-function handleFileSelect(event) {
-    var files = event.target.files;
-    if (!files || files.length === 0) return;
-
-    if (files.length > MAX_FILES) {
-        showToast('⚠️ Máximo ' + MAX_FILES + ' archivos', 'warning');
-        event.target.value = '';
-        return;
-    }
-
-    var preview = document.getElementById('filePreview');
-    preview.innerHTML = '';
-
-    archivosSeleccionados = [];
-
-    for (var i = 0; i < files.length; i++) {
-        var file = files[i];
-        if (!validarArchivo(file)) {
-            event.target.value = '';
-            archivosSeleccionados = [];
-            preview.innerHTML = '';
-            return;
+    function actualizarCryptoTotal() {
+        const qty = parseInt(cryptoQty?.textContent || 1);
+        const total = qty * 4.50;
+        const comision = total * 0.02;
+        const totalConComision = total + comision;
+        const totalEl = document.getElementById('cryptoTotal');
+        if (totalEl) {
+            totalEl.textContent = `$${totalConComision.toFixed(2)} USDT`;
         }
-
-        archivosSeleccionados.push(file);
-        var isImage = file.type.startsWith('image/');
-        var isAudio = file.type.startsWith('audio/');
-        var icon = isImage ? '🖼️' : (isAudio ? '🎵' : '📎');
-        var size = (file.size / 1024).toFixed(1);
-
-        var el = document.createElement('div');
-        el.style.cssText = 'display:inline-flex;align-items:center;gap:6px;background:rgba(212,175,55,0.1);padding:4px 12px;border-radius:12px;font-size:0.65rem;color:#8899aa;';
-        el.innerHTML = icon + ' ' + escapeHTML(file.name) + ' (' + size + 'KB) <span onclick="this.parentElement.remove();archivosSeleccionados=[];" style="cursor:pointer;color:#ef4444;">✕</span>';
-        preview.appendChild(el);
     }
-
-    event.target.value = '';
-    showToast('📎 ' + files.length + ' archivo(s) seleccionado(s)', 'success');
-}
-
-// ================================================================
-// ================================================================
-// 🎙️ GRABACIÓN DE VOZ
-// ================================================================
-// ================================================================
-
-var grabacionActiva = false;
-var mediaRecorder = null;
-var audioChunks = [];
-
-function toggleGrabacionVoz() {
-    var btn = document.getElementById('btnGrabarVoz');
-
-    if (!grabacionActiva) {
-        iniciarGrabacionVoz(btn);
-    } else {
-        detenerGrabacionVoz(btn);
-    }
-}
-
-function iniciarGrabacionVoz(btn) {
-    navigator.mediaDevices.getUserMedia({ audio: true })
-        .then(function(stream) {
-            mediaRecorder = new MediaRecorder(stream);
-            audioChunks = [];
-
-            mediaRecorder.ondataavailable = function(event) {
-                audioChunks.push(event.data);
-            };
-
-            mediaRecorder.onstop = function() {
-                var audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-                var file = new File([audioBlob], 'voz_' + Date.now() + '.webm', { type: 'audio/webm' });
-
-                sessionManager.getSession().then(function(session) {
-                    if (session && conversacionActual) {
-                        archivosSeleccionados = [file];
-                        enviarMensaje();
-                    }
-                });
-
-                stream.getTracks().forEach(function(track) { track.stop(); });
-            };
-
-            mediaRecorder.start();
-            grabacionActiva = true;
-            btn.textContent = '⏹️';
-            btn.style.color = '#ef4444';
-            showToast('🎙️ Grabando...', '', 2000);
-        })
-        .catch(function(error) {
-            Logger.error('Error iniciando grabación', error);
-            showToast('❌ Error al acceder al micrófono', 'error');
-        });
-}
-
-function detenerGrabacionVoz(btn) {
-    if (mediaRecorder && mediaRecorder.state === 'recording') {
-        mediaRecorder.stop();
-        grabacionActiva = false;
-        btn.textContent = '🎙️';
-        btn.style.color = '';
-        showToast('✅ Grabación finalizada', 'success');
-    }
-}
-
-// ================================================================
-// ================================================================
-// 🗑️ ELIMINAR MENSAJE CON VERIFICACIÓN DE PROPIEDAD
-// ================================================================
-// ================================================================
-
-function eliminarMensaje(mensajeId) {
-    if (!confirm('¿Eliminar este mensaje?')) return;
-
-    sessionManager.getSession()
-        .then(function(session) {
-            if (!session) throw new Error('No autenticado');
-
-            return supabase
-                .from('mensajes_chat')
-                .select('remitente_id, destinatario_id, contenido, created_at')
-                .eq('id', mensajeId)
-                .single()
-                .then(function(mensajeResult) {
-                    if (mensajeResult.error) throw new Error('Mensaje no encontrado');
-                    var mensaje = mensajeResult.data;
-                    if (mensaje.remitente_id !== session.user.id) {
-                        showToast('⚠️ Solo el remitente puede eliminar este mensaje', 'error');
-                        return;
-                    }
-
-                    showLoading('Eliminando mensaje...');
-
-                    return supabase
-                        .from('mensajes_chat')
-                        .update({
-                            eliminado: true,
-                            eliminado_por: session.user.id,
-                            eliminado_en: new Date().toISOString()
-                        })
-                        .eq('id', mensajeId)
-                        .eq('remitente_id', session.user.id);
-                });
-        })
-        .then(function(result) {
-            if (!result) return;
-            if (result.error) throw result.error;
-
-            hideLoading();
-            showToast('🗑️ Mensaje eliminado');
-            if (conversacionActual) {
-                messageCache.delete(conversacionActual.id);
-                return cargarMensajes(conversacionActual.id).then(function() {
-                    return cargarConversaciones();
-                });
-            }
-            return cargarConversaciones();
-        })
-        .catch(function(error) {
-            hideLoading();
-            Logger.error('Error eliminando mensaje', error);
-            showToast('❌ Error al eliminar mensaje', 'error');
-        });
-}
-
-// ================================================================
-// ================================================================
-// ✏️ EDITAR MENSAJE
-// ================================================================
-// ================================================================
-
-function editarMensaje(mensajeId) {
-    var nuevoContenido = prompt('Edita tu mensaje:');
-    if (nuevoContenido === null) return;
-    if (!nuevoContenido.trim()) {
-        showToast('⚠️ No puedes dejar vacío', 'error');
-        return;
-    }
-    if (nuevoContenido.length > 10000) {
-        showToast('⚠️ El mensaje es demasiado largo (máx 10,000 caracteres)', 'warning');
-        return;
-    }
-
-    sessionManager.getSession()
-        .then(function(session) {
-            if (!session) {
-                showToast('⚠️ Inicia sesión', 'error');
-                return;
-            }
-
-            showLoading('Editando mensaje...');
-
-            return llamadaAPI('/api/mensajes/mensajes/' + mensajeId, {
-                method: 'PUT',
-                body: JSON.stringify({ contenido: nuevoContenido })
-            });
-        })
-        .then(function(result) {
-            hideLoading();
-            if (!result) return;
-
-            showToast('✅ Mensaje editado');
-            if (conversacionActual) {
-                messageCache.delete(conversacionActual.id);
-                return cargarMensajes(conversacionActual.id);
-            }
-        })
-        .catch(function(error) {
-            hideLoading();
-            Logger.error('Error editando mensaje', error);
-            showToast('❌ Error al editar mensaje', 'error');
-        });
-}
-
-// ================================================================
-// ================================================================
-// 🗑️ ELIMINAR CONVERSACIÓN CON CASCADA
-// ================================================================
-// ================================================================
-
-function eliminarConversacion(contactoId) {
-    if (!contactoId) {
-        showToast('⚠️ No hay conversación seleccionada', 'error');
-        return;
-    }
-
-    if (!confirm('¿Eliminar toda la conversación con este contacto?')) return;
-
-    // contactoId es un UUID validado por el sistema, no necesita sanitización adicional
-    // pero aseguramos que sea solo letras, números y guiones (formato UUID)
-    if (typeof contactoId !== 'string' || !contactoId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
-        showToast('❌ ID de contacto inválido', 'error');
-        return;
-    }
-
-    sessionManager.getSession()
-        .then(function(session) {
-            if (!session) {
-                showToast('⚠️ Inicia sesión', 'error');
-                return;
-            }
-
-            return supabase
-                .from('contactos')
-                .select('id')
-                .eq('usuario_id', session.user.id)
-                .eq('contacto_id', contactoId)
-                .single()
-                .then(function(contactoResult) {
-                    if (contactoResult.error || !contactoResult.data) {
-                        showToast('❌ Contacto no encontrado', 'error');
-                        return;
-                    }
-
-                    showLoading('Eliminando conversación...');
-
-                    return supabase
-                        .from('mensajes_chat')
-                        .select('id')
-                        .or('and(remitente_id.eq.' + session.user.id + ',destinatario_id.eq.' + contactoId + '),and(remitente_id.eq.' + contactoId + ',destinatario_id.eq.' + session.user.id + ')')
-                        .then(function(mensajesResult) {
-                            if (mensajesResult.error) throw mensajesResult.error;
-                            var mensajes = mensajesResult.data || [];
-
-                            if (mensajes.length > 0) {
-                                var ids = mensajes.map(function(m) { return m.id; });
-                                return supabase
-                                    .from('mensajes_chat')
-                                    .update({
-                                        eliminado: true,
-                                        eliminado_por: session.user.id,
-                                        eliminado_en: new Date().toISOString()
-                                    })
-                                    .in('id', ids);
-                            }
-                            return { error: null };
-                        })
-                        .then(function() {
-                            return supabase
-                                .from('contactos')
-                                .delete()
-                                .eq('usuario_id', session.user.id)
-                                .eq('contacto_id', contactoId);
-                        });
-                });
-        })
-        .then(function(result) {
-            if (!result) return;
-            if (result.error) throw result.error;
-
-            hideLoading();
-            messageCache.delete(contactoId);
-
-            if (conversacionActual && conversacionActual.id === contactoId) {
-                conversacionActual = null;
-                window._conversacionActualId = null;
-                document.getElementById('chatNombre').textContent = 'Selecciona una conversación';
-                document.getElementById('chatMessages').innerHTML = '<div class="empty-chat"><span class="icon">◈</span><h3>Conversación eliminada</h3></div>';
-            }
-
-            showToast('🗑️ Conversación eliminada');
-            return cargarConversaciones();
-        })
-        .catch(function(error) {
-            hideLoading();
-            Logger.error('Error eliminando conversación', error);
-            showToast('❌ Error al eliminar conversación', 'error');
-        });
-}
-
-// ================================================================
-// ================================================================
-// 👁️ MARCAR MENSAJES COMO LEÍDOS
-// ================================================================
-// ================================================================
-
-function marcarMensajesLeidos(contactoId) {
-    return sessionManager.getSession()
-        .then(function(session) {
-            if (!session) return;
-
-            return supabase
-                .from('mensajes_chat')
-                .update({ leido: true })
-                .eq('remitente_id', contactoId)
-                .eq('destinatario_id', session.user.id)
-                .eq('leido', false)
-                .is('eliminado', false);
-        })
-        .catch(function(error) {
-            Logger.warn('Error marcando mensajes como leídos', error);
-        });
-}
-
-// ================================================================
-// ================================================================
-// ⚠️ REPORTAR MENSAJE
-// ================================================================
-// ================================================================
-
-function reportarMensaje(mensajeId) {
-    var motivo = prompt('¿Por qué reportas este mensaje? (spam, ofensa, acoso, ilegal)');
-    if (!motivo) return;
-
-    sessionManager.getSession()
-        .then(function(session) {
-            if (!session) {
-                showToast('⚠️ Inicia sesión para reportar', 'error');
-                return;
-            }
-
-            return llamadaAPI('/api/mensajes/reportar/' + mensajeId, {
-                method: 'POST',
-                body: JSON.stringify({ motivo: motivo })
-            });
-        })
-        .then(function(result) {
-            if (!result) return;
-            showToast('⚠️ Reporte enviado. Gracias por ayudar.', 'warning');
-        })
-        .catch(function(error) {
-            Logger.error('Error reportando mensaje', error);
-            showToast('❌ Error al reportar', 'error');
-        });
-}
-
-// ================================================================
-// ================================================================
-// 🚫 BLOQUEAR USUARIO
-// ================================================================
-// ================================================================
-
-function bloquearUsuario(usuarioId) {
-    if (!usuarioId) {
-        showToast('⚠️ No hay usuario seleccionado', 'error');
-        return;
-    }
-
-    if (!confirm('¿Bloquear a este usuario? No podrán enviarte mensajes.')) return;
-
-    sessionManager.getSession()
-        .then(function(session) {
-            if (!session) {
-                showToast('⚠️ Inicia sesión', 'error');
-                return;
-            }
-
-            return llamadaAPI('/api/mensajes/bloquear/' + usuarioId, {
-                method: 'POST'
-            });
-        })
-        .then(function(result) {
-            if (!result) return;
-
-            showToast('🚫 Usuario bloqueado');
-
-            if (conversacionActual && conversacionActual.id === usuarioId) {
-                conversacionActual = null;
-                window._conversacionActualId = null;
-                document.getElementById('chatNombre').textContent = 'Selecciona una conversación';
-                document.getElementById('chatMessages').innerHTML = '<div class="empty-chat"><span class="icon">◈</span><h3>Usuario bloqueado</h3></div>';
-            }
-
-            return cargarConversaciones();
-        })
-        .catch(function(error) {
-            Logger.error('Error bloqueando usuario', error);
-            showToast('❌ Error al bloquear usuario', 'error');
-        });
-}
-
-// ================================================================
-// ================================================================
-// 🔍 BUSCAR EN CONVERSACIÓN
-// ================================================================
-// ================================================================
-
-function buscarEnConversacion(query) {
-    var querySanitizada = sanitizarQuery(query);
-    if (!querySanitizada || !querySanitizada.trim()) {
-        showToast('⚠️ Escribe algo para buscar', 'warning');
-        return;
-    }
-
-    if (!conversacionActual) {
-        showToast('⚠️ Selecciona una conversación', 'error');
-        return;
-    }
-
-    sessionManager.getSession()
-        .then(function(session) {
-            if (!session) return;
-
-            showLoading('Buscando...');
-
-            return supabase
-                .from('mensajes_chat')
-                .select('*')
-                .or('and(remitente_id.eq.' + session.user.id + ',destinatario_id.eq.' + conversacionActual.id + '),and(remitente_id.eq.' + conversacionActual.id + ',destinatario_id.eq.' + session.user.id + ')')
-                .eq('eliminado', false)
-                .ilike('contenido', '%' + querySanitizada.trim() + '%')
-                .order('created_at', { ascending: true });
-        })
-        .then(function(result) {
-            hideLoading();
-            if (!result) return;
-            if (result.error) throw result.error;
-
-            var container = document.getElementById('chatMessages');
-            var data = result.data || [];
-
-            if (data.length === 0) {
-                container.innerHTML = '<div class="empty-chat"><span class="icon">◈</span><h3>No se encontraron resultados</h3><p>No hay mensajes que coincidan con "' + escapeHTML(querySanitizada) + '"</p><button onclick="cargarMensajes(\'' + conversacionActual.id + '\')" style="margin-top:12px;padding:8px 20px;background:linear-gradient(135deg,#d4af37,#c49a2a);border:none;border-radius:30px;color:#0b0e14;font-weight:600;cursor:pointer;">Volver</button></div>';
-                return;
-            }
-
-            var html = '';
-            for (var i = 0; i < data.length; i++) {
-                html += crearMensajeHTML(data[i]);
-            }
-            container.innerHTML = html;
-            container.scrollTop = container.scrollHeight;
-            showToast('🔍 Encontrados ' + data.length + ' mensajes', 'success');
-        })
-        .catch(function(error) {
-            hideLoading();
-            Logger.error('Error buscando', error);
-            showToast('❌ Error al buscar', 'error');
-        });
-}
-
-// ================================================================
-// ================================================================
-// ✎ NUEVA CONVERSACIÓN (ABRIR MODAL)
-// ================================================================
-// ================================================================
-
-function nuevaConversacion() {
-    document.getElementById('modalNuevoContacto').classList.add('show');
-    document.getElementById('searchInputModal').value = '';
-    document.getElementById('resultadosBusqueda').innerHTML = '<div style="padding:20px;text-align:center;color:#667788;font-size:0.75rem;">Escribe al menos 2 caracteres para buscar</div>';
-    setTimeout(function() {
-        document.getElementById('searchInputModal').focus();
-    }, 200);
-}
-
-function cerrarModalNuevoContacto() {
-    document.getElementById('modalNuevoContacto').classList.remove('show');
-}
-
-// ================================================================
-// ================================================================
-// 🧹 LIMPIEZA DE RECURSOS
-// ================================================================
-// ================================================================
-
-function limpiarRecursosMensajes() {
-    if (currentChannel) {
-        try { supabase.removeChannel(currentChannel); } catch (e) {}
-        currentChannel = null;
-    }
-    if (mediaRecorder && mediaRecorder.state === 'recording') {
-        try { mediaRecorder.stop(); } catch (e) {}
-    }
-    if (audioChunks.length > 0) {
-        audioChunks = [];
-    }
-    archivosSeleccionados = [];
-    grabacionActiva = false;
-    hideLoading();
-}
-
-window.addEventListener('beforeunload', limpiarRecursosMensajes);
-
-// ================================================================
-// ================================================================
-// 🔄 INICIALIZACIÓN
-// ================================================================
-// ================================================================
-
-document.addEventListener('DOMContentLoaded', function() {
-    Logger.info('Sistema de mensajes inicializado');
-
-    // CONTADOR DE CARACTERES
-    var input = document.getElementById('chatInput');
-    if (input) {
-        var counter = document.createElement('div');
-        counter.id = 'charCounter';
-        counter.style.cssText = 'font-size:0.6rem;color:#8899aa;text-align:right;padding:4px;';
-        counter.textContent = '0/10000';
-        input.parentNode.appendChild(counter);
-
-        input.addEventListener('input', function() {
-            var max = 10000;
-            var len = this.value.length;
-            counter.textContent = len + '/' + max;
-            counter.style.color = len > max * 0.9 ? '#ef4444' : '#8899aa';
-
-            if (len > max) {
-                this.value = this.value.substring(0, max);
-                showToast('⚠️ Límite de 10,000 caracteres', 'warning');
-            }
-        });
-    }
-
-    cargarConversaciones();
-
-    var chatInput = document.getElementById('chatInput');
-    if (chatInput) {
-        chatInput.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') {
-                enviarMensaje();
-            }
-        });
-    }
-
-    var btnEnviar = document.getElementById('btnEnviar');
-    if (btnEnviar) {
-        btnEnviar.addEventListener('click', enviarMensaje);
-    }
-
-    var searchInput = document.getElementById('searchInput');
-    if (searchInput) {
-        searchInput.addEventListener('input', function(e) {
-            buscarContactos(e.target.value);
-        });
-    }
-
-    var searchInputModal = document.getElementById('searchInputModal');
-    if (searchInputModal) {
-        searchInputModal.addEventListener('input', function(e) {
-            buscarContactos(e.target.value);
-        });
-    }
-
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-            cerrarModalNuevoContacto();
-        }
-    });
+    actualizarCryptoTotal();
 });
 
 // ================================================================
+// ESTILOS CSS INYECTADOS
 // ================================================================
-// 🎯 EXPOSICIÓN GLOBAL
-// ================================================================
-// ================================================================
+const estilosAnimacion = document.createElement('style');
+estilosAnimacion.textContent = `
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes scaleIn {
+        from { transform: scale(0.8); opacity: 0; }
+        to { transform: scale(1); opacity: 1; }
+    }
+    @keyframes slideInRight {
+        from { transform: translateX(100px); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+    @keyframes slideOutRight {
+        from { transform: translateX(0); opacity: 1; }
+        to { transform: translateX(100px); opacity: 0; }
+    }
+    @keyframes confetiFall {
+        from { transform: translateY(0) rotate(0deg); opacity: 1; }
+        to { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+    }
+    .toast {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        padding: 15px 25px;
+        border-radius: 12px;
+        background: var(--bg-card);
+        color: var(--text-primary);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        border: 1px solid var(--border-color);
+        z-index: 9999;
+        transform: translateX(100px);
+        opacity: 0;
+        transition: all 0.3s ease;
+        max-width: 400px;
+        backdrop-filter: blur(10px);
+    }
+    .toast.show {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    .toast.error {
+        border-color: #ff6b6b;
+        background: rgba(255, 107, 107, 0.1);
+    }
+    .toast.warning {
+        border-color: #feca57;
+        background: rgba(254, 202, 87, 0.1);
+    }
+    .toast.success {
+        border-color: #2ecc71;
+        background: rgba(46, 204, 113, 0.1);
+    }
+`;
+document.head.appendChild(estilosAnimacion);
 
-window.cargarConversaciones = cargarConversaciones;
-window.abrirConversacion = abrirConversacion;
-window.enviarMensaje = enviarMensaje;
-window.eliminarMensaje = eliminarMensaje;
-window.editarMensaje = editarMensaje;
-window.eliminarConversacion = eliminarConversacion;
-window.bloquearUsuario = bloquearUsuario;
-window.reportarMensaje = reportarMensaje;
-window.buscarEnConversacion = buscarEnConversacion;
-window.nuevaConversacion = nuevaConversacion;
-window.cerrarModalNuevoContacto = cerrarModalNuevoContacto;
-window.agregarContacto = agregarContacto;
-window.buscarContactos = buscarContactos;
-window.seleccionarArchivo = seleccionarArchivo;
-window.handleFileSelect = handleFileSelect;
-window.toggleGrabacionVoz = toggleGrabacionVoz;
+// ================================================================
+// EXPOSICIÓN DE FUNCIONES GLOBALES
+// ================================================================
+window.cambiarTab = cambiarTab;
+window.cargarPerfil = cargarPerfil;
+window.guardarPerfil = guardarPerfil;
+window.abrirSelectorArchivo = abrirSelectorArchivo;
+window.subirFoto = subirFoto;
+window.subirVideo = subirVideo;
+window.editarPerfil = editarPerfil;
+window.compartirPerfil = compartirPerfil;
+window.conectarWallet = conectarWallet;
+window.desconectarWallet = desconectarWallet;
+window.comprarDomo = comprarDomo;
+window.canjearNFT = canjearNFT;
+window.reaccionarPublicacion = reaccionarPublicacion;
+window.comentarPublicacion = comentarPublicacion;
+window.agregarAmigo = agregarAmigo;
+window.cerrarSesion = cerrarSesion;
+window.irAMuro = irAMuro;
 window.showToast = showToast;
-window.limpiarRecursosMensajes = limpiarRecursosMensajes;
+window.generarQRPerfil = generarQRPerfil;
+window.calcularNivel = calcularNivel;
+window.compartirLogro = compartirLogro;
+
+window.comprarESIM = comprarESIM;
+window.cargarDatosESIM = cargarDatosESIM;
+window.activarESIM = activarESIM;
+window.desactivarESIM = desactivarESIM;
+window.generarQRESIM = generarQRESIM;
+window.obtenerEstadoESIM = obtenerEstadoESIM;
+window.obtenerPlanesESIM = obtenerPlanesESIM;
+window.verificarPago = verificarPago;
+window.sincronizarESIM = sincronizarESIM;
+
+window.comprarConCripto = comprarConCripto;
+window.verificarPagoCrypto = verificarPagoCrypto;
+window.copiarDireccion = copiarDireccion;
+window.cerrarModalPago = cerrarModalPago;
+
+window.cambiarConexion = cambiarConexion;
+window.cargarEstadoConexion = cargarEstadoConexion;
+window.getPerfilActual = getPerfilActual;
+
+window.actualizarEstadoEnLinea = actualizarEstadoEnLinea;
+window.cambiarEstado = cambiarEstado;
+window.cargarAmigosEnLinea = cargarAmigosEnLinea;
+window.actualizarListaAmigos = actualizarListaAmigos;
+
+window.escanearQR = escanearQR;
+window.abrirCamaraQR = abrirCamaraQR;
+window.cerrarCamaraQR = cerrarCamaraQR;
+window.cargarHistorialQR = cargarHistorialQR;
+window.actualizarUIHistorialQR = actualizarUIHistorialQR;
+window.procesarQR = procesarQR;
