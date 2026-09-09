@@ -1,0 +1,2208 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>◈ Mensajes · Sariel's</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/features/mensajes/mensajes.css" />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+    <style>
+        :root {
+            --gold: #D4AF37;
+            --gold-dark: #b8923a;
+            --gold-light: #e8c84a;
+            --gold-bright: #f0d060;
+            --green-deep: #0F2D1A;
+            --green-mid: #1a4a2a;
+            --green-bright: #2a6a3a;
+            --space: #05080f;
+            --text-primary: #f0f4f8;
+            --text-secondary: #c0d8e8;
+            --text-muted: #8aa8b8;
+            --glass-bg: rgba(15, 45, 26, 0.55);
+            --glass-border: rgba(212, 175, 55, 0.15);
+            --shadow-gold: 0 8px 32px rgba(212, 175, 55, 0.25);
+            --shadow-gold-strong: 0 0 60px rgba(212, 175, 55, 0.15);
+            --radius: 16px;
+            --radius-xl: 24px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-slow: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            --success: #00d68f;
+            --danger: #ff3366;
+            --warning: #f7d44a;
+            --cyan: #00e5ff;
+            --purple: #a855f7;
+            --pink: #ec4899;
+            --live-red: #ff0044;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: var(--space);
+            color: var(--text-primary);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            min-height: 100vh;
+            line-height: 1.6;
+            background-image:
+                radial-gradient(ellipse at 20% 50%, rgba(26, 74, 42, 0.4) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 50%, rgba(212, 175, 55, 0.08) 0%, transparent 60%);
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        #stars-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; will-change: transform; }
+        .nebula { position: fixed; border-radius: 50%; filter: blur(120px); opacity: 0.12; pointer-events: none; z-index: 0; animation: nebula-drift 25s ease-in-out infinite alternate; will-change: transform; }
+        .nebula-1 { width: 700px; height: 700px; background: var(--green-bright); top: -15%; right: -15%; }
+        .nebula-2 { width: 600px; height: 600px; background: var(--gold-light); bottom: -15%; left: -15%; animation-delay: -8s; opacity: 0.06; }
+        .nebula-3 { width: 500px; height: 500px; background: var(--purple); top: 50%; left: 50%; transform: translate(-50%, -50%); animation-delay: -15s; opacity: 0.04; }
+        @keyframes nebula-drift { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(40px, -30px) scale(1.15); } }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: var(--space); }
+        ::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 2px; }
+        .app { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 16px 20px 30px; contain: layout style; }
+        .header { display: flex; justify-content: space-between; align-items: center; padding: 10px 0 14px; border-bottom: 1px solid var(--glass-border); flex-wrap: wrap; gap: 10px; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); position: sticky; top: 0; z-index: 100; background: rgba(5, 8, 15, 0.92); border-radius: var(--radius) var(--radius) 0 0; contain: layout style; }
+        .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; transition: var(--transition); }
+        .logo:hover { opacity: 0.85; }
+        .logo-hex { font-size: 1.8rem; color: var(--gold); font-weight: 800; font-family: 'Orbitron', monospace; text-shadow: 0 0 30px rgba(212, 175, 55, 0.3); animation: glow-pulse 3s ease-in-out infinite; will-change: text-shadow; }
+        @keyframes glow-pulse { 0%, 100% { text-shadow: 0 0 30px rgba(212, 175, 55, 0.3); } 50% { text-shadow: 0 0 60px rgba(212, 175, 55, 0.6); } }
+        .logo-text { font-family: 'Orbitron', monospace; font-size: 1.2rem; font-weight: 700; color: var(--text-primary); letter-spacing: 2px; }
+        .logo-text span { color: var(--gold); }
+        .logo-badge { font-size: 0.45rem; background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: var(--space); padding: 2px 10px; border-radius: 20px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
+        .header-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .network-badge { display: flex; align-items: center; gap: 6px; font-size: 0.6rem; color: var(--gold); background: rgba(212, 175, 55, 0.1); padding: 4px 12px; border-radius: 20px; border: 1px solid rgba(212, 175, 55, 0.15); }
+        .network-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); animation: pulse-dot 2s infinite; will-change: transform, opacity; }
+        @keyframes pulse-dot { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.3; transform: scale(0.8); } }
+        .main-nav { display: flex; gap: 4px; background: rgba(15, 45, 26, 0.3); border-radius: var(--radius); padding: 4px; border: 1px solid var(--glass-border); margin: 16px 0 20px; overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; contain: layout style; }
+        .main-nav .nav-link { padding: 8px 16px; border-radius: 12px; color: var(--text-muted); text-decoration: none; font-size: 0.7rem; font-weight: 500; transition: var(--transition); white-space: nowrap; font-family: 'Inter', sans-serif; background: transparent; border: none; cursor: pointer; position: relative; }
+        .main-nav .nav-link::after { content: ''; position: absolute; bottom: 2px; left: 50%; width: 0; height: 2px; background: var(--gold); transition: var(--transition); transform: translateX(-50%); border-radius: 2px; }
+        .main-nav .nav-link:hover::after, .main-nav .nav-link.active::after { width: 60%; }
+        .main-nav .nav-link:hover { color: var(--text-primary); background: rgba(212, 175, 55, 0.05); }
+        .main-nav .nav-link.active { background: rgba(212, 175, 55, 0.12); color: var(--gold); }
+        .main-nav .nav-link.live { color: var(--live-red); }
+        .main-nav .nav-link.live:hover { background: rgba(255, 0, 68, 0.08); }
+        .chat-panel { display: grid; grid-template-columns: 320px 1fr; gap: 0; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-xl); overflow: hidden; min-height: 520px; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); transition: var(--transition-slow); }
+        .chat-panel:hover { border-color: rgba(212, 175, 55, 0.2); box-shadow: var(--shadow-gold); }
+        .conversaciones { border-right: 1px solid var(--glass-border); background: rgba(0, 0, 0, 0.2); overflow-y: auto; max-height: 600px; }
+        .conversaciones::-webkit-scrollbar { width: 3px; }
+        .conversaciones::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 2px; }
+        .conversaciones .header-conv { padding: 16px 18px; border-bottom: 1px solid var(--glass-border); font-family: 'Orbitron', monospace; font-size: 0.85rem; color: var(--gold); display: flex; justify-content: space-between; align-items: center; letter-spacing: 0.5px; }
+        .conversaciones .header-conv .btn-nuevo { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1rem; transition: var(--transition); font-family: 'Inter', sans-serif; padding: 4px 8px; border-radius: 8px; }
+        .conversaciones .header-conv .btn-nuevo:hover { color: var(--gold); background: rgba(212, 175, 55, 0.05); }
+        .conv-item { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-bottom: 1px solid rgba(212, 175, 55, 0.04); cursor: pointer; transition: var(--transition); }
+        .conv-item:hover { background: rgba(212, 175, 55, 0.05); }
+        .conv-item.active { background: rgba(212, 175, 55, 0.10); border-left: 3px solid var(--gold); }
+        .conv-item .conv-avatar { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, var(--green-deep), var(--gold)); display: flex; align-items: center; justify-content: center; font-weight: 700; color: white; font-size: 1rem; flex-shrink: 0; font-family: 'Orbitron', monospace; overflow: hidden; }
+        .conv-item .conv-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+        .conv-item .conv-info { flex: 1; min-width: 0; }
+        .conv-item .conv-info .conv-nombre { font-weight: 600; color: var(--text-primary); font-size: 0.85rem; letter-spacing: 0.3px; }
+        .conv-item .conv-info .conv-msg { font-size: 0.7rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .conv-item .conv-meta { text-align: right; flex-shrink: 0; }
+        .conv-item .conv-meta .conv-hora { font-size: 0.6rem; color: var(--text-muted); }
+        .conv-item .conv-meta .conv-badge { background: var(--gold); color: var(--space); font-size: 0.55rem; font-weight: 700; padding: 2px 8px; border-radius: 12px; display: inline-block; margin-top: 2px; font-family: 'Orbitron', monospace; }
+        .chat-area { display: flex; flex-direction: column; height: 100%; min-height: 520px; }
+        .chat-area .chat-header { padding: 14px 20px; border-bottom: 1px solid var(--glass-border); display: flex; align-items: center; gap: 12px; background: rgba(0, 0, 0, 0.1); }
+        .chat-area .chat-header .chat-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--green-deep), var(--gold)); display: flex; align-items: center; justify-content: center; font-weight: 700; color: white; font-size: 0.9rem; flex-shrink: 0; font-family: 'Orbitron', monospace; }
+        .chat-area .chat-header .chat-info { flex: 1; }
+        .chat-area .chat-header .chat-nombre { font-weight: 600; color: var(--text-primary); font-size: 0.95rem; letter-spacing: 0.3px; }
+        .chat-area .chat-header .chat-estado { font-size: 0.65rem; color: var(--text-muted); letter-spacing: 0.3px; }
+        .chat-area .chat-header .chat-estado.online { color: var(--success); }
+        .chat-area .chat-header .chat-actions { display: flex; gap: 4px; }
+        .chat-area .chat-header .chat-actions button { background: none; border: none; color: var(--text-muted); cursor: pointer; transition: var(--transition); font-size: 0.8rem; padding: 4px 8px; border-radius: 8px; }
+        .chat-area .chat-header .chat-actions button:hover { color: var(--gold); background: rgba(212, 175, 55, 0.05); }
+        .chat-area .chat-header .chat-actions button.llamar:hover { color: var(--success); }
+        .chat-area .chat-header .chat-actions button.colgar:hover { color: var(--danger); }
+        .chat-messages { flex: 1; padding: 16px 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; max-height: 400px; background: rgba(0, 0, 0, 0.05); }
+        .chat-messages::-webkit-scrollbar { width: 3px; }
+        .chat-messages::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 2px; }
+        .msg-wrapper.enviado { display: flex; flex-direction: column; align-items: flex-end; animation: fadeIn 0.3s ease; width: 100%; }
+        .msg-wrapper.enviado .burbuja { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); border-radius: 18px 18px 4px 18px; padding: 10px 16px; max-width: 75%; word-wrap: break-word; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15); font-size: 0.9rem; line-height: 1.5; transition: var(--transition); }
+        .msg-wrapper.enviado .burbuja:hover { transform: scale(1.01); }
+        .msg-wrapper.enviado .meta { display: flex; align-items: center; gap: 6px; margin-top: 3px; font-size: 0.6rem; color: var(--text-muted); letter-spacing: 0.3px; }
+        .msg-wrapper.enviado .meta .leido { font-size: 0.65rem; }
+        .msg-wrapper.enviado .meta .leido.no-leido { color: var(--text-muted); }
+        .msg-wrapper.enviado .meta .leido.leido { color: var(--gold); }
+        .msg-wrapper.recibido { display: flex; flex-direction: column; align-items: flex-start; animation: fadeIn 0.3s ease; width: 100%; }
+        .msg-wrapper.recibido .fila { display: flex; align-items: flex-end; gap: 10px; max-width: 85%; }
+        .msg-wrapper.recibido .avatar { width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(135deg, var(--green-deep), var(--gold)); display: flex; align-items: center; justify-content: center; font-weight: 700; color: white; font-size: 0.8rem; flex-shrink: 0; font-family: 'Orbitron', monospace; transition: var(--transition); position: relative; border: 2px solid rgba(212, 175, 55, 0.2); overflow: hidden; }
+        .msg-wrapper.recibido .avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+        .msg-wrapper.recibido .avatar.estado-conectado { border-color: var(--success); box-shadow: 0 0 20px rgba(0, 214, 143, 0.2); }
+        .msg-wrapper.recibido .avatar.estado-desconectado { border-color: var(--text-muted); opacity: 0.6; }
+        .msg-wrapper.recibido .burbuja { background: rgba(255, 255, 255, 0.06); color: var(--text-secondary); border-radius: 18px 18px 18px 4px; padding: 10px 16px; word-wrap: break-word; border: 1px solid var(--glass-border); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); font-size: 0.9rem; line-height: 1.5; transition: var(--transition); }
+        .msg-wrapper.recibido .burbuja:hover { background: rgba(255, 255, 255, 0.10); }
+        .msg-wrapper.recibido .meta { display: flex; align-items: center; gap: 6px; margin-top: 3px; margin-left: 44px; font-size: 0.6rem; color: var(--text-muted); letter-spacing: 0.3px; }
+        .msg-wrapper.recibido .burbuja img { max-width: 100%; border-radius: 8px; margin-top: 4px; }
+        .msg-wrapper.recibido .burbuja video { max-width: 100%; border-radius: 8px; margin-top: 4px; }
+        .msg-wrapper.recibido .burbuja audio { width: 100%; margin-top: 4px; }
+        .msg-wrapper.enviado .burbuja img { max-width: 100%; border-radius: 8px; margin-top: 4px; }
+        .msg-wrapper.enviado .burbuja video { max-width: 100%; border-radius: 8px; margin-top: 4px; }
+        .msg-wrapper.enviado .burbuja audio { width: 100%; margin-top: 4px; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+        .chat-input { display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--glass-border); background: rgba(0, 0, 0, 0.1); flex-wrap: wrap; }
+        .chat-input input { flex: 1; padding: 10px 16px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border); border-radius: 30px; color: var(--text-primary); font-size: 0.85rem; font-family: 'Inter', sans-serif; transition: var(--transition); outline: none; min-width: 120px; }
+        .chat-input input:focus { outline: none; border-color: var(--gold); background: rgba(255, 255, 255, 0.08); box-shadow: 0 0 30px rgba(212, 175, 55, 0.05); }
+        .chat-input input::placeholder { color: var(--text-muted); }
+        .chat-input .btn-enviar { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); border: none; padding: 10px 20px; border-radius: 30px; font-family: 'Orbitron', monospace; font-weight: 700; font-size: 0.65rem; cursor: pointer; transition: var(--transition); letter-spacing: 0.5px; }
+        .chat-input .btn-enviar:hover { transform: scale(1.02); box-shadow: var(--shadow-gold); }
+        .chat-input .btn-enviar:disabled { opacity: 0.4; cursor: not-allowed; }
+        .chat-input .btn-adjuntar { background: none; border: 1px solid var(--glass-border); color: var(--text-muted); padding: 10px 14px; border-radius: 30px; cursor: pointer; transition: var(--transition); font-size: 1rem; }
+        .chat-input .btn-adjuntar:hover { color: var(--gold); border-color: var(--gold); }
+        .chat-input .btn-audio { background: none; border: 1px solid var(--glass-border); color: var(--text-muted); padding: 10px 14px; border-radius: 30px; cursor: pointer; transition: var(--transition); font-size: 1rem; }
+        .chat-input .btn-audio:hover { color: var(--gold); border-color: var(--gold); }
+        .chat-input .btn-audio.grabando { color: var(--danger); border-color: var(--danger); animation: pulse-audio 1s infinite; }
+        @keyframes pulse-audio { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .empty-chat { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; color: var(--text-muted); text-align: center; padding: 40px 20px; }
+        .empty-chat .icon { font-size: 2.5rem; display: block; margin-bottom: 12px; font-family: 'Orbitron', monospace; color: var(--gold); opacity: 0.4; letter-spacing: 2px; }
+        .empty-chat h3 { font-family: 'Orbitron', monospace; color: var(--text-secondary); font-size: 1rem; letter-spacing: 1px; font-weight: 400; }
+        .empty-chat p { font-size: 0.85rem; letter-spacing: 0.3px; }
+        .video-call-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.95); z-index: 9999; display: none; justify-content: center; align-items: center; flex-direction: column; }
+        .video-call-overlay.active { display: flex; }
+        .video-call-overlay .videos-container { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; align-items: center; width: 100%; max-width: 1200px; padding: 20px; }
+        .video-call-overlay .videos-container video { width: 45%; max-width: 600px; border-radius: 16px; background: #111; border: 2px solid var(--gold); object-fit: cover; min-height: 200px; }
+        .video-call-overlay .videos-container video.local { width: 30%; max-width: 400px; border-color: var(--text-muted); }
+        .video-call-overlay .call-controls { display: flex; gap: 20px; margin-top: 30px; padding: 20px; background: rgba(0, 0, 0, 0.5); border-radius: 60px; backdrop-filter: blur(10px); }
+        .video-call-overlay .call-controls button { padding: 16px 20px; border-radius: 50%; border: none; font-size: 1.4rem; cursor: pointer; transition: var(--transition); background: rgba(255, 255, 255, 0.1); color: white; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; }
+        .video-call-overlay .call-controls button:hover { transform: scale(1.05); }
+        .video-call-overlay .call-controls button.colgar { background: var(--danger); color: white; }
+        .video-call-overlay .call-controls button.colgar:hover { background: #cc0033; }
+        .video-call-overlay .call-controls button.mic { background: rgba(255, 255, 255, 0.1); }
+        .video-call-overlay .call-controls button.mic.muted { background: var(--danger); }
+        .video-call-overlay .call-controls button.cam { background: rgba(255, 255, 255, 0.1); }
+        .video-call-overlay .call-controls button.cam.off { background: var(--danger); }
+        .video-call-overlay .call-info { color: var(--text-primary); font-size: 0.9rem; margin-top: 10px; font-family: 'Orbitron', monospace; letter-spacing: 1px; }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); z-index: 9998; justify-content: center; align-items: center; backdrop-filter: blur(8px); }
+        .modal-overlay.show { display: flex; }
+        .modal-overlay .modal-content { background: var(--green-deep); border: 1px solid var(--gold); border-radius: var(--radius-xl); padding: 30px; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto; box-shadow: var(--shadow-gold-strong); }
+        .modal-overlay .modal-content h2 { font-family: 'Orbitron', monospace; color: var(--gold); font-size: 1.2rem; margin-bottom: 16px; letter-spacing: 1px; }
+        .modal-overlay .modal-content input { width: 100%; padding: 12px 16px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border); border-radius: 12px; color: var(--text-primary); font-size: 0.9rem; outline: none; margin-bottom: 12px; }
+        .modal-overlay .modal-content input:focus { border-color: var(--gold); }
+        .modal-overlay .modal-content .resultados { max-height: 300px; overflow-y: auto; }
+        .modal-overlay .modal-content .resultados .resultado-item:hover { background: rgba(212, 175, 55, 0.05); }
+        .modal-overlay .modal-close { background: none; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer; float: right; }
+        .modal-overlay .modal-close:hover { color: var(--gold); }
+        .toast { position: fixed; bottom: 30px; right: 30px; background: var(--green-deep); border: 1px solid var(--gold); color: var(--gold); padding: 14px 28px; border-radius: 14px; font-size: 0.8rem; font-weight: 500; box-shadow: var(--shadow-gold-strong); transform: translateY(100px); opacity: 0; transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); z-index: 9999; max-width: 400px; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); letter-spacing: 0.3px; }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.error { border-color: var(--danger); color: var(--danger); }
+        .toast.warning { border-color: var(--warning); color: var(--warning); }
+        .toast.success { border-color: var(--success); color: var(--success); }
+        .footer { margin-top: 30px; padding-top: 16px; border-top: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; font-size: 0.7rem; color: var(--text-muted); padding-bottom: 8px; letter-spacing: 0.3px; }
+        .footer .brand { color: var(--gold); font-weight: 600; letter-spacing: 1px; }
+        .footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
+        .footer-links a { color: var(--text-muted); text-decoration: none; transition: var(--transition); }
+        .footer-links a:hover { color: var(--gold); }
+        @media (max-width: 768px) {
+            .app { padding: 12px 14px; }
+            .chat-panel { grid-template-columns: 1fr; min-height: auto; border-radius: var(--radius); }
+            .conversaciones { border-right: none; border-bottom: 1px solid var(--glass-border); max-height: 180px; }
+            .chat-area { min-height: 400px; }
+            .chat-messages { padding: 12px 14px; max-height: 300px; }
+            .msg-wrapper.enviado .burbuja, .msg-wrapper.recibido .burbuja { font-size: 0.85rem; padding: 8px 14px; max-width: 90%; }
+            .msg-wrapper.recibido .avatar { width: 28px; height: 28px; font-size: 0.7rem; }
+            .msg-wrapper.recibido .meta { margin-left: 38px; }
+            .main-nav .nav-link { font-size: 0.6rem; padding: 6px 10px; }
+            .header .logo-text { font-size: 1rem; }
+            .header .logo-hex { font-size: 1.4rem; }
+            .video-call-overlay .videos-container video { width: 90%; }
+            .video-call-overlay .videos-container video.local { width: 40%; }
+            .video-call-overlay .call-controls button { width: 50px; height: 50px; font-size: 1.2rem; padding: 12px 16px; }
+            .modal-overlay .modal-content { padding: 20px; margin: 16px; }
+        }
+        @media (max-width: 480px) {
+            .chat-area .chat-header { flex-wrap: wrap; padding: 10px 14px; }
+            .chat-input { flex-wrap: wrap; }
+            .chat-input input { flex: 1 1 100%; }
+            .chat-input .btn-enviar { flex: 1; justify-content: center; }
+            .conv-item { padding: 8px 12px; }
+            .conv-item .conv-avatar { width: 32px; height: 32px; font-size: 0.8rem; }
+            .main-nav .nav-link { font-size: 0.55rem; padding: 4px 8px; }
+            .chat-messages { padding: 10px 10px; }
+            .msg-wrapper.enviado .burbuja, .msg-wrapper.recibido .burbuja { font-size: 0.8rem; padding: 6px 12px; }
+            .msg-wrapper.recibido .avatar { width: 24px; height: 24px; font-size: 0.6rem; }
+            .msg-wrapper.recibido .meta { margin-left: 34px; }
+            .video-call-overlay .videos-container video { width: 100%; max-width: 100%; }
+            .video-call-overlay .videos-container video.local { width: 30%; max-width: 150px; position: absolute; bottom: 100px; right: 20px; z-index: 10; }
+            .video-call-overlay .call-controls { gap: 10px; padding: 12px 16px; flex-wrap: wrap; justify-content: center; }
+            .video-call-overlay .call-controls button { width: 44px; height: 44px; font-size: 1rem; padding: 10px 12px; }
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/livekit-client@1/dist/livekit-client.umd.min.js"></script>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+</head>
+<body>
+
+    <canvas id="stars-canvas"></canvas>
+    <div class="nebula nebula-1"></div>
+    <div class="nebula nebula-2"></div>
+    <div class="nebula nebula-3"></div>
+
+    <div class="video-call-overlay" id="callOverlay">
+        <div class="videos-container" id="videosContainer">
+            <video id="remoteVideo" autoplay playsinline></video>
+            <video id="localVideo" class="local" autoplay playsinline muted></video>
+            <div id="remoteAvatarPlaceholder" style="position:absolute;color:var(--text-muted);font-size:1.2rem;pointer-events:none;">📹</div>
+            <div id="localAvatarPlaceholder" style="position:absolute;color:var(--text-muted);font-size:1.2rem;pointer-events:none;">📹</div>
+        </div>
+        <div class="call-info" id="callInfo">◈ Conectando...</div>
+        <div style="display:flex;gap:12px;align-items:center;margin-top:8px;">
+            <span id="callDuration" style="color:var(--text-muted);font-size:0.8rem;font-family:'Orbitron',monospace;">00:00</span>
+            <span id="participantsCount" style="color:var(--text-muted);font-size:0.7rem;">0</span>
+        </div>
+        <div class="call-controls">
+            <button class="mic" id="btnToggleAudio" onclick="toggleAudio()" title="Micrófono">🎤</button>
+            <button class="cam" id="btnToggleVideo" onclick="toggleVideo()" title="Cámara">📷</button>
+            <button id="btnToggleScreen" onclick="toggleScreenShare()" title="Compartir pantalla">🖥️</button>
+            <button onclick="toggleParticipantsPanel()" title="Participantes">👥</button>
+            <button class="colgar" onclick="colgarLlamada()" title="Colgar">📞</button>
+        </div>
+        <div id="participantsPanel" style="display:none;position:absolute;bottom:120px;right:30px;background:rgba(0,0,0,0.8);border-radius:12px;padding:12px;min-width:150px;max-height:200px;overflow-y:auto;border:1px solid var(--glass-border);">
+            <div style="font-size:0.6rem;color:var(--text-muted);margin-bottom:6px;">◈ Participantes</div>
+            <div id="participantsList"></div>
+        </div>
+        <div id="localMuteIndicator" style="display:none;position:absolute;bottom:100px;left:50%;transform:translateX(-50%);background:var(--danger);color:white;padding:4px 12px;border-radius:12px;font-size:0.6rem;">🔇 Micrófono silenciado</div>
+    </div>
+
+    <div class="video-call-overlay" id="callIncoming" style="display:none;background:rgba(0,0,0,0.9);">
+        <div style="text-align:center;">
+            <div id="callerAvatar" style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,var(--green-deep),var(--gold));display:flex;align-items:center;justify-content:center;font-size:2rem;color:white;margin:0 auto 16px;font-family:'Orbitron',monospace;">◈</div>
+            <h3 style="color:var(--text-primary);font-family:'Orbitron',monospace;font-weight:400;" id="callerName">Usuario</h3>
+            <p style="color:var(--text-muted);margin-top:4px;">📞 Llamada entrante...</p>
+            <div style="display:flex;gap:20px;margin-top:20px;">
+                <button onclick="aceptarLlamadaEntrante()" style="padding:16px 32px;border-radius:50%;border:none;background:var(--success);color:white;font-size:1.5rem;cursor:pointer;">📞</button>
+                <button onclick="rechazarLlamadaEntrante()" style="padding:16px 32px;border-radius:50%;border:none;background:var(--danger);color:white;font-size:1.5rem;cursor:pointer;">✕</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modalNuevoContacto">
+        <div class="modal-content">
+            <button class="modal-close" onclick="cerrarModalNuevoContacto()">✕</button>
+            <h2>◈ Nueva conversación</h2>
+            <input type="text" id="searchInputModal" placeholder="Buscar por nombre o email..." />
+            <div class="resultados" id="resultadosBusqueda">
+                <div style="color:var(--text-muted);text-align:center;padding:20px;">Escribe al menos 2 caracteres para buscar</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="app">
+        <header class="header">
+            <a href="/" class="logo">
+                <span class="logo-hex">◈</span>
+                <span class="logo-text">Sariel<span>'s</span></span>
+                <span class="logo-badge">✦ WEB3</span>
+            </a>
+            <div class="header-actions">
+                <span class="network-badge"><span class="dot"></span> Polygon</span>
+                <span id="userInfo" style="font-size:0.7rem;color:var(--text-muted);"></span>
+            </div>
+        </header>
+
+        <nav class="main-nav">
+            <a href="/" class="nav-link">⌂ Inicio</a>
+            <a href="/features/muro/muro.html" class="nav-link">◇ Muro</a>
+            <a href="/features/perfil/perfil.html" class="nav-link">◆ Perfil</a>
+            <a href="/features/mensajes/contactos.html" class="nav-link">◈ Contactos</a>
+            <a href="/features/mensajes/mensajes.html" class="nav-link active">◈ Mensajes</a>
+            <a href="/features/live/live.html" class="nav-link live">◉ Live</a>
+        </nav>
+
+        <div class="chat-panel">
+            <div class="conversaciones">
+                <div class="header-conv">
+                    <span>◈ Conversaciones</span>
+                    <button class="btn-nuevo" onclick="nuevaConversacion()">✎</button>
+                </div>
+                <div id="conversacionesList"></div>
+            </div>
+
+            <div class="chat-area">
+                <div class="chat-header">
+                    <div class="chat-avatar" id="chatAvatar">◈</div>
+                    <div class="chat-info">
+                        <div class="chat-nombre" id="chatNombre">Selecciona una conversación</div>
+                        <div class="chat-estado online" id="chatEstado">◉ En línea</div>
+                    </div>
+                    <div class="chat-actions">
+                        <button onclick="iniciarVideollamada()" title="Videollamada" class="llamar" id="btnVideoCall">📹</button>
+                        <button onclick="buscarEnConversacion(prompt('🔍 Buscar en la conversación:'))" title="Buscar">🔍</button>
+                        <button onclick="if(conversacionActual){eliminarConversacion(conversacionActual.id)}" title="Eliminar conversación">🗑️</button>
+                    </div>
+                </div>
+
+                <div class="chat-messages" id="chatMessages">
+                    <div class="empty-chat">
+                        <span class="icon">◈</span>
+                        <h3>Selecciona una conversación</h3>
+                        <p>Elige un chat para empezar a hablar</p>
+                    </div>
+                </div>
+
+                <div class="chat-input">
+                    <button class="btn-adjuntar" onclick="seleccionarArchivo()" title="Adjuntar archivo">📎</button>
+                    <button class="btn-audio" id="btnAudio" onclick="toggleGrabacionVoz()" title="Grabar audio">🎙️</button>
+                    <input type="text" id="chatInput" placeholder="Escribe un mensaje..." />
+                    <button class="btn-enviar" id="btnEnviar">⟡ Enviar</button>
+                    <input type="file" id="fileInput" style="display:none" multiple accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt" />
+                </div>
+            </div>
+        </div>
+
+        <footer class="footer">
+            <span><span class="brand">◈ Sariel's</span> · Sabor al Paladar · WEB3</span>
+            <div class="footer-links">
+                <a href="/terminos.html">◈ Términos</a>
+                <span style="opacity:0.3;">⚡ Polygon</span>
+            </div>
+        </footer>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // ================================================================
+        // SARIEL'S - MENSAJES COMPLETO
+        // VERSIÓN CORREGIDA - perfiles_publicos
+        // ================================================================
+
+        // CAMBIOS APLICADOS:
+        // 1) buscarContactos(): .from('usuarios') → .from('perfiles_publicos')
+        // 2) abrirConversacion(): .from('usuarios') → .from('perfiles_publicos')
+        // 3) Estado online en abrirConversacion(): .from('usuarios') → .from('perfiles_publicos')
+
+        var API_URL = window.location.origin;
+        var SUPABASE_URL = 'https://zultnlogdoajehbswlih.supabase.co';
+        var SUPABASE_ANON_KEY = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
+
+        var supabase = window.supabase || supabaseClient;
+        var usuarioActual = null;
+        var conversacionActual = null;
+        var mensajesCache = {};
+        var realtimeChannel = null;
+        var mediaRecorder = null;
+        var audioChunks = [];
+        var grabacionActiva = false;
+        var archivosSeleccionados = [];
+        var callState = {
+            active: false,
+            room: null,
+            localTrack: null,
+            audioTrack: null,
+            screenTrack: null,
+            callId: null,
+            isInitiator: false,
+            startTime: null,
+            incomingCallId: null,
+            incomingFrom: null,
+            participants: [],
+            durationInterval: null,
+            _ringInterval: null
+        };
+        var callChannel = null;
+        var callListeners = [];
+        var audioMuted = false;
+        var videoMuted = false;
+        var screenSharing = false;
+
+        function showToast(msg, type) {
+            if (type === void 0) type = '';
+            try {
+                var t = document.getElementById('toast');
+                if (!t) {
+                    t = document.createElement('div');
+                    t.id = 'toast';
+                    t.className = 'toast';
+                    document.body.appendChild(t);
+                }
+                t.textContent = msg;
+                t.className = 'toast show';
+                if (type === 'error') t.classList.add('error');
+                else if (type === 'warning') t.classList.add('warning');
+                else if (type === 'success') t.classList.add('success');
+                else t.classList.remove('error', 'warning', 'success');
+                clearTimeout(t._timeout);
+                t._timeout = setTimeout(function() {
+                    t.classList.remove('show');
+                }, 3500);
+            } catch (e) {
+                console.warn('Toast no disponible:', e);
+                console.log('[' + (type || 'info') + '] ' + msg);
+            }
+        }
+
+        function escapeHTML(texto) {
+            if (!texto) return '';
+            var div = document.createElement('div');
+            div.textContent = texto;
+            return div.innerHTML;
+        }
+
+        async function getSession() {
+            try {
+                var sessionData = await supabase.auth.getSession();
+                if (sessionData.error) throw sessionData.error;
+                return sessionData.data.session;
+            } catch (e) {
+                console.error('Error obteniendo sesión:', e);
+                return null;
+            }
+        }
+
+        async function obtenerUsuarioActual() {
+            try {
+                var session = await getSession();
+                if (session) {
+                    usuarioActual = session.user;
+                    return session.user;
+                }
+                return null;
+            } catch (e) {
+                console.error('Error obteniendo usuario:', e);
+                return null;
+            }
+        }
+
+        async function verificarAutenticacion() {
+            try {
+                var session = await getSession();
+                if (!session) {
+                    showToast('⚠️ Inicia sesión para usar el chat', 'error');
+                    return false;
+                }
+                usuarioActual = session.user;
+                return true;
+            } catch (e) {
+                console.error('Error verificando autenticación:', e);
+                return false;
+            }
+        }
+
+        // ================================================================
+        // CARGAR CONVERSACIONES
+        // ================================================================
+
+        async function cargarConversaciones() {
+            try {
+                var ok = await verificarAutenticacion();
+                if (!ok) return;
+
+                var result = await supabase.rpc('obtener_conversaciones_usuario', {
+                    p_usuario_id: usuarioActual.id
+                });
+
+                if (result.error) throw result.error;
+
+                var container = document.getElementById('conversacionesList');
+                if (!container) return;
+
+                if (!result.data || result.data.length === 0) {
+                    container.innerHTML = `
+                        <div style="padding:20px;text-align:center;color:var(--text-muted);font-size:0.8rem;">
+                            ◈ No tienes conversaciones<br>
+                            <span style="font-size:0.7rem;">Presiona ✎ para iniciar una</span>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = '';
+
+                for (var i = 0; i < result.data.length; i++) {
+                    var conv = result.data[i];
+
+                    var otro = {
+                        id: conv.otro_usuario_id,
+                        nombre: conv.otro_usuario_nombre || 'Usuario',
+                        avatar_url: conv.otro_usuario_avatar || null
+                    };
+
+                    var ultimo = conv.ultimo_mensaje || { contenido: 'Sin mensajes', created_at: '' };
+                    var hora = ultimo.created_at ? new Date(ultimo.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+                    var avatarInicial = otro.nombre ? otro.nombre.charAt(0).toUpperCase() : '◈';
+
+                    var item = document.createElement('div');
+                    item.className = 'conv-item' + (conv.id === (conversacionActual ? conversacionActual.id : null) ? ' active' : '');
+                    item.dataset.id = conv.id;
+                    item.onclick = function(id) {
+                        return function() {
+                            abrirConversacion(id);
+                        };
+                    }(conv.id);
+
+                    var avatarHTML = otro.avatar_url ?
+                        '<img src="' + otro.avatar_url + '" alt="' + escapeHTML(otro.nombre) + '" />' :
+                        avatarInicial;
+
+                    var badgeHTML = '';
+                    if (ultimo.is_read === false && ultimo.sender_id !== usuarioActual.id) {
+                        badgeHTML = '<span class="conv-badge">●</span>';
+                    }
+
+                    item.innerHTML = `
+                        <div class="conv-avatar">${avatarHTML}</div>
+                        <div class="conv-info">
+                            <div class="conv-nombre">${escapeHTML(otro.nombre || 'Usuario')}</div>
+                            <div class="conv-msg">${escapeHTML(ultimo.contenido || 'Sin mensajes')}</div>
+                        </div>
+                        <div class="conv-meta">
+                            <div class="conv-hora">${hora}</div>
+                            ${badgeHTML}
+                        </div>
+                    `;
+
+                    container.appendChild(item);
+                }
+
+                if (conversacionActual) {
+                    abrirConversacion(conversacionActual.id);
+                }
+
+            } catch (e) {
+                console.error('Error cargando conversaciones:', e);
+                showToast('❌ Error al cargar conversaciones', 'error');
+            }
+        }
+
+        // ================================================================
+        // ABRIR CONVERSACIÓN - CORREGIDO (usa perfiles_publicos)
+        // ================================================================
+
+        async function abrirConversacion(conversacionId) {
+            try {
+                var ok = await verificarAutenticacion();
+                if (!ok) return;
+
+                var items = document.querySelectorAll('.conv-item');
+                for (var i = 0; i < items.length; i++) {
+                    items[i].classList.remove('active');
+                }
+                var selected = document.querySelector('.conv-item[data-id="' + conversacionId + '"]');
+                if (selected) selected.classList.add('active');
+
+                // ✅ CORREGIDO: usar perfiles_publicos para datos del contacto
+                var otroResult = await supabase
+                    .from('perfiles_publicos')
+                    .select('id, nombre, handle, avatar_url')
+                    .eq('id', conversacionId)
+                    .single();
+
+                if (otroResult.error && otroResult.error.code !== 'PGRST116') {
+                    throw otroResult.error;
+                }
+
+                var otro = otroResult.data || { nombre: 'Usuario', avatar_url: null };
+
+                conversacionActual = {
+                    id: conversacionId,
+                    otro: otro
+                };
+
+                if (otro) {
+                    document.getElementById('chatNombre').textContent = otro.nombre || 'Usuario';
+                    document.getElementById('chatAvatar').textContent = otro.nombre ? otro.nombre.charAt(0).toUpperCase() : '◈';
+                }
+
+                // ✅ CORREGIDO: usar perfiles_publicos para estado online
+                var estadoResult = await supabase
+                    .from('perfiles_publicos')
+                    .select('online, ultima_conexion')
+                    .eq('id', conversacionId)
+                    .single();
+
+                if (estadoResult.data) {
+                    var chatEstado = document.getElementById('chatEstado');
+                    if (estadoResult.data.online) {
+                        chatEstado.textContent = '◉ En línea';
+                        chatEstado.className = 'chat-estado online';
+                    } else {
+                        chatEstado.textContent = '◈ Desconectado';
+                        chatEstado.className = 'chat-estado';
+                    }
+                }
+
+                var mensajesResult = await supabase.rpc('obtener_mensajes_conversacion', {
+                    p_conversacion_id: conversacionId,
+                    p_usuario_id: usuarioActual.id,
+                    p_limite: 50,
+                    p_desde: null
+                });
+
+                if (mensajesResult.error) throw mensajesResult.error;
+
+                var container = document.getElementById('chatMessages');
+                if (!container) return;
+
+                if (!mensajesResult.data || mensajesResult.data.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-chat">
+                            <span class="icon">◈</span>
+                            <h3>Sin mensajes</h3>
+                            <p>Envía el primer mensaje</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = '';
+
+                for (var j = 0; j < mensajesResult.data.length; j++) {
+                    var msg = mensajesResult.data[j];
+                    var esEnviado = msg.sender_id === usuarioActual.id;
+                    var html = crearMensajeHTML(msg, esEnviado);
+                    container.innerHTML += html;
+                }
+
+                container.scrollTop = container.scrollHeight;
+
+                var hayNoLeidos = mensajesResult.data.some(function(m) {
+                    return m.sender_id !== usuarioActual.id && !m.is_read;
+                });
+
+                if (hayNoLeidos) {
+                    marcarLeidos(conversacionId);
+                }
+
+                suscribirseAMensajes(conversacionId);
+
+            } catch (e) {
+                console.error('Error abriendo conversación:', e);
+                showToast('❌ Error al abrir conversación', 'error');
+            }
+        }
+
+        function crearMensajeHTML(msg, esEnviado) {
+            var hora = msg.created_at ? new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+
+            var contenido = msg.contenido || '';
+
+            if (msg.media_url) {
+                if (msg.tipo === 'imagen') {
+                    contenido = '<img src="' + msg.media_url + '" alt="' + escapeHTML(msg.nombre_archivo || 'Imagen') + '" loading="lazy" />';
+                } else if (msg.tipo === 'video') {
+                    contenido = '<video controls src="' + msg.media_url + '"></video>';
+                } else if (msg.tipo === 'audio') {
+                    contenido = '<audio controls src="' + msg.media_url + '"></audio>';
+                } else {
+                    contenido = '📎 <a href="' + msg.media_url + '" target="_blank" style="color:var(--gold);">' + escapeHTML(msg.nombre_archivo || 'Archivo') + '</a>';
+                }
+            }
+
+            var html = '';
+
+            if (esEnviado) {
+                html = `
+                    <div class="msg-wrapper enviado">
+                        <div class="burbuja">${contenido}</div>
+                        <div class="meta">
+                            ${hora}
+                            ${msg.is_read ? '<span class="leido leido">◆◆</span>' : '<span class="leido no-leido">◈◈</span>'}
+                        </div>
+                    </div>
+                `;
+            } else {
+                var avatarInicial = msg.sender_nombre ? msg.sender_nombre.charAt(0).toUpperCase() : '◈';
+                var avatarHTML = msg.sender_avatar ?
+                    '<img src="' + msg.sender_avatar + '" alt="' + escapeHTML(msg.sender_nombre) + '" />' :
+                    avatarInicial;
+
+                html = `
+                    <div class="msg-wrapper recibido">
+                        <div class="fila">
+                            <div class="avatar estado-conectado">
+                                ${avatarHTML}
+                            </div>
+                            <div class="burbuja">${contenido}</div>
+                        </div>
+                        <div class="meta">${hora}</div>
+                    </div>
+                `;
+            }
+
+            return html;
+        }
+
+        async function enviarMensaje() {
+            var input = document.getElementById('chatInput');
+            var texto = input.value.trim();
+
+            if (!texto || !conversacionActual) {
+                if (!conversacionActual) {
+                    showToast('⚠️ Selecciona una conversación', 'warning');
+                }
+                return;
+            }
+
+            try {
+                var ok = await verificarAutenticacion();
+                if (!ok) return;
+
+                var mensaje = {
+                    conversation_id: conversacionActual.id,
+                    sender_id: usuarioActual.id,
+                    contenido: texto,
+                    tipo: 'texto',
+                    is_read: false,
+                    is_deleted: false
+                };
+
+                var result = await supabase
+                    .from('messages')
+                    .insert(mensaje)
+                    .select()
+                    .single();
+
+                if (result.error) throw result.error;
+
+                input.value = '';
+
+                var container = document.getElementById('chatMessages');
+                var empty = container.querySelector('.empty-chat');
+                if (empty) empty.remove();
+
+                var html = crearMensajeHTML(result.data, true);
+                container.innerHTML += html;
+                container.scrollTop = container.scrollHeight;
+
+                cargarConversaciones();
+
+            } catch (e) {
+                console.error('Error enviando mensaje:', e);
+                showToast('❌ Error al enviar mensaje', 'error');
+            }
+        }
+
+        async function marcarLeidos(conversacionId) {
+            try {
+                if (!conversacionActual || !conversacionActual.otro) return;
+
+                var result = await supabase.rpc('marcar_mensajes_leidos', {
+                    p_remitente_id: conversacionActual.otro.id,
+                    p_destinatario_id: usuarioActual.id
+                });
+
+                if (result.error) throw result.error;
+
+            } catch (e) {
+                console.error('Error marcando leídos:', e);
+            }
+        }
+
+        function suscribirseAMensajes(conversacionId) {
+            if (realtimeChannel) {
+                try {
+                    supabase.removeChannel(realtimeChannel);
+                } catch (e) {}
+                realtimeChannel = null;
+            }
+
+            realtimeChannel = supabase
+                .channel('mensajes-' + conversacionId)
+                .on('postgres_changes', {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'messages',
+                    filter: 'conversation_id=eq.' + conversacionId
+                }, function(payload) {
+                    var msg = payload.new;
+                    if (msg.sender_id !== usuarioActual.id) {
+                        var container = document.getElementById('chatMessages');
+                        var empty = container.querySelector('.empty-chat');
+                        if (empty) empty.remove();
+
+                        var html = crearMensajeHTML(msg, false);
+                        container.innerHTML += html;
+                        container.scrollTop = container.scrollHeight;
+
+                        marcarLeidos(conversacionId);
+                        cargarConversaciones();
+                    }
+                })
+                .subscribe();
+
+            console.log('📡 Suscrito a mensajes de la conversación:', conversacionId);
+        }
+
+        async function eliminarMensaje(messageId) {
+            try {
+                var ok = await verificarAutenticacion();
+                if (!ok) return;
+
+                if (!confirm('¿Eliminar este mensaje?')) return;
+
+                var result = await supabase
+                    .from('messages')
+                    .update({ is_deleted: true, deleted_at: new Date().toISOString() })
+                    .eq('id', messageId)
+                    .eq('sender_id', usuarioActual.id);
+
+                if (result.error) throw result.error;
+
+                showToast('🗑️ Mensaje eliminado', 'success');
+                abrirConversacion(conversacionActual.id);
+
+            } catch (e) {
+                console.error('Error eliminando mensaje:', e);
+                showToast('❌ Error al eliminar mensaje', 'error');
+            }
+        }
+
+        async function editarMensaje(messageId, nuevoContenido) {
+            try {
+                var ok = await verificarAutenticacion();
+                if (!ok) return;
+
+                if (!nuevoContenido || !nuevoContenido.trim()) {
+                    showToast('⚠️ El mensaje no puede estar vacío', 'warning');
+                    return;
+                }
+
+                var result = await supabase
+                    .from('messages')
+                    .update({
+                        contenido: nuevoContenido.trim(),
+                        editado: true,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', messageId)
+                    .eq('sender_id', usuarioActual.id);
+
+                if (result.error) throw result.error;
+
+                showToast('✏️ Mensaje editado', 'success');
+                abrirConversacion(conversacionActual.id);
+
+            } catch (e) {
+                console.error('Error editando mensaje:', e);
+                showToast('❌ Error al editar mensaje', 'error');
+            }
+        }
+
+        async function eliminarConversacion(conversacionId) {
+            try {
+                var ok = await verificarAutenticacion();
+                if (!ok) return;
+
+                if (!confirm('¿Eliminar esta conversación?')) return;
+
+                var result = await supabase
+                    .from('conversation_participants')
+                    .delete()
+                    .eq('conversation_id', conversacionId)
+                    .eq('user_id', usuarioActual.id);
+
+                if (result.error) throw result.error;
+
+                if (conversacionActual && conversacionActual.id === conversacionId) {
+                    conversacionActual = null;
+                    document.getElementById('chatNombre').textContent = 'Selecciona una conversación';
+                    document.getElementById('chatMessages').innerHTML = `
+                        <div class="empty-chat">
+                            <span class="icon">◈</span>
+                            <h3>Selecciona una conversación</h3>
+                            <p>Elige un chat para empezar a hablar</p>
+                        </div>
+                    `;
+                }
+
+                showToast('🗑️ Conversación eliminada', 'success');
+                cargarConversaciones();
+
+            } catch (e) {
+                console.error('Error eliminando conversación:', e);
+                showToast('❌ Error al eliminar conversación', 'error');
+            }
+        }
+
+        async function bloquearUsuario(usuarioId) {
+            try {
+                var ok = await verificarAutenticacion();
+                if (!ok) return;
+
+                if (!confirm('¿Bloquear a este usuario?')) return;
+
+                var result = await supabase.rpc('bloquear_usuario', {
+                    p_usuario_id: usuarioActual.id,
+                    p_bloqueado_id: usuarioId
+                });
+
+                if (result.error) throw result.error;
+
+                showToast('🚫 Usuario bloqueado', 'success');
+                eliminarConversacion(conversacionActual.id);
+
+            } catch (e) {
+                console.error('Error bloqueando usuario:', e);
+                showToast('❌ Error al bloquear usuario', 'error');
+            }
+        }
+
+        async function reportarMensaje(messageId, motivo) {
+            try {
+                var ok = await verificarAutenticacion();
+                if (!ok) return;
+
+                if (!motivo || !motivo.trim()) {
+                    showToast('⚠️ Escribe un motivo para el reporte', 'warning');
+                    return;
+                }
+
+                var result = await supabase
+                    .from('mensajes_reportes')
+                    .insert({
+                        mensaje_id: messageId,
+                        usuario_id: usuarioActual.id,
+                        motivo: motivo.trim()
+                    });
+
+                if (result.error) throw result.error;
+
+                showToast('⚠️ Mensaje reportado', 'success');
+
+            } catch (e) {
+                console.error('Error reportando mensaje:', e);
+                showToast('❌ Error al reportar mensaje', 'error');
+            }
+        }
+
+        async function buscarEnConversacion(query) {
+            if (!query || !query.trim()) {
+                showToast('⚠️ Escribe algo para buscar', 'warning');
+                return;
+            }
+
+            if (!conversacionActual) {
+                showToast('⚠️ Selecciona una conversación', 'error');
+                return;
+            }
+
+            try {
+                var session = await getSession();
+                if (!session) return;
+
+                var result = await supabase.rpc('buscar_mensajes_conversacion', {
+                    p_conversacion_id: conversacionActual.id,
+                    p_usuario_id: session.user.id,
+                    p_busqueda: query.trim(),
+                    p_limite: 50
+                });
+
+                if (result.error) throw result.error;
+
+                var container = document.getElementById('chatMessages');
+
+                if (!result.data || result.data.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-chat">
+                            <span class="icon">◈</span>
+                            <h3>No se encontraron resultados</h3>
+                            <p>No hay mensajes que coincidan con "${escapeHTML(query)}"</p>
+                            <button onclick="abrirConversacion('${conversacionActual.id}')" style="margin-top:12px;padding:8px 20px;background:var(--gold);color:var(--space);border:none;border-radius:8px;cursor:pointer;">
+                                ↩ Volver
+                            </button>
+                        </div>
+                    `;
+                    return;
+                }
+
+                var html = '';
+                for (var i = 0; i < result.data.length; i++) {
+                    var msg = result.data[i];
+                    var esEnviado = msg.sender_id === session.user.id;
+                    html += crearMensajeHTML(msg, esEnviado);
+                }
+
+                container.innerHTML = html;
+                container.scrollTop = container.scrollHeight;
+
+                showToast('🔍 Encontrados ' + result.data.length + ' mensajes', 'success');
+
+            } catch (e) {
+                console.error('Error buscando:', e);
+                showToast('❌ Error al buscar', 'error');
+            }
+        }
+
+        function nuevaConversacion() {
+            var modal = document.getElementById('modalNuevoContacto');
+            if (modal) {
+                modal.classList.add('show');
+                var input = document.getElementById('searchInputModal');
+                if (input) {
+                    input.value = '';
+                    input.focus();
+                }
+                var resultados = document.getElementById('resultadosBusqueda');
+                if (resultados) {
+                    resultados.innerHTML = '<div style="color:var(--text-muted);text-align:center;padding:20px;">Escribe al menos 2 caracteres para buscar</div>';
+                }
+            }
+        }
+
+        function cerrarModalNuevoContacto() {
+            var modal = document.getElementById('modalNuevoContacto');
+            if (modal) {
+                modal.classList.remove('show');
+            }
+        }
+
+        // ================================================================
+        // BUSCAR CONTACTOS - CORREGIDO (usa perfiles_publicos)
+        // ================================================================
+
+        async function buscarContactos(query) {
+            if (!query || query.length < 2) {
+                var resultados = document.getElementById('resultadosBusqueda');
+                if (resultados) {
+                    resultados.innerHTML = '<div style="color:var(--text-muted);text-align:center;padding:20px;">Escribe al menos 2 caracteres para buscar</div>';
+                }
+                return;
+            }
+
+            try {
+                var session = await getSession();
+                if (!session) return;
+
+                // ✅ CORREGIDO: usar perfiles_publicos para buscar usuarios
+                var result = await supabase
+                    .from('perfiles_publicos')
+                    .select('id, nombre, handle, avatar_url')
+                    .or('nombre.ilike.%' + query + '%,handle.ilike.%' + query + '%')
+                    .neq('id', session.user.id)
+                    .limit(10);
+
+                if (result.error) throw result.error;
+
+                var container = document.getElementById('resultadosBusqueda');
+                if (!container) return;
+
+                if (!result.data || result.data.length === 0) {
+                    container.innerHTML = '<div style="color:var(--text-muted);text-align:center;padding:20px;">No se encontraron usuarios</div>';
+                    return;
+                }
+
+                var html = '';
+                for (var i = 0; i < result.data.length; i++) {
+                    var user = result.data[i];
+                    var avatarInicial = user.nombre ? user.nombre.charAt(0).toUpperCase() : '◈';
+                    var avatarHTML = user.avatar_url ?
+                        '<img src="' + user.avatar_url + '" style="width:40px;height:40px;border-radius:50%;object-fit:cover;" />' :
+                        avatarInicial;
+
+                    html += `
+                        <div class="resultado-item" onclick="agregarContacto('${user.id}')" style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid rgba(212,175,55,0.05);cursor:pointer;transition:all 0.3s;">
+                            <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--green-deep),var(--gold));display:flex;align-items:center;justify-content:center;font-weight:700;color:white;font-size:1rem;flex-shrink:0;overflow:hidden;">
+                                ${avatarHTML}
+                            </div>
+                            <div style="flex:1;">
+                                <div style="font-weight:600;color:var(--text-primary);">${escapeHTML(user.nombre || 'Usuario')}</div>
+                                <div style="font-size:0.7rem;color:var(--text-muted);">@${escapeHTML(user.handle || 'usuario')}</div>
+                            </div>
+                            <button style="padding:6px 12px;background:var(--gold);color:var(--space);border:none;border-radius:8px;cursor:pointer;font-size:0.7rem;font-weight:600;">
+                                ✎ Iniciar chat
+                            </button>
+                        </div>
+                    `;
+                }
+
+                container.innerHTML = html;
+
+            } catch (e) {
+                console.error('Error buscando contactos:', e);
+                showToast('❌ Error al buscar', 'error');
+            }
+        }
+
+        async function agregarContacto(usuarioId) {
+            try {
+                var session = await getSession();
+                if (!session) return;
+
+                var result = await supabase.rpc('crear_conversacion_directa', {
+                    p_usuario_a_id: session.user.id,
+                    p_usuario_b_id: usuarioId
+                });
+
+                if (result.error) throw result.error;
+
+                var convId = result.data && result.data[0] ? result.data[0].conversation_id : null;
+
+                if (convId) {
+                    cerrarModalNuevoContacto();
+                    showToast('✅ Conversación creada', 'success');
+                    cargarConversaciones();
+                    setTimeout(function() {
+                        abrirConversacion(convId);
+                    }, 300);
+                }
+
+            } catch (e) {
+                console.error('Error creando conversación:', e);
+                showToast('❌ Error al crear conversación', 'error');
+            }
+        }
+
+        function seleccionarArchivo() {
+            var input = document.getElementById('fileInput');
+            if (input) {
+                input.click();
+            }
+        }
+
+        async function handleFileSelect(event) {
+            var files = event.target.files;
+            if (!files || files.length === 0) return;
+
+            for (var i = 0; i < files.length; i++) {
+                await subirArchivo(files[i]);
+            }
+
+            event.target.value = '';
+        }
+
+        async function subirArchivo(file) {
+            try {
+                var ok = await verificarAutenticacion();
+                if (!ok) return;
+
+                if (!conversacionActual) {
+                    showToast('⚠️ Selecciona una conversación', 'error');
+                    return;
+                }
+
+                if (file.size > 50 * 1024 * 1024) {
+                    showToast('⚠️ Archivo excede 50MB', 'error');
+                    return;
+                }
+
+                var ext = file.name.split('.').pop() || 'bin';
+                var fileName = Date.now() + '_' + Math.random().toString(36).substr(2, 6) + '.' + ext;
+
+                var tipo = 'archivo';
+                if (file.type.startsWith('image/')) tipo = 'imagen';
+                else if (file.type.startsWith('video/')) tipo = 'video';
+                else if (file.type.startsWith('audio/')) tipo = 'audio';
+
+                var bucket = tipo === 'audio' ? 'chat-audio' : 'chat-attachments';
+                var filePath = usuarioActual.id + '/mensajes/' + fileName;
+
+                var uploadResult = await supabase.storage
+                    .from(bucket)
+                    .upload(filePath, file, {
+                        contentType: file.type,
+                        cacheControl: '3600',
+                        upsert: false
+                    });
+
+                if (uploadResult.error) throw uploadResult.error;
+
+                var signedUrlResult = await supabase.storage
+                    .from(bucket)
+                    .createSignedUrl(filePath, 3600);
+
+                if (signedUrlResult.error) throw signedUrlResult.error;
+
+                var mediaUrl = signedUrlResult.data.signedUrl;
+
+                var mensaje = {
+                    conversation_id: conversacionActual.id,
+                    sender_id: usuarioActual.id,
+                    contenido: file.name,
+                    media_url: mediaUrl,
+                    tipo: tipo,
+                    nombre_archivo: file.name,
+                    tamano_bytes: file.size,
+                    mime_type: file.type,
+                    is_read: false,
+                    is_deleted: false
+                };
+
+                var result = await supabase
+                    .from('messages')
+                    .insert(mensaje)
+                    .select()
+                    .single();
+
+                if (result.error) throw result.error;
+
+                var container = document.getElementById('chatMessages');
+                var empty = container.querySelector('.empty-chat');
+                if (empty) empty.remove();
+
+                var html = crearMensajeHTML(result.data, true);
+                container.innerHTML += html;
+                container.scrollTop = container.scrollHeight;
+
+                cargarConversaciones();
+                showToast('✅ Archivo subido: ' + file.name, 'success');
+
+            } catch (e) {
+                console.error('Error subiendo archivo:', e);
+                showToast('❌ Error al subir archivo: ' + (e.message || 'Error desconocido'), 'error');
+            }
+        }
+
+        async function toggleGrabacionVoz() {
+            var btn = document.getElementById('btnAudio');
+
+            if (grabacionActiva) {
+                if (mediaRecorder && mediaRecorder.state === 'recording') {
+                    mediaRecorder.stop();
+                    mediaRecorder = null;
+                }
+                grabacionActiva = false;
+                if (btn) {
+                    btn.classList.remove('grabando');
+                    btn.textContent = '🎙️';
+                }
+                showToast('⏹️ Grabación detenida', '');
+                return;
+            }
+
+            try {
+                var stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+
+                mediaRecorder.ondataavailable = function(event) {
+                    if (event.data.size > 0) {
+                        audioChunks.push(event.data);
+                    }
+                };
+
+                mediaRecorder.onstop = async function() {
+                    var audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    var audioFile = new File([audioBlob], 'audio-' + Date.now() + '.webm', { type: 'audio/webm' });
+                    await subirArchivo(audioFile);
+                    stream.getTracks().forEach(function(track) { track.stop(); });
+                };
+
+                mediaRecorder.start();
+                grabacionActiva = true;
+
+                if (btn) {
+                    btn.classList.add('grabando');
+                    btn.textContent = '⏹️';
+                }
+
+                showToast('🎙️ Grabando... presiona de nuevo para detener', '');
+
+            } catch (e) {
+                console.error('Error grabando audio:', e);
+                showToast('❌ Error al acceder al micrófono', 'error');
+            }
+        }
+
+        async function obtenerTokenLiveKit(roomName, participantName) {
+            try {
+                var session = await getSession();
+                if (!session) {
+                    throw new Error('No autenticado');
+                }
+
+                var response = await fetch('/api/livekit/token', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + session.access_token
+                    },
+                    body: JSON.stringify({
+                        roomName: roomName,
+                        participantName: participantName
+                    })
+                });
+
+                if (!response.ok) {
+                    var errorData = await response.json();
+                    throw new Error(errorData.error || 'Error al obtener token');
+                }
+
+                var data = await response.json();
+                return data;
+
+            } catch (e) {
+                console.error('Error obteniendo token LiveKit:', e);
+                throw e;
+            }
+        }
+
+        async function iniciarVideollamada() {
+            if (!conversacionActual) {
+                showToast('⚠️ Selecciona una conversación para llamar', 'warning');
+                return;
+            }
+
+            if (callState.active) {
+                mostrarLlamada();
+                return;
+            }
+
+            try {
+                var session = await getSession();
+                if (!session) {
+                    showToast('⚠️ Inicia sesión para llamar', 'error');
+                    return;
+                }
+
+                var usuarioResult = await supabase
+                    .from('perfiles_publicos')
+                    .select('id, nombre')
+                    .eq('id', conversacionActual.otro.id)
+                    .single();
+
+                if (usuarioResult.error) {
+                    showToast('❌ Usuario no encontrado', 'error');
+                    return;
+                }
+
+                var llamadaActiva = await supabase
+                    .from('llamadas')
+                    .select('id, estado')
+                    .or('and(creador_id.eq.' + session.user.id + ',destinatario_id.eq.' + conversacionActual.otro.id + '),and(creador_id.eq.' + conversacionActual.otro.id + ',destinatario_id.eq.' + session.user.id + ')')
+                    .in('estado', ['ringing', 'active'])
+                    .maybeSingle();
+
+                if (llamadaActiva.data) {
+                    showToast('⚠️ Ya hay una llamada en curso con este usuario', 'warning');
+                    return;
+                }
+
+                var callId = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).substr(2);
+                var roomName = 'call_' + callId;
+
+                var crearLlamada = await supabase
+                    .from('llamadas')
+                    .insert({
+                        id: callId,
+                        creador_id: session.user.id,
+                        destinatario_id: conversacionActual.otro.id,
+                        tipo: 'video',
+                        estado: 'ringing',
+                        room_name: roomName,
+                        conversation_id: conversacionActual.id
+                    });
+
+                if (crearLlamada.error) throw crearLlamada.error;
+
+                await supabase
+                    .from('llamadas_participantes')
+                    .insert({
+                        llamada_id: callId,
+                        usuario_id: session.user.id,
+                        rol: 'creador',
+                        estado: 'conectado',
+                        entro_at: new Date().toISOString()
+                    });
+
+                callState.callId = callId;
+                callState.isInitiator = true;
+                callState.active = true;
+
+                mostrarLlamada();
+
+                await conectarALiveKit(roomName, session.user.id, callId);
+
+                iniciarContadorDuracion();
+
+                suscribirseALlamada(callId);
+
+                showToast('📞 Llamando a ' + (conversacionActual.otro.nombre || 'usuario') + '...', '');
+
+                var btnCall = document.getElementById('btnVideoCall');
+                if (btnCall) {
+                    btnCall.textContent = '📞';
+                    btnCall.classList.add('active-call');
+                }
+
+            } catch (e) {
+                console.error('Error iniciando videollamada:', e);
+                showToast('❌ Error al iniciar llamada: ' + e.message, 'error');
+                limpiarLlamada();
+            }
+        }
+
+        async function conectarALiveKit(roomName, participantId, callId) {
+            try {
+                var tokenData = await obtenerTokenLiveKit(roomName, participantId);
+
+                if (typeof LivekitClient === 'undefined') {
+                    showToast('⚠️ LiveKit no está cargado. Recarga la página.', 'error');
+                    return;
+                }
+
+                var room = new LivekitClient.Room();
+
+                room.on(LivekitClient.RoomEvent.TrackSubscribed, function(track, publication, participant) {
+                    if (track.kind === 'video' && !track.isLocal) {
+                        var videoElement = document.getElementById('remoteVideo');
+                        if (videoElement) {
+                            track.attach(videoElement);
+                            var placeholder = document.getElementById('remoteAvatarPlaceholder');
+                            if (placeholder) placeholder.style.display = 'none';
+                        }
+                    }
+                    if (track.kind === 'audio' && !track.isLocal) {
+                        track.attach();
+                    }
+                });
+
+                room.on(LivekitClient.RoomEvent.ParticipantConnected, function(participant) {
+                    actualizarParticipantes(room);
+                    showToast('👤 ' + (participant.name || 'Usuario') + ' se unió a la llamada', 'success');
+                });
+
+                room.on(LivekitClient.RoomEvent.ParticipantDisconnected, function(participant) {
+                    actualizarParticipantes(room);
+                    showToast('👤 ' + (participant.name || 'Usuario') + ' abandonó la llamada', 'warning');
+                });
+
+                room.on(LivekitClient.RoomEvent.Disconnected, function() {
+                    if (callState.active) {
+                        colgarLlamada();
+                    }
+                });
+
+                await room.connect(tokenData.url, tokenData.token);
+
+                await publicarTracksLocales(room);
+
+                callState.room = room;
+                callState.active = true;
+
+                actualizarParticipantes(room);
+
+                showToast('✅ Conectado a la videollamada', 'success');
+
+            } catch (e) {
+                console.error('Error conectando a LiveKit:', e);
+                showToast('❌ Error al conectar a la videollamada: ' + e.message, 'error');
+                colgarLlamada();
+                throw e;
+            }
+        }
+
+        async function publicarTracksLocales(room) {
+            try {
+                var stream = await navigator.mediaDevices.getUserMedia({
+                    audio: true,
+                    video: {
+                        facingMode: 'user',
+                        width: { ideal: 640 },
+                        height: { ideal: 480 }
+                    }
+                });
+
+                var audioTrack = stream.getAudioTracks()[0];
+                if (audioTrack) {
+                    await room.localParticipant.publishTrack(audioTrack, {
+                        name: 'microphone',
+                        source: LivekitClient.TrackSource.Microphone
+                    });
+                    callState.audioTrack = audioTrack;
+                }
+
+                var videoTrack = stream.getVideoTracks()[0];
+                if (videoTrack) {
+                    await room.localParticipant.publishTrack(videoTrack, {
+                        name: 'camera',
+                        source: LivekitClient.TrackSource.Camera
+                    });
+                    callState.localTrack = videoTrack;
+
+                    var localVideo = document.getElementById('localVideo');
+                    if (localVideo) {
+                        localVideo.srcObject = new MediaStream([videoTrack]);
+                        var placeholder = document.getElementById('localAvatarPlaceholder');
+                        if (placeholder) placeholder.style.display = 'none';
+                    }
+                }
+
+                return stream;
+
+            } catch (e) {
+                console.error('Error publicando tracks locales:', e);
+                try {
+                    var audioOnly = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    var audioTrack = audioOnly.getAudioTracks()[0];
+                    if (audioTrack) {
+                        await room.localParticipant.publishTrack(audioTrack, {
+                            name: 'microphone',
+                            source: LivekitClient.TrackSource.Microphone
+                        });
+                        callState.audioTrack = audioTrack;
+                        showToast('🎤 Audio disponible (cámara no accesible)', 'warning');
+                    }
+                } catch (audioError) {
+                    showToast('⚠️ No se pudo acceder a cámara ni micrófono', 'error');
+                }
+            }
+        }
+
+        function mostrarLlamada() {
+            var overlay = document.getElementById('callOverlay');
+            if (overlay) {
+                overlay.classList.add('active');
+            }
+
+            document.getElementById('remoteAvatarPlaceholder').style.display = 'block';
+            document.getElementById('localAvatarPlaceholder').style.display = 'block';
+            document.getElementById('remoteVideo').srcObject = null;
+            document.getElementById('localVideo').srcObject = null;
+        }
+
+        function ocultarLlamada() {
+            var overlay = document.getElementById('callOverlay');
+            if (overlay) {
+                overlay.classList.remove('active');
+            }
+        }
+
+        function minimizarLlamada() {
+            ocultarLlamada();
+            showToast('📹 Llamada minimizada', '');
+        }
+
+        function iniciarContadorDuracion() {
+            callState.startTime = Date.now();
+            if (callState.durationInterval) {
+                clearInterval(callState.durationInterval);
+            }
+
+            callState.durationInterval = setInterval(function() {
+                if (!callState.active) {
+                    clearInterval(callState.durationInterval);
+                    return;
+                }
+                var elapsed = Math.floor((Date.now() - callState.startTime) / 1000);
+                var mins = String(Math.floor(elapsed / 60)).padStart(2, '0');
+                var secs = String(elapsed % 60).padStart(2, '0');
+                var durationEl = document.getElementById('callDuration');
+                if (durationEl) {
+                    durationEl.textContent = mins + ':' + secs;
+                }
+            }, 1000);
+        }
+
+        function suscribirseALlamada(callId) {
+            if (callChannel) {
+                try {
+                    supabase.removeChannel(callChannel);
+                } catch (e) {}
+                callChannel = null;
+            }
+
+            callChannel = supabase
+                .channel('call-' + callId)
+                .on('postgres_changes', {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'llamadas',
+                    filter: 'id=eq.' + callId
+                }, function(payload) {
+                    manejarCambioLlamada(payload.new);
+                })
+                .subscribe();
+        }
+
+        function manejarCambioLlamada(data) {
+            console.log('Cambio en llamada:', data);
+
+            if (data.estado === 'ended' || data.estado === 'rejected' || data.estado === 'missed') {
+                if (callState.active) {
+                    showToast('📞 La llamada ha terminado', 'warning');
+                    colgarLlamada();
+                }
+            }
+
+            if (data.estado === 'active' && callState.isInitiator) {
+                showToast('✅ Llamada conectada', 'success');
+            }
+        }
+
+        function suscribirseALlamadas() {
+            callListeners.forEach(function(listener) {
+                try {
+                    supabase.removeChannel(listener);
+                } catch (e) {}
+            });
+            callListeners = [];
+
+            getSession().then(function(session) {
+                if (!session) return;
+
+                var channel = supabase
+                    .channel('llamadas-entrantes')
+                    .on('postgres_changes', {
+                        event: 'INSERT',
+                        schema: 'public',
+                        table: 'llamadas'
+                    }, function(payload) {
+                        var data = payload.new;
+                        if (data.estado === 'ringing' && usuarioActual && data.destinatario_id === usuarioActual.id) {
+                            mostrarLlamadaEntrante(data);
+                        }
+                    })
+                    .subscribe();
+
+                callListeners.push(channel);
+            });
+        }
+
+        function mostrarLlamadaEntrante(data) {
+            if (callState.active) {
+                rechazarLlamada(data.id);
+                return;
+            }
+
+            var incoming = document.getElementById('callIncoming');
+            if (incoming && incoming.style.display === 'flex') {
+                return;
+            }
+
+            callState.incomingCallId = data.id;
+            callState.incomingFrom = data.creador_id;
+
+            supabase
+                .from('perfiles_publicos')
+                .select('nombre, avatar_url')
+                .eq('id', data.creador_id)
+                .single()
+                .then(function(result) {
+                    if (!result.error && result.data) {
+                        document.getElementById('callerName').textContent = result.data.nombre || 'Usuario';
+                        var avatar = document.getElementById('callerAvatar');
+                        if (result.data.avatar_url) {
+                            avatar.innerHTML = '<img src="' + result.data.avatar_url + '" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" />';
+                        } else {
+                            avatar.textContent = (result.data.nombre || 'U')[0].toUpperCase();
+                        }
+                    }
+                });
+
+            if (incoming) incoming.style.display = 'flex';
+
+            try {
+                var audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                var oscillator = audioContext.createOscillator();
+                var gainNode = audioContext.createGain();
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                oscillator.frequency.value = 440;
+                oscillator.type = 'sine';
+                gainNode.gain.value = 0.15;
+                oscillator.start();
+                oscillator.stop(audioContext.currentTime + 0.3);
+
+                var interval = setInterval(function() {
+                    var incomingEl = document.getElementById('callIncoming');
+                    if (!incomingEl || incomingEl.style.display !== 'flex') {
+                        clearInterval(interval);
+                        return;
+                    }
+                    var osc = audioContext.createOscillator();
+                    var gain = audioContext.createGain();
+                    osc.connect(gain);
+                    gain.connect(audioContext.destination);
+                    osc.frequency.value = 440;
+                    osc.type = 'sine';
+                    gain.gain.value = 0.15;
+                    osc.start();
+                    osc.stop(audioContext.currentTime + 0.3);
+                }, 2000);
+
+                callState._ringInterval = interval;
+
+            } catch (e) {
+                // Silencio
+            }
+        }
+
+        async function aceptarLlamadaEntrante() {
+            var callId = callState.incomingCallId;
+            if (!callId) return;
+
+            try {
+                var session = await getSession();
+                if (!session) {
+                    showToast('⚠️ Inicia sesión para aceptar', 'error');
+                    return;
+                }
+
+                await supabase
+                    .from('llamadas')
+                    .update({
+                        estado: 'active',
+                        contestada_at: new Date().toISOString()
+                    })
+                    .eq('id', callId);
+
+                await supabase
+                    .from('llamadas_participantes')
+                    .insert({
+                        llamada_id: callId,
+                        usuario_id: session.user.id,
+                        rol: 'invitado',
+                        estado: 'conectado',
+                        entro_at: new Date().toISOString()
+                    });
+
+                var llamadaData = await supabase
+                    .from('llamadas')
+                    .select('room_name, creador_id')
+                    .eq('id', callId)
+                    .single();
+
+                if (llamadaData.error) throw llamadaData.error;
+
+                callState.callId = callId;
+                callState.isInitiator = false;
+                callState.active = true;
+
+                document.getElementById('callIncoming').style.display = 'none';
+                mostrarLlamada();
+
+                await conectarALiveKit(llamadaData.data.room_name, session.user.id, callId);
+                iniciarContadorDuracion();
+                suscribirseALlamada(callId);
+
+                if (callState._ringInterval) {
+                    clearInterval(callState._ringInterval);
+                    callState._ringInterval = null;
+                }
+
+                showToast('✅ Llamada aceptada', 'success');
+
+                var btnCall = document.getElementById('btnVideoCall');
+                if (btnCall) {
+                    btnCall.textContent = '📞';
+                    btnCall.classList.add('active-call');
+                }
+
+            } catch (e) {
+                console.error('Error aceptando llamada:', e);
+                showToast('❌ Error al aceptar llamada: ' + e.message, 'error');
+                limpiarLlamada();
+            }
+        }
+
+        function rechazarLlamadaEntrante() {
+            var callId = callState.incomingCallId;
+            if (!callId) return;
+
+            rechazarLlamada(callId);
+            document.getElementById('callIncoming').style.display = 'none';
+
+            if (callState._ringInterval) {
+                clearInterval(callState._ringInterval);
+                callState._ringInterval = null;
+            }
+
+            showToast('❌ Llamada rechazada', 'warning');
+        }
+
+        async function rechazarLlamada(callId) {
+            try {
+                await supabase
+                    .from('llamadas')
+                    .update({
+                        estado: 'rejected',
+                        finalizada_at: new Date().toISOString()
+                    })
+                    .eq('id', callId);
+            } catch (e) {
+                console.error('Error rechazando llamada:', e);
+            }
+        }
+
+        async function colgarLlamada() {
+            if (!callState.active && !callState.callId) return;
+
+            try {
+                var session = await getSession();
+
+                if (callState.callId) {
+                    await supabase
+                        .from('llamadas')
+                        .update({
+                            estado: 'ended',
+                            finalizada_at: new Date().toISOString()
+                        })
+                        .eq('id', callState.callId);
+
+                    if (session) {
+                        await supabase
+                            .from('llamadas_participantes')
+                            .update({
+                                estado: 'desconectado',
+                                salio_at: new Date().toISOString()
+                            })
+                            .eq('llamada_id', callState.callId)
+                            .eq('usuario_id', session.user.id)
+                            .eq('estado', 'conectado');
+                    }
+                }
+
+                limpiarRecursosLiveKit();
+                limpiarLlamada();
+                ocultarLlamada();
+                document.getElementById('callIncoming').style.display = 'none';
+
+                var btnCall = document.getElementById('btnVideoCall');
+                if (btnCall) {
+                    btnCall.textContent = '📹';
+                    btnCall.classList.remove('active-call');
+                }
+
+                showToast('📞 Llamada finalizada', '');
+
+            } catch (e) {
+                console.error('Error colgando llamada:', e);
+                limpiarRecursosLiveKit();
+                limpiarLlamada();
+                ocultarLlamada();
+            }
+        }
+
+        function limpiarRecursosLiveKit() {
+            try {
+                if (callState.room) {
+                    callState.room.disconnect();
+                    callState.room = null;
+                }
+
+                if (callState.localTrack) {
+                    callState.localTrack.stop();
+                    callState.localTrack = null;
+                }
+
+                if (callState.audioTrack) {
+                    callState.audioTrack.stop();
+                    callState.audioTrack = null;
+                }
+
+                if (callState.screenTrack) {
+                    callState.screenTrack.stop();
+                    callState.screenTrack = null;
+                }
+
+                document.getElementById('remoteVideo').srcObject = null;
+                document.getElementById('localVideo').srcObject = null;
+                document.getElementById('remoteAvatarPlaceholder').style.display = 'block';
+                document.getElementById('localAvatarPlaceholder').style.display = 'block';
+
+                if (callChannel) {
+                    try {
+                        supabase.removeChannel(callChannel);
+                    } catch (e) {}
+                    callChannel = null;
+                }
+
+                if (callState.durationInterval) {
+                    clearInterval(callState.durationInterval);
+                    callState.durationInterval = null;
+                }
+
+                if (callState._ringInterval) {
+                    clearInterval(callState._ringInterval);
+                    callState._ringInterval = null;
+                }
+
+            } catch (e) {
+                console.error('Error limpiando recursos LiveKit:', e);
+            }
+        }
+
+        function limpiarLlamada() {
+            callState.active = false;
+            callState.room = null;
+            callState.localTrack = null;
+            callState.audioTrack = null;
+            callState.screenTrack = null;
+            callState.callId = null;
+            callState.isInitiator = false;
+            callState.startTime = null;
+            callState.incomingCallId = null;
+            callState.incomingFrom = null;
+            callState.participants = [];
+
+            document.getElementById('participantsList').innerHTML = '';
+            document.getElementById('participantsCount').textContent = '0';
+            document.getElementById('callDuration').textContent = '00:00';
+        }
+
+        function actualizarParticipantes(room) {
+            if (!room) return;
+
+            var participants = [];
+            var localIdentity = room.localParticipant.identity;
+
+            participants.push({
+                identity: localIdentity,
+                name: room.localParticipant.name || 'Tú',
+                isLocal: true
+            });
+
+            room.participants.forEach(function(p) {
+                participants.push({
+                    identity: p.identity,
+                    name: p.name || 'Participante',
+                    isLocal: false
+                });
+            });
+
+            callState.participants = participants;
+
+            var list = document.getElementById('participantsList');
+            var count = document.getElementById('participantsCount');
+
+            if (list) {
+                list.innerHTML = participants.map(function(p) {
+                    return '<div style="padding:4px 8px;font-size:0.8rem;color:var(--text-secondary);">' +
+                        escapeHTML(p.name) + (p.isLocal ? ' (Tú)' : '') +
+                        '</div>';
+                }).join('');
+            }
+
+            if (count) {
+                count.textContent = participants.length;
+            }
+        }
+
+        function toggleAudio() {
+            var btn = document.getElementById('btnToggleAudio');
+            if (!callState.room) return;
+
+            try {
+                audioMuted = !audioMuted;
+                if (callState.audioTrack) {
+                    callState.audioTrack.enabled = !audioMuted;
+                }
+
+                if (audioMuted) {
+                    btn.classList.add('muted');
+                    btn.textContent = '🔇';
+                    document.getElementById('localMuteIndicator').style.display = 'block';
+                } else {
+                    btn.classList.remove('muted');
+                    btn.textContent = '🎤';
+                    document.getElementById('localMuteIndicator').style.display = 'none';
+                }
+
+                showToast(audioMuted ? '🔇 Micrófono silenciado' : '🎤 Micrófono activado', '');
+
+            } catch (e) {
+                console.error('Error toggling audio:', e);
+            }
+        }
+
+        function toggleVideo() {
+            var btn = document.getElementById('btnToggleVideo');
+            if (!callState.room) return;
+
+            try {
+                videoMuted = !videoMuted;
+                if (callState.localTrack) {
+                    callState.localTrack.enabled = !videoMuted;
+                }
+
+                if (videoMuted) {
+                    btn.classList.add('muted');
+                    btn.textContent = '📷❌';
+                    document.getElementById('localVideo').style.display = 'none';
+                    document.getElementById('localAvatarPlaceholder').style.display = 'block';
+                } else {
+                    btn.classList.remove('muted');
+                    btn.textContent = '📷';
+                    document.getElementById('localVideo').style.display = 'block';
+                    document.getElementById('localAvatarPlaceholder').style.display = 'none';
+                }
+
+                showToast(videoMuted ? '📷 Cámara desactivada' : '📷 Cámara activada', '');
+
+            } catch (e) {
+                console.error('Error toggling video:', e);
+            }
+        }
+
+        async function toggleScreenShare() {
+            var btn = document.getElementById('btnToggleScreen');
+            if (!callState.room) return;
+
+            try {
+                if (!screenSharing) {
+                    var stream = await navigator.mediaDevices.getDisplayMedia({
+                        video: { cursor: 'always' },
+                        audio: true
+                    });
+
+                    var videoTrack = stream.getVideoTracks()[0];
+                    if (videoTrack) {
+                        await callState.room.localParticipant.publishTrack(videoTrack, {
+                            name: 'screen',
+                            source: LivekitClient.TrackSource.ScreenShare
+                        });
+                        callState.screenTrack = videoTrack;
+                        screenSharing = true;
+                        btn.classList.add('active');
+                        btn.textContent = '🖥️⏹️';
+
+                        videoTrack.onended = function() {
+                            detenerScreenShare();
+                        };
+
+                        showToast('🖥️ Compartiendo pantalla', 'success');
+                    }
+                } else {
+                    detenerScreenShare();
+                }
+
+            } catch (e) {
+                console.error('Error toggling screen share:', e);
+                if (e.name === 'NotAllowedError') {
+                    showToast('⚠️ Permiso denegado para compartir pantalla', 'warning');
+                } else {
+                    showToast('❌ Error al compartir pantalla: ' + e.message, 'error');
+                }
+            }
+        }
+
+        async function detenerScreenShare() {
+            try {
+                if (callState.screenTrack) {
+                    await callState.room.localParticipant.unpublishTrack(callState.screenTrack);
+                    callState.screenTrack.stop();
+                    callState.screenTrack = null;
+                }
+                screenSharing = false;
+                var btn = document.getElementById('btnToggleScreen');
+                if (btn) {
+                    btn.classList.remove('active');
+                    btn.textContent = '🖥️';
+                }
+                showToast('🖥️ Compartir pantalla detenido', '');
+
+            } catch (e) {
+                console.error('Error deteniendo screen share:', e);
+            }
+        }
+
+        function toggleParticipantsPanel() {
+            var panel = document.getElementById('participantsPanel');
+            if (panel) {
+                panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+            }
+        }
+
+        function limpiarRecursosMensajes() {
+            if (realtimeChannel) {
+                try {
+                    supabase.removeChannel(realtimeChannel);
+                } catch (e) {}
+                realtimeChannel = null;
+            }
+
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                try {
+                    mediaRecorder.stop();
+                } catch (e) {}
+            }
+
+            audioChunks = [];
+            grabacionActiva = false;
+            archivosSeleccionados = [];
+
+            limpiarRecursosLiveKit();
+
+            callListeners.forEach(function(listener) {
+                try {
+                    supabase.removeChannel(listener);
+                } catch (e) {}
+            });
+            callListeners = [];
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('◈ Sariel\'s - Mensajes con Videollamada');
+            console.log('✅ Inicializando...');
+
+            verificarAutenticacion().then(function(ok) {
+                if (ok) {
+                    cargarConversaciones();
+                    suscribirseALlamadas();
+                }
+            });
+
+            var chatInput = document.getElementById('chatInput');
+            if (chatInput) {
+                chatInput.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') {
+                        enviarMensaje();
+                    }
+                });
+            }
+
+            var btnEnviar = document.getElementById('btnEnviar');
+            if (btnEnviar) {
+                btnEnviar.addEventListener('click', enviarMensaje);
+            }
+
+            var searchInput = document.getElementById('searchInputModal');
+            if (searchInput) {
+                searchInput.addEventListener('input', function(e) {
+                    buscarContactos(e.target.value);
+                });
+            }
+
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    cerrarModalNuevoContacto();
+                    var incoming = document.getElementById('callIncoming');
+                    if (incoming && incoming.style.display === 'flex') {
+                        rechazarLlamadaEntrante();
+                    }
+                }
+            });
+
+            var fileInput = document.getElementById('fileInput');
+            if (fileInput) {
+                fileInput.addEventListener('change', handleFileSelect);
+            }
+
+            console.log('✅ Inicialización completada');
+        });
+
+        window.cargarConversaciones = cargarConversaciones;
+        window.abrirConversacion = abrirConversacion;
+        window.enviarMensaje = enviarMensaje;
+        window.eliminarMensaje = eliminarMensaje;
+        window.editarMensaje = editarMensaje;
+        window.eliminarConversacion = eliminarConversacion;
+        window.bloquearUsuario = bloquearUsuario;
+        window.reportarMensaje = reportarMensaje;
+        window.buscarEnConversacion = buscarEnConversacion;
+        window.nuevaConversacion = nuevaConversacion;
+        window.cerrarModalNuevoContacto = cerrarModalNuevoContacto;
+        window.agregarContacto = agregarContacto;
+        window.buscarContactos = buscarContactos;
+        window.seleccionarArchivo = seleccionarArchivo;
+        window.handleFileSelect = handleFileSelect;
+        window.toggleGrabacionVoz = toggleGrabacionVoz;
+        window.showToast = showToast;
+        window.limpiarRecursosMensajes = limpiarRecursosMensajes;
+
+        window.iniciarVideollamada = iniciarVideollamada;
+        window.aceptarLlamadaEntrante = aceptarLlamadaEntrante;
+        window.rechazarLlamadaEntrante = rechazarLlamadaEntrante;
+        window.colgarLlamada = colgarLlamada;
+        window.minimizarLlamada = minimizarLlamada;
+        window.toggleAudio = toggleAudio;
+        window.toggleVideo = toggleVideo;
+        window.toggleScreenShare = toggleScreenShare;
+        window.toggleParticipantsPanel = toggleParticipantsPanel;
+        window.mostrarLlamada = mostrarLlamada;
+        window.ocultarLlamada = ocultarLlamada;
+
+        console.log('✅ Funciones globales expuestas');
+    </script>
+
+</body>
+</html>
