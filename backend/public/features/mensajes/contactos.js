@@ -1,6 +1,6 @@
 /* ================================================================
    CONTACTOS - SARIEL'S ECOSYSTEM
-   VERSIÓN CORREGIDA - USANDO window.supabase (SINGLETON GLOBAL)
+   VERSIÓN CORREGIDA - USANDO perfiles_publicos PARA DATOS DE OTROS
    ================================================================ */
 
 // ================================================================
@@ -112,7 +112,7 @@ async function actualizarOnline(online) {
 }
 
 // ================================================================
-// CARGAR CONTACTOS
+// CARGAR CONTACTOS (CORREGIDO: usa perfiles_publicos)
 // ================================================================
 async function cargarContactos() {
     try {
@@ -121,6 +121,7 @@ async function cargarContactos() {
             return;
         }
 
+        // ✅ CORREGIDO: usar perfiles_publicos para datos de otros
         const { data, error } = await supabase
             .from('contactos')
             .select(`
@@ -129,14 +130,13 @@ async function cargarContactos() {
                 estado,
                 es_favorito,
                 created_at,
-                usuarios:contacto_id (
+                perfiles_publicos:contacto_id (
                     id,
                     nombre,
                     handle,
                     avatar_url,
                     online,
-                    ultima_conexion,
-                    verificado
+                    ultima_conexion
                 )
             `)
             .eq('usuario_id', usuarioActual.id)
@@ -153,7 +153,7 @@ async function cargarContactos() {
         }
 
         contactos = data.map(c => {
-            const usuario = c.usuarios || {};
+            const usuario = c.perfiles_publicos || {};
             return {
                 _id: c.contacto_id,
                 nombre: usuario.nombre || 'Usuario',
@@ -162,7 +162,7 @@ async function cargarContactos() {
                 online: usuario.online || false,
                 ultima_conexion: usuario.ultima_conexion || null,
                 esFavorito: c.es_favorito || false,
-                verificado: usuario.verificado || false,
+                verificado: false,
                 estado_relacion: c.estado || 'activo'
             };
         });
@@ -289,7 +289,6 @@ function renderizarContactos(lista) {
                 <div class="contacto-info">
                     <div class="nombre">
                         ${nombreSanitizado}
-                        ${contacto.verificado ? '<span class="verified">✦ VERIFICADO</span>' : ''}
                     </div>
                     <div class="estado ${esOnline ? 'online' : 'offline'}">
                         ${estadoTexto}
@@ -337,7 +336,7 @@ function aplicarFiltros() {
 }
 
 // ================================================================
-// 🔍 BUSCAR USUARIOS
+// 🔍 BUSCAR USUARIOS (CORREGIDO: usa perfiles_publicos)
 // ================================================================
 async function buscarUsuarios(query) {
     if (!query || query.length < 2) {
@@ -349,8 +348,9 @@ async function buscarUsuarios(query) {
         const session = await getSession();
         if (!session) return;
 
+        // ✅ CORREGIDO: usar perfiles_publicos en lugar de usuarios
         const { data, error } = await supabase
-            .from('usuarios')
+            .from('perfiles_publicos')
             .select('id, nombre, handle, avatar_url, online')
             .or(`nombre.ilike.%${query}%,handle.ilike.%${query}%`)
             .neq('id', session.user.id)
@@ -836,3 +836,4 @@ window.ordenarContactos = ordenarContactos;
 window.actualizarOnline = actualizarOnline;
 window.showToast = showToast;
 window.limpiarRecursosContactos = limpiarRecursosContactos;
+window.aplicarFiltros = aplicarFiltros;
