@@ -361,16 +361,17 @@
     <script>
         // ================================================================
         // SARIEL'S - MENSAJES COMPLETO
-        // VERSIÓN INLINE - CORREGIDA (auditoría contra Supabase real)
+        // VERSIÓN ACTUALIZADA - URLs FIRMADAS
         // ================================================================
         // CAMBIOS DE ESTA REVISIÓN:
         // 1) cargarConversaciones(): el RPC obtener_conversaciones_usuario
         //    devuelve campos planos (otro_usuario_id/otro_usuario_nombre/
         //    otro_usuario_avatar), no un arreglo otros_participantes.
-        // 2) subirArchivo(): el bucket 'chat-files' no existe. Se usa
-        //    'chat-attachments' o 'chat-audio' según el tipo.
-        // 3) subirArchivo(): la ruta del archivo ahora empieza con el UID
-        //    del usuario (requisito de las políticas RLS de Storage).
+        // 2) subirArchivo(): usa createSignedUrl() en lugar de getPublicUrl()
+        //    para generar URLs firmadas con expiración de 1 hora (3600s).
+        // 3) subirArchivo(): la ruta del archivo empieza con el UID del usuario
+        //    (requisito de las políticas RLS de Storage).
+        // 4) Se agregó manejo de errores para cuando createSignedUrl falla.
         // ================================================================
 
         var API_URL = window.location.origin;
@@ -1149,13 +1150,11 @@
         }
 
         // ================================================================
-        // SUBIR ARCHIVO
+        // SUBIR ARCHIVO - CON URLs FIRMADAS
         // ================================================================
-        // CORREGIDO:
-        // - bucket 'chat-files' (no existe) -> 'chat-attachments' / 'chat-audio'
-        //   según el tipo de archivo, igual que en el backend.
-        // - la ruta ahora empieza con el UID del usuario, requisito de las
-        //   políticas RLS de storage.objects para poder subir.
+        // ✅ AHORA USA createSignedUrl() en lugar de getPublicUrl()
+        //    Las URLs firmadas tienen expiración de 1 hora (3600 segundos)
+        //    Esto permite acceder a archivos en buckets PRIVADOS
         // ================================================================
 
         async function subirArchivo(file) {
@@ -1182,10 +1181,10 @@
                 else if (file.type.startsWith('video/')) tipo = 'video';
                 else if (file.type.startsWith('audio/')) tipo = 'audio';
 
-                // ✅ CORREGIDO: bucket real según el tipo
+                // ✅ Bucket real según el tipo
                 var bucket = tipo === 'audio' ? 'chat-audio' : 'chat-attachments';
 
-                // ✅ CORREGIDO: la ruta debe empezar con el UID del usuario
+                // ✅ La ruta debe empezar con el UID del usuario
                 var filePath = usuarioActual.id + '/mensajes/' + fileName;
 
                 var uploadResult = await supabase.storage
@@ -1198,20 +1197,22 @@
 
                 if (uploadResult.error) throw uploadResult.error;
 
-                // NOTA: chat-attachments y chat-audio son buckets PRIVADOS.
-                // getPublicUrl() genera una URL, pero Supabase no servirá el
-                // archivo con ella (se necesita createSignedUrl). Se deja así
-                // por ahora para no romper el resto del flujo; si las imágenes
-                // o audios no cargan, hay que migrar a URLs firmadas.
-                var publicUrlResult = supabase.storage
+                // ✅ NUEVO: Generar URL firmada en lugar de pública
+                // Los buckets son PRIVADOS, necesitamos URLs firmadas
+                var signedUrlResult = await supabase.storage
                     .from(bucket)
-                    .getPublicUrl(filePath);
+                    .createSignedUrl(filePath, 3600); // 1 hora de validez
+
+                if (signedUrlResult.error) throw signedUrlResult.error;
+
+                // Usar la URL firmada para el mensaje
+                var mediaUrl = signedUrlResult.data.signedUrl;
 
                 var mensaje = {
                     conversation_id: conversacionActual.id,
                     sender_id: usuarioActual.id,
                     contenido: file.name,
-                    media_url: publicUrlResult.data.publicUrl,
+                    media_url: mediaUrl,
                     tipo: tipo,
                     nombre_archivo: file.name,
                     tamano_bytes: file.size,
@@ -1242,7 +1243,7 @@
 
             } catch (e) {
                 console.error('Error subiendo archivo:', e);
-                showToast('❌ Error al subir archivo', 'error');
+                showToast('❌ Error al subir archivo: ' + (e.message || 'Error desconocido'), 'error');
             }
         }
 
