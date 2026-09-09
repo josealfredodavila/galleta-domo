@@ -1,12 +1,11 @@
 /* ================================================================
    CONTACTOS - SARIEL'S ECOSYSTEM
-   VERSIÓN CORREGIDA - USANDO perfiles_publicos PARA DATOS DE OTROS
+   VERSIÓN CORREGIDA - USANDO perfiles_publicos
    ================================================================ */
 
 // ================================================================
-// CONFIGURACIÓN SUPABASE - REUTILIZAR EL CLIENTE GLOBAL
+// CONFIGURACIÓN SUPABASE
 // ================================================================
-// ✅ Usamos window.supabase que es creado por app.js
 let supabase = window.supabase;
 
 if (typeof supabase === 'undefined') {
@@ -14,7 +13,7 @@ if (typeof supabase === 'undefined') {
 }
 
 // ================================================================
-// ESCAPE HTML - PREVENCIÓN XSS
+// ESCAPE HTML
 // ================================================================
 function escapeHTML(texto) {
     if (!texto) return '';
@@ -24,9 +23,9 @@ function escapeHTML(texto) {
 }
 
 // ================================================================
-// TOAST NOTIFICACIONES - CON FALLBACK SEGURO
+// TOAST
 // ================================================================
-function showToast(msg, type = '', duration = 3500) {
+function showToast(msg, type = '') {
     try {
         let t = document.getElementById('toast');
         if (!t) {
@@ -42,10 +41,9 @@ function showToast(msg, type = '', duration = 3500) {
         else if (type === 'success') t.classList.add('success');
         else t.classList.remove('error', 'warning', 'success');
         clearTimeout(t._timeout);
-        t._timeout = setTimeout(() => t.classList.remove('show'), duration);
+        t._timeout = setTimeout(() => t.classList.remove('show'), 3500);
     } catch (e) {
-        console.warn('Toast no disponible:', e);
-        alert(msg);
+        console.warn('Toast error:', e);
     }
 }
 
@@ -70,7 +68,6 @@ let contactosFiltrados = [];
 let filtroActual = 'todos';
 let usuarioActual = null;
 let canalContactos = null;
-let modoOscuro = true;
 
 // ================================================================
 // VERIFICAR AUTENTICACIÓN
@@ -93,21 +90,15 @@ async function actualizarOnline(online) {
         const session = await getSession();
         if (!session) return;
 
-        const { error } = await supabase
+        await supabase
             .from('usuarios')
             .update({
                 online: online,
                 ultima_conexion: online ? new Date().toISOString() : new Date().toISOString()
             })
             .eq('id', session.user.id);
-
-        if (error) throw error;
-
-        if (usuarioActual) {
-            usuarioActual.online = online;
-        }
     } catch (error) {
-        console.error('Error actualizando estado online:', error);
+        console.error('Error actualizando online:', error);
     }
 }
 
@@ -121,7 +112,6 @@ async function cargarContactos() {
             return;
         }
 
-        // ✅ CORREGIDO: usar perfiles_publicos para datos de otros
         const { data, error } = await supabase
             .from('contactos')
             .select(`
@@ -161,9 +151,7 @@ async function cargarContactos() {
                 avatar_url: usuario.avatar_url || null,
                 online: usuario.online || false,
                 ultima_conexion: usuario.ultima_conexion || null,
-                esFavorito: c.es_favorito || false,
-                verificado: false,
-                estado_relacion: c.estado || 'activo'
+                esFavorito: c.es_favorito || false
             };
         });
 
@@ -195,7 +183,7 @@ function mostrarSinContactos() {
 }
 
 // ================================================================
-// INICIAR ESCUCHA DE CONTACTOS (REALTIME)
+// ESCUCHA REALTIME
 // ================================================================
 function iniciarEscuchaContactos() {
     if (canalContactos) {
@@ -236,11 +224,11 @@ function actualizarContadores() {
     const total = contactos.length;
     const online = contactos.filter(c => c.online).length;
 
-    const totalContactosEl = document.getElementById('totalContactos');
-    const onlineContactosEl = document.getElementById('onlineContactos');
+    const totalEl = document.getElementById('totalContactos');
+    const onlineEl = document.getElementById('onlineContactos');
 
-    if (totalContactosEl) totalContactosEl.textContent = total;
-    if (onlineContactosEl) onlineContactosEl.textContent = online;
+    if (totalEl) totalEl.textContent = total;
+    if (onlineEl) onlineEl.textContent = online;
 }
 
 // ================================================================
@@ -250,9 +238,8 @@ function formatearTiempo(fecha) {
     if (!fecha) return 'Desconectado';
     const ahora = new Date();
     const entonces = new Date(fecha);
-    const diffMs = ahora - entonces;
-    const diffMin = Math.floor(diffMs / 60000);
-    
+    const diffMin = Math.floor((ahora - entonces) / 60000);
+
     if (diffMin < 1) return 'hace un momento';
     if (diffMin < 60) return `hace ${diffMin} min`;
     if (diffMin < 1440) return `hace ${Math.floor(diffMin / 60)} h`;
@@ -287,15 +274,9 @@ function renderizarContactos(lista) {
                     ${esFavorito ? '<span class="favorito-badge">◆</span>' : ''}
                 </div>
                 <div class="contacto-info">
-                    <div class="nombre">
-                        ${nombreSanitizado}
-                    </div>
-                    <div class="estado ${esOnline ? 'online' : 'offline'}">
-                        ${estadoTexto}
-                    </div>
-                    <div class="contacto-meta">
-                        <span>@${handleSanitizado}</span>
-                    </div>
+                    <div class="nombre">${nombreSanitizado}</div>
+                    <div class="estado ${esOnline ? 'online' : 'offline'}">${estadoTexto}</div>
+                    <div class="contacto-meta"><span>@${handleSanitizado}</span></div>
                 </div>
                 <div class="contacto-actions">
                     <button class="mensaje" onclick="irAMensajes('${escapeHTML(contacto._id)}')" title="Enviar mensaje">◈</button>
@@ -321,13 +302,8 @@ function aplicarFiltros() {
         const matchBusqueda = matchNombre || matchHandle;
 
         let matchFiltro = true;
-        if (filtroActual === 'online') {
-            matchFiltro = c.online === true;
-        } else if (filtroActual === 'favoritos') {
-            matchFiltro = c.esFavorito === true;
-        } else if (filtroActual === 'recientes') {
-            matchFiltro = true;
-        }
+        if (filtroActual === 'online') matchFiltro = c.online === true;
+        else if (filtroActual === 'favoritos') matchFiltro = c.esFavorito === true;
 
         return matchBusqueda && matchFiltro;
     });
@@ -336,7 +312,7 @@ function aplicarFiltros() {
 }
 
 // ================================================================
-// 🔍 BUSCAR USUARIOS (CORREGIDO: usa perfiles_publicos)
+// 🔍 BUSCAR USUARIOS (CORREGIDO)
 // ================================================================
 async function buscarUsuarios(query) {
     if (!query || query.length < 2) {
@@ -348,7 +324,6 @@ async function buscarUsuarios(query) {
         const session = await getSession();
         if (!session) return;
 
-        // ✅ CORREGIDO: usar perfiles_publicos en lugar de usuarios
         const { data, error } = await supabase
             .from('perfiles_publicos')
             .select('id, nombre, handle, avatar_url, online')
@@ -362,11 +337,7 @@ async function buscarUsuarios(query) {
         if (!container) return;
 
         if (!data || data.length === 0) {
-            container.innerHTML = `
-                <div style="padding:12px;text-align:center;color:var(--text-muted);font-size:0.75rem;">
-                    No se encontraron usuarios
-                </div>
-            `;
+            container.innerHTML = `<div style="padding:12px;text-align:center;color:var(--text-muted);font-size:0.75rem;">No se encontraron usuarios</div>`;
             return;
         }
 
@@ -384,19 +355,8 @@ async function buscarUsuarios(query) {
             const handleSanitizado = escapeHTML(usuario.handle || 'usuario');
 
             return `
-                <div class="resultado-item" style="
-                    display:flex;align-items:center;gap:10px;padding:8px 12px;
-                    border-bottom:1px solid rgba(212,175,55,0.05);
-                    transition:all 0.2s;
-                ">
-                    <div class="avatar" style="
-                        width:36px;height:36px;border-radius:50%;
-                        background:linear-gradient(135deg,var(--green-deep),var(--gold));
-                        display:flex;align-items:center;justify-content:center;
-                        color:white;font-size:0.8rem;overflow:hidden;
-                        border:2px solid ${estaOnline ? 'var(--success)' : 'var(--text-muted)'};
-                        position:relative;
-                    ">
+                <div class="resultado-item" style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid rgba(212,175,55,0.05);">
+                    <div class="avatar" style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--green-deep),var(--gold));display:flex;align-items:center;justify-content:center;color:white;font-size:0.8rem;overflow:hidden;border:2px solid ${estaOnline ? 'var(--success)' : 'var(--text-muted)'};">
                         ${usuario.avatar_url ? `<img src="${escapeHTML(usuario.avatar_url)}" style="width:100%;height:100%;object-fit:cover;">` : (usuario.nombre ? nombreSanitizado[0].toUpperCase() : '◈')}
                     </div>
                     <div style="flex:1;">
@@ -404,17 +364,9 @@ async function buscarUsuarios(query) {
                         <div style="font-size:0.6rem;color:var(--text-muted);">@${handleSanitizado} ${estaOnline ? '· 🟢 En línea' : ''}</div>
                     </div>
                     ${yaEsContacto ? `
-                        <span style="font-size:0.55rem;color:var(--success);background:rgba(0,214,143,0.1);padding:2px 10px;border-radius:12px;">
-                            ✓ Contacto
-                        </span>
+                        <span style="font-size:0.55rem;color:var(--success);background:rgba(0,214,143,0.1);padding:2px 10px;border-radius:12px;">✓ Contacto</span>
                     ` : `
-                        <button onclick="agregarContacto('${escapeHTML(usuario.id)}')" style="
-                            background:linear-gradient(135deg,var(--gold),var(--gold-dark));
-                            color:var(--space);border:none;padding:4px 12px;border-radius:12px;
-                            font-size:0.6rem;font-weight:600;cursor:pointer;
-                        ">
-                            + Agregar
-                        </button>
+                        <button onclick="agregarContacto('${usuario.id}')" style="background:linear-gradient(135deg,var(--gold),var(--gold-dark));color:var(--space);border:none;padding:4px 12px;border-radius:12px;font-size:0.6rem;font-weight:600;cursor:pointer;">+ Agregar</button>
                     `}
                 </div>
             `;
@@ -432,7 +384,7 @@ async function agregarContacto(contactoId) {
     try {
         const session = await getSession();
         if (!session) {
-            showToast('⚠️ Inicia sesión para agregar contactos', 'error');
+            showToast('⚠️ Inicia sesión', 'error');
             return;
         }
 
@@ -444,11 +396,11 @@ async function agregarContacto(contactoId) {
             .maybeSingle();
 
         if (existe) {
-            showToast('⚠️ Este usuario ya es tu contacto', 'warning');
+            showToast('⚠️ Ya es tu contacto', 'warning');
             return;
         }
 
-        const { error } = await supabase
+        await supabase
             .from('contactos')
             .insert({
                 usuario_id: session.user.id,
@@ -457,10 +409,7 @@ async function agregarContacto(contactoId) {
                 es_favorito: false
             });
 
-        if (error) throw error;
-
-        showToast('✅ Contacto agregado correctamente', 'success');
-        
+        showToast('✅ Contacto agregado', 'success');
         document.getElementById('searchInputModal').value = '';
         document.getElementById('resultadosBusqueda').innerHTML = '';
         cerrarModalBuscar();
@@ -476,7 +425,7 @@ async function agregarContacto(contactoId) {
 // 🚫 BLOQUEAR CONTACTO
 // ================================================================
 async function bloquearContacto(contactoId) {
-    if (!confirm('¿Bloquear a este usuario? No podrán enviarte mensajes ni ver tu perfil.')) return;
+    if (!confirm('¿Bloquear a este usuario?')) return;
 
     try {
         const session = await getSession();
@@ -485,26 +434,12 @@ async function bloquearContacto(contactoId) {
             return;
         }
 
-        try {
-            const { error } = await supabase
-                .from('bloqueos')
-                .insert({
-                    usuario_id: session.user.id,
-                    bloqueado_id: contactoId
-                });
-
-            if (error) {
-                if (error.code === '42P01') {
-                    showToast('⚠️ La tabla de bloqueos no está configurada', 'warning');
-                    return;
-                }
-                throw error;
-            }
-        } catch (insertError) {
-            console.error('Error insertando bloqueo:', insertError);
-            showToast('❌ Error al bloquear usuario', 'error');
-            return;
-        }
+        await supabase
+            .from('bloqueos')
+            .insert({
+                usuario_id: session.user.id,
+                bloqueado_id: contactoId
+            });
 
         await supabase
             .from('contactos')
@@ -519,41 +454,7 @@ async function bloquearContacto(contactoId) {
 
     } catch (error) {
         console.error('Error bloqueando usuario:', error);
-        showToast('❌ Error al bloquear usuario', 'error');
-    }
-}
-
-// ================================================================
-// 🔓 DESBLOQUEAR USUARIO
-// ================================================================
-async function desbloquearUsuario(contactoId) {
-    try {
-        const session = await getSession();
-        if (!session) {
-            showToast('⚠️ Inicia sesión', 'error');
-            return;
-        }
-
-        const { error } = await supabase
-            .from('bloqueos')
-            .delete()
-            .eq('usuario_id', session.user.id)
-            .eq('bloqueado_id', contactoId);
-
-        if (error) {
-            if (error.code === '42P01') {
-                showToast('⚠️ La tabla de bloqueos no está configurada', 'warning');
-                return;
-            }
-            throw error;
-        }
-
-        showToast('✅ Usuario desbloqueado', 'success');
-        await cargarContactos();
-
-    } catch (error) {
-        console.error('Error desbloqueando usuario:', error);
-        showToast('❌ Error al desbloquear', 'error');
+        showToast('❌ Error al bloquear', 'error');
     }
 }
 
@@ -570,7 +471,7 @@ function irAMensajes(contactoId) {
 async function toggleFavorito(contactoId) {
     const session = await getSession();
     if (!session) {
-        showToast('⚠️ Inicia sesión para marcar favoritos', 'error');
+        showToast('⚠️ Inicia sesión', 'error');
         return;
     }
 
@@ -580,13 +481,11 @@ async function toggleFavorito(contactoId) {
 
         const nuevoEstado = !contacto.esFavorito;
 
-        const { error } = await supabase
+        await supabase
             .from('contactos')
             .update({ es_favorito: nuevoEstado })
             .eq('usuario_id', session.user.id)
             .eq('contacto_id', contactoId);
-
-        if (error) throw error;
 
         contacto.esFavorito = nuevoEstado;
         aplicarFiltros();
@@ -602,22 +501,20 @@ async function toggleFavorito(contactoId) {
 // 🗑️ ELIMINAR CONTACTO
 // ================================================================
 async function eliminarContacto(contactoId) {
-    if (!confirm('¿Estás seguro de eliminar este contacto?')) return;
+    if (!confirm('¿Eliminar este contacto?')) return;
 
     const session = await getSession();
     if (!session) {
-        showToast('⚠️ Inicia sesión para eliminar contactos', 'error');
+        showToast('⚠️ Inicia sesión', 'error');
         return;
     }
 
     try {
-        const { error } = await supabase
+        await supabase
             .from('contactos')
             .delete()
             .eq('usuario_id', session.user.id)
             .eq('contacto_id', contactoId);
-
-        if (error) throw error;
 
         contactos = contactos.filter(c => c._id !== contactoId);
         actualizarContadores();
@@ -631,50 +528,34 @@ async function eliminarContacto(contactoId) {
 }
 
 // ================================================================
-// 📧 INVITAR CONTACTO POR CÓDIGO
+// 📧 INVITAR CONTACTO
 // ================================================================
 async function invitarContacto() {
     try {
         const session = await getSession();
         if (!session) {
-            showToast('⚠️ Inicia sesión para invitar', 'error');
+            showToast('⚠️ Inicia sesión', 'error');
             return;
         }
 
         const codigo = 'SAR-' + Math.random().toString(36).substring(2, 8).toUpperCase();
 
-        try {
-            const { data, error } = await supabase
-                .from('invitaciones')
-                .insert({
-                    usuario_id: session.user.id,
-                    codigo: codigo,
-                    activo: true
-                })
-                .select()
-                .single();
+        await supabase
+            .from('invitaciones')
+            .insert({
+                usuario_id: session.user.id,
+                codigo: codigo,
+                activo: true
+            });
 
-            if (error) {
-                if (error.code === '42P01') {
-                    showToast('⚠️ La tabla de invitaciones no está configurada', 'warning');
-                    return;
-                }
-                throw error;
-            }
-
-            const modal = document.getElementById('modalInvitacion');
-            const codigoEl = document.getElementById('codigoInvitacion');
-            if (modal && codigoEl) {
-                codigoEl.textContent = codigo;
-                modal.style.display = 'flex';
-            }
-
-            showToast('✅ Código de invitación generado', 'success');
-
-        } catch (insertError) {
-            console.error('Error generando invitación:', insertError);
-            showToast('❌ Error al generar invitación', 'error');
+        const modal = document.getElementById('modalInvitacion');
+        const codigoEl = document.getElementById('codigoInvitacion');
+        if (modal && codigoEl) {
+            codigoEl.textContent = codigo;
+            modal.style.display = 'flex';
         }
+
+        showToast('✅ Código generado', 'success');
 
     } catch (error) {
         console.error('Error generando invitación:', error);
@@ -689,7 +570,6 @@ function cerrarModalInvitacion() {
 async function copiarCodigoInvitacion() {
     const codigo = document.getElementById('codigoInvitacion')?.textContent;
     if (!codigo) return;
-    
     try {
         await navigator.clipboard.writeText(`◈ Únete a Sariel's con mi código: ${codigo}`);
         showToast('📋 Código copiado', 'success');
@@ -699,14 +579,7 @@ async function copiarCodigoInvitacion() {
 }
 
 // ================================================================
-// 👁️ VER PERFIL DE CONTACTO
-// ================================================================
-function verPerfilContacto(contactoId) {
-    window.location.href = `/features/perfil/perfil.html?contacto=${contactoId}`;
-}
-
-// ================================================================
-// 🔄 ORDENAR CONTACTOS
+// ORDENAR CONTACTOS
 // ================================================================
 function ordenarContactos(criterio) {
     switch (criterio) {
@@ -723,22 +596,18 @@ function ordenarContactos(criterio) {
                 return fechaB - fechaA;
             });
             break;
-        default:
-            break;
     }
     aplicarFiltros();
 }
 
 // ================================================================
-// ABRIR MODAL AGREGAR CONTACTO
+// ABRIR MODALES
 // ================================================================
 function abrirAgregarContacto() {
     const modal = document.getElementById('modalBuscarContacto');
     if (modal) {
         modal.style.display = 'flex';
-        setTimeout(() => {
-            document.getElementById('searchInputModal')?.focus();
-        }, 300);
+        setTimeout(() => document.getElementById('searchInputModal')?.focus(), 300);
     }
 }
 
@@ -749,7 +618,7 @@ function cerrarModalBuscar() {
 }
 
 // ================================================================
-// LIMPIEZA DE RECURSOS
+// LIMPIEZA
 // ================================================================
 function limpiarRecursosContactos() {
     if (canalContactos) {
@@ -765,14 +634,11 @@ window.addEventListener('beforeunload', limpiarRecursosContactos);
 // ================================================================
 document.addEventListener('DOMContentLoaded', async function() {
     const autenticado = await verificarAutenticacion();
-    
+
     if (autenticado) {
         await actualizarOnline(true);
         await cargarContactos();
-        
-        window.addEventListener('beforeunload', function() {
-            actualizarOnline(false);
-        });
+        window.addEventListener('beforeunload', () => actualizarOnline(false));
     } else {
         mostrarSinContactos();
     }
@@ -782,41 +648,27 @@ document.addEventListener('DOMContentLoaded', async function() {
         let timeout;
         searchModal.addEventListener('input', function() {
             clearTimeout(timeout);
-            timeout = setTimeout(() => {
-                buscarUsuarios(this.value);
-            }, 300);
-        });
-        searchModal.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') {
-                buscarUsuarios(this.value);
-            }
+            timeout = setTimeout(() => buscarUsuarios(this.value), 300);
         });
     }
 
     const searchInput = document.getElementById('searchInput');
     if (searchInput) {
-        searchInput.addEventListener('input', function() {
-            aplicarFiltros();
-        });
+        searchInput.addEventListener('input', aplicarFiltros);
     }
 
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
-            document.querySelectorAll('.modal-overlay.show').forEach(modal => {
-                modal.style.display = 'none';
-            });
             cerrarModalBuscar();
             cerrarModalInvitacion();
         }
     });
 
     console.log('◈ Sariel\'s - Contactos');
-    console.log('👥 Contactos cargados:', contactos.length);
-    console.log('📡 Realtime activado');
 });
 
 // ================================================================
-// 📤 EXPOSICIÓN DE FUNCIONES GLOBALES
+// EXPOSICIÓN GLOBAL
 // ================================================================
 window.cargarContactos = cargarContactos;
 window.irAMensajes = irAMensajes;
@@ -826,14 +678,11 @@ window.abrirAgregarContacto = abrirAgregarContacto;
 window.buscarUsuarios = buscarUsuarios;
 window.agregarContacto = agregarContacto;
 window.bloquearContacto = bloquearContacto;
-window.desbloquearUsuario = desbloquearUsuario;
 window.invitarContacto = invitarContacto;
 window.copiarCodigoInvitacion = copiarCodigoInvitacion;
 window.cerrarModalInvitacion = cerrarModalInvitacion;
 window.cerrarModalBuscar = cerrarModalBuscar;
-window.verPerfilContacto = verPerfilContacto;
 window.ordenarContactos = ordenarContactos;
 window.actualizarOnline = actualizarOnline;
 window.showToast = showToast;
-window.limpiarRecursosContactos = limpiarRecursosContactos;
 window.aplicarFiltros = aplicarFiltros;
