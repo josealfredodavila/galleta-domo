@@ -32,3 +32,45 @@ router.post('/login', AuthController.login);
 router.post('/logout', AuthController.logout);
 
 /**
+ * @route   GET /api/auth/me
+ * @desc    Obtener datos del usuario autenticado
+ * @access  Private
+ */
+router.get('/me', verificarToken, AuthController.getMe);
+
+/**
+ * @route   PUT /api/auth/me
+ * @desc    Actualizar perfil del usuario autenticado
+ * @access  Private
+ */
+router.put('/me', verificarToken, AuthController.updateMe);
+
+/**
+ * @route   POST /api/auth/change-password
+ * @desc    Cambiar contraseña
+ * @access  Private
+ */
+router.post('/change-password', verificarToken, AuthController.changePassword);
+
+/**
+ * @route   POST /api/auth/refresh-token
+ * @desc    Refrescar token JWT
+ * @access  Public
+ */
+router.post('/refresh-token', AuthController.refreshToken);
+
+/**
+ * @route   POST /api/auth/forgot-password
+ * @desc    Solicitar recuperación de contraseña
+ * @access  Public
+ */
+router.post('/forgot-password', AuthController.forgotPassword);
+
+/**
+ * @route   POST /api/auth/reset-password
+ * @desc    Restablecer contraseña con token
+ * @access  Public
+ */
+router.post('/reset-password', AuthController.resetPassword);
+
+module.exports = router;
