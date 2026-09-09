@@ -361,17 +361,17 @@
     <script>
         // ================================================================
         // SARIEL'S - MENSAJES COMPLETO
-        // VERSIÓN ACTUALIZADA - URLs FIRMADAS
+        // VERSIÓN FINAL - URLs FIRMADAS CON BACKEND
         // ================================================================
         // CAMBIOS DE ESTA REVISIÓN:
-        // 1) cargarConversaciones(): el RPC obtener_conversaciones_usuario
+        // 1) cargarConversaciones(): RPC obtener_conversaciones_usuario
         //    devuelve campos planos (otro_usuario_id/otro_usuario_nombre/
         //    otro_usuario_avatar), no un arreglo otros_participantes.
-        // 2) subirArchivo(): usa createSignedUrl() en lugar de getPublicUrl()
-        //    para generar URLs firmadas con expiración de 1 hora (3600s).
-        // 3) subirArchivo(): la ruta del archivo empieza con el UID del usuario
-        //    (requisito de las políticas RLS de Storage).
-        // 4) Se agregó manejo de errores para cuando createSignedUrl falla.
+        // 2) subirArchivo(): usa endpoint /api/storage/signed-url para
+        //    generar URLs firmadas con expiración de 1 hora (3600s).
+        // 3) subirArchivo(): la ruta del archivo empieza con el UID del
+        //    usuario (requisito de las políticas RLS de Storage).
+        // 4) RLS activado en blocked_users (ChatGPT ya lo hizo).
         // ================================================================
 
         var API_URL = window.location.origin;
@@ -484,10 +484,6 @@
         // ================================================================
         // CARGAR CONVERSACIONES (RPC)
         // ================================================================
-        // CORREGIDO: obtener_conversaciones_usuario devuelve columnas planas
-        // (otro_usuario_id, otro_usuario_nombre, otro_usuario_avatar), no
-        // un arreglo "otros_participantes". Se mapean directamente.
-        // ================================================================
 
         async function cargarConversaciones() {
             try {
@@ -518,7 +514,6 @@
                 for (var i = 0; i < result.data.length; i++) {
                     var conv = result.data[i];
 
-                    // ✅ CORREGIDO: mapeo directo desde las columnas reales del RPC
                     var otro = {
                         id: conv.otro_usuario_id,
                         nombre: conv.otro_usuario_nombre || 'Usuario',
@@ -1150,10 +1145,10 @@
         }
 
         // ================================================================
-        // SUBIR ARCHIVO - CON URLs FIRMADAS
+        // SUBIR ARCHIVO - CON URLs FIRMADAS (BACKEND)
         // ================================================================
-        // ✅ AHORA USA createSignedUrl() en lugar de getPublicUrl()
-        //    Las URLs firmadas tienen expiración de 1 hora (3600 segundos)
+        // ✅ USA EL ENDPOINT /api/storage/signed-url PARA GENERAR URLs FIRMADAS
+        //    Las URLs tienen expiración de 1 hora (3600 segundos)
         //    Esto permite acceder a archivos en buckets PRIVADOS
         // ================================================================
 
@@ -1175,18 +1170,15 @@
                 var ext = file.name.split('.').pop() || 'bin';
                 var fileName = Date.now() + '_' + Math.random().toString(36).substr(2, 6) + '.' + ext;
 
-                // Determinar tipo de archivo
                 var tipo = 'archivo';
                 if (file.type.startsWith('image/')) tipo = 'imagen';
                 else if (file.type.startsWith('video/')) tipo = 'video';
                 else if (file.type.startsWith('audio/')) tipo = 'audio';
 
-                // ✅ Bucket real según el tipo
                 var bucket = tipo === 'audio' ? 'chat-audio' : 'chat-attachments';
-
-                // ✅ La ruta debe empezar con el UID del usuario
                 var filePath = usuarioActual.id + '/mensajes/' + fileName;
 
+                // 1. SUBIR ARCHIVO A STORAGE
                 var uploadResult = await supabase.storage
                     .from(bucket)
                     .upload(filePath, file, {
@@ -1197,17 +1189,30 @@
 
                 if (uploadResult.error) throw uploadResult.error;
 
-                // ✅ NUEVO: Generar URL firmada en lugar de pública
-                // Los buckets son PRIVADOS, necesitamos URLs firmadas
-                var signedUrlResult = await supabase.storage
-                    .from(bucket)
-                    .createSignedUrl(filePath, 3600); // 1 hora de validez
+                // 2. GENERAR URL FIRMADA USANDO EL BACKEND
+                var session = await getSession();
+                var response = await fetch('/api/storage/signed-url', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + session.access_token
+                    },
+                    body: JSON.stringify({
+                        bucket: bucket,
+                        filePath: filePath,
+                        expiresIn: 3600
+                    })
+                });
 
-                if (signedUrlResult.error) throw signedUrlResult.error;
+                if (!response.ok) {
+                    var errorData = await response.json();
+                    throw new Error(errorData.error || 'Error generando URL firmada');
+                }
 
-                // Usar la URL firmada para el mensaje
-                var mediaUrl = signedUrlResult.data.signedUrl;
+                var data = await response.json();
+                var mediaUrl = data.signedUrl;
 
+                // 3. GUARDAR MENSAJE CON URL FIRMADA
                 var mensaje = {
                     conversation_id: conversacionActual.id,
                     sender_id: usuarioActual.id,
@@ -1238,7 +1243,6 @@
                 container.scrollTop = container.scrollHeight;
 
                 cargarConversaciones();
-
                 showToast('✅ Archivo subido: ' + file.name, 'success');
 
             } catch (e) {
