@@ -1,7 +1,22 @@
-<script>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sariel's - Mensajes</title>
+    </head>
+<body>
+
+    <div id="chatMessages"></div>
+    <input type="text" id="chatInput" placeholder="Escribe un mensaje..." />
+    <button id="btnEnviar">Enviar</button>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/livekit-client/dist/livekit-client.umd.min.js"></script>
+
+    <script>
     // ================================================================
-    // SARIEL'S - MENSAJES COMPLETO
-    // VERSIÓN BLINDADA Y ULTRA-ROBUSTA
+    // SARIEL'S - MENSAJES COMPLETO (VERSIÓN LIMPIA Y CORREGIDA)
     // ================================================================
 
     var API_URL = window.location.origin;
@@ -29,39 +44,21 @@
     var videoMuted = false;
     var screenSharing = false;
 
-    // ================================================================
-    // INICIALIZACIÓN DE SUPABASE
-    // ================================================================
     function initSupabase() {
         try {
             var sdk = window.supabase;
-            if (!sdk || typeof sdk.createClient !== 'function') {
-                console.error('❌ SDK de Supabase no disponible o versión incorrecta.');
-                return false;
-            }
-
+            if (!sdk || typeof sdk.createClient !== 'function') return false;
             if (!supabase) {
                 supabase = sdk.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-                    auth: {
-                        persistSession: true,
-                        autoRefreshToken: true,
-                        detectSessionInUrl: true
-                    },
-                    realtime: {
-                        params: { eventsPerSecond: 5 }
-                    }
+                    auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
                 });
             }
             return true;
         } catch (e) {
-            console.error('❌ Error creando cliente Supabase:', e);
             return false;
         }
     }
 
-    // ================================================================
-    // UTILIDADES
-    // ================================================================
     function showToast(msg, type) {
         if (type === void 0) type = '';
         try {
@@ -76,9 +73,7 @@
             t.className = 'toast show ' + (type || '');
             clearTimeout(t._timeout);
             t._timeout = setTimeout(function() { t.classList.remove('show'); }, 3500);
-        } catch (e) {
-            console.warn('Toast no disponible:', e);
-        }
+        } catch (e) {}
     }
 
     function escapeHTML(texto) {
@@ -95,7 +90,6 @@
             if (sessionData.error) throw sessionData.error;
             return sessionData.data.session;
         } catch (e) {
-            console.error('Error obteniendo sesión:', e);
             return null;
         }
     }
@@ -103,20 +97,14 @@
     async function verificarAutenticacion() {
         try {
             var session = await getSession();
-            if (!session) {
-                return false;
-            }
+            if (!session) return false;
             usuarioActual = session.user;
             return true;
         } catch (e) {
-            console.error('Error verificando autenticación:', e);
             return false;
         }
     }
 
-    // ================================================================
-    // CARGAR CONVERSACIONES
-    // ================================================================
     async function cargarConversaciones() {
         try {
             var ok = await verificarAutenticacion();
@@ -132,15 +120,11 @@
             if (result.error) throw result.error;
 
             if (!result.data || result.data.length === 0) {
-                container.innerHTML =
-                    '<div style="padding:20px;text-align:center;color:#888;font-size:0.8rem;">' +
-                    '◈ No tienes conversaciones<br>' +
-                    '<span style="font-size:0.7rem;">Presiona ✎ para iniciar una</span></div>';
+                container.innerHTML = '<div style="padding:20px;text-align:center;color:#888;font-size:0.8rem;">◈ No tienes conversaciones</div>';
                 return;
             }
 
             container.innerHTML = '';
-
             for (var i = 0; i < result.data.length; i++) {
                 var conv = result.data[i];
                 var otro = {
@@ -150,55 +134,22 @@
                 };
                 var ultimo = conv.ultimo_mensaje || { contenido: 'Sin mensajes', created_at: '' };
                 var hora = ultimo.created_at ? new Date(ultimo.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
-                var avatarInicial = otro.nombre ? otro.nombre.charAt(0).toUpperCase() : '◈';
 
                 var item = document.createElement('div');
-                item.className = 'conv-item' + (conv.id === (conversacionActual ? conversacionActual.id : null) ? ' active' : '');
-                item.dataset.id = conv.id;
-                item.onclick = (function(id) {
-                    return function() { abrirConversacion(id); };
-                })(conv.id);
-
-                var avatarHTML = otro.avatar_url
-                    ? '<img src="' + otro.avatar_url + '" alt="' + escapeHTML(otro.nombre) + '" />'
-                    : avatarInicial;
-
-                var badgeHTML = (ultimo.is_read === false && ultimo.sender_id !== usuarioActual.id)
-                    ? '<span class="conv-badge">●</span>' : '';
-
-                item.innerHTML =
-                    '<div class="conv-avatar">' + avatarHTML + '</div>' +
-                    '<div class="conv-info">' +
-                        '<div class="conv-nombre">' + escapeHTML(otro.nombre || 'Usuario') + '</div>' +
-                        '<div class="conv-msg">' + escapeHTML(ultimo.contenido || 'Sin mensajes') + '</div>' +
-                    '</div>' +
-                    '<div class="conv-meta">' +
-                        '<div class="conv-hora">' + hora + '</div>' +
-                        badgeHTML +
-                    '</div>';
-
+                item.className = 'conv-item';
+                item.onclick = (function(id) { return function() { abrirConversacion(id); }; })(conv.id);
+                item.innerHTML = '<div class="conv-nombre">' + escapeHTML(otro.nombre) + '</div><div class="conv-msg">' + escapeHTML(ultimo.contenido) + '</div>';
                 container.appendChild(item);
             }
-
-            if (conversacionActual) abrirConversacion(conversacionActual.id);
-
         } catch (e) {
             console.error('Error cargando conversaciones:', e);
         }
     }
 
-    // ================================================================
-    // ABRIR CONVERSACIÓN
-    // ================================================================
     async function abrirConversacion(contactoId) {
         try {
             var ok = await verificarAutenticacion();
             if (!ok) return;
-
-            var items = document.querySelectorAll('.conv-item');
-            for (var i = 0; i < items.length; i++) items[i].classList.remove('active');
-            var selected = document.querySelector('.conv-item[data-id="' + contactoId + '"]');
-            if (selected) selected.classList.add('active');
 
             var otroResult = await supabase
                 .from('perfiles_publicos')
@@ -208,22 +159,6 @@
 
             var otro = otroResult.data || { nombre: 'Usuario', avatar_url: null };
             conversacionActual = { id: contactoId, otro: otro };
-
-            var elNombre = document.getElementById('chatNombre');
-            var elAvatar = document.getElementById('chatAvatar');
-            if (elNombre) elNombre.textContent = otro.nombre || 'Usuario';
-            if (elAvatar) elAvatar.textContent = otro.nombre ? otro.nombre.charAt(0).toUpperCase() : '◈';
-
-            var chatEstado = document.getElementById('chatEstado');
-            if (chatEstado) {
-                if (otro.online) {
-                    chatEstado.textContent = '◉ En línea';
-                    chatEstado.className = 'chat-estado online';
-                } else {
-                    chatEstado.textContent = '◈ Desconectado';
-                    chatEstado.className = 'chat-estado';
-                }
-            }
 
             var mensajesResult = await supabase
                 .from('mensajes_chat')
@@ -236,24 +171,15 @@
             var container = document.getElementById('chatMessages');
             if (!container) return;
 
-            if (!mensajesResult.data || mensajesResult.data.length === 0) {
-                container.innerHTML =
-                    '<div class="empty-chat"><span class="icon">◈</span>' +
-                    '<h3>Sin mensajes</h3><p>Envía el primer mensaje</p></div>';
-                return;
-            }
-
             container.innerHTML = '';
-            for (var j = 0; j < mensajesResult.data.length; j++) {
-                var msg = mensajesResult.data[j];
-                var esEnviado = msg.remitente_id === usuarioActual.id;
-                container.innerHTML += crearMensajeHTML(msg, esEnviado);
+            if (mensajesResult.data) {
+                for (var j = 0; j < mensajesResult.data.length; j++) {
+                    var msg = mensajesResult.data[j];
+                    var esEnviado = msg.remitente_id === usuarioActual.id;
+                    container.innerHTML += crearMensajeHTML(msg, esEnviado);
+                }
             }
-
             container.scrollTop = container.scrollHeight;
-            marcarLeidos(contactoId);
-            suscribirseAMensajes(contactoId);
-
         } catch (e) {
             console.error('Error abriendo conversación:', e);
         }
@@ -262,49 +188,14 @@
     function crearMensajeHTML(msg, esEnviado) {
         var hora = msg.created_at ? new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
         var contenido = msg.contenido || '';
-
-        if (msg.imagen_url) {
-            if (msg.tipo === 'imagen') {
-                contenido = '<img src="' + msg.imagen_url + '" alt="' + escapeHTML(msg.nombre_archivo || 'Imagen') + '" loading="lazy" />';
-            } else if (msg.tipo === 'video') {
-                contenido = '<video controls src="' + msg.imagen_url + '"></video>';
-            } else if (msg.tipo === 'audio') {
-                contenido = '<audio controls src="' + msg.imagen_url + '"></audio>';
-            } else {
-                contenido = '📎 <a href="' + msg.imagen_url + '" target="_blank">' + escapeHTML(msg.nombre_archivo || 'Archivo') + '</a>';
-            }
-        }
-
-        if (esEnviado) {
-            return '<div class="msg-wrapper enviado">' +
-                '<div class="burbuja">' + contenido + '</div>' +
-                '<div class="meta">' + hora +
-                (msg.leido ? '<span class="leido leido">◆◆</span>' : '<span class="leido no-leido">◈◈</span>') +
-                '</div></div>';
-        }
-
-        var avatarInicial = msg.sender_nombre ? msg.sender_nombre.charAt(0).toUpperCase() : '◈';
-        var avatarHTML = msg.sender_avatar
-            ? '<img src="' + msg.sender_avatar + '" alt="' + escapeHTML(msg.sender_nombre) + '" />'
-            : avatarInicial;
-
-        return '<div class="msg-wrapper recibido">' +
-            '<div class="fila">' +
-                '<div class="avatar estado-conectado">' + avatarHTML + '</div>' +
-                '<div class="burbuja">' + contenido + '</div>' +
-            '</div>' +
-            '<div class="meta">' + hora + '</div></div>';
+        return '<div class="msg-wrapper ' + (esEnviado ? 'enviado' : 'recibido') + '"><div class="burbuja">' + escapeHTML(contenido) + '</div><div class="meta">' + hora + '</div></div>';
     }
 
     async function enviarMensaje() {
         var input = document.getElementById('chatInput');
         if (!input) return;
         var texto = input.value.trim();
-
-        if (!texto || !conversacionActual) {
-            if (!conversacionActual) showToast('⚠️ Selecciona una conversación', 'warning');
-            return;
-        }
+        if (!texto || !conversacionActual) return;
 
         try {
             var ok = await verificarAutenticacion();
@@ -326,103 +217,25 @@
             input.value = '';
             var container = document.getElementById('chatMessages');
             if (container) {
-                var empty = container.querySelector('.empty-chat');
-                if (empty) empty.remove();
                 container.innerHTML += crearMensajeHTML(result.data, true);
                 container.scrollTop = container.scrollHeight;
             }
-            cargarConversaciones();
-
         } catch (e) {
-            console.error('Error enviando mensaje:', e);
             showToast('❌ Error al enviar mensaje', 'error');
         }
     }
 
-    async function marcarLeidos(contactoId) {
-        try {
-            if (!usuarioActual) return;
-            await supabase.from('mensajes_chat')
-                .update({ leido: true })
-                .eq('remitente_id', contactoId)
-                .eq('destinatario_id', usuarioActual.id)
-                .eq('leido', false)
-                .eq('eliminado', false);
-        } catch (e) {
-            console.error('Error marcando leídos:', e);
-        }
-    }
-
-    function suscribirseAMensajes(contactoId) {
-        if (realtimeChannel) {
-            try { supabase.removeChannel(realtimeChannel); } catch (e) {}
-            realtimeChannel = null;
-        }
-
-        realtimeChannel = supabase
-            .channel('mensajes-' + contactoId)
-            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mensajes_chat' }, function(payload) {
-                var msg = payload.new;
-                if (msg.remitente_id === contactoId && msg.destinatario_id === usuarioActual.id) {
-                    var container = document.getElementById('chatMessages');
-                    if (container) {
-                        var empty = container.querySelector('.empty-chat');
-                        if (empty) empty.remove();
-                        container.innerHTML += crearMensajeHTML(msg, false);
-                        container.scrollTop = container.scrollHeight;
-                    }
-                    marcarLeidos(contactoId);
-                    cargarConversaciones();
-                }
-            })
-            .subscribe();
-    }
-
-    // ================================================================
-    // ARRANQUE SEGURO (Evita pantallas blancas y errores de DOM)
-    // ================================================================
     function arrancarApp() {
-        try {
-            console.log("◈ Sariel's - Inicializando aplicación...");
+        if (!initSupabase()) return;
+        verificarAutenticacion().then(function(ok) {
+            if (ok) cargarConversaciones();
+        });
 
-            if (!initSupabase()) {
-                console.error('❌ No se pudo inicializar Supabase. Deteniendo arranque.');
-                return;
-            }
-
-            verificarAutenticacion().then(function(ok) {
-                if (ok) {
-                    cargarConversaciones();
-                }
-            });
-
-            var chatInput = document.getElementById('chatInput');
-            if (chatInput) {
-                chatInput.addEventListener('keydown', function(e) {
-                    if (e.key === 'Enter') enviarMensaje();
-                });
-            }
-
-            var btnEnviar = document.getElementById('btnEnviar');
-            if (btnEnviar) btnEnviar.addEventListener('click', enviarMensaje);
-
-            console.log('✅ Aplicación iniciada con éxito.');
-        } catch (err) {
-            console.error('❌ Error crítico en arranque:', err);
-        }
+        var btnEnviar = document.getElementById('btnEnviar');
+        if (btnEnviar) btnEnviar.addEventListener('click', enviarMensaje);
     }
 
-    // Esperar a que el DOM y el script del CDN carguen de forma segura
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', arrancarApp);
-    } else {
-        setTimeout(arrancarApp, 50);
-    }
-
-    // ================================================================
-    // EXPOSICIÓN GLOBAL DE FUNCIONES
-    // ================================================================
-    window.cargarConversaciones = cargarConversaciones;
-    window.abrirConversacion = abrirConversacion;
-    window.enviarMensaje = enviarMensaje;
-</script>
+    document.addEventListener('DOMContentLoaded', arrancarApp);
+    </script>
+</body>
+</html>
