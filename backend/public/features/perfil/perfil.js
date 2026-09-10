@@ -1,3 +1,6 @@
+(function () {
+'use strict';
+
 /* ================================================================
    PERFIL.JS - SARIEL'S ECOSYSTEM
    VERSIÓN FUNCIONAL - INTEGRACIÓN COMPLETA CON SERVER.JS + SUPABASE + TELNYX
@@ -2649,3 +2652,5 @@ window.cerrarCamaraQR = cerrarCamaraQR;
 window.cargarHistorialQR = cargarHistorialQR;
 window.actualizarUIHistorialQR = actualizarUIHistorialQR;
 window.procesarQR = procesarQR;
+
+})();
