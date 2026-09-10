@@ -6,7 +6,62 @@
     <title>◈ Perfil · Sariel's</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
-    
+
+    <!-- ================================================================ -->
+    <!-- GUARD DE SESIÓN — se ejecuta ANTES de pintar la página            -->
+    <!-- Oculta el contenido hasta confirmar sesión; si no hay sesión      -->
+    <!-- redirige de inmediato, sin parpadeo de datos de "Explorador".     -->
+    <!-- ================================================================ -->
+    <style>
+        html:not(.auth-ready) .app { display: none !important; }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script>
+        (function () {
+            'use strict';
+
+            var GUARD_SUPABASE_URL = 'https://zultnlogdoajehbswlih.supabase.co';
+            var GUARD_SUPABASE_KEY = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
+
+            function revelarPagina() {
+                document.documentElement.classList.add('auth-ready');
+            }
+
+            function irAInicio() {
+                window.location.replace('/');
+            }
+
+            // Salvaguarda: si algo falla (CDN bloqueado, sin internet, etc.)
+            // no dejamos la página oculta para siempre — se revela de todas
+            // formas tras 4s y el banner de error de más abajo avisará.
+            var salvaguarda = setTimeout(revelarPagina, 4000);
+
+            try {
+                if (typeof window.supabase === 'undefined') {
+                    return; // se revela por la salvaguarda; el banner de error avisará
+                }
+
+                var guardClient = window.supabase.createClient(GUARD_SUPABASE_URL, GUARD_SUPABASE_KEY);
+
+                guardClient.auth.getSession().then(function (resultado) {
+                    clearTimeout(salvaguarda);
+                    var session = resultado && resultado.data ? resultado.data.session : null;
+                    if (!session) {
+                        irAInicio();
+                    } else {
+                        revelarPagina();
+                    }
+                }).catch(function () {
+                    clearTimeout(salvaguarda);
+                    revelarPagina();
+                });
+            } catch (e) {
+                clearTimeout(salvaguarda);
+                revelarPagina();
+            }
+        })();
+    </script>
+
     <style>
         :root {
             --gold: #D4AF37;
@@ -1394,8 +1449,7 @@
         });
     </script>
 
-    <!-- ✅ SCRIPTS: SOLO Supabase + jsQR + perfil.js -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <!-- ✅ SCRIPTS: jsQR + perfil.js (Supabase ya se cargó en el <head> para el guard de sesión) -->
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
     <script src="/features/perfil/perfil.js"></script>
 </body>
