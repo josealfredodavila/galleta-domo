@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marketing - Sariel's Ecosystem</title>
+    <link rel="stylesheet" href="marketing.css">
+    <!-- Incluir Chart.js para gráficos reales -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div id="marketing-app">
+        <!-- Header con resumen -->
+        <header class="marketing-header">
+            <h1>Panel de Marketing</h1>
+            <button id="btn-create-campaign" class="btn-primary">+ Crear campaña</button>
+        </header>
+
+        <!-- Dashboard de Resumen -->
+        <section id="dashboard-summary" class="summary-cards">
+            <div class="card">
+                <h3>Presupuesto Total</h3>
+                <p id="total-budget">$0.00</p>
+            </div>
+            <div class="card">
+                <h3>Campañas Activas</h3>
+                <p id="active-campaigns">0</p>
+            </div>
+            <div class="card">
+                <h3>Gasto Total</h3>
+                <p id="total-spent">$0.00</p>
+            </div>
+            <div class="card">
+                <h3>Alcance Total</h3>
+                <p id="total-reach">0</p>
+            </div>
+        </section>
+
+        <!-- Filtros y Lista de Campañas -->
+        <section id="campaigns-section">
+            <div class="filters">
+                <button class="filter-btn active" data-filter="all">Todas</button>
+                <button class="filter-btn" data-filter="activa">Activas</button>
+                <button class="filter-btn" data-filter="pendiente_pago">Pendientes</button>
+                <button class="filter-btn" data-filter="finalizada">Finalizadas</button>
+                <button class="filter-btn" data-filter="pausada">Pausadas</button>
+                <button class="filter-btn" data-filter="cancelada">Canceladas</button>
+            </div>
+            <div id="campaigns-list" class="campaigns-grid">
+                <!-- Se llena dinámicamente con JS -->
+            </div>
+        </section>
+
+        <!-- Modal de Detalle de Campaña -->
+        <div id="modal-detail" class="modal hidden">
+            <div class="modal-content">
+                <span class="close-modal">&times;</span>
+                <h2 id="detail-title">Detalle de Campaña</h2>
+                <div id="detail-info"></div>
+                <div class="charts-container">
+                    <canvas id="chart-reach"></canvas>
+                    <canvas id="chart-impressions"></canvas>
+                    <canvas id="chart-spent"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal de Creación de Campaña (Wizard) -->
+        <div id="modal-create" class="modal hidden">
+            <div class="modal-content wizard">
+                <span class="close-modal">&times;</span>
+                <h2>Crear Campaña</h2>
+                <div id="wizard-step-1" class="wizard-step">
+                    <h3>Paso 1: ¿Dónde anunciar?</h3>
+                    <button class="btn-option" data-type="live">🔴 LIVE</button>
+                    <button class="btn-option" data-type="grupo">👥 GRUPO</button>
+                </div>
+                <div id="wizard-step-2" class="wizard-step hidden">
+                    <h3>Paso 2: Seleccionar destino</h3>
+                    <select id="select-target"></select>
+                    <button class="btn-next">Siguiente</button>
+                </div>
+                <div id="wizard-step-3" class="wizard-step hidden">
+                    <h3>Paso 3: Nombre de campaña</h3>
+                    <input type="text" id="campaign-name" placeholder="Ej: Promo Verano">
+                    <button class="btn-next">Siguiente</button>
+                </div>
+                <div id="wizard-step-4" class="wizard-step hidden">
+                    <h3>Paso 4: Objetivo</h3>
+                    <select id="campaign-objective">
+                        <option value="alcance">Alcance</option>
+                        <option value="reproducciones">Reproducciones</option>
+                        <option value="interacciones">Interacciones</option>
+                        <option value="clics">Clics</option>
+                    </select>
+                    <button class="btn-next">Siguiente</button>
+                </div>
+                <div id="wizard-step-5" class="wizard-step hidden">
+                    <h3>Paso 5: Presupuesto (MXN)</h3>
+                    <p id="pricing-info"></p>
+                    <input type="number" id="campaign-budget" placeholder="Monto en MXN">
+                    <button class="btn-next">Siguiente</button>
+                </div>
+                <div id="wizard-step-6" class="wizard-step hidden">
+                    <h3>Paso 6: Contenido del Anuncio</h3>
+                    <input type="text" id="ad-title" placeholder="Título">
+                    <textarea id="ad-description" placeholder="Descripción"></textarea>
+                    <input type="url" id="ad-image" placeholder="URL de Imagen (opcional)">
+                    <input type="url" id="ad-video" placeholder="URL de Video (opcional)">
+                    <input type="text" id="ad-cta" placeholder="Texto del botón (Ej: Ver más)">
+                    <button class="btn-next">Siguiente</button>
+                </div>
+                <div id="wizard-step-7" class="wizard-step hidden">
+                    <h3>Paso 7: Resumen y Pago</h3>
+                    <div id="summary-content"></div>
+                    <button id="btn-pay" class="btn-primary">Continuar al pago</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script type="module" src="marketing.js"></script>
+</body>
+</html>
