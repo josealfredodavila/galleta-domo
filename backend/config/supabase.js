@@ -2,6 +2,9 @@
 // CONFIGURACIÓN DE SUPABASE
 // UNIFICADO - CLIENTE PÚBLICO Y ADMIN
 // ================================================================
+// IMPORTANTE: No crashea el proceso si falta alguna variable.
+// Solo muestra warnings para permitir que el Worker arranque.
+// ================================================================
 
 const { createClient } = require('@supabase/supabase-js');
 
@@ -14,11 +17,11 @@ const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 // ================================================================
-// VALIDACIÓN CRÍTICA
+// VALIDACIÓN CRÍTICA (sin crashear el proceso)
 // ================================================================
 
 if (!supabaseUrl) {
-    throw new Error('❌ Falta la variable de entorno SUPABASE_URL');
+    console.warn('⚠️ SUPABASE_URL no definida. Configuración de Supabase deshabilitada.');
 }
 
 if (!supabaseAnonKey) {
@@ -33,7 +36,13 @@ if (!supabaseServiceKey) {
 // CLIENTE PÚBLICO (frontend/navegador)
 // ================================================================
 
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+let supabase = null;
+
+if (supabaseUrl && supabaseAnonKey) {
+    supabase = createClient(supabaseUrl, supabaseAnonKey);
+} else {
+    console.warn('⚠️ Cliente público de Supabase no inicializado.');
+}
 
 // ================================================================
 // CLIENTE ADMIN (solo backend - service_role)
@@ -41,12 +50,15 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 let supabaseAdmin = null;
 
-if (supabaseServiceKey) {
+if (supabaseUrl && supabaseServiceKey) {
     supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-        auth: { autoRefreshToken: false, persistSession: false }
+        auth: {
+            autoRefreshToken: false,
+            persistSession: false
+        }
     });
 } else {
-    console.warn('⚠️ SUPABASE_SERVICE_ROLE_KEY no definida. Operaciones admin deshabilitadas.');
+    console.warn('⚠️ Cliente admin de Supabase no inicializado.');
 }
 
 // ================================================================
