@@ -1,5 +1,16 @@
 /* ================================================================
    ROUTES/MARKETING.JS - SARIEL'S ECOSYSTEM
+   VERSIÓN CON ALGORITMO MEJORADO
+   ================================================================
+   SOPORTA:
+   ✅ target_tipo = 'live'   (transmisiones.id es integer)
+   ✅ target_tipo = 'grupo'  (grupos_video.id es uuid)
+   ✅ target_tipo = 'video'  (videos.id es uuid)
+
+   USA:
+   ✅ Función SQL: obtener_campanas_candidatas
+   ✅ Función SQL: registrar_vista_anuncio
+   ✅ Fallback en JS si las funciones SQL fallan
    ================================================================ */
 
 const express = require('express');
@@ -29,6 +40,8 @@ const COSTOS = {
 
 const MAX_IMPRESIONES_POR_USUARIO = 3;
 const VENTANA_FRECUENCIA_HORAS = 24;
+
+const TARGETS_VALIDOS = ['live', 'grupo', 'video'];
 
 function getBearerToken(req) {
     const auth = req.headers.authorization || '';
@@ -62,6 +75,50 @@ async function autenticar(req, res, next) {
     next();
 }
 
+async function obtenerCiudadUsuario(usuario_id) {
+    try {
+        const { data, error } = await supabaseAdmin
+            .from('usuarios')
+            .select('ciudad')
+            .eq('id', usuario_id)
+            .maybeSingle();
+        if (error || !data) return null;
+        return data.ciudad || null;
+    } catch (err) {
+        return null;
+    }
+}
+
+async function obtenerCategoriaTarget(target_tipo, target_id) {
+    try {
+        if (target_tipo === 'live') {
+            const { data } = await supabaseAdmin
+                .from('transmisiones')
+                .select('categoria')
+                .eq('id', target_id)
+                .maybeSingle();
+            return data?.categoria || null;
+        } else if (target_tipo === 'grupo') {
+            const { data } = await supabaseAdmin
+                .from('grupos_video')
+                .select('categoria_id, grupos_video_categorias:categoria_id(nombre)')
+                .eq('id', target_id)
+                .maybeSingle();
+            return data?.grupos_video_categorias?.nombre || null;
+        } else if (target_tipo === 'video') {
+            const { data } = await supabaseAdmin
+                .from('videos')
+                .select('categoria')
+                .eq('id', target_id)
+                .maybeSingle();
+            return data?.categoria || null;
+        }
+        return null;
+    } catch (err) {
+        return null;
+    }
+}
+
 /* ================================================================
    POST /api/marketing/get-ad
 ================================================================ */
@@ -75,95 +132,83 @@ router.post('/get-ad', autenticar, async (req, res) => {
         const { target_tipo, target_id, session_id } = req.body;
         const usuario_id = req.user.id;
 
-        if (!['live', 'grupo'].includes(target_tipo)) {
-            return res.status(400).json({ success: false, error: 'target_tipo debe ser "live" o "grupo"' });
+        if (!TARGETS_VALIDOS.includes(target_tipo)) {
+            return res.status(400).json({
+                success: false,
+                error: `target_tipo debe ser uno de: ${TARGETS_VALIDOS.join(', ')}`
+            });
         }
         if (!target_id) {
             return res.status(400).json({ success: false, error: 'target_id requerido' });
         }
 
-        const targetField = target_tipo === 'live' ? 'live_id' : 'grupo_id';
+        const targetField = target_tipo === 'live' ? 'live_id'
+                          : target_tipo === 'grupo' ? 'grupo_id'
+                          : 'video_id';
 
-        const { data: targets, error: targetsError } = await supabaseAdmin
-            .from('marketing_campaign_targets')
-            .select(`
-                campaign_id,
-                marketing_campaigns!inner(
-                    id, nombre, estado, presupuesto, gastado, moneda
-                )
-            `)
-            .eq('target_tipo', target_tipo)
-            .eq(targetField, target_id);
+        const [ciudadUsuario, categoriaTarget] = await Promise.all([
+            obtenerCiudadUsuario(usuario_id),
+            obtenerCategoriaTarget(target_tipo, target_id)
+        ]);
 
-        if (targetsError) {
-            console.error('Error targets:', targetsError);
-            return res.status(500).json({ success: false, error: 'Error consultando campañas' });
+        console.log(`📢 [ALGO] usuario=${usuario_id} target=${target_tipo}:${target_id} ciudad=${ciudadUsuario} categoria=${categoriaTarget}`);
+
+        // 1. Intentar usar la función SQL optimizada
+        let candidatas = null;
+        try {
+            const { data: rpcData, error: rpcError } = await supabaseAdmin.rpc('obtener_campanas_candidatas', {
+                p_target_tipo: target_tipo,
+                p_target_id: String(target_id),
+                p_usuario_id: usuario_id,
+                p_ciudad_usuario: ciudadUsuario,
+                p_categoria_target: categoriaTarget
+            });
+
+            if (!rpcError && rpcData && rpcData.length > 0) {
+                candidatas = rpcData;
+                console.log(`✅ [ALGO] RPC devolvió ${candidatas.length} candidatas`);
+            } else if (rpcError) {
+                console.warn('⚠️ [ALGO] RPC falló, usando fallback JS:', rpcError.message);
+            }
+        } catch (rpcCatchError) {
+            console.warn('⚠️ [ALGO] Excepción en RPC, usando fallback JS:', rpcCatchError.message);
         }
 
-        if (!targets || targets.length === 0) {
-            return res.json({ success: true, ad: null, reason: 'sin_campañas' });
+        // 2. Fallback: algoritmo en JS
+        if (!candidatas || candidatas.length === 0) {
+            console.log('🔄 [ALGO] Usando algoritmo en JS (fallback)');
+            candidatas = await algoritmoJS({
+                target_tipo,
+                target_id,
+                usuario_id,
+                ciudadUsuario,
+                categoriaTarget
+            });
         }
 
-        const campanasValidas = targets
-            .map(t => t.marketing_campaigns)
-            .filter(c =>
-                c &&
-                c.estado === 'activa' &&
-                parseFloat(c.gastado || 0) < parseFloat(c.presupuesto || 0)
-            );
-
-        if (campanasValidas.length === 0) {
-            return res.json({ success: true, ad: null, reason: 'sin_presupuesto' });
+        if (!candidatas || candidatas.length === 0) {
+            return res.json({ success: true, ad: null, reason: 'sin_candidatas' });
         }
 
-        const ventana = new Date();
-        ventana.setHours(ventana.getHours() - VENTANA_FRECUENCIA_HORAS);
+        const ganadora = candidatas[0];
+        console.log(`🏆 [ALGO] Ganadora: campaign=${ganadora.campaign_id} ad=${ganadora.ad_id} score=${ganadora.score} razon=${ganadora.razon}`);
 
-        const { data: impresionesRecientes } = await supabaseAdmin
-            .from('marketing_events')
-            .select('campaign_id')
-            .eq('usuario_id', usuario_id)
-            .eq('evento', 'impresion')
-            .gte('created_at', ventana.toISOString());
-
-        const conteoPorCampana = {};
-        (impresionesRecientes || []).forEach(e => {
-            conteoPorCampana[e.campaign_id] = (conteoPorCampana[e.campaign_id] || 0) + 1;
-        });
-
-        const campanasFiltradas = campanasValidas.filter(
-            c => (conteoPorCampana[c.id] || 0) < MAX_IMPRESIONES_POR_USUARIO
-        );
-
-        if (campanasFiltradas.length === 0) {
-            return res.json({ success: true, ad: null, reason: 'frecuencia_maxima' });
-        }
-
-        campanasFiltradas.sort((a, b) => {
-            const gastoA = parseFloat(a.gastado || 0);
-            const gastoB = parseFloat(b.gastado || 0);
-            return gastoA - gastoB;
-        });
-
-        const campanaGanadora = campanasFiltradas[0];
-
-        const { data: ads, error: adsError } = await supabaseAdmin
+        const { data: ad, error: adError } = await supabaseAdmin
             .from('marketing_ads')
             .select('*')
-            .eq('campaign_id', campanaGanadora.id)
+            .eq('id', ganadora.ad_id)
             .eq('activo', true)
-            .limit(1);
+            .maybeSingle();
 
-        if (adsError || !ads || ads.length === 0) {
-            return res.json({ success: true, ad: null, reason: 'sin_anuncio' });
+        if (adError || !ad) {
+            return res.json({ success: true, ad: null, reason: 'ad_no_encontrado' });
         }
 
-        const ad = ads[0];
-
+        // 3. Registrar impresión
         await supabaseAdmin
             .from('marketing_events')
             .insert({
-                campaign_id: campanaGanadora.id,
+                campaign_id: ganadora.campaign_id,
                 ad_id: ad.id,
                 usuario_id: usuario_id,
                 target_tipo: target_tipo,
@@ -172,12 +217,30 @@ router.post('/get-ad', autenticar, async (req, res) => {
                 session_id: session_id || null,
                 metadata: {
                     user_agent: req.headers['user-agent'] || null,
-                    timestamp: new Date().toISOString()
+                    timestamp: new Date().toISOString(),
+                    score: ganadora.score,
+                    razon: ganadora.razon,
+                    ciudad_usuario: ciudadUsuario,
+                    categoria_target: categoriaTarget
                 }
             });
 
+        // 4. Registrar vista única (si la función existe)
+        try {
+            await supabaseAdmin.rpc('registrar_vista_anuncio', {
+                p_usuario_id: usuario_id,
+                p_ad_id: ad.id,
+                p_campaign_id: ganadora.campaign_id,
+                p_target_tipo: target_tipo,
+                p_target_id: String(target_id)
+            });
+        } catch (vistaError) {
+            console.warn('⚠️ [ALGO] No se pudo registrar vista única:', vistaError.message);
+        }
+
+        // 5. Descontar presupuesto
         await supabaseAdmin.rpc('descontar_presupuesto_campana', {
-            p_campaign_id: campanaGanadora.id,
+            p_campaign_id: ganadora.campaign_id,
             p_monto: COSTOS.impresion
         });
 
@@ -193,15 +256,136 @@ router.post('/get-ad', autenticar, async (req, res) => {
                 cta_texto: ad.cta_texto,
                 destino_tipo: ad.destino_tipo
             },
-            campaign_nombre: campanaGanadora.nombre,
-            costo: COSTOS.impresion
+            meta: {
+                score: ganadora.score,
+                razon: ganadora.razon,
+                costo: COSTOS.impresion
+            }
         });
 
     } catch (error) {
-        console.error('Error get-ad:', error);
+        console.error('❌ Error get-ad:', error);
         return res.status(500).json({ success: false, error: 'Error interno' });
     }
 });
+
+/* ================================================================
+   ALGORITMO EN JS (FALLBACK)
+================================================================ */
+
+async function algoritmoJS({ target_tipo, target_id, usuario_id, ciudadUsuario, categoriaTarget }) {
+    const targetField = target_tipo === 'live' ? 'live_id'
+                      : target_tipo === 'grupo' ? 'grupo_id'
+                      : 'video_id';
+
+    const { data: targets, error: targetsError } = await supabaseAdmin
+        .from('marketing_campaign_targets')
+        .select(`
+            campaign_id,
+            marketing_campaigns!inner(
+                id, nombre, estado, presupuesto, gastado, moneda,
+                segmentacion_ciudad, segmentacion_categoria,
+                horario_inicio, horario_fin, prioridad, peso_rotacion
+            )
+        `)
+        .eq('target_tipo', target_tipo)
+        .eq(targetField, target_id);
+
+    if (targetsError || !targets || targets.length === 0) {
+        return [];
+    }
+
+    const horaActual = new Date().toTimeString().slice(0, 8);
+    const campanasValidas = targets
+        .map(t => t.marketing_campaigns)
+        .filter(c => {
+            if (!c) return false;
+            if (c.estado !== 'activa') return false;
+            if (parseFloat(c.gastado || 0) >= parseFloat(c.presupuesto || 0)) return false;
+            if (c.segmentacion_ciudad && ciudadUsuario && c.segmentacion_ciudad !== ciudadUsuario) return false;
+            if (c.segmentacion_categoria && categoriaTarget && c.segmentacion_categoria !== categoriaTarget) return false;
+            if (c.horario_inicio && c.horario_fin) {
+                const inicio = String(c.horario_inicio).slice(0, 8);
+                const fin = String(c.horario_fin).slice(0, 8);
+                if (horaActual < inicio || horaActual > fin) return false;
+            }
+            return true;
+        });
+
+    if (campanasValidas.length === 0) return [];
+
+    const ventana = new Date();
+    ventana.setHours(ventana.getHours() - VENTANA_FRECUENCIA_HORAS);
+
+    const { data: impresionesRecientes } = await supabaseAdmin
+        .from('marketing_events')
+        .select('campaign_id')
+        .eq('usuario_id', usuario_id)
+        .eq('evento', 'impresion')
+        .gte('created_at', ventana.toISOString());
+
+    const conteoPorCampana = {};
+    (impresionesRecientes || []).forEach(e => {
+        conteoPorCampana[e.campaign_id] = (conteoPorCampana[e.campaign_id] || 0) + 1;
+    });
+
+    const campanasFiltradas = campanasValidas.filter(
+        c => (conteoPorCampana[c.id] || 0) < MAX_IMPRESIONES_POR_USUARIO
+    );
+
+    if (campanasFiltradas.length === 0) return [];
+
+    const resultados = [];
+    for (const c of campanasFiltradas) {
+        const { data: ads } = await supabaseAdmin
+            .from('marketing_ads')
+            .select('id')
+            .eq('campaign_id', c.id)
+            .eq('activo', true)
+            .limit(1);
+
+        if (!ads || ads.length === 0) continue;
+
+        const presupuesto = parseFloat(c.presupuesto || 0);
+        const gastado = parseFloat(c.gastado || 0);
+        const restante = presupuesto - gastado;
+        const ratioRestante = presupuesto > 0 ? restante / presupuesto : 0;
+
+        let score = 0;
+        let razon = 'rotacion_normal';
+
+        score += ratioRestante * 100;
+
+        if (c.prioridad && c.prioridad > 0) {
+            score += c.prioridad * 10;
+            razon = 'prioridad_alta';
+        }
+        if (c.segmentacion_ciudad && ciudadUsuario && c.segmentacion_ciudad === ciudadUsuario) {
+            score += 50;
+            razon = 'match_ciudad';
+        }
+        if (c.segmentacion_categoria && categoriaTarget && c.segmentacion_categoria === categoriaTarget) {
+            score += 30;
+            razon = 'match_categoria';
+        }
+        if (c.peso_rotacion && c.peso_rotacion > 0) {
+            score += c.peso_rotacion * 20;
+        }
+        if (ratioRestante > 0.5 && razon === 'rotacion_normal') {
+            razon = 'presupuesto_alto';
+        }
+
+        resultados.push({
+            campaign_id: c.id,
+            ad_id: ads[0].id,
+            score: Math.round(score),
+            razon
+        });
+    }
+
+    resultados.sort((a, b) => b.score - a.score);
+    return resultados;
+}
 
 /* ================================================================
    POST /api/marketing/register-event
@@ -244,19 +428,22 @@ router.post('/register-event', autenticar, async (req, res) => {
             return res.status(400).json({ success: false, error: 'Campaña no activa' });
         }
 
+        const insertData = {
+            campaign_id,
+            ad_id,
+            usuario_id,
+            target_tipo: target_tipo || null,
+            evento: eventoNormalizado,
+            session_id: session_id || null,
+            metadata: metadata || {}
+        };
+
+        if (target_tipo === 'live') insertData.live_id = target_id;
+        else if (target_tipo === 'grupo') insertData.grupo_id = target_id;
+
         const { error: insertError } = await supabaseAdmin
             .from('marketing_events')
-            .insert({
-                campaign_id,
-                ad_id,
-                usuario_id,
-                target_tipo: target_tipo || null,
-                live_id: target_tipo === 'live' ? target_id : null,
-                grupo_id: target_tipo === 'grupo' ? target_id : null,
-                evento: eventoNormalizado,
-                session_id: session_id || null,
-                metadata: metadata || {}
-            });
+            .insert(insertData);
 
         if (insertError) {
             console.error('Error insertando evento:', insertError);
@@ -341,6 +528,41 @@ router.get('/my-campaigns', autenticar, async (req, res) => {
 
     } catch (error) {
         console.error('Error my-campaigns:', error);
+        return res.status(500).json({ success: false, error: 'Error interno' });
+    }
+});
+
+/* ================================================================
+   GET /api/marketing/debug-algo (SOLO PARA PRUEBAS)
+================================================================ */
+
+router.get('/debug-algo', autenticar, async (req, res) => {
+    try {
+        const { target_tipo, target_id } = req.query;
+        if (!target_tipo || !target_id) {
+            return res.status(400).json({ success: false, error: 'target_tipo y target_id requeridos' });
+        }
+
+        const usuario_id = req.user.id;
+        const ciudadUsuario = await obtenerCiudadUsuario(usuario_id);
+        const categoriaTarget = await obtenerCategoriaTarget(target_tipo, target_id);
+
+        const candidatas = await algoritmoJS({
+            target_tipo,
+            target_id,
+            usuario_id,
+            ciudadUsuario,
+            categoriaTarget
+        });
+
+        return res.json({
+            success: true,
+            contexto: { ciudadUsuario, categoriaTarget, usuario_id, target_tipo, target_id },
+            candidatas
+        });
+
+    } catch (error) {
+        console.error('Error debug-algo:', error);
         return res.status(500).json({ success: false, error: 'Error interno' });
     }
 });
