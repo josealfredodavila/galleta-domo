@@ -578,6 +578,17 @@
             50% { transform: translateY(-8px); }
         }
         .empty-state p { font-size: 0.8rem; letter-spacing: 0.5px; }
+        .empty-state small {
+            display: block;
+            margin-top: 10px;
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            opacity: 0.7;
+        }
+        .empty-state.error-state .icon {
+            color: var(--danger);
+            filter: drop-shadow(0 0 20px rgba(255, 51, 102, 0.5));
+        }
 
         .modal {
             position: fixed;
@@ -941,7 +952,7 @@
             <div id="campaigns-list" class="campaigns-grid">
                 <div class="empty-state">
                     <span class="icon">◈</span>
-                    <p>Cargando campañas...</p>
+                    <p>Inicializando...</p>
                 </div>
             </div>
         </section>
@@ -1081,16 +1092,55 @@
         return div.innerHTML;
     }
 
+    // ============================================================
+    // ✅ DOMContentLoaded CORREGIDO
+    // ============================================================
     document.addEventListener('DOMContentLoaded', async () => {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-            showToast('⚠ Inicia sesión para ver tus campañas', 'warning', 5000);
-            return;
+        try {
+            const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+            if (sessionError) {
+                console.error('⚠️ Error obteniendo sesión:', sessionError);
+            }
+
+            if (!session || !session.user) {
+                console.warn('⚠️ No hay sesión activa');
+                showToast('⚠ Inicia sesión para ver tus campañas', 'warning', 5000);
+                document.getElementById('campaigns-list').innerHTML = `
+                    <div class="empty-state">
+                        <span class="icon">◈</span>
+                        <p>Inicia sesión para ver tus campañas</p>
+                        <a href="/" class="btn btn-primary" style="margin-top:20px;">Ir al inicio</a>
+                    </div>
+                `;
+                return;
+            }
+
+            currentUser = session.user;
+            console.log('✅ Usuario autenticado:', currentUser.id);
+
+            // Pricing (con try/catch para que no bloquee)
+            try {
+                await loadPricing();
+            } catch (pricingError) {
+                console.error('⚠️ Error cargando precios:', pricingError);
+            }
+
+            // Campañas (nunca debe quedarse atascado)
+            await loadCampaigns();
+
+            setupEventListeners();
+
+        } catch (globalError) {
+            console.error('❌ Error global en DOMContentLoaded:', globalError);
+            document.getElementById('campaigns-list').innerHTML = `
+                <div class="empty-state error-state">
+                    <span class="icon">⚠</span>
+                    <p>Error al inicializar el módulo</p>
+                    <small>${escapeHTML(globalError.message || 'Error desconocido')}</small>
+                </div>
+            `;
         }
-        currentUser = user;
-        await loadPricing();
-        await loadCampaigns();
-        setupEventListeners();
     });
 
     async function loadPricing() {
@@ -1098,25 +1148,66 @@
             .from('marketing_pricing')
             .select('*')
             .eq('activo', true);
-        if (error) console.warn('Pricing no disponible:', error.message);
+        if (error) {
+            console.warn('⚠️ Pricing no disponible:', error.message);
+            window.marketingPricing = [];
+            return;
+        }
         window.marketingPricing = data || [];
     }
 
+    // ============================================================
+    // ✅ loadCampaigns CORREGIDO - SIEMPRE TERMINA EL ESTADO
+    // ============================================================
     async function loadCampaigns() {
-        const { data, error } = await supabase
-            .from('marketing_campaigns')
-            .select('*')
-            .eq('anunciante_id', currentUser.id)
-            .order('created_at', { ascending: false });
+        const campaignsList = document.getElementById('campaigns-list');
 
-        if (error) {
-            console.error('Error cargando campañas:', error);
-            showToast('❌ Error cargando campañas', 'error');
-            return;
+        try {
+            const { data, error } = await supabase
+                .from('marketing_campaigns')
+                .select('*')
+                .eq('anunciante_id', currentUser.id)
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                console.error('❌ Error cargando campañas:', error);
+                campaignsList.innerHTML = `
+                    <div class="empty-state error-state">
+                        <span class="icon">⚠</span>
+                        <p>Error cargando campañas</p>
+                        <small>${escapeHTML(error.message || 'Error desconocido')}</small>
+                    </div>
+                `;
+                return;
+            }
+
+            campaigns = data || [];
+
+            // Si no hay campañas, mostrar mensaje
+            if (campaigns.length === 0) {
+                campaignsList.innerHTML = `
+                    <div class="empty-state">
+                        <span class="icon">◈</span>
+                        <p>No hay campañas creadas aún</p>
+                    </div>
+                `;
+                calculateSummary();
+                return;
+            }
+
+            renderCampaigns();
+            calculateSummary();
+
+        } catch (err) {
+            console.error('❌ Error inesperado en loadCampaigns:', err);
+            campaignsList.innerHTML = `
+                <div class="empty-state error-state">
+                    <span class="icon">⚠</span>
+                    <p>Error inesperado</p>
+                    <small>${escapeHTML(err.message || 'Error desconocido')}</small>
+                </div>
+            `;
         }
-        campaigns = data || [];
-        renderCampaigns();
-        calculateSummary();
     }
 
     function renderCampaigns() {
@@ -1140,7 +1231,7 @@
                 <h3>${escapeHTML(camp.nombre)}</h3>
                 <div class="info-row">
                     <span class="label">Estado</span>
-                    <span class="badge ${camp.estado}">${camp.estado.replace('_', ' ')}</span>
+                    <span class="badge ${camp.estado}">${(camp.estado || '').replace('_', ' ')}</span>
                 </div>
                 <div class="info-row">
                     <span class="label">Presupuesto</span>
@@ -1200,7 +1291,7 @@
 
         document.getElementById('detail-title').textContent = '◈ ' + campaign.nombre;
         document.getElementById('detail-info').innerHTML = `
-            <div class="detail-row"><span>Estado</span><span class="badge ${campaign.estado}">${campaign.estado.replace('_',' ')}</span></div>
+            <div class="detail-row"><span>Estado</span><span class="badge ${campaign.estado}">${(campaign.estado || '').replace('_',' ')}</span></div>
             <div class="detail-row"><span>Presupuesto</span><span>$${parseFloat(campaign.presupuesto || 0).toFixed(2)} ${campaign.moneda || 'MXN'}</span></div>
             <div class="detail-row"><span>Gastado</span><span>$${parseFloat(campaign.gastado || 0).toFixed(2)}</span></div>
             <div class="detail-row"><span>Restante</span><span>$${(parseFloat(campaign.presupuesto || 0) - parseFloat(campaign.gastado || 0)).toFixed(2)}</span></div>
@@ -1378,7 +1469,6 @@
             });
         });
 
-        // ✅ CORREGIDO: grupos → grupos_video, columnas correctas
         document.querySelectorAll('.btn-option').forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 const type = e.currentTarget.dataset.type;
