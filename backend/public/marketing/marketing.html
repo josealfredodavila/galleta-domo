@@ -52,7 +52,6 @@
             padding-bottom: 100px;
         }
 
-        /* === FONDO ANIMADO === */
         body::before {
             content: '';
             position: fixed;
@@ -65,7 +64,6 @@
             pointer-events: none;
         }
 
-        /* Grid futurista de fondo */
         body::after {
             content: '';
             position: fixed;
@@ -97,7 +95,6 @@
             100% { transform: translate(80px, -50px) scale(1.15); }
         }
 
-        /* Partículas flotantes */
         .particles {
             position: fixed;
             inset: 0;
@@ -122,7 +119,6 @@
             100% { transform: translateY(-100vh) translateX(40px); opacity: 0; }
         }
 
-        /* === APP CONTAINER === */
         .app {
             position: relative;
             z-index: 1;
@@ -131,7 +127,6 @@
             padding: 0 16px;
         }
 
-        /* === HEADER === */
         .header {
             display: flex;
             justify-content: space-between;
@@ -205,7 +200,6 @@
             50% { opacity: 0.4; transform: scale(0.7); }
         }
 
-        /* === NAV === */
         .main-nav {
             display: flex;
             gap: 4px;
@@ -241,7 +235,6 @@
             box-shadow: 0 0 20px rgba(212, 175, 55, 0.15);
         }
 
-        /* === HERO / TÍTULO === */
         .marketing-hero {
             display: flex;
             justify-content: space-between;
@@ -309,7 +302,6 @@
             letter-spacing: 0.5px;
         }
 
-        /* === BOTONES === */
         .btn {
             display: inline-flex;
             align-items: center;
@@ -360,7 +352,6 @@
             box-shadow: 0 0 30px rgba(212, 175, 55, 0.15);
         }
 
-        /* === TARJETAS DE RESUMEN === */
         .summary-cards {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -433,7 +424,6 @@
             letter-spacing: 1px;
         }
 
-        /* === FILTROS === */
         .filters {
             display: flex;
             gap: 8px;
@@ -468,7 +458,6 @@
             box-shadow: 0 0 25px rgba(212, 175, 55, 0.2);
         }
 
-        /* === CAMPAÑAS === */
         .campaigns-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -485,7 +474,6 @@
             position: relative;
             overflow: hidden;
         }
-        /* Esquinas futuristas */
         .campaign-card::before,
         .campaign-card::after {
             content: '';
@@ -545,7 +533,6 @@
             font-family: 'Space Mono', monospace;
         }
 
-        /* === BADGES === */
         .badge {
             display: inline-block;
             padding: 3px 10px;
@@ -571,7 +558,6 @@
         .badge.rechazada { background: rgba(255, 51, 102, 0.15); color: var(--danger); border: 1px solid rgba(255, 51, 102, 0.35); }
         .badge.cancelada { background: rgba(255, 51, 102, 0.15); color: var(--danger); border: 1px solid rgba(255, 51, 102, 0.3); }
 
-        /* === EMPTY STATE === */
         .empty-state {
             text-align: center;
             padding: 60px 20px;
@@ -593,7 +579,6 @@
         }
         .empty-state p { font-size: 0.8rem; letter-spacing: 0.5px; }
 
-        /* === MODALES === */
         .modal {
             position: fixed;
             inset: 0;
@@ -676,7 +661,6 @@
             text-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
         }
 
-        /* === WIZARD === */
         .wizard-step { display: flex; flex-direction: column; gap: 14px; }
         .wizard-step.hidden { display: none; }
         .wizard-step h3 {
@@ -744,7 +728,6 @@
             background: linear-gradient(155deg, rgba(212, 175, 55, 0.12), rgba(0, 0, 0, 0.3));
         }
 
-        /* === DETALLE === */
         .detail-row {
             display: flex;
             justify-content: space-between;
@@ -767,7 +750,6 @@
             font-family: 'Space Mono', monospace;
         }
 
-        /* === STATS === */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(105px, 1fr));
@@ -812,7 +794,6 @@
             text-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
         }
 
-        /* === GRÁFICOS === */
         .charts-container {
             display: grid;
             grid-template-columns: 1fr;
@@ -845,7 +826,6 @@
             gap: 8px;
         }
 
-        /* === TOAST === */
         .toast {
             position: fixed;
             bottom: 30px;
@@ -871,7 +851,6 @@
         .toast.success { border-color: var(--success); color: var(--success); box-shadow: 0 0 80px rgba(0, 214, 143, 0.3); }
         .toast.warning { border-color: var(--warning); color: var(--warning); box-shadow: 0 0 80px rgba(245, 158, 11, 0.3); }
 
-        /* === RESPONSIVE === */
         @media (max-width: 640px) {
             .marketing-hero { flex-direction: column; text-align: center; padding: 22px; }
             .marketing-hero h1 { font-size: 1.15rem; }
@@ -888,7 +867,6 @@
 </head>
 <body>
 
-    <!-- Fondos animados -->
     <div class="bg-glow bg-glow-1"></div>
     <div class="bg-glow bg-glow-2"></div>
     <div class="bg-glow bg-glow-3"></div>
@@ -896,7 +874,6 @@
 
     <div class="app">
 
-        <!-- HEADER -->
         <header class="header">
             <a href="/" class="logo">
                 <span class="logo-hex">◈</span>
@@ -908,7 +885,6 @@
             </div>
         </header>
 
-        <!-- NAV -->
         <nav class="main-nav">
             <a href="/" class="nav-link">⌂ Inicio</a>
             <a href="/features/muro/muro.html" class="nav-link">◇ Muro</a>
@@ -921,7 +897,6 @@
             <a href="/marketing/marketing.html" class="nav-link active">📢 Marketing</a>
         </nav>
 
-        <!-- HERO -->
         <div class="marketing-hero">
             <div class="hero-title-wrap">
                 <div class="hero-kicker">// SarieL's Ecosystem · Ads Network</div>
@@ -931,7 +906,6 @@
             <button id="btn-create-campaign" class="btn btn-primary">+ Crear Campaña</button>
         </div>
 
-        <!-- RESUMEN -->
         <section id="dashboard-summary" class="summary-cards">
             <div class="card">
                 <div class="card-icon">💰</div>
@@ -955,7 +929,6 @@
             </div>
         </section>
 
-        <!-- CAMPAÑAS -->
         <section id="campaigns-section">
             <div class="filters">
                 <button class="filter-btn active" data-filter="all">Todas</button>
@@ -975,7 +948,6 @@
 
     </div>
 
-    <!-- MODAL DETALLE -->
     <div id="modal-detail" class="modal hidden">
         <div class="modal-content">
             <button class="close-modal" data-close="modal-detail">&times;</button>
@@ -999,7 +971,6 @@
         </div>
     </div>
 
-    <!-- MODAL CREAR -->
     <div id="modal-create" class="modal hidden">
         <div class="modal-content">
             <button class="close-modal" data-close="modal-create">&times;</button>
@@ -1077,7 +1048,6 @@
     let currentChartInstances = {};
     let currentFilter = 'all';
 
-    // ===== PARTÍCULAS =====
     function createParticles() {
         const container = document.getElementById('particles');
         if (!container) return;
@@ -1096,7 +1066,6 @@
     }
     createParticles();
 
-    // ===== TOAST =====
     function showToast(msg, type = '', duration = 3500) {
         const t = document.getElementById('toast');
         t.textContent = msg;
@@ -1112,7 +1081,6 @@
         return div.innerHTML;
     }
 
-    // ===== INIT =====
     document.addEventListener('DOMContentLoaded', async () => {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
@@ -1319,7 +1287,6 @@
             }
         };
 
-        // Gráfico Alcance (línea con glow)
         const ctxReach = document.getElementById('chart-reach').getContext('2d');
         const gradReach = ctxReach.createLinearGradient(0, 0, 0, 200);
         gradReach.addColorStop(0, 'rgba(212, 175, 55, 0.5)');
@@ -1346,7 +1313,6 @@
             options: commonOpts
         });
 
-        // Gráfico Impresiones (barras doradas con glow)
         currentChartInstances.impressions = new Chart(document.getElementById('chart-impressions'), {
             type: 'bar',
             data: {
@@ -1363,7 +1329,6 @@
             options: commonOpts
         });
 
-        // Gráfico Gasto (línea roja con glow)
         const ctxSpent = document.getElementById('chart-spent').getContext('2d');
         const gradSpent = ctxSpent.createLinearGradient(0, 0, 0, 200);
         gradSpent.addColorStop(0, 'rgba(255, 51, 102, 0.5)');
@@ -1413,19 +1378,28 @@
             });
         });
 
+        // ✅ CORREGIDO: grupos → grupos_video, columnas correctas
         document.querySelectorAll('.btn-option').forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 const type = e.currentTarget.dataset.type;
                 currentWizardData.target_tipo = type;
 
-                const table = type === 'live' ? 'transmisiones' : 'grupos';
-                const { data, error } = await supabase.from(table).select('id, titulo, nombre').limit(50);
+                const table = type === 'live' ? 'transmisiones' : 'grupos_video';
+                const columns = type === 'live' ? 'id, titulo' : 'id, nombre';
+
+                const { data, error } = await supabase
+                    .from(table)
+                    .select(columns)
+                    .limit(50);
 
                 const select = document.getElementById('select-target');
                 if (error || !data || data.length === 0) {
                     select.innerHTML = '<option value="">No hay elementos disponibles</option>';
                 } else {
-                    select.innerHTML = data.map(t => `<option value="${t.id}">${escapeHTML(t.titulo || t.nombre || 'Sin nombre')}</option>`).join('');
+                    select.innerHTML = data.map(t => {
+                        const label = type === 'live' ? t.titulo : t.nombre;
+                        return `<option value="${t.id}">${escapeHTML(label || 'Sin nombre')}</option>`;
+                    }).join('');
                 }
                 showStep(2);
             });
@@ -1520,6 +1494,10 @@
 
             if (campaignError) throw campaignError;
 
+            const destinoTipo = currentWizardData.target_tipo;
+            const destinoLiveId = destinoTipo === 'live' ? currentWizardData.target_id : null;
+            const destinoGrupoId = destinoTipo === 'grupo' ? currentWizardData.target_id : null;
+
             await supabase.from('marketing_ads').insert([{
                 campaign_id: campaignData.id,
                 titulo: currentWizardData.ad.titulo,
@@ -1527,6 +1505,9 @@
                 imagen_url: currentWizardData.ad.imagen_url,
                 video_url: currentWizardData.ad.video_url,
                 cta_texto: currentWizardData.ad.cta_texto,
+                destino_tipo: destinoTipo,
+                destino_live_id: destinoLiveId,
+                destino_grupo_id: destinoGrupoId,
                 activo: true
             }]);
 
