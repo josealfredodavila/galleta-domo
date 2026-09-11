@@ -1,0 +1,63 @@
+# ================================================================
+# .dockerignore - SARIEL'S ECOSYSTEM
+# ================================================================
+# Archivos que NO deben ir a la imagen Docker
+# ================================================================
+
+# Dependencias (se instalan dentro del Dockerfile)
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Variables de entorno (NUNCA subir al repo)
+.env
+.env.*
+!.env.example
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Logs y archivos temporales
+*.log
+*.tmp
+*.swp
+.DS_Store
+Thumbs.db
+
+# Tests y cobertura
+coverage
+.nyc_output
+*.test.js
+*.spec.js
+
+# Configuración del editor
+.vscode
+.idea
+*.sublime-*
+
+# Cache
+.cache
+.npm
+.parcel-cache
+
+# Documentación
+docs
+README.md
+*.md
+
+# Archivos de Railway (no deben ir dentro del contenedor)
+railway.json
+railway.toml
+
+# Docker (no copiar el propio Dockerfile dentro)
+Dockerfile
+.dockerignore
+
+# Archivos de CI/CD
+.github
+.gitlab-ci.yml
+.travis.yml
