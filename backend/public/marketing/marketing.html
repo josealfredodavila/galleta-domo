@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>📢 Marketing · Sariel's</title>
+    <title>◈ Marketing · Sariel's</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Orbitron:wght@400;500;600;700;800;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -13,277 +13,902 @@
         :root {
             --gold: #D4AF37;
             --gold-dark: #b8923a;
-            --gold-light: #e8c84a;
+            --gold-light: #F5E6A8;
+            --gold-glow: rgba(212, 175, 55, 0.5);
+            --gold-soft: rgba(212, 175, 55, 0.12);
             --green-deep: #0F2D1A;
-            --space: #05080f;
+            --green-mid: #1a4a2a;
+            --space: #04060d;
+            --space-2: #080f1a;
             --text-primary: #f0f4f8;
             --text-secondary: #c0d8e8;
-            --text-muted: #8aa8b8;
-            --glass-bg: rgba(15, 45, 26, 0.45);
-            --glass-border: rgba(212, 175, 55, 0.15);
-            --shadow-gold: 0 8px 40px rgba(212, 175, 55, 0.3);
+            --text-muted: #6b8a9e;
+            --glass-bg: rgba(15, 45, 26, 0.35);
+            --glass-bg-2: rgba(8, 15, 26, 0.7);
+            --glass-border: rgba(212, 175, 55, 0.18);
+            --glass-border-strong: rgba(212, 175, 55, 0.4);
             --radius: 16px;
-            --radius-xl: 28px;
-            --transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            --radius-xl: 24px;
+            --transition: all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
             --success: #00d68f;
             --danger: #ff3366;
             --warning: #f59e0b;
+            --purple: #a855f7;
+            --cyan: #22d3ee;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        ::selection { background: var(--gold); color: var(--space); }
+
+        html, body { overflow-x: hidden; }
 
         body {
             background: var(--space);
             color: var(--text-primary);
             font-family: 'Inter', sans-serif;
             min-height: 100vh;
-            background-image:
-                radial-gradient(ellipse at 20% 50%, rgba(26, 74, 42, 0.3) 0%, transparent 60%),
-                radial-gradient(ellipse at 80% 50%, rgba(212, 175, 55, 0.06) 0%, transparent 60%);
+            position: relative;
             -webkit-font-smoothing: antialiased;
-            overflow-x: hidden;
-            padding-bottom: 80px;
+            padding-bottom: 100px;
+        }
+
+        /* === FONDO ANIMADO === */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse at 20% 10%, rgba(26, 74, 42, 0.35) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 50%, rgba(212, 175, 55, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 100%, rgba(168, 85, 247, 0.06) 0%, transparent 60%);
+            z-index: -2;
+            pointer-events: none;
+        }
+
+        /* Grid futurista de fondo */
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(212, 175, 55, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(212, 175, 55, 0.03) 1px, transparent 1px);
+            background-size: 60px 60px;
+            z-index: -1;
+            pointer-events: none;
+            mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
+            -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
         }
 
         .bg-glow {
             position: fixed;
             border-radius: 50%;
-            filter: blur(150px);
+            filter: blur(140px);
             pointer-events: none;
-            z-index: 0;
+            z-index: -1;
+            animation: glowFloat 18s ease-in-out infinite alternate;
         }
-        .bg-glow-1 { width: 500px; height: 500px; background: rgba(212, 175, 55, 0.06); top: -10%; right: -10%; }
-        .bg-glow-2 { width: 400px; height: 400px; background: rgba(0, 214, 143, 0.04); bottom: -10%; left: -10%; }
+        .bg-glow-1 { width: 500px; height: 500px; background: rgba(212, 175, 55, 0.12); top: -15%; right: -10%; }
+        .bg-glow-2 { width: 450px; height: 450px; background: rgba(0, 214, 143, 0.08); bottom: -15%; left: -10%; animation-delay: -6s; }
+        .bg-glow-3 { width: 350px; height: 350px; background: rgba(168, 85, 247, 0.06); top: 40%; left: 40%; animation-delay: -12s; }
 
-        .app { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 0 16px; }
+        @keyframes glowFloat {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(80px, -50px) scale(1.15); }
+        }
 
+        /* Partículas flotantes */
+        .particles {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            pointer-events: none;
+            overflow: hidden;
+        }
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: var(--gold);
+            border-radius: 50%;
+            box-shadow: 0 0 6px var(--gold);
+            opacity: 0.4;
+            animation: particleFloat linear infinite;
+        }
+        @keyframes particleFloat {
+            0% { transform: translateY(100vh) translateX(0); opacity: 0; }
+            10% { opacity: 0.6; }
+            90% { opacity: 0.6; }
+            100% { transform: translateY(-100vh) translateX(40px); opacity: 0; }
+        }
+
+        /* === APP CONTAINER === */
+        .app {
+            position: relative;
+            z-index: 1;
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 0 16px;
+        }
+
+        /* === HEADER === */
         .header {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 12px 0; border-bottom: 1px solid var(--glass-border);
-            position: sticky; top: 0; z-index: 100;
-            background: rgba(5, 8, 15, 0.92);
-            backdrop-filter: blur(20px);
-            margin-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 0;
+            border-bottom: 1px solid var(--glass-border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(4, 6, 13, 0.85);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
         }
+
         .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
-        .logo-hex { font-size: 1.8rem; color: var(--gold); font-family: 'Orbitron', monospace; }
-        .logo-text { font-family: 'Orbitron', monospace; font-size: 1.2rem; color: var(--text-primary); letter-spacing: 2px; }
+        .logo-hex {
+            font-size: 1.9rem;
+            color: var(--gold);
+            font-family: 'Orbitron', monospace;
+            filter: drop-shadow(0 0 12px var(--gold-glow));
+            animation: hexPulse 3s ease-in-out infinite;
+        }
+        @keyframes hexPulse {
+            0%, 100% { filter: drop-shadow(0 0 12px var(--gold-glow)); }
+            50% { filter: drop-shadow(0 0 24px var(--gold-glow)); }
+        }
+        .logo-text {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.25rem;
+            color: var(--text-primary);
+            letter-spacing: 3px;
+            font-weight: 700;
+        }
         .logo-text span { color: var(--gold); }
-        .logo-badge { font-size: 0.45rem; background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: var(--space); padding: 2px 10px; border-radius: 20px; font-weight: 700; }
-        .network-badge { display: flex; align-items: center; gap: 6px; font-size: 0.6rem; color: var(--gold); background: rgba(212, 175, 55, 0.1); padding: 4px 12px; border-radius: 20px; border: 1px solid rgba(212, 175, 55, 0.1); }
+        .logo-badge {
+            font-size: 0.42rem;
+            background: linear-gradient(135deg, var(--gold), var(--gold-light));
+            color: var(--space);
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            box-shadow: 0 0 20px var(--gold-glow);
+        }
 
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .status-pill {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.6rem;
+            color: var(--success);
+            background: rgba(0, 214, 143, 0.08);
+            padding: 5px 12px;
+            border-radius: 20px;
+            border: 1px solid rgba(0, 214, 143, 0.2);
+            font-family: 'Space Mono', monospace;
+        }
+        .status-pill .dot {
+            width: 6px; height: 6px; border-radius: 50%;
+            background: var(--success);
+            box-shadow: 0 0 10px var(--success);
+            animation: pulseDot 1.5s infinite;
+        }
+        @keyframes pulseDot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(0.7); }
+        }
+
+        /* === NAV === */
         .main-nav {
-            display: flex; gap: 4px; background: rgba(15,45,26,0.3); border-radius: var(--radius);
-            padding: 4px; border: 1px solid var(--glass-border); margin-bottom: 16px; overflow-x: auto;
-            backdrop-filter: blur(10px);
+            display: flex;
+            gap: 4px;
+            background: var(--glass-bg-2);
+            border-radius: var(--radius);
+            padding: 5px;
+            border: 1px solid var(--glass-border);
+            margin: 14px 0 24px;
+            overflow-x: auto;
+            scrollbar-width: none;
+            backdrop-filter: blur(16px);
         }
+        .main-nav::-webkit-scrollbar { display: none; }
         .main-nav .nav-link {
-            padding: 8px 16px; border-radius: 12px; color: var(--text-muted); text-decoration: none;
-            font-size: 0.7rem; transition: var(--transition); white-space: nowrap;
+            padding: 9px 16px;
+            border-radius: 11px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.7rem;
+            font-weight: 500;
+            transition: var(--transition);
+            white-space: nowrap;
+            letter-spacing: 0.3px;
         }
-        .main-nav .nav-link:hover { color: var(--text-primary); background: rgba(212,175,55,0.05); }
-        .main-nav .nav-link.active { background: rgba(212,175,55,0.12); color: var(--gold); }
+        .main-nav .nav-link:hover {
+            color: var(--text-primary);
+            background: rgba(212, 175, 55, 0.06);
+        }
+        .main-nav .nav-link.active {
+            background: linear-gradient(135deg, rgba(212, 175, 55, 0.2), rgba(212, 175, 55, 0.08));
+            color: var(--gold);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.15);
+        }
 
-        .marketing-header {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 20px 24px; background: var(--glass-bg); border: 1px solid var(--glass-border);
-            border-radius: var(--radius-xl); margin-bottom: 16px; flex-wrap: wrap; gap: 12px;
-            backdrop-filter: blur(12px);
+        /* === HERO / TÍTULO === */
+        .marketing-hero {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 26px 28px;
+            background: linear-gradient(135deg, rgba(15, 45, 26, 0.5), rgba(8, 15, 26, 0.7));
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-xl);
+            margin-bottom: 24px;
+            position: relative;
+            overflow: hidden;
+            flex-wrap: wrap;
+            gap: 16px;
+            backdrop-filter: blur(16px);
         }
-        .marketing-header h1 {
-            font-family: 'Orbitron', monospace; font-size: 1.2rem; color: var(--gold);
-            display: flex; align-items: center; gap: 10px;
+        .marketing-hero::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 1px;
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
+            animation: scanLine 4s linear infinite;
+        }
+        @keyframes scanLine {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+        .marketing-hero::after {
+            content: '';
+            position: absolute;
+            top: -50%; right: -10%;
+            width: 300px; height: 300px;
+            background: radial-gradient(circle, rgba(212, 175, 55, 0.15), transparent 70%);
+            filter: blur(40px);
+            pointer-events: none;
         }
 
+        .hero-title-wrap {
+            position: relative;
+            z-index: 1;
+        }
+        .hero-kicker {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.58rem;
+            color: var(--gold);
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+            opacity: 0.8;
+        }
+        .marketing-hero h1 {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #fff 30%, var(--gold) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: 1px;
+        }
+        .hero-sub {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+            letter-spacing: 0.5px;
+        }
+
+        /* === BOTONES === */
         .btn {
-            display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-            padding: 10px 20px; border-radius: 30px; font-size: 0.75rem; font-weight: 600;
-            border: none; cursor: pointer; font-family: 'Inter', sans-serif; transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 22px;
+            border-radius: 30px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            transition: var(--transition);
+            letter-spacing: 0.5px;
+            position: relative;
+            overflow: hidden;
+            text-transform: uppercase;
         }
-        .btn-primary { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); box-shadow: 0 4px 20px rgba(212, 175, 55, 0.2); }
-        .btn-primary:hover { transform: translateY(-2px) scale(1.02); box-shadow: var(--shadow-gold); }
-        .btn-outline { background: transparent; color: var(--text-secondary); border: 1px solid var(--glass-border); }
-        .btn-outline:hover { border-color: var(--gold); color: var(--gold); background: rgba(212, 175, 55, 0.05); }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            color: var(--space);
+            box-shadow: 0 4px 25px rgba(212, 175, 55, 0.35), inset 0 1px 0 rgba(255,255,255,0.3);
+            position: relative;
+            z-index: 1;
+        }
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);
+            transition: left 0.6s ease;
+        }
+        .btn-primary:hover::before { left: 100%; }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 35px rgba(212, 175, 55, 0.5);
+        }
+        .btn-outline {
+            background: transparent;
+            color: var(--text-secondary);
+            border: 1px solid var(--glass-border-strong);
+        }
+        .btn-outline:hover {
+            border-color: var(--gold);
+            color: var(--gold);
+            background: rgba(212, 175, 55, 0.06);
+            box-shadow: 0 0 30px rgba(212, 175, 55, 0.15);
+        }
 
+        /* === TARJETAS DE RESUMEN === */
         .summary-cards {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 12px; margin-bottom: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 14px;
+            margin-bottom: 28px;
         }
         .card {
-            background: var(--glass-bg); padding: 18px; border-radius: var(--radius);
-            border: 1px solid var(--glass-border); backdrop-filter: blur(12px);
-            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            background: linear-gradient(135deg, rgba(15, 45, 26, 0.5), rgba(8, 15, 26, 0.6));
+            padding: 20px 22px;
+            border-radius: var(--radius);
+            border: 1px solid var(--glass-border);
+            position: relative;
+            overflow: hidden;
+            transition: var(--transition);
+            backdrop-filter: blur(14px);
+            animation: cardFadeIn 0.6s ease backwards;
+        }
+        .card:nth-child(1) { animation-delay: 0.05s; }
+        .card:nth-child(2) { animation-delay: 0.1s; }
+        .card:nth-child(3) { animation-delay: 0.15s; }
+        .card:nth-child(4) { animation-delay: 0.2s; }
+
+        @keyframes cardFadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: -1px; left: 20%;
+            width: 60%; height: 1px;
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
+            opacity: 0.6;
+        }
+        .card::after {
+            content: '';
+            position: absolute;
+            bottom: -30px; right: -30px;
+            width: 100px; height: 100px;
+            background: radial-gradient(circle, rgba(212, 175, 55, 0.15), transparent 70%);
+            filter: blur(20px);
+            pointer-events: none;
+        }
+        .card:hover {
+            transform: translateY(-4px);
+            border-color: var(--glass-border-strong);
+            box-shadow: 0 12px 50px rgba(212, 175, 55, 0.12);
+        }
+        .card-icon {
+            font-size: 1.2rem;
+            margin-bottom: 8px;
+            filter: drop-shadow(0 0 10px var(--gold-glow));
         }
         .card h3 {
-            margin: 0 0 8px 0; font-size: 0.7rem; color: var(--text-muted);
-            text-transform: uppercase; letter-spacing: 1px;
+            margin: 0 0 8px 0;
+            font-size: 0.58rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: 600;
         }
         .card p {
-            margin: 0; font-size: 1.6rem; font-weight: 800; color: var(--gold);
+            margin: 0;
+            font-size: 1.7rem;
+            font-weight: 800;
+            color: var(--gold);
             font-family: 'Orbitron', monospace;
+            text-shadow: 0 0 20px rgba(212, 175, 55, 0.4);
+            letter-spacing: 1px;
         }
 
+        /* === FILTROS === */
         .filters {
-            display: flex; gap: 8px; overflow-x: auto; margin-bottom: 16px; padding-bottom: 8px;
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            margin-bottom: 20px;
+            padding-bottom: 8px;
+            scrollbar-width: none;
         }
+        .filters::-webkit-scrollbar { display: none; }
         .filter-btn {
-            background: var(--glass-bg); color: var(--text-muted); border: 1px solid var(--glass-border);
-            padding: 8px 16px; border-radius: 20px; cursor: pointer; white-space: nowrap;
-            font-size: 0.7rem; transition: var(--transition); font-family: 'Inter', sans-serif;
+            background: var(--glass-bg-2);
+            color: var(--text-muted);
+            border: 1px solid var(--glass-border);
+            padding: 9px 18px;
+            border-radius: 20px;
+            cursor: pointer;
+            white-space: nowrap;
+            font-size: 0.68rem;
+            font-weight: 600;
+            transition: var(--transition);
+            font-family: 'Inter', sans-serif;
+            letter-spacing: 0.3px;
         }
-        .filter-btn.active { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); border-color: transparent; font-weight: 700; }
+        .filter-btn:hover {
+            color: var(--text-primary);
+            border-color: var(--glass-border-strong);
+        }
+        .filter-btn.active {
+            background: linear-gradient(135deg, rgba(212, 175, 55, 0.25), rgba(212, 175, 55, 0.08));
+            color: var(--gold);
+            border-color: var(--gold);
+            box-shadow: 0 0 25px rgba(212, 175, 55, 0.2);
+        }
 
+        /* === CAMPAÑAS === */
         .campaigns-grid {
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 14px; margin-bottom: 30px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 16px;
         }
         .campaign-card {
-            background: var(--glass-bg); border: 1px solid var(--glass-border);
-            border-radius: var(--radius); padding: 18px; cursor: pointer;
-            transition: var(--transition); backdrop-filter: blur(12px);
+            background: linear-gradient(155deg, rgba(15, 45, 26, 0.45), rgba(8, 15, 26, 0.7));
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            padding: 20px;
+            cursor: pointer;
+            transition: var(--transition);
+            backdrop-filter: blur(14px);
+            position: relative;
+            overflow: hidden;
         }
-        .campaign-card:hover {
-            transform: translateY(-4px); border-color: var(--gold);
-            box-shadow: var(--shadow-gold);
+        /* Esquinas futuristas */
+        .campaign-card::before,
+        .campaign-card::after {
+            content: '';
+            position: absolute;
+            width: 16px; height: 16px;
+            border-color: var(--gold);
+            opacity: 0;
+            transition: opacity 0.4s ease;
         }
-        .campaign-card h3 { color: var(--gold); font-size: 0.9rem; margin-bottom: 10px; font-family: 'Orbitron', monospace; }
-        .campaign-card p { font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 4px; }
-        .campaign-card p strong { color: var(--text-muted); font-weight: 500; }
-        .badge {
-            display: inline-block; padding: 3px 10px; border-radius: 20px;
-            font-size: 0.55rem; font-weight: 700; text-transform: uppercase;
-            letter-spacing: 0.5px; margin-top: 6px;
+        .campaign-card::before {
+            top: 8px; left: 8px;
+            border-top: 2px solid;
+            border-left: 2px solid;
         }
-        .badge.borrador { background: rgba(138, 168, 184, 0.15); color: #8aa8b8; }
-        .badge.pendiente_pago { background: rgba(245, 158, 11, 0.15); color: var(--warning); }
-        .badge.pagada { background: rgba(0, 214, 143, 0.15); color: var(--success); }
-        .badge.pendiente_revision { background: rgba(168, 85, 247, 0.15); color: #a855f7; }
-        .badge.activa { background: rgba(0, 214, 143, 0.15); color: var(--success); }
-        .badge.pausada { background: rgba(245, 158, 11, 0.15); color: var(--warning); }
-        .badge.finalizada { background: rgba(138, 168, 184, 0.15); color: #8aa8b8; }
-        .badge.rechazada { background: rgba(255, 51, 102, 0.15); color: var(--danger); }
-        .badge.cancelada { background: rgba(255, 51, 102, 0.15); color: var(--danger); }
+        .campaign-card::after {
+            bottom: 8px; right: 8px;
+            border-bottom: 2px solid;
+            border-right: 2px solid;
+        }
+        .campaign-card:hover::before,
+        .campaign-card:hover::after { opacity: 1; }
 
+        .campaign-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--glass-border-strong);
+            box-shadow: 0 20px 60px rgba(212, 175, 55, 0.15), 0 0 0 1px rgba(212, 175, 55, 0.1);
+        }
+
+        .campaign-card h3 {
+            color: var(--gold);
+            font-size: 0.95rem;
+            margin-bottom: 14px;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+        }
+        .campaign-card .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.06);
+            font-size: 0.68rem;
+        }
+        .campaign-card .info-row:last-child { border-bottom: none; }
+        .campaign-card .info-row .label {
+            color: var(--text-muted);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 0.6rem;
+        }
+        .campaign-card .info-row .value {
+            color: var(--text-primary);
+            font-weight: 600;
+            font-family: 'Space Mono', monospace;
+        }
+
+        /* === BADGES === */
+        .badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.55rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-family: 'Space Mono', monospace;
+            position: relative;
+        }
+        .badge.borrador { background: rgba(138, 168, 184, 0.15); color: #8aa8b8; border: 1px solid rgba(138, 168, 184, 0.3); }
+        .badge.pendiente_pago { background: rgba(245, 158, 11, 0.15); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.35); box-shadow: 0 0 15px rgba(245, 158, 11, 0.2); }
+        .badge.pagada { background: rgba(0, 214, 143, 0.15); color: var(--success); border: 1px solid rgba(0, 214, 143, 0.35); box-shadow: 0 0 15px rgba(0, 214, 143, 0.2); }
+        .badge.pendiente_revision { background: rgba(168, 85, 247, 0.15); color: var(--purple); border: 1px solid rgba(168, 85, 247, 0.35); }
+        .badge.activa { background: rgba(0, 214, 143, 0.18); color: var(--success); border: 1px solid rgba(0, 214, 143, 0.4); box-shadow: 0 0 20px rgba(0, 214, 143, 0.25); animation: badgePulse 2s infinite; }
+        @keyframes badgePulse {
+            0%, 100% { box-shadow: 0 0 20px rgba(0, 214, 143, 0.25); }
+            50% { box-shadow: 0 0 30px rgba(0, 214, 143, 0.5); }
+        }
+        .badge.pausada { background: rgba(245, 158, 11, 0.15); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.35); }
+        .badge.finalizada { background: rgba(138, 168, 184, 0.15); color: #8aa8b8; border: 1px solid rgba(138, 168, 184, 0.3); }
+        .badge.rechazada { background: rgba(255, 51, 102, 0.15); color: var(--danger); border: 1px solid rgba(255, 51, 102, 0.35); }
+        .badge.cancelada { background: rgba(255, 51, 102, 0.15); color: var(--danger); border: 1px solid rgba(255, 51, 102, 0.3); }
+
+        /* === EMPTY STATE === */
         .empty-state {
-            text-align: center; padding: 40px 20px; color: var(--text-muted);
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
             grid-column: 1 / -1;
         }
-        .empty-state .icon { font-size: 2.5rem; display: block; margin-bottom: 12px; color: var(--gold); opacity: 0.4; }
+        .empty-state .icon {
+            font-size: 3rem;
+            display: block;
+            margin-bottom: 16px;
+            color: var(--gold);
+            opacity: 0.4;
+            filter: drop-shadow(0 0 20px var(--gold-glow));
+            animation: emptyFloat 3s ease-in-out infinite;
+        }
+        @keyframes emptyFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+        .empty-state p { font-size: 0.8rem; letter-spacing: 0.5px; }
 
-        /* Modales */
+        /* === MODALES === */
         .modal {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85); display: flex; justify-content: center; align-items: center;
-            z-index: 1000; backdrop-filter: blur(8px); padding: 16px;
+            position: fixed;
+            inset: 0;
+            background: rgba(2, 4, 10, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            padding: 16px;
+            animation: modalFadeIn 0.3s ease;
+        }
+        @keyframes modalFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
         .modal.hidden { display: none; }
+
         .modal-content {
-            background: linear-gradient(160deg, rgba(15,45,26,0.98), rgba(5,8,15,0.98));
-            border: 1px solid var(--gold); border-radius: var(--radius-xl); padding: 28px;
-            width: 100%; max-width: 600px; position: relative; max-height: 90vh; overflow-y: auto;
-            box-shadow: 0 20px 70px rgba(0,0,0,0.6), var(--shadow-gold);
+            background: linear-gradient(160deg, rgba(15, 45, 26, 0.98), rgba(4, 6, 13, 0.99));
+            border: 1px solid var(--glass-border-strong);
+            border-radius: var(--radius-xl);
+            padding: 32px;
+            width: 100%;
+            max-width: 620px;
+            position: relative;
+            max-height: 92vh;
+            overflow-y: auto;
+            box-shadow: 0 30px 100px rgba(0, 0, 0, 0.7), 0 0 80px rgba(212, 175, 55, 0.1);
+            animation: modalSlideIn 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            scrollbar-width: thin;
+            scrollbar-color: var(--gold) transparent;
         }
+        .modal-content::-webkit-scrollbar { width: 4px; }
+        .modal-content::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 4px; }
+
+        @keyframes modalSlideIn {
+            from { opacity: 0; transform: translateY(30px) scale(0.96); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .modal-content::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 20%;
+            width: 60%; height: 1px;
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
+            box-shadow: 0 0 15px var(--gold-glow);
+        }
+
         .close-modal {
-            position: absolute; top: 15px; right: 20px; font-size: 1.8rem; cursor: pointer;
-            color: var(--text-muted); background: none; border: none; line-height: 1;
+            position: absolute;
+            top: 16px; right: 20px;
+            font-size: 1.8rem;
+            cursor: pointer;
+            color: var(--text-muted);
+            background: none;
+            border: none;
+            line-height: 1;
+            transition: var(--transition);
+            width: 36px; height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
         }
-        .close-modal:hover { color: var(--gold); }
+        .close-modal:hover {
+            color: var(--gold);
+            background: rgba(212, 175, 55, 0.1);
+            transform: rotate(90deg);
+        }
 
         .modal-content h2 {
-            color: var(--gold); font-family: 'Orbitron', monospace; font-size: 1rem;
-            margin-bottom: 20px;
+            color: var(--gold);
+            font-family: 'Orbitron', monospace;
+            font-size: 1.05rem;
+            margin-bottom: 22px;
+            letter-spacing: 1px;
+            text-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
         }
 
+        /* === WIZARD === */
         .wizard-step { display: flex; flex-direction: column; gap: 14px; }
         .wizard-step.hidden { display: none; }
-        .wizard-step h3 { color: var(--text-primary); font-size: 0.85rem; margin-bottom: 6px; }
+        .wizard-step h3 {
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            margin-bottom: 4px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+        }
 
-        .wizard-step input, .wizard-step select, .wizard-step textarea {
-            background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border);
-            color: var(--text-primary); padding: 12px 16px; border-radius: 12px;
-            width: 100%; font-family: 'Inter', sans-serif; font-size: 0.8rem; outline: none;
+        .wizard-step input,
+        .wizard-step select,
+        .wizard-step textarea {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--glass-border);
+            color: var(--text-primary);
+            padding: 13px 16px;
+            border-radius: 12px;
+            width: 100%;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.8rem;
+            outline: none;
             transition: var(--transition);
         }
-        .wizard-step input:focus, .wizard-step select:focus, .wizard-step textarea:focus {
-            border-color: var(--gold); box-shadow: 0 0 20px rgba(212, 175, 55, 0.1);
+        .wizard-step input:focus,
+        .wizard-step select:focus,
+        .wizard-step textarea:focus {
+            border-color: var(--gold);
+            box-shadow: 0 0 25px rgba(212, 175, 55, 0.15);
+            background: rgba(0, 0, 0, 0.5);
         }
-        .wizard-step textarea { min-height: 80px; resize: vertical; }
+        .wizard-step textarea { min-height: 90px; resize: vertical; }
+
+        .wizard-step select {
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23D4AF37' stroke-width='2' stroke-linecap='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+            background-size: 16px;
+            padding-right: 42px;
+        }
+        .wizard-step select option { background: var(--space); color: var(--text-primary); }
 
         .btn-option {
-            padding: 14px; border-radius: 14px; border: 1px solid var(--glass-border);
-            background: rgba(0,0,0,0.3); color: var(--text-primary); cursor: pointer;
-            font-size: 0.85rem; font-weight: 600; transition: var(--transition);
-            font-family: 'Inter', sans-serif;
+            padding: 18px;
+            border-radius: 16px;
+            border: 1px solid var(--glass-border);
+            background: linear-gradient(155deg, rgba(15, 45, 26, 0.4), rgba(0, 0, 0, 0.3));
+            color: var(--text-primary);
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 700;
+            transition: var(--transition);
+            font-family: 'Orbitron', monospace;
+            letter-spacing: 1px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
         }
-        .btn-option:hover { border-color: var(--gold); color: var(--gold); transform: translateY(-2px); }
+        .btn-option:hover {
+            border-color: var(--gold);
+            color: var(--gold);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 40px rgba(212, 175, 55, 0.2);
+            background: linear-gradient(155deg, rgba(212, 175, 55, 0.12), rgba(0, 0, 0, 0.3));
+        }
 
-        .charts-container {
-            display: grid; grid-template-columns: 1fr; gap: 16px; margin-top: 20px;
-        }
-        .chart-box {
-            background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border);
-            border-radius: var(--radius); padding: 14px;
-        }
-        .chart-box h4 { color: var(--gold); font-size: 0.7rem; margin-bottom: 10px; font-family: 'Orbitron', monospace; }
-
+        /* === DETALLE === */
         .detail-row {
-            display: flex; justify-content: space-between; padding: 8px 0;
-            border-bottom: 1px solid rgba(212, 175, 55, 0.08); font-size: 0.75rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.08);
+            font-size: 0.75rem;
         }
-        .detail-row span:first-child { color: var(--text-muted); }
-        .detail-row span:last-child { color: var(--text-primary); font-weight: 600; }
+        .detail-row:last-child { border-bottom: none; }
+        .detail-row span:first-child {
+            color: var(--text-muted);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 0.65rem;
+        }
+        .detail-row span:last-child {
+            color: var(--text-primary);
+            font-weight: 700;
+            font-family: 'Space Mono', monospace;
+        }
 
+        /* === STATS === */
         .stats-grid {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-            gap: 10px; margin: 16px 0;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(105px, 1fr));
+            gap: 10px;
+            margin: 18px 0;
         }
         .stat-item {
-            background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border);
-            border-radius: 12px; padding: 12px; text-align: center;
+            background: linear-gradient(155deg, rgba(15, 45, 26, 0.4), rgba(0, 0, 0, 0.35));
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 14px 10px;
+            text-align: center;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
         }
-        .stat-item .label { font-size: 0.55rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
-        .stat-item .value { font-size: 1.1rem; color: var(--gold); font-weight: 800; font-family: 'Orbitron', monospace; margin-top: 4px; }
+        .stat-item:hover {
+            border-color: var(--glass-border-strong);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(212, 175, 55, 0.1);
+        }
+        .stat-item::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 30%;
+            width: 40%; height: 1px;
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
+        }
+        .stat-item .label {
+            font-size: 0.52rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+        .stat-item .value {
+            font-size: 1.15rem;
+            color: var(--gold);
+            font-weight: 800;
+            font-family: 'Orbitron', monospace;
+            margin-top: 6px;
+            text-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
+        }
 
+        /* === GRÁFICOS === */
+        .charts-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 16px;
+            margin-top: 22px;
+        }
+        .chart-box {
+            background: linear-gradient(155deg, rgba(15, 45, 26, 0.35), rgba(0, 0, 0, 0.4));
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            padding: 16px;
+            position: relative;
+        }
+        .chart-box::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 25%;
+            width: 50%; height: 1px;
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
+        }
+        .chart-box h4 {
+            color: var(--gold);
+            font-size: 0.68rem;
+            margin-bottom: 14px;
+            font-family: 'Orbitron', monospace;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* === TOAST === */
         .toast {
-            position: fixed; bottom: 30px; right: 30px; padding: 14px 24px;
-            border-radius: 16px; background: var(--glass-bg); border: 1px solid var(--gold);
-            color: var(--gold); font-size: 0.75rem; font-weight: 500;
-            box-shadow: 0 0 80px rgba(212, 175, 55, 0.2);
-            transform: translateY(100px); opacity: 0; transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-            z-index: 99999; max-width: 320px; backdrop-filter: blur(16px);
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            padding: 16px 26px;
+            border-radius: 16px;
+            background: linear-gradient(155deg, rgba(15, 45, 26, 0.98), rgba(4, 6, 13, 0.98));
+            border: 1px solid var(--gold);
+            color: var(--gold);
+            font-size: 0.75rem;
+            font-weight: 600;
+            box-shadow: 0 0 80px rgba(212, 175, 55, 0.3), 0 20px 40px rgba(0,0,0,0.5);
+            transform: translateY(150px) scale(0.9);
+            opacity: 0;
+            transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            z-index: 99999;
+            max-width: 340px;
+            backdrop-filter: blur(20px);
+            letter-spacing: 0.3px;
         }
-        .toast.show { transform: translateY(0); opacity: 1; }
-        .toast.error { border-color: var(--danger); color: var(--danger); }
-        .toast.success { border-color: var(--success); color: var(--success); }
-        .toast.warning { border-color: var(--warning); color: var(--warning); }
+        .toast.show { transform: translateY(0) scale(1); opacity: 1; }
+        .toast.error { border-color: var(--danger); color: var(--danger); box-shadow: 0 0 80px rgba(255, 51, 102, 0.3); }
+        .toast.success { border-color: var(--success); color: var(--success); box-shadow: 0 0 80px rgba(0, 214, 143, 0.3); }
+        .toast.warning { border-color: var(--warning); color: var(--warning); box-shadow: 0 0 80px rgba(245, 158, 11, 0.3); }
 
-        @media (max-width: 600px) {
-            .marketing-header { flex-direction: column; text-align: center; }
-            .marketing-header h1 { font-size: 1rem; }
-            .summary-cards { grid-template-columns: 1fr 1fr; }
-            .card p { font-size: 1.2rem; }
-            .modal-content { padding: 20px; }
+        /* === RESPONSIVE === */
+        @media (max-width: 640px) {
+            .marketing-hero { flex-direction: column; text-align: center; padding: 22px; }
+            .marketing-hero h1 { font-size: 1.15rem; }
+            .summary-cards { grid-template-columns: 1fr 1fr; gap: 10px; }
+            .card { padding: 16px; }
+            .card p { font-size: 1.3rem; }
+            .modal-content { padding: 24px 20px; }
+            .toast { right: 16px; left: 16px; bottom: 20px; max-width: none; }
+        }
+        @media (max-width: 400px) {
+            .summary-cards { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
 
+    <!-- Fondos animados -->
     <div class="bg-glow bg-glow-1"></div>
     <div class="bg-glow bg-glow-2"></div>
+    <div class="bg-glow bg-glow-3"></div>
+    <div class="particles" id="particles"></div>
 
     <div class="app">
 
+        <!-- HEADER -->
         <header class="header">
             <a href="/" class="logo">
                 <span class="logo-hex">◈</span>
                 <span class="logo-text">Sariel<span>'s</span></span>
                 <span class="logo-badge">✦ WEB3</span>
             </a>
-            <div class="header-actions">
-                <span class="network-badge">◈ Polygon</span>
+            <div class="header-right">
+                <span class="status-pill"><span class="dot"></span> ONLINE</span>
             </div>
         </header>
 
+        <!-- NAV -->
         <nav class="main-nav">
             <a href="/" class="nav-link">⌂ Inicio</a>
             <a href="/features/muro/muro.html" class="nav-link">◇ Muro</a>
@@ -296,30 +921,41 @@
             <a href="/marketing/marketing.html" class="nav-link active">📢 Marketing</a>
         </nav>
 
-        <div class="marketing-header">
-            <h1>📢 Panel de Marketing</h1>
-            <button id="btn-create-campaign" class="btn btn-primary">+ Crear campaña</button>
+        <!-- HERO -->
+        <div class="marketing-hero">
+            <div class="hero-title-wrap">
+                <div class="hero-kicker">// SarieL's Ecosystem · Ads Network</div>
+                <h1>◈ Panel de Marketing</h1>
+                <div class="hero-sub">Gestiona tus campañas publicitarias en LIVE y GRUPOS</div>
+            </div>
+            <button id="btn-create-campaign" class="btn btn-primary">+ Crear Campaña</button>
         </div>
 
+        <!-- RESUMEN -->
         <section id="dashboard-summary" class="summary-cards">
             <div class="card">
+                <div class="card-icon">💰</div>
                 <h3>Presupuesto Total</h3>
                 <p id="total-budget">$0.00</p>
             </div>
             <div class="card">
+                <div class="card-icon">⚡</div>
                 <h3>Campañas Activas</h3>
                 <p id="active-campaigns">0</p>
             </div>
             <div class="card">
+                <div class="card-icon">📉</div>
                 <h3>Gasto Total</h3>
                 <p id="total-spent">$0.00</p>
             </div>
             <div class="card">
+                <div class="card-icon">📡</div>
                 <h3>Alcance Total</h3>
                 <p id="total-reach">0</p>
             </div>
         </section>
 
+        <!-- CAMPAÑAS -->
         <section id="campaigns-section">
             <div class="filters">
                 <button class="filter-btn active" data-filter="all">Todas</button>
@@ -331,7 +967,7 @@
             </div>
             <div id="campaigns-list" class="campaigns-grid">
                 <div class="empty-state">
-                    <span class="icon">📢</span>
+                    <span class="icon">◈</span>
                     <p>Cargando campañas...</p>
                 </div>
             </div>
@@ -343,7 +979,7 @@
     <div id="modal-detail" class="modal hidden">
         <div class="modal-content">
             <button class="close-modal" data-close="modal-detail">&times;</button>
-            <h2 id="detail-title">Detalle de Campaña</h2>
+            <h2 id="detail-title">◈ Detalle de Campaña</h2>
             <div id="detail-info"></div>
             <div class="stats-grid" id="detail-stats"></div>
             <div class="charts-container">
@@ -352,7 +988,7 @@
                     <canvas id="chart-reach"></canvas>
                 </div>
                 <div class="chart-box">
-                    <h4>👁️ Impresiones por día</h4>
+                    <h4>👁 Impresiones por día</h4>
                     <canvas id="chart-impressions"></canvas>
                 </div>
                 <div class="chart-box">
@@ -367,46 +1003,46 @@
     <div id="modal-create" class="modal hidden">
         <div class="modal-content">
             <button class="close-modal" data-close="modal-create">&times;</button>
-            <h2>Crear Campaña</h2>
+            <h2>◈ Nueva Campaña</h2>
 
             <div id="wizard-step-1" class="wizard-step">
-                <h3>Paso 1: ¿Dónde anunciar?</h3>
-                <button class="btn-option" data-type="live">🔴 LIVE</button>
+                <h3>▸ Paso 01 — ¿Dónde anunciar?</h3>
+                <button class="btn-option" data-type="live">◉ LIVE</button>
                 <button class="btn-option" data-type="grupo">👥 GRUPO</button>
             </div>
 
             <div id="wizard-step-2" class="wizard-step hidden">
-                <h3>Paso 2: Seleccionar destino</h3>
+                <h3>▸ Paso 02 — Seleccionar destino</h3>
                 <select id="select-target"></select>
                 <button class="btn btn-primary btn-next">Siguiente →</button>
             </div>
 
             <div id="wizard-step-3" class="wizard-step hidden">
-                <h3>Paso 3: Nombre de campaña</h3>
-                <input type="text" id="campaign-name" placeholder="Ej: Promo Verano">
+                <h3>▸ Paso 03 — Nombre de campaña</h3>
+                <input type="text" id="campaign-name" placeholder="Ej: Promo Verano 2026">
                 <button class="btn btn-primary btn-next">Siguiente →</button>
             </div>
 
             <div id="wizard-step-4" class="wizard-step hidden">
-                <h3>Paso 4: Objetivo</h3>
+                <h3>▸ Paso 04 — Objetivo</h3>
                 <select id="campaign-objective">
-                    <option value="alcance">Alcance</option>
-                    <option value="reproducciones">Reproducciones</option>
-                    <option value="interacciones">Interacciones</option>
-                    <option value="clics">Clics</option>
+                    <option value="alcance">📡 Alcance</option>
+                    <option value="reproducciones">🎬 Reproducciones</option>
+                    <option value="interacciones">💬 Interacciones</option>
+                    <option value="clics">👆 Clics</option>
                 </select>
                 <button class="btn btn-primary btn-next">Siguiente →</button>
             </div>
 
             <div id="wizard-step-5" class="wizard-step hidden">
-                <h3>Paso 5: Presupuesto (MXN)</h3>
+                <h3>▸ Paso 05 — Presupuesto (MXN)</h3>
                 <p id="pricing-info" style="color: var(--text-muted); font-size: 0.7rem;"></p>
                 <input type="number" id="campaign-budget" placeholder="Monto en MXN" min="1">
                 <button class="btn btn-primary btn-next">Siguiente →</button>
             </div>
 
             <div id="wizard-step-6" class="wizard-step hidden">
-                <h3>Paso 6: Contenido del Anuncio</h3>
+                <h3>▸ Paso 06 — Contenido del Anuncio</h3>
                 <input type="text" id="ad-title" placeholder="Título">
                 <textarea id="ad-description" placeholder="Descripción"></textarea>
                 <input type="url" id="ad-image" placeholder="URL de Imagen (opcional)">
@@ -416,9 +1052,9 @@
             </div>
 
             <div id="wizard-step-7" class="wizard-step hidden">
-                <h3>Paso 7: Resumen y Pago</h3>
+                <h3>▸ Paso 07 — Resumen y Pago</h3>
                 <div id="summary-content"></div>
-                <button id="btn-pay" class="btn btn-primary">💳 Continuar al pago</button>
+                <button id="btn-pay" class="btn btn-primary">💳 Continuar al Pago</button>
             </div>
         </div>
     </div>
@@ -427,7 +1063,7 @@
 
     <script>
     /* ============================================================
-       MARKETING - SARIEL'S ECOSYSTEM
+       MARKETING - SARIEL'S ECOSYSTEM · FUTURIST EDITION
        ============================================================ */
 
     const supabase = window.supabase.createClient(
@@ -440,6 +1076,25 @@
     let currentWizardData = {};
     let currentChartInstances = {};
     let currentFilter = 'all';
+
+    // ===== PARTÍCULAS =====
+    function createParticles() {
+        const container = document.getElementById('particles');
+        if (!container) return;
+        for (let i = 0; i < 25; i++) {
+            const p = document.createElement('div');
+            p.className = 'particle';
+            p.style.left = Math.random() * 100 + '%';
+            p.style.animationDuration = (8 + Math.random() * 12) + 's';
+            p.style.animationDelay = (Math.random() * 10) + 's';
+            p.style.opacity = 0.2 + Math.random() * 0.4;
+            const size = 1 + Math.random() * 2;
+            p.style.width = size + 'px';
+            p.style.height = size + 'px';
+            container.appendChild(p);
+        }
+    }
+    createParticles();
 
     // ===== TOAST =====
     function showToast(msg, type = '', duration = 3500) {
@@ -457,11 +1112,11 @@
         return div.innerHTML;
     }
 
-    // ===== INICIALIZACIÓN =====
+    // ===== INIT =====
     document.addEventListener('DOMContentLoaded', async () => {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
-            showToast('⚠️ Inicia sesión para ver tus campañas', 'warning', 5000);
+            showToast('⚠ Inicia sesión para ver tus campañas', 'warning', 5000);
             return;
         }
         currentUser = user;
@@ -470,7 +1125,6 @@
         setupEventListeners();
     });
 
-    // ===== CARGAR PRICING =====
     async function loadPricing() {
         const { data, error } = await supabase
             .from('marketing_pricing')
@@ -480,7 +1134,6 @@
         window.marketingPricing = data || [];
     }
 
-    // ===== CARGAR CAMPAÑAS =====
     async function loadCampaigns() {
         const { data, error } = await supabase
             .from('marketing_campaigns')
@@ -498,7 +1151,6 @@
         calculateSummary();
     }
 
-    // ===== RENDER CAMPAÑAS =====
     function renderCampaigns() {
         const container = document.getElementById('campaigns-list');
         const filtered = currentFilter === 'all'
@@ -508,7 +1160,7 @@
         if (filtered.length === 0) {
             container.innerHTML = `
                 <div class="empty-state">
-                    <span class="icon">📢</span>
+                    <span class="icon">◈</span>
                     <p>No hay campañas ${currentFilter === 'all' ? 'creadas aún' : 'con este estado'}.</p>
                 </div>
             `;
@@ -518,16 +1170,30 @@
         container.innerHTML = filtered.map(camp => `
             <div class="campaign-card" onclick="openDetail('${camp.id}')">
                 <h3>${escapeHTML(camp.nombre)}</h3>
-                <p><strong>Estado:</strong> <span class="badge ${camp.estado}">${camp.estado}</span></p>
-                <p><strong>Presupuesto:</strong> $${parseFloat(camp.presupuesto || 0).toFixed(2)} ${camp.moneda || 'MXN'}</p>
-                <p><strong>Gastado:</strong> $${parseFloat(camp.gastado || 0).toFixed(2)}</p>
-                <p><strong>Inicio:</strong> ${camp.fecha_inicio ? new Date(camp.fecha_inicio).toLocaleDateString() : '—'}</p>
-                <p><strong>Fin:</strong> ${camp.fecha_fin ? new Date(camp.fecha_fin).toLocaleDateString() : '—'}</p>
+                <div class="info-row">
+                    <span class="label">Estado</span>
+                    <span class="badge ${camp.estado}">${camp.estado.replace('_', ' ')}</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">Presupuesto</span>
+                    <span class="value">$${parseFloat(camp.presupuesto || 0).toFixed(2)} ${camp.moneda || 'MXN'}</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">Gastado</span>
+                    <span class="value">$${parseFloat(camp.gastado || 0).toFixed(2)}</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">Inicio</span>
+                    <span class="value">${camp.fecha_inicio ? new Date(camp.fecha_inicio).toLocaleDateString('es-MX') : '—'}</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">Fin</span>
+                    <span class="value">${camp.fecha_fin ? new Date(camp.fecha_fin).toLocaleDateString('es-MX') : '—'}</span>
+                </div>
             </div>
         `).join('');
     }
 
-    // ===== RESUMEN =====
     function calculateSummary() {
         let budget = 0, active = 0, spent = 0;
         campaigns.forEach(c => {
@@ -535,26 +1201,44 @@
             spent += parseFloat(c.gastado || 0);
             if (c.estado === 'activa') active++;
         });
-        document.getElementById('total-budget').textContent = `$${budget.toFixed(2)}`;
-        document.getElementById('active-campaigns').textContent = active;
-        document.getElementById('total-spent').textContent = `$${spent.toFixed(2)}`;
-        document.getElementById('total-reach').textContent = '0';
+        animateNumber('total-budget', budget, '$');
+        animateNumber('active-campaigns', active);
+        animateNumber('total-spent', spent, '$');
+        animateNumber('total-reach', 0);
     }
 
-    // ===== DETALLE =====
+    function animateNumber(elId, target, prefix = '') {
+        const el = document.getElementById(elId);
+        if (!el) return;
+        const duration = 800;
+        const start = 0;
+        const startTime = performance.now();
+        const isDecimal = target % 1 !== 0;
+
+        function update(currentTime) {
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            const eased = 1 - Math.pow(1 - progress, 3);
+            const value = start + (target - start) * eased;
+            el.textContent = prefix + (isDecimal ? value.toFixed(2) : Math.floor(value));
+            if (progress < 1) requestAnimationFrame(update);
+        }
+        requestAnimationFrame(update);
+    }
+
     async function openDetail(campaignId) {
         const campaign = campaigns.find(c => c.id === campaignId);
         if (!campaign) return;
 
-        document.getElementById('detail-title').textContent = campaign.nombre;
+        document.getElementById('detail-title').textContent = '◈ ' + campaign.nombre;
         document.getElementById('detail-info').innerHTML = `
-            <div class="detail-row"><span>Estado</span><span class="badge ${campaign.estado}">${campaign.estado}</span></div>
+            <div class="detail-row"><span>Estado</span><span class="badge ${campaign.estado}">${campaign.estado.replace('_',' ')}</span></div>
             <div class="detail-row"><span>Presupuesto</span><span>$${parseFloat(campaign.presupuesto || 0).toFixed(2)} ${campaign.moneda || 'MXN'}</span></div>
             <div class="detail-row"><span>Gastado</span><span>$${parseFloat(campaign.gastado || 0).toFixed(2)}</span></div>
             <div class="detail-row"><span>Restante</span><span>$${(parseFloat(campaign.presupuesto || 0) - parseFloat(campaign.gastado || 0)).toFixed(2)}</span></div>
             <div class="detail-row"><span>Objetivo</span><span>${campaign.objetivo || '—'}</span></div>
-            <div class="detail-row"><span>Inicio</span><span>${campaign.fecha_inicio ? new Date(campaign.fecha_inicio).toLocaleDateString() : '—'}</span></div>
-            <div class="detail-row"><span>Fin</span><span>${campaign.fecha_fin ? new Date(campaign.fecha_fin).toLocaleDateString() : '—'}</span></div>
+            <div class="detail-row"><span>Inicio</span><span>${campaign.fecha_inicio ? new Date(campaign.fecha_inicio).toLocaleDateString('es-MX') : '—'}</span></div>
+            <div class="detail-row"><span>Fin</span><span>${campaign.fecha_fin ? new Date(campaign.fecha_fin).toLocaleDateString('es-MX') : '—'}</span></div>
         `;
 
         document.getElementById('modal-detail').classList.remove('hidden');
@@ -567,8 +1251,8 @@
 
         if (error || !stats || stats.length === 0) {
             document.getElementById('detail-stats').innerHTML = `
-                <div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--warning);font-size:0.75rem;">
-                    Las estadísticas aparecerán cuando la campaña comience a recibir tráfico.
+                <div style="grid-column:1/-1;text-align:center;padding:24px;color:var(--warning);font-size:0.72rem;letter-spacing:0.5px;line-height:1.6;">
+                    ⚠ Las estadísticas aparecerán cuando la campaña<br>comience a recibir tráfico.
                 </div>
             `;
             return;
@@ -586,53 +1270,127 @@
         }), { impresiones: 0, alcance: 0, vistas: 0, vistas_completas: 0, clics: 0, interacciones: 0, reproducciones: 0, conversiones: 0 });
 
         document.getElementById('detail-stats').innerHTML = `
-            <div class="stat-item"><div class="label">Alcance</div><div class="value">${totals.alcance}</div></div>
-            <div class="stat-item"><div class="label">Impresiones</div><div class="value">${totals.impresiones}</div></div>
-            <div class="stat-item"><div class="label">Vistas</div><div class="value">${totals.vistas}</div></div>
-            <div class="stat-item"><div class="label">Clics</div><div class="value">${totals.clics}</div></div>
-            <div class="stat-item"><div class="label">Interacciones</div><div class="value">${totals.interacciones}</div></div>
-            <div class="stat-item"><div class="label">Reproducciones</div><div class="value">${totals.reproducciones}</div></div>
-            <div class="stat-item"><div class="label">Conversiones</div><div class="value">${totals.conversiones}</div></div>
+            <div class="stat-item"><div class="label">Alcance</div><div class="value">${totals.alcance.toLocaleString()}</div></div>
+            <div class="stat-item"><div class="label">Impresiones</div><div class="value">${totals.impresiones.toLocaleString()}</div></div>
+            <div class="stat-item"><div class="label">Vistas</div><div class="value">${totals.vistas.toLocaleString()}</div></div>
+            <div class="stat-item"><div class="label">Clics</div><div class="value">${totals.clics.toLocaleString()}</div></div>
+            <div class="stat-item"><div class="label">Interacciones</div><div class="value">${totals.interacciones.toLocaleString()}</div></div>
+            <div class="stat-item"><div class="label">Reproducciones</div><div class="value">${totals.reproducciones.toLocaleString()}</div></div>
+            <div class="stat-item"><div class="label">Conversiones</div><div class="value">${totals.conversiones.toLocaleString()}</div></div>
         `;
 
         renderCharts(stats);
     }
 
-    // ===== GRÁFICOS =====
     function renderCharts(stats) {
         Object.values(currentChartInstances).forEach(c => { try { c.destroy(); } catch(e){} });
         currentChartInstances = {};
 
+        Chart.defaults.color = '#6b8a9e';
+        Chart.defaults.font.family = 'Inter, sans-serif';
+        Chart.defaults.font.size = 10;
+
         const labels = stats.map(s => new Date(s.fecha).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }));
         const commonOpts = {
             responsive: true,
-            plugins: { legend: { display: false } },
+            maintainAspectRatio: true,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: 'rgba(4, 6, 13, 0.95)',
+                    borderColor: '#D4AF37',
+                    borderWidth: 1,
+                    titleColor: '#D4AF37',
+                    bodyColor: '#f0f4f8',
+                    padding: 10,
+                    cornerRadius: 8,
+                    titleFont: { family: 'Orbitron', weight: '700', size: 11 }
+                }
+            },
             scales: {
-                x: { ticks: { color: '#8aa8b8', font: { size: 9 } }, grid: { color: 'rgba(212,175,55,0.05)' } },
-                y: { ticks: { color: '#8aa8b8', font: { size: 9 } }, grid: { color: 'rgba(212,175,55,0.05)' } }
+                x: {
+                    ticks: { color: '#6b8a9e', font: { size: 9 } },
+                    grid: { color: 'rgba(212, 175, 55, 0.05)' }
+                },
+                y: {
+                    ticks: { color: '#6b8a9e', font: { size: 9 } },
+                    grid: { color: 'rgba(212, 175, 55, 0.05)' }
+                }
             }
         };
 
-        currentChartInstances.reach = new Chart(document.getElementById('chart-reach'), {
+        // Gráfico Alcance (línea con glow)
+        const ctxReach = document.getElementById('chart-reach').getContext('2d');
+        const gradReach = ctxReach.createLinearGradient(0, 0, 0, 200);
+        gradReach.addColorStop(0, 'rgba(212, 175, 55, 0.5)');
+        gradReach.addColorStop(1, 'rgba(212, 175, 55, 0)');
+
+        currentChartInstances.reach = new Chart(ctxReach, {
             type: 'line',
-            data: { labels, datasets: [{ label: 'Alcance', data: stats.map(s => s.alcance || 0), borderColor: '#D4AF37', backgroundColor: 'rgba(212,175,55,0.1)', fill: true, tension: 0.3 }] },
+            data: {
+                labels,
+                datasets: [{
+                    data: stats.map(s => s.alcance || 0),
+                    borderColor: '#D4AF37',
+                    backgroundColor: gradReach,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: '#D4AF37',
+                    pointBorderColor: '#04060d',
+                    pointBorderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    borderWidth: 2
+                }]
+            },
             options: commonOpts
         });
 
+        // Gráfico Impresiones (barras doradas con glow)
         currentChartInstances.impressions = new Chart(document.getElementById('chart-impressions'), {
             type: 'bar',
-            data: { labels, datasets: [{ label: 'Impresiones', data: stats.map(s => s.impresiones || 0), backgroundColor: '#00d68f' }] },
+            data: {
+                labels,
+                datasets: [{
+                    data: stats.map(s => s.impresiones || 0),
+                    backgroundColor: 'rgba(0, 214, 143, 0.7)',
+                    borderColor: '#00d68f',
+                    borderWidth: 1,
+                    borderRadius: 6,
+                    hoverBackgroundColor: '#00d68f'
+                }]
+            },
             options: commonOpts
         });
 
-        currentChartInstances.spent = new Chart(document.getElementById('chart-spent'), {
+        // Gráfico Gasto (línea roja con glow)
+        const ctxSpent = document.getElementById('chart-spent').getContext('2d');
+        const gradSpent = ctxSpent.createLinearGradient(0, 0, 0, 200);
+        gradSpent.addColorStop(0, 'rgba(255, 51, 102, 0.5)');
+        gradSpent.addColorStop(1, 'rgba(255, 51, 102, 0)');
+
+        currentChartInstances.spent = new Chart(ctxSpent, {
             type: 'line',
-            data: { labels, datasets: [{ label: 'Gasto', data: stats.map(s => s.gasto || 0), borderColor: '#ff3366', backgroundColor: 'rgba(255,51,102,0.1)', fill: true, tension: 0.3 }] },
+            data: {
+                labels,
+                datasets: [{
+                    data: stats.map(s => s.gasto || 0),
+                    borderColor: '#ff3366',
+                    backgroundColor: gradSpent,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: '#ff3366',
+                    pointBorderColor: '#04060d',
+                    pointBorderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    borderWidth: 2
+                }]
+            },
             options: commonOpts
         });
     }
 
-    // ===== EVENT LISTENERS =====
     function setupEventListeners() {
         document.getElementById('btn-create-campaign').addEventListener('click', () => {
             document.getElementById('modal-create').classList.remove('hidden');
@@ -657,7 +1415,7 @@
 
         document.querySelectorAll('.btn-option').forEach(btn => {
             btn.addEventListener('click', async (e) => {
-                const type = e.target.dataset.type;
+                const type = e.currentTarget.dataset.type;
                 currentWizardData.target_tipo = type;
 
                 const table = type === 'live' ? 'transmisiones' : 'grupos';
@@ -675,13 +1433,13 @@
 
         document.querySelector('#wizard-step-2 .btn-next').addEventListener('click', () => {
             currentWizardData.target_id = document.getElementById('select-target').value;
-            if (!currentWizardData.target_id) { showToast('⚠️ Selecciona un destino', 'warning'); return; }
+            if (!currentWizardData.target_id) { showToast('⚠ Selecciona un destino', 'warning'); return; }
             showStep(3);
         });
 
         document.querySelector('#wizard-step-3 .btn-next').addEventListener('click', () => {
             currentWizardData.nombre = document.getElementById('campaign-name').value.trim();
-            if (!currentWizardData.nombre) { showToast('⚠️ Escribe un nombre', 'warning'); return; }
+            if (!currentWizardData.nombre) { showToast('⚠ Escribe un nombre', 'warning'); return; }
             showStep(4);
         });
 
@@ -689,8 +1447,8 @@
             currentWizardData.objetivo = document.getElementById('campaign-objective').value;
             const pricing = window.marketingPricing.find(p => p.tipo === currentWizardData.target_tipo);
             document.getElementById('pricing-info').textContent = pricing
-                ? `Mínimo configurado: $${pricing.minimo} MXN`
-                : 'No hay mínimo configurado para este tipo.';
+                ? `◈ Mínimo configurado: $${pricing.minimo} MXN`
+                : '◈ No hay mínimo configurado para este tipo.';
             showStep(5);
         });
 
@@ -699,7 +1457,7 @@
             const pricing = window.marketingPricing.find(p => p.tipo === currentWizardData.target_tipo);
             const min = pricing ? parseFloat(pricing.minimo) : 0;
             if (!budget || budget < min) {
-                showToast(`⚠️ El mínimo es $${min} MXN`, 'warning');
+                showToast(`⚠ El mínimo es $${min} MXN`, 'warning');
                 return;
             }
             currentWizardData.presupuesto = budget;
@@ -714,7 +1472,7 @@
                 video_url: document.getElementById('ad-video').value.trim() || null,
                 cta_texto: document.getElementById('ad-cta').value.trim() || 'Ver más',
             };
-            if (!currentWizardData.ad.titulo) { showToast('⚠️ Escribe un título', 'warning'); return; }
+            if (!currentWizardData.ad.titulo) { showToast('⚠ Escribe un título', 'warning'); return; }
             renderSummary();
             showStep(7);
         });
@@ -779,7 +1537,7 @@
                 [targetField]: currentWizardData.target_id
             }]);
 
-            showToast('✅ Campaña creada. Pendiente de pago.', 'success', 4000);
+            showToast('✓ Campaña creada · Pendiente de pago', 'success', 4000);
             document.getElementById('modal-create').classList.add('hidden');
 
             await loadCampaigns();
@@ -790,7 +1548,6 @@
         }
     }
 
-    // Exponer global
     window.openDetail = openDetail;
     </script>
 </body>
