@@ -1045,7 +1045,7 @@
 
     <script>
     /* ============================================================
-       MARKETING - SARIEL'S ECOSYSTEM · FUTURIST EDITION
+       MARKETING - SARIEL'S ECOSYSTEM
        ============================================================ */
 
     const supabase = window.supabase.createClient(
@@ -1079,6 +1079,7 @@
 
     function showToast(msg, type = '', duration = 3500) {
         const t = document.getElementById('toast');
+        if (!t) return;
         t.textContent = msg;
         t.className = 'toast show ' + (type || '');
         clearTimeout(t._timeout);
@@ -1093,19 +1094,22 @@
     }
 
     // ============================================================
-    // ✅ DOMContentLoaded CORREGIDO
+    // DOMContentLoaded
     // ============================================================
     document.addEventListener('DOMContentLoaded', async () => {
+        console.log('🟢 [DOMContentLoaded] Iniciando módulo Marketing...');
+
         try {
             const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
             if (sessionError) {
-                console.error('⚠️ Error obteniendo sesión:', sessionError);
+                console.error('🔴 [DOMContentLoaded] Error obteniendo sesión:', sessionError);
             }
 
+            console.log('🟢 [DOMContentLoaded] Sesión:', session);
+
             if (!session || !session.user) {
-                console.warn('⚠️ No hay sesión activa');
-                showToast('⚠ Inicia sesión para ver tus campañas', 'warning', 5000);
+                console.warn('🟠 [DOMContentLoaded] No hay sesión activa');
                 document.getElementById('campaigns-list').innerHTML = `
                     <div class="empty-state">
                         <span class="icon">◈</span>
@@ -1117,22 +1121,28 @@
             }
 
             currentUser = session.user;
-            console.log('✅ Usuario autenticado:', currentUser.id);
+            console.log('🟢 [DOMContentLoaded] currentUser.id:', currentUser.id);
+            console.log('🟢 [DOMContentLoaded] currentUser.email:', currentUser.email);
 
-            // Pricing (con try/catch para que no bloquee)
+            // Paso 1: Pricing (try/catch, no bloquea)
             try {
+                console.log('🟡 [DOMContentLoaded] Cargando pricing...');
                 await loadPricing();
+                console.log('🟢 [DOMContentLoaded] Pricing OK');
             } catch (pricingError) {
-                console.error('⚠️ Error cargando precios:', pricingError);
+                console.error('🔴 [DOMContentLoaded] Error pricing (no bloquea):', pricingError);
             }
 
-            // Campañas (nunca debe quedarse atascado)
+            // Paso 2: Campañas
+            console.log('🟡 [DOMContentLoaded] Cargando campañas...');
             await loadCampaigns();
+            console.log('🟢 [DOMContentLoaded] Campañas OK');
 
+            // Paso 3: Event listeners
             setupEventListeners();
 
         } catch (globalError) {
-            console.error('❌ Error global en DOMContentLoaded:', globalError);
+            console.error('🔴 [DOMContentLoaded] Error global:', globalError);
             document.getElementById('campaigns-list').innerHTML = `
                 <div class="empty-state error-state">
                     <span class="icon">⚠</span>
@@ -1143,34 +1153,64 @@
         }
     });
 
+    // ============================================================
+    // PRICING
+    // ============================================================
     async function loadPricing() {
         const { data, error } = await supabase
             .from('marketing_pricing')
             .select('*')
             .eq('activo', true);
+
         if (error) {
-            console.warn('⚠️ Pricing no disponible:', error.message);
+            console.warn('🟠 [loadPricing] Pricing no disponible:', error.message);
             window.marketingPricing = [];
             return;
         }
+        console.log('🟢 [loadPricing] Pricing cargado:', data?.length || 0);
         window.marketingPricing = data || [];
     }
 
     // ============================================================
-    // ✅ loadCampaigns CORREGIDO - SIEMPRE TERMINA EL ESTADO
+    // LOAD CAMPAIGNS — SIEMPRE TERMINA EL ESTADO
     // ============================================================
     async function loadCampaigns() {
+        console.log('🟡 [loadCampaigns] Iniciando...');
+        console.log('🟡 [loadCampaigns] currentUser:', currentUser);
+        console.log('🟡 [loadCampaigns] anunciante_id:', currentUser?.id);
+
         const campaignsList = document.getElementById('campaigns-list');
+        if (!campaignsList) {
+            console.error('🔴 [loadCampaigns] No existe #campaigns-list');
+            return;
+        }
+
+        if (!currentUser || !currentUser.id) {
+            console.error('🔴 [loadCampaigns] currentUser no definido');
+            campaignsList.innerHTML = `
+                <div class="empty-state error-state">
+                    <span class="icon">⚠</span>
+                    <p>Error cargando campañas</p>
+                    <small>Usuario no autenticado</small>
+                </div>
+            `;
+            return;
+        }
 
         try {
+            console.log('🟡 [loadCampaigns] Consultando Supabase...');
             const { data, error } = await supabase
                 .from('marketing_campaigns')
                 .select('*')
                 .eq('anunciante_id', currentUser.id)
                 .order('created_at', { ascending: false });
 
+            console.log('🟢 [loadCampaigns] data:', data);
+            console.log('🟢 [loadCampaigns] error:', error);
+            console.log('🟢 [loadCampaigns] cantidad:', data?.length || 0);
+
             if (error) {
-                console.error('❌ Error cargando campañas:', error);
+                console.error('🔴 [loadCampaigns] Error de Supabase:', error);
                 campaignsList.innerHTML = `
                     <div class="empty-state error-state">
                         <span class="icon">⚠</span>
@@ -1181,25 +1221,27 @@
                 return;
             }
 
-            campaigns = data || [];
-
-            // Si no hay campañas, mostrar mensaje
-            if (campaigns.length === 0) {
+            if (!data || data.length === 0) {
+                console.log('🟡 [loadCampaigns] No hay campañas');
                 campaignsList.innerHTML = `
                     <div class="empty-state">
                         <span class="icon">◈</span>
                         <p>No hay campañas creadas aún</p>
                     </div>
                 `;
+                campaigns = [];
                 calculateSummary();
                 return;
             }
 
+            campaigns = data;
+            console.log('🟢 [loadCampaigns] Ejecutando renderCampaigns...');
             renderCampaigns();
             calculateSummary();
+            console.log('🟢 [loadCampaigns] Completado');
 
         } catch (err) {
-            console.error('❌ Error inesperado en loadCampaigns:', err);
+            console.error('🔴 [loadCampaigns] Excepción inesperada:', err);
             campaignsList.innerHTML = `
                 <div class="empty-state error-state">
                     <span class="icon">⚠</span>
@@ -1210,8 +1252,14 @@
         }
     }
 
+    // ============================================================
+    // RENDER
+    // ============================================================
     function renderCampaigns() {
+        console.log('🟡 [renderCampaigns] Renderizando', campaigns.length, 'campañas');
         const container = document.getElementById('campaigns-list');
+        if (!container) return;
+
         const filtered = currentFilter === 'all'
             ? campaigns
             : campaigns.filter(c => c.estado === currentFilter);
@@ -1285,6 +1333,9 @@
         requestAnimationFrame(update);
     }
 
+    // ============================================================
+    // DETALLE
+    // ============================================================
     async function openDetail(campaignId) {
         const campaign = campaigns.find(c => c.id === campaignId);
         if (!campaign) return;
@@ -1341,6 +1392,9 @@
         renderCharts(stats);
     }
 
+    // ============================================================
+    // GRÁFICOS
+    // ============================================================
     function renderCharts(stats) {
         Object.values(currentChartInstances).forEach(c => { try { c.destroy(); } catch(e){} });
         currentChartInstances = {};
@@ -1447,6 +1501,9 @@
         });
     }
 
+    // ============================================================
+    // EVENT LISTENERS
+    // ============================================================
     function setupEventListeners() {
         document.getElementById('btn-create-campaign').addEventListener('click', () => {
             document.getElementById('modal-create').classList.remove('hidden');
