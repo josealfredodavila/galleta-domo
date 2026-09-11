@@ -153,7 +153,6 @@ router.post('/get-ad', autenticar, async (req, res) => {
 
         console.log(`📢 [ALGO] usuario=${usuario_id} target=${target_tipo}:${target_id} ciudad=${ciudadUsuario} categoria=${categoriaTarget}`);
 
-        // 1. Intentar usar la función SQL optimizada
         let candidatas = null;
         try {
             const { data: rpcData, error: rpcError } = await supabaseAdmin.rpc('obtener_campanas_candidatas', {
@@ -174,7 +173,6 @@ router.post('/get-ad', autenticar, async (req, res) => {
             console.warn('⚠️ [ALGO] Excepción en RPC, usando fallback JS:', rpcCatchError.message);
         }
 
-        // 2. Fallback: algoritmo en JS
         if (!candidatas || candidatas.length === 0) {
             console.log('🔄 [ALGO] Usando algoritmo en JS (fallback)');
             candidatas = await algoritmoJS({
@@ -204,7 +202,6 @@ router.post('/get-ad', autenticar, async (req, res) => {
             return res.json({ success: true, ad: null, reason: 'ad_no_encontrado' });
         }
 
-        // 3. Registrar impresión
         await supabaseAdmin
             .from('marketing_events')
             .insert({
@@ -225,7 +222,6 @@ router.post('/get-ad', autenticar, async (req, res) => {
                 }
             });
 
-        // 4. Registrar vista única (si la función existe)
         try {
             await supabaseAdmin.rpc('registrar_vista_anuncio', {
                 p_usuario_id: usuario_id,
@@ -238,7 +234,6 @@ router.post('/get-ad', autenticar, async (req, res) => {
             console.warn('⚠️ [ALGO] No se pudo registrar vista única:', vistaError.message);
         }
 
-        // 5. Descontar presupuesto
         await supabaseAdmin.rpc('descontar_presupuesto_campana', {
             p_campaign_id: ganadora.campaign_id,
             p_monto: COSTOS.impresion
