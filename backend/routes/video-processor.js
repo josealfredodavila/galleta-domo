@@ -39,10 +39,23 @@ const supabaseAdmin = (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY)
 const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
 const COLA_NOMBRE = 'video-processing';
 
+// FIX: family: 0 es obligatorio para conectar a Redis dentro de la red
+// privada de Railway, que resuelve por IPv6. Sin esto, ioredis intenta
+// IPv4 por defecto, la conexión nunca se completa, y con
+// maxRetriesPerRequest: null el proceso se queda colgado para siempre
+// en cualquier comando (ej. videoQueue.add) sin lanzar ningún error.
 const redisConnection = new IORedis(REDIS_URL, {
     maxRetriesPerRequest: null,
     enableReadyCheck: false,
+    family: 0,
     retryStrategy: (times) => Math.min(times * 1000, 30000)
+});
+
+redisConnection.on('connect', () => {
+    console.log('📡 [video-processor] Conectado a Redis');
+});
+redisConnection.on('error', (err) => {
+    console.error('❌ [video-processor] Error de conexión a Redis:', err.message);
 });
 
 const videoQueue = new Queue(COLA_NOMBRE, {
