@@ -167,6 +167,130 @@
             overflow: hidden;
         }
 
+        /* ============================================================
+           ANUNCIO DE MARKETING EN VIDEOS
+           ============================================================ */
+        .marketing-ad-container {
+            display: none;
+            margin-bottom: 20px;
+            background: linear-gradient(155deg, rgba(15, 45, 26, 0.55), rgba(8, 15, 26, 0.75));
+            border: 1px solid rgba(212, 175, 55, 0.25);
+            border-radius: var(--radius-xl);
+            overflow: hidden;
+            backdrop-filter: blur(14px);
+            position: relative;
+            box-shadow: 0 10px 40px rgba(212, 175, 55, 0.08);
+            animation: adFadeIn 0.5s ease;
+        }
+        .marketing-ad-container.visible { display: block; }
+        @keyframes adFadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .marketing-ad-container::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 20%;
+            width: 60%; height: 1px;
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
+            opacity: 0.5;
+        }
+        .marketing-ad-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 16px;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.1);
+        }
+        .marketing-ad-label {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.55rem;
+            color: var(--gold);
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            opacity: 0.85;
+        }
+        .marketing-ad-label::before { content: '◈'; color: var(--gold); font-size: 0.7rem; }
+        .marketing-ad-close {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            cursor: pointer;
+            line-height: 1;
+            padding: 4px 8px;
+            transition: var(--transition);
+        }
+        .marketing-ad-close:hover { color: var(--gold); }
+        .marketing-ad-body {
+            display: flex;
+            gap: 14px;
+            padding: 14px 16px 16px;
+            align-items: flex-start;
+        }
+        .marketing-ad-media {
+            width: 96px;
+            height: 96px;
+            border-radius: 12px;
+            overflow: hidden;
+            flex-shrink: 0;
+            background: rgba(0,0,0,0.4);
+            border: 1px solid rgba(212, 175, 55, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--gold);
+            font-family: 'Orbitron', monospace;
+            font-size: 1.5rem;
+            position: relative;
+        }
+        .marketing-ad-media img, .marketing-ad-media video { width: 100%; height: 100%; object-fit: cover; }
+        .marketing-ad-content { flex: 1; min-width: 0; }
+        .marketing-ad-title {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 6px;
+            line-height: 1.3;
+        }
+        .marketing-ad-desc {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            margin-bottom: 12px;
+            word-wrap: break-word;
+        }
+        .marketing-ad-cta {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 20px;
+            border-radius: 30px;
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            color: var(--space);
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            transition: var(--transition);
+            font-family: 'Inter', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .marketing-ad-cta:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(212, 175, 55, 0.4);
+        }
+        @media (max-width: 480px) {
+            .marketing-ad-body { flex-direction: column; }
+            .marketing-ad-media { width: 100%; height: 140px; }
+        }
+
         /* ===== FORMULARIO SUBIR VIDEO ===== */
         .upload-section {
             background: var(--glass-bg);
@@ -309,7 +433,7 @@
         }
 
         /* ================================================================
-           🎯 MARCA DE AGUA "◈ Sariel's" (Estilo TikTok)
+           MARCA DE AGUA "◈ Sariel's" (Estilo TikTok)
            ================================================================ */
         .watermark {
             position: absolute;
@@ -619,12 +743,14 @@
             <a href="/features/mensajes/contactos.html" class="nav-link">◈ Contactos</a>
             <a href="/features/live/live.html" class="nav-link live">◉ Live</a>
             <a href="/features/internet/internet.html" class="nav-link">◈ Internet</a>
-            <a href="/features/videos/videos.html" class="nav-link active">🎬 Videos</a>
+            <a href="/features/videos/videos.html" class="nav-link active">▶ Videos</a>
+            <a href="/features/grupos/grupos.html" class="nav-link">◇ Grupos</a>
+            <a href="/marketing/marketing.html" class="nav-link">◈ Marketing</a>
         </nav>
 
         <!-- SUBIR VIDEO -->
         <div class="upload-section">
-            <h3 data-clave="videos_titulo">🎬 Subir nuevo video</h3>
+            <h3 data-clave="videos_titulo">◈ Subir nuevo video</h3>
             <form id="formSubirVideo" onsubmit="event.preventDefault(); subirVideo();">
                 <div class="form-group">
                     <label data-clave="videos_titulo_video">Título del video</label>
@@ -638,7 +764,7 @@
                     <label data-clave="videos_seleccionar_archivo">Selecciona el archivo de video</label>
                     <div class="file-input-wrapper">
                         <input type="file" id="inputArchivoVideo" accept="video/*" required />
-                        <button type="submit" class="btn-subir-video" id="btnSubirVideo" data-clave="videos_subir">🚀 Subir video</button>
+                        <button type="submit" class="btn-subir-video" id="btnSubirVideo" data-clave="videos_subir">◈ Subir video</button>
                     </div>
                     <div style="font-size:0.55rem;color:var(--text-muted);margin-top:4px;" data-clave="videos_formatos">
                         Formatos: MP4, WebM, MOV · Máx 100MB · Full HD
@@ -653,10 +779,30 @@
             </form>
         </div>
 
+        <!-- ============================================================
+             ANUNCIO DE MARKETING PARA VIDEOS
+             ============================================================ -->
+        <div class="marketing-ad-container" id="marketingAdContainer">
+            <div class="marketing-ad-header">
+                <span class="marketing-ad-label">Patrocinado</span>
+                <button class="marketing-ad-close" onclick="cerrarAnuncioVideo()" aria-label="Cerrar anuncio">&times;</button>
+            </div>
+            <div class="marketing-ad-body">
+                <div class="marketing-ad-media" id="marketingAdMediaVideo">
+                    <span>◈</span>
+                </div>
+                <div class="marketing-ad-content">
+                    <div class="marketing-ad-title" id="marketingAdTitleVideo">Cargando anuncio...</div>
+                    <div class="marketing-ad-desc" id="marketingAdDescVideo"></div>
+                    <button class="marketing-ad-cta" id="marketingAdCtaVideo" onclick="registrarClicAnuncioVideo()">Ver más</button>
+                </div>
+            </div>
+        </div>
+
         <!-- LISTA DE VIDEOS -->
         <div id="videosContainer">
             <div class="empty-state">
-                <span class="icon">🎬</span>
+                <span class="icon">◈</span>
                 <h3 data-clave="videos_empty">No hay videos aún</h3>
                 <p data-clave="videos_empty_desc">Sé el primero en compartir un video en Sariel's.</p>
             </div>
@@ -665,9 +811,9 @@
         <footer class="footer">
             <span><span class="brand">◈ Sariel's</span> · Sabor al Paladar · WEB3</span>
             <div class="footer-links">
-                <a href="/terminos" data-clave="videos_footer_terminos">📜 Términos</a>
-                <a href="/privacidad" data-clave="videos_footer_privacidad">🔒 Privacidad</a>
-                <a href="/cookies" data-clave="videos_footer_cookies">🍪 Cookies</a>
+                <a href="/terminos" data-clave="videos_footer_terminos">◈ Términos</a>
+                <a href="/privacidad" data-clave="videos_footer_privacidad">◈ Privacidad</a>
+                <a href="/cookies" data-clave="videos_footer_cookies">◈ Cookies</a>
                 <span style="opacity:0.3;">⚡ Polygon</span>
             </div>
         </footer>
@@ -677,12 +823,12 @@
     <!-- ===== MODAL REPRODUCTOR FLOTANTE (FULL SCREEN) ===== -->
     <div class="modal-overlay" id="videoModal">
         <div class="modal-video">
-            <button class="btn-cerrar" onclick="cerrarModalVideo()">✕</button>
+            <button class="btn-cerrar" onclick="cerrarModalVideo()">×</button>
 
             <div class="video-wrapper">
                 <video id="modalVideoPlayer" controls autoplay playsinline></video>
                 <!-- ============================================================
-                     🎯 MARCA DE AGUA "◈ Sariel's" (Estilo TikTok)
+                     MARCA DE AGUA "◈ Sariel's" (Estilo TikTok)
                      ============================================================ -->
                 <div class="watermark" id="watermark">
                     <span class="icon">◈</span>
@@ -696,16 +842,16 @@
                 <div class="autor" id="modalAutor">@usuario</div>
                 <div class="descripcion" id="modalDescripcion">Descripción del video</div>
                 <div class="stats">
-                    <span>👁️ <span id="modalVistas">0</span> vistas</span>
+                    <span>◈ <span id="modalVistas">0</span> vistas</span>
                     <span class="btn-video-like" id="btnLikeVideo" onclick="toggleLikeVideo()">
-                        ❤️ <span id="modalLikes">0</span>
+                        ◈ <span id="modalLikes">0</span>
                     </span>
-                    <span>💬 <span id="modalComentariosCount">0</span></span>
+                    <span>◈ <span id="modalComentariosCount">0</span></span>
                 </div>
             </div>
 
             <div class="comentarios-section">
-                <h4 data-clave="videos_comentarios">💬 Comentarios</h4>
+                <h4 data-clave="videos_comentarios">◈ Comentarios</h4>
                 <div id="modalComentariosLista">
                     <div style="color:var(--text-muted);font-size:0.7rem;padding:8px 0;" data-clave="videos_sin_comentarios">Sin comentarios. Sé el primero.</div>
                 </div>
@@ -720,7 +866,7 @@
     <div class="toast" id="toast"></div>
 
     <div id="errorBanner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:99999;background:#ff3366;color:#fff;padding:12px 16px;font-family:monospace;font-size:0.75rem;word-break:break-word;">
-        <strong>⚠️ Error detectado:</strong>
+        <strong>◈ Error detectado:</strong>
         <span id="errorBannerText"></span>
         <button onclick="document.getElementById('errorBanner').style.display='none'" style="float:right;background:none;border:1px solid #fff;color:#fff;border-radius:6px;padding:2px 10px;cursor:pointer;">Cerrar</button>
     </div>
@@ -731,12 +877,19 @@
 
     <script>
         // ================================================================
-        // VIDEOS - TODAS LAS FUNCIONES DEFINIDAS AQUÍ
+        // VIDEOS - TODAS LAS FUNCIONES
         // ================================================================
 
         var sessionUser = null;
         var videoActual = null;
         var likeCache = new Map();
+
+        // ===== ESTADO ANUNCIO =====
+        var anuncioActualVideo = null;
+        var adRefreshIntervalVideo = null;
+        var adSessionIdVideo = null;
+        var adVistaTimerVideo = null;
+        var adCerradoVideo = false;
 
         // ===== TOAST =====
         function showToast(msg, type) {
@@ -784,7 +937,157 @@
         }
 
         // ================================================================
-        // CARGAR VIDEOS CON AUTO-REPRODUCCIÓN AL HACER SCROLL
+        // ANUNCIOS DE MARKETING PARA VIDEOS
+        // ================================================================
+
+        function getOrCreateAdSessionIdVideo() {
+            if (adSessionIdVideo) return adSessionIdVideo;
+            adSessionIdVideo = `ads_video_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
+            return adSessionIdVideo;
+        }
+
+        function cerrarAnuncioVideo() {
+            adCerradoVideo = true;
+            var container = document.getElementById('marketingAdContainer');
+            if (container) container.classList.remove('visible');
+            anuncioActualVideo = null;
+        }
+
+        async function cargarAnuncioVideo(videoId) {
+            if (!videoId) return;
+            if (adCerradoVideo) return;
+
+            var session = await getSession();
+            if (!session) return;
+
+            try {
+                var response = await fetch('/api/marketing/get-ad', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + session.access_token
+                    },
+                    body: JSON.stringify({
+                        target_tipo: 'video',
+                        target_id: String(videoId),
+                        session_id: getOrCreateAdSessionIdVideo()
+                    })
+                });
+
+                if (!response.ok) {
+                    console.warn('No se pudo obtener anuncio:', response.status);
+                    return;
+                }
+
+                var data = await response.json();
+
+                if (!data.success || !data.ad) {
+                    var container = document.getElementById('marketingAdContainer');
+                    if (container) container.classList.remove('visible');
+                    return;
+                }
+
+                mostrarAnuncioVideo(data.ad);
+                anuncioActualVideo = data.ad;
+
+                if (adVistaTimerVideo) clearTimeout(adVistaTimerVideo);
+                adVistaTimerVideo = setTimeout(function() {
+                    registrarVistaAnuncioVideo(videoId);
+                }, 3000);
+
+            } catch (error) {
+                console.error('Error cargando anuncio de video:', error);
+            }
+        }
+
+        function mostrarAnuncioVideo(ad) {
+            var container = document.getElementById('marketingAdContainer');
+            var media = document.getElementById('marketingAdMediaVideo');
+            var title = document.getElementById('marketingAdTitleVideo');
+            var desc = document.getElementById('marketingAdDescVideo');
+            var cta = document.getElementById('marketingAdCtaVideo');
+
+            if (!container || !media || !title || !desc || !cta) return;
+
+            if (ad.imagen_url) {
+                media.innerHTML = '<img src="' + escapeHTML(ad.imagen_url) + '" alt="' + escapeHTML(ad.titulo) + '" loading="lazy" onerror="this.parentElement.innerHTML=\'<span>◈</span>\'">';
+            } else if (ad.video_url) {
+                media.innerHTML = '<video src="' + escapeHTML(ad.video_url) + '" muted autoplay loop playsinline></video>';
+            } else {
+                media.innerHTML = '<span>◈</span>';
+            }
+
+            title.textContent = ad.titulo || 'Patrocinado';
+            desc.textContent = ad.descripcion || '';
+            cta.textContent = ad.cta_texto || 'Ver más';
+
+            desc.style.display = ad.descripcion ? 'block' : 'none';
+
+            container.classList.add('visible');
+        }
+
+        async function registrarVistaAnuncioVideo(videoId) {
+            if (!anuncioActualVideo) return;
+            var session = await getSession();
+            if (!session) return;
+
+            try {
+                await fetch('/api/marketing/register-event', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + session.access_token
+                    },
+                    body: JSON.stringify({
+                        ad_id: anuncioActualVideo.id,
+                        campaign_id: anuncioActualVideo.campaign_id,
+                        target_tipo: 'video',
+                        target_id: String(videoId),
+                        evento: 'vista',
+                        session_id: getOrCreateAdSessionIdVideo()
+                    })
+                });
+            } catch (error) {
+                console.warn('Error registrando vista:', error);
+            }
+        }
+
+        async function registrarClicAnuncioVideo() {
+            if (!anuncioActualVideo) return;
+            var session = await getSession();
+            if (!session) return;
+
+            try {
+                var videoId = videoActual ? videoActual.id : null;
+
+                await fetch('/api/marketing/register-event', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + session.access_token
+                    },
+                    body: JSON.stringify({
+                        ad_id: anuncioActualVideo.id,
+                        campaign_id: anuncioActualVideo.campaign_id,
+                        target_tipo: 'video',
+                        target_id: String(videoId),
+                        evento: 'clic',
+                        session_id: getOrCreateAdSessionIdVideo()
+                    })
+                });
+
+                if (anuncioActualVideo.video_url) {
+                    window.open(anuncioActualVideo.video_url, '_blank', 'noopener');
+                } else if (anuncioActualVideo.imagen_url) {
+                    window.open(anuncioActualVideo.imagen_url, '_blank', 'noopener');
+                }
+            } catch (error) {
+                console.warn('Error registrando clic:', error);
+            }
+        }
+
+        // ================================================================
+        // CARGAR VIDEOS
         // ================================================================
         async function cargarVideos() {
             try {
@@ -800,7 +1103,7 @@
                 var data = result.data || [];
 
                 if (data.length === 0) {
-                    container.innerHTML = '<div class="empty-state"><span class="icon">🎬</span><h3 data-clave="videos_empty">No hay videos aún</h3><p data-clave="videos_empty_desc">Sé el primero en compartir un video en Sariel\'s.</p></div>';
+                    container.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3 data-clave="videos_empty">No hay videos aún</h3><p data-clave="videos_empty_desc">Sé el primero en compartir un video en Sariel\'s.</p></div>';
                     return;
                 }
 
@@ -811,7 +1114,7 @@
                     var miniatura = v.url_miniatura || '';
                     var thumbnailHtml = miniatura ?
                         '<img src="' + escapeHTML(miniatura) + '" alt="' + escapeHTML(v.titulo) + '" />' :
-                        '<span style="font-size:4rem;opacity:0.3;">🎬</span>';
+                        '<span style="font-size:4rem;opacity:0.3;">◈</span>';
 
                     return '<div class="video-card" data-video-id="' + v.id + '" onclick="abrirVideo(\'' + v.id + '\')">' +
                         '<div class="thumbnail">' +
@@ -823,43 +1126,18 @@
                         '<div class="autor">' + escapeHTML(autor.nombre || 'Usuario') + ' · ' + new Date(v.created_at).toLocaleDateString() + '</div>' +
                         '<div class="descripcion">' + escapeHTML((v.descripcion || '').substring(0, 100)) + '</div>' +
                         '<div class="stats">' +
-                        '<span>👁️ ' + vistas + '</span>' +
-                        '<span>❤️ ' + likes + '</span>' +
-                        '<span>💬 ' + (v.comentarios || 0) + '</span>' +
+                        '<span>◈ ' + vistas + '</span>' +
+                        '<span>◈ ' + likes + '</span>' +
+                        '<span>◈ ' + (v.comentarios || 0) + '</span>' +
                         '</div>' +
                         '</div>' +
                         '</div>';
                 }).join('');
 
-                // ✅ Activar auto-reproducción al hacer scroll
-                activarAutoReproduccion();
-
             } catch (e) {
                 console.error('Error cargando videos:', e);
-                showToast('❌ Error al cargar videos', 'error');
+                showToast('Error al cargar videos', 'error');
             }
-        }
-
-        // ================================================================
-        // AUTO-REPRODUCCIÓN AL HACER SCROLL (como TikTok)
-        // ================================================================
-        function activarAutoReproduccion() {
-            var cards = document.querySelectorAll('.video-card');
-            var observer = new IntersectionObserver(function(entries) {
-                entries.forEach(function(entry) {
-                    if (entry.isIntersecting) {
-                        var videoId = entry.target.dataset.videoId;
-                        if (videoId) {
-                            // Abrir el video automáticamente cuando es visible
-                            abrirVideo(videoId);
-                        }
-                    }
-                });
-            }, { threshold: 0.6 }); // 60% visible para activar
-
-            cards.forEach(function(card) {
-                observer.observe(card);
-            });
         }
 
         // ================================================================
@@ -871,21 +1149,21 @@
             var fileInput = document.getElementById('inputArchivoVideo');
             var btn = document.getElementById('btnSubirVideo');
 
-            if (!titulo) { showToast('⚠️ Escribe un título', 'warning'); return; }
-            if (!fileInput.files || fileInput.files.length === 0) { showToast('⚠️ Selecciona un video', 'warning'); return; }
+            if (!titulo) { showToast('Escribe un título', 'warning'); return; }
+            if (!fileInput.files || fileInput.files.length === 0) { showToast('Selecciona un video', 'warning'); return; }
 
             var file = fileInput.files[0];
             var maxSize = 100 * 1024 * 1024;
-            if (file.size > maxSize) { showToast('⚠️ El video es demasiado grande (máx 100MB)', 'error'); return; }
+            if (file.size > maxSize) { showToast('El video es demasiado grande (máx 100MB)', 'error'); return; }
 
             var allowedTypes = ['video/mp4', 'video/webm', 'video/quicktime', 'video/x-msvideo'];
-            if (!allowedTypes.includes(file.type)) { showToast('⚠️ Formato no soportado. Usa MP4, WebM o MOV', 'error'); return; }
+            if (!allowedTypes.includes(file.type)) { showToast('Formato no soportado. Usa MP4, WebM o MOV', 'error'); return; }
 
             var session = await getSession();
-            if (!session) { showToast('⚠️ Inicia sesión para subir videos', 'error'); return; }
+            if (!session) { showToast('Inicia sesión para subir videos', 'error'); return; }
 
             btn.disabled = true;
-            btn.textContent = '⏳ Subiendo...';
+            btn.textContent = 'Subiendo...';
 
             var progressEl = document.getElementById('uploadProgress');
             var progressFill = document.getElementById('progressFill');
@@ -931,7 +1209,7 @@
 
                 if (insertResult.error) throw insertResult.error;
 
-                showToast('✅ Video subido correctamente', 'success');
+                showToast('Video subido correctamente', 'success');
                 document.getElementById('inputTituloVideo').value = '';
                 document.getElementById('inputDescripcionVideo').value = '';
                 fileInput.value = '';
@@ -943,15 +1221,15 @@
 
             } catch (e) {
                 console.error('Error subiendo video:', e);
-                showToast('❌ Error al subir video: ' + e.message, 'error');
+                showToast('Error al subir video: ' + e.message, 'error');
             } finally {
                 btn.disabled = false;
-                btn.textContent = '🚀 Subir video';
+                btn.textContent = '◈ Subir video';
             }
         }
 
         // ================================================================
-        // ABRIR VIDEO EN MODAL (FULL SCREEN) - CORREGIDO SIN ADVERTENCIA
+        // ABRIR VIDEO EN MODAL
         // ================================================================
         async function abrirVideo(videoId) {
             var modal = document.getElementById('videoModal');
@@ -981,34 +1259,34 @@
                 var likesCount = video.likes || 0;
                 if (liked) {
                     likeBtn.classList.add('liked');
-                    likeBtn.innerHTML = '❤️ <span id="modalLikes">' + likesCount + '</span>';
+                    likeBtn.innerHTML = '◈ <span id="modalLikes">' + likesCount + '</span>';
                 } else {
                     likeBtn.classList.remove('liked');
-                    likeBtn.innerHTML = '🤍 <span id="modalLikes">' + likesCount + '</span>';
+                    likeBtn.innerHTML = '◈ <span id="modalLikes">' + likesCount + '</span>';
                 }
 
                 document.getElementById('modalComentariosCount').textContent = video.comentarios || 0;
 
-                // ✅ ASIGNAR FUENTE Y CARGAR
                 videoPlayer.src = video.url_video;
                 videoPlayer.load();
 
                 cargarComentariosVideo(videoId);
 
-                // ✅ MOSTRAR MODAL
+                // ✅ Cargar anuncio para este video
+                adCerradoVideo = false;
+                cargarAnuncioVideo(videoId);
+
                 modal.classList.add('show');
 
-                // ✅ REPRODUCIR CON MANEJO DE ERROR SILENCIOSO (ADVERTENCIA ELIMINADA)
                 try {
                     await videoPlayer.play();
                 } catch (playError) {
-                    // ✅ Advertencia silenciada - el usuario puede dar clic en play
-                    console.log('ℹ️ El usuario debe interactuar para reproducir el video.');
+                    console.log('El usuario debe interactuar para reproducir el video.');
                 }
 
             } catch (e) {
                 console.error('Error abriendo video:', e);
-                showToast('❌ Error al cargar video', 'error');
+                showToast('Error al cargar video', 'error');
             }
         }
 
@@ -1041,11 +1319,6 @@
                         user_agent: navigator.userAgent
                     });
 
-                await window.supabase
-                    .from('videos')
-                    .update({ reproducciones: window.supabase.raw('reproducciones + 1') })
-                    .eq('id', videoId);
-
             } catch (e) { console.error('Error registrando vista:', e); }
         }
 
@@ -1073,8 +1346,8 @@
         // TOGGLE LIKE VIDEO
         // ================================================================
         async function toggleLikeVideo() {
-            if (!videoActual) { showToast('⚠️ No hay video seleccionado', 'warning'); return; }
-            if (!sessionUser) { showToast('⚠️ Inicia sesión para dar like', 'error'); return; }
+            if (!videoActual) { showToast('No hay video seleccionado', 'warning'); return; }
+            if (!sessionUser) { showToast('Inicia sesión para dar like', 'error'); return; }
 
             var videoId = videoActual.id;
             var likeBtn = document.getElementById('btnLikeVideo');
@@ -1096,14 +1369,6 @@
                     var current = parseInt(likesSpan.textContent) || 0;
                     likesSpan.textContent = Math.max(0, current - 1);
                     likeBtn.classList.remove('liked');
-                    likeBtn.innerHTML = '🤍 <span id="modalLikes">' + likesSpan.textContent + '</span>';
-
-                    await window.supabase
-                        .from('videos')
-                        .update({ likes: window.supabase.raw('likes - 1') })
-                        .eq('id', videoId);
-
-                    videoActual.likes = Math.max(0, (videoActual.likes || 0) - 1);
 
                 } else {
                     var result2 = await window.supabase
@@ -1111,7 +1376,7 @@
                         .insert({ video_id: videoId, usuario_id: sessionUser.id });
                     if (result2.error) {
                         if (result2.error.code === '23505') {
-                            showToast('⚠️ Ya diste like', 'warning');
+                            showToast('Ya diste like', 'warning');
                             return;
                         }
                         throw result2.error;
@@ -1121,19 +1386,11 @@
                     var current2 = parseInt(likesSpan.textContent) || 0;
                     likesSpan.textContent = current2 + 1;
                     likeBtn.classList.add('liked');
-                    likeBtn.innerHTML = '❤️ <span id="modalLikes">' + likesSpan.textContent + '</span>';
-
-                    await window.supabase
-                        .from('videos')
-                        .update({ likes: window.supabase.raw('likes + 1') })
-                        .eq('id', videoId);
-
-                    videoActual.likes = (videoActual.likes || 0) + 1;
                 }
 
             } catch (e) {
                 console.error('Error toggling like:', e);
-                showToast('❌ Error al procesar like', 'error');
+                showToast('Error al procesar like', 'error');
             }
         }
 
@@ -1181,13 +1438,13 @@
         // ENVIAR COMENTARIO VIDEO
         // ================================================================
         async function enviarComentarioVideo() {
-            if (!videoActual) { showToast('⚠️ No hay video seleccionado', 'warning'); return; }
-            if (!sessionUser) { showToast('⚠️ Inicia sesión para comentar', 'error'); return; }
+            if (!videoActual) { showToast('No hay video seleccionado', 'warning'); return; }
+            if (!sessionUser) { showToast('Inicia sesión para comentar', 'error'); return; }
 
             var input = document.getElementById('inputComentarioVideo');
             var texto = input.value.trim();
-            if (!texto) { showToast('⚠️ Escribe un comentario', 'warning'); return; }
-            if (texto.length > 2000) { showToast('⚠️ El comentario es demasiado largo', 'error'); return; }
+            if (!texto) { showToast('Escribe un comentario', 'warning'); return; }
+            if (texto.length > 2000) { showToast('El comentario es demasiado largo', 'error'); return; }
 
             try {
                 var result = await window.supabase
@@ -1201,23 +1458,18 @@
                 if (result.error) throw result.error;
 
                 input.value = '';
-                showToast('✅ Comentario agregado', 'success');
+                showToast('Comentario agregado', 'success');
                 cargarComentariosVideo(videoActual.id);
 
                 var countSpan = document.getElementById('modalComentariosCount');
                 var current = parseInt(countSpan.textContent) || 0;
                 countSpan.textContent = current + 1;
 
-                await window.supabase
-                    .from('videos')
-                    .update({ comentarios: window.supabase.raw('comentarios + 1') })
-                    .eq('id', videoActual.id);
-
                 videoActual.comentarios = (videoActual.comentarios || 0) + 1;
 
             } catch (e) {
                 console.error('Error enviando comentario:', e);
-                showToast('❌ Error al comentar', 'error');
+                showToast('Error al comentar', 'error');
             }
         }
 
@@ -1284,6 +1536,9 @@
         window.verTokens = verTokens;
         window.showToast = showToast;
         window.cargarUsuarioActual = cargarUsuarioActual;
+        window.cerrarAnuncioVideo = cerrarAnuncioVideo;
+        window.registrarClicAnuncioVideo = registrarClicAnuncioVideo;
+        window.cargarAnuncioVideo = cargarAnuncioVideo;
     </script>
 
 </body>
