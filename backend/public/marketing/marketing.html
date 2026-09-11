@@ -6,12 +6,10 @@
     <title>◈ Marketing · Sariel's</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>">
 
-    <!-- Preconnect para fuentes -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Orbitron:wght@400;500;600;700;800;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 
-    <!-- Supabase (cliente público) -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
     <style>
@@ -124,7 +122,6 @@
             100% { transform: translateY(-100vh) translateX(40px); opacity: 0; }
         }
 
-        /* Prefers-reduced-motion */
         @media (prefers-reduced-motion: reduce) {
             .particle, .bg-glow, .logo-hex, .marketing-hero::before, .badge.activa {
                 animation: none !important;
@@ -348,9 +345,13 @@
             border-color: var(--glass-border-strong);
         }
         .card-icon {
-            font-size: 1.2rem;
-            margin-bottom: 8px;
+            font-family: 'Orbitron', monospace;
+            font-size: 1.1rem;
+            color: var(--gold);
+            margin-bottom: 10px;
             filter: drop-shadow(0 0 10px var(--gold-glow));
+            letter-spacing: 0;
+            opacity: 0.9;
         }
         .card h3 {
             margin: 0 0 8px 0;
@@ -479,6 +480,7 @@
             grid-column: 1 / -1;
         }
         .empty-state .icon {
+            font-family: 'Orbitron', monospace;
             font-size: 3rem;
             display: block;
             margin-bottom: 16px;
@@ -717,9 +719,9 @@
             <a href="/features/mensajes/contactos.html" class="nav-link">◈ Contactos</a>
             <a href="/features/live/live.html" class="nav-link">◉ Live</a>
             <a href="/features/internet/internet.html" class="nav-link">◈ Internet</a>
-            <a href="/features/videos/videos.html" class="nav-link">🎬 Videos</a>
-            <a href="/features/grupos/grupos.html" class="nav-link">👥 Grupos</a>
-            <a href="/marketing/marketing.html" class="nav-link active">📢 Marketing</a>
+            <a href="/features/videos/videos.html" class="nav-link">▶ Videos</a>
+            <a href="/features/grupos/grupos.html" class="nav-link">◇ Grupos</a>
+            <a href="/marketing/marketing.html" class="nav-link active">◈ Marketing</a>
         </nav>
 
         <div class="marketing-hero">
@@ -733,22 +735,22 @@
 
         <section id="dashboard-summary" class="summary-cards">
             <div class="card">
-                <div class="card-icon">💰</div>
+                <div class="card-icon">◈</div>
                 <h3>Presupuesto Total</h3>
                 <p id="total-budget">$0.00</p>
             </div>
             <div class="card">
-                <div class="card-icon">⚡</div>
+                <div class="card-icon">▲</div>
                 <h3>Campañas Activas</h3>
                 <p id="active-campaigns">0</p>
             </div>
             <div class="card">
-                <div class="card-icon">📉</div>
+                <div class="card-icon">▼</div>
                 <h3>Gasto Total</h3>
                 <p id="total-spent">$0.00</p>
             </div>
             <div class="card">
-                <div class="card-icon">📡</div>
+                <div class="card-icon">◉</div>
                 <h3>Alcance Total</h3>
                 <p id="total-reach">0</p>
             </div>
@@ -780,9 +782,9 @@
             <div id="detail-info"></div>
             <div class="stats-grid" id="detail-stats"></div>
             <div class="charts-container">
-                <div class="chart-box"><h4>📊 Alcance por día</h4><canvas id="chart-reach"></canvas></div>
-                <div class="chart-box"><h4>👁 Impresiones por día</h4><canvas id="chart-impressions"></canvas></div>
-                <div class="chart-box"><h4>💰 Gasto por día</h4><canvas id="chart-spent"></canvas></div>
+                <div class="chart-box"><h4>◈ Alcance por día</h4><canvas id="chart-reach"></canvas></div>
+                <div class="chart-box"><h4>◉ Impresiones por día</h4><canvas id="chart-impressions"></canvas></div>
+                <div class="chart-box"><h4>▼ Gasto por día</h4><canvas id="chart-spent"></canvas></div>
             </div>
         </div>
     </div>
@@ -794,7 +796,7 @@
             <div id="wizard-step-1" class="wizard-step">
                 <h3>▸ Paso 01 — ¿Dónde anunciar?</h3>
                 <button class="btn-option" data-type="live">◉ LIVE</button>
-                <button class="btn-option" data-type="grupo">👥 GRUPO</button>
+                <button class="btn-option" data-type="grupo">◇ GRUPO</button>
             </div>
             <div id="wizard-step-2" class="wizard-step hidden">
                 <h3>▸ Paso 02 — Seleccionar destino</h3>
@@ -809,10 +811,10 @@
             <div id="wizard-step-4" class="wizard-step hidden">
                 <h3>▸ Paso 04 — Objetivo</h3>
                 <select id="campaign-objective">
-                    <option value="alcance">📡 Alcance</option>
-                    <option value="reproducciones">🎬 Reproducciones</option>
-                    <option value="interacciones">💬 Interacciones</option>
-                    <option value="clics">👆 Clics</option>
+                    <option value="alcance">◈ Alcance</option>
+                    <option value="reproducciones">▶ Reproducciones</option>
+                    <option value="interacciones">◆ Interacciones</option>
+                    <option value="clics">▲ Clics</option>
                 </select>
                 <button class="btn btn-primary btn-next">Siguiente →</button>
             </div>
@@ -834,7 +836,7 @@
             <div id="wizard-step-7" class="wizard-step hidden">
                 <h3>▸ Paso 07 — Resumen y Pago</h3>
                 <div id="summary-content"></div>
-                <button id="btn-pay" class="btn btn-primary">💳 Continuar al Pago</button>
+                <button id="btn-pay" class="btn btn-primary">◈ Continuar al Pago</button>
             </div>
         </div>
     </div>
@@ -846,16 +848,12 @@
        MARKETING - SARIEL'S ECOSYSTEM · AUDITED VERSION
        ============================================================ */
 
-    // ===== CONFIGURACIÓN =====
-    // Estas credenciales son PÚBLICAS (publishable key). NUNCA poner service_role aquí.
     const SUPABASE_URL = 'https://zultnlogdoajehbswlih.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
-    const DEBUG = false; // Cambiar a true para ver logs en consola
+    const DEBUG = false;
 
-    // ===== ESTADOS VÁLIDOS =====
     const ESTADOS_VALIDOS = ['borrador', 'pendiente_pago', 'pagada', 'pendiente_revision', 'activa', 'pausada', 'finalizada', 'rechazada', 'cancelada'];
 
-    // ===== ESTADO GLOBAL =====
     let currentUser = null;
     let campaigns = [];
     let currentWizardData = {};
@@ -866,14 +864,8 @@
     let chartJsLoaded = false;
     let chartJsLoading = false;
 
-    // ===== UTILIDADES =====
-    function log(...args) {
-        if (DEBUG) console.log('📢', ...args);
-    }
-
-    function logError(...args) {
-        console.error('🔴', ...args);
-    }
+    function log(...args) { if (DEBUG) console.log('◈', ...args); }
+    function logError(...args) { console.error('✕', ...args); }
 
     function escapeHTML(texto) {
         if (texto === null || texto === undefined) return '';
@@ -890,9 +882,7 @@
         try {
             const u = new URL(str);
             return u.protocol === 'http:' || u.protocol === 'https:';
-        } catch {
-            return false;
-        }
+        } catch { return false; }
     }
 
     function normalizeEstado(estado) {
@@ -901,11 +891,8 @@
 
     function formatFecha(fecha) {
         if (!fecha) return '—';
-        try {
-            return new Date(fecha).toLocaleDateString('es-MX');
-        } catch {
-            return '—';
-        }
+        try { return new Date(fecha).toLocaleDateString('es-MX'); }
+        catch { return '—'; }
     }
 
     function showToast(msg, type, duration) {
@@ -917,7 +904,6 @@
         toastTimeout = setTimeout(() => t.classList.remove('show'), duration || 3500);
     }
 
-    // ===== PARTÍCULAS =====
     function renderParticles() {
         if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
         const container = document.getElementById('particles');
@@ -936,50 +922,34 @@
         }
     }
 
-    // ===== CHART.JS LAZY LOAD =====
     function loadChartJs() {
         return new Promise((resolve, reject) => {
             if (chartJsLoaded) return resolve();
             if (chartJsLoading) {
                 const check = setInterval(() => {
-                    if (chartJsLoaded) {
-                        clearInterval(check);
-                        resolve();
-                    }
+                    if (chartJsLoaded) { clearInterval(check); resolve(); }
                 }, 100);
                 return;
             }
             chartJsLoading = true;
             const script = document.createElement('script');
             script.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js';
-            script.onload = () => {
-                chartJsLoaded = true;
-                chartJsLoading = false;
-                resolve();
-            };
-            script.onerror = () => {
-                chartJsLoading = false;
-                reject(new Error('No se pudo cargar Chart.js'));
-            };
+            script.onload = () => { chartJsLoaded = true; chartJsLoading = false; resolve(); };
+            script.onerror = () => { chartJsLoading = false; reject(new Error('No se pudo cargar Chart.js')); };
             document.head.appendChild(script);
         });
     }
 
-    // ===== INIT PRINCIPAL =====
     async function init() {
         log('INIT: Iniciando módulo Marketing');
         renderParticles();
-
-        // 1. Siempre enganchar wizard (aunque Supabase falle)
         setupWizard();
 
-        // 2. Verificar Supabase SDK
         if (!window.supabase || !window.supabase.createClient) {
             showBootError('El SDK de Supabase no cargó. Revisa tu conexión.');
             return;
         }
 
-        // 3. Crear cliente
         try {
             supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         } catch (err) {
@@ -988,7 +958,6 @@
             return;
         }
 
-        // 4. Obtener usuario
         let user = null;
         try {
             const { data, error } = await supabaseClient.auth.getUser();
@@ -998,33 +967,23 @@
             logError('Error obteniendo usuario:', err);
         }
 
-        if (!user) {
-            showNoSession();
-            return;
-        }
+        if (!user) { showNoSession(); return; }
 
         currentUser = user;
         log('Usuario autenticado:', user.id);
 
-        // 5. Cargar campañas (con try/catch propio)
-        try {
-            await loadCampaigns();
-        } catch (err) {
-            logError('Error cargando campañas:', err);
-            showCampaignsError(err.message);
-        }
+        try { await loadCampaigns(); }
+        catch (err) { logError('Error cargando campañas:', err); showCampaignsError(err.message); }
 
-        // 6. Enganchar filtros (después de tener campañas)
         setupFilters();
     }
 
-    // ===== ESTADOS DE BOOT =====
     function showBootError(msg) {
         const el = document.getElementById('campaigns-list');
         if (!el) return;
         el.innerHTML = `
             <div class="empty-state error-state">
-                <span class="icon">⚠</span>
+                <span class="icon">✕</span>
                 <p>Error inicializando Marketing</p>
                 <small>${escapeHTML(msg)}</small>
             </div>
@@ -1048,25 +1007,17 @@
         if (!el) return;
         el.innerHTML = `
             <div class="empty-state error-state">
-                <span class="icon">⚠</span>
+                <span class="icon">✕</span>
                 <p>Error cargando campañas</p>
                 <small>${escapeHTML(msg || 'Error desconocido')}</small>
             </div>
         `;
     }
 
-    // ===== CARGAR CAMPAÑAS =====
     async function loadCampaigns() {
         const el = document.getElementById('campaigns-list');
-        if (!el) {
-            logError('#campaigns-list no existe en el DOM');
-            return;
-        }
-
-        if (!currentUser || !currentUser.id) {
-            showNoSession();
-            return;
-        }
+        if (!el) { logError('#campaigns-list no existe en el DOM'); return; }
+        if (!currentUser || !currentUser.id) { showNoSession(); return; }
 
         el.innerHTML = `
             <div class="empty-state">
@@ -1081,11 +1032,7 @@
             .eq('anunciante_id', currentUser.id)
             .order('created_at', { ascending: false });
 
-        if (error) {
-            logError('Error Supabase:', error);
-            showCampaignsError(error.message);
-            return;
-        }
+        if (error) { logError('Error Supabase:', error); showCampaignsError(error.message); return; }
 
         campaigns = data || [];
 
@@ -1104,7 +1051,6 @@
         calculateSummary();
     }
 
-    // ===== RENDER CAMPAÑAS (SEGURO CONTRA XSS) =====
     function renderCampaigns() {
         const container = document.getElementById('campaigns-list');
         if (!container) return;
@@ -1123,7 +1069,6 @@
             return;
         }
 
-        // 🔒 SEGURIDAD: escapeHTML en todo dato de BD + data-id + sin onclick inline
         container.innerHTML = filtered.map(camp => {
             const estado = normalizeEstado(camp.estado);
             const nombre = escapeHTML(camp.nombre) || 'Sin nombre';
@@ -1160,19 +1105,15 @@
             `;
         }).join('');
 
-        // 🔒 Delegación de eventos (evita onclick inline)
         if (!container._clickBound) {
             container._clickBound = true;
             container.addEventListener('click', (e) => {
                 const card = e.target.closest('.campaign-card');
-                if (card && card.dataset.id) {
-                    openDetail(card.dataset.id);
-                }
+                if (card && card.dataset.id) openDetail(card.dataset.id);
             });
         }
     }
 
-    // ===== SUMMARY =====
     function calculateSummary() {
         let budget = 0, active = 0, spent = 0;
         campaigns.forEach(c => {
@@ -1186,7 +1127,6 @@
         document.getElementById('total-reach').textContent = '0';
     }
 
-    // ===== FILTROS =====
     function setupFilters() {
         document.querySelectorAll('.filter-btn').forEach(btn => {
             if (btn._bound) return;
@@ -1200,7 +1140,6 @@
         });
     }
 
-    // ===== DETALLE =====
     async function openDetail(campaignId) {
         const campaign = campaigns.find(c => c.id === campaignId);
         if (!campaign) return;
@@ -1229,7 +1168,7 @@
         if (error || !stats || stats.length === 0) {
             document.getElementById('detail-stats').innerHTML = `
                 <div style="grid-column:1/-1;text-align:center;padding:24px;color:var(--warning);font-size:0.72rem;line-height:1.6;">
-                    ⚠ Las estadísticas aparecerán cuando la campaña<br>comience a recibir tráfico.
+                    ✕ Las estadísticas aparecerán cuando la campaña<br>comience a recibir tráfico.
                 </div>
             `;
             return;
@@ -1256,7 +1195,6 @@
             <div class="stat-item"><div class="label">Conversiones</div><div class="value">${totals.conversiones.toLocaleString()}</div></div>
         `;
 
-        // Lazy load Chart.js solo cuando se abre el detalle
         try {
             await loadChartJs();
             renderCharts(stats);
@@ -1265,7 +1203,6 @@
         }
     }
 
-    // ===== GRÁFICOS =====
     function renderCharts(stats) {
         if (typeof Chart === 'undefined') return;
 
@@ -1362,16 +1299,12 @@
         });
     }
 
-    // ===== WIZARD =====
     function setupWizard() {
         const btnCreate = document.getElementById('btn-create-campaign');
         if (btnCreate && !btnCreate._bound) {
             btnCreate._bound = true;
             btnCreate.addEventListener('click', () => {
-                if (!currentUser) {
-                    showToast('⚠ Inicia sesión para crear campañas', 'warning');
-                    return;
-                }
+                if (!currentUser) { showToast('✕ Inicia sesión para crear campañas', 'warning'); return; }
                 document.getElementById('modal-create').classList.remove('hidden');
                 resetWizard();
             });
@@ -1451,12 +1384,12 @@
 
         if (step === '2') {
             currentWizardData.target_id = document.getElementById('select-target').value;
-            if (!currentWizardData.target_id) { showToast('⚠ Selecciona un destino', 'warning'); return; }
+            if (!currentWizardData.target_id) { showToast('✕ Selecciona un destino', 'warning'); return; }
             showWizardStep('3');
         } else if (step === '3') {
             const nombre = document.getElementById('campaign-name').value.trim();
-            if (!nombre) { showToast('⚠ Escribe un nombre', 'warning'); return; }
-            if (nombre.length > 120) { showToast('⚠ Máximo 120 caracteres', 'warning'); return; }
+            if (!nombre) { showToast('✕ Escribe un nombre', 'warning'); return; }
+            if (nombre.length > 120) { showToast('✕ Máximo 120 caracteres', 'warning'); return; }
             currentWizardData.nombre = nombre;
             showWizardStep('4');
         } else if (step === '4') {
@@ -1464,8 +1397,8 @@
             showWizardStep('5');
         } else if (step === '5') {
             const budget = parseFloat(document.getElementById('campaign-budget').value);
-            if (!budget || budget <= 0) { showToast('⚠ Ingresa un presupuesto válido', 'warning'); return; }
-            if (budget > 1000000) { showToast('⚠ Presupuesto demasiado alto', 'warning'); return; }
+            if (!budget || budget <= 0) { showToast('✕ Ingresa un presupuesto válido', 'warning'); return; }
+            if (budget > 1000000) { showToast('✕ Presupuesto demasiado alto', 'warning'); return; }
             currentWizardData.presupuesto = budget;
             showWizardStep('6');
         } else if (step === '6') {
@@ -1475,9 +1408,9 @@
             const videoUrl = document.getElementById('ad-video').value.trim();
             const cta = document.getElementById('ad-cta').value.trim();
 
-            if (!titulo) { showToast('⚠ Escribe un título', 'warning'); return; }
-            if (imagenUrl && !isValidHttpUrl(imagenUrl)) { showToast('⚠ URL de imagen inválida', 'warning'); return; }
-            if (videoUrl && !isValidHttpUrl(videoUrl)) { showToast('⚠ URL de video inválida', 'warning'); return; }
+            if (!titulo) { showToast('✕ Escribe un título', 'warning'); return; }
+            if (imagenUrl && !isValidHttpUrl(imagenUrl)) { showToast('✕ URL de imagen inválida', 'warning'); return; }
+            if (videoUrl && !isValidHttpUrl(videoUrl)) { showToast('✕ URL de video inválida', 'warning'); return; }
 
             currentWizardData.ad = {
                 titulo: titulo,
@@ -1498,7 +1431,6 @@
         }
     }
 
-    // ===== CREAR CAMPAÑA =====
     async function processPayment() {
         try {
             if (!currentUser) throw new Error('No hay sesión');
@@ -1544,26 +1476,23 @@
                 [targetField]: currentWizardData.target_id
             }]);
 
-            showToast('✓ Campaña creada · Pendiente de pago', 'success', 4000);
+            showToast('◈ Campaña creada · Pendiente de pago', 'success', 4000);
             document.getElementById('modal-create').classList.add('hidden');
 
-            // En vez de location.reload(), recargamos datos y actualizamos DOM
             await loadCampaigns();
 
         } catch (err) {
             logError('Error creando campaña:', err);
-            showToast('❌ Error: ' + err.message, 'error');
+            showToast('✕ Error: ' + err.message, 'error');
         }
     }
 
-    // ===== BOOT =====
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);
     } else {
         init();
     }
 
-    // Exponer para el HTML
     window.openDetail = openDetail;
     </script>
 </body>
