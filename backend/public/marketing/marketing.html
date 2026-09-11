@@ -2,21 +2,305 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Marketing - Sariel's Ecosystem</title>
-    <link rel="stylesheet" href="marketing.css">
-    <!-- Incluir Chart.js para gráficos reales -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>📢 Marketing · Sariel's</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        :root {
+            --gold: #D4AF37;
+            --gold-dark: #b8923a;
+            --gold-light: #e8c84a;
+            --green-deep: #0F2D1A;
+            --space: #05080f;
+            --text-primary: #f0f4f8;
+            --text-secondary: #c0d8e8;
+            --text-muted: #8aa8b8;
+            --glass-bg: rgba(15, 45, 26, 0.45);
+            --glass-border: rgba(212, 175, 55, 0.15);
+            --shadow-gold: 0 8px 40px rgba(212, 175, 55, 0.3);
+            --radius: 16px;
+            --radius-xl: 28px;
+            --transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            --success: #00d68f;
+            --danger: #ff3366;
+            --warning: #f59e0b;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: var(--space);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            background-image:
+                radial-gradient(ellipse at 20% 50%, rgba(26, 74, 42, 0.3) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 50%, rgba(212, 175, 55, 0.06) 0%, transparent 60%);
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+            padding-bottom: 80px;
+        }
+
+        .bg-glow {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(150px);
+            pointer-events: none;
+            z-index: 0;
+        }
+        .bg-glow-1 { width: 500px; height: 500px; background: rgba(212, 175, 55, 0.06); top: -10%; right: -10%; }
+        .bg-glow-2 { width: 400px; height: 400px; background: rgba(0, 214, 143, 0.04); bottom: -10%; left: -10%; }
+
+        .app { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 0 16px; }
+
+        .header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px 0; border-bottom: 1px solid var(--glass-border);
+            position: sticky; top: 0; z-index: 100;
+            background: rgba(5, 8, 15, 0.92);
+            backdrop-filter: blur(20px);
+            margin-bottom: 16px;
+        }
+        .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+        .logo-hex { font-size: 1.8rem; color: var(--gold); font-family: 'Orbitron', monospace; }
+        .logo-text { font-family: 'Orbitron', monospace; font-size: 1.2rem; color: var(--text-primary); letter-spacing: 2px; }
+        .logo-text span { color: var(--gold); }
+        .logo-badge { font-size: 0.45rem; background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: var(--space); padding: 2px 10px; border-radius: 20px; font-weight: 700; }
+        .network-badge { display: flex; align-items: center; gap: 6px; font-size: 0.6rem; color: var(--gold); background: rgba(212, 175, 55, 0.1); padding: 4px 12px; border-radius: 20px; border: 1px solid rgba(212, 175, 55, 0.1); }
+
+        .main-nav {
+            display: flex; gap: 4px; background: rgba(15,45,26,0.3); border-radius: var(--radius);
+            padding: 4px; border: 1px solid var(--glass-border); margin-bottom: 16px; overflow-x: auto;
+            backdrop-filter: blur(10px);
+        }
+        .main-nav .nav-link {
+            padding: 8px 16px; border-radius: 12px; color: var(--text-muted); text-decoration: none;
+            font-size: 0.7rem; transition: var(--transition); white-space: nowrap;
+        }
+        .main-nav .nav-link:hover { color: var(--text-primary); background: rgba(212,175,55,0.05); }
+        .main-nav .nav-link.active { background: rgba(212,175,55,0.12); color: var(--gold); }
+
+        .marketing-header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 20px 24px; background: var(--glass-bg); border: 1px solid var(--glass-border);
+            border-radius: var(--radius-xl); margin-bottom: 16px; flex-wrap: wrap; gap: 12px;
+            backdrop-filter: blur(12px);
+        }
+        .marketing-header h1 {
+            font-family: 'Orbitron', monospace; font-size: 1.2rem; color: var(--gold);
+            display: flex; align-items: center; gap: 10px;
+        }
+
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+            padding: 10px 20px; border-radius: 30px; font-size: 0.75rem; font-weight: 600;
+            border: none; cursor: pointer; font-family: 'Inter', sans-serif; transition: var(--transition);
+        }
+        .btn-primary { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); box-shadow: 0 4px 20px rgba(212, 175, 55, 0.2); }
+        .btn-primary:hover { transform: translateY(-2px) scale(1.02); box-shadow: var(--shadow-gold); }
+        .btn-outline { background: transparent; color: var(--text-secondary); border: 1px solid var(--glass-border); }
+        .btn-outline:hover { border-color: var(--gold); color: var(--gold); background: rgba(212, 175, 55, 0.05); }
+
+        .summary-cards {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px; margin-bottom: 20px;
+        }
+        .card {
+            background: var(--glass-bg); padding: 18px; border-radius: var(--radius);
+            border: 1px solid var(--glass-border); backdrop-filter: blur(12px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+        .card h3 {
+            margin: 0 0 8px 0; font-size: 0.7rem; color: var(--text-muted);
+            text-transform: uppercase; letter-spacing: 1px;
+        }
+        .card p {
+            margin: 0; font-size: 1.6rem; font-weight: 800; color: var(--gold);
+            font-family: 'Orbitron', monospace;
+        }
+
+        .filters {
+            display: flex; gap: 8px; overflow-x: auto; margin-bottom: 16px; padding-bottom: 8px;
+        }
+        .filter-btn {
+            background: var(--glass-bg); color: var(--text-muted); border: 1px solid var(--glass-border);
+            padding: 8px 16px; border-radius: 20px; cursor: pointer; white-space: nowrap;
+            font-size: 0.7rem; transition: var(--transition); font-family: 'Inter', sans-serif;
+        }
+        .filter-btn.active { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); border-color: transparent; font-weight: 700; }
+
+        .campaigns-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 14px; margin-bottom: 30px;
+        }
+        .campaign-card {
+            background: var(--glass-bg); border: 1px solid var(--glass-border);
+            border-radius: var(--radius); padding: 18px; cursor: pointer;
+            transition: var(--transition); backdrop-filter: blur(12px);
+        }
+        .campaign-card:hover {
+            transform: translateY(-4px); border-color: var(--gold);
+            box-shadow: var(--shadow-gold);
+        }
+        .campaign-card h3 { color: var(--gold); font-size: 0.9rem; margin-bottom: 10px; font-family: 'Orbitron', monospace; }
+        .campaign-card p { font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 4px; }
+        .campaign-card p strong { color: var(--text-muted); font-weight: 500; }
+        .badge {
+            display: inline-block; padding: 3px 10px; border-radius: 20px;
+            font-size: 0.55rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.5px; margin-top: 6px;
+        }
+        .badge.borrador { background: rgba(138, 168, 184, 0.15); color: #8aa8b8; }
+        .badge.pendiente_pago { background: rgba(245, 158, 11, 0.15); color: var(--warning); }
+        .badge.pagada { background: rgba(0, 214, 143, 0.15); color: var(--success); }
+        .badge.pendiente_revision { background: rgba(168, 85, 247, 0.15); color: #a855f7; }
+        .badge.activa { background: rgba(0, 214, 143, 0.15); color: var(--success); }
+        .badge.pausada { background: rgba(245, 158, 11, 0.15); color: var(--warning); }
+        .badge.finalizada { background: rgba(138, 168, 184, 0.15); color: #8aa8b8; }
+        .badge.rechazada { background: rgba(255, 51, 102, 0.15); color: var(--danger); }
+        .badge.cancelada { background: rgba(255, 51, 102, 0.15); color: var(--danger); }
+
+        .empty-state {
+            text-align: center; padding: 40px 20px; color: var(--text-muted);
+            grid-column: 1 / -1;
+        }
+        .empty-state .icon { font-size: 2.5rem; display: block; margin-bottom: 12px; color: var(--gold); opacity: 0.4; }
+
+        /* Modales */
+        .modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); display: flex; justify-content: center; align-items: center;
+            z-index: 1000; backdrop-filter: blur(8px); padding: 16px;
+        }
+        .modal.hidden { display: none; }
+        .modal-content {
+            background: linear-gradient(160deg, rgba(15,45,26,0.98), rgba(5,8,15,0.98));
+            border: 1px solid var(--gold); border-radius: var(--radius-xl); padding: 28px;
+            width: 100%; max-width: 600px; position: relative; max-height: 90vh; overflow-y: auto;
+            box-shadow: 0 20px 70px rgba(0,0,0,0.6), var(--shadow-gold);
+        }
+        .close-modal {
+            position: absolute; top: 15px; right: 20px; font-size: 1.8rem; cursor: pointer;
+            color: var(--text-muted); background: none; border: none; line-height: 1;
+        }
+        .close-modal:hover { color: var(--gold); }
+
+        .modal-content h2 {
+            color: var(--gold); font-family: 'Orbitron', monospace; font-size: 1rem;
+            margin-bottom: 20px;
+        }
+
+        .wizard-step { display: flex; flex-direction: column; gap: 14px; }
+        .wizard-step.hidden { display: none; }
+        .wizard-step h3 { color: var(--text-primary); font-size: 0.85rem; margin-bottom: 6px; }
+
+        .wizard-step input, .wizard-step select, .wizard-step textarea {
+            background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border);
+            color: var(--text-primary); padding: 12px 16px; border-radius: 12px;
+            width: 100%; font-family: 'Inter', sans-serif; font-size: 0.8rem; outline: none;
+            transition: var(--transition);
+        }
+        .wizard-step input:focus, .wizard-step select:focus, .wizard-step textarea:focus {
+            border-color: var(--gold); box-shadow: 0 0 20px rgba(212, 175, 55, 0.1);
+        }
+        .wizard-step textarea { min-height: 80px; resize: vertical; }
+
+        .btn-option {
+            padding: 14px; border-radius: 14px; border: 1px solid var(--glass-border);
+            background: rgba(0,0,0,0.3); color: var(--text-primary); cursor: pointer;
+            font-size: 0.85rem; font-weight: 600; transition: var(--transition);
+            font-family: 'Inter', sans-serif;
+        }
+        .btn-option:hover { border-color: var(--gold); color: var(--gold); transform: translateY(-2px); }
+
+        .charts-container {
+            display: grid; grid-template-columns: 1fr; gap: 16px; margin-top: 20px;
+        }
+        .chart-box {
+            background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border);
+            border-radius: var(--radius); padding: 14px;
+        }
+        .chart-box h4 { color: var(--gold); font-size: 0.7rem; margin-bottom: 10px; font-family: 'Orbitron', monospace; }
+
+        .detail-row {
+            display: flex; justify-content: space-between; padding: 8px 0;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.08); font-size: 0.75rem;
+        }
+        .detail-row span:first-child { color: var(--text-muted); }
+        .detail-row span:last-child { color: var(--text-primary); font-weight: 600; }
+
+        .stats-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 10px; margin: 16px 0;
+        }
+        .stat-item {
+            background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border);
+            border-radius: 12px; padding: 12px; text-align: center;
+        }
+        .stat-item .label { font-size: 0.55rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+        .stat-item .value { font-size: 1.1rem; color: var(--gold); font-weight: 800; font-family: 'Orbitron', monospace; margin-top: 4px; }
+
+        .toast {
+            position: fixed; bottom: 30px; right: 30px; padding: 14px 24px;
+            border-radius: 16px; background: var(--glass-bg); border: 1px solid var(--gold);
+            color: var(--gold); font-size: 0.75rem; font-weight: 500;
+            box-shadow: 0 0 80px rgba(212, 175, 55, 0.2);
+            transform: translateY(100px); opacity: 0; transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            z-index: 99999; max-width: 320px; backdrop-filter: blur(16px);
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.error { border-color: var(--danger); color: var(--danger); }
+        .toast.success { border-color: var(--success); color: var(--success); }
+        .toast.warning { border-color: var(--warning); color: var(--warning); }
+
+        @media (max-width: 600px) {
+            .marketing-header { flex-direction: column; text-align: center; }
+            .marketing-header h1 { font-size: 1rem; }
+            .summary-cards { grid-template-columns: 1fr 1fr; }
+            .card p { font-size: 1.2rem; }
+            .modal-content { padding: 20px; }
+        }
+    </style>
 </head>
 <body>
-    <div id="marketing-app">
-        <!-- Header con resumen -->
-        <header class="marketing-header">
-            <h1>Panel de Marketing</h1>
-            <button id="btn-create-campaign" class="btn-primary">+ Crear campaña</button>
+
+    <div class="bg-glow bg-glow-1"></div>
+    <div class="bg-glow bg-glow-2"></div>
+
+    <div class="app">
+
+        <header class="header">
+            <a href="/" class="logo">
+                <span class="logo-hex">◈</span>
+                <span class="logo-text">Sariel<span>'s</span></span>
+                <span class="logo-badge">✦ WEB3</span>
+            </a>
+            <div class="header-actions">
+                <span class="network-badge">◈ Polygon</span>
+            </div>
         </header>
 
-        <!-- Dashboard de Resumen -->
+        <nav class="main-nav">
+            <a href="/" class="nav-link">⌂ Inicio</a>
+            <a href="/features/muro/muro.html" class="nav-link">◇ Muro</a>
+            <a href="/features/perfil/perfil.html" class="nav-link">◆ Perfil</a>
+            <a href="/features/mensajes/contactos.html" class="nav-link">◈ Contactos</a>
+            <a href="/features/live/live.html" class="nav-link">◉ Live</a>
+            <a href="/features/internet/internet.html" class="nav-link">◈ Internet</a>
+            <a href="/features/videos/videos.html" class="nav-link">🎬 Videos</a>
+            <a href="/features/grupos/grupos.html" class="nav-link">👥 Grupos</a>
+            <a href="/marketing/marketing.html" class="nav-link active">📢 Marketing</a>
+        </nav>
+
+        <div class="marketing-header">
+            <h1>📢 Panel de Marketing</h1>
+            <button id="btn-create-campaign" class="btn btn-primary">+ Crear campaña</button>
+        </div>
+
         <section id="dashboard-summary" class="summary-cards">
             <div class="card">
                 <h3>Presupuesto Total</h3>
@@ -36,7 +320,6 @@
             </div>
         </section>
 
-        <!-- Filtros y Lista de Campañas -->
         <section id="campaigns-section">
             <div class="filters">
                 <button class="filter-btn active" data-filter="all">Todas</button>
@@ -47,77 +330,468 @@
                 <button class="filter-btn" data-filter="cancelada">Canceladas</button>
             </div>
             <div id="campaigns-list" class="campaigns-grid">
-                <!-- Se llena dinámicamente con JS -->
+                <div class="empty-state">
+                    <span class="icon">📢</span>
+                    <p>Cargando campañas...</p>
+                </div>
             </div>
         </section>
 
-        <!-- Modal de Detalle de Campaña -->
-        <div id="modal-detail" class="modal hidden">
-            <div class="modal-content">
-                <span class="close-modal">&times;</span>
-                <h2 id="detail-title">Detalle de Campaña</h2>
-                <div id="detail-info"></div>
-                <div class="charts-container">
+    </div>
+
+    <!-- MODAL DETALLE -->
+    <div id="modal-detail" class="modal hidden">
+        <div class="modal-content">
+            <button class="close-modal" data-close="modal-detail">&times;</button>
+            <h2 id="detail-title">Detalle de Campaña</h2>
+            <div id="detail-info"></div>
+            <div class="stats-grid" id="detail-stats"></div>
+            <div class="charts-container">
+                <div class="chart-box">
+                    <h4>📊 Alcance por día</h4>
                     <canvas id="chart-reach"></canvas>
+                </div>
+                <div class="chart-box">
+                    <h4>👁️ Impresiones por día</h4>
                     <canvas id="chart-impressions"></canvas>
+                </div>
+                <div class="chart-box">
+                    <h4>💰 Gasto por día</h4>
                     <canvas id="chart-spent"></canvas>
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- Modal de Creación de Campaña (Wizard) -->
-        <div id="modal-create" class="modal hidden">
-            <div class="modal-content wizard">
-                <span class="close-modal">&times;</span>
-                <h2>Crear Campaña</h2>
-                <div id="wizard-step-1" class="wizard-step">
-                    <h3>Paso 1: ¿Dónde anunciar?</h3>
-                    <button class="btn-option" data-type="live">🔴 LIVE</button>
-                    <button class="btn-option" data-type="grupo">👥 GRUPO</button>
-                </div>
-                <div id="wizard-step-2" class="wizard-step hidden">
-                    <h3>Paso 2: Seleccionar destino</h3>
-                    <select id="select-target"></select>
-                    <button class="btn-next">Siguiente</button>
-                </div>
-                <div id="wizard-step-3" class="wizard-step hidden">
-                    <h3>Paso 3: Nombre de campaña</h3>
-                    <input type="text" id="campaign-name" placeholder="Ej: Promo Verano">
-                    <button class="btn-next">Siguiente</button>
-                </div>
-                <div id="wizard-step-4" class="wizard-step hidden">
-                    <h3>Paso 4: Objetivo</h3>
-                    <select id="campaign-objective">
-                        <option value="alcance">Alcance</option>
-                        <option value="reproducciones">Reproducciones</option>
-                        <option value="interacciones">Interacciones</option>
-                        <option value="clics">Clics</option>
-                    </select>
-                    <button class="btn-next">Siguiente</button>
-                </div>
-                <div id="wizard-step-5" class="wizard-step hidden">
-                    <h3>Paso 5: Presupuesto (MXN)</h3>
-                    <p id="pricing-info"></p>
-                    <input type="number" id="campaign-budget" placeholder="Monto en MXN">
-                    <button class="btn-next">Siguiente</button>
-                </div>
-                <div id="wizard-step-6" class="wizard-step hidden">
-                    <h3>Paso 6: Contenido del Anuncio</h3>
-                    <input type="text" id="ad-title" placeholder="Título">
-                    <textarea id="ad-description" placeholder="Descripción"></textarea>
-                    <input type="url" id="ad-image" placeholder="URL de Imagen (opcional)">
-                    <input type="url" id="ad-video" placeholder="URL de Video (opcional)">
-                    <input type="text" id="ad-cta" placeholder="Texto del botón (Ej: Ver más)">
-                    <button class="btn-next">Siguiente</button>
-                </div>
-                <div id="wizard-step-7" class="wizard-step hidden">
-                    <h3>Paso 7: Resumen y Pago</h3>
-                    <div id="summary-content"></div>
-                    <button id="btn-pay" class="btn-primary">Continuar al pago</button>
-                </div>
+    <!-- MODAL CREAR -->
+    <div id="modal-create" class="modal hidden">
+        <div class="modal-content">
+            <button class="close-modal" data-close="modal-create">&times;</button>
+            <h2>Crear Campaña</h2>
+
+            <div id="wizard-step-1" class="wizard-step">
+                <h3>Paso 1: ¿Dónde anunciar?</h3>
+                <button class="btn-option" data-type="live">🔴 LIVE</button>
+                <button class="btn-option" data-type="grupo">👥 GRUPO</button>
+            </div>
+
+            <div id="wizard-step-2" class="wizard-step hidden">
+                <h3>Paso 2: Seleccionar destino</h3>
+                <select id="select-target"></select>
+                <button class="btn btn-primary btn-next">Siguiente →</button>
+            </div>
+
+            <div id="wizard-step-3" class="wizard-step hidden">
+                <h3>Paso 3: Nombre de campaña</h3>
+                <input type="text" id="campaign-name" placeholder="Ej: Promo Verano">
+                <button class="btn btn-primary btn-next">Siguiente →</button>
+            </div>
+
+            <div id="wizard-step-4" class="wizard-step hidden">
+                <h3>Paso 4: Objetivo</h3>
+                <select id="campaign-objective">
+                    <option value="alcance">Alcance</option>
+                    <option value="reproducciones">Reproducciones</option>
+                    <option value="interacciones">Interacciones</option>
+                    <option value="clics">Clics</option>
+                </select>
+                <button class="btn btn-primary btn-next">Siguiente →</button>
+            </div>
+
+            <div id="wizard-step-5" class="wizard-step hidden">
+                <h3>Paso 5: Presupuesto (MXN)</h3>
+                <p id="pricing-info" style="color: var(--text-muted); font-size: 0.7rem;"></p>
+                <input type="number" id="campaign-budget" placeholder="Monto en MXN" min="1">
+                <button class="btn btn-primary btn-next">Siguiente →</button>
+            </div>
+
+            <div id="wizard-step-6" class="wizard-step hidden">
+                <h3>Paso 6: Contenido del Anuncio</h3>
+                <input type="text" id="ad-title" placeholder="Título">
+                <textarea id="ad-description" placeholder="Descripción"></textarea>
+                <input type="url" id="ad-image" placeholder="URL de Imagen (opcional)">
+                <input type="url" id="ad-video" placeholder="URL de Video (opcional)">
+                <input type="text" id="ad-cta" placeholder="Texto del botón (Ej: Ver más)">
+                <button class="btn btn-primary btn-next">Siguiente →</button>
+            </div>
+
+            <div id="wizard-step-7" class="wizard-step hidden">
+                <h3>Paso 7: Resumen y Pago</h3>
+                <div id="summary-content"></div>
+                <button id="btn-pay" class="btn btn-primary">💳 Continuar al pago</button>
             </div>
         </div>
     </div>
-    <script type="module" src="marketing.js"></script>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+    /* ============================================================
+       MARKETING - SARIEL'S ECOSYSTEM
+       ============================================================ */
+
+    const supabase = window.supabase.createClient(
+        'https://zultnlogdoajehbswlih.supabase.co',
+        'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
+    );
+
+    let currentUser = null;
+    let campaigns = [];
+    let currentWizardData = {};
+    let currentChartInstances = {};
+    let currentFilter = 'all';
+
+    // ===== TOAST =====
+    function showToast(msg, type = '', duration = 3500) {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.className = 'toast show ' + (type || '');
+        clearTimeout(t._timeout);
+        t._timeout = setTimeout(() => t.classList.remove('show'), duration);
+    }
+
+    function escapeHTML(texto) {
+        if (!texto) return '';
+        const div = document.createElement('div');
+        div.textContent = texto;
+        return div.innerHTML;
+    }
+
+    // ===== INICIALIZACIÓN =====
+    document.addEventListener('DOMContentLoaded', async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            showToast('⚠️ Inicia sesión para ver tus campañas', 'warning', 5000);
+            return;
+        }
+        currentUser = user;
+        await loadPricing();
+        await loadCampaigns();
+        setupEventListeners();
+    });
+
+    // ===== CARGAR PRICING =====
+    async function loadPricing() {
+        const { data, error } = await supabase
+            .from('marketing_pricing')
+            .select('*')
+            .eq('activo', true);
+        if (error) console.warn('Pricing no disponible:', error.message);
+        window.marketingPricing = data || [];
+    }
+
+    // ===== CARGAR CAMPAÑAS =====
+    async function loadCampaigns() {
+        const { data, error } = await supabase
+            .from('marketing_campaigns')
+            .select('*')
+            .eq('anunciante_id', currentUser.id)
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            console.error('Error cargando campañas:', error);
+            showToast('❌ Error cargando campañas', 'error');
+            return;
+        }
+        campaigns = data || [];
+        renderCampaigns();
+        calculateSummary();
+    }
+
+    // ===== RENDER CAMPAÑAS =====
+    function renderCampaigns() {
+        const container = document.getElementById('campaigns-list');
+        const filtered = currentFilter === 'all'
+            ? campaigns
+            : campaigns.filter(c => c.estado === currentFilter);
+
+        if (filtered.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <span class="icon">📢</span>
+                    <p>No hay campañas ${currentFilter === 'all' ? 'creadas aún' : 'con este estado'}.</p>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = filtered.map(camp => `
+            <div class="campaign-card" onclick="openDetail('${camp.id}')">
+                <h3>${escapeHTML(camp.nombre)}</h3>
+                <p><strong>Estado:</strong> <span class="badge ${camp.estado}">${camp.estado}</span></p>
+                <p><strong>Presupuesto:</strong> $${parseFloat(camp.presupuesto || 0).toFixed(2)} ${camp.moneda || 'MXN'}</p>
+                <p><strong>Gastado:</strong> $${parseFloat(camp.gastado || 0).toFixed(2)}</p>
+                <p><strong>Inicio:</strong> ${camp.fecha_inicio ? new Date(camp.fecha_inicio).toLocaleDateString() : '—'}</p>
+                <p><strong>Fin:</strong> ${camp.fecha_fin ? new Date(camp.fecha_fin).toLocaleDateString() : '—'}</p>
+            </div>
+        `).join('');
+    }
+
+    // ===== RESUMEN =====
+    function calculateSummary() {
+        let budget = 0, active = 0, spent = 0;
+        campaigns.forEach(c => {
+            budget += parseFloat(c.presupuesto || 0);
+            spent += parseFloat(c.gastado || 0);
+            if (c.estado === 'activa') active++;
+        });
+        document.getElementById('total-budget').textContent = `$${budget.toFixed(2)}`;
+        document.getElementById('active-campaigns').textContent = active;
+        document.getElementById('total-spent').textContent = `$${spent.toFixed(2)}`;
+        document.getElementById('total-reach').textContent = '0';
+    }
+
+    // ===== DETALLE =====
+    async function openDetail(campaignId) {
+        const campaign = campaigns.find(c => c.id === campaignId);
+        if (!campaign) return;
+
+        document.getElementById('detail-title').textContent = campaign.nombre;
+        document.getElementById('detail-info').innerHTML = `
+            <div class="detail-row"><span>Estado</span><span class="badge ${campaign.estado}">${campaign.estado}</span></div>
+            <div class="detail-row"><span>Presupuesto</span><span>$${parseFloat(campaign.presupuesto || 0).toFixed(2)} ${campaign.moneda || 'MXN'}</span></div>
+            <div class="detail-row"><span>Gastado</span><span>$${parseFloat(campaign.gastado || 0).toFixed(2)}</span></div>
+            <div class="detail-row"><span>Restante</span><span>$${(parseFloat(campaign.presupuesto || 0) - parseFloat(campaign.gastado || 0)).toFixed(2)}</span></div>
+            <div class="detail-row"><span>Objetivo</span><span>${campaign.objetivo || '—'}</span></div>
+            <div class="detail-row"><span>Inicio</span><span>${campaign.fecha_inicio ? new Date(campaign.fecha_inicio).toLocaleDateString() : '—'}</span></div>
+            <div class="detail-row"><span>Fin</span><span>${campaign.fecha_fin ? new Date(campaign.fecha_fin).toLocaleDateString() : '—'}</span></div>
+        `;
+
+        document.getElementById('modal-detail').classList.remove('hidden');
+
+        const { data: stats, error } = await supabase
+            .from('marketing_daily_stats')
+            .select('*')
+            .eq('campaign_id', campaignId)
+            .order('fecha', { ascending: true });
+
+        if (error || !stats || stats.length === 0) {
+            document.getElementById('detail-stats').innerHTML = `
+                <div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--warning);font-size:0.75rem;">
+                    Las estadísticas aparecerán cuando la campaña comience a recibir tráfico.
+                </div>
+            `;
+            return;
+        }
+
+        const totals = stats.reduce((acc, s) => ({
+            impresiones: acc.impresiones + (s.impresiones || 0),
+            alcance: acc.alcance + (s.alcance || 0),
+            vistas: acc.vistas + (s.vistas || 0),
+            vistas_completas: acc.vistas_completas + (s.vistas_completas || 0),
+            clics: acc.clics + (s.clics || 0),
+            interacciones: acc.interacciones + (s.interacciones || 0),
+            reproducciones: acc.reproducciones + (s.reproducciones || 0),
+            conversiones: acc.conversiones + (s.conversiones || 0),
+        }), { impresiones: 0, alcance: 0, vistas: 0, vistas_completas: 0, clics: 0, interacciones: 0, reproducciones: 0, conversiones: 0 });
+
+        document.getElementById('detail-stats').innerHTML = `
+            <div class="stat-item"><div class="label">Alcance</div><div class="value">${totals.alcance}</div></div>
+            <div class="stat-item"><div class="label">Impresiones</div><div class="value">${totals.impresiones}</div></div>
+            <div class="stat-item"><div class="label">Vistas</div><div class="value">${totals.vistas}</div></div>
+            <div class="stat-item"><div class="label">Clics</div><div class="value">${totals.clics}</div></div>
+            <div class="stat-item"><div class="label">Interacciones</div><div class="value">${totals.interacciones}</div></div>
+            <div class="stat-item"><div class="label">Reproducciones</div><div class="value">${totals.reproducciones}</div></div>
+            <div class="stat-item"><div class="label">Conversiones</div><div class="value">${totals.conversiones}</div></div>
+        `;
+
+        renderCharts(stats);
+    }
+
+    // ===== GRÁFICOS =====
+    function renderCharts(stats) {
+        Object.values(currentChartInstances).forEach(c => { try { c.destroy(); } catch(e){} });
+        currentChartInstances = {};
+
+        const labels = stats.map(s => new Date(s.fecha).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }));
+        const commonOpts = {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { ticks: { color: '#8aa8b8', font: { size: 9 } }, grid: { color: 'rgba(212,175,55,0.05)' } },
+                y: { ticks: { color: '#8aa8b8', font: { size: 9 } }, grid: { color: 'rgba(212,175,55,0.05)' } }
+            }
+        };
+
+        currentChartInstances.reach = new Chart(document.getElementById('chart-reach'), {
+            type: 'line',
+            data: { labels, datasets: [{ label: 'Alcance', data: stats.map(s => s.alcance || 0), borderColor: '#D4AF37', backgroundColor: 'rgba(212,175,55,0.1)', fill: true, tension: 0.3 }] },
+            options: commonOpts
+        });
+
+        currentChartInstances.impressions = new Chart(document.getElementById('chart-impressions'), {
+            type: 'bar',
+            data: { labels, datasets: [{ label: 'Impresiones', data: stats.map(s => s.impresiones || 0), backgroundColor: '#00d68f' }] },
+            options: commonOpts
+        });
+
+        currentChartInstances.spent = new Chart(document.getElementById('chart-spent'), {
+            type: 'line',
+            data: { labels, datasets: [{ label: 'Gasto', data: stats.map(s => s.gasto || 0), borderColor: '#ff3366', backgroundColor: 'rgba(255,51,102,0.1)', fill: true, tension: 0.3 }] },
+            options: commonOpts
+        });
+    }
+
+    // ===== EVENT LISTENERS =====
+    function setupEventListeners() {
+        document.getElementById('btn-create-campaign').addEventListener('click', () => {
+            document.getElementById('modal-create').classList.remove('hidden');
+            resetWizard();
+        });
+
+        document.querySelectorAll('.close-modal').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const target = e.target.dataset.close;
+                document.getElementById(target).classList.add('hidden');
+            });
+        });
+
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentFilter = btn.dataset.filter;
+                renderCampaigns();
+            });
+        });
+
+        document.querySelectorAll('.btn-option').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const type = e.target.dataset.type;
+                currentWizardData.target_tipo = type;
+
+                const table = type === 'live' ? 'transmisiones' : 'grupos';
+                const { data, error } = await supabase.from(table).select('id, titulo, nombre').limit(50);
+
+                const select = document.getElementById('select-target');
+                if (error || !data || data.length === 0) {
+                    select.innerHTML = '<option value="">No hay elementos disponibles</option>';
+                } else {
+                    select.innerHTML = data.map(t => `<option value="${t.id}">${escapeHTML(t.titulo || t.nombre || 'Sin nombre')}</option>`).join('');
+                }
+                showStep(2);
+            });
+        });
+
+        document.querySelector('#wizard-step-2 .btn-next').addEventListener('click', () => {
+            currentWizardData.target_id = document.getElementById('select-target').value;
+            if (!currentWizardData.target_id) { showToast('⚠️ Selecciona un destino', 'warning'); return; }
+            showStep(3);
+        });
+
+        document.querySelector('#wizard-step-3 .btn-next').addEventListener('click', () => {
+            currentWizardData.nombre = document.getElementById('campaign-name').value.trim();
+            if (!currentWizardData.nombre) { showToast('⚠️ Escribe un nombre', 'warning'); return; }
+            showStep(4);
+        });
+
+        document.querySelector('#wizard-step-4 .btn-next').addEventListener('click', () => {
+            currentWizardData.objetivo = document.getElementById('campaign-objective').value;
+            const pricing = window.marketingPricing.find(p => p.tipo === currentWizardData.target_tipo);
+            document.getElementById('pricing-info').textContent = pricing
+                ? `Mínimo configurado: $${pricing.minimo} MXN`
+                : 'No hay mínimo configurado para este tipo.';
+            showStep(5);
+        });
+
+        document.querySelector('#wizard-step-5 .btn-next').addEventListener('click', () => {
+            const budget = parseFloat(document.getElementById('campaign-budget').value);
+            const pricing = window.marketingPricing.find(p => p.tipo === currentWizardData.target_tipo);
+            const min = pricing ? parseFloat(pricing.minimo) : 0;
+            if (!budget || budget < min) {
+                showToast(`⚠️ El mínimo es $${min} MXN`, 'warning');
+                return;
+            }
+            currentWizardData.presupuesto = budget;
+            showStep(6);
+        });
+
+        document.querySelector('#wizard-step-6 .btn-next').addEventListener('click', () => {
+            currentWizardData.ad = {
+                titulo: document.getElementById('ad-title').value.trim(),
+                descripcion: document.getElementById('ad-description').value.trim(),
+                imagen_url: document.getElementById('ad-image').value.trim() || null,
+                video_url: document.getElementById('ad-video').value.trim() || null,
+                cta_texto: document.getElementById('ad-cta').value.trim() || 'Ver más',
+            };
+            if (!currentWizardData.ad.titulo) { showToast('⚠️ Escribe un título', 'warning'); return; }
+            renderSummary();
+            showStep(7);
+        });
+
+        document.getElementById('btn-pay').addEventListener('click', processPayment);
+    }
+
+    function showStep(stepNumber) {
+        document.querySelectorAll('.wizard-step').forEach(el => el.classList.add('hidden'));
+        document.getElementById(`wizard-step-${stepNumber}`).classList.remove('hidden');
+    }
+
+    function resetWizard() {
+        currentWizardData = {};
+        document.querySelectorAll('.wizard-step input, .wizard-step select, .wizard-step textarea').forEach(el => el.value = '');
+        showStep(1);
+    }
+
+    function renderSummary() {
+        document.getElementById('summary-content').innerHTML = `
+            <div class="detail-row"><span>Campaña</span><span>${escapeHTML(currentWizardData.nombre)}</span></div>
+            <div class="detail-row"><span>Destino</span><span>${currentWizardData.target_tipo.toUpperCase()}</span></div>
+            <div class="detail-row"><span>Objetivo</span><span>${currentWizardData.objetivo}</span></div>
+            <div class="detail-row"><span>Presupuesto</span><span>$${currentWizardData.presupuesto} MXN</span></div>
+            <div class="detail-row"><span>Contenido</span><span>${escapeHTML(currentWizardData.ad.titulo)}</span></div>
+        `;
+    }
+
+    async function processPayment() {
+        try {
+            const { data: campaignData, error: campaignError } = await supabase
+                .from('marketing_campaigns')
+                .insert([{
+                    anunciante_id: currentUser.id,
+                    nombre: currentWizardData.nombre,
+                    objetivo: currentWizardData.objetivo,
+                    presupuesto: currentWizardData.presupuesto,
+                    moneda: 'MXN',
+                    estado: 'pendiente_pago',
+                    fecha_inicio: new Date().toISOString(),
+                    fecha_fin: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+                }])
+                .select()
+                .single();
+
+            if (campaignError) throw campaignError;
+
+            await supabase.from('marketing_ads').insert([{
+                campaign_id: campaignData.id,
+                titulo: currentWizardData.ad.titulo,
+                descripcion: currentWizardData.ad.descripcion,
+                imagen_url: currentWizardData.ad.imagen_url,
+                video_url: currentWizardData.ad.video_url,
+                cta_texto: currentWizardData.ad.cta_texto,
+                activo: true
+            }]);
+
+            const targetField = currentWizardData.target_tipo === 'live' ? 'live_id' : 'grupo_id';
+            await supabase.from('marketing_campaign_targets').insert([{
+                campaign_id: campaignData.id,
+                target_tipo: currentWizardData.target_tipo,
+                [targetField]: currentWizardData.target_id
+            }]);
+
+            showToast('✅ Campaña creada. Pendiente de pago.', 'success', 4000);
+            document.getElementById('modal-create').classList.add('hidden');
+
+            await loadCampaigns();
+
+        } catch (err) {
+            console.error('Error creando campaña:', err);
+            showToast('❌ Error: ' + err.message, 'error');
+        }
+    }
+
+    // Exponer global
+    window.openDetail = openDetail;
+    </script>
 </body>
 </html>
