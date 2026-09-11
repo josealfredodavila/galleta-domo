@@ -1,11 +1,5 @@
 /* ================================================================
    ROUTES/MARKETING.JS - SARIEL'S ECOSYSTEM
-   ================================================================
-   ENDPOINTS:
-   ✅ POST /api/marketing/get-ad         → Devuelve el anuncio a mostrar
-   ✅ POST /api/marketing/register-event → Registra impresión/vista/clic
-   ✅ POST /api/marketing/descontar      → Descuenta presupuesto
-   ✅ GET  /api/marketing/my-campaigns   → Lista campañas del usuario
    ================================================================ */
 
 const express = require('express');
@@ -23,10 +17,6 @@ const supabaseAdmin = (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY)
     })
     : null;
 
-/* ================================================================
-   CONFIGURACIÓN DEL ALGORITMO
-================================================================ */
-
 const COSTOS = {
     impresion: 0.05,
     vista: 0.10,
@@ -39,10 +29,6 @@ const COSTOS = {
 
 const MAX_IMPRESIONES_POR_USUARIO = 3;
 const VENTANA_FRECUENCIA_HORAS = 24;
-
-/* ================================================================
-   HELPERS
-================================================================ */
 
 function getBearerToken(req) {
     const auth = req.headers.authorization || '';
@@ -67,10 +53,6 @@ function normalizarEvento(evento) {
     return eventos.includes(evento) ? evento : null;
 }
 
-/* ================================================================
-   MIDDLEWARE AUTH
-================================================================ */
-
 async function autenticar(req, res, next) {
     const user = await obtenerUsuario(req);
     if (!user) {
@@ -81,7 +63,7 @@ async function autenticar(req, res, next) {
 }
 
 /* ================================================================
-   ✅ POST /api/marketing/get-ad
+   POST /api/marketing/get-ad
 ================================================================ */
 
 router.post('/get-ad', autenticar, async (req, res) => {
@@ -114,7 +96,7 @@ router.post('/get-ad', autenticar, async (req, res) => {
             .eq(targetField, target_id);
 
         if (targetsError) {
-            console.error('❌ Error targets:', targetsError);
+            console.error('Error targets:', targetsError);
             return res.status(500).json({ success: false, error: 'Error consultando campañas' });
         }
 
@@ -157,7 +139,6 @@ router.post('/get-ad', autenticar, async (req, res) => {
             return res.json({ success: true, ad: null, reason: 'frecuencia_maxima' });
         }
 
-        // ALGORITMO: menor gastado primero
         campanasFiltradas.sort((a, b) => {
             const gastoA = parseFloat(a.gastado || 0);
             const gastoB = parseFloat(b.gastado || 0);
@@ -179,7 +160,6 @@ router.post('/get-ad', autenticar, async (req, res) => {
 
         const ad = ads[0];
 
-        // Registrar impresión
         await supabaseAdmin
             .from('marketing_events')
             .insert({
@@ -196,7 +176,6 @@ router.post('/get-ad', autenticar, async (req, res) => {
                 }
             });
 
-        // Descontar presupuesto
         await supabaseAdmin.rpc('descontar_presupuesto_campana', {
             p_campaign_id: campanaGanadora.id,
             p_monto: COSTOS.impresion
@@ -219,13 +198,13 @@ router.post('/get-ad', autenticar, async (req, res) => {
         });
 
     } catch (error) {
-        console.error('❌ Error get-ad:', error);
+        console.error('Error get-ad:', error);
         return res.status(500).json({ success: false, error: 'Error interno' });
     }
 });
 
 /* ================================================================
-   ✅ POST /api/marketing/register-event
+   POST /api/marketing/register-event
 ================================================================ */
 
 router.post('/register-event', autenticar, async (req, res) => {
@@ -280,7 +259,7 @@ router.post('/register-event', autenticar, async (req, res) => {
             });
 
         if (insertError) {
-            console.error('❌ Error insertando evento:', insertError);
+            console.error('Error insertando evento:', insertError);
             return res.status(500).json({ success: false, error: 'Error registrando evento' });
         }
 
@@ -297,13 +276,13 @@ router.post('/register-event', autenticar, async (req, res) => {
         return res.json({ success: true, evento: eventoNormalizado });
 
     } catch (error) {
-        console.error('❌ Error register-event:', error);
+        console.error('Error register-event:', error);
         return res.status(500).json({ success: false, error: 'Error interno' });
     }
 });
 
 /* ================================================================
-   ✅ POST /api/marketing/descontar
+   POST /api/marketing/descontar
 ================================================================ */
 
 router.post('/descontar', autenticar, async (req, res) => {
@@ -330,20 +309,20 @@ router.post('/descontar', autenticar, async (req, res) => {
         });
 
         if (error) {
-            console.error('❌ Error descontar:', error);
+            console.error('Error descontar:', error);
             return res.status(500).json({ success: false, error: 'Error descontando' });
         }
 
         return res.json({ success: true, resultado: data });
 
     } catch (error) {
-        console.error('❌ Error descontar:', error);
+        console.error('Error descontar:', error);
         return res.status(500).json({ success: false, error: 'Error interno' });
     }
 });
 
 /* ================================================================
-   ✅ GET /api/marketing/my-campaigns
+   GET /api/marketing/my-campaigns
 ================================================================ */
 
 router.get('/my-campaigns', autenticar, async (req, res) => {
@@ -361,7 +340,7 @@ router.get('/my-campaigns', autenticar, async (req, res) => {
         return res.json({ success: true, campaigns: data || [] });
 
     } catch (error) {
-        console.error('❌ Error my-campaigns:', error);
+        console.error('Error my-campaigns:', error);
         return res.status(500).json({ success: false, error: 'Error interno' });
     }
 });
