@@ -1094,90 +1094,51 @@
     }
 
     // ============================================================
-    // DOMContentLoaded
+    // 🚀 ARRANQUE SIMPLIFICADO (SIN loadPricing)
     // ============================================================
     document.addEventListener('DOMContentLoaded', async () => {
-        console.log('🟢 [DOMContentLoaded] Iniciando módulo Marketing...');
+        console.log('🚀 MARKETING INICIANDO');
+
+        const campaignsList = document.getElementById('campaigns-list');
 
         try {
-            const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+            const { data: { user }, error } = await supabase.auth.getUser();
 
-            if (sessionError) {
-                console.error('🔴 [DOMContentLoaded] Error obteniendo sesión:', sessionError);
-            }
+            console.log('👤 USER:', user);
+            console.log('❌ AUTH ERROR:', error);
 
-            console.log('🟢 [DOMContentLoaded] Sesión:', session);
+            if (error) throw error;
+            if (!user) throw new Error('No hay sesión autenticada');
 
-            if (!session || !session.user) {
-                console.warn('🟠 [DOMContentLoaded] No hay sesión activa');
-                document.getElementById('campaigns-list').innerHTML = `
-                    <div class="empty-state">
-                        <span class="icon">◈</span>
-                        <p>Inicia sesión para ver tus campañas</p>
-                        <a href="/" class="btn btn-primary" style="margin-top:20px;">Ir al inicio</a>
-                    </div>
-                `;
-                return;
-            }
+            currentUser = user;
+            console.log('✅ currentUser:', currentUser.id);
 
-            currentUser = session.user;
-            console.log('🟢 [DOMContentLoaded] currentUser.id:', currentUser.id);
-            console.log('🟢 [DOMContentLoaded] currentUser.email:', currentUser.email);
-
-            // Paso 1: Pricing (try/catch, no bloquea)
-            try {
-                console.log('🟡 [DOMContentLoaded] Cargando pricing...');
-                await loadPricing();
-                console.log('🟢 [DOMContentLoaded] Pricing OK');
-            } catch (pricingError) {
-                console.error('🔴 [DOMContentLoaded] Error pricing (no bloquea):', pricingError);
-            }
-
-            // Paso 2: Campañas
-            console.log('🟡 [DOMContentLoaded] Cargando campañas...');
+            console.log('📢 LLAMANDO loadCampaigns');
             await loadCampaigns();
-            console.log('🟢 [DOMContentLoaded] Campañas OK');
+            console.log('✅ loadCampaigns TERMINÓ');
 
-            // Paso 3: Event listeners
             setupEventListeners();
 
-        } catch (globalError) {
-            console.error('🔴 [DOMContentLoaded] Error global:', globalError);
-            document.getElementById('campaigns-list').innerHTML = `
-                <div class="empty-state error-state">
-                    <span class="icon">⚠</span>
-                    <p>Error al inicializar el módulo</p>
-                    <small>${escapeHTML(globalError.message || 'Error desconocido')}</small>
-                </div>
-            `;
+        } catch (error) {
+            console.error('🔥 ERROR INICIALIZANDO MARKETING:', error);
+            if (campaignsList) {
+                campaignsList.innerHTML = `
+                    <div class="empty-state error-state">
+                        <span class="icon">⚠</span>
+                        <p>Error inicializando Marketing</p>
+                        <small>${escapeHTML(error.message || 'Error desconocido')}</small>
+                    </div>
+                `;
+            }
         }
     });
 
     // ============================================================
-    // PRICING
-    // ============================================================
-    async function loadPricing() {
-        const { data, error } = await supabase
-            .from('marketing_pricing')
-            .select('*')
-            .eq('activo', true);
-
-        if (error) {
-            console.warn('🟠 [loadPricing] Pricing no disponible:', error.message);
-            window.marketingPricing = [];
-            return;
-        }
-        console.log('🟢 [loadPricing] Pricing cargado:', data?.length || 0);
-        window.marketingPricing = data || [];
-    }
-
-    // ============================================================
-    // LOAD CAMPAIGNS — SIEMPRE TERMINA EL ESTADO
+    // LOAD CAMPAIGNS
     // ============================================================
     async function loadCampaigns() {
-        console.log('🟡 [loadCampaigns] Iniciando...');
-        console.log('🟡 [loadCampaigns] currentUser:', currentUser);
-        console.log('🟡 [loadCampaigns] anunciante_id:', currentUser?.id);
+        console.log('📢 [loadCampaigns] Iniciando...');
+        console.log('📢 [loadCampaigns] currentUser:', currentUser?.id);
 
         const campaignsList = document.getElementById('campaigns-list');
         if (!campaignsList) {
@@ -1198,19 +1159,18 @@
         }
 
         try {
-            console.log('🟡 [loadCampaigns] Consultando Supabase...');
             const { data, error } = await supabase
                 .from('marketing_campaigns')
                 .select('*')
                 .eq('anunciante_id', currentUser.id)
                 .order('created_at', { ascending: false });
 
-            console.log('🟢 [loadCampaigns] data:', data);
-            console.log('🟢 [loadCampaigns] error:', error);
-            console.log('🟢 [loadCampaigns] cantidad:', data?.length || 0);
+            console.log('📢 [loadCampaigns] data:', data);
+            console.log('📢 [loadCampaigns] error:', error);
+            console.log('📢 [loadCampaigns] cantidad:', data?.length || 0);
 
             if (error) {
-                console.error('🔴 [loadCampaigns] Error de Supabase:', error);
+                console.error('🔴 [loadCampaigns] Error:', error);
                 campaignsList.innerHTML = `
                     <div class="empty-state error-state">
                         <span class="icon">⚠</span>
@@ -1222,7 +1182,7 @@
             }
 
             if (!data || data.length === 0) {
-                console.log('🟡 [loadCampaigns] No hay campañas');
+                console.log('📢 [loadCampaigns] No hay campañas');
                 campaignsList.innerHTML = `
                     <div class="empty-state">
                         <span class="icon">◈</span>
@@ -1235,13 +1195,13 @@
             }
 
             campaigns = data;
-            console.log('🟢 [loadCampaigns] Ejecutando renderCampaigns...');
+            console.log('📢 [loadCampaigns] Renderizando...');
             renderCampaigns();
             calculateSummary();
-            console.log('🟢 [loadCampaigns] Completado');
+            console.log('📢 [loadCampaigns] Completado');
 
         } catch (err) {
-            console.error('🔴 [loadCampaigns] Excepción inesperada:', err);
+            console.error('🔴 [loadCampaigns] Excepción:', err);
             campaignsList.innerHTML = `
                 <div class="empty-state error-state">
                     <span class="icon">⚠</span>
@@ -1566,7 +1526,7 @@
 
         document.querySelector('#wizard-step-4 .btn-next').addEventListener('click', () => {
             currentWizardData.objetivo = document.getElementById('campaign-objective').value;
-            const pricing = window.marketingPricing.find(p => p.tipo === currentWizardData.target_tipo);
+            const pricing = (window.marketingPricing || []).find(p => p.tipo === currentWizardData.target_tipo);
             document.getElementById('pricing-info').textContent = pricing
                 ? `◈ Mínimo configurado: $${pricing.minimo} MXN`
                 : '◈ No hay mínimo configurado para este tipo.';
@@ -1575,7 +1535,7 @@
 
         document.querySelector('#wizard-step-5 .btn-next').addEventListener('click', () => {
             const budget = parseFloat(document.getElementById('campaign-budget').value);
-            const pricing = window.marketingPricing.find(p => p.tipo === currentWizardData.target_tipo);
+            const pricing = (window.marketingPricing || []).find(p => p.tipo === currentWizardData.target_tipo);
             const min = pricing ? parseFloat(pricing.minimo) : 0;
             if (!budget || budget < min) {
                 showToast(`⚠ El mínimo es $${min} MXN`, 'warning');
