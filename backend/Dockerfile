@@ -1,12 +1,13 @@
 # ================================================================
 # DOCKERFILE - SARIEL'S ECOSYSTEM
 # ================================================================
-# - Node.js 20 (compatible con tu package.json)
+# - Node.js 22 (tiene WebSocket nativo, arregla el error de Supabase)
 # - FFmpeg instalado (para procesar videos)
 # - Compatible con Railway
+# - NO incluye CMD: Railway usa el Start Command del panel
 # ================================================================
 
-FROM node:20-slim
+FROM node:22-slim
 
 # Instalar FFmpeg y dependencias del sistema
 RUN apt-get update && \
@@ -14,6 +15,9 @@ RUN apt-get update && \
         ffmpeg \
         ca-certificates \
         fonts-dejavu-core \
+        python3 \
+        make \
+        g++ \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -29,8 +33,9 @@ RUN npm install --omit=dev && npm cache clean --force
 # Copiar el resto del código
 COPY . .
 
-# Exponer puerto (Railway lo asigna dinámicamente, pero ponemos uno por defecto)
+# Exponer puerto (Railway lo asigna dinámicamente)
 EXPOSE 8080
 
-# Comando por defecto (puede ser sobrescrito por Railway)
-CMD ["node", "server.js"]
+# ⚠️ NO poner CMD aquí. Railway usará el Start Command del panel:
+# - API:    node server.js
+# - Worker: node worker.js
