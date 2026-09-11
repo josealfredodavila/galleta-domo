@@ -10,6 +10,7 @@
    ✅ Payments
    ✅ Webhooks
    ✅ Membresía
+   ✅ Marketing (get-ad, register-event, descontar, my-campaigns)
    ✅ Helmet
    ✅ CORS
    ✅ Rate Limit
@@ -390,16 +391,6 @@ const corsOrigins =
         .map(origin => origin.trim())
         .filter(Boolean);
 
-/*
- * En producción permitimos:
- *
- * 1. Los orígenes explícitamente configurados.
- * 2. El propio dominio Railway de producción.
- *
- * Esto evita bloquear las peticiones normales del mismo sitio
- * cuando CORS_ORIGINS no contiene explícitamente el dominio.
- */
-
 const DEFAULT_PRODUCTION_ORIGINS = [
     'https://galleta-domo-production.up.railway.app'
 ];
@@ -419,18 +410,10 @@ app.use(
             callback
         ) {
 
-            /*
-             * Requests sin Origin:
-             * curl, health checks, server-to-server, etc.
-             */
             if (!origin) {
                 return callback(null, true);
             }
 
-            /*
-             * Desarrollo:
-             * permitimos localhost y cualquier origen.
-             */
             if (!isProduction) {
                 return callback(null, true);
             }
@@ -510,20 +493,12 @@ app.use(
     '/api/',
     (req, res, next) => {
 
-        /*
-         * Webhooks no deben quedar bloqueados
-         * por el rate limit general.
-         */
         if (
             req.path.startsWith('/webhook/')
         ) {
             return next();
         }
 
-        /*
-         * LiveKit necesita permitir varias
-         * solicitudes durante llamadas.
-         */
         if (
             req.path === '/livekit/token'
         ) {
@@ -1310,10 +1285,6 @@ app.post(
             const userId =
                 req.user.id;
 
-            /*
-             * El participante debe ser siempre
-             * el usuario autenticado.
-             */
             if (
                 participantName !== userId
             ) {
@@ -1362,22 +1333,6 @@ app.post(
                         'El nombre debe comenzar con call_ o live_ y contener un UUID válido'
                 });
             }
-
-            /* ====================================================
-               AUTORIZACIÓN DE VIDEOLLAMADA
-
-               ESQUEMA REAL:
-               llamadas:
-                 id
-                 creador_id
-                 estado
-
-               llamadas_participantes:
-                 llamada_id
-                 usuario_id
-                 rol
-                 estado
-            ==================================================== */
 
             if (isCall) {
 
@@ -1434,9 +1389,6 @@ app.post(
                     });
                 }
 
-                /*
-                 * La llamada debe estar disponible.
-                 */
                 if (
                     llamada.estado !== 'active' &&
                     llamada.estado !== 'ringing'
@@ -1451,16 +1403,9 @@ app.post(
                     });
                 }
 
-                /*
-                 * El creador siempre está autorizado.
-                 */
                 const esCreador =
                     llamada.creador_id === userId;
 
-                /*
-                 * Los demás usuarios deben aparecer
-                 * expresamente como participantes.
-                 */
                 let esParticipante =
                     false;
 
@@ -1504,19 +1449,11 @@ app.post(
                         });
                     }
 
-                    /*
-                     * Si existe el registro, el usuario
-                     * está autorizado.
-                     */
                     esParticipante =
                         Boolean(
                             participante
                         );
 
-                    /*
-                     * Si el participante fue explícitamente
-                     * rechazado/cancelado, no entra.
-                     */
                     if (
                         participante &&
                         (
@@ -1550,10 +1487,6 @@ app.post(
                     });
                 }
             }
-
-            /* ====================================================
-               AUTORIZACIÓN DE LIVE
-            ==================================================== */
 
             if (isLive) {
 
@@ -1606,11 +1539,6 @@ app.post(
                     });
                 }
 
-                /*
-                 * Actualmente este endpoint mantiene
-                 * el modelo original: solamente el creador
-                 * puede solicitar el token de publicación.
-                 */
                 if (
                     stream.usuario_id !== userId
                 ) {
@@ -1639,10 +1567,6 @@ app.post(
                     });
                 }
             }
-
-            /* ====================================================
-               NOMBRE DEL USUARIO
-            ==================================================== */
 
             let nombreUsuario =
                 req.user.user_metadata?.nombre ||
@@ -1673,10 +1597,6 @@ app.post(
                         usuarioData.nombre;
                 }
             }
-
-            /* ====================================================
-               TOKEN
-            ==================================================== */
 
             const token =
                 new AccessToken(
@@ -2275,15 +2195,6 @@ if (
     fs.existsSync(publicPath)
 ) {
 
-    /*
-     * IMPORTANTE:
-     *
-     * El Content-Type se establece AQUÍ,
-     * antes de que express.static responda.
-     *
-     * El middleware anterior estaba después de
-     * express.static(), por lo que podía no ejecutarse.
-     */
     const staticOptions = {
 
         setHeaders: (
@@ -2508,6 +2419,18 @@ app.use(
 );
 
 /* ================================================================
+   MARKETING
+================================================================ */
+
+const marketingRoutes =
+    require('./routes/marketing');
+
+app.use(
+    '/api/marketing',
+    marketingRoutes
+);
+
+/* ================================================================
    RUTAS HTML
 ================================================================ */
 
@@ -2597,6 +2520,13 @@ app.get(
     )
 );
 
+app.get(
+    '/features/marketing/marketing.html',
+    enviarHTML(
+        'features/marketing/marketing.html'
+    )
+);
+
 /* ================================================================
    RUTAS AMIGABLES
 ================================================================ */
@@ -2647,6 +2577,13 @@ app.get(
     '/videos',
     enviarHTML(
         'features/videos/videos.html'
+    )
+);
+
+app.get(
+    '/marketing',
+    enviarHTML(
+        'features/marketing/marketing.html'
     )
 );
 
@@ -2756,6 +2693,27 @@ app.get(
                     '/api/livekit/token'
             },
 
+            marketing: {
+
+                enabled:
+                    true,
+
+                endpoints: {
+
+                    get_ad:
+                        'POST /api/marketing/get-ad',
+
+                    register_event:
+                        'POST /api/marketing/register-event',
+
+                    descontar:
+                        'POST /api/marketing/descontar',
+
+                    my_campaigns:
+                        'GET /api/marketing/my-campaigns'
+                }
+            },
+
             mensajeria: {
 
                 enabled:
@@ -2799,23 +2757,9 @@ app.get(
    SPA FALLBACK
 ================================================================ */
 
-/*
- * NO usamos:
- *
- * app.get('*', ...)
- *
- * porque Express 5 cambió la sintaxis de wildcards.
- *
- * Usamos middleware sin patrón de ruta.
- * Esto funciona independientemente de la sintaxis de path-to-regexp.
- */
-
 app.use(
     (req, res, next) => {
 
-        /*
-         * Las APIs nunca deben recibir index.html.
-         */
         if (
             req.path.startsWith('/api/')
         ) {
@@ -2828,11 +2772,6 @@ app.use(
             return next();
         }
 
-        /*
-         * Si parece un archivo solicitado,
-         * dejamos que el 404 correspondiente
-         * continúe.
-         */
         if (
             path.extname(req.path) !== ''
         ) {
@@ -2961,6 +2900,10 @@ app.listen(
 
         console.log(
             '💬 Mensajería router: ✅ /api/mensajes'
+        );
+
+        console.log(
+            '📢 Marketing router: ✅ /api/marketing'
         );
 
         console.log(
