@@ -11,6 +11,7 @@
    ✅ Webhooks
    ✅ Membresía
    ✅ Marketing (get-ad, register-event, descontar, my-campaigns)
+   ✅ Video Processor (queue, status, jobs, cancel)
    ✅ Helmet
    ✅ CORS
    ✅ Rate Limit
@@ -2431,6 +2432,18 @@ app.use(
 );
 
 /* ================================================================
+   VIDEO PROCESSOR
+================================================================ */
+
+const videoProcessorRoutes =
+    require('./routes/video-processor');
+
+app.use(
+    '/api/video',
+    videoProcessorRoutes
+);
+
+/* ================================================================
    RUTAS HTML
 ================================================================ */
 
@@ -2714,6 +2727,27 @@ app.get(
                 }
             },
 
+            video_processor: {
+
+                enabled:
+                    true,
+
+                endpoints: {
+
+                    queue:
+                        'POST /api/video/queue',
+
+                    status:
+                        'GET /api/video/status/:jobId',
+
+                    jobs:
+                        'GET /api/video/jobs',
+
+                    cancel:
+                        'DELETE /api/video/jobs/:jobId'
+                }
+            },
+
             mensajeria: {
 
                 enabled:
@@ -2907,6 +2941,10 @@ app.listen(
         );
 
         console.log(
+            '🎬 Video processor: ✅ /api/video'
+        );
+
+        console.log(
             '🌎 I18N: ✅ /api/idiomas'
         );
 
@@ -2955,6 +2993,14 @@ app.listen(
                 LIVEKIT_API_KEY &&
                 LIVEKIT_API_SECRET &&
                 LIVEKIT_URL
+                    ? '✅ Configurado'
+                    : '❌ No configurado'
+            }`
+        );
+
+        console.log(
+            `📡 Redis: ${
+                process.env.REDIS_URL
                     ? '✅ Configurado'
                     : '❌ No configurado'
             }`
