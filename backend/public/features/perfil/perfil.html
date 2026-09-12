@@ -849,6 +849,13 @@
     <!-- MÓDULO DE PUBLICACIONES EN PERFIL (CORREGIDO)                    -->
     <!-- Fix: sb() obtiene window.supabaseClient para evitar              -->
     <!-- "Cannot read properties of undefined (reading 'getSession')".    -->
+    <!-- Fix: media_type ya no manda 'texto' (el CHECK de la tabla solo   -->
+    <!-- acepta 'imagen' | 'video' | NULL) — ahora manda null si no hay   -->
+    <!-- imagen/video adjunto.                                            -->
+    <!-- Fix: las reacciones ahora usan la tabla real 'publicaciones_     -->
+    <!-- reacciones' (uuid, con políticas RLS completas) en vez de la     -->
+    <!-- tabla vieja 'reacciones' (post_id integer, sin política DELETE,  -->
+    <!-- incompatible con el id uuid de publicaciones).                   -->
     <!-- ================================================================ -->
     <script>
     (function() {
@@ -957,6 +964,8 @@
 
         // ============================================================
         // PUBLICAR DESDE EL PERFIL
+        // ✅ FIX: media_type ahora es null por defecto (antes 'texto',
+        // valor que el CHECK de la tabla publicaciones no acepta).
         // ============================================================
         window.publicarDesdePerfil = async function() {
             var btn = document.getElementById('btnPublicarPerfil');
@@ -979,7 +988,7 @@
                 if (!session) { if (window.showToast) window.showToast('⚠️ Inicia sesión', 'error'); return; }
 
                 var mediaUrl = null;
-                var mediaType = 'texto';
+                var mediaType = null;
 
                 if (archivosSeleccionados.imagen) {
                     if (window.showToast) window.showToast('⏳ Subiendo imagen...', '', 5000);
@@ -1141,6 +1150,10 @@
 
         // ============================================================
         // REACCIONAR
+        // ✅ FIX: usa 'publicaciones_reacciones' (publicacion_id uuid,
+        // con políticas INSERT/DELETE/SELECT) en vez de 'reacciones'
+        // (post_id integer, sin política DELETE — no funcionaba nunca
+        // con los ids uuid reales de la tabla publicaciones).
         // ============================================================
         window.reaccionarPublicacionPerfil = async function(postId, tipoReaccion) {
             try {
@@ -1152,20 +1165,20 @@
                 if (!session) { if (window.showToast) window.showToast('⚠️ Inicia sesión', 'error'); return; }
 
                 var existing = await client
-                    .from('reacciones')
+                    .from('publicaciones_reacciones')
                     .select('id')
-                    .eq('post_id', postId)
+                    .eq('publicacion_id', postId)
                     .eq('usuario_id', session.user.id)
                     .maybeSingle();
 
                 if (existing.data) {
-                    await client.from('reacciones').delete().eq('id', existing.data.id);
+                    await client.from('publicaciones_reacciones').delete().eq('id', existing.data.id);
                     var span = document.getElementById('likes-' + postId);
                     if (span) span.textContent = Math.max(0, (parseInt(span.textContent) || 0) - 1);
                     if (window.showToast) window.showToast('💔 Like eliminado', 'warning', 2000);
                 } else {
-                    var insert = await client.from('reacciones').insert({
-                        post_id: postId,
+                    var insert = await client.from('publicaciones_reacciones').insert({
+                        publicacion_id: postId,
                         usuario_id: session.user.id,
                         tipo: tipoReaccion
                     });
