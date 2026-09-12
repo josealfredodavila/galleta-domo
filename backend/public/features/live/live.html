@@ -364,7 +364,8 @@
     <div class="toast" id="toast"></div>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script>
-const supabase = window.supabase.createClient('https://zultnlogdoajehbswlih.supabase.co','sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu');
+// ✅ FIX CRÍTICO: Renombrado a supabaseClient para evitar colisión con window.supabase y app.js
+const supabaseClient = window.supabase.createClient('https://zultnlogdoajehbswlih.supabase.co','sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu');
 const LIVEKIT_CONFIG = { url: 'wss://csariels-domo-57ujk04t.livekit.cloud' };
 const DONACIONES = {
     5: { nombre: 'Cubo Plata', emoji: '🥈', color: '#C0C0C0', duracion: 3000, efecto: 'cubo_plata' },
@@ -389,7 +390,7 @@ function showToast(msg, type = '', duration = 3500) {
     t._timeout = setTimeout(() => t.classList.remove('show'), duration);
 }
 function escapeHTML(texto) { if (!texto) return ''; const div = document.createElement('div'); div.textContent = texto; return div.innerHTML; }
-async function getSession() { const { data: { session } } = await supabase.auth.getSession(); return session; }
+async function getSession() { const { data: { session } } = await supabaseClient.auth.getSession(); return session; }
 async function cargarLiveKit() { return await import('https://cdn.jsdelivr.net/npm/livekit-client@2/dist/livekit-client.esm.mjs'); }
 
 async function obtenerTokenLiveKit(roomName, participantName, role = 'subscriber') {
@@ -458,8 +459,9 @@ async function iniciarTransmisionGeneral() {
         const session = await getSession();
         if (!session) { showToast('⚠️ Inicia sesión para transmitir', 'error'); return; }
         currentUser = session.user;
+        console.log('🎬 [2] Usuario:', currentUser.id);
 
-        const { data: streamActivo, error: checkError } = await supabase.from('transmisiones').select('id')
+        const { data: streamActivo, error: checkError } = await supabaseClient.from('transmisiones').select('id')
             .eq('streamer_id', currentUser.id).eq('estado', 'en_vivo').eq('is_live', true)
             .is('grupo_id', null)
             .maybeSingle();
@@ -470,43 +472,51 @@ async function iniciarTransmisionGeneral() {
         showToast('⏳ Iniciando transmisión...', '', 3000);
         const titulo = prompt('Título de tu transmisión:', 'Mi live en Sariel\'s') || 'Live en Sariel\'s';
         const categoria = prompt('Categoría (gaming, musica, educacion, comunidad, tecnologia, general):', 'general') || 'general';
+        console.log('🎬 [3] Título:', titulo, 'Categoría:', categoria);
 
-        // ✅ FIX: NO enviamos room_name. El trigger lo genera como "live_UUID"
-        console.log('🎬 [2] Creando transmisión (room_name será generado por el trigger)...');
-        const { data: rpcResult, error: streamError } = await supabase.rpc('crear_transmision', {
+        console.log('🎬 [4] Creando transmisión (room_name generado por trigger)...');
+        const { data: rpcResult, error: streamError } = await supabaseClient.rpc('crear_transmision', {
             p_titulo: titulo,
             p_categoria: categoria,
-            p_room_name: null, // ← El trigger genera "live_UUID"
+            p_room_name: null,
             p_grupo_id: null
         });
 
         if (streamError) { console.error('❌ Error en RPC:', streamError); throw new Error(streamError.message || 'Error al crear transmisión'); }
         const nuevoId = (typeof rpcResult === 'object' && rpcResult !== null) ? rpcResult.id : rpcResult;
         if (!nuevoId) throw new Error('No se pudo crear la transmisión');
-        console.log('🎬 [3] Transmisión creada con ID:', nuevoId);
+        console.log('🎬 [5] Transmisión creada con ID:', nuevoId);
 
-        const { data: transmision, error: fetchError } = await supabase.from('transmisiones').select('*').eq('id', nuevoId).single();
+        const { data: transmision, error: fetchError } = await supabaseClient.from('transmisiones').select('*').eq('id', nuevoId).single();
         if (fetchError || !transmision) throw new Error('No se pudo recuperar la transmisión');
 
         currentStream = transmision;
         currentStreamId = transmision.id;
         document.getElementById('liveTitle').textContent = titulo;
-        console.log('🎬 [4] RoomName válido generado por BD:', transmision.room_name);
+        console.log('🎬 [6] RoomName generado:', transmision.room_name);
 
         try {
             showToast('🔗 Conectando a LiveKit...', '', 2000);
+            console.log('🎬 [7] Cargando LiveKit v2...');
             const { Room, Track } = await cargarLiveKit();
             liveKitRoom = new Room();
 
-            // ✅ Usamos el room_name REAL que la BD generó (live_UUID)
+            console.log('🎬 [8] Pidiendo token con room_name:', transmision.room_name);
             const token = await obtenerTokenLiveKit(transmision.room_name, currentUser.id, 'publisher');
+            console.log('🎬 [9] Token recibido');
+
             await liveKitRoom.connect(LIVEKIT_CONFIG.url, token);
+            console.log('🎬 [10] Conectado a LiveKit');
 
             await liveKitRoom.localParticipant.setCameraEnabled(true);
             await liveKitRoom.localParticipant.setMicrophoneEnabled(true);
+            console.log('🎬 [11] Cámara y micrófono activados');
 
             const localVideoTrack = liveKitRoom.localParticipant.getTrackPublication(Track.Source.Camera)?.videoTrack;
-            if (localVideoTrack) localVideoTrack.attach(document.getElementById('liveVideo'));
+            if (localVideoTrack) {
+                localVideoTrack.attach(document.getElementById('liveVideo'));
+                console.log('🎬 [12] Video adjuntado');
+            }
 
             showToast('✅ Transmitiendo en vivo', 'success');
             liveKitRoom.on('participantConnected', () => { espectadores++; document.getElementById('viewersCount').textContent = `● ${espectadores}`; });
@@ -537,7 +547,7 @@ async function finalizarTransmisionGeneral() {
         if (!streamId) { showToast('⚠️ No se encontró el ID', 'error'); return; }
         if (currentUser) {
             if (!currentStream || currentStream.id !== streamId) {
-                const { data: stream } = await supabase.from('transmisiones').select('streamer_id, estado').eq('id', streamId).maybeSingle();
+                const { data: stream } = await supabaseClient.from('transmisiones').select('streamer_id, estado').eq('id', streamId).maybeSingle();
                 if (!stream || stream.streamer_id !== currentUser.id) { showToast('⚠️ Solo el streamer puede finalizar', 'error'); return; }
                 if (stream.estado === 'finalizada') { showToast('⚠️ Ya finalizó', 'warning'); return; }
                 currentStream = stream;
@@ -550,12 +560,12 @@ async function finalizarTransmisionGeneral() {
         if (gameScreenStream) { gameScreenStream.getTracks().forEach(t => t.stop()); gameScreenStream = null; }
         if (liveKitRoom) { try { await liveKitRoom.disconnect(); } catch (e) {} liveKitRoom = null; }
 
-        const { error } = await supabase.rpc('finalizar_transmision', { p_transmision_id: streamId });
+        const { error } = await supabaseClient.rpc('finalizar_transmision', { p_transmision_id: streamId });
         if (error) {
-            await supabase.from('transmisiones').update({ estado: 'finalizada', is_live: false, fecha_fin: new Date().toISOString() }).eq('id', streamId);
+            await supabaseClient.from('transmisiones').update({ estado: 'finalizada', is_live: false, fecha_fin: new Date().toISOString() }).eq('id', streamId);
         }
         if (streamInterval) { clearInterval(streamInterval); streamInterval = null; }
-        if (channelChat) { supabase.removeChannel(channelChat); channelChat = null; }
+        if (channelChat) { supabaseClient.removeChannel(channelChat); channelChat = null; }
         detenerRefrescoAnuncios(); cerrarAnuncio();
         isLive = false; currentStream = null; currentStreamId = null; transmisionParamId = null;
         showToast('✅ Transmisión finalizada', 'success');
@@ -568,7 +578,7 @@ async function unirseATransmision(streamId) {
         const session = await getSession();
         if (!session) { showToast('⚠️ Inicia sesión', 'error'); return; }
         showToast('⏳ Uniéndose...', '', 2000);
-        const { data: stream, error } = await supabase.from('transmisiones').select('*').eq('id', streamId).single();
+        const { data: stream, error } = await supabaseClient.from('transmisiones').select('*').eq('id', streamId).single();
         if (error) throw error;
         currentStream = stream;
         currentStreamId = stream.id;
@@ -590,8 +600,8 @@ async function unirseATransmision(streamId) {
 
 function suscribirseAlChat() {
     if (!currentStream) return;
-    if (channelChat) supabase.removeChannel(channelChat);
-    channelChat = supabase.channel(`live-${currentStream.id}`)
+    if (channelChat) supabaseClient.removeChannel(channelChat);
+    channelChat = supabaseClient.channel(`live-${currentStream.id}`)
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mensajes_live', filter: `transmision_id=eq.${currentStream.id}` },
             (payload) => { agregarMensajeAlChat(payload.new); })
         .subscribe();
@@ -606,7 +616,7 @@ async function enviarMensaje() {
     const mod = verificarContenido(mensaje);
     if (mod.prohibido) { showToast(`⚠️ ${mod.razon}`, 'warning'); input.value = ''; return; }
     try {
-        await supabase.from('mensajes_live').insert({ transmision_id: currentStream.id, usuario_id: session.user.id, mensaje, nombre_usuario: session.user.user_metadata?.nombre || 'Explorador', creado_en: new Date().toISOString() });
+        await supabaseClient.from('mensajes_live').insert({ transmision_id: currentStream.id, usuario_id: session.user.id, mensaje, nombre_usuario: session.user.user_metadata?.nombre || 'Explorador', creado_en: new Date().toISOString() });
         input.value = '';
     } catch (e) { showToast('❌ Error al enviar', 'error'); }
 }
@@ -641,7 +651,7 @@ async function enviarDonacion(monto) {
         if (!d) { showToast('⚠️ Monto no válido', 'error'); return; }
         showToast(`⏳ Procesando $${monto}...`, '', 3000);
         const idem = `donacion_${session.user.id}_${currentStream.id}_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
-        await supabase.from('live_donaciones').insert({ transmision_id: currentStream.id, usuario_id: session.user.id, monto_usd: monto, mensaje: `💎 ${d.nombre}`, idempotency_key: idem, creado_en: new Date().toISOString() });
+        await supabaseClient.from('live_donaciones').insert({ transmision_id: currentStream.id, usuario_id: session.user.id, monto_usd: monto, mensaje: `💎 ${d.nombre}`, idempotency_key: idem, creado_en: new Date().toISOString() });
         mostrarEfectoDonacion(monto, d, session.user);
         agregarMensajeAlChat({ nombre_usuario: session.user.user_metadata?.nombre || 'Explorador', mensaje: `🎉 ¡Donó $${monto} USD (${d.nombre})!`, creado_en: new Date().toISOString() });
         showToast(`🎉 ¡${d.nombre} recibido!`, 'success', 5000);
@@ -671,32 +681,31 @@ function iniciarContadorEspectadores() {
     if (streamInterval) clearInterval(streamInterval);
     streamInterval = setInterval(async () => {
         if (!currentStream) return;
-        try { await supabase.from('transmisiones').update({ viewers_count: espectadores }).eq('id', currentStream.id); } catch (e) {}
+        try { await supabaseClient.from('transmisiones').update({ viewers_count: espectadores }).eq('id', currentStream.id); } catch (e) {}
     }, 15000);
 }
 async function seguirStreamer(streamerId) {
     const session = await getSession(); if (!session) { showToast('⚠️ Inicia sesión', 'error'); return; }
-    const { error } = await supabase.from('live_seguidores').insert({ streamer_id: streamerId, seguidor_id: session.user.id, creado_en: new Date().toISOString() });
+    const { error } = await supabaseClient.from('live_seguidores').insert({ streamer_id: streamerId, seguidor_id: session.user.id, creado_en: new Date().toISOString() });
     if (error) { if (error.code === '23505') { showToast('⚠️ Ya sigues', 'warning'); return; } throw error; }
     showToast('✅ Ahora sigues', 'success');
 }
 async function getSeguidores(streamerId) {
-    const { data } = await supabase.from('live_seguidores').select('seguidor_id').eq('streamer_id', streamerId);
+    const { data } = await supabaseClient.from('live_seguidores').select('seguidor_id').eq('streamer_id', streamerId);
     return data ? data.length : 0;
 }
 async function notificarSeguidores() {
     if (!currentStream || !currentUser) return;
-    const { data: segs } = await supabase.from('live_seguidores').select('seguidor_id').eq('streamer_id', currentUser.id);
+    const { data: segs } = await supabaseClient.from('live_seguidores').select('seguidor_id').eq('streamer_id', currentUser.id);
     if (!segs || segs.length === 0) return;
     const nombre = currentUser.user_metadata?.nombre || 'Un streamer';
     const notifs = segs.map(s => ({ user_id: s.seguidor_id, tipo: 'live_iniciado', mensaje: `${nombre} ha iniciado: ${currentStream.titulo}`, emisor_id: currentUser.id, leida: false, fecha: new Date().toISOString(), metadata: { stream_id: currentStream.id } }));
-    for (let i = 0; i < notifs.length; i += 50) await supabase.from('notificaciones').insert(notifs.slice(i, i + 50));
+    for (let i = 0; i < notifs.length; i += 50) await supabaseClient.from('notificaciones').insert(notifs.slice(i, i + 50));
 }
 
 async function cargarTransmisionesActivas() {
     try {
-        // ✅ Solo profesionales (sin grupo)
-        const { data, error } = await supabase.from('transmisiones').select('*')
+        const { data, error } = await supabaseClient.from('transmisiones').select('*')
             .eq('estado', 'en_vivo').eq('is_live', true)
             .is('grupo_id', null)
             .order('fecha_inicio', { ascending: false });
@@ -781,7 +790,7 @@ async function abrirSelectorJuego() {
     modal.addEventListener('click', (e) => { if (e.target === modal) cerrarSelectorJuego(); });
     document.body.appendChild(modal);
     try {
-        const { data, error } = await supabase.from('juegos').select('id, nombre, package_name, activo').eq('activo', true).order('nombre');
+        const { data, error } = await supabaseClient.from('juegos').select('id, nombre, package_name, activo').eq('activo', true).order('nombre');
         if (error) throw error;
         juegosDisponibles = data || [];
         const grid = document.getElementById('gameGrid');
@@ -811,15 +820,14 @@ async function iniciarTransmisionJuego(juego) {
         if (!session) { gameScreenStream.getTracks().forEach(t => t.stop()); gameScreenStream = null; showToast('⚠️ Inicia sesión', 'error'); return; }
         currentUser = session.user;
 
-        const { data: act } = await supabase.from('transmisiones').select('id').eq('streamer_id', currentUser.id).eq('estado', 'en_vivo').eq('is_live', true).is('grupo_id', null).maybeSingle();
+        const { data: act } = await supabaseClient.from('transmisiones').select('id').eq('streamer_id', currentUser.id).eq('estado', 'en_vivo').eq('is_live', true).is('grupo_id', null).maybeSingle();
         if (act) { gameScreenStream.getTracks().forEach(t => t.stop()); gameScreenStream = null; showToast('⚠️ Ya tienes una transmisión activa', 'warning'); return; }
 
         gameScreenTrack = gameScreenStream.getVideoTracks()[0];
         if (!gameScreenTrack) throw new Error('No se obtuvo la pista');
 
-        // ✅ FIX: NO enviamos room_name
         const titulo = `◈ Jugando ${nj}`;
-        const { data: rpcResult, error: rpcError } = await supabase.rpc('crear_transmision', {
+        const { data: rpcResult, error: rpcError } = await supabaseClient.rpc('crear_transmision', {
             p_titulo: titulo, p_categoria: 'gaming', p_room_name: null, p_grupo_id: null
         });
         if (rpcError) throw rpcError;
@@ -827,7 +835,7 @@ async function iniciarTransmisionJuego(juego) {
         const nuevoId = (typeof rpcResult === 'object' && rpcResult !== null) ? rpcResult.id : rpcResult;
         if (!nuevoId) throw new Error('Sin ID');
 
-        const { data: transmision } = await supabase.from('transmisiones').select('*').eq('id', nuevoId).single();
+        const { data: transmision } = await supabaseClient.from('transmisiones').select('*').eq('id', nuevoId).single();
         if (!transmision) throw new Error('No se pudo recuperar');
 
         currentStream = transmision;
@@ -864,7 +872,7 @@ async function iniciarTransmisionJuego(juego) {
 async function cargarEstadisticas() {
     const session = await getSession();
     if (!session) { showToast('⚠️ Inicia sesión', 'error'); return; }
-    const { data, error } = await supabase.from('transmisiones').select('*').eq('streamer_id', session.user.id).is('grupo_id', null).order('fecha_inicio', { ascending: false });
+    const { data, error } = await supabaseClient.from('transmisiones').select('*').eq('streamer_id', session.user.id).is('grupo_id', null).order('fecha_inicio', { ascending: false });
     if (error) { showToast('✕ Error', 'error'); return; }
     if (!data || data.length === 0) { showToast('◈ Sin estadísticas aún', 'warning'); return; }
     const totalStreams = data.length;
@@ -874,6 +882,7 @@ async function cargarEstadisticas() {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
+    console.log('◈ Sariel\'s Live - cargando...');
     const session = await getSession();
     if (session) currentUser = session.user;
     else showToast('⚠️ Inicia sesión', 'warning');
@@ -882,7 +891,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (transmisionParamId) {
         currentStreamId = Number(transmisionParamId) || transmisionParamId;
         try {
-            const { data: stream } = await supabase.from('transmisiones').select('*').eq('id', currentStreamId).single();
+            const { data: stream } = await supabaseClient.from('transmisiones').select('*').eq('id', currentStreamId).single();
             if (stream) { currentStream = stream; currentStreamId = stream.id; document.getElementById('liveTitle').textContent = stream.titulo || 'EN VIVO'; adCerrado = false; iniciarRefrescoAnuncios(); }
         } catch (e) { console.error(e); }
     }
