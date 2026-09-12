@@ -754,12 +754,18 @@
             cargarGrupos();
         }
 
+        // ✅ FIX: Actualiza la URL con ?grupo=UUID para que al recargar vuelva al grupo
         async function abrirGrupo(grupoId) {
             try {
                 var result = await window.supabase.from('grupos_video').select('*, miembros:grupos_video_miembros(count)').eq('id', grupoId).single();
                 if (result.error) throw result.error;
                 grupoActual = result.data;
                 grupoActualId = grupoId;
+
+                // ✅ Actualizar URL sin recargar la página
+                var url = new URL(window.location);
+                url.searchParams.set('grupo', grupoId);
+                window.history.replaceState({ grupoId: grupoId }, '', url);
 
                 await verificarMembresia(grupoId);
                 await verificarLiveActivoGrupo(grupoId);
@@ -844,7 +850,6 @@
             }
         }
 
-        // ✅ FIX: p_room_name = null para que el trigger genere "live_UUID" automáticamente
         async function iniciarLiveEnGrupo() {
             console.log('🎬 [1] Iniciando live de grupo...');
             if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
@@ -962,7 +967,6 @@
             if (container) container.classList.remove('visible');
         }
 
-        // ✅ FIX: usa el room_name REAL de la BD
         async function verLiveActivo() {
             if (!liveActivoEnGrupo) { showToast('No hay LIVE activo en este grupo', 'warning'); return; }
             mostrarLiveGrupoInline(liveActivoEnGrupo);
@@ -1402,6 +1406,8 @@
                 grupoActual = null; grupoActualId = null; liveActivoEnGrupo = null;
                 isLiveGrupoActivo = false; currentStreamGrupoId = null;
                 esAdmin = false; esModerador = false; esCreador = false; rolEnGrupo = null;
+                // Limpiar URL
+                var url = new URL(window.location); url.searchParams.delete('grupo'); window.history.replaceState({}, '', url);
                 await cargarGrupos();
             } catch (e) {
                 console.error(e);
@@ -1528,7 +1534,12 @@
                 document.getElementById('inputCiudadGrupo').value = '';
                 document.getElementById('inputEstadoGrupo').value = '';
                 document.getElementById('inputPaisGrupo').value = '';
-                cargarGrupos();
+                // ✅ Abrir el grupo recién creado
+                if (groupResult.data?.id) {
+                    await abrirGrupo(groupResult.data.id);
+                } else {
+                    cargarGrupos();
+                }
             } catch (e) { console.error(e); showToast('Error: ' + e.message, 'error'); }
             finally { btn.disabled = false; btn.textContent = '◈ Crear grupo'; }
         }
@@ -1590,18 +1601,33 @@
             cerrarLiveGrupoInline();
             detenerRefrescoAnuncios();
             cerrarAnuncio();
+            // ✅ Limpiar URL del grupo
+            var url = new URL(window.location);
+            url.searchParams.delete('grupo');
+            window.history.replaceState({}, '', url);
             cargarGrupos();
         }
 
         function verTokens() { window.location.href = '/features/perfil/perfil.html'; }
 
-        document.addEventListener('DOMContentLoaded', function() {
+        // ✅ NUEVO: Restaurar grupo desde URL al cargar + al volver de otra app/pestaña
+        document.addEventListener('DOMContentLoaded', async function() {
             console.log('Sariel\'s - Grupos con Live independiente');
-            cargarUsuarioActual().then(function() {
-                cargarCategorias();
-                cargarCiudades();
-                cargarGrupos();
-            });
+            await cargarUsuarioActual();
+            await cargarCategorias();
+            await cargarCiudades();
+
+            // ✅ Leer el parámetro ?grupo=UUID de la URL y abrir el grupo automáticamente
+            var params = new URLSearchParams(window.location.search);
+            var grupoIdDesdeUrl = params.get('grupo');
+
+            if (grupoIdDesdeUrl) {
+                console.log('📡 Restaurando grupo desde URL:', grupoIdDesdeUrl);
+                await abrirGrupo(grupoIdDesdeUrl);
+            } else {
+                await cargarGrupos();
+            }
+
             document.addEventListener('keydown', function(e) {
                 if (e.key === 'Escape') {
                     cerrarModalCrearGrupo(); cerrarModalAdmin(); cerrarModalRegalos(); cerrarConfirmacionEliminarGrupo();
@@ -1617,6 +1643,39 @@
             });
             document.querySelectorAll('.modal-overlay').forEach(function(modal) {
                 modal.addEventListener('click', function(e) { if (e.target === this) this.classList.remove('show'); });
+            });
+
+            // ✅ NUEVO: Manejar botón "atrás" del navegador
+            window.addEventListener('popstate', async function(e) {
+                var params = new URLSearchParams(window.location.search);
+                var grupoId = params.get('grupo');
+                if (grupoId) {
+                    if (grupoId !== grupoActualId) await abrirGrupo(grupoId);
+                } else {
+                    // Volver a la lista sin recargar
+                    document.getElementById('vistaLista').style.display = 'block';
+                    document.getElementById('vistaGrupo').classList.remove('show');
+                    grupoActual = null; grupoActualId = null; liveActivoEnGrupo = null;
+                    isLiveGrupoActivo = false; currentStreamGrupoId = null;
+                    if (liveKitRoomGrupo) { try { liveKitRoomGrupo.disconnect(); } catch(err) {} liveKitRoomGrupo = null; }
+                    if (channelChatGrupo) { try { window.supabase.removeChannel(channelChatGrupo); } catch(err) {} channelChatGrupo = null; }
+                    cerrarLiveGrupoInline();
+                    detenerRefrescoAnuncios();
+                    cerrarAnuncio();
+                    await cargarGrupos();
+                }
+            });
+
+            // ✅ NUEVO: Cuando el usuario vuelve a la pestaña/app, verificar si sigue en el grupo
+            document.addEventListener('visibilitychange', async function() {
+                if (document.visibilityState === 'visible') {
+                    var params = new URLSearchParams(window.location.search);
+                    var grupoId = params.get('grupo');
+                    if (grupoId && grupoId !== grupoActualId) {
+                        console.log('📡 Visibilitychange: restaurando grupo', grupoId);
+                        await abrirGrupo(grupoId);
+                    }
+                }
             });
         });
 
