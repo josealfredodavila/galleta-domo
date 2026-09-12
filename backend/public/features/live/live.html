@@ -897,20 +897,11 @@ function cerrarAnuncio() {
 
 // Carga un anuncio desde el backend para este LIVE
 async function cargarAnuncioLive() {
-    // Solo cargar si hay una transmisión activa
-    if (!currentStreamId) {
-        return;
-    }
-
-    // Si el usuario cerró el anuncio, no volver a mostrarlo en esta sesión
-    if (adCerrado) {
-        return;
-    }
+    if (!currentStreamId) return;
+    if (adCerrado) return;
 
     const session = await getSession();
-    if (!session) {
-        return; // Solo mostrar anuncios a usuarios autenticados
-    }
+    if (!session) return;
 
     try {
         const response = await fetch('/api/marketing/get-ad', {
@@ -934,7 +925,6 @@ async function cargarAnuncioLive() {
         const data = await response.json();
 
         if (!data.success || !data.ad) {
-            // No hay anuncio disponible, ocultar contenedor
             const container = document.getElementById('marketingAdContainer');
             if (container) container.classList.remove('visible');
             return;
@@ -943,7 +933,6 @@ async function cargarAnuncioLive() {
         mostrarAnuncio(data.ad);
         anuncioActual = data.ad;
 
-        // Registrar vista después de 3 segundos visible
         if (adVistaTimer) clearTimeout(adVistaTimer);
         adVistaTimer = setTimeout(() => {
             registrarVistaAnuncio();
@@ -954,7 +943,6 @@ async function cargarAnuncioLive() {
     }
 }
 
-// Renderiza el anuncio en el DOM
 function mostrarAnuncio(ad) {
     const container = document.getElementById('marketingAdContainer');
     const media = document.getElementById('marketingAdMedia');
@@ -964,7 +952,6 @@ function mostrarAnuncio(ad) {
 
     if (!container || !media || !title || !desc || !cta) return;
 
-    // Media: imagen, video o placeholder
     if (ad.imagen_url) {
         media.innerHTML = `<img src="${escapeHTML(ad.imagen_url)}" alt="${escapeHTML(ad.titulo)}" loading="lazy" onerror="this.parentElement.innerHTML='<span>◈</span>'">`;
     } else if (ad.video_url) {
@@ -977,13 +964,11 @@ function mostrarAnuncio(ad) {
     desc.textContent = ad.descripcion || '';
     cta.textContent = ad.cta_texto || 'Ver más';
 
-    // Ocultar descripción si está vacía
     desc.style.display = ad.descripcion ? 'block' : 'none';
 
     container.classList.add('visible');
 }
 
-// Registra la vista del anuncio (después de 3s)
 async function registrarVistaAnuncio() {
     if (!anuncioActual) return;
     const session = await getSession();
@@ -1010,7 +995,6 @@ async function registrarVistaAnuncio() {
     }
 }
 
-// Registra el clic del CTA
 async function registrarClicAnuncio() {
     if (!anuncioActual) return;
     const session = await getSession();
@@ -1033,7 +1017,6 @@ async function registrarClicAnuncio() {
             })
         });
 
-        // Abrir destino si existe
         if (anuncioActual.video_url) {
             window.open(anuncioActual.video_url, '_blank', 'noopener');
         } else if (anuncioActual.imagen_url) {
@@ -1044,12 +1027,9 @@ async function registrarClicAnuncio() {
     }
 }
 
-// Inicia el refresco automático de anuncios cada 30 segundos
 function iniciarRefrescoAnuncios() {
     if (adRefreshInterval) clearInterval(adRefreshInterval);
-    // Primera carga
     cargarAnuncioLive();
-    // Refrescar cada 30s
     adRefreshInterval = setInterval(() => {
         if (currentStreamId && !adCerrado) {
             cargarAnuncioLive();
@@ -1057,7 +1037,6 @@ function iniciarRefrescoAnuncios() {
     }, 30000);
 }
 
-// Detiene el refresco de anuncios
 function detenerRefrescoAnuncios() {
     if (adRefreshInterval) {
         clearInterval(adRefreshInterval);
@@ -1102,7 +1081,8 @@ async function iniciarTransmisionGeneral() {
 
         const roomName = `live-${currentUser.id}-${Date.now()}`;
 
-        const { data: streamData, error: streamError } = await supabase.rpc('crear_transmision', {
+        // ===== CREAR TRANSMISIÓN =====
+        const { data: rpcResult, error: streamError } = await supabase.rpc('crear_transmision', {
             p_titulo: titulo,
             p_categoria: categoria,
             p_room_name: roomName,
@@ -1114,9 +1094,22 @@ async function iniciarTransmisionGeneral() {
             throw new Error(streamError.message || 'Error al crear transmisión');
         }
 
-        const transmision = Array.isArray(streamData) ? streamData[0] : streamData;
-        if (!transmision || !transmision.id) {
-            throw new Error('No se pudo crear la transmisión');
+        // La RPC devuelve el ID (bigint)
+        const nuevoId = (typeof rpcResult === 'object' && rpcResult !== null) ? rpcResult.id : rpcResult;
+        if (!nuevoId) {
+            throw new Error('No se pudo crear la transmisión (ID vacío)');
+        }
+
+        // Traer la fila completa
+        const { data: transmision, error: fetchError } = await supabase
+            .from('transmisiones')
+            .select('*')
+            .eq('id', nuevoId)
+            .single();
+
+        if (fetchError || !transmision) {
+            console.error('❌ Error recuperando transmisión:', fetchError);
+            throw new Error('No se pudo recuperar la transmisión creada');
         }
 
         currentStream = transmision;
@@ -1163,7 +1156,6 @@ async function iniciarTransmisionGeneral() {
         suscribirseAlChat();
         await notificarSeguidores();
 
-        // ✅ Iniciar refresco de anuncios al iniciar transmisión
         adCerrado = false;
         iniciarRefrescoAnuncios();
 
@@ -1258,7 +1250,6 @@ async function finalizarTransmisionGeneral() {
         if (streamInterval) { clearInterval(streamInterval); streamInterval = null; }
         if (channelChat) { supabase.removeChannel(channelChat); channelChat = null; }
 
-        // ✅ Detener anuncios al finalizar
         detenerRefrescoAnuncios();
         cerrarAnuncio();
 
@@ -1345,7 +1336,6 @@ async function unirseATransmision(streamId) {
         const overlay = document.querySelector('.live-overlay .text');
         if (overlay) overlay.textContent = stream.titulo || 'EN VIVO';
 
-        // ✅ Iniciar anuncios al ver transmisión
         adCerrado = false;
         iniciarRefrescoAnuncios();
 
@@ -1510,6 +1500,11 @@ async function enviarDonacion(monto) {
 
         const idempotencyKey = `donacion_${session.user.id}_${currentStream.id}_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
 
+        // El trigger preparar_donacion_live() se encarga de:
+        // - donante_id (desde usuario_id o auth.uid())
+        // - usuario_id (desde donante_id)
+        // - streamer_id (desde transmisiones)
+        // - monto_fundador_usd y monto_streamer_usd (50/50)
         const { data: donacionData, error: donacionError } = await supabase
             .from('live_donaciones')
             .insert({
@@ -1518,7 +1513,6 @@ async function enviarDonacion(monto) {
                 monto_usd: monto,
                 mensaje: `💎 ${donacion.nombre}`,
                 idempotency_key: idempotencyKey,
-                estado: 'completado',
                 creado_en: new Date().toISOString()
             })
             .select()
@@ -1997,7 +1991,7 @@ async function iniciarTransmisionJuego(juego) {
         const roomName = `live-${currentUser.id}-${Date.now()}`;
         const titulo = `◈ Jugando ${nombreJuego}`;
 
-        const { data: rpcData, error: rpcError } = await supabase.rpc('crear_transmision', {
+        const { data: rpcResult, error: rpcError } = await supabase.rpc('crear_transmision', {
             p_titulo: titulo,
             p_categoria: 'gaming',
             p_room_name: roomName,
@@ -2005,12 +1999,24 @@ async function iniciarTransmisionJuego(juego) {
         });
         if (rpcError) throw rpcError;
 
-        const streamData = Array.isArray(rpcData) ? rpcData[0] : rpcData;
-        if (!streamData?.id) throw new Error('Supabase no devolvió el ID.');
+        // La RPC devuelve el ID (bigint)
+        const nuevoId = (typeof rpcResult === 'object' && rpcResult !== null) ? rpcResult.id : rpcResult;
+        if (!nuevoId) throw new Error('Supabase no devolvió el ID.');
 
-        currentStream = streamData;
-        currentStreamId = streamData.id;
-        if (!currentStream.room_name) currentStream.room_name = roomName;
+        // Traer la fila completa
+        const { data: transmision, error: fetchError } = await supabase
+            .from('transmisiones')
+            .select('*')
+            .eq('id', nuevoId)
+            .single();
+
+        if (fetchError || !transmision) {
+            console.error('❌ Error recuperando transmisión:', fetchError);
+            throw new Error('No se pudo recuperar la transmisión creada');
+        }
+
+        currentStream = transmision;
+        currentStreamId = transmision.id;
         document.getElementById('liveTitle').textContent = titulo;
 
         const video = document.getElementById('liveVideo');
@@ -2060,7 +2066,6 @@ async function iniciarTransmisionJuego(juego) {
         suscribirseAlChat();
         await notificarSeguidores();
 
-        // ✅ Iniciar anuncios
         adCerrado = false;
         iniciarRefrescoAnuncios();
 
@@ -2156,7 +2161,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             currentStreamId = stream.id;
             document.getElementById('liveTitle').textContent = stream.titulo || 'EN VIVO';
 
-            // ✅ Iniciar anuncios al cargar una transmisión por URL
             adCerrado = false;
             iniciarRefrescoAnuncios();
 
