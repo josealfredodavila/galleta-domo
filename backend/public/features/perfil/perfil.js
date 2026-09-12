@@ -276,7 +276,7 @@ async function cambiarEstado(online) {
 }
 
 // ================================================================
-// AMIGOS EN TIEMPO REAL (CORREGIDO: usa perfiles_publicos)
+// AMIGOS EN TIEMPO REAL (con fallback a usuarios)
 // ================================================================
 let canalAmigos = null;
 
@@ -303,7 +303,6 @@ function iniciarEscuchaAmigos() {
     return canalAmigos;
 }
 
-// ✅ CORREGIDO: usa perfiles_publicos en lugar de usuarios
 async function cargarAmigosEnLinea() {
     try {
         const session = await getSession();
@@ -328,25 +327,39 @@ async function cargarAmigosEnLinea() {
 
         const idsContactos = contactos.map(c => c.contacto_id);
 
-        // ✅ CORREGIDO: usar perfiles_publicos
-        const { data: enLinea, error: enLineaError } = await supabase
-            .from('perfiles_publicos')
-            .select('id, nombre, handle, avatar_url, online, ultima_conexion')
-            .in('id', idsContactos)
-            .eq('online', true);
+        let enLinea = [];
+        let todosContactos = [];
 
-        if (enLineaError) throw enLineaError;
+        try {
+            const { data: enLineaData, error: enLineaError } = await supabase
+                .from('perfiles_publicos')
+                .select('id, nombre, handle, avatar_url, online, ultima_conexion')
+                .in('id', idsContactos)
+                .eq('online', true);
 
-        // ✅ CORREGIDO: usar perfiles_publicos
-        const { data: todosContactos, error: todosError } = await supabase
-            .from('perfiles_publicos')
-            .select('id, nombre, handle, avatar_url, online, ultima_conexion')
-            .in('id', idsContactos);
+            if (enLineaError) throw enLineaError;
+            enLinea = enLineaData || [];
 
-        if (todosError) throw todosError;
+            const { data: todosData, error: todosError } = await supabase
+                .from('perfiles_publicos')
+                .select('id, nombre, handle, avatar_url, online, ultima_conexion')
+                .in('id', idsContactos);
+
+            if (todosError) throw todosError;
+            todosContactos = todosData || [];
+
+        } catch (e) {
+            console.warn('perfiles_publicos no disponible, usando usuarios:', e.message);
+            const { data: usuarios } = await supabase
+                .from('usuarios')
+                .select('id, nombre, handle, avatar_url, online, ultima_conexion')
+                .in('id', idsContactos);
+
+            todosContactos = usuarios || [];
+            enLinea = todosContactos.filter(u => u.online === true);
+        }
 
         actualizarUIAmigos(todosContactos || [], enLinea || []);
-
         return { enLinea, todosContactos };
 
     } catch (error) {
@@ -420,19 +433,19 @@ async function notificarCambioEstado(online) {
             .eq('usuario_id', session.user.id)
             .eq('estado', 'aceptado');
 
-        if (error || !contactos) return;
+        if (error || !contactos || contactos.length === 0) return;
 
-        for (const contacto of contactos) {
-            await supabase
-                .from('notificaciones')
-                .insert({
-                    user_id: contacto.contacto_id,
-                    tipo: 'estado',
-                    mensaje: `${perfilCache?.nombre || 'Un usuario'} está ${online ? '🟢 activo' : '⭕ inactivo'}`,
-                    emisor_id: session.user.id,
-                    leida: false,
-                    fecha: new Date().toISOString()
-                });
+        const notifs = contactos.map(c => ({
+            user_id: c.contacto_id,
+            tipo: 'estado',
+            mensaje: `${perfilCache?.nombre || 'Un usuario'} está ${online ? '🟢 activo' : '⭕ inactivo'}`,
+            emisor_id: session.user.id,
+            leida: false,
+            fecha: new Date().toISOString()
+        }));
+
+        for (let i = 0; i < notifs.length; i += 50) {
+            await supabase.from('notificaciones').insert(notifs.slice(i, i + 50));
         }
 
     } catch (error) {
@@ -674,7 +687,7 @@ function iniciarEscuchaConexion() {
 }
 
 // ================================================================
-// eSIM - TELNYX FUNCTIONS (INTEGRACIÓN CON SERVER.JS)
+// eSIM - TELNYX FUNCTIONS
 // ================================================================
 
 function actualizarUIESIM(data) {
@@ -759,9 +772,6 @@ function mostrarSinESIM() {
     }
 }
 
-/**
- * Cargar datos reales de eSIM desde el backend
- */
 async function cargarDatosESIM(iccid) {
     if (!iccid) {
         console.warn('⚠️ No hay ICCID para cargar datos eSIM');
@@ -823,9 +833,6 @@ async function cargarDatosESIM(iccid) {
     }
 }
 
-/**
- * Fallback: Cargar datos locales de Supabase
- */
 async function cargarDatosESIMLocal(iccid) {
     try {
         const session = await getSession();
@@ -855,9 +862,6 @@ async function cargarDatosESIMLocal(iccid) {
     }
 }
 
-/**
- * Sincronizar eSIM manualmente con Telnyx
- */
 async function sincronizarESIM() {
     try {
         const session = await getSession();
@@ -891,9 +895,6 @@ async function sincronizarESIM() {
     }
 }
 
-/**
- * Comprar eSIM
- */
 async function comprarESIM(planId) {
     try {
         const session = await getSession();
@@ -945,9 +946,6 @@ async function comprarESIM(planId) {
     }
 }
 
-/**
- * Activar eSIM
- */
 async function activarESIM(iccid) {
     try {
         const session = await getSession();
@@ -988,9 +986,6 @@ async function activarESIM(iccid) {
     }
 }
 
-/**
- * Desactivar eSIM
- */
 async function desactivarESIM(iccid) {
     try {
         const session = await getSession();
@@ -1033,9 +1028,6 @@ async function desactivarESIM(iccid) {
     }
 }
 
-/**
- * Generar QR de activación eSIM
- */
 async function generarQRESIM(iccid) {
     try {
         const iccidParam = iccid || perfilCache?.esim_iccid;
@@ -1051,9 +1043,6 @@ async function generarQRESIM(iccid) {
     }
 }
 
-/**
- * Obtener estado de eSIM
- */
 async function obtenerEstadoESIM() {
     try {
         const session = await getSession();
@@ -1074,9 +1063,6 @@ async function obtenerEstadoESIM() {
     }
 }
 
-/**
- * Obtener planes eSIM
- */
 async function obtenerPlanesESIM() {
     try {
         const { data, error } = await supabase
@@ -1486,13 +1472,22 @@ async function cargarHistorialQR() {
             .order('fecha', { ascending: false })
             .limit(10);
 
-        if (error) throw error;
+        if (error) {
+            if (error.code === '42P01') {
+                console.warn('qr_historial no existe aún');
+                qrHistorial = [];
+                actualizarUIHistorialQR([]);
+                return;
+            }
+            throw error;
+        }
 
         qrHistorial = data || [];
         actualizarUIHistorialQR(qrHistorial);
 
     } catch (error) {
         console.error('Error cargando historial QR:', error);
+        actualizarUIHistorialQR([]);
     }
 }
 
@@ -2158,6 +2153,18 @@ async function subirFoto(event) {
         return;
     }
 
+    if (file.size > 5 * 1024 * 1024) {
+        showToast('❌ La imagen no puede superar los 5 MB', 'error');
+        event.target.value = '';
+        return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+        showToast('❌ Solo se permiten imágenes', 'error');
+        event.target.value = '';
+        return;
+    }
+
     const fileExt = file.name.split('.').pop().toLowerCase();
     const filePath = `${session.user.id}/avatar.${fileExt}`;
 
@@ -2166,15 +2173,25 @@ async function subirFoto(event) {
 
         const { error: uploadError } = await supabase.storage
             .from('sariels-avatars')
-            .upload(filePath, file, { upsert: true });
+            .upload(filePath, file, { upsert: true, contentType: file.type });
 
-        if (uploadError) throw uploadError;
+        if (uploadError) {
+            console.error('Error storage:', uploadError);
+            if (uploadError.message?.includes('not found') || uploadError.message?.includes('Bucket')) {
+                showToast('❌ Bucket de avatares no configurado', 'error');
+            } else if (uploadError.message?.includes('policy') || uploadError.message?.includes('violates')) {
+                showToast('❌ Sin permiso para subir foto', 'error');
+            } else {
+                showToast('❌ Error: ' + uploadError.message, 'error');
+            }
+            return;
+        }
 
         const { data: urlData } = supabase.storage
             .from('sariels-avatars')
             .getPublicUrl(filePath);
 
-        const publicUrl = urlData.publicUrl;
+        const publicUrl = urlData.publicUrl + '?t=' + Date.now();
 
         const { error: updateError } = await supabase
             .from('usuarios')
@@ -2186,10 +2203,10 @@ async function subirFoto(event) {
         showToast('✅ Foto actualizada correctamente', 'success');
         event.target.value = '';
         await cargarPerfil(true);
-        
+
     } catch (error) {
         console.error('Error al subir foto:', error);
-        showToast('❌ Error al subir foto', 'error');
+        showToast('❌ Error al subir foto: ' + error.message, 'error');
     }
 }
 
@@ -2210,9 +2227,15 @@ async function reaccionarPublicacion(postId, tipoReaccion) {
                 post_id: postId,
                 usuario_id: session.user.id,
                 tipo: tipoReaccion
-            }, { onConflict: 'post_id, usuario_id' });
+            }, { onConflict: 'post_id,usuario_id' });
 
-        if (error) throw error;
+        if (error) {
+            console.error('Error reacción:', error);
+            if (error.code === '42P01') showToast('❌ Tabla de reacciones no configurada', 'error');
+            else if (error.code === '42501') showToast('❌ Sin permiso para reaccionar', 'error');
+            else showToast('❌ Error al reaccionar: ' + error.message, 'error');
+            return;
+        }
         showToast(`❤️ Reaccionaste con ${tipoReaccion}`, 'success');
     } catch (error) {
         console.error('Error al reaccionar:', error);
@@ -2239,12 +2262,18 @@ async function comentarPublicacion(postId, contenido) {
             .insert({
                 post_id: postId,
                 usuario_id: session.user.id,
-                contenido: textoFormateado
+                contenido: textoFormateado,
+                created_at: new Date().toISOString()
             });
 
-        if (error) throw error;
+        if (error) {
+            console.error('Error comentario:', error);
+            if (error.code === '42P01') showToast('❌ Tabla de comentarios no configurada', 'error');
+            else if (error.code === '42501') showToast('❌ Sin permiso para comentar', 'error');
+            else showToast('❌ Error al comentar: ' + error.message, 'error');
+            return;
+        }
         showToast('💬 Comentario publicado', 'success');
-        
     } catch (error) {
         console.error('Error al comentar:', error);
         showToast('❌ Error al enviar comentario', 'error');
@@ -2271,16 +2300,14 @@ async function agregarAmigo(amigoId) {
             });
 
         if (error) {
-            if (error.code === '23505') {
-                showToast('⚠️ Ya enviaste solicitud a este usuario', 'warning');
-            } else {
-                throw error;
-            }
+            if (error.code === '23505') showToast('⚠️ Ya enviaste solicitud a este usuario', 'warning');
+            else if (error.code === '42P01') showToast('❌ Tabla de contactos no configurada', 'error');
+            else if (error.code === '42501') showToast('❌ Sin permiso para agregar', 'error');
+            else showToast('❌ Error: ' + error.message, 'error');
             return;
         }
 
         showToast('🤝 Solicitud de amistad enviada', 'success');
-        
     } catch (error) {
         console.error('Error al agregar amigo:', error);
         showToast('❌ No se pudo enviar la solicitud', 'error');
@@ -2380,31 +2407,40 @@ async function subirVideo(event) {
     }
 
     if (!file.type.startsWith('video/')) {
-        showToast('❌ Formato no válido', 'error');
+        showToast('❌ Formato no válido (solo videos)', 'error');
         return;
     }
 
-    if (file.size > 50 * 1024 * 1024) {
-        showToast('❌ El video excede 50MB', 'error');
+    if (file.size > 100 * 1024 * 1024) {
+        showToast('❌ El video excede 100 MB', 'error');
         return;
     }
 
     try {
-        showToast('⏳ Subiendo video... 0%', '', 10000);
-        
+        showToast('⏳ Subiendo video...', '', 15000);
+
         const fileExt = file.name.split('.').pop();
         const filePath = `${session.user.id}/video_${Date.now()}.${fileExt}`;
 
         const { error: uploadError } = await supabase.storage
             .from('posts')
             .upload(filePath, file, {
-                onProgress: (progress) => {
-                    const percent = Math.round((progress.loaded / progress.total) * 100);
-                    showToast(`⏳ Subiendo video... ${percent}%`, '', 10000);
-                }
+                cacheControl: '3600',
+                upsert: false,
+                contentType: file.type
             });
 
-        if (uploadError) throw uploadError;
+        if (uploadError) {
+            console.error('Error storage:', uploadError);
+            if (uploadError.message?.includes('not found') || uploadError.message?.includes('Bucket')) {
+                showToast('❌ Bucket de posts no configurado', 'error');
+            } else if (uploadError.message?.includes('policy') || uploadError.message?.includes('violates')) {
+                showToast('❌ Sin permiso para subir video', 'error');
+            } else {
+                showToast('❌ Error: ' + uploadError.message, 'error');
+            }
+            return;
+        }
 
         const { data: urlData } = supabase.storage
             .from('posts')
@@ -2412,7 +2448,7 @@ async function subirVideo(event) {
 
         showToast('✅ Video subido con éxito', 'success');
         return urlData.publicUrl;
-        
+
     } catch (error) {
         console.error('Error al subir video:', error);
         showToast('❌ Error al subir el video: ' + error.message, 'error');
@@ -2504,7 +2540,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         cargarAmigosEnLinea();
     }, 15000);
 
-    // Controles de cantidad crypto
     const cryptoQty = document.getElementById('cryptoQuantity');
     if (cryptoQty) {
         document.getElementById('cryptoDecreaseQty').addEventListener('click', () => {
