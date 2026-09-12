@@ -1,83 +1,116 @@
 /* ================================================================
    CONTACTOS - SARIEL'S ECOSYSTEM
-   VERSIÓN CORREGIDA - cliente real + tabla usuarios
-   ÚNICA fuente de verdad: este archivo.
-   NO duplicar estas funciones en contactos.html.
+   VERSIÓN ACTUALIZADA CONTRA SUPABASE REAL
+   Proyecto: zultnlogdoajehbswlih
+
+   TABLAS UTILIZADAS:
+   - public.contactos
+   - public.usuarios
+   - public.bloqueos
+   - public.invitaciones
+
+   NO MODIFICA:
+   - Videos
+   - Live
+   - Grupos
+   - Transmisiones
+   - Mensajes
    ================================================================ */
 
-// ================================================================
-// FIX CRÍTICO: obtiene el cliente real
-// ================================================================
+'use strict';
+
+/* ================================================================
+   SUPABASE
+   ================================================================ */
+
 function sb() {
-    return window.supabaseClient || window.supabase;
+    return window.supabaseClient || window.supabase || null;
 }
 
-// ================================================================
-// ESCAPE HTML - PREVENCIÓN XSS
-// ================================================================
+/* ================================================================
+   ESCAPE HTML
+   ================================================================ */
+
 function escapeHTML(texto) {
-    if (!texto) return '';
+    if (texto === null || texto === undefined) return '';
 
     const div = document.createElement('div');
-    div.textContent = texto;
+    div.textContent = String(texto);
+
     return div.innerHTML;
 }
 
-// ================================================================
-// TOAST - NOTIFICACIONES
-// ================================================================
+/* ================================================================
+   ESCAPE ATRIBUTOS
+   ================================================================ */
+
+function escapeAttr(texto) {
+    return escapeHTML(texto)
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+/* ================================================================
+   TOAST
+   ================================================================ */
+
 function showToast(msg, type = '') {
     try {
-        let t = document.getElementById('toast');
+        let toast = document.getElementById('toast');
 
-        if (!t) {
-            t = document.createElement('div');
-            t.id = 'toast';
-            t.className = 'toast';
-            document.body.appendChild(t);
+        if (!toast) {
+            toast = document.createElement('div');
+            toast.id = 'toast';
+            toast.className = 'toast';
+            document.body.appendChild(toast);
         }
 
-        t.textContent = msg;
-        t.className = 'toast show';
+        toast.textContent = msg;
+
+        toast.className = 'toast show';
 
         if (type === 'error') {
-            t.classList.add('error');
+            toast.classList.add('error');
         } else if (type === 'warning') {
-            t.classList.add('warning');
+            toast.classList.add('warning');
         } else if (type === 'success') {
-            t.classList.add('success');
-        } else {
-            t.classList.remove('error', 'warning', 'success');
+            toast.classList.add('success');
         }
 
-        clearTimeout(t._timeout);
+        clearTimeout(toast._timeout);
 
-        t._timeout = setTimeout(() => {
-            t.classList.remove('show');
+        toast._timeout = setTimeout(() => {
+            toast.classList.remove('show');
         }, 3500);
 
-    } catch (e) {
-        console.warn('Toast error:', e);
+    } catch (error) {
+        console.warn('Error mostrando toast:', error);
     }
 }
 
-// ================================================================
-// OBTENER SESIÓN
-// ================================================================
+/* ================================================================
+   SESIÓN
+   ================================================================ */
+
 async function getSession() {
     try {
         const client = sb();
 
-        if (!client || typeof client.auth === 'undefined') {
-            console.warn('Supabase cliente no disponible aún');
+        if (!client || !client.auth) {
             return null;
         }
 
         const {
-            data: { session }
+            data: { session },
+            error
         } = await client.auth.getSession();
 
-        return session;
+        if (error) {
+            console.error('Error obteniendo sesión:', error);
+            return null;
+        }
+
+        return session || null;
 
     } catch (error) {
         console.error('Error obteniendo sesión:', error);
@@ -85,24 +118,34 @@ async function getSession() {
     }
 }
 
-// ================================================================
-// VARIABLES GLOBALES
-// ================================================================
+/* ================================================================
+   VARIABLES GLOBALES
+   ================================================================ */
+
 let contactos = [];
 let contactosFiltrados = [];
-let filtroActual = 'todos';
-let usuarioActual = null;
-let canalContactos = null;
 
-// ================================================================
-// VERIFICAR AUTENTICACIÓN
-// ================================================================
+let filtroActual = 'todos';
+
+let usuarioActual = null;
+
+let canalContactos = null;
+let canalUsuarios = null;
+
+/* ================================================================
+   AUTENTICACIÓN
+   ================================================================ */
+
 async function verificarAutenticacion() {
+
     const session = await getSession();
 
     if (!session) {
+
+        usuarioActual = null;
+
         showToast(
-            '⚠️ Inicia sesión para ver contactos',
+            '⚠️ Inicia sesión para ver tus contactos',
             'warning'
         );
 
@@ -114,158 +157,266 @@ async function verificarAutenticacion() {
     return true;
 }
 
-// ================================================================
-// ACTUALIZAR ESTADO ONLINE
-// ================================================================
+/* ================================================================
+   ACTUALIZAR ESTADO ONLINE
+   TABLA REAL: public.usuarios
+
+   COLUMNAS:
+   - online
+   - ultima_conexion
+   - offline_desde
+   ================================================================ */
+
 async function actualizarOnline(online) {
+
     try {
+
         const session = await getSession();
 
         if (!session) return;
 
-        const result = await sb()
+        const client = sb();
+
+        if (!client) return;
+
+        const ahora = new Date().toISOString();
+
+        const datos = {
+            online: Boolean(online),
+            ultima_conexion: ahora
+        };
+
+        if (!online) {
+            datos.offline_desde = ahora;
+        } else {
+            datos.offline_desde = null;
+        }
+
+        const { error } = await client
             .from('usuarios')
-            .update({
-                online: online,
-                ultima_conexion: new Date().toISOString()
-            })
+            .update(datos)
             .eq('id', session.user.id);
 
-        if (result.error) {
-            throw result.error;
+        if (error) {
+            console.error(
+                'Error actualizando estado online:',
+                error
+            );
+            return;
         }
 
         if (usuarioActual) {
-            usuarioActual.online = online;
+            usuarioActual.online = Boolean(online);
         }
 
     } catch (error) {
+
         console.error(
-            'Error actualizando online:',
+            'Error actualizando estado online:',
             error
         );
     }
 }
 
-// ================================================================
-// CARGAR CONTACTOS
-// ================================================================
+/* ================================================================
+   CARGAR CONTACTOS
+   TABLA: public.contactos
+
+   ESTRUCTURA REAL:
+
+   id
+   usuario_id
+   contacto_id
+   es_favorito
+   estado
+   fecha
+   created_at
+
+   IMPORTANTE:
+   contactos tiene DOS FK hacia usuarios.
+
+   Por eso se utiliza explícitamente:
+
+   usuarios!contactos_contacto_id_fkey
+   ================================================================ */
+
 async function cargarContactos() {
+
     try {
+
         if (!await verificarAutenticacion()) {
             mostrarSinContactos();
             return;
         }
 
-        const {
-            data,
-            error
-        } = await sb()
+        const client = sb();
+
+        if (!client) {
+            mostrarSinContactos();
+            return;
+        }
+
+        const { data, error } = await client
             .from('contactos')
             .select(`
                 id,
+                usuario_id,
                 contacto_id,
-                estado,
                 es_favorito,
+                estado,
+                fecha,
                 created_at,
-                usuarios:contacto_id (
+                contacto:usuarios!contactos_contacto_id_fkey (
                     id,
                     nombre,
                     handle,
                     avatar_url,
                     online,
                     ultima_conexion,
+                    offline_desde,
                     verificado
                 )
             `)
             .eq('usuario_id', usuarioActual.id)
-            .eq('estado', 'activo');
+            .eq('estado', 'activo')
+            .order('created_at', {
+                ascending: false
+            });
 
         if (error) {
-            throw error;
-        }
+            console.error(
+                'Error Supabase cargando contactos:',
+                error
+            );
 
-        if (!data || data.length === 0) {
             mostrarSinContactos();
-
-            contactos = [];
-
-            actualizarContadores();
-            aplicarFiltros();
-
             return;
         }
 
-        contactos = data.map(c => {
-            const usuario = c.usuarios || {};
+        contactos = (data || [])
+            .map(registro => {
 
-            return {
-                _id: c.contacto_id,
-                nombre: usuario.nombre || 'Usuario',
-                handle: usuario.handle || '',
-                avatar_url: usuario.avatar_url || null,
-                online: usuario.online || false,
-                ultima_conexion:
-                    usuario.ultima_conexion || null,
-                esFavorito: c.es_favorito || false,
-                verificado: usuario.verificado || false,
-                estado_relacion: c.estado || 'activo'
-            };
-        });
+                const usuario = registro.contacto || {};
+
+                return {
+                    id: registro.id,
+
+                    _id: registro.contacto_id,
+
+                    usuario_id: registro.usuario_id,
+
+                    nombre: usuario.nombre || 'Usuario',
+
+                    handle: usuario.handle || '',
+
+                    avatar_url: usuario.avatar_url || null,
+
+                    online: usuario.online === true,
+
+                    ultima_conexion:
+                        usuario.ultima_conexion || null,
+
+                    offline_desde:
+                        usuario.offline_desde || null,
+
+                    esFavorito:
+                        registro.es_favorito === true,
+
+                    verificado:
+                        usuario.verificado === true,
+
+                    estado_relacion:
+                        registro.estado || 'activo',
+
+                    fecha:
+                        registro.fecha || null,
+
+                    created_at:
+                        registro.created_at || null
+                };
+            });
 
         actualizarContadores();
+
         aplicarFiltros();
+
         iniciarEscuchaContactos();
 
     } catch (error) {
+
         console.error(
             'Error cargando contactos:',
             error
         );
 
+        contactos = [];
+
+        actualizarContadores();
+
         mostrarSinContactos();
     }
 }
 
-// ================================================================
-// MOSTRAR SIN CONTACTOS
-// ================================================================
+/* ================================================================
+   ESTADO VACÍO
+   ================================================================ */
+
 function mostrarSinContactos() {
-    const contactosListEl =
+
+    const lista =
         document.getElementById('contactosList');
 
-    if (contactosListEl) {
-        contactosListEl.innerHTML = `
-            <div class="empty-state">
-                <span class="icon">◈</span>
-                <h3>Sin contactos</h3>
-                <p>Comienza a agregar personas a tu red</p>
+    if (!lista) return;
 
-                <button
-                    class="btn-accion"
-                    onclick="abrirAgregarContacto()"
-                >
-                    ◈ Agregar contacto
-                </button>
-            </div>
-        `;
-    }
+    lista.innerHTML = `
+        <div class="empty-state">
+
+            <span class="icon">◈</span>
+
+            <h3>Sin contactos</h3>
+
+            <p>
+                Comienza a agregar personas
+                a tu red.
+            </p>
+
+            <button
+                class="btn-accion"
+                onclick="abrirAgregarContacto()"
+            >
+                ◈ Agregar contacto
+            </button>
+
+        </div>
+    `;
 }
 
-// ================================================================
-// ESCUCHA REALTIME
-// ================================================================
+/* ================================================================
+   REALTIME
+   ================================================================ */
+
 function iniciarEscuchaContactos() {
-    if (!usuarioActual) return;
 
     const client = sb();
 
-    if (!client) return;
+    if (!client || !usuarioActual) {
+        return;
+    }
+
+    /* ------------------------------------------------------------
+       CANAL CONTACTOS
+       ------------------------------------------------------------ */
 
     if (canalContactos) {
+
         try {
             client.removeChannel(canalContactos);
-        } catch (e) {}
+        } catch (error) {
+            console.warn(
+                'No se pudo eliminar canal anterior:',
+                error
+            );
+        }
 
         canalContactos = null;
     }
@@ -284,9 +435,34 @@ function iniciarEscuchaContactos() {
                 filter:
                     `usuario_id=eq.${usuarioActual.id}`
             },
-            () => {
-                cargarContactos();
+            async () => {
+
+                await cargarContactos();
             }
+        )
+        .subscribe();
+
+    /* ------------------------------------------------------------
+       CANAL USUARIOS
+
+       Se escucha UPDATE porque online,
+       ultima_conexion y offline_desde viven
+       en public.usuarios.
+       ------------------------------------------------------------ */
+
+    if (canalUsuarios) {
+
+        try {
+            client.removeChannel(canalUsuarios);
+        } catch (error) {}
+
+        canalUsuarios = null;
+    }
+
+    canalUsuarios = client
+        .channel(
+            'usuarios-contactos-' +
+            usuarioActual.id
         )
         .on(
             'postgres_changes',
@@ -295,42 +471,81 @@ function iniciarEscuchaContactos() {
                 schema: 'public',
                 table: 'usuarios'
             },
-            (payload) => {
+            payload => {
+
                 const usuario = payload.new;
 
-                const contacto = contactos.find(
-                    c => c._id === usuario.id
-                );
-
-                if (contacto) {
-                    contacto.online =
-                        usuario.online || false;
-
-                    contacto.ultima_conexion =
-                        usuario.ultima_conexion;
-
-                    actualizarContadores();
-                    aplicarFiltros();
+                if (!usuario || !usuario.id) {
+                    return;
                 }
+
+                const contacto =
+                    contactos.find(
+                        item =>
+                            item._id === usuario.id
+                    );
+
+                if (!contacto) {
+                    return;
+                }
+
+                contacto.nombre =
+                    usuario.nombre ||
+                    contacto.nombre;
+
+                contacto.handle =
+                    usuario.handle ||
+                    contacto.handle;
+
+                contacto.avatar_url =
+                    usuario.avatar_url ||
+                    contacto.avatar_url;
+
+                contacto.online =
+                    usuario.online === true;
+
+                contacto.ultima_conexion =
+                    usuario.ultima_conexion ||
+                    null;
+
+                contacto.offline_desde =
+                    usuario.offline_desde ||
+                    null;
+
+                contacto.verificado =
+                    usuario.verificado === true;
+
+                actualizarContadores();
+
+                aplicarFiltros();
             }
         )
         .subscribe();
 }
 
-// ================================================================
-// ACTUALIZAR CONTADORES
-// ================================================================
+/* ================================================================
+   CONTADORES
+   ================================================================ */
+
 function actualizarContadores() {
-    const total = contactos.length;
+
+    const total =
+        contactos.length;
 
     const online =
-        contactos.filter(c => c.online).length;
+        contactos.filter(
+            contacto => contacto.online === true
+        ).length;
 
     const totalEl =
-        document.getElementById('totalContactos');
+        document.getElementById(
+            'totalContactos'
+        );
 
     const onlineEl =
-        document.getElementById('onlineContactos');
+        document.getElementById(
+            'onlineContactos'
+        );
 
     if (totalEl) {
         totalEl.textContent = total;
@@ -341,20 +556,28 @@ function actualizarContadores() {
     }
 }
 
-// ================================================================
-// FORMATEAR TIEMPO
-// ================================================================
+/* ================================================================
+   FORMATEAR TIEMPO
+   ================================================================ */
+
 function formatearTiempo(fecha) {
+
     if (!fecha) {
         return 'Desconectado';
     }
 
-    const ahora = new Date();
-    const entonces = new Date(fecha);
+    const ahora = Date.now();
+
+    const timestamp =
+        new Date(fecha).getTime();
+
+    if (Number.isNaN(timestamp)) {
+        return 'Desconectado';
+    }
 
     const diffMin =
         Math.floor(
-            (ahora - entonces) / 60000
+            (ahora - timestamp) / 60000
         );
 
     if (diffMin < 1) {
@@ -366,64 +589,100 @@ function formatearTiempo(fecha) {
     }
 
     if (diffMin < 1440) {
-        return `hace ${Math.floor(diffMin / 60)} h`;
+        return `hace ${Math.floor(
+            diffMin / 60
+        )} h`;
     }
 
-    return `hace ${Math.floor(diffMin / 1440)} d`;
+    return `hace ${Math.floor(
+        diffMin / 1440
+    )} d`;
 }
 
-// ================================================================
-// RENDERIZAR CONTACTOS
-// ================================================================
-function renderizarContactos(lista) {
-    const contactosListEl =
-        document.getElementById('contactosList');
+/* ================================================================
+   RENDER CONTACTOS
+   ================================================================ */
 
-    if (!contactosListEl) return;
+function renderizarContactos(lista) {
+
+    const listaEl =
+        document.getElementById(
+            'contactosList'
+        );
+
+    if (!listaEl) return;
 
     if (!lista || lista.length === 0) {
+
         mostrarSinContactos();
+
         return;
     }
 
-    contactosListEl.innerHTML =
+    listaEl.innerHTML =
         lista.map(contacto => {
 
             const esOnline =
                 contacto.online === true;
 
             const esFavorito =
-                contacto.esFavorito || false;
+                contacto.esFavorito === true;
+
+            const nombre =
+                contacto.nombre ||
+                'Usuario';
+
+            const handle =
+                contacto.handle ||
+                'usuario';
 
             const inicial =
-                contacto.nombre
-                    ? contacto.nombre[0].toUpperCase()
-                    : '✦';
+                nombre
+                    .trim()
+                    .charAt(0)
+                    .toUpperCase() ||
+                '✦';
 
             const estadoTexto =
                 esOnline
                     ? '◉ En línea'
-                    : `◈ ${formatearTiempo(
-                        contacto.ultima_conexion
-                    )}`;
+                    : `◈ ${
+                        formatearTiempo(
+                            contacto.ultima_conexion
+                        )
+                    }`;
 
-            const nombreSanitizado =
-                escapeHTML(
-                    contacto.nombre || 'Usuario'
-                );
+            const id =
+                escapeAttr(contacto._id);
 
-            const handleSanitizado =
-                escapeHTML(
-                    contacto.handle || 'usuario'
-                );
+            const nombreHTML =
+                escapeHTML(nombre);
 
-            const idSanitizado =
-                escapeHTML(contacto._id);
+            const handleHTML =
+                escapeHTML(handle);
+
+            const avatar =
+                contacto.avatar_url
+                    ? `
+                        <img
+                            src="${escapeAttr(
+                                contacto.avatar_url
+                            )}"
+                            alt="${nombreHTML}"
+                            style="
+                                width:100%;
+                                height:100%;
+                                object-fit:cover;
+                                border-radius:50%;
+                            "
+                        >
+                    `
+                    : escapeHTML(inicial);
 
             return `
                 <div
                     class="contacto-card"
-                    data-id="${idSanitizado}"
+                    data-id="${id}"
                 >
 
                     <div
@@ -434,23 +693,7 @@ function renderizarContactos(lista) {
                         "
                     >
 
-                        ${
-                            contacto.avatar_url
-                                ? `
-                                    <img
-                                        src="${escapeHTML(
-                                            contacto.avatar_url
-                                        )}"
-                                        style="
-                                            width:100%;
-                                            height:100%;
-                                            object-fit:cover;
-                                            border-radius:50%;
-                                        "
-                                    >
-                                `
-                                : inicial
-                        }
+                        ${avatar}
 
                         ${
                             esOnline
@@ -469,17 +712,15 @@ function renderizarContactos(lista) {
                     <div class="contacto-info">
 
                         <div class="nombre">
-                            ${nombreSanitizado}
+
+                            ${nombreHTML}
 
                             ${
                                 contacto.verificado
-                                    ? `
-                                        <span class="verified">
-                                            ✦ VERIFICADO
-                                        </span>
-                                    `
+                                    ? '<span class="verified">✦ VERIFICADO</span>'
                                     : ''
                             }
+
                         </div>
 
                         <div
@@ -488,13 +729,15 @@ function renderizarContactos(lista) {
                                 ${esOnline ? 'online' : 'offline'}
                             "
                         >
-                            ${estadoTexto}
+                            ${escapeHTML(estadoTexto)}
                         </div>
 
                         <div class="contacto-meta">
+
                             <span>
-                                @${handleSanitizado}
+                                @${handleHTML}
                             </span>
+
                         </div>
 
                     </div>
@@ -503,7 +746,7 @@ function renderizarContactos(lista) {
 
                         <button
                             class="mensaje"
-                            onclick="irAMensajes('${idSanitizado}')"
+                            onclick="irAMensajes('${id}')"
                             title="Enviar mensaje"
                         >
                             ◈
@@ -514,7 +757,7 @@ function renderizarContactos(lista) {
                                 favorito
                                 ${esFavorito ? 'active' : ''}
                             "
-                            onclick="toggleFavorito('${idSanitizado}')"
+                            onclick="toggleFavorito('${id}')"
                             title="Favorito"
                         >
                             ◆
@@ -522,7 +765,7 @@ function renderizarContactos(lista) {
 
                         <button
                             class="bloquear"
-                            onclick="bloquearContacto('${idSanitizado}')"
+                            onclick="bloquearContacto('${id}')"
                             title="Bloquear"
                         >
                             🚫
@@ -530,7 +773,7 @@ function renderizarContactos(lista) {
 
                         <button
                             class="eliminar"
-                            onclick="eliminarContacto('${idSanitizado}')"
+                            onclick="eliminarContacto('${id}')"
                             title="Eliminar"
                         >
                             ✕
@@ -544,108 +787,150 @@ function renderizarContactos(lista) {
         }).join('');
 }
 
-// ================================================================
-// APLICAR FILTROS
-// ================================================================
+/* ================================================================
+   FILTROS
+   ================================================================ */
+
 function aplicarFiltros() {
-    const searchInputEl =
-        document.getElementById('searchInput');
+
+    const searchInput =
+        document.getElementById(
+            'searchInput'
+        );
 
     const query =
-        searchInputEl
-            ? searchInputEl.value.toLowerCase().trim()
+        searchInput
+            ? searchInput.value
+                .toLowerCase()
+                .trim()
             : '';
 
     contactosFiltrados =
-        contactos.filter(c => {
+        contactos.filter(contacto => {
 
-            const matchNombre =
-                c.nombre?.toLowerCase().includes(query)
-                || false;
+            const nombre =
+                (contacto.nombre || '')
+                    .toLowerCase();
 
-            const matchHandle =
-                c.handle?.toLowerCase().includes(query)
-                || false;
+            const handle =
+                (contacto.handle || '')
+                    .toLowerCase();
 
-            const matchBusqueda =
-                matchNombre || matchHandle;
+            const coincideBusqueda =
+                !query ||
+                nombre.includes(query) ||
+                handle.includes(query);
 
-            let matchFiltro = true;
+            let coincideFiltro = true;
 
-            if (filtroActual === 'online') {
-                matchFiltro =
-                    c.online === true;
+            switch (filtroActual) {
 
-            } else if (
-                filtroActual === 'favoritos'
-            ) {
-                matchFiltro =
-                    c.esFavorito === true;
+                case 'online':
+
+                    coincideFiltro =
+                        contacto.online === true;
+
+                    break;
+
+                case 'favoritos':
+
+                    coincideFiltro =
+                        contacto.esFavorito === true;
+
+                    break;
+
+                case 'todos':
+                default:
+
+                    coincideFiltro = true;
+
+                    break;
             }
 
             return (
-                matchBusqueda &&
-                matchFiltro
+                coincideBusqueda &&
+                coincideFiltro
             );
         });
 
-    renderizarContactos(contactosFiltrados);
+    renderizarContactos(
+        contactosFiltrados
+    );
 }
 
-// ================================================================
-// BUSCAR USUARIOS
-// ================================================================
+/* ================================================================
+   BUSCAR USUARIOS
+   TABLA REAL: public.usuarios
+   ================================================================ */
+
 async function buscarUsuarios(query) {
-    if (!query || query.length < 2) {
 
-        const cont =
-            document.getElementById(
-                'resultadosBusqueda'
-            );
+    const container =
+        document.getElementById(
+            'resultadosBusqueda'
+        );
 
-        if (cont) {
-            cont.innerHTML = '';
+    if (!query || query.trim().length < 2) {
+
+        if (container) {
+            container.innerHTML = '';
         }
 
         return;
     }
 
     try {
-        const session = await getSession();
+
+        const session =
+            await getSession();
 
         if (!session) return;
 
-        const q =
-            query.replace(
-                /[%_,()]/g,
-                ''
-            );
+        const client = sb();
 
-        const {
-            data,
-            error
-        } = await sb()
-            .from('usuarios')
-            .select(
-                'id, nombre, handle, avatar_url, online'
-            )
-            .or(
-                `nombre.ilike.%${q}%,handle.ilike.%${q}%`
-            )
-            .neq(
-                'id',
-                session.user.id
-            )
-            .limit(10);
+        if (!client) return;
+
+        /*
+         * Limpieza para evitar caracteres
+         * especiales de filtros PostgREST.
+         */
+
+        const q =
+            query
+                .trim()
+                .replace(/[%_,()]/g, '')
+                .replace(/\s+/g, ' ');
+
+        if (q.length < 2) {
+            if (container) {
+                container.innerHTML = '';
+            }
+            return;
+        }
+
+        const { data, error } =
+            await client
+                .from('usuarios')
+                .select(`
+                    id,
+                    nombre,
+                    handle,
+                    avatar_url,
+                    online,
+                    verificado
+                `)
+                .or(
+                    `nombre.ilike.%${q}%,handle.ilike.%${q}%`
+                )
+                .neq(
+                    'id',
+                    session.user.id
+                )
+                .limit(10);
 
         if (error) {
             throw error;
         }
-
-        const container =
-            document.getElementById(
-                'resultadosBusqueda'
-            );
 
         if (!container) return;
 
@@ -667,44 +952,87 @@ async function buscarUsuarios(query) {
             return;
         }
 
+        /*
+         * Contactos existentes del usuario actual.
+         */
+
         const {
-            data: contactosExistentes
-        } = await sb()
+            data: contactosExistentes,
+            error: errorContactos
+        } = await client
             .from('contactos')
-            .select('contacto_id')
+            .select('contacto_id, estado')
             .eq(
                 'usuario_id',
                 session.user.id
             );
 
+        if (errorContactos) {
+            throw errorContactos;
+        }
+
         const idsExistentes =
-            contactosExistentes?.map(
-                c => c.contacto_id
-            ) || [];
+            new Set(
+                (contactosExistentes || [])
+                    .map(
+                        contacto =>
+                            contacto.contacto_id
+                    )
+            );
 
         container.innerHTML =
             data.map(usuario => {
 
                 const yaEsContacto =
-                    idsExistentes.includes(
+                    idsExistentes.has(
                         usuario.id
                     );
 
                 const estaOnline =
-                    usuario.online || false;
+                    usuario.online === true;
 
-                const nombreSanitizado =
+                const nombre =
+                    usuario.nombre ||
+                    'Usuario';
+
+                const handle =
+                    usuario.handle ||
+                    'usuario';
+
+                const nombreHTML =
+                    escapeHTML(nombre);
+
+                const handleHTML =
+                    escapeHTML(handle);
+
+                const id =
+                    escapeAttr(usuario.id);
+
+                const inicial =
                     escapeHTML(
-                        usuario.nombre || 'Usuario'
+                        nombre
+                            .trim()
+                            .charAt(0)
+                            .toUpperCase() ||
+                        '◈'
                     );
 
-                const handleSanitizado =
-                    escapeHTML(
-                        usuario.handle || 'usuario'
-                    );
-
-                const idSanitizado =
-                    escapeHTML(usuario.id);
+                const avatar =
+                    usuario.avatar_url
+                        ? `
+                            <img
+                                src="${escapeAttr(
+                                    usuario.avatar_url
+                                )}"
+                                alt="${nombreHTML}"
+                                style="
+                                    width:100%;
+                                    height:100%;
+                                    object-fit:cover;
+                                "
+                            >
+                        `
+                        : inicial;
 
                 return `
                     <div
@@ -725,6 +1053,7 @@ async function buscarUsuarios(query) {
                             style="
                                 width:36px;
                                 height:36px;
+                                min-width:36px;
                                 border-radius:50%;
                                 background:
                                     linear-gradient(
@@ -746,32 +1075,10 @@ async function buscarUsuarios(query) {
                                     };
                             "
                         >
-
-                            ${
-                                usuario.avatar_url
-                                    ? `
-                                        <img
-                                            src="${escapeHTML(
-                                                usuario.avatar_url
-                                            )}"
-                                            style="
-                                                width:100%;
-                                                height:100%;
-                                                object-fit:cover;
-                                            "
-                                        >
-                                    `
-                                    : (
-                                        usuario.nombre
-                                            ? nombreSanitizado[0]
-                                                .toUpperCase()
-                                            : '◈'
-                                    )
-                            }
-
+                            ${avatar}
                         </div>
 
-                        <div style="flex:1;">
+                        <div style="flex:1;min-width:0;">
 
                             <div
                                 style="
@@ -779,7 +1086,13 @@ async function buscarUsuarios(query) {
                                     font-size:0.8rem;
                                 "
                             >
-                                ${nombreSanitizado}
+                                ${nombreHTML}
+
+                                ${
+                                    usuario.verificado
+                                        ? '<span class="verified">✦</span>'
+                                        : ''
+                                }
                             </div>
 
                             <div
@@ -788,11 +1101,11 @@ async function buscarUsuarios(query) {
                                     color:var(--text-muted);
                                 "
                             >
-                                @${handleSanitizado}
+                                @${handleHTML}
 
                                 ${
                                     estaOnline
-                                        ? '· 🟢 En línea'
+                                        ? ' · 🟢 En línea'
                                         : ''
                                 }
                             </div>
@@ -813,8 +1126,10 @@ async function buscarUsuarios(query) {
                                                     143,
                                                     0.1
                                                 );
-                                            padding:2px 10px;
+                                            padding:
+                                                2px 10px;
                                             border-radius:12px;
+                                            white-space:nowrap;
                                         "
                                     >
                                         ✓ Contacto
@@ -822,11 +1137,7 @@ async function buscarUsuarios(query) {
                                 `
                                 : `
                                     <button
-                                        onclick="
-                                            agregarContacto(
-                                                '${idSanitizado}'
-                                            )
-                                        "
+                                        onclick="agregarContacto('${id}')"
                                         style="
                                             background:
                                                 linear-gradient(
@@ -841,6 +1152,7 @@ async function buscarUsuarios(query) {
                                             font-size:0.6rem;
                                             font-weight:600;
                                             cursor:pointer;
+                                            white-space:nowrap;
                                         "
                                     >
                                         + Agregar
@@ -859,38 +1171,86 @@ async function buscarUsuarios(query) {
             'Error buscando usuarios:',
             error
         );
+
+        if (container) {
+
+            container.innerHTML = `
+                <div
+                    style="
+                        padding:12px;
+                        text-align:center;
+                        color:var(--text-muted);
+                        font-size:0.7rem;
+                    "
+                >
+                    No fue posible realizar la búsqueda
+                </div>
+            `;
+        }
     }
 }
 
-// ================================================================
-// AGREGAR CONTACTO
-// ================================================================
+/* ================================================================
+   AGREGAR CONTACTO
+   TABLA REAL: public.contactos
+   ================================================================ */
+
 async function agregarContacto(contactoId) {
+
     try {
 
-        const session = await getSession();
+        const session =
+            await getSession();
 
         if (!session) {
+
             showToast(
                 '⚠️ Inicia sesión',
                 'error'
             );
+
             return;
         }
 
-        if (contactoId === session.user.id) {
+        if (!contactoId) {
+
+            showToast(
+                '⚠️ Usuario inválido',
+                'error'
+            );
+
+            return;
+        }
+
+        if (
+            contactoId ===
+            session.user.id
+        ) {
+
             showToast(
                 '⚠️ No puedes agregarte a ti mismo',
                 'warning'
             );
+
             return;
         }
 
+        const client = sb();
+
+        /*
+         * Comprobación previa para evitar
+         * duplicados.
+         */
+
         const {
-            data: existe
-        } = await sb()
+            data: existe,
+            error: errorExiste
+        } = await client
             .from('contactos')
-            .select('id')
+            .select(`
+                id,
+                estado
+            `)
             .eq(
                 'usuario_id',
                 session.user.id
@@ -901,28 +1261,68 @@ async function agregarContacto(contactoId) {
             )
             .maybeSingle();
 
+        if (errorExiste) {
+            throw errorExiste;
+        }
+
         if (existe) {
-            showToast(
-                '⚠️ Ya es tu contacto',
-                'warning'
-            );
+
+            if (existe.estado !== 'activo') {
+
+                const {
+                    error: errorReactivar
+                } = await client
+                    .from('contactos')
+                    .update({
+                        estado: 'activo'
+                    })
+                    .eq(
+                        'id',
+                        existe.id
+                    );
+
+                if (errorReactivar) {
+                    throw errorReactivar;
+                }
+
+                showToast(
+                    '✅ Contacto restaurado',
+                    'success'
+                );
+
+            } else {
+
+                showToast(
+                    '⚠️ Ya es tu contacto',
+                    'warning'
+                );
+            }
+
+            await cargarContactos();
+
             return;
         }
 
-        const result =
-            await sb()
-                .from('contactos')
-                .insert({
-                    usuario_id:
-                        session.user.id,
-                    contacto_id:
-                        contactoId,
-                    estado: 'activo',
-                    es_favorito: false
-                });
+        const {
+            error
+        } = await client
+            .from('contactos')
+            .insert({
+                usuario_id:
+                    session.user.id,
 
-        if (result.error) {
-            throw result.error;
+                contacto_id:
+                    contactoId,
+
+                estado:
+                    'activo',
+
+                es_favorito:
+                    false
+            });
+
+        if (error) {
+            throw error;
         }
 
         showToast(
@@ -930,22 +1330,22 @@ async function agregarContacto(contactoId) {
             'success'
         );
 
-        const inputModal =
+        const input =
             document.getElementById(
                 'searchInputModal'
             );
 
-        const resBusqueda =
+        if (input) {
+            input.value = '';
+        }
+
+        const resultados =
             document.getElementById(
                 'resultadosBusqueda'
             );
 
-        if (inputModal) {
-            inputModal.value = '';
-        }
-
-        if (resBusqueda) {
-            resBusqueda.innerHTML = '';
+        if (resultados) {
+            resultados.innerHTML = '';
         }
 
         cerrarModalBuscar();
@@ -960,20 +1360,32 @@ async function agregarContacto(contactoId) {
         );
 
         showToast(
-            '❌ Error al agregar contacto',
+            '❌ No fue posible agregar el contacto',
             'error'
         );
     }
 }
 
-// ================================================================
-// BLOQUEAR CONTACTO
-// ================================================================
+/* ================================================================
+   BLOQUEAR CONTACTO
+   TABLA REAL: public.bloqueos
+
+   COLUMNAS:
+   - id
+   - usuario_id
+   - bloqueado_id
+   - created_at
+   ================================================================ */
+
 async function bloquearContacto(contactoId) {
 
-    if (!confirm(
-        '¿Bloquear a este usuario?'
-    )) {
+    if (!contactoId) return;
+
+    if (
+        !confirm(
+            '¿Bloquear a este usuario?'
+        )
+    ) {
         return;
     }
 
@@ -983,28 +1395,67 @@ async function bloquearContacto(contactoId) {
             await getSession();
 
         if (!session) {
+
             showToast(
                 '⚠️ Inicia sesión',
                 'error'
             );
+
             return;
         }
 
-        const r1 =
-            await sb()
+        const client = sb();
+
+        /*
+         * Evitar duplicar bloqueo.
+         */
+
+        const {
+            data: bloqueoExistente,
+            error: errorBusqueda
+        } = await client
+            .from('bloqueos')
+            .select('id')
+            .eq(
+                'usuario_id',
+                session.user.id
+            )
+            .eq(
+                'bloqueado_id',
+                contactoId
+            )
+            .maybeSingle();
+
+        if (errorBusqueda) {
+            throw errorBusqueda;
+        }
+
+        if (!bloqueoExistente) {
+
+            const {
+                error: errorBloqueo
+            } = await client
                 .from('bloqueos')
                 .insert({
                     usuario_id:
                         session.user.id,
+
                     bloqueado_id:
                         contactoId
                 });
 
-        if (r1.error) {
-            throw r1.error;
+            if (errorBloqueo) {
+                throw errorBloqueo;
+            }
         }
 
-        await sb()
+        /*
+         * Eliminar la relación de contactos.
+         */
+
+        const {
+            error: errorContacto
+        } = await client
             .from('contactos')
             .delete()
             .eq(
@@ -1016,12 +1467,18 @@ async function bloquearContacto(contactoId) {
                 contactoId
             );
 
+        if (errorContacto) {
+            throw errorContacto;
+        }
+
         contactos =
             contactos.filter(
-                c => c._id !== contactoId
+                contacto =>
+                    contacto._id !== contactoId
             );
 
         actualizarContadores();
+
         aplicarFiltros();
 
         showToast(
@@ -1037,34 +1494,46 @@ async function bloquearContacto(contactoId) {
         );
 
         showToast(
-            '❌ Error al bloquear',
+            '❌ No fue posible bloquear al usuario',
             'error'
         );
     }
 }
 
-// ================================================================
-// IR A MENSAJES
-// ================================================================
+/* ================================================================
+   MENSAJES
+   ================================================================ */
+
 function irAMensajes(contactoId) {
 
+    if (!contactoId) return;
+
+    const id =
+        encodeURIComponent(
+            contactoId
+        );
+
     window.location.href =
-        `/features/mensajes/mensajes.html?contacto=${contactoId}`;
+        `/features/mensajes/mensajes.html?contacto=${id}`;
 }
 
-// ================================================================
-// TOGGLE FAVORITO
-// ================================================================
+/* ================================================================
+   FAVORITO
+   TABLA REAL: public.contactos
+   ================================================================ */
+
 async function toggleFavorito(contactoId) {
 
     const session =
         await getSession();
 
     if (!session) {
+
         showToast(
             '⚠️ Inicia sesión',
             'error'
         );
+
         return;
     }
 
@@ -1072,32 +1541,38 @@ async function toggleFavorito(contactoId) {
 
         const contacto =
             contactos.find(
-                c => c._id === contactoId
+                item =>
+                    item._id === contactoId
             );
 
-        if (!contacto) return;
+        if (!contacto) {
+            return;
+        }
 
         const nuevoEstado =
             !contacto.esFavorito;
 
-        const result =
-            await sb()
-                .from('contactos')
-                .update({
-                    es_favorito:
-                        nuevoEstado
-                })
-                .eq(
-                    'usuario_id',
-                    session.user.id
-                )
-                .eq(
-                    'contacto_id',
-                    contactoId
-                );
+        const client = sb();
 
-        if (result.error) {
-            throw result.error;
+        const {
+            error
+        } = await client
+            .from('contactos')
+            .update({
+                es_favorito:
+                    nuevoEstado
+            })
+            .eq(
+                'usuario_id',
+                session.user.id
+            )
+            .eq(
+                'contacto_id',
+                contactoId
+            );
+
+        if (error) {
+            throw error;
         }
 
         contacto.esFavorito =
@@ -1108,7 +1583,8 @@ async function toggleFavorito(contactoId) {
         showToast(
             nuevoEstado
                 ? '◆ Agregado a favoritos'
-                : '◆ Favorito eliminado'
+                : '◆ Favorito eliminado',
+            'success'
         );
 
     } catch (error) {
@@ -1125,14 +1601,19 @@ async function toggleFavorito(contactoId) {
     }
 }
 
-// ================================================================
-// ELIMINAR CONTACTO
-// ================================================================
+/* ================================================================
+   ELIMINAR CONTACTO
+   ================================================================ */
+
 async function eliminarContacto(contactoId) {
 
-    if (!confirm(
-        '¿Eliminar este contacto?'
-    )) {
+    if (!contactoId) return;
+
+    if (
+        !confirm(
+            '¿Eliminar este contacto?'
+        )
+    ) {
         return;
     }
 
@@ -1140,42 +1621,50 @@ async function eliminarContacto(contactoId) {
         await getSession();
 
     if (!session) {
+
         showToast(
             '⚠️ Inicia sesión',
             'error'
         );
+
         return;
     }
 
     try {
 
-        const result =
-            await sb()
-                .from('contactos')
-                .delete()
-                .eq(
-                    'usuario_id',
-                    session.user.id
-                )
-                .eq(
-                    'contacto_id',
-                    contactoId
-                );
+        const client = sb();
 
-        if (result.error) {
-            throw result.error;
+        const {
+            error
+        } = await client
+            .from('contactos')
+            .delete()
+            .eq(
+                'usuario_id',
+                session.user.id
+            )
+            .eq(
+                'contacto_id',
+                contactoId
+            );
+
+        if (error) {
+            throw error;
         }
 
         contactos =
             contactos.filter(
-                c => c._id !== contactoId
+                contacto =>
+                    contacto._id !== contactoId
             );
 
         actualizarContadores();
+
         aplicarFiltros();
 
         showToast(
-            '✅ Contacto eliminado'
+            '✅ Contacto eliminado',
+            'success'
         );
 
     } catch (error) {
@@ -1192,9 +1681,23 @@ async function eliminarContacto(contactoId) {
     }
 }
 
-// ================================================================
-// INVITAR CONTACTO
-// ================================================================
+/* ================================================================
+   INVITACIONES
+   TABLA REAL: public.invitaciones
+
+   COLUMNAS:
+   - id
+   - usuario_id
+   - codigo
+   - usado_por
+   - usado
+   - fecha_creacion
+   - fecha_uso
+   - created_at
+   - activo
+   - expira_en
+   ================================================================ */
+
 async function invitarContacto() {
 
     try {
@@ -1203,34 +1706,89 @@ async function invitarContacto() {
             await getSession();
 
         if (!session) {
+
             showToast(
                 '⚠️ Inicia sesión',
                 'error'
             );
+
             return;
         }
 
-        const codigo =
-            'SAR-' +
-            Math.random()
-                .toString(36)
-                .substring(2, 8)
-                .toUpperCase();
+        const client = sb();
 
-        const result =
-            await sb()
+        let codigo;
+
+        /*
+         * Generar código y comprobar que no exista.
+         */
+
+        for (let intento = 0; intento < 5; intento++) {
+
+            const candidato =
+                'SAR-' +
+                Math.random()
+                    .toString(36)
+                    .substring(2, 8)
+                    .toUpperCase();
+
+            const {
+                data: existente,
+                error: errorBusqueda
+            } = await client
                 .from('invitaciones')
-                .insert({
-                    usuario_id:
-                        session.user.id,
-                    codigo: codigo,
-                    activo: true
-                })
-                .select()
-                .single();
+                .select('id')
+                .eq(
+                    'codigo',
+                    candidato
+                )
+                .maybeSingle();
 
-        if (result.error) {
-            throw result.error;
+            if (errorBusqueda) {
+                throw errorBusqueda;
+            }
+
+            if (!existente) {
+
+                codigo =
+                    candidato;
+
+                break;
+            }
+        }
+
+        if (!codigo) {
+
+            showToast(
+                '❌ No se pudo generar un código único',
+                'error'
+            );
+
+            return;
+        }
+
+        const {
+            data,
+            error
+        } = await client
+            .from('invitaciones')
+            .insert({
+                usuario_id:
+                    session.user.id,
+
+                codigo,
+
+                activo:
+                    true,
+
+                usado:
+                    false
+            })
+            .select()
+            .single();
+
+        if (error) {
+            throw error;
         }
 
         const modal =
@@ -1243,13 +1801,18 @@ async function invitarContacto() {
                 'codigoInvitacion'
             );
 
-        if (modal && codigoEl) {
+        if (
+            modal &&
+            codigoEl
+        ) {
 
             codigoEl.textContent =
-                codigo;
+                data.codigo;
 
             modal.classList.add('show');
-            modal.style.display = 'flex';
+
+            modal.style.display =
+                'flex';
         }
 
         showToast(
@@ -1271,9 +1834,10 @@ async function invitarContacto() {
     }
 }
 
-// ================================================================
-// CERRAR MODAL INVITACIÓN
-// ================================================================
+/* ================================================================
+   CERRAR INVITACIÓN
+   ================================================================ */
+
 function cerrarModalInvitacion() {
 
     const modal =
@@ -1281,36 +1845,58 @@ function cerrarModalInvitacion() {
             'modalInvitacion'
         );
 
-    if (modal) {
-        modal.classList.remove('show');
-        modal.style.display = 'none';
-    }
+    if (!modal) return;
+
+    modal.classList.remove('show');
+
+    modal.style.display =
+        'none';
 }
 
-// ================================================================
-// COPIAR CÓDIGO INVITACIÓN
-// ================================================================
+/* ================================================================
+   COPIAR INVITACIÓN
+   ================================================================ */
+
 async function copiarCodigoInvitacion() {
 
-    const codigo =
+    const codigoEl =
         document.getElementById(
             'codigoInvitacion'
-        )?.textContent;
+        );
 
-    if (!codigo) return;
+    const codigo =
+        codigoEl?.textContent?.trim();
+
+    if (!codigo) {
+        return;
+    }
+
+    const texto =
+        `◈ Únete a Sariel's con mi código: ${codigo}`;
 
     try {
 
-        await navigator.clipboard.writeText(
-            `◈ Únete a Sariel's con mi código: ${codigo}`
-        );
+        if (
+            navigator.clipboard &&
+            navigator.clipboard.writeText
+        ) {
+
+            await navigator.clipboard
+                .writeText(texto);
+
+        } else {
+
+            throw new Error(
+                'Clipboard no disponible'
+            );
+        }
 
         showToast(
             '📋 Código copiado',
             'success'
         );
 
-    } catch {
+    } catch (error) {
 
         prompt(
             'Copia este código:',
@@ -1319,10 +1905,15 @@ async function copiarCodigoInvitacion() {
     }
 }
 
-// ================================================================
-// ORDENAR CONTACTOS
-// ================================================================
+/* ================================================================
+   ORDENAR CONTACTOS
+   ================================================================ */
+
 function ordenarContactos(criterio) {
+
+    if (!Array.isArray(contactos)) {
+        return;
+    }
 
     switch (criterio) {
 
@@ -1332,7 +1923,12 @@ function ordenarContactos(criterio) {
                 (a, b) =>
                     (a.nombre || '')
                         .localeCompare(
-                            b.nombre || ''
+                            b.nombre || '',
+                            undefined,
+                            {
+                                sensitivity:
+                                    'base'
+                            }
                         )
             );
 
@@ -1342,8 +1938,12 @@ function ordenarContactos(criterio) {
 
             contactos.sort(
                 (a, b) =>
-                    (b.online ? 1 : 0) -
-                    (a.online ? 1 : 0)
+                    Number(
+                        b.online === true
+                    ) -
+                    Number(
+                        a.online === true
+                    )
             );
 
             break;
@@ -1357,15 +1957,15 @@ function ordenarContactos(criterio) {
                         a.ultima_conexion
                             ? new Date(
                                 a.ultima_conexion
-                            )
-                            : new Date(0);
+                            ).getTime()
+                            : 0;
 
                     const fechaB =
                         b.ultima_conexion
                             ? new Date(
                                 b.ultima_conexion
-                            )
-                            : new Date(0);
+                            ).getTime()
+                            : 0;
 
                     return fechaB - fechaA;
                 }
@@ -1377,9 +1977,10 @@ function ordenarContactos(criterio) {
     aplicarFiltros();
 }
 
-// ================================================================
-// ABRIR MODAL AGREGAR CONTACTO
-// ================================================================
+/* ================================================================
+   ABRIR MODAL BUSCAR
+   ================================================================ */
+
 function abrirAgregarContacto() {
 
     const modal =
@@ -1387,29 +1988,31 @@ function abrirAgregarContacto() {
             'modalBuscarContacto'
         );
 
-    if (modal) {
+    if (!modal) return;
 
-        modal.classList.add('show');
-        modal.style.display = 'flex';
+    modal.classList.add('show');
 
-        setTimeout(() => {
+    modal.style.display =
+        'flex';
 
-            const inp =
-                document.getElementById(
-                    'searchInputModal'
-                );
+    setTimeout(() => {
 
-            if (inp) {
-                inp.focus();
-            }
+        const input =
+            document.getElementById(
+                'searchInputModal'
+            );
 
-        }, 300);
-    }
+        if (input) {
+            input.focus();
+        }
+
+    }, 300);
 }
 
-// ================================================================
-// CERRAR MODAL BUSCAR
-// ================================================================
+/* ================================================================
+   CERRAR MODAL BUSCAR
+   ================================================================ */
+
 function cerrarModalBuscar() {
 
     const modal =
@@ -1420,7 +2023,9 @@ function cerrarModalBuscar() {
     if (modal) {
 
         modal.classList.remove('show');
-        modal.style.display = 'none';
+
+        modal.style.display =
+            'none';
     }
 
     const input =
@@ -1432,52 +2037,66 @@ function cerrarModalBuscar() {
         input.value = '';
     }
 
-    const res =
+    const resultados =
         document.getElementById(
             'resultadosBusqueda'
         );
 
-    if (res) {
-        res.innerHTML = '';
+    if (resultados) {
+        resultados.innerHTML = '';
     }
 }
 
-// ================================================================
-// LIMPIEZA
-// ================================================================
+/* ================================================================
+   LIMPIAR REALTIME
+   ================================================================ */
+
 function limpiarRecursosContactos() {
+
+    const client = sb();
+
+    if (!client) {
+        return;
+    }
 
     if (canalContactos) {
 
         try {
-            sb().removeChannel(
+            client.removeChannel(
                 canalContactos
             );
-        } catch (e) {}
+        } catch (error) {}
 
         canalContactos = null;
     }
+
+    if (canalUsuarios) {
+
+        try {
+            client.removeChannel(
+                canalUsuarios
+            );
+        } catch (error) {}
+
+        canalUsuarios = null;
+    }
 }
 
-window.addEventListener(
-    'beforeunload',
-    limpiarRecursosContactos
-);
+/* ================================================================
+   INIT
+   ================================================================ */
 
-// ================================================================
-// INICIALIZAR
-// ================================================================
 document.addEventListener(
     'DOMContentLoaded',
     function () {
 
         console.log(
-            '◈ Sariel\'s - Contactos'
+            "◈ Sariel's - Contactos inicializando..."
         );
 
-        // --------------------------------------------------------
-        // FILTROS
-        // --------------------------------------------------------
+        /* --------------------------------------------------------
+           FILTROS
+           -------------------------------------------------------- */
 
         const filtros =
             document.querySelectorAll(
@@ -1490,10 +2109,12 @@ document.addEventListener(
                 'click',
                 function () {
 
-                    filtros.forEach(b =>
-                        b.classList.remove(
-                            'active'
-                        )
+                    filtros.forEach(
+                        item =>
+                            item.classList
+                                .remove(
+                                    'active'
+                                )
                     );
 
                     this.classList.add(
@@ -1503,7 +2124,8 @@ document.addEventListener(
                     filtroActual =
                         this.getAttribute(
                             'data-filtro'
-                        ) || 'todos';
+                        ) ||
+                        'todos';
 
                     if (
                         filtroActual ===
@@ -1523,21 +2145,26 @@ document.addEventListener(
                             'reciente'
                         );
 
+                    } else if (
+                        filtroActual ===
+                        'favoritos'
+                    ) {
+
+                        aplicarFiltros();
+
                     } else {
 
                         ordenarContactos(
                             'nombre'
                         );
                     }
-
-                    aplicarFiltros();
                 }
             );
         });
 
-        // --------------------------------------------------------
-        // INIT CON REINTENTOS
-        // --------------------------------------------------------
+        /* --------------------------------------------------------
+           ESPERAR SUPABASE
+           -------------------------------------------------------- */
 
         let intentos = 0;
 
@@ -1547,13 +2174,12 @@ document.addEventListener(
 
             if (
                 !client ||
-                typeof client.auth ===
-                    'undefined'
+                !client.auth
             ) {
 
                 intentos++;
 
-                if (intentos < 20) {
+                if (intentos < 30) {
 
                     setTimeout(
                         init,
@@ -1563,8 +2189,8 @@ document.addEventListener(
                     return;
                 }
 
-                console.warn(
-                    'Supabase nunca estuvo listo'
+                console.error(
+                    "❌ Supabase no estuvo disponible después de 15 segundos."
                 );
 
                 mostrarSinContactos();
@@ -1572,37 +2198,43 @@ document.addEventListener(
                 return;
             }
 
+            console.log(
+                "✅ Cliente Supabase disponible."
+            );
+
             verificarAutenticacion()
-                .then(autenticado => {
+                .then(async autenticado => {
 
-                    if (autenticado) {
-
-                        actualizarOnline(
-                            true
-                        );
-
-                        cargarContactos();
-
-                        window.addEventListener(
-                            'beforeunload',
-                            () =>
-                                actualizarOnline(
-                                    false
-                                )
-                        );
-
-                    } else {
+                    if (!autenticado) {
 
                         mostrarSinContactos();
+
+                        return;
                     }
+
+                    await actualizarOnline(
+                        true
+                    );
+
+                    await cargarContactos();
+
+                })
+                .catch(error => {
+
+                    console.error(
+                        'Error inicializando Contactos:',
+                        error
+                    );
+
+                    mostrarSinContactos();
                 });
         }
 
         init();
 
-        // --------------------------------------------------------
-        // BUSCADOR DEL MODAL
-        // --------------------------------------------------------
+        /* --------------------------------------------------------
+           BÚSQUEDA DE USUARIOS
+           -------------------------------------------------------- */
 
         const searchModal =
             document.getElementById(
@@ -1617,27 +2249,30 @@ document.addEventListener(
                 'input',
                 function () {
 
-                    clearTimeout(timeout);
+                    clearTimeout(
+                        timeout
+                    );
 
-                    const val =
+                    const valor =
                         this.value;
 
-                    timeout = setTimeout(
-                        () =>
-                            buscarUsuarios(
-                                val
-                            ),
-                        300
-                    );
+                    timeout =
+                        setTimeout(
+                            () =>
+                                buscarUsuarios(
+                                    valor
+                                ),
+                            300
+                        );
                 }
             );
 
             searchModal.addEventListener(
                 'keydown',
-                function (e) {
+                function (event) {
 
                     if (
-                        e.key ===
+                        event.key ===
                         'Enter'
                     ) {
 
@@ -1649,9 +2284,9 @@ document.addEventListener(
             );
         }
 
-        // --------------------------------------------------------
-        // BUSCADOR PRINCIPAL
-        // --------------------------------------------------------
+        /* --------------------------------------------------------
+           BÚSQUEDA EN CONTACTOS
+           -------------------------------------------------------- */
 
         const searchInput =
             document.getElementById(
@@ -1666,17 +2301,21 @@ document.addEventListener(
             );
         }
 
-        // --------------------------------------------------------
-        // ESCAPE
-        // --------------------------------------------------------
+        /* --------------------------------------------------------
+           ESC
+           -------------------------------------------------------- */
 
         document.addEventListener(
             'keydown',
-            function (e) {
+            function (event) {
 
-                if (e.key === 'Escape') {
+                if (
+                    event.key ===
+                    'Escape'
+                ) {
 
                     cerrarModalBuscar();
+
                     cerrarModalInvitacion();
                 }
             }
@@ -1684,9 +2323,38 @@ document.addEventListener(
     }
 );
 
-// ================================================================
-// EXPOSICIÓN GLOBAL
-// ================================================================
+/* ================================================================
+   AL SALIR
+   ================================================================ */
+
+window.addEventListener(
+    'beforeunload',
+    function () {
+
+        /*
+         * Se mantiene síncrono en cuanto al
+         * cierre de canales.
+         */
+
+        limpiarRecursosContactos();
+
+        /*
+         * Intentamos marcar offline.
+         * El navegador puede cancelar operaciones
+         * asíncronas durante beforeunload, por eso
+         * no dependemos de esto como mecanismo único.
+         */
+
+        try {
+            actualizarOnline(false);
+        } catch (error) {}
+    }
+);
+
+/* ================================================================
+   EXPORTACIONES GLOBALES
+   ================================================================ */
+
 window.cargarContactos =
     cargarContactos;
 
@@ -1737,3 +2405,7 @@ window.aplicarFiltros =
 
 window.limpiarRecursosContactos =
     limpiarRecursosContactos;
+
+console.log(
+    "◈ Sariel's Contactos JS cargado."
+);
