@@ -777,27 +777,15 @@
 
         <div class="contactos-stats">
 
-            <span
-                class="stat"
-                data-clave="contactos_total"
-            >
+            <span class="stat" data-clave="contactos_total">
                 ◈ Total:
-                <span
-                    class="numero"
-                    id="totalContactos"
-                >0</span>
+                <span class="numero" id="totalContactos">0</span>
             </span>
 
-            <span
-                class="stat"
-                data-clave="contactos_en_linea"
-            >
+            <span class="stat" data-clave="contactos_en_linea">
                 <span class="dot online"></span>
                 En línea:
-                <span
-                    class="numero"
-                    id="onlineContactos"
-                >0</span>
+                <span class="numero" id="onlineContactos">0</span>
             </span>
 
         </div>
@@ -939,7 +927,6 @@
 
 </div>
 
-
 <!-- ============================================================
      MODAL BUSCAR CONTACTO
      ============================================================ -->
@@ -1007,7 +994,6 @@
     </div>
 
 </div>
-
 
 <!-- ============================================================
      MODAL INVITACIÓN
@@ -1108,7 +1094,6 @@
 
 </div>
 
-
 <div
     class="toast"
     id="toast"
@@ -1116,17 +1101,15 @@
     aria-live="polite"
 ></div>
 
-
 <!-- ============================================================
      SCRIPTS
      
-     ORDEN OBLIGATORIO:
+     ORDEN:
      1. Supabase UMD
      2. app.js
      3. contactos.js
      
-     contactos.js es la ÚNICA fuente de lógica de Contactos.
-     NO hay JavaScript de contactos dentro de este HTML.
+     contactos.js es la fuente de lógica de Contactos.
      ============================================================ -->
 
 <script
@@ -1147,51 +1130,6 @@
         window.__contactosJsError = true;
     "
 ></script>
-
-
-<!-- ============================================================
-     DETECTOR DE CARGA
-     Solo sirve para detectar un JS que no haya cargado.
-     No contiene lógica de Supabase ni de contactos.
-     ============================================================ -->
-
-<script>
-(function () {
-    window.addEventListener('load', function () {
-
-        setTimeout(function () {
-
-            if (window.__contactosJsError) {
-
-                const lista = document.getElementById('contactosList');
-
-                if (lista) {
-                    lista.innerHTML = `
-                        <div class="empty-state">
-                            <span class="icon">⚠</span>
-                            <h3>No se pudo cargar Contactos</h3>
-                            <p style="margin-top:10px;">
-                                El archivo contactos.js no pudo cargarse.
-                            </p>
-                            <p style="
-                                margin-top:8px;
-                                font-size:0.65rem;
-                                opacity:0.7;
-                            ">
-                                Revisa la ruta:
-                                /features/mensajes/contactos.js
-                            </p>
-                        </div>
-                    `;
-                }
-
-            }
-
-        }, 1500);
-
-    });
-})();
-</script>
 
 </body>
 </html>
