@@ -171,11 +171,10 @@ async function procesarVideo(job) {
             `scale=${finalWidth}:${finalHeight}:force_original_aspect_ratio=decrease`,
             `pad=${finalWidth}:${finalHeight}:(ow-iw)/2:(oh-ih)/2:color=black`,
 
-            // 2. Difuminar marca de agua externa en esquina inferior derecha
-            `delogo=x=${xBR}:y=${yBR}:w=${logoW}:h=${logoH}:show=0`,
-
-            // 3. Difuminar marca de agua externa en esquina superior derecha
-            `delogo=x=${xTR}:y=${yTR}:w=${logoW}:h=${logoH}:show=0`,
+            // NOTA: se removieron los filtros "delogo" — es un filtro GPL que
+            // probablemente no está compilado en el binario de ffmpeg-static.
+            // No hace falta: los "drawbox" de abajo ya tapan por completo esa
+            // misma zona con un color sólido casi opaco.
 
             // 4. Superponer caja de Sariel's en esquina inferior derecha
             `drawbox=x=${xBR}:y=${yBR}:w=${logoW}:h=${logoH}:color=0x0F2D1A@0.85:t=fill`,
