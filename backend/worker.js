@@ -6,8 +6,7 @@
    FUNCIONES:
    - Escucha la cola "video-processing"
    - Descarga el video original
-   - Aplica delogo para difuminar marca de agua externa
-   - Superpone la marca de Sariel's
+   - Aplica overlay de marca de agua "✦ WEB3" (PNG transparente)
    - Re-encodea a MP4 720p h264 + AAC
    - Sube a Supabase Storage
    - Actualiza la DB
@@ -79,6 +78,9 @@ const COLA_NOMBRE = 'video-processing';
 const TEMP_DIR = os.tmpdir();
 const MAX_CONCURRENT = 1; // Solo 1 video a la vez (para no matar CPU)
 
+// Ruta al logo PNG (debe existir en assets/sariels_web3.png)
+const LOGO_PATH = path.join(__dirname, 'assets', 'sariels_web3.png');
+
 // ================================================================
 // FUNCIÓN PRINCIPAL: PROCESAR VIDEO
 // ================================================================
@@ -91,6 +93,13 @@ async function procesarVideo(job) {
     const outputPath = path.join(TEMP_DIR, `sariels_output_${job.id}.mp4`);
 
     try {
+        // ============================================================
+        // PASO 0: Verificar que el logo existe
+        // ============================================================
+        if (!fs.existsSync(LOGO_PATH)) {
+            throw new Error(`❌ El logo no existe en: ${LOGO_PATH}. Súbelo a la carpeta assets/`);
+        }
+
         // ============================================================
         // PASO 1: Descargar el video original
         // ============================================================
@@ -132,64 +141,47 @@ async function procesarVideo(job) {
         await job.updateProgress(20);
 
         // ============================================================
-        // PASO 3: Construir el filtro de FFmpeg
+        // PASO 3: Construir el filtro de FFmpeg (Overlay PNG "✦ WEB3")
         // ============================================================
-        // Estrategia:
-        // - Redimensionar a 720p máximo
-        // - Aplicar delogo en esquina inferior derecha (tapa TikTok)
-        // - Aplicar delogo en esquina superior derecha (tapa Reels)
-        // - Superponer marca de Sariel's
-
         const targetHeight = Math.min(720, height);
         const scaleFactor = targetHeight / height;
         const targetWidth = Math.round(width * scaleFactor);
+
         // Asegurar dimensiones pares (requerido por h264)
         const finalWidth = targetWidth % 2 === 0 ? targetWidth : targetWidth - 1;
         const finalHeight = targetHeight % 2 === 0 ? targetHeight : targetHeight - 1;
 
-        // Dimensiones de la zona de marca de agua
-        const logoW = Math.floor(finalWidth * 0.40);
-        const logoH = Math.floor(finalHeight * 0.14);
-        const marginX = Math.floor(finalWidth * 0.02);
-        const marginY = Math.floor(finalHeight * 0.025);
+        // --- CONFIGURACIÓN DEL LOGO "✦ WEB3" ---
+        // Ancho del logo: 20% del ancho del video (cámbialo si lo quieres más grande)
+        const logoW = Math.floor(finalWidth * 0.20);
+
+        // Altura del logo manteniendo proporción de la imagen (1200x250 = 0.2083)
+        // Si tu PNG tiene otras dimensiones, ajusta este multiplicador.
+        const logoH = Math.floor(logoW * 0.2083);
+
+        // Márgenes desde la esquina inferior derecha
+        const marginX = Math.floor(finalWidth * 0.03);
+        const marginY = Math.floor(finalHeight * 0.03);
 
         const xBR = finalWidth - logoW - marginX;
         const yBR = finalHeight - logoH - marginY;
-        const xTR = finalWidth - logoW - marginX;
-        const yTR = marginY;
 
-        const fontSize = Math.floor(finalHeight * 0.045);
-        const fontSizeSmall = Math.floor(finalHeight * 0.030);
-
-        console.log(`🎨 [JOB ${job.id}] Aplicando filtros...`);
+        console.log(`🎨 [JOB ${job.id}] Aplicando overlay "✦ WEB3"...`);
         console.log(`   - Escala: ${finalWidth}x${finalHeight}`);
-        console.log(`   - Delogo: ${logoW}x${logoH}`);
+        console.log(`   - Logo: ${logoW}x${logoH} en posición (${xBR}, ${yBR})`);
 
-        // Filtro completo en una sola cadena
-        const videoFilters = [
-            // 1. Escalar a 720p
-            `scale=${finalWidth}:${finalHeight}:force_original_aspect_ratio=decrease`,
-            `pad=${finalWidth}:${finalHeight}:(ow-iw)/2:(oh-ih)/2:color=black`,
-
-            // NOTA: se removieron los filtros "delogo" — es un filtro GPL que
-            // probablemente no está compilado en el binario de ffmpeg-static.
-            // No hace falta: los "drawbox" de abajo ya tapan por completo esa
-            // misma zona con un color sólido casi opaco.
-
-            // 4. Superponer caja de Sariel's en esquina inferior derecha
-            `drawbox=x=${xBR}:y=${yBR}:w=${logoW}:h=${logoH}:color=0x0F2D1A@0.85:t=fill`,
-            `drawbox=x=${xBR}:y=${yBR}:w=${logoW}:h=${logoH}:color=0xD4AF37@0.9:t=2`,
-
-            // 5. Texto "Sariel's" en la caja
-            `drawtext=text='Sariel\\'s':fontcolor=0xD4AF37:fontsize=${fontSize}:x=${xBR + 15}:y=${yBR + Math.floor(logoH * 0.22)}:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf`,
-
-            // 6. Texto "✦ WEB3" debajo
-            `drawtext=text='✦ WEB3':fontcolor=0xD4AF37:fontsize=${fontSizeSmall}:x=${xBR + 15}:y=${yBR + Math.floor(logoH * 0.62)}:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf`,
-
-            // 7. Marca superior derecha (por si acaso)
-            `drawbox=x=${xTR}:y=${yTR}:w=${logoW}:h=${logoH}:color=0x0F2D1A@0.7:t=fill`,
-            `drawtext=text='Sariel\\'s':fontcolor=0xD4AF37:fontsize=${fontSizeSmall}:x=${xTR + 12}:y=${yTR + Math.floor(logoH * 0.35)}:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf`
-        ].join(',');
+        // Filtro complejo: 2 entradas (video + logo PNG)
+        // OJO: en complexFilter los filtros se separan con ";" no con ","
+        const filterComplex = [
+            // 1. Escalar el video original
+            `[0:v]scale=${finalWidth}:${finalHeight}:force_original_aspect_ratio=decrease[scaled]`,
+            // 2. Padded a las dimensiones exactas
+            `[scaled]pad=${finalWidth}:${finalHeight}:(ow-iw)/2:(oh-ih)/2:color=black[pad]`,
+            // 3. Escalar el logo
+            `[1:v]scale=${logoW}:${logoH}[logo]`,
+            // 4. Superponer el logo en la esquina inferior derecha
+            `[pad][logo]overlay=${xBR}:${yBR}[out]`
+        ].join(';');
 
         await job.updateProgress(25);
 
@@ -200,7 +192,8 @@ async function procesarVideo(job) {
 
         await new Promise((resolve, reject) => {
             ffmpeg(inputPath)
-                .videoFilters(videoFilters)
+                .input(LOGO_PATH)                 // Segunda entrada: el PNG
+                .complexFilter(filterComplex)     // Filtro complejo de 2 entradas
                 .outputOptions([
                     '-c:v libx264',
                     '-preset veryfast',
@@ -211,10 +204,13 @@ async function procesarVideo(job) {
                     '-c:a aac',
                     '-b:a 128k',
                     '-movflags +faststart',
-                    '-max_muxing_queue_size 1024'
+                    '-max_muxing_queue_size 1024',
+                    '-map', '[out]',              // Mapear la salida del complexFilter
+                    '-map', '0:a?'                // Mapear el audio original si existe
                 ])
                 .on('start', (cmd) => {
                     console.log(`▶️ [JOB ${job.id}] FFmpeg iniciado`);
+                    console.log(`   CMD: ${cmd}`);
                 })
                 .on('progress', (progress) => {
                     if (progress.percent) {
@@ -226,8 +222,10 @@ async function procesarVideo(job) {
                     console.log(`✅ [JOB ${job.id}] FFmpeg terminó`);
                     resolve();
                 })
-                .on('error', (err) => {
+                .on('error', (err, stdout, stderr) => {
                     console.error(`❌ [JOB ${job.id}] FFmpeg error:`, err.message);
+                    // ESTO ES CLAVE PARA DEPURAR:
+                    console.error(`❌ [JOB ${job.id}] STDERR:`, stderr);
                     reject(err);
                 })
                 .save(outputPath);
@@ -428,4 +426,5 @@ console.log('========================================');
 console.log('📡 Cola:', COLA_NOMBRE);
 console.log('🔢 Concurrencia:', MAX_CONCURRENT);
 console.log('📁 Temp dir:', TEMP_DIR);
+console.log('🖼️ Logo:', LOGO_PATH);
 console.log('========================================');
