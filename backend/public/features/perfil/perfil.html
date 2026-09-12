@@ -439,7 +439,6 @@
                 <button class="tab-btn" onclick="cambiarTab('qr')">📷 Escanear QR</button>
             </div>
 
-            <!-- ===== TAB: MIS PUBLICACIONES ===== -->
             <div id="tab-mis-publicaciones" class="tab-content active">
                 <div class="panel">
                     <div class="panel-header">
@@ -499,7 +498,6 @@
                 </div>
             </div>
 
-            <!-- ===== TAB: ACTIVIDAD ===== -->
             <div id="tab-actividad" class="tab-content">
                 <div class="panel">
                     <div class="panel-header">
@@ -516,7 +514,6 @@
                 </div>
             </div>
 
-            <!-- ===== TAB: TOKENS ===== -->
             <div id="tab-tokens" class="tab-content">
                 <div class="panel">
                     <div class="panel-header">
@@ -606,7 +603,6 @@
                 </div>
             </div>
 
-            <!-- ===== TAB: CONFIGURACIÓN ===== -->
             <div id="tab-config" class="tab-content">
                 <div class="panel">
                     <div class="panel-header">
@@ -666,7 +662,6 @@
                 </div>
             </div>
 
-            <!-- ===== TAB: eSIM ===== -->
             <div id="tab-esim" class="tab-content">
                 <div class="panel">
                     <div class="panel-header">
@@ -731,7 +726,6 @@
                 </div>
             </div>
 
-            <!-- ===== TAB: ESCANEAR QR ===== -->
             <div id="tab-qr" class="tab-content">
                 <div class="panel">
                     <div class="panel-header">
@@ -853,13 +847,17 @@
 
     <!-- ================================================================ -->
     <!-- MÓDULO DE PUBLICACIONES EN PERFIL (CORREGIDO)                    -->
-    <!-- Columnas reales: media_url, media_type, likes, comentarios       -->
+    <!-- Fix: sb() obtiene window.supabase dinámicamente para evitar      -->
+    <!-- "Cannot read properties of undefined (reading 'getSession')".    -->
     <!-- ================================================================ -->
     <script>
     (function() {
         'use strict';
 
-        var supabaseClient = window.supabase;
+        // ✅ FIX: Función que obtiene window.supabase cada vez
+        function sb() {
+            return window.supabase;
+        }
 
         var archivosSeleccionados = {
             imagen: null,
@@ -958,7 +956,7 @@
         };
 
         // ============================================================
-        // PUBLICAR DESDE EL PERFIL (columnas reales de la tabla)
+        // PUBLICAR DESDE EL PERFIL
         // ============================================================
         window.publicarDesdePerfil = async function() {
             var btn = document.getElementById('btnPublicarPerfil');
@@ -973,7 +971,10 @@
             if (btn) { btn.disabled = true; btn.textContent = '⏳ Publicando...'; }
 
             try {
-                var sessionResult = await supabaseClient.auth.getSession();
+                var client = sb();
+                if (!client) throw new Error('Supabase no está listo. Intenta de nuevo.');
+
+                var sessionResult = await client.auth.getSession();
                 var session = sessionResult.data.session;
                 if (!session) { if (window.showToast) window.showToast('⚠️ Inicia sesión', 'error'); return; }
 
@@ -986,13 +987,13 @@
                     var ext = file.name.split('.').pop().toLowerCase();
                     var filePath = session.user.id + '/post_' + Date.now() + '.' + ext;
 
-                    var uploadResult = await supabaseClient.storage
+                    var uploadResult = await client.storage
                         .from('posts')
                         .upload(filePath, file, { cacheControl: '3600', upsert: false, contentType: file.type });
 
                     if (uploadResult.error) throw new Error('Error subiendo imagen: ' + uploadResult.error.message);
 
-                    var urlData = supabaseClient.storage.from('posts').getPublicUrl(filePath);
+                    var urlData = client.storage.from('posts').getPublicUrl(filePath);
                     mediaUrl = urlData.data.publicUrl;
                     mediaType = 'imagen';
                 }
@@ -1003,13 +1004,13 @@
                     var vext = vfile.name.split('.').pop().toLowerCase();
                     var vfilePath = session.user.id + '/video_' + Date.now() + '.' + vext;
 
-                    var vuploadResult = await supabaseClient.storage
+                    var vuploadResult = await client.storage
                         .from('posts')
                         .upload(vfilePath, vfile, { cacheControl: '3600', upsert: false, contentType: vfile.type });
 
                     if (vuploadResult.error) throw new Error('Error subiendo video: ' + vuploadResult.error.message);
 
-                    var vurlData = supabaseClient.storage.from('posts').getPublicUrl(vfilePath);
+                    var vurlData = client.storage.from('posts').getPublicUrl(vfilePath);
                     mediaUrl = vurlData.data.publicUrl;
                     mediaType = 'video';
                 }
@@ -1022,11 +1023,11 @@
                     estado: 'publicado'
                 };
 
-                var insertResult = await supabaseClient.from('publicaciones').insert(insertPayload).select().single();
+                var insertResult = await client.from('publicaciones').insert(insertPayload).select().single();
 
                 if (insertResult.error) {
                     delete insertPayload.estado;
-                    var fb = await supabaseClient.from('publicaciones').insert(insertPayload).select().single();
+                    var fb = await client.from('publicaciones').insert(insertPayload).select().single();
                     if (fb.error) throw new Error(fb.error.message);
                 }
 
@@ -1050,7 +1051,7 @@
         };
 
         // ============================================================
-        // CARGAR MIS PUBLICACIONES (columnas reales)
+        // CARGAR MIS PUBLICACIONES (con reintentos por si Supabase tarda)
         // ============================================================
         window.cargarMisPublicaciones = async function() {
             var container = document.getElementById('misPublicacionesList');
@@ -1058,11 +1059,21 @@
             if (!container) return;
 
             try {
-                var sessionResult = await supabaseClient.auth.getSession();
-                var session = sessionResult.data.session;
-                if (!session) return;
+                var client = sb();
+                if (!client) {
+                    container.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h4>Cargando conexión...</h4><p>Espera un momento</p></div>';
+                    setTimeout(cargarMisPublicaciones, 1000);
+                    return;
+                }
 
-                var result = await supabaseClient
+                var sessionResult = await client.auth.getSession();
+                var session = sessionResult.data.session;
+                if (!session) {
+                    container.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h4>Inicia sesión</h4><p>Para ver tus publicaciones</p></div>';
+                    return;
+                }
+
+                var result = await client
                     .from('publicaciones')
                     .select('*')
                     .eq('usuario_id', session.user.id)
@@ -1129,15 +1140,18 @@
         };
 
         // ============================================================
-        // REACCIONAR (usa tabla reacciones + trigger actualiza likes)
+        // REACCIONAR
         // ============================================================
         window.reaccionarPublicacionPerfil = async function(postId, tipoReaccion) {
             try {
-                var sessionResult = await supabaseClient.auth.getSession();
+                var client = sb();
+                if (!client) { if (window.showToast) window.showToast('⚠️ Supabase no listo', 'error'); return; }
+
+                var sessionResult = await client.auth.getSession();
                 var session = sessionResult.data.session;
                 if (!session) { if (window.showToast) window.showToast('⚠️ Inicia sesión', 'error'); return; }
 
-                var existing = await supabaseClient
+                var existing = await client
                     .from('reacciones')
                     .select('id')
                     .eq('post_id', postId)
@@ -1145,12 +1159,12 @@
                     .maybeSingle();
 
                 if (existing.data) {
-                    await supabaseClient.from('reacciones').delete().eq('id', existing.data.id);
+                    await client.from('reacciones').delete().eq('id', existing.data.id);
                     var span = document.getElementById('likes-' + postId);
                     if (span) span.textContent = Math.max(0, (parseInt(span.textContent) || 0) - 1);
                     if (window.showToast) window.showToast('💔 Like eliminado', 'warning', 2000);
                 } else {
-                    var insert = await supabaseClient.from('reacciones').insert({
+                    var insert = await client.from('reacciones').insert({
                         post_id: postId,
                         usuario_id: session.user.id,
                         tipo: tipoReaccion
@@ -1176,7 +1190,7 @@
         };
 
         // ============================================================
-        // COMENTARIOS (el trigger de Supabase actualiza el contador)
+        // COMENTARIOS
         // ============================================================
         window.toggleComentariosPerfil = async function(publicacionId) {
             var container = document.getElementById('comentarios-container-' + publicacionId);
@@ -1192,7 +1206,10 @@
             lista.innerHTML = '<div style="font-size:0.7rem;color:var(--text-muted);padding:4px;">Cargando...</div>';
 
             try {
-                var result = await supabaseClient
+                var client = sb();
+                if (!client) return;
+
+                var result = await client
                     .from('muro_comentarios')
                     .select('*')
                     .eq('post_id', publicacionId)
@@ -1235,7 +1252,10 @@
             if (!texto) { if (window.showToast) window.showToast('⚠️ Escribe un comentario', 'warning'); return; }
 
             try {
-                var sessionResult = await supabaseClient.auth.getSession();
+                var client = sb();
+                if (!client) { if (window.showToast) window.showToast('⚠️ Supabase no listo', 'error'); return; }
+
+                var sessionResult = await client.auth.getSession();
                 var session = sessionResult.data.session;
                 if (!session) { if (window.showToast) window.showToast('⚠️ Inicia sesión', 'error'); return; }
 
@@ -1246,11 +1266,11 @@
                     created_at: new Date().toISOString()
                 };
 
-                var result = await supabaseClient.from('muro_comentarios').insert(payload).select().single();
+                var result = await client.from('muro_comentarios').insert(payload).select().single();
 
                 if (result.error) {
                     delete payload.created_at;
-                    var fb = await supabaseClient.from('muro_comentarios').insert(payload).select().single();
+                    var fb = await client.from('muro_comentarios').insert(payload).select().single();
                     if (fb.error) throw new Error(fb.error.message);
                 }
 
@@ -1271,7 +1291,9 @@
         window.eliminarMiPublicacion = async function(publicacionId) {
             if (!confirm('¿Seguro que quieres eliminar esta publicación?')) return;
             try {
-                var result = await supabaseClient.from('publicaciones').delete().eq('id', publicacionId);
+                var client = sb();
+                if (!client) return;
+                var result = await client.from('publicaciones').delete().eq('id', publicacionId);
                 if (result.error) throw new Error(result.error.message);
                 if (window.showToast) window.showToast('🗑️ Publicación eliminada', 'success');
                 await cargarMisPublicaciones();
@@ -1289,7 +1311,20 @@
         }
 
         document.addEventListener('DOMContentLoaded', function() {
-            setTimeout(function() { cargarMisPublicaciones(); }, 1500);
+            // ✅ Reintentar hasta que Supabase esté listo (máx 15s)
+            var intentos = 0;
+            function intentarCargar() {
+                if (sb() && intentos < 30) {
+                    cargarMisPublicaciones();
+                } else if (intentos < 30) {
+                    intentos++;
+                    setTimeout(intentarCargar, 500);
+                } else {
+                    console.warn('Supabase no se inicializó después de 15s');
+                }
+            }
+            intentarCargar();
+
             document.addEventListener('click', function(e) {
                 var picker = document.getElementById('emojiPickerPerfil');
                 if (picker && picker.classList.contains('show')) {
