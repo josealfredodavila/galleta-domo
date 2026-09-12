@@ -291,9 +291,6 @@
         .watermark-live .text span { color: var(--gold); }
         .watermark-live .badge-web3 { font-size: 0.4rem; background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); padding: 1px 6px; border-radius: 10px; font-weight: 700; }
 
-        /* ============================================================
-           ANUNCIO DE MARKETING
-           ============================================================ */
         .marketing-ad-container {
             display: none;
             margin-bottom: 16px;
@@ -657,9 +654,6 @@
                 </div>
             </div>
 
-            <!-- ============================================================
-                 CONTENEDOR DE ANUNCIO DE MARKETING
-                 ============================================================ -->
             <div class="marketing-ad-container" id="marketingAdContainer">
                 <div class="marketing-ad-header">
                     <span class="marketing-ad-label">Patrocinado</span>
@@ -845,6 +839,12 @@ async function getSession() {
     return session;
 }
 
+// ===== CARGAR LIBRERÍA LIVEKIT (v2) =====
+async function cargarLiveKit() {
+    const LiveKit = await import('https://cdn.jsdelivr.net/npm/livekit-client@2/dist/livekit-client.esm.mjs');
+    return LiveKit;
+}
+
 // ===== OBTENER TOKEN LIVEKIT =====
 async function obtenerTokenLiveKit(roomName, participantName, role = 'subscriber') {
     try {
@@ -864,14 +864,15 @@ async function obtenerTokenLiveKit(roomName, participantName, role = 'subscriber
         });
 
         if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.message || error.error || 'Error al obtener token');
+            let error = { message: 'Error desconocido' };
+            try { error = await response.json(); } catch (e) {}
+            throw new Error(error.message || error.error || `Error HTTP ${response.status}`);
         }
 
         const data = await response.json();
         return data.token;
     } catch (error) {
-        console.error('Error obteniendo token LiveKit:', error);
+        console.error('❌ Error obteniendo token LiveKit:', error);
         throw error;
     }
 }
@@ -880,14 +881,12 @@ async function obtenerTokenLiveKit(roomName, participantName, role = 'subscriber
    ✅ ANUNCIOS DE MARKETING
    ================================================================ */
 
-// Genera un session_id único para esta visita
 function getOrCreateAdSessionId() {
     if (adSessionId) return adSessionId;
     adSessionId = `ads_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
     return adSessionId;
 }
 
-// Cierra el anuncio actual
 function cerrarAnuncio() {
     adCerrado = true;
     const container = document.getElementById('marketingAdContainer');
@@ -895,7 +894,6 @@ function cerrarAnuncio() {
     anuncioActual = null;
 }
 
-// Carga un anuncio desde el backend para este LIVE
 async function cargarAnuncioLive() {
     if (!currentStreamId) return;
     if (adCerrado) return;
@@ -1053,12 +1051,14 @@ function detenerRefrescoAnuncios() {
 // ================================================================
 async function iniciarTransmisionGeneral() {
     try {
+        console.log('🎬 [1] Iniciando transmisión general...');
         const session = await getSession();
         if (!session) {
             showToast('⚠️ Inicia sesión para transmitir', 'error');
             return;
         }
         currentUser = session.user;
+        console.log('🎬 [2] Usuario:', currentUser.id);
 
         const { data: streamActivo, error: checkError } = await supabase
             .from('transmisiones')
@@ -1078,10 +1078,11 @@ async function iniciarTransmisionGeneral() {
 
         const titulo = prompt('Título de tu transmisión:', 'Mi live en Sariel\'s') || 'Live en Sariel\'s';
         const categoria = prompt('Categoría (gaming, musica, educacion, comunidad, tecnologia, general):', 'general') || 'general';
+        console.log('🎬 [3] Título:', titulo, '| Categoría:', categoria);
 
         const roomName = `live-${currentUser.id}-${Date.now()}`;
 
-        // ===== CREAR TRANSMISIÓN =====
+        console.log('🎬 [4] Creando transmisión en Supabase...');
         const { data: rpcResult, error: streamError } = await supabase.rpc('crear_transmision', {
             p_titulo: titulo,
             p_categoria: categoria,
@@ -1094,13 +1095,10 @@ async function iniciarTransmisionGeneral() {
             throw new Error(streamError.message || 'Error al crear transmisión');
         }
 
-        // La RPC devuelve el ID (bigint)
         const nuevoId = (typeof rpcResult === 'object' && rpcResult !== null) ? rpcResult.id : rpcResult;
-        if (!nuevoId) {
-            throw new Error('No se pudo crear la transmisión (ID vacío)');
-        }
+        if (!nuevoId) throw new Error('No se pudo crear la transmisión (ID vacío)');
+        console.log('🎬 [5] Transmisión creada con ID:', nuevoId);
 
-        // Traer la fila completa
         const { data: transmision, error: fetchError } = await supabase
             .from('transmisiones')
             .select('*')
@@ -1115,23 +1113,40 @@ async function iniciarTransmisionGeneral() {
         currentStream = transmision;
         currentStreamId = transmision.id;
         document.getElementById('liveTitle').textContent = titulo;
+        console.log('🎬 [6] Transmisión recuperada. Room:', transmision.room_name);
 
+        // ===== CONECTAR A LIVEKIT =====
         try {
             showToast('🔗 Conectando a LiveKit...', '', 2000);
+            console.log('🎬 [7] Cargando librería LiveKit v2...');
 
-            const { Room } = await import('https://cdn.jsdelivr.net/npm/livekit-client@1/dist/index.js');
+            const { Room, Track } = await cargarLiveKit();
             liveKitRoom = new Room();
 
+            console.log('🎬 [8] Pidiendo token al backend...');
             const token = await obtenerTokenLiveKit(
                 currentStream.room_name,
                 currentUser.id,
                 'publisher'
             );
+            console.log('🎬 [9] Token recibido');
 
+            console.log('🎬 [10] Conectando a LiveKit WebSocket...');
             await liveKitRoom.connect(LIVEKIT_CONFIG.url, token);
+            console.log('🎬 [11] Conectado a LiveKit');
 
             await liveKitRoom.localParticipant.setCameraEnabled(true);
             await liveKitRoom.localParticipant.setMicrophoneEnabled(true);
+            console.log('🎬 [12] Cámara y micrófono activados');
+
+            // ✅ FIX: Adjuntar la pista de video local al <video>
+            const localVideoTrack = liveKitRoom.localParticipant.getTrackPublication(Track.Source.Camera)?.videoTrack;
+            if (localVideoTrack) {
+                localVideoTrack.attach(document.getElementById('liveVideo'));
+                console.log('🎬 [13] Pista de video local adjuntada al <video>');
+            } else {
+                console.warn('⚠️ No se encontró la pista de cámara local');
+            }
 
             showToast('✅ Conectado a LiveKit', 'success');
 
@@ -1145,8 +1160,8 @@ async function iniciarTransmisionGeneral() {
             });
 
         } catch (e) {
-            console.warn('LiveKit no disponible, modo local:', e);
-            showToast('⚠️ Modo local - sin transmisión en vivo', 'warning');
+            console.error('❌ Error conectando a LiveKit:', e);
+            showToast('⚠️ Error LiveKit: ' + e.message, 'warning', 5000);
         }
 
         isLive = true;
@@ -1160,9 +1175,10 @@ async function iniciarTransmisionGeneral() {
         iniciarRefrescoAnuncios();
 
         showToast('🎥 ¡Transmisión iniciada!', 'success', 4000);
+        console.log('🎬 [14] COMPLETADO');
 
     } catch (error) {
-        console.error('Error iniciando transmisión:', error);
+        console.error('❌ Error iniciando transmisión:', error);
         showToast('❌ Error al iniciar: ' + error.message, 'error');
         if (liveKitRoom) {
             try { await liveKitRoom.disconnect(); } catch (e) {}
@@ -1287,7 +1303,7 @@ async function unirseATransmision(streamId) {
 
         const { data: stream, error } = await supabase
             .from('transmisiones')
-            .select('*, usuarios(id, nombre, avatar_url)')
+            .select('*')
             .eq('id', streamId)
             .single();
 
@@ -1297,7 +1313,7 @@ async function unirseATransmision(streamId) {
         currentStreamId = stream.id;
 
         try {
-            const { Room } = await import('https://cdn.jsdelivr.net/npm/livekit-client@1/dist/index.js');
+            const { Room } = await cargarLiveKit();
             liveKitRoom = new Room();
 
             const token = await obtenerTokenLiveKit(
@@ -1308,18 +1324,12 @@ async function unirseATransmision(streamId) {
 
             await liveKitRoom.connect(LIVEKIT_CONFIG.url, token);
 
-            liveKitRoom.on('trackSubscribed', (track, publication, participant) => {
+            liveKitRoom.on('trackSubscribed', (track) => {
                 if (track.kind === 'video') {
                     const video = document.getElementById('liveVideo');
                     if (video) {
                         track.attach(video);
-                        try {
-                            video.play().catch(e => {
-                                console.warn('Autoplay bloqueado en suscripción:', e);
-                            });
-                        } catch (e) {
-                            console.warn('Error en play():', e);
-                        }
+                        video.play().catch(e => console.warn('Autoplay bloqueado:', e));
                     }
                 }
             });
@@ -1327,8 +1337,8 @@ async function unirseATransmision(streamId) {
             showToast('📺 Conectado a la transmisión', 'success');
 
         } catch (e) {
-            console.warn('LiveKit no disponible, modo solo chat:', e);
-            showToast('⚠️ Modo solo chat - sin video', 'warning');
+            console.error('❌ Error LiveKit al unirse:', e);
+            showToast('⚠️ Error al conectar: ' + e.message, 'warning');
         }
 
         suscribirseAlChat();
@@ -1398,7 +1408,7 @@ async function enviarMensaje() {
     }
 
     try {
-        const { data: msgData, error: msgError } = await supabase
+        const { error: msgError } = await supabase
             .from('mensajes_live')
             .insert({
                 transmision_id: currentStream.id,
@@ -1450,15 +1460,13 @@ function agregarMensajeAlChat(mensaje) {
 }
 
 // ================================================================
-// 🛡️ MODERACIÓN
+// 🛡️ MODERACIÓN (con regex \b para no bloquear palabras dentro de otras)
 // ================================================================
 function verificarContenido(texto) {
-    const textoLower = texto.toLowerCase();
+    const regex = new RegExp(`\\b(${PALABRAS_PROHIBIDAS.join('|')})\\b`, 'i');
 
-    for (const palabra of PALABRAS_PROHIBIDAS) {
-        if (textoLower.includes(palabra)) {
-            return { prohibido: true, razon: `Contiene lenguaje inapropiado` };
-        }
+    if (regex.test(texto)) {
+        return { prohibido: true, razon: 'Contiene lenguaje inapropiado' };
     }
 
     if (/(acoso|bullying|hostigamiento|amenaza)/i.test(texto)) {
@@ -1500,12 +1508,7 @@ async function enviarDonacion(monto) {
 
         const idempotencyKey = `donacion_${session.user.id}_${currentStream.id}_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
 
-        // El trigger preparar_donacion_live() se encarga de:
-        // - donante_id (desde usuario_id o auth.uid())
-        // - usuario_id (desde donante_id)
-        // - streamer_id (desde transmisiones)
-        // - monto_fundador_usd y monto_streamer_usd (50/50)
-        const { data: donacionData, error: donacionError } = await supabase
+        const { error: donacionError } = await supabase
             .from('live_donaciones')
             .insert({
                 transmision_id: currentStream.id,
@@ -1694,10 +1697,7 @@ async function cargarTransmisionesActivas() {
     try {
         const { data, error } = await supabase
             .from('transmisiones')
-            .select(`
-                *,
-                usuarios(id, nombre, avatar_url)
-            `)
+            .select('*')
             .eq('estado', 'en_vivo')
             .eq('is_live', true)
             .order('fecha_inicio', { ascending: false });
@@ -1736,7 +1736,7 @@ function renderizarTransmisiones(streams) {
             </div>
             <div class="stream-name">${escapeHTML(stream.titulo || 'Live')}</div>
             <div class="stream-host">
-                ${escapeHTML(stream.usuarios?.nombre || 'Streamer')} · ${stream.viewers_count || 0} espectadores
+                Streamer · ${stream.viewers_count || 0} espectadores
             </div>
             <div style="font-size:0.55rem;color:var(--text-muted);margin-top:4px;">
                 ${escapeHTML(stream.categoria || 'General')} · ${new Date(stream.fecha_inicio).toLocaleTimeString()}
@@ -1764,33 +1764,60 @@ function togglePlay() {
     }
 }
 
-function toggleMute() {
-    const video = document.getElementById('liveVideo');
-    if (!video) return;
+// ✅ FIX: toggleMute ahora controla el micrófono REAL de LiveKit
+async function toggleMute() {
+    if (!liveKitRoom) {
+        showToast('⚠️ No estás transmitiendo', 'warning');
+        return;
+    }
 
-    isMuted = !isMuted;
-    video.muted = isMuted;
+    try {
+        const currentlyEnabled = liveKitRoom.localParticipant.isMicrophoneEnabled;
+        await liveKitRoom.localParticipant.setMicrophoneEnabled(!currentlyEnabled);
+        isMuted = !currentlyEnabled;
 
-    const btn = document.getElementById('muteBtn');
-    if (isMuted) {
-        btn.classList.add('muted');
-    } else {
-        btn.classList.remove('muted');
+        const btn = document.getElementById('muteBtn');
+        if (isMuted) {
+            btn.classList.add('muted');
+        } else {
+            btn.classList.remove('muted');
+        }
+
+        showToast(isMuted ? '🎤 Micrófono silenciado' : '🎤 Micrófono activado', 'success', 2000);
+    } catch (error) {
+        console.error('Error al cambiar micrófono:', error);
+        showToast('❌ Error al cambiar micrófono', 'error');
     }
 }
 
+// ✅ FIX: capturarPantalla ahora SÍ publica la pantalla a LiveKit
 async function capturarPantalla() {
+    if (!liveKitRoom) {
+        showToast('⚠️ No estás transmitiendo', 'error');
+        return;
+    }
+
     if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
         showToast('⚠️ Tu navegador no soporta compartir pantalla', 'error');
         return;
     }
 
     try {
+        const { LocalVideoTrack } = await cargarLiveKit();
+
         const screenStream = await navigator.mediaDevices.getDisplayMedia({
             video: true,
             audio: true
         });
 
+        const screenVideoTrack = screenStream.getVideoTracks()[0];
+
+        await liveKitRoom.localParticipant.publishTrack(
+            new LocalVideoTrack(screenVideoTrack),
+            { name: 'screen', source: 'screen_share' }
+        );
+
+        // Mostrar la pantalla compartida en el <video> local
         const video = document.getElementById('liveVideo');
         if (video) {
             video.srcObject = screenStream;
@@ -1799,8 +1826,16 @@ async function capturarPantalla() {
 
         showToast('🖥️ Compartiendo pantalla', 'success');
 
-        screenStream.getVideoTracks()[0].onended = () => {
-            restaurarCamara();
+        screenVideoTrack.onended = async () => {
+            try {
+                const pub = liveKitRoom.localParticipant.getTrackPublicationByName('screen');
+                if (pub && pub.track) {
+                    await liveKitRoom.localParticipant.unpublishTrack(pub.track);
+                }
+            } catch (e) {
+                console.warn('Error despublicando pantalla:', e);
+            }
+            await restaurarCamara();
         };
 
     } catch (error) {
@@ -1813,6 +1848,11 @@ async function restaurarCamara() {
     try {
         if (liveKitRoom) {
             await liveKitRoom.localParticipant.setCameraEnabled(true);
+            const video = document.getElementById('liveVideo');
+            const cameraPub = liveKitRoom.localParticipant.getTrackPublication('camera');
+            if (video && cameraPub && cameraPub.videoTrack) {
+                cameraPub.videoTrack.attach(video);
+            }
         }
     } catch (error) {
         console.error('Error restaurando cámara:', error);
@@ -1943,7 +1983,6 @@ async function seleccionarJuego(juego) {
 async function iniciarTransmisionJuego(juego) {
     try {
         const nombreJuego = juego?.nombre || 'Juego';
-        const packageName = juego?.package_name || null;
 
         if (esIOS()) {
             showToast('Compartir pantalla no disponible en iOS.', 'warning', 6000);
@@ -1999,11 +2038,9 @@ async function iniciarTransmisionJuego(juego) {
         });
         if (rpcError) throw rpcError;
 
-        // La RPC devuelve el ID (bigint)
         const nuevoId = (typeof rpcResult === 'object' && rpcResult !== null) ? rpcResult.id : rpcResult;
         if (!nuevoId) throw new Error('Supabase no devolvió el ID.');
 
-        // Traer la fila completa
         const { data: transmision, error: fetchError } = await supabase
             .from('transmisiones')
             .select('*')
@@ -2027,7 +2064,7 @@ async function iniciarTransmisionJuego(juego) {
         }
 
         try {
-            const { Room, LocalVideoTrack, LocalAudioTrack } = await import('https://cdn.jsdelivr.net/npm/livekit-client@1/dist/index.js');
+            const { Room, LocalVideoTrack, LocalAudioTrack } = await cargarLiveKit();
             liveKitRoom = new Room();
 
             const token = await obtenerTokenLiveKit(
@@ -2148,13 +2185,14 @@ document.addEventListener('DOMContentLoaded', async function() {
     transmisionParamId = params.get('transmision');
 
     if (transmisionParamId) {
-        currentStreamId = transmisionParamId;
-        console.log('📡 Visualizando transmisión:', transmisionParamId);
+        // ✅ FIX: normalizar a número si es posible
+        currentStreamId = Number(transmisionParamId) || transmisionParamId;
+        console.log('📡 Visualizando transmisión:', currentStreamId);
         try {
             const { data: stream, error: streamError } = await supabase
                 .from('transmisiones')
                 .select('*')
-                .eq('id', transmisionParamId)
+                .eq('id', currentStreamId)
                 .single();
             if (streamError) throw streamError;
             currentStream = stream;
@@ -2180,7 +2218,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
 
-    console.log('◈ Sariel\'s - Live con Marketing');
+    console.log('◈ Sariel\'s - Live listo');
 });
 
 // ================================================================
