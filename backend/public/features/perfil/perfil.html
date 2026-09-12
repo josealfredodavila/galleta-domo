@@ -847,16 +847,16 @@
 
     <!-- ================================================================ -->
     <!-- MÓDULO DE PUBLICACIONES EN PERFIL (CORREGIDO)                    -->
-    <!-- Fix: sb() obtiene window.supabase dinámicamente para evitar      -->
+    <!-- Fix: sb() obtiene window.supabaseClient para evitar              -->
     <!-- "Cannot read properties of undefined (reading 'getSession')".    -->
     <!-- ================================================================ -->
     <script>
     (function() {
         'use strict';
 
-        // ✅ FIX: Función que obtiene window.supabase cada vez
+        // ✅ FIX: Obtiene el cliente real creado por perfil.js
         function sb() {
-            return window.supabase;
+            return window.supabaseClient;
         }
 
         var archivosSeleccionados = {
