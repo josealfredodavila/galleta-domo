@@ -1,6 +1,8 @@
 /* ================================================================
    CONTACTOS - SARIEL'S ECOSYSTEM
    VERSIÓN CORREGIDA - cliente real + tabla usuarios
+   ÚNICA fuente de verdad: este archivo.
+   NO duplicar estas funciones en contactos.html.
    ================================================================ */
 
 // ================================================================
@@ -672,7 +674,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Init con reintentos
+    // Init con reintentos (por si app.js tarda en crear el cliente)
     let intentos = 0;
     function init() {
         const client = sb();
