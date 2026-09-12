@@ -8,11 +8,19 @@
 
 // ================================================================
 // CONFIGURACIÓN SUPABASE
+// ✅ EXPONEMOS EL CLIENTE GLOBALMENTE COMO window.supabaseClient
+// para que el módulo de publicaciones del perfil.html pueda usarlo.
 // ================================================================
-const supabase = window.supabase.createClient(
+const supabaseClient = window.supabase.createClient(
     'https://zultnlogdoajehbswlih.supabase.co',
     'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
 );
+
+// ✅ Exponer globalmente para otros scripts
+window.supabaseClient = supabaseClient;
+
+// ✅ Alias interno para no tener que cambiar todas las referencias
+const supabase = supabaseClient;
 
 // ================================================================
 // CONFIGURACIÓN DE ENTORNO
