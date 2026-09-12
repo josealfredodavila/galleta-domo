@@ -9,53 +9,20 @@
 
     <style>
         :root {
-            --gold: #D4AF37;
-            --gold-dark: #b8923a;
-            --gold-light: #e8c84a;
-            --gold-bright: #f0d060;
-            --green-deep: #0F2D1A;
-            --green-mid: #1a4a2a;
-            --green-bright: #2a6a3a;
-            --space: #05080f;
-            --text-primary: #f0f4f8;
-            --text-secondary: #c0d8e8;
-            --text-muted: #8aa8b8;
-            --glass-bg: rgba(15, 45, 26, 0.55);
-            --glass-border: rgba(212, 175, 55, 0.15);
-            --shadow-gold: 0 8px 32px rgba(212, 175, 55, 0.25);
-            --shadow-gold-strong: 0 0 60px rgba(212, 175, 55, 0.15);
-            --radius: 16px;
-            --radius-xl: 24px;
-            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            --success: #00d68f;
-            --danger: #ff3366;
-            --warning: #f7d44a;
-            --cyan: #00e5ff;
-            --purple: #a855f7;
-            --pink: #ec4899;
-            --live-red: #ff0044;
-            --bronze: #CD7F32;
-            --bronze-light: #D4A574;
-            --esmeralda: #50C878;
+            --gold: #D4AF37; --gold-dark: #b8923a; --gold-light: #e8c84a; --gold-bright: #f0d060;
+            --green-deep: #0F2D1A; --green-mid: #1a4a2a; --green-bright: #2a6a3a;
+            --space: #05080f; --text-primary: #f0f4f8; --text-secondary: #c0d8e8; --text-muted: #8aa8b8;
+            --glass-bg: rgba(15, 45, 26, 0.55); --glass-border: rgba(212, 175, 55, 0.15);
+            --shadow-gold: 0 8px 32px rgba(212, 175, 55, 0.25); --shadow-gold-strong: 0 0 60px rgba(212, 175, 55, 0.15);
+            --radius: 16px; --radius-xl: 24px; --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --success: #00d68f; --danger: #ff3366; --warning: #f7d44a; --cyan: #00e5ff;
+            --purple: #a855f7; --pink: #ec4899; --live-red: #ff0044;
+            --bronze: #CD7F32; --bronze-light: #D4A574; --esmeralda: #50C878;
         }
-
         * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        body {
-            background: var(--space);
-            color: var(--text-primary);
-            font-family: 'Inter', sans-serif;
-            min-height: 100vh;
-            background-image: radial-gradient(ellipse at 20% 50%, rgba(26, 74, 42, 0.4) 0%, transparent 60%), radial-gradient(ellipse at 80% 50%, rgba(212, 175, 55, 0.08) 0%, transparent 60%);
-        }
-
+        body { background: var(--space); color: var(--text-primary); font-family: 'Inter', sans-serif; min-height: 100vh; background-image: radial-gradient(ellipse at 20% 50%, rgba(26, 74, 42, 0.4) 0%, transparent 60%), radial-gradient(ellipse at 80% 50%, rgba(212, 175, 55, 0.08) 0%, transparent 60%); }
         .app { max-width: 1100px; margin: 0 auto; padding: 12px 16px 30px; position: relative; z-index: 1; }
-
-        .header {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 10px 0 14px; border-bottom: 1px solid var(--glass-border);
-            background: rgba(5, 8, 15, 0.92); position: sticky; top: 0; z-index: 100;
-        }
+        .header { display: flex; justify-content: space-between; align-items: center; padding: 10px 0 14px; border-bottom: 1px solid var(--glass-border); background: rgba(5, 8, 15, 0.92); position: sticky; top: 0; z-index: 100; }
         .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
         .logo-hex { font-size: 1.8rem; color: var(--gold); font-family: 'Orbitron', monospace; }
         .logo-text { font-family: 'Orbitron', monospace; font-size: 1.2rem; color: var(--text-primary); letter-spacing: 2px; }
@@ -63,45 +30,22 @@
         .logo-badge { font-size: 0.45rem; background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: var(--space); padding: 2px 10px; border-radius: 20px; font-weight: 700; }
         .network-badge { display: flex; align-items: center; gap: 6px; font-size: 0.6rem; color: var(--gold); background: rgba(212,175,55,0.1); padding: 4px 12px; border-radius: 20px; }
         .token-badge { display: flex; align-items: center; gap: 6px; background: rgba(212,175,55,0.1); border: 1px solid rgba(212,175,55,0.15); padding: 4px 14px; border-radius: 20px; font-size: 0.7rem; color: var(--gold); font-family: 'Orbitron', monospace; cursor: pointer; }
-
-        .main-nav {
-            display: flex; gap: 4px; background: rgba(15,45,26,0.3); border-radius: var(--radius);
-            padding: 4px; border: 1px solid var(--glass-border); margin: 16px 0 20px; overflow-x: auto;
-        }
+        .main-nav { display: flex; gap: 4px; background: rgba(15,45,26,0.3); border-radius: var(--radius); padding: 4px; border: 1px solid var(--glass-border); margin: 16px 0 20px; overflow-x: auto; }
         .main-nav .nav-link { padding: 8px 16px; border-radius: 12px; color: var(--text-muted); text-decoration: none; font-size: 0.7rem; white-space: nowrap; transition: var(--transition); }
         .main-nav .nav-link:hover { color: var(--text-primary); background: rgba(212,175,55,0.05); }
         .main-nav .nav-link.active { background: rgba(212,175,55,0.12); color: var(--gold); }
         .main-nav .nav-link.live { color: var(--danger); }
-
-        .toast {
-            position: fixed; bottom: 20px; right: 20px; padding: 12px 24px; border-radius: 12px;
-            background: var(--green-deep); border: 1px solid var(--gold); color: var(--gold);
-            font-size: 0.8rem; font-weight: 500; box-shadow: var(--shadow-gold-strong);
-            transform: translateY(100px); opacity: 0; transition: all 0.4s ease;
-            z-index: 99999; max-width: 400px; backdrop-filter: blur(10px);
-        }
+        .toast { position: fixed; bottom: 20px; right: 20px; padding: 12px 24px; border-radius: 12px; background: var(--green-deep); border: 1px solid var(--gold); color: var(--gold); font-size: 0.8rem; font-weight: 500; box-shadow: var(--shadow-gold-strong); transform: translateY(100px); opacity: 0; transition: all 0.4s ease; z-index: 99999; max-width: 400px; backdrop-filter: blur(10px); }
         .toast.show { transform: translateY(0); opacity: 1; }
         .toast.error { border-color: var(--danger); color: var(--danger); }
         .toast.warning { border-color: var(--warning); color: var(--warning); }
         .toast.success { border-color: var(--success); color: var(--success); }
-
-        .grupos-header {
-            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;
-            margin-bottom: 16px;
-        }
+        .grupos-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
         .grupos-header h1 { font-family: 'Orbitron', monospace; color: var(--gold); font-size: 1.2rem; }
         .grupos-header .filtros { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-        .grupos-header .filtros input, .grupos-header .filtros select {
-            padding: 6px 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border);
-            border-radius: 20px; color: var(--text-primary); font-size: 0.7rem; outline: none; min-width: 120px;
-        }
+        .grupos-header .filtros input, .grupos-header .filtros select { padding: 6px 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 20px; color: var(--text-primary); font-size: 0.7rem; outline: none; min-width: 120px; }
         .grupos-header .filtros input:focus, .grupos-header .filtros select:focus { border-color: var(--gold); }
-
-        .btn-gold {
-            background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space);
-            border: none; padding: 8px 20px; border-radius: 30px; font-weight: 700; font-size: 0.7rem;
-            cursor: pointer; transition: var(--transition);
-        }
+        .btn-gold { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); border: none; padding: 8px 20px; border-radius: 30px; font-weight: 700; font-size: 0.7rem; cursor: pointer; transition: var(--transition); }
         .btn-gold:hover { transform: translateY(-2px); box-shadow: var(--shadow-gold); }
         .btn-outline { background: transparent; color: var(--text-secondary); border: 1px solid var(--glass-border); padding: 8px 20px; border-radius: 30px; font-weight: 600; font-size: 0.7rem; cursor: pointer; transition: var(--transition); }
         .btn-outline:hover { border-color: var(--gold); color: var(--gold); }
@@ -111,14 +55,8 @@
         .btn-live { background: var(--live-red); color: #fff; border: none; padding: 8px 20px; border-radius: 30px; font-weight: 700; font-size: 0.7rem; cursor: pointer; animation: pulse-live 2s infinite; }
         .btn-live:hover { transform: scale(1.02); }
         @keyframes pulse-live { 0%,100% { opacity: 1; } 50% { opacity: 0.7; } }
-
-        .grupos-grid {
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px;
-        }
-        .grupo-card {
-            background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-xl);
-            padding: 16px; cursor: pointer; transition: var(--transition);
-        }
+        .grupos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+        .grupo-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-xl); padding: 16px; cursor: pointer; transition: var(--transition); }
         .grupo-card:hover { border-color: var(--gold); transform: translateY(-3px); box-shadow: var(--shadow-gold); }
         .grupo-card .avatar { width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, var(--green-deep), var(--gold)); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: #fff; overflow: hidden; margin-bottom: 8px; }
         .grupo-card .avatar img { width: 100%; height: 100%; object-fit: cover; }
@@ -129,19 +67,10 @@
         .grupo-card .estado-badge { font-size: 0.5rem; padding: 2px 10px; border-radius: 12px; background: rgba(212,175,55,0.1); color: var(--gold); }
         .grupo-card .estado-badge.privado { background: rgba(255,51,102,0.1); color: var(--danger); }
         .grupo-card .live-badge { font-size: 0.5rem; padding: 2px 10px; border-radius: 12px; background: var(--live-red); color: #fff; animation: pulse-live 2s infinite; }
-
         .grupo-interno { display: none; }
         .grupo-interno.show { display: block; }
-
-        .grupo-header-interno {
-            background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-xl);
-            padding: 20px; margin-bottom: 20px;
-        }
-        .grupo-header-interno .portada {
-            width: 100%; height: 120px; background: linear-gradient(135deg, var(--green-deep), var(--gold-dark));
-            border-radius: var(--radius); margin-bottom: 12px; display: flex; align-items: center; justify-content: center;
-            font-size: 3rem; color: rgba(255,255,255,0.1); overflow: hidden;
-        }
+        .grupo-header-interno { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-xl); padding: 20px; margin-bottom: 20px; }
+        .grupo-header-interno .portada { width: 100%; height: 120px; background: linear-gradient(135deg, var(--green-deep), var(--gold-dark)); border-radius: var(--radius); margin-bottom: 12px; display: flex; align-items: center; justify-content: center; font-size: 3rem; color: rgba(255,255,255,0.1); overflow: hidden; }
         .grupo-header-interno .portada img { width: 100%; height: 100%; object-fit: cover; }
         .grupo-header-interno .info-row { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; }
         .grupo-header-interno .avatar-grande { width: 70px; height: 70px; border-radius: 50%; background: linear-gradient(135deg, var(--green-deep), var(--gold)); display: flex; align-items: center; justify-content: center; font-size: 1.8rem; color: #fff; overflow: hidden; flex-shrink: 0; }
@@ -152,150 +81,113 @@
         .grupo-header-interno .info-text .meta { display: flex; gap: 12px; font-size: 0.65rem; color: var(--text-muted); margin-top: 6px; flex-wrap: wrap; }
         .grupo-header-interno .acciones { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
 
-        /* ============================================================
-           ANUNCIO DE MARKETING EN GRUPOS
-           ============================================================ */
-        .marketing-ad-container {
+        /* ===== LIVE DE GRUPO INLINE ===== */
+        .grupo-live-container {
             display: none;
-            margin-bottom: 16px;
-            background: linear-gradient(155deg, rgba(15, 45, 26, 0.55), rgba(8, 15, 26, 0.75));
-            border: 1px solid rgba(212, 175, 55, 0.25);
+            margin-bottom: 20px;
+            background: var(--glass-bg);
+            border: 1px solid var(--live-red);
             border-radius: var(--radius-xl);
             overflow: hidden;
-            backdrop-filter: blur(14px);
-            position: relative;
-            box-shadow: 0 10px 40px rgba(212, 175, 55, 0.08);
+            box-shadow: 0 10px 40px rgba(255, 0, 68, 0.2);
             animation: adFadeIn 0.5s ease;
         }
-        .marketing-ad-container.visible { display: block; }
-
-        @keyframes adFadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+        .grupo-live-container.visible { display: block; }
+        .grupo-live-container .live-header-bar {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 16px; border-bottom: 1px solid rgba(255, 0, 68, 0.2);
+            background: rgba(255, 0, 68, 0.05);
         }
-
-        .marketing-ad-container::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 20%;
-            width: 60%; height: 1px;
-            background: linear-gradient(90deg, transparent, var(--gold), transparent);
-            opacity: 0.5;
+        .grupo-live-container .live-header-bar .live-tag {
+            display: flex; align-items: center; gap: 8px;
+            color: var(--live-red); font-weight: 700; font-size: 0.75rem;
+            font-family: 'Orbitron', monospace; letter-spacing: 1px;
         }
-
-        .marketing-ad-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 16px;
-            border-bottom: 1px solid rgba(212, 175, 55, 0.1);
+        .grupo-live-container .live-header-bar .live-tag .dot {
+            width: 8px; height: 8px; border-radius: 50%; background: var(--live-red);
+            animation: pulse-live 1s infinite;
         }
-        .marketing-ad-label {
-            font-family: 'Orbitron', monospace;
-            font-size: 0.55rem;
-            color: var(--gold);
-            letter-spacing: 3px;
-            text-transform: uppercase;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            opacity: 0.85;
+        .grupo-live-container .live-header-bar .live-close {
+            background: transparent; border: none; color: var(--text-muted);
+            font-size: 1.2rem; cursor: pointer; padding: 4px 10px; border-radius: 8px;
         }
-        .marketing-ad-label::before {
-            content: '◈';
-            color: var(--gold);
-            font-size: 0.7rem;
+        .grupo-live-container .live-header-bar .live-close:hover { color: var(--danger); background: rgba(255,0,68,0.1); }
+        .grupo-live-container .live-video-wrap {
+            position: relative; width: 100%; background: #000;
+            aspect-ratio: 16/9; max-height: 60vh;
         }
-        .marketing-ad-close {
-            background: transparent;
-            border: none;
-            color: var(--text-muted);
-            font-size: 1.1rem;
-            cursor: pointer;
-            line-height: 1;
-            padding: 4px 8px;
-            transition: var(--transition);
+        .grupo-live-container .live-video-wrap video {
+            width: 100%; height: 100%; object-fit: cover;
         }
-        .marketing-ad-close:hover { color: var(--gold); }
-
-        .marketing-ad-body {
-            display: flex;
-            gap: 14px;
-            padding: 14px 16px 16px;
-            align-items: flex-start;
+        .grupo-live-container .live-controls-inline {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            padding: 16px;
+            background: linear-gradient(to top, rgba(0,0,0,0.85), transparent);
+            display: flex; gap: 8px; justify-content: center; align-items: center;
         }
-        .marketing-ad-media {
-            width: 96px;
-            height: 96px;
-            border-radius: 12px;
-            overflow: hidden;
-            flex-shrink: 0;
-            background: rgba(0,0,0,0.4);
-            border: 1px solid rgba(212, 175, 55, 0.15);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--gold);
-            font-family: 'Orbitron', monospace;
-            font-size: 1.5rem;
-            position: relative;
+        .grupo-live-container .live-ctrl-btn {
+            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 50%; width: 44px; height: 44px;
+            display: flex; align-items: center; justify-content: center;
+            color: #fff; cursor: pointer; transition: var(--transition);
+            backdrop-filter: blur(8px);
         }
-        .marketing-ad-media img,
-        .marketing-ad-media video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
+        .grupo-live-container .live-ctrl-btn:hover { transform: scale(1.08); border-color: var(--gold); color: var(--gold); }
+        .grupo-live-container .live-ctrl-btn.muted { background: rgba(255, 51, 102, 0.3); border-color: var(--danger); color: var(--danger); }
+        .grupo-live-container .live-ctrl-btn.end { background: rgba(255, 0, 68, 0.3); border-color: var(--live-red); }
+        .grupo-live-container .live-ctrl-btn svg { width: 20px; height: 20px; }
+        .grupo-live-container .live-info {
+            padding: 12px 16px; border-top: 1px solid var(--glass-border);
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 0.7rem; color: var(--text-secondary);
         }
-
-        .marketing-ad-content { flex: 1; min-width: 0; }
-        .marketing-ad-title {
-            font-family: 'Orbitron', monospace;
-            font-size: 0.85rem;
-            font-weight: 700;
-            color: var(--text-primary);
-            margin-bottom: 6px;
-            line-height: 1.3;
+        .grupo-live-container .live-chat-inline {
+            max-height: 150px; overflow-y: auto; padding: 8px 16px;
+            border-top: 1px solid var(--glass-border); background: rgba(0,0,0,0.2);
+            display: flex; flex-direction: column; gap: 4px;
         }
-        .marketing-ad-desc {
-            font-size: 0.7rem;
-            color: var(--text-secondary);
-            line-height: 1.5;
-            margin-bottom: 12px;
-            word-wrap: break-word;
+        .grupo-live-container .live-chat-inline .chat-msg {
+            font-size: 0.7rem; color: var(--text-secondary);
+            padding: 2px 0; border-bottom: 1px solid rgba(212,175,55,0.04);
         }
-        .marketing-ad-cta {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 8px 20px;
-            border-radius: 30px;
+        .grupo-live-container .live-chat-inline .chat-msg strong { color: var(--gold); font-weight: 600; }
+        .grupo-live-container .live-chat-input-row {
+            display: flex; gap: 8px; padding: 10px 16px;
+            border-top: 1px solid var(--glass-border); background: rgba(0,0,0,0.3);
+        }
+        .grupo-live-container .live-chat-input-row input {
+            flex: 1; padding: 8px 14px; background: rgba(255,255,255,0.05);
+            border: 1px solid var(--glass-border); border-radius: 20px;
+            color: var(--text-primary); font-size: 0.75rem; outline: none;
+        }
+        .grupo-live-container .live-chat-input-row input:focus { border-color: var(--gold); }
+        .grupo-live-container .live-chat-input-row button {
             background: linear-gradient(135deg, var(--gold), var(--gold-dark));
-            color: var(--space);
-            font-size: 0.7rem;
-            font-weight: 700;
-            text-decoration: none;
-            border: none;
-            cursor: pointer;
-            transition: var(--transition);
-            font-family: 'Inter', sans-serif;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            color: var(--space); border: none; padding: 8px 18px;
+            border-radius: 20px; font-weight: 700; font-size: 0.7rem; cursor: pointer;
         }
-        .marketing-ad-cta:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 30px rgba(212, 175, 55, 0.4);
-        }
+        .grupo-live-container .live-chat-input-row button:hover { transform: scale(1.03); }
 
-        @media (max-width: 480px) {
-            .marketing-ad-body { flex-direction: column; }
-            .marketing-ad-media { width: 100%; height: 140px; }
-        }
+        .marketing-ad-container { display: none; margin-bottom: 16px; background: linear-gradient(155deg, rgba(15, 45, 26, 0.55), rgba(8, 15, 26, 0.75)); border: 1px solid rgba(212, 175, 55, 0.25); border-radius: var(--radius-xl); overflow: hidden; backdrop-filter: blur(14px); position: relative; box-shadow: 0 10px 40px rgba(212, 175, 55, 0.08); animation: adFadeIn 0.5s ease; }
+        .marketing-ad-container.visible { display: block; }
+        @keyframes adFadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .marketing-ad-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; border-bottom: 1px solid rgba(212, 175, 55, 0.1); }
+        .marketing-ad-label { font-family: 'Orbitron', monospace; font-size: 0.55rem; color: var(--gold); letter-spacing: 3px; text-transform: uppercase; display: flex; align-items: center; gap: 8px; opacity: 0.85; }
+        .marketing-ad-label::before { content: '◈'; color: var(--gold); font-size: 0.7rem; }
+        .marketing-ad-close { background: transparent; border: none; color: var(--text-muted); font-size: 1.1rem; cursor: pointer; line-height: 1; padding: 4px 8px; transition: var(--transition); }
+        .marketing-ad-close:hover { color: var(--gold); }
+        .marketing-ad-body { display: flex; gap: 14px; padding: 14px 16px 16px; align-items: flex-start; }
+        .marketing-ad-media { width: 96px; height: 96px; border-radius: 12px; overflow: hidden; flex-shrink: 0; background: rgba(0,0,0,0.4); border: 1px solid rgba(212, 175, 55, 0.15); display: flex; align-items: center; justify-content: center; color: var(--gold); font-family: 'Orbitron', monospace; font-size: 1.5rem; position: relative; }
+        .marketing-ad-media img, .marketing-ad-media video { width: 100%; height: 100%; object-fit: cover; }
+        .marketing-ad-content { flex: 1; min-width: 0; }
+        .marketing-ad-title { font-family: 'Orbitron', monospace; font-size: 0.85rem; font-weight: 700; color: var(--text-primary); margin-bottom: 6px; line-height: 1.3; }
+        .marketing-ad-desc { font-size: 0.7rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 12px; word-wrap: break-word; }
+        .marketing-ad-cta { display: inline-flex; align-items: center; gap: 6px; padding: 8px 20px; border-radius: 30px; background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); font-size: 0.7rem; font-weight: 700; text-decoration: none; border: none; cursor: pointer; transition: var(--transition); font-family: 'Inter', sans-serif; text-transform: uppercase; letter-spacing: 0.5px; }
+        .marketing-ad-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(212, 175, 55, 0.4); }
+        @media (max-width: 480px) { .marketing-ad-body { flex-direction: column; } .marketing-ad-media { width: 100%; height: 140px; } }
 
         .publicaciones-container { margin-top: 16px; }
-        .publicacion-card {
-            background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius);
-            padding: 14px 16px; margin-bottom: 12px;
-        }
+        .publicacion-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 12px; }
         .publicacion-card .header { display: flex; gap: 10px; align-items: center; margin-bottom: 8px; }
         .publicacion-card .header .avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, var(--green-deep), var(--gold)); display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: #fff; overflow: hidden; flex-shrink: 0; }
         .publicacion-card .header .avatar img { width: 100%; height: 100%; object-fit: cover; }
@@ -307,111 +199,47 @@
         .publicacion-card .stats { display: flex; gap: 12px; font-size: 0.6rem; color: var(--text-muted); margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--glass-border); flex-wrap: wrap; }
         .publicacion-card .stats span { cursor: pointer; padding: 4px 8px; border-radius: 12px; transition: var(--transition); }
         .publicacion-card .stats span:hover { color: var(--gold); background: rgba(212,175,55,0.05); }
-
-        .form-publicacion {
-            background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius);
-            padding: 14px 16px; margin-bottom: 16px;
-        }
+        .form-publicacion { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 16px; }
         .form-publicacion textarea { width: 100%; padding: 10px 14px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 10px; color: var(--text-primary); font-size: 0.8rem; resize: vertical; min-height: 60px; outline: none; }
         .form-publicacion textarea:focus { border-color: var(--gold); }
         .form-publicacion .acciones { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; align-items: center; position: relative; }
         .form-publicacion .acciones button { background: transparent; border: none; color: var(--text-muted); font-size: 0.7rem; cursor: pointer; padding: 4px 12px; border-radius: 12px; transition: var(--transition); }
         .form-publicacion .acciones button:hover { color: var(--gold); background: rgba(212,175,55,0.05); }
         .form-publicacion .acciones .btn-publicar { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); border: none; padding: 6px 20px; border-radius: 20px; font-weight: 700; font-size: 0.7rem; cursor: pointer; }
-
-        /* ===== SELECTOR DE EMOJIS ===== */
-        .emoji-picker {
-            display: none;
-            position: absolute;
-            bottom: 100%;
-            left: 0;
-            background: rgba(15, 25, 20, 0.95);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius);
-            padding: 12px;
-            width: 280px;
-            max-width: 90vw;
-            z-index: 1000;
-            box-shadow: var(--shadow-gold-strong);
-            backdrop-filter: blur(12px);
-            margin-bottom: 8px;
-        }
+        .emoji-picker { display: none; position: absolute; bottom: 100%; left: 0; background: rgba(15, 25, 20, 0.95); border: 1px solid var(--glass-border); border-radius: var(--radius); padding: 12px; width: 280px; max-width: 90vw; z-index: 1000; box-shadow: var(--shadow-gold-strong); backdrop-filter: blur(12px); margin-bottom: 8px; }
         .emoji-picker.show { display: block; }
         .emoji-picker .grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; }
         .emoji-picker .grid button { background: transparent; border: none; font-size: 1.5rem; padding: 6px 4px; cursor: pointer; border-radius: 8px; transition: var(--transition); line-height: 1; }
         .emoji-picker .grid button:hover { background: rgba(212, 175, 55, 0.15); transform: scale(1.15); }
-        .emoji-picker .grid button:active { transform: scale(0.9); }
         .emoji-picker .titulo { color: var(--text-muted); font-size: 0.6rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; text-align: center; font-family: 'Orbitron', monospace; }
-
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5,8,15,0.9);
-            display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px;
-        }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5,8,15,0.9); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
         .modal-overlay.show { display: flex; }
-        .modal {
-            background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-xl);
-            padding: 24px; max-width: 500px; width: 100%; max-height: 85vh; overflow-y: auto;
-        }
+        .modal { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-xl); padding: 24px; max-width: 500px; width: 100%; max-height: 85vh; overflow-y: auto; }
         .modal .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
         .modal .modal-header h2 { font-family: 'Orbitron', monospace; color: var(--gold); font-size: 1rem; }
         .modal .modal-header .btn-cerrar { background: none; border: none; color: var(--text-muted); font-size: 1.4rem; cursor: pointer; }
         .modal .form-group { margin-bottom: 12px; }
         .modal .form-group label { display: block; font-size: 0.7rem; color: var(--text-muted); margin-bottom: 4px; }
-        .modal .form-group input, .modal .form-group textarea, .modal .form-group select {
-            width: 100%; padding: 8px 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border);
-            border-radius: 10px; color: var(--text-primary); font-size: 0.85rem; outline: none;
-        }
-        .modal .form-group input:focus, .modal .form-group textarea:focus, .modal .form-group select:focus {
-            border-color: var(--gold);
-        }
+        .modal .form-group input, .modal .form-group textarea, .modal .form-group select { width: 100%; padding: 8px 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 10px; color: var(--text-primary); font-size: 0.85rem; outline: none; }
+        .modal .form-group input:focus, .modal .form-group textarea:focus, .modal .form-group select:focus { border-color: var(--gold); }
         .modal .btn-guardar { width: 100%; padding: 10px; border-radius: 30px; border: none; background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); font-weight: 700; font-size: 0.85rem; cursor: pointer; }
         .modal .btn-guardar:hover { transform: scale(1.02); }
-        .modal .btn-eliminar-grupo {
-            width: 100%; padding: 10px; border-radius: 30px; border: none;
-            background: rgba(255, 51, 102, 0.1); color: var(--danger);
-            border: 1px solid rgba(255, 51, 102, 0.2);
-            font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: var(--transition);
-            margin-top: 8px;
-        }
-        .modal .btn-eliminar-grupo:hover {
-            background: rgba(255, 51, 102, 0.2);
-            transform: scale(1.02);
-        }
-        .modal .btn-confirmar-eliminar {
-            width: 100%; padding: 10px; border-radius: 30px; border: none;
-            background: var(--danger); color: #fff;
-            font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: var(--transition);
-        }
-        .modal .btn-confirmar-eliminar:hover {
-            transform: scale(1.02);
-            box-shadow: 0 0 30px rgba(255, 51, 102, 0.3);
-        }
-
+        .modal .btn-eliminar-grupo { width: 100%; padding: 10px; border-radius: 30px; border: none; background: rgba(255, 51, 102, 0.1); color: var(--danger); border: 1px solid rgba(255, 51, 102, 0.2); font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: var(--transition); margin-top: 8px; }
+        .modal .btn-eliminar-grupo:hover { background: rgba(255, 51, 102, 0.2); transform: scale(1.02); }
+        .modal .btn-confirmar-eliminar { width: 100%; padding: 10px; border-radius: 30px; border: none; background: var(--danger); color: #fff; font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: var(--transition); }
+        .modal .btn-confirmar-eliminar:hover { transform: scale(1.02); box-shadow: 0 0 30px rgba(255, 51, 102, 0.3); }
         .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); }
         .empty-state .icon { font-size: 2.5rem; display: block; margin-bottom: 12px; color: var(--gold); opacity: 0.3; }
-
-        .gift-options {
-            display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin: 12px 0;
-        }
-        .gift-btn {
-            padding: 10px 16px; border-radius: 12px; border: 1px solid var(--glass-border);
-            background: rgba(0,0,0,0.3); color: var(--text-primary); cursor: pointer;
-            transition: var(--transition); text-align: center; min-width: 70px;
-        }
+        .gift-options { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin: 12px 0; }
+        .gift-btn { padding: 10px 16px; border-radius: 12px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.3); color: var(--text-primary); cursor: pointer; transition: var(--transition); text-align: center; min-width: 70px; }
         .gift-btn:hover { border-color: var(--gold); transform: scale(1.05); background: rgba(212,175,55,0.1); }
         .gift-btn .monto { font-weight: 700; color: var(--gold); font-size: 0.9rem; }
         .gift-btn .label { font-size: 0.5rem; color: var(--text-muted); display: block; }
-
-        .footer {
-            margin-top: 30px; padding-top: 16px; border-top: 1px solid var(--glass-border);
-            display: flex; justify-content: space-between; align-items: center; font-size: 0.7rem;
-            color: var(--text-muted); flex-wrap: wrap; gap: 10px;
-        }
+        .footer { margin-top: 30px; padding-top: 16px; border-top: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center; font-size: 0.7rem; color: var(--text-muted); flex-wrap: wrap; gap: 10px; }
         .footer .brand { color: var(--gold); font-weight: 600; }
         .footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
         .footer-links a { color: var(--text-muted); text-decoration: none; }
         .footer-links a:hover { color: var(--gold); }
-
         @media (max-width: 768px) {
             .app { padding: 12px 14px; }
             .grupos-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -422,6 +250,7 @@
             .grupos-header .filtros { justify-content: center; }
             .emoji-picker { width: 220px; left: 50%; transform: translateX(-50%); }
             .emoji-picker .grid { grid-template-columns: repeat(6, 1fr); }
+            .grupo-live-container .live-chat-inline { max-height: 120px; }
         }
         @media (max-width: 480px) {
             .grupos-grid { grid-template-columns: 1fr; }
@@ -521,6 +350,44 @@
             </div>
 
             <!-- ============================================================ -->
+            <!-- 🎥 CONTENEDOR DE LIVE DEL GRUPO (INLINE) -->
+            <!-- ============================================================ -->
+            <div class="grupo-live-container" id="grupoLiveContainer">
+                <div class="live-header-bar">
+                    <div class="live-tag">
+                        <span class="dot"></span>
+                        <span>EN VIVO · <span id="grupoLiveTitulo">Transmisión del grupo</span></span>
+                    </div>
+                    <button class="live-close" onclick="cerrarLiveGrupoInline()" title="Cerrar">×</button>
+                </div>
+                <div class="live-video-wrap">
+                    <video id="grupoLiveVideo" autoplay playsinline muted></video>
+                    <div class="live-controls-inline">
+                        <button class="live-ctrl-btn" onclick="toggleMuteGrupoLive()" id="grupoLiveMuteBtn" title="Micrófono">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 15c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v7c0 1.66 1.34 3 3 3z"/>
+                                <path d="M19 10v2c0 3.87-3.13 7-7 7s-7-3.13-7-7v-2"/>
+                            </svg>
+                        </button>
+                        <button class="live-ctrl-btn end" onclick="finalizarLiveGrupo()" id="grupoLiveEndBtn" title="Finalizar" style="display:none;">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <rect x="6" y="6" width="12" height="12" rx="1"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="live-info">
+                    <span>👁️ <span id="grupoLiveEspectadores">0</span> espectadores</span>
+                    <span id="grupoLiveEstado">● Conectando...</span>
+                </div>
+                <div class="live-chat-inline" id="grupoLiveChat"></div>
+                <div class="live-chat-input-row">
+                    <input type="text" id="grupoLiveChatInput" placeholder="Escribe un mensaje..." />
+                    <button onclick="enviarMensajeLiveGrupo()">Enviar</button>
+                </div>
+            </div>
+
+            <!-- ============================================================ -->
             <!-- ANUNCIO DE MARKETING -->
             <!-- ============================================================ -->
             <div class="marketing-ad-container" id="marketingAdContainer">
@@ -547,7 +414,6 @@
                     <button onclick="toggleEmojiPickerGrupo()" id="btnEmojiGrupo">◈ Emoji</button>
                     <button onclick="insertarHashtagGrupo()"># Hashtag</button>
                     <button class="btn-publicar" onclick="publicarEnGrupo()">◈ Publicar</button>
-                    <!-- ===== SELECTOR DE EMOJIS ===== -->
                     <div class="emoji-picker" id="emojiPickerGrupo">
                         <div class="titulo">✦ Elige tu emoji</div>
                         <div class="grid" id="emojiGridGrupo"></div>
@@ -659,16 +525,9 @@
                     <button class="btn-cerrar" onclick="cerrarConfirmacionEliminarGrupo()">×</button>
                 </div>
                 <div style="padding:12px 0;">
-                    <p style="color:var(--text-secondary); font-size:0.9rem; margin-bottom:12px;">
-                        ¿Eliminar este grupo?
-                    </p>
-                    <p style="color:var(--danger); font-size:0.85rem; font-weight:600; margin-bottom:8px;">
-                        Esta acción es permanente.
-                    </p>
-                    <p style="color:var(--text-muted); font-size:0.8rem; margin-bottom:16px;">
-                        Se eliminarán el grupo y su contenido asociado (publicaciones, comentarios, miembros, etc.).
-                        Esta acción no se puede deshacer.
-                    </p>
+                    <p style="color:var(--text-secondary); font-size:0.9rem; margin-bottom:12px;">¿Eliminar este grupo?</p>
+                    <p style="color:var(--danger); font-size:0.85rem; font-weight:600; margin-bottom:8px;">Esta acción es permanente.</p>
+                    <p style="color:var(--text-muted); font-size:0.8rem; margin-bottom:16px;">Se eliminarán el grupo y su contenido asociado (publicaciones, comentarios, miembros, etc.). Esta acción no se puede deshacer.</p>
                     <div style="display:flex; gap:8px; flex-wrap:wrap;">
                         <button class="btn-outline" onclick="cerrarConfirmacionEliminarGrupo()" style="flex:1; text-align:center;">Cancelar</button>
                         <button class="btn-confirmar-eliminar" onclick="ejecutarEliminarGrupo()" style="flex:1; text-align:center;">Eliminar grupo</button>
@@ -688,9 +547,7 @@
                     <button class="btn-cerrar" onclick="cerrarModalRegalos()">×</button>
                 </div>
                 <div style="text-align:center;padding:10px 0;">
-                    <p style="color:var(--text-muted);font-size:0.8rem;margin-bottom:12px;">
-                        Apoya a <strong id="giftStreamerName" style="color:var(--gold);">el creador</strong>
-                    </p>
+                    <p style="color:var(--text-muted);font-size:0.8rem;margin-bottom:12px;">Apoya a <strong id="giftStreamerName" style="color:var(--gold);">el creador</strong></p>
                     <div class="gift-options" id="giftOptions">
                         <button class="gift-btn" onclick="enviarRegalo(5)"><span class="monto">$5</span><span class="label">Bronce</span></button>
                         <button class="gift-btn" onclick="enviarRegalo(10)"><span class="monto">$10</span><span class="label">Plata</span></button>
@@ -757,12 +614,12 @@
         var channelChatGrupo = null;
         var espectadoresGrupo = 0;
         var currentStreamGrupoId = null;
+        var esStreamerDelLiveGrupo = false;
 
         // ===== TOAST =====
         function showToast(msg, type) {
             var t = document.getElementById('toast');
-            if (!t) { t = document.createElement('div'); t.id = 'toast'; t.className = 'toast';
-                document.body.appendChild(t); }
+            if (!t) { t = document.createElement('div'); t.id = 'toast'; t.className = 'toast'; document.body.appendChild(t); }
             t.textContent = msg;
             t.className = 'toast show';
             if (type === 'error') t.classList.add('error');
@@ -790,14 +647,18 @@
             return div.innerHTML;
         }
 
+        // ===== CARGAR LIBRERÍA LIVEKIT (v2) =====
+        async function cargarLiveKit() {
+            return await import('https://cdn.jsdelivr.net/npm/livekit-client@2/dist/livekit-client.esm.mjs');
+        }
+
         // ===== CARGAR USUARIO ACTUAL =====
         async function cargarUsuarioActual() {
             try {
                 var session = await getSession();
                 if (!session) { sessionUser = null; return null; }
                 sessionUser = session.user;
-                var result = await window.supabase.from('usuarios').select('nombre, handle, tokens').eq('id', session.user
-                    .id).single();
+                var result = await window.supabase.from('usuarios').select('nombre, handle, tokens').eq('id', session.user.id).single();
                 if (!result.error && result.data) {
                     document.getElementById('tokenBadgeCantidad').textContent = result.data.tokens || 0;
                 }
@@ -808,7 +669,6 @@
         // ================================================================
         // ✅ ANUNCIOS DE MARKETING EN GRUPOS
         // ================================================================
-
         function getOrCreateAdSessionId() {
             if (adSessionId) return adSessionId;
             adSessionId = `ads_grupo_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
@@ -825,48 +685,26 @@
         async function cargarAnuncioGrupo() {
             if (!grupoActualId) return;
             if (adCerrado) return;
-
             const session = await getSession();
             if (!session) return;
-
             try {
                 const response = await fetch('/api/marketing/get-ad', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${session.access_token}`
-                    },
-                    body: JSON.stringify({
-                        target_tipo: 'grupo',
-                        target_id: grupoActualId,
-                        session_id: getOrCreateAdSessionId()
-                    })
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+                    body: JSON.stringify({ target_tipo: 'grupo', target_id: grupoActualId, session_id: getOrCreateAdSessionId() })
                 });
-
-                if (!response.ok) {
-                    console.warn('No se pudo obtener anuncio:', response.status);
-                    return;
-                }
-
+                if (!response.ok) { console.warn('No se pudo obtener anuncio:', response.status); return; }
                 const data = await response.json();
-
                 if (!data.success || !data.ad) {
                     const container = document.getElementById('marketingAdContainer');
                     if (container) container.classList.remove('visible');
                     return;
                 }
-
                 mostrarAnuncio(data.ad);
                 anuncioActual = data.ad;
-
                 if (adVistaTimer) clearTimeout(adVistaTimer);
-                adVistaTimer = setTimeout(() => {
-                    registrarVistaAnuncio();
-                }, 3000);
-
-            } catch (error) {
-                console.error('Error cargando anuncio:', error);
-            }
+                adVistaTimer = setTimeout(() => { registrarVistaAnuncio(); }, 3000);
+            } catch (error) { console.error('Error cargando anuncio:', error); }
         }
 
         function mostrarAnuncio(ad) {
@@ -875,9 +713,7 @@
             const title = document.getElementById('marketingAdTitle');
             const desc = document.getElementById('marketingAdDesc');
             const cta = document.getElementById('marketingAdCta');
-
             if (!container || !media || !title || !desc || !cta) return;
-
             if (ad.imagen_url) {
                 media.innerHTML = `<img src="${escapeHTML(ad.imagen_url)}" alt="${escapeHTML(ad.titulo)}" loading="lazy" onerror="this.parentElement.innerHTML='<span>◈</span>'">`;
             } else if (ad.video_url) {
@@ -885,13 +721,10 @@
             } else {
                 media.innerHTML = '<span>◈</span>';
             }
-
             title.textContent = ad.titulo || 'Patrocinado';
             desc.textContent = ad.descripcion || '';
             cta.textContent = ad.cta_texto || 'Ver más';
-
             desc.style.display = ad.descripcion ? 'block' : 'none';
-
             container.classList.add('visible');
         }
 
@@ -899,87 +732,48 @@
             if (!anuncioActual) return;
             const session = await getSession();
             if (!session) return;
-
             try {
                 await fetch('/api/marketing/register-event', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${session.access_token}`
-                    },
-                    body: JSON.stringify({
-                        ad_id: anuncioActual.id,
-                        campaign_id: anuncioActual.campaign_id,
-                        target_tipo: 'grupo',
-                        target_id: grupoActualId,
-                        evento: 'vista',
-                        session_id: getOrCreateAdSessionId()
-                    })
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+                    body: JSON.stringify({ ad_id: anuncioActual.id, campaign_id: anuncioActual.campaign_id, target_tipo: 'grupo', target_id: grupoActualId, evento: 'vista', session_id: getOrCreateAdSessionId() })
                 });
-            } catch (error) {
-                console.warn('Error registrando vista:', error);
-            }
+            } catch (error) { console.warn('Error registrando vista:', error); }
         }
 
         async function registrarClicAnuncio() {
             if (!anuncioActual) return;
             const session = await getSession();
             if (!session) return;
-
             try {
                 await fetch('/api/marketing/register-event', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${session.access_token}`
-                    },
-                    body: JSON.stringify({
-                        ad_id: anuncioActual.id,
-                        campaign_id: anuncioActual.campaign_id,
-                        target_tipo: 'grupo',
-                        target_id: grupoActualId,
-                        evento: 'clic',
-                        session_id: getOrCreateAdSessionId()
-                    })
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+                    body: JSON.stringify({ ad_id: anuncioActual.id, campaign_id: anuncioActual.campaign_id, target_tipo: 'grupo', target_id: grupoActualId, evento: 'clic', session_id: getOrCreateAdSessionId() })
                 });
-
-                if (anuncioActual.video_url) {
-                    window.open(anuncioActual.video_url, '_blank', 'noopener');
-                } else if (anuncioActual.imagen_url) {
-                    window.open(anuncioActual.imagen_url, '_blank', 'noopener');
-                }
-            } catch (error) {
-                console.warn('Error registrando clic:', error);
-            }
+                if (anuncioActual.video_url) window.open(anuncioActual.video_url, '_blank', 'noopener');
+                else if (anuncioActual.imagen_url) window.open(anuncioActual.imagen_url, '_blank', 'noopener');
+            } catch (error) { console.warn('Error registrando clic:', error); }
         }
 
         function iniciarRefrescoAnuncios() {
             if (adRefreshInterval) clearInterval(adRefreshInterval);
             cargarAnuncioGrupo();
             adRefreshInterval = setInterval(() => {
-                if (grupoActualId && !adCerrado) {
-                    cargarAnuncioGrupo();
-                }
+                if (grupoActualId && !adCerrado) cargarAnuncioGrupo();
             }, 30000);
         }
 
         function detenerRefrescoAnuncios() {
-            if (adRefreshInterval) {
-                clearInterval(adRefreshInterval);
-                adRefreshInterval = null;
-            }
-            if (adVistaTimer) {
-                clearTimeout(adVistaTimer);
-                adVistaTimer = null;
-            }
+            if (adRefreshInterval) { clearInterval(adRefreshInterval); adRefreshInterval = null; }
+            if (adVistaTimer) { clearTimeout(adVistaTimer); adVistaTimer = null; }
         }
 
         // ================================================================
         // 📷 PROCESAR IMAGEN CON MARCA DE AGUA
         // ================================================================
-
         async function procesarConMarcaDeAgua(file, tipo) {
-            return new Promise((resolve, reject) => {
+            return new Promise((resolve) => {
                 try {
                     if (tipo === 'imagen') {
                         const reader = new FileReader();
@@ -987,106 +781,54 @@
                             const img = new Image();
                             img.onload = function() {
                                 const canvas = document.createElement('canvas');
-                                canvas.width = img.width;
-                                canvas.height = img.height;
+                                canvas.width = img.width; canvas.height = img.height;
                                 const ctx = canvas.getContext('2d');
-
                                 ctx.drawImage(img, 0, 0);
-
                                 const marca = "Csariel's Ecosystem";
                                 const fontSize = Math.max(20, Math.min(img.width / 20, 60));
                                 ctx.font = `bold ${fontSize}px 'Inter', sans-serif`;
-                                ctx.textAlign = 'center';
-                                ctx.textBaseline = 'middle';
-
-                                ctx.shadowColor = 'rgba(0,0,0,0.8)';
-                                ctx.shadowBlur = 15;
-                                ctx.shadowOffsetX = 3;
-                                ctx.shadowOffsetY = 3;
-
-                                const x = img.width - 40;
-                                const y = img.height - 40;
-
+                                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                                const x = img.width - 40; const y = img.height - 40;
                                 const metrics = ctx.measureText(marca);
                                 const padding = 20;
                                 const rectWidth = metrics.width + padding * 2;
                                 const rectHeight = fontSize * 1.8 + padding;
-
-                                ctx.shadowBlur = 0;
                                 ctx.fillStyle = 'rgba(15, 45, 26, 0.7)';
-                                ctx.shadowBlur = 10;
-                                ctx.shadowColor = 'rgba(0,0,0,0.5)';
-                                ctx.shadowOffsetX = 0;
-                                ctx.shadowOffsetY = 0;
-
-                                const rectX = x - rectWidth / 2;
-                                const rectY = y - rectHeight / 2;
-                                ctx.beginPath();
-                                ctx.roundRect(rectX, rectY, rectWidth, rectHeight, 12);
-                                ctx.fill();
-
-                                ctx.shadowBlur = 0;
-                                ctx.strokeStyle = 'rgba(212, 175, 55, 0.6)';
-                                ctx.lineWidth = 2;
-                                ctx.beginPath();
-                                ctx.roundRect(rectX, rectY, rectWidth, rectHeight, 12);
-                                ctx.stroke();
-
-                                ctx.shadowColor = 'rgba(0,0,0,0.9)';
-                                ctx.shadowBlur = 8;
-                                ctx.shadowOffsetX = 2;
-                                ctx.shadowOffsetY = 2;
+                                const rectX = x - rectWidth / 2; const rectY = y - rectHeight / 2;
+                                ctx.beginPath(); ctx.roundRect(rectX, rectY, rectWidth, rectHeight, 12); ctx.fill();
+                                ctx.strokeStyle = 'rgba(212, 175, 55, 0.6)'; ctx.lineWidth = 2;
+                                ctx.beginPath(); ctx.roundRect(rectX, rectY, rectWidth, rectHeight, 12); ctx.stroke();
                                 ctx.fillStyle = '#D4AF37';
-                                ctx.textAlign = 'center';
-                                ctx.textBaseline = 'middle';
                                 ctx.fillText(marca, x, y);
-
                                 canvas.toBlob(function(blob) {
-                                    const processedFile = new File([blob], file.name, {
-                                        type: file.type,
-                                        lastModified: Date.now()
-                                    });
-                                    resolve(processedFile);
+                                    resolve(new File([blob], file.name, { type: file.type, lastModified: Date.now() }));
                                 }, file.type, 0.95);
                             };
                             img.src = e.target.result;
                         };
                         reader.readAsDataURL(file);
-                    } else if (tipo === 'video') {
-                        console.log('Video recibido para marca de agua (backend procesará)');
-                        resolve(file);
                     } else {
                         resolve(file);
                     }
-                } catch (error) {
-                    console.error('Error procesando marca de agua:', error);
-                    resolve(file);
-                }
+                } catch (error) { console.error('Error marca de agua:', error); resolve(file); }
             });
         }
 
         // ================================================================
-        // CARGAR CATEGORÍAS
+        // CARGAR CATEGORÍAS / CIUDADES / GRUPOS
         // ================================================================
         async function cargarCategorias() {
             try {
-                var result = await window.supabase
-                    .from('grupos_video_categorias')
-                    .select('*')
-                    .eq('activo', true)
-                    .order('nombre', { ascending: true });
-
+                var result = await window.supabase.from('grupos_video_categorias').select('*').eq('activo', true).order('nombre', { ascending: true });
                 if (result.error) throw result.error;
                 categoriasCache = result.data || [];
-
                 var select = document.getElementById('selectCategoria');
                 if (select) {
                     var currentVal = select.value;
                     select.innerHTML = '<option value="">Todas las categorías</option>';
                     categoriasCache.forEach(function(c) {
                         var opt = document.createElement('option');
-                        opt.value = c.id;
-                        opt.textContent = c.nombre;
+                        opt.value = c.id; opt.textContent = c.nombre;
                         select.appendChild(opt);
                     });
                     select.value = currentVal;
@@ -1094,32 +836,19 @@
             } catch (e) { console.error('Error cargando categorías:', e); }
         }
 
-        // ================================================================
-        // CARGAR CIUDADES ÚNICAS
-        // ================================================================
         async function cargarCiudades() {
             try {
-                var result = await window.supabase
-                    .from('grupos_video')
-                    .select('ciudad')
-                    .not('ciudad', 'is', null)
-                    .neq('ciudad', '');
-
+                var result = await window.supabase.from('grupos_video').select('ciudad').not('ciudad', 'is', null).neq('ciudad', '');
                 if (result.error) throw result.error;
-
                 var ciudades = {};
-                (result.data || []).forEach(function(g) {
-                    if (g.ciudad) ciudades[g.ciudad] = true;
-                });
-
+                (result.data || []).forEach(function(g) { if (g.ciudad) ciudades[g.ciudad] = true; });
                 var select = document.getElementById('selectCiudad');
                 if (select) {
                     var currentVal = select.value;
                     select.innerHTML = '<option value="">Todas las ciudades</option>';
                     Object.keys(ciudades).sort().forEach(function(c) {
                         var opt = document.createElement('option');
-                        opt.value = c;
-                        opt.textContent = c;
+                        opt.value = c; opt.textContent = c;
                         select.appendChild(opt);
                     });
                     select.value = currentVal;
@@ -1128,76 +857,47 @@
         }
 
         // ================================================================
-        // CARGAR GRUPOS
+        // CARGAR GRUPOS (con filtro de live por grupo_id)
         // ================================================================
         async function cargarGrupos() {
             var grid = document.getElementById('gruposGrid');
-            
             try {
                 if (typeof window.supabase === 'undefined') {
-                    grid.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3 data-clave="grupos_error_conexion">Error de conexión</h3><p data-clave="grupos_error_conexion_desc">Supabase no está disponible. Recarga la página.</p></div>';
-                    showToast('Supabase no disponible', 'error');
+                    grid.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3>Error de conexión</h3></div>';
                     return;
                 }
-
-                if (!sessionUser) {
-                    await cargarUsuarioActual();
-                }
+                if (!sessionUser) await cargarUsuarioActual();
 
                 var buscar = document.getElementById('inputBuscar')?.value?.trim() || '';
                 var ciudad = document.getElementById('selectCiudad')?.value || '';
                 var categoria = document.getElementById('selectCategoria')?.value || '';
 
-                var query = window.supabase
-                    .from('grupos_video')
-                    .select(`
-                        *,
-                        miembros:grupos_video_miembros(count)
-                    `)
-                    .order('created_at', { ascending: false });
-
-                if (buscar) {
-                    query = query.or(`nombre.ilike.%${buscar}%,descripcion.ilike.%${buscar}%`);
-                }
-                if (ciudad) {
-                    query = query.eq('ciudad', ciudad);
-                }
-                if (categoria) {
-                    query = query.eq('categoria_id', parseInt(categoria));
-                }
+                var query = window.supabase.from('grupos_video').select(`*, miembros:grupos_video_miembros(count)`).order('created_at', { ascending: false });
+                if (buscar) query = query.or(`nombre.ilike.%${buscar}%,descripcion.ilike.%${buscar}%`);
+                if (ciudad) query = query.eq('ciudad', ciudad);
+                if (categoria) query = query.eq('categoria_id', parseInt(categoria));
 
                 if (soloMisGrupos && sessionUser) {
-                    var misGruposResult = await window.supabase
-                        .from('grupos_video_miembros')
-                        .select('grupo_id')
-                        .eq('usuario_id', sessionUser.id)
-                        .eq('estado', 'activo');
-
+                    var misGruposResult = await window.supabase.from('grupos_video_miembros').select('grupo_id').eq('usuario_id', sessionUser.id).eq('estado', 'activo');
                     if (misGruposResult.error) throw misGruposResult.error;
                     var ids = (misGruposResult.data || []).map(function(m) { return m.grupo_id; });
                     if (ids.length === 0) {
-                        grid.innerHTML =
-                            '<div class="empty-state"><span class="icon">◈</span><h3 data-clave="grupos_no_perteneces">No perteneces a ningún grupo</h3><p data-clave="grupos_no_perteneces_desc">Crea uno o únete a uno existente</p></div>';
+                        grid.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3>No perteneces a ningún grupo</h3></div>';
                         return;
                     }
                     query = query.in('id', ids);
                 }
 
                 var result = await query;
-
-                if (result.error) {
-                    console.error('Error en consulta Supabase:', result.error);
-                    throw result.error;
-                }
-
+                if (result.error) throw result.error;
                 var grupos = result.data || [];
 
                 if (grupos.length === 0) {
-                    grid.innerHTML =
-                        '<div class="empty-state"><span class="icon">◈</span><h3 data-clave="grupos_no_hay">No hay grupos</h3><p data-clave="grupos_no_hay_desc">Crea el primer grupo de la comunidad</p></div>';
+                    grid.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3>No hay grupos</h3><p>Crea el primero</p></div>';
                     return;
                 }
 
+                // ✅ Solo buscar vivos de ESTOS grupos (filtro estricto)
                 var liveMap = {};
                 for (var i = 0; i < grupos.length; i++) {
                     try {
@@ -1209,69 +909,37 @@
                             .eq('estado', 'en_vivo')
                             .eq('is_live', true)
                             .maybeSingle();
-
-                        if (liveResult.data) {
-                            liveMap[g.id] = liveResult.data;
-                        }
-                    } catch (e) {
-                        console.warn('Error verificando live para grupo:', g.id, e);
-                    }
+                        if (liveResult.data) liveMap[g.id] = liveResult.data;
+                    } catch (e) { console.warn('Error verificando live para grupo:', grupos[i].id, e); }
                 }
 
                 grid.innerHTML = grupos.map(function(g) {
                     var miembros = g.miembros ? g.miembros[0]?.count || 0 : 0;
                     var tieneLive = liveMap[g.id] ? true : false;
                     var visibilidad = g.visibilidad || 'publico';
-                    var visBadge = visibilidad === 'publico' ?
-                        '<span class="estado-badge">◈ Público</span>' :
-                        '<span class="estado-badge privado">◈ Privado</span>';
-
+                    var visBadge = visibilidad === 'publico' ? '<span class="estado-badge">◈ Público</span>' : '<span class="estado-badge privado">◈ Privado</span>';
                     return '<div class="grupo-card" onclick="abrirGrupo(\'' + g.id + '\')">' +
-                        '<div class="avatar">' + (g.avatar_url ? '<img src="' + escapeHTML(g.avatar_url) + '">' : '◈') +
-                        '</div>' +
+                        '<div class="avatar">' + (g.avatar_url ? '<img src="' + escapeHTML(g.avatar_url) + '">' : '◈') + '</div>' +
                         '<div class="nombre">' + escapeHTML(g.nombre) + '</div>' +
                         '<div class="descripcion">' + escapeHTML((g.descripcion || '').substring(0, 80)) + '</div>' +
                         '<div class="meta">' +
                         '<span class="ciudad">◈ ' + escapeHTML(g.ciudad || 'Sin ciudad') + '</span>' +
-                        '<span>◈ ' + miembros + '</span>' +
-                        visBadge +
+                        '<span>◈ ' + miembros + '</span>' + visBadge +
                         (tieneLive ? ' <span class="live-badge">◉ EN VIVO</span>' : '') +
-                        '</div>' +
-                        '</div>';
+                        '</div></div>';
                 }).join('');
 
             } catch (e) {
                 console.error('Error cargando grupos:', e);
-                var errorMsg = 'Error al cargar grupos: ';
-                if (e.message?.includes('JWT')) {
-                    errorMsg += 'Error de autenticación. Inicia sesión nuevamente.';
-                } else if (e.message?.includes('permission')) {
-                    errorMsg += 'No tienes permisos para ver los grupos.';
-                } else if (e.message?.includes('network')) {
-                    errorMsg += 'Error de red. Verifica tu conexión.';
-                } else {
-                    errorMsg += e.message || 'Error desconocido. Recarga la página.';
-                }
-                grid.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3 data-clave="grupos_error_cargar">Error cargando grupos</h3><p>' + errorMsg + '</p></div>';
-                showToast(errorMsg, 'error');
+                grid.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3>Error cargando grupos</h3><p>' + (e.message || '') + '</p></div>';
             }
         }
 
-        // ================================================================
-        // TOGGLE MIS GRUPOS
-        // ================================================================
         function toggleMisGrupos() {
             soloMisGrupos = !soloMisGrupos;
             var btn = document.getElementById('btnMisGrupos');
-            if (soloMisGrupos) {
-                btn.textContent = '◈ Todos los grupos';
-                btn.style.borderColor = 'var(--gold)';
-                btn.style.color = 'var(--gold)';
-            } else {
-                btn.textContent = '◈ Mis grupos';
-                btn.style.borderColor = '';
-                btn.style.color = '';
-            }
+            if (soloMisGrupos) { btn.textContent = '◈ Todos los grupos'; btn.style.borderColor = 'var(--gold)'; btn.style.color = 'var(--gold)'; }
+            else { btn.textContent = '◈ Mis grupos'; btn.style.borderColor = ''; btn.style.color = ''; }
             cargarGrupos();
         }
 
@@ -1280,14 +948,8 @@
         // ================================================================
         async function abrirGrupo(grupoId) {
             try {
-                var result = await window.supabase
-                    .from('grupos_video')
-                    .select('*, miembros:grupos_video_miembros(count)')
-                    .eq('id', grupoId)
-                    .single();
-
+                var result = await window.supabase.from('grupos_video').select('*, miembros:grupos_video_miembros(count)').eq('id', grupoId).single();
                 if (result.error) throw result.error;
-
                 grupoActual = result.data;
                 grupoActualId = grupoId;
 
@@ -1300,32 +962,21 @@
                 document.getElementById('grupoNombre').textContent = grupoActual.nombre || 'Sin nombre';
                 document.getElementById('grupoDescripcion').textContent = grupoActual.descripcion || 'Sin descripción';
                 document.getElementById('grupoCiudad').textContent = '◈ ' + (grupoActual.ciudad || 'Sin ciudad');
-                document.getElementById('grupoMiembros').textContent = '◈ ' + (grupoActual.miembros?.[0]?.count || 0) +
-                    ' miembros';
+                document.getElementById('grupoMiembros').textContent = '◈ ' + (grupoActual.miembros?.[0]?.count || 0) + ' miembros';
 
                 var vis = grupoActual.visibilidad || 'publico';
                 document.getElementById('grupoEstadoBadge').textContent = vis === 'publico' ? '◈ Público' : '◈ Privado';
 
                 var avatarEl = document.getElementById('grupoAvatar');
-                if (grupoActual.avatar_url) {
-                    avatarEl.innerHTML = '<img src="' + escapeHTML(grupoActual.avatar_url) + '">';
-                } else {
-                    avatarEl.textContent = '◈';
-                }
+                if (grupoActual.avatar_url) avatarEl.innerHTML = '<img src="' + escapeHTML(grupoActual.avatar_url) + '">';
+                else avatarEl.textContent = '◈';
 
                 var portadaEl = document.getElementById('grupoPortada');
-                if (grupoActual.portada_url) {
-                    portadaEl.innerHTML = '<img src="' + escapeHTML(grupoActual.portada_url) + '">';
-                } else {
-                    portadaEl.textContent = '◈';
-                }
+                if (grupoActual.portada_url) portadaEl.innerHTML = '<img src="' + escapeHTML(grupoActual.portada_url) + '">';
+                else portadaEl.textContent = '◈';
 
                 var btnAdmin = document.getElementById('btnAdminGrupo');
-                if (esAdmin || esModerador) {
-                    btnAdmin.style.display = 'inline-block';
-                } else {
-                    btnAdmin.style.display = 'none';
-                }
+                btnAdmin.style.display = (esAdmin || esModerador) ? 'inline-block' : 'none';
 
                 var btnLive = document.getElementById('btnIniciarLive');
                 var btnVerLive = document.getElementById('btnVerLive');
@@ -1334,7 +985,6 @@
                 if (liveActivoEnGrupo) {
                     btnVerLive.style.display = 'inline-block';
                     document.getElementById('grupoLiveBadge').style.display = 'inline';
-                    
                     if (sessionUser && liveActivoEnGrupo.streamer_id === sessionUser.id) {
                         btnFinalizarLive.style.display = 'inline-block';
                         btnLive.style.display = 'none';
@@ -1346,14 +996,11 @@
                     btnVerLive.style.display = 'none';
                     document.getElementById('grupoLiveBadge').style.display = 'none';
                     btnFinalizarLive.style.display = 'none';
-                    if (esMiembro()) {
-                        btnLive.style.display = 'inline-block';
-                    }
+                    if (esMiembro()) btnLive.style.display = 'inline-block';
                 }
 
                 await cargarPublicacionesGrupo(grupoId);
 
-                // ✅ Iniciar anuncios al abrir el grupo
                 adCerrado = false;
                 iniciarRefrescoAnuncios();
 
@@ -1368,58 +1015,21 @@
         // ================================================================
         async function verificarMembresia(grupoId) {
             try {
-                if (!sessionUser) {
-                    esAdmin = false;
-                    esModerador = false;
-                    esCreador = false;
-                    rolEnGrupo = null;
-                    return;
-                }
-
-                if (grupoActual && grupoActual.creador_id === sessionUser.id) {
-                    esCreador = true;
-                } else {
-                    esCreador = false;
-                }
-
-                var result = await window.supabase
-                    .from('grupos_video_miembros')
-                    .select('rol, estado')
-                    .eq('grupo_id', grupoId)
-                    .eq('usuario_id', sessionUser.id)
-                    .maybeSingle();
-
-                if (!result.data) {
-                    esAdmin = false;
-                    esModerador = false;
-                    rolEnGrupo = null;
-                    return;
-                }
-
-                var data = result.data;
-                rolEnGrupo = data.rol || 'miembro';
+                if (!sessionUser) { esAdmin = false; esModerador = false; esCreador = false; rolEnGrupo = null; return; }
+                esCreador = !!(grupoActual && grupoActual.creador_id === sessionUser.id);
+                var result = await window.supabase.from('grupos_video_miembros').select('rol, estado').eq('grupo_id', grupoId).eq('usuario_id', sessionUser.id).maybeSingle();
+                if (!result.data) { esAdmin = false; esModerador = false; rolEnGrupo = null; return; }
+                rolEnGrupo = result.data.rol || 'miembro';
                 esAdmin = rolEnGrupo === 'administrador';
                 esModerador = rolEnGrupo === 'moderador' || esAdmin;
-
-                if (esCreador) {
-                    esAdmin = true;
-                }
-
-            } catch (e) {
-                console.error('Error verificando membresía:', e);
-                esAdmin = false;
-                esModerador = false;
-                esCreador = false;
-                rolEnGrupo = null;
-            }
+                if (esCreador) esAdmin = true;
+            } catch (e) { console.error('Error verificando membresía:', e); esAdmin = false; esModerador = false; esCreador = false; rolEnGrupo = null; }
         }
 
-        function esMiembro() {
-            return rolEnGrupo !== null || esCreador;
-        }
+        function esMiembro() { return rolEnGrupo !== null || esCreador; }
 
         // ================================================================
-        // VERIFICAR LIVE ACTIVO EN GRUPO
+        // VERIFICAR LIVE ACTIVO EN GRUPO (filtro estricto por grupo_id)
         // ================================================================
         async function verificarLiveActivoGrupo(grupoId) {
             try {
@@ -1430,11 +1040,8 @@
                     .eq('estado', 'en_vivo')
                     .eq('is_live', true)
                     .maybeSingle();
-
                 liveActivoEnGrupo = result.data || null;
-                if (liveActivoEnGrupo) {
-                    currentStreamGrupoId = liveActivoEnGrupo.id;
-                }
+                if (liveActivoEnGrupo) currentStreamGrupoId = liveActivoEnGrupo.id;
                 return liveActivoEnGrupo;
             } catch (e) {
                 console.error('Error verificando live:', e);
@@ -1444,442 +1051,26 @@
         }
 
         // ================================================================
-        // CARGAR PUBLICACIONES DEL GRUPO
-        // ================================================================
-        async function cargarPublicacionesGrupo(grupoId) {
-            try {
-                var result = await window.supabase
-                    .from('grupos_video_publicaciones')
-                    .select(`
-                        *,
-                        usuarios:usuario_id (id, nombre, handle, avatar_url)
-                    `)
-                    .eq('grupo_id', grupoId)
-                    .eq('estado', 'publicado')
-                    .order('created_at', { ascending: false });
-
-                if (result.error) throw result.error;
-
-                var container = document.getElementById('publicacionesContainer');
-                var data = result.data || [];
-
-                if (data.length === 0) {
-                    container.innerHTML =
-                        '<div class="empty-state"><span class="icon">◈</span><h3 data-clave="grupos_sin_publicaciones">Sin publicaciones</h3><p data-clave="grupos_sin_publicaciones_desc">Sé el primero en publicar algo</p></div>';
-                    return;
-                }
-
-                container.innerHTML = data.map(function(p) {
-                    var u = p.usuarios || {};
-                    var avatar = u.avatar_url ? '<img src="' + escapeHTML(u.avatar_url) + '">' : '◈';
-                    var nombre = escapeHTML(u.nombre || 'Usuario');
-
-                    var contenido = escapeHTML(p.contenido || '');
-                    if (p.imagen_url) {
-                        contenido += '<br><img src="' + escapeHTML(p.imagen_url) + '" loading="lazy" />';
-                    }
-                    if (p.video_url) {
-                        contenido += '<br><video src="' + escapeHTML(p.video_url) + '" controls preload="metadata"></video>';
-                    }
-
-                    var likesCount = p.likes_count || 0;
-                    var comentariosCount = p.comentarios_count || 0;
-
-                    return '<div class="publicacion-card">' +
-                        '<div class="header">' +
-                        '<div class="avatar">' + avatar + '</div>' +
-                        '<div><div class="nombre">' + nombre + '</div>' +
-                        '<div class="fecha">' + new Date(p.created_at).toLocaleString() + '</div></div>' +
-                        '</div>' +
-                        '<div class="contenido">' + contenido + '</div>' +
-                        '<div class="stats">' +
-                        '<span onclick="reaccionarPublicacion(\'' + p.id + '\')">◈ <span id="likes-' + p.id + '">' +
-                        likesCount + '</span></span>' +
-                        '<span onclick="toggleComentariosPublicacion(\'' + p.id + '\')">◈ <span id="comentarios-' + p.id +
-                        '">' + comentariosCount + '</span></span>' +
-                        '<span onclick="compartirPublicacion(\'' + p.id + '\')">◈ Compartir</span>' +
-                        '</div>' +
-                        '<div class="comentarios-container" id="comentariosContainer-' + p.id +
-                        '" style="display:none;margin-top:8px;">' +
-                        '<div id="comentariosLista-' + p.id + '"></div>' +
-                        '<div style="display:flex;gap:6px;margin-top:6px;">' +
-                        '<input type="text" id="inputComentario-' + p.id +
-                        '" placeholder="Escribe un comentario..." style="flex:1;padding:4px 10px;background:rgba(255,255,255,0.05);border:1px solid var(--glass-border);border-radius:20px;color:var(--text-primary);font-size:0.65rem;outline:none;">' +
-                        '<button onclick="enviarComentarioPublicacion(\'' + p.id +
-                        '\')" style="background:linear-gradient(135deg,var(--gold),var(--gold-dark));color:var(--space);border:none;padding:4px 14px;border-radius:20px;font-weight:700;font-size:0.65rem;cursor:pointer;">Enviar</button>' +
-                        '</div>' +
-                        '</div>' +
-                        '</div>';
-                }).join('');
-
-            } catch (e) {
-                console.error('Error cargando publicaciones:', e);
-                showToast('Error cargando publicaciones', 'error');
-            }
-        }
-
-        // ================================================================
-        // PUBLICAR EN GRUPO
-        // ================================================================
-        async function publicarEnGrupo() {
-            if (publicando) { showToast('Ya estás publicando...', 'warning'); return; }
-            if (!sessionUser) { showToast('Inicia sesión para publicar', 'error'); return; }
-            if (!grupoActualId) { showToast('No hay grupo seleccionado', 'error'); return; }
-            if (!esMiembro()) { showToast('Debes ser miembro del grupo', 'error'); return; }
-
-            var input = document.getElementById('inputPublicacion');
-            var contenido = input.value.trim();
-
-            if (!contenido) { showToast('Escribe algo para publicar', 'warning'); return; }
-            if (contenido.length > 5000) { showToast('El texto es demasiado largo', 'error'); return; }
-
-            publicando = true;
-            try {
-                var result = await window.supabase
-                    .from('grupos_video_publicaciones')
-                    .insert({
-                        grupo_id: grupoActualId,
-                        usuario_id: sessionUser.id,
-                        contenido: contenido,
-                        tipo: 'texto',
-                        estado: 'publicado'
-                    })
-                    .select()
-                    .single();
-
-                if (result.error) throw result.error;
-
-                input.value = '';
-                showToast('Publicación creada', 'success');
-                await cargarPublicacionesGrupo(grupoActualId);
-
-            } catch (e) {
-                console.error('Error publicando:', e);
-                showToast('Error al publicar: ' + e.message, 'error');
-            } finally {
-                publicando = false;
-            }
-        }
-
-        // ================================================================
-        // SUBIR FOTO EN GRUPO        
-        // ================================================================
-        async function subirFotoGrupo() {
-            if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
-            if (!grupoActualId) { showToast('No hay grupo seleccionado', 'error'); return; }
-            if (!esMiembro()) { showToast('Debes ser miembro del grupo', 'error'); return; }
-
-            var input = document.createElement('input');
-            input.type = 'file';
-            input.accept = 'image/*';
-            input.onchange = async function(e) {
-                var file = e.target.files[0];
-                if (!file) return;
-
-                if (file.size > 10 * 1024 * 1024) {
-                    showToast('La imagen no puede superar los 10MB', 'error');
-                    return;
-                }
-
-                showToast('Procesando imagen con marca de agua...', '');
-
-                try {
-                    var processedFile = await procesarConMarcaDeAgua(file, 'imagen');
-
-                    showToast('Subiendo imagen...', '');
-
-                    var fileExt = processedFile.name.split('.').pop();
-                    var filePath = grupoActualId + '/' + sessionUser.id + '/' + Date.now() + '.' + fileExt;
-
-                    var uploadResult = await window.supabase.storage
-                        .from('grupos-publicaciones')
-                        .upload(filePath, processedFile, { cacheControl: '3600', upsert: true });
-
-                    if (uploadResult.error) throw uploadResult.error;
-
-                    var urlData = window.supabase.storage.from('grupos-publicaciones').getPublicUrl(filePath);
-                    var publicUrl = urlData.data.publicUrl;
-
-                    var result = await window.supabase
-                        .from('grupos_video_publicaciones')
-                        .insert({
-                            grupo_id: grupoActualId,
-                            usuario_id: sessionUser.id,
-                            imagen_url: publicUrl,
-                            tipo: 'imagen',
-                            estado: 'publicado'
-                        })
-                        .select()
-                        .single();
-
-                    if (result.error) throw result.error;
-
-                    showToast('Foto publicada con marca de agua', 'success');
-                    await cargarPublicacionesGrupo(grupoActualId);
-
-                } catch (error) {
-                    console.error('Error subiendo foto:', error);
-                    showToast('Error al subir foto: ' + error.message, 'error');
-                }
-            };
-            input.click();
-        }
-
-        // ================================================================
-        // SUBIR VIDEO EN GRUPO
-        // ================================================================
-        async function subirVideoGrupo() {
-            if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
-            if (!grupoActualId) { showToast('No hay grupo seleccionado', 'error'); return; }
-            if (!esMiembro()) { showToast('Debes ser miembro del grupo', 'error'); return; }
-
-            var input = document.createElement('input');
-            input.type = 'file';
-            input.accept = 'video/*';
-            input.onchange = async function(e) {
-                var file = e.target.files[0];
-                if (!file) return;
-
-                if (file.size > 100 * 1024 * 1024) {
-                    showToast('El video no puede superar los 100MB', 'error');
-                    return;
-                }
-
-                showToast('Procesando video con marca de agua...', '');
-
-                try {
-                    var processedFile = await procesarConMarcaDeAgua(file, 'video');
-
-                    showToast('Subiendo video...', '');
-
-                    var fileExt = processedFile.name.split('.').pop();
-                    var filePath = grupoActualId + '/' + sessionUser.id + '/' + Date.now() + '.' + fileExt;
-
-                    var uploadResult = await window.supabase.storage
-                        .from('grupos-publicaciones')
-                        .upload(filePath, processedFile, { cacheControl: '3600', upsert: true });
-
-                    if (uploadResult.error) throw uploadResult.error;
-
-                    var urlData = window.supabase.storage.from('grupos-publicaciones').getPublicUrl(filePath);
-                    var publicUrl = urlData.data.publicUrl;
-
-                    var result = await window.supabase
-                        .from('grupos_video_publicaciones')
-                        .insert({
-                            grupo_id: grupoActualId,
-                            usuario_id: sessionUser.id,
-                            video_url: publicUrl,
-                            tipo: 'video',
-                            estado: 'publicado'
-                        })
-                        .select()
-                        .single();
-
-                    if (result.error) throw result.error;
-
-                    showToast('Video publicado con marca de agua', 'success');
-                    await cargarPublicacionesGrupo(grupoActualId);
-
-                } catch (error) {
-                    console.error('Error subiendo video:', error);
-                    showToast('Error al subir video: ' + error.message, 'error');
-                }
-            };
-            input.click();
-        }
-
-        // ================================================================
-        // REACCIONAR A PUBLICACIÓN
-        // ================================================================
-        async function reaccionarPublicacion(publicacionId) {
-            if (!sessionUser) { showToast('Inicia sesión para reaccionar', 'error'); return; }
-
-            try {
-                var existing = await window.supabase
-                    .from('grupos_video_reacciones')
-                    .select('id')
-                    .eq('publicacion_id', publicacionId)
-                    .eq('usuario_id', sessionUser.id)
-                    .maybeSingle();
-
-                var likesSpan = document.getElementById('likes-' + publicacionId);
-                var currentLikes = parseInt(likesSpan?.textContent || 0);
-
-                if (existing.data) {
-                    var result = await window.supabase
-                        .from('grupos_video_reacciones')
-                        .delete()
-                        .eq('id', existing.data.id);
-
-                    if (result.error) throw result.error;
-
-                    if (likesSpan) {
-                        likesSpan.textContent = Math.max(0, currentLikes - 1);
-                    }
-                } else {
-                    var result = await window.supabase
-                        .from('grupos_video_reacciones')
-                        .insert({
-                            publicacion_id: publicacionId,
-                            usuario_id: sessionUser.id,
-                            tipo: 'like'
-                        });
-
-                    if (result.error) throw result.error;
-
-                    if (likesSpan) {
-                        likesSpan.textContent = currentLikes + 1;
-                    }
-                }
-
-            } catch (e) {
-                console.error('Error reaccionando:', e);
-                showToast('Error al reaccionar', 'error');
-                if (grupoActualId) cargarPublicacionesGrupo(grupoActualId);
-            }
-        }
-
-        // ================================================================
-        // COMENTARIOS EN PUBLICACIÓN
-        // ================================================================
-        function toggleComentariosPublicacion(publicacionId) {
-            var container = document.getElementById('comentariosContainer-' + publicacionId);
-            if (!container) return;
-            var isVisible = container.style.display !== 'none';
-            container.style.display = isVisible ? 'none' : 'block';
-            if (!isVisible) {
-                cargarComentariosPublicacion(publicacionId);
-            }
-        }
-
-        async function cargarComentariosPublicacion(publicacionId) {
-            var lista = document.getElementById('comentariosLista-' + publicacionId);
-            if (!lista) return;
-
-            try {
-                var result = await window.supabase
-                    .from('grupos_video_comentarios')
-                    .select(`
-                        *,
-                        usuarios:usuario_id (id, nombre, handle, avatar_url)
-                    `)
-                    .eq('publicacion_id', publicacionId)
-                    .order('created_at', { ascending: true });
-
-                if (result.error) throw result.error;
-
-                var data = result.data || [];
-                if (data.length === 0) {
-                    lista.innerHTML =
-                        '<div style="color:var(--text-muted);font-size:0.65rem;padding:4px 0;" data-clave="grupos_sin_comentarios">Sin comentarios</div>';
-                    return;
-                }
-
-                lista.innerHTML = data.map(function(c) {
-                    var u = c.usuarios || {};
-                    var avatar = u.avatar_url ? '<img src="' + escapeHTML(u.avatar_url) + '">' : '◈';
-                    return '<div style="display:flex;gap:6px;padding:4px 0;border-bottom:1px solid rgba(212,175,55,0.04);">' +
-                        '<div style="width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,var(--green-deep),var(--gold));display:flex;align-items:center;justify-content:center;font-size:0.5rem;color:#fff;overflow:hidden;flex-shrink:0;">' +
-                        avatar + '</div>' +
-                        '<div style="flex:1;font-size:0.65rem;"><strong style="color:var(--gold);">' + escapeHTML(u
-                            .nombre || 'Usuario') + '</strong> ' + escapeHTML(c.contenido || '') +
-                        '<div style="font-size:0.5rem;color:var(--text-muted);">' + new Date(c.created_at)
-                        .toLocaleString() + '</div></div>' +
-                        '</div>';
-                }).join('');
-
-            } catch (e) {
-                console.error('Error cargando comentarios:', e);
-                lista.innerHTML = '<div style="color:var(--danger);font-size:0.65rem;">Error al cargar comentarios</div>';
-            }
-        }
-
-        async function enviarComentarioPublicacion(publicacionId) {
-            if (!sessionUser) { showToast('Inicia sesión para comentar', 'error'); return; }
-
-            var input = document.getElementById('inputComentario-' + publicacionId);
-            var texto = input.value.trim();
-            if (!texto) { showToast('Escribe un comentario', 'warning'); return; }
-            if (texto.length > 2000) { showToast('El comentario es demasiado largo', 'error'); return; }
-
-            try {
-                var result = await window.supabase
-                    .from('grupos_video_comentarios')
-                    .insert({
-                        publicacion_id: publicacionId,
-                        usuario_id: sessionUser.id,
-                        contenido: texto
-                    })
-                    .select();
-
-                if (result.error) throw result.error;
-
-                input.value = '';
-                showToast('Comentario agregado', 'success');
-
-                var countSpan = document.getElementById('comentarios-' + publicacionId);
-                if (countSpan) {
-                    var current = parseInt(countSpan.textContent) || 0;
-                    countSpan.textContent = current + 1;
-                }
-
-                cargarComentariosPublicacion(publicacionId);
-
-            } catch (e) {
-                console.error('Error enviando comentario:', e);
-                showToast('Error al comentar', 'error');
-            }
-        }
-
-        // ================================================================
-        // COMPARTIR PUBLICACIÓN
-        // ================================================================
-        function compartirPublicacion(publicacionId) {
-            var url = window.location.origin + '/features/grupos/grupos.html?publicacion=' + publicacionId;
-            if (navigator.share) {
-                navigator.share({
-                    title: 'Publicación en Sariel\'s',
-                    text: 'Mira esta publicación en el grupo',
-                    url: url
-                }).catch(function() {});
-            } else {
-                navigator.clipboard.writeText(url).then(function() {
-                    showToast('Enlace copiado al portapapeles', 'success');
-                }).catch(function() {
-                    var textarea = document.createElement('textarea');
-                    textarea.value = url;
-                    document.body.appendChild(textarea);
-                    textarea.select();
-                    document.execCommand('copy');
-                    document.body.removeChild(textarea);
-                    showToast('Enlace copiado al portapapeles', 'success');
-                });
-            }
-        }
-
-        // ================================================================
-        // INICIAR LIVE EN GRUPO
+        // 🎥 INICIAR LIVE EN GRUPO (con LiveKit v2)
         // ================================================================
         async function iniciarLiveEnGrupo() {
+            console.log('🎬 [1] Iniciando live de grupo...');
             if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
             if (!grupoActualId) { showToast('No hay grupo seleccionado', 'error'); return; }
             if (!esMiembro()) { showToast('Debes ser miembro del grupo', 'error'); return; }
             if (isLiveGrupoActivo) { showToast('Ya hay un LIVE activo en este grupo', 'warning'); return; }
 
             var liveExistente = await verificarLiveActivoGrupo(grupoActualId);
-            if (liveExistente) {
-                showToast('Ya hay un LIVE activo en este grupo', 'warning');
-                return;
-            }
+            if (liveExistente) { showToast('Ya hay un LIVE activo en este grupo', 'warning'); return; }
 
             try {
                 var titulo = prompt('Título del LIVE:', 'Live en ' + (grupoActual.nombre || 'grupo')) || 'Live en grupo';
                 var roomName = 'grupo-live-' + sessionUser.id + '-' + Date.now();
+                console.log('🎬 [2] RoomName:', roomName);
 
                 showToast('Creando transmisión de grupo...', '');
 
-                const { data: result, error } = await window.supabase.rpc('crear_transmision', {
+                const { data: rpcResult, error } = await window.supabase.rpc('crear_transmision', {
                     p_titulo: titulo,
                     p_categoria: 'grupo',
                     p_room_name: roomName,
@@ -1887,89 +1078,104 @@
                 });
 
                 if (error) {
-                    console.error('Error en RPC crear_transmision:', error);
+                    console.error('❌ Error en RPC crear_transmision:', error);
                     throw new Error(error.message || 'Error al crear LIVE de grupo');
                 }
 
-                const transmision = Array.isArray(result) ? result[0] : result;
-                if (!transmision || !transmision.id) {
-                    throw new Error('No se pudo crear la transmisión del grupo');
-                }
+                // La RPC devuelve bigint
+                const nuevoId = (typeof rpcResult === 'object' && rpcResult !== null) ? rpcResult.id : rpcResult;
+                if (!nuevoId) throw new Error('No se pudo crear la transmisión (ID vacío)');
+                console.log('🎬 [3] Transmisión creada con ID:', nuevoId);
+
+                // Traer fila completa
+                const { data: transmision, error: fetchError } = await window.supabase
+                    .from('transmisiones')
+                    .select('*')
+                    .eq('id', nuevoId)
+                    .single();
+                if (fetchError || !transmision) { console.error('❌ Error recuperando transmisión:', fetchError); throw new Error('No se pudo recuperar la transmisión'); }
 
                 currentStreamGrupoId = transmision.id;
                 liveActivoEnGrupo = transmision;
                 isLiveGrupoActivo = true;
+                esStreamerDelLiveGrupo = true;
 
+                // Mostrar panel de live
+                mostrarLiveGrupoInline(transmision);
                 document.getElementById('grupoLiveBadge').style.display = 'inline';
                 document.getElementById('btnIniciarLive').style.display = 'none';
                 document.getElementById('btnFinalizarLive').style.display = 'inline-block';
                 document.getElementById('btnVerLive').style.display = 'inline-block';
 
-                showToast('LIVE de grupo iniciado', 'success');
-
+                // ===== CONECTAR A LIVEKIT v2 =====
                 try {
-                    showToast('Conectando a LiveKit...', '', 2000);
-                    const { Room } = await import('https://cdn.jsdelivr.net/npm/livekit-client@1/dist/index.js');
+                    showToast('🔗 Conectando a LiveKit...', '', 2000);
+                    console.log('🎬 [4] Cargando LiveKit v2...');
+                    const { Room, Track } = await cargarLiveKit();
                     liveKitRoomGrupo = new Room();
 
-                    const token = await obtenerTokenLiveKitGrupo(
-                        transmision.room_name,
-                        sessionUser.user_metadata?.nombre || sessionUser.email || 'streamer',
-                        'publisher'
-                    );
+                    console.log('🎬 [5] Pidiendo token...');
+                    const token = await obtenerTokenLiveKitGrupo(transmision.room_name, sessionUser.id, 'publisher');
+                    console.log('🎬 [6] Token recibido');
 
                     await liveKitRoomGrupo.connect(LIVEKIT_CONFIG.url, token);
+                    console.log('🎬 [7] Conectado');
+
                     await liveKitRoomGrupo.localParticipant.setCameraEnabled(true);
                     await liveKitRoomGrupo.localParticipant.setMicrophoneEnabled(true);
+                    console.log('🎬 [8] Cámara y micrófono activados');
+
+                    // ✅ Attach local
+                    const localVideoTrack = liveKitRoomGrupo.localParticipant.getTrackPublication(Track.Source.Camera)?.videoTrack;
+                    if (localVideoTrack) {
+                        localVideoTrack.attach(document.getElementById('grupoLiveVideo'));
+                        console.log('🎬 [9] Video local adjuntado');
+                    }
+
+                    document.getElementById('grupoLiveEstado').textContent = '● En vivo';
+                    showToast('✅ Transmitiendo en el grupo', 'success');
 
                     liveKitRoomGrupo.on('participantConnected', () => {
                         espectadoresGrupo++;
+                        document.getElementById('grupoLiveEspectadores').textContent = espectadoresGrupo;
                     });
                     liveKitRoomGrupo.on('participantDisconnected', () => {
                         espectadoresGrupo = Math.max(0, espectadoresGrupo - 1);
+                        document.getElementById('grupoLiveEspectadores').textContent = espectadoresGrupo;
                     });
 
-                    showToast('Conectado a LiveKit', 'success');
                 } catch (e) {
-                    console.warn('LiveKit no disponible, modo local:', e);
-                    showToast('Modo local - sin transmisión en vivo', 'warning');
+                    console.error('❌ Error LiveKit:', e);
+                    showToast('⚠️ Error LiveKit: ' + e.message, 'warning', 5000);
+                    document.getElementById('grupoLiveEstado').textContent = '⚠️ Sin conexión LiveKit';
                 }
 
-                await cargarPublicacionesGrupo(grupoActualId);
-                await cargarGrupos();
+                suscribirseAlChatGrupo();
 
             } catch (e) {
-                console.error('Error iniciando live de grupo:', e);
-                showToast('Error al iniciar LIVE de grupo: ' + e.message, 'error');
+                console.error('❌ Error iniciando live de grupo:', e);
+                showToast('Error: ' + e.message, 'error');
                 isLiveGrupoActivo = false;
             }
         }
 
         // ================================================================
-        // OBTENER TOKEN LIVEKIT PARA GRUPO
+        // OBTENER TOKEN LIVEKIT (para grupo)
         // ================================================================
-        async function obtenerTokenLiveKitGrupo(roomName, participantName, role = 'subscriber') {
+        async function obtenerTokenLiveKitGrupo(roomName, participantName, role) {
             try {
                 const session = await getSession();
                 if (!session) throw new Error('No autenticado');
-
                 const response = await fetch('/api/livekit/token', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${session.access_token}`
-                    },
-                    body: JSON.stringify({
-                        roomName: roomName,
-                        participantName: session.user.id
-                    })
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+                    body: JSON.stringify({ roomName: roomName, participantName: participantName })
                 });
-
                 if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.error || 'Error al obtener token');
+                    let error = { message: 'Error' };
+                    try { error = await response.json(); } catch (e) {}
+                    throw new Error(error.message || error.error || `HTTP ${response.status}`);
                 }
-
                 const data = await response.json();
                 return data.token;
             } catch (error) {
@@ -1979,17 +1185,141 @@
         }
 
         // ================================================================
+        // MOSTRAR LIVE INLINE EN GRUPO
+        // ================================================================
+        function mostrarLiveGrupoInline(transmision) {
+            const container = document.getElementById('grupoLiveContainer');
+            const titulo = document.getElementById('grupoLiveTitulo');
+            if (!container) return;
+            container.classList.add('visible');
+            if (titulo) titulo.textContent = transmision.titulo || 'Transmisión del grupo';
+        }
+
+        function cerrarLiveGrupoInline() {
+            const container = document.getElementById('grupoLiveContainer');
+            if (container) container.classList.remove('visible');
+        }
+
+        // ================================================================
+        // VER LIVE ACTIVO
+        // ================================================================
+        async function verLiveActivo() {
+            if (!liveActivoEnGrupo) {
+                showToast('No hay LIVE activo en este grupo', 'warning');
+                return;
+            }
+            mostrarLiveGrupoInline(liveActivoEnGrupo);
+            esStreamerDelLiveGrupo = (sessionUser && liveActivoEnGrupo.streamer_id === sessionUser.id);
+            document.getElementById('grupoLiveEndBtn').style.display = esStreamerDelLiveGrupo ? 'inline-flex' : 'none';
+
+            try {
+                showToast('Conectando al LIVE del grupo...', '', 2000);
+                const { Room } = await cargarLiveKit();
+                liveKitRoomGrupo = new Room();
+
+                const token = await obtenerTokenLiveKitGrupo(liveActivoEnGrupo.room_name, sessionUser.id, 'subscriber');
+                await liveKitRoomGrupo.connect(LIVEKIT_CONFIG.url, token);
+
+                liveKitRoomGrupo.on('trackSubscribed', (track) => {
+                    if (track.kind === 'video') {
+                        const video = document.getElementById('grupoLiveVideo');
+                        if (video) {
+                            track.attach(video);
+                            video.play().catch(e => console.warn('Autoplay bloqueado:', e));
+                        }
+                    }
+                });
+
+                document.getElementById('grupoLiveEstado').textContent = '● En vivo';
+                showToast('Conectado al LIVE', 'success');
+
+                suscribirseAlChatGrupo();
+
+            } catch (e) {
+                console.error('Error al ver live:', e);
+                showToast('⚠️ Error al conectar: ' + e.message, 'warning');
+            }
+        }
+
+        // ================================================================
+        // CHAT DEL LIVE DEL GRUPO
+        // ================================================================
+        function suscribirseAlChatGrupo() {
+            if (!currentStreamGrupoId) return;
+            if (channelChatGrupo) {
+                window.supabase.removeChannel(channelChatGrupo);
+            }
+            channelChatGrupo = window.supabase
+                .channel(`grupo-live-${currentStreamGrupoId}`)
+                .on('postgres_changes', {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'mensajes_live',
+                    filter: `transmision_id=eq.${currentStreamGrupoId}`
+                }, (payload) => {
+                    agregarMensajeChatGrupo(payload.new);
+                })
+                .subscribe();
+        }
+
+        async function enviarMensajeLiveGrupo() {
+            const input = document.getElementById('grupoLiveChatInput');
+            const mensaje = (input?.value || '').trim();
+            if (!mensaje) return;
+            if (!sessionUser) { showToast('Inicia sesión para chatear', 'error'); return; }
+            if (!currentStreamGrupoId) { showToast('No hay LIVE activo', 'error'); return; }
+
+            try {
+                const { error } = await window.supabase.from('mensajes_live').insert({
+                    transmision_id: currentStreamGrupoId,
+                    usuario_id: sessionUser.id,
+                    mensaje: mensaje,
+                    nombre_usuario: sessionUser.user_metadata?.nombre || 'Usuario',
+                    creado_en: new Date().toISOString()
+                });
+                if (error) throw error;
+                input.value = '';
+            } catch (e) {
+                console.error('Error enviando mensaje:', e);
+                showToast('Error al enviar mensaje', 'error');
+            }
+        }
+
+        function agregarMensajeChatGrupo(mensaje) {
+            const container = document.getElementById('grupoLiveChat');
+            if (!container) return;
+            const div = document.createElement('div');
+            div.className = 'chat-msg';
+            div.innerHTML = `<strong>${escapeHTML(mensaje.nombre_usuario || 'Usuario')}:</strong> ${escapeHTML(mensaje.mensaje)}`;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // ================================================================
+        // TOGGLE MUTE DEL LIVE DEL GRUPO
+        // ================================================================
+        async function toggleMuteGrupoLive() {
+            if (!liveKitRoomGrupo || !esStreamerDelLiveGrupo) {
+                showToast('Solo el streamer puede silenciar el micrófono', 'warning');
+                return;
+            }
+            try {
+                const enabled = liveKitRoomGrupo.localParticipant.isMicrophoneEnabled;
+                await liveKitRoomGrupo.localParticipant.setMicrophoneEnabled(!enabled);
+                const btn = document.getElementById('grupoLiveMuteBtn');
+                if (btn) btn.classList.toggle('muted', enabled);
+                showToast(enabled ? '🎤 Micrófono silenciado' : '🎤 Micrófono activado', 'success', 2000);
+            } catch (e) {
+                console.error('Error cambiando micrófono:', e);
+            }
+        }
+
+        // ================================================================
         // FINALIZAR LIVE DE GRUPO
         // ================================================================
         async function finalizarLiveGrupo() {
-            if (!sessionUser) {
-                showToast('Inicia sesión', 'error');
-                return;
-            }
-            if (!grupoActualId) {
-                showToast('No hay grupo seleccionado', 'error');
-                return;
-            }
+            if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
+            if (!grupoActualId) { showToast('No hay grupo seleccionado', 'error'); return; }
 
             const { data: transmisionActiva, error: buscarError } = await window.supabase
                 .from('transmisiones')
@@ -1999,61 +1329,32 @@
                 .eq('is_live', true)
                 .maybeSingle();
 
-            if (buscarError) {
-                console.error('Error buscando transmisión:', buscarError);
-                showToast('Error al buscar transmisión activa', 'error');
-                return;
-            }
+            if (buscarError) { console.error(buscarError); return; }
+            if (!transmisionActiva) { showToast('No hay LIVE activo', 'warning'); return; }
+            if (transmisionActiva.streamer_id !== sessionUser.id) { showToast('Solo el streamer puede finalizar', 'error'); return; }
+            if (!confirm('¿Finalizar el LIVE del grupo?')) return;
 
-            if (!transmisionActiva) {
-                showToast('No hay LIVE activo en este grupo', 'warning');
-                return;
-            }
-
-            if (transmisionActiva.streamer_id !== sessionUser.id) {
-                showToast('Solo el streamer puede finalizar el LIVE', 'error');
-                return;
-            }
-
-            if (!confirm('¿Seguro que quieres finalizar el LIVE del grupo?')) return;
-
-            showToast('Finalizando LIVE de grupo...', '');
+            showToast('Finalizando...', '');
 
             try {
-                const { data, error } = await window.supabase.rpc('finalizar_transmision', {
+                const { error } = await window.supabase.rpc('finalizar_transmision', {
                     p_transmision_id: transmisionActiva.id
                 });
-
                 if (error) {
-                    console.error('Error en RPC finalizar_transmision:', error);
-                    const { error: updateError } = await window.supabase
-                        .from('transmisiones')
-                        .update({ 
-                            estado: 'finalizada', 
-                            is_live: false, 
-                            fecha_fin: new Date().toISOString() 
-                        })
-                        .eq('id', transmisionActiva.id);
-
-                    if (updateError) throw updateError;
-                    showToast('LIVE de grupo finalizado (vía fallback)', 'success');
-                } else {
-                    showToast('LIVE de grupo finalizado', 'success');
+                    console.error('Error RPC:', error);
+                    await window.supabase.from('transmisiones').update({ estado: 'finalizada', is_live: false, fecha_fin: new Date().toISOString() }).eq('id', transmisionActiva.id);
                 }
+                showToast('LIVE finalizado', 'success');
+
+                if (liveKitRoomGrupo) { try { await liveKitRoomGrupo.disconnect(); } catch (e) {} liveKitRoomGrupo = null; }
+                if (channelChatGrupo) { try { window.supabase.removeChannel(channelChatGrupo); } catch (e) {} channelChatGrupo = null; }
 
                 liveActivoEnGrupo = null;
                 isLiveGrupoActivo = false;
                 currentStreamGrupoId = null;
+                esStreamerDelLiveGrupo = false;
 
-                if (liveKitRoomGrupo) {
-                    try {
-                        await liveKitRoomGrupo.disconnect();
-                        liveKitRoomGrupo = null;
-                    } catch (e) {
-                        console.warn('Error desconectando LiveKit:', e);
-                    }
-                }
-
+                cerrarLiveGrupoInline();
                 document.getElementById('grupoLiveBadge').style.display = 'none';
                 document.getElementById('btnIniciarLive').style.display = 'inline-block';
                 document.getElementById('btnVerLive').style.display = 'none';
@@ -2061,292 +1362,301 @@
 
                 await cargarPublicacionesGrupo(grupoActualId);
                 await cargarGrupos();
-
             } catch (e) {
-                console.error('Error finalizando LIVE de grupo:', e);
-                showToast('Error al finalizar LIVE de grupo: ' + e.message, 'error');
+                console.error('Error finalizando live:', e);
+                showToast('Error: ' + e.message, 'error');
             }
         }
 
         // ================================================================
-        // VER LIVE DE GRUPO
+        // RESTO DE FUNCIONES (SIN CAMBIOS)
         // ================================================================
-        function verLiveActivo() {
-            if (liveActivoEnGrupo) {
-                window.open('/features/live/live.html?transmision=' + liveActivoEnGrupo.id, '_blank');
-            } else {
-                showToast('No hay LIVE activo en este grupo', 'warning');
-            }
+        async function cargarPublicacionesGrupo(grupoId) {
+            try {
+                var result = await window.supabase.from('grupos_video_publicaciones').select(`*, usuarios:usuario_id (id, nombre, handle, avatar_url)`).eq('grupo_id', grupoId).eq('estado', 'publicado').order('created_at', { ascending: false });
+                if (result.error) throw result.error;
+                var container = document.getElementById('publicacionesContainer');
+                var data = result.data || [];
+                if (data.length === 0) {
+                    container.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3>Sin publicaciones</h3><p>Sé el primero en publicar algo</p></div>';
+                    return;
+                }
+                container.innerHTML = data.map(function(p) {
+                    var u = p.usuarios || {};
+                    var avatar = u.avatar_url ? '<img src="' + escapeHTML(u.avatar_url) + '">' : '◈';
+                    var nombre = escapeHTML(u.nombre || 'Usuario');
+                    var contenido = escapeHTML(p.contenido || '');
+                    if (p.imagen_url) contenido += '<br><img src="' + escapeHTML(p.imagen_url) + '" loading="lazy" />';
+                    if (p.video_url) contenido += '<br><video src="' + escapeHTML(p.video_url) + '" controls preload="metadata"></video>';
+                    var likesCount = p.likes_count || 0;
+                    var comentariosCount = p.comentarios_count || 0;
+                    return '<div class="publicacion-card">' +
+                        '<div class="header"><div class="avatar">' + avatar + '</div>' +
+                        '<div><div class="nombre">' + nombre + '</div>' +
+                        '<div class="fecha">' + new Date(p.created_at).toLocaleString() + '</div></div></div>' +
+                        '<div class="contenido">' + contenido + '</div>' +
+                        '<div class="stats">' +
+                        '<span onclick="reaccionarPublicacion(\'' + p.id + '\')">◈ <span id="likes-' + p.id + '">' + likesCount + '</span></span>' +
+                        '<span onclick="toggleComentariosPublicacion(\'' + p.id + '\')">◈ <span id="comentarios-' + p.id + '">' + comentariosCount + '</span></span>' +
+                        '<span onclick="compartirPublicacion(\'' + p.id + '\')">◈ Compartir</span></div>' +
+                        '<div class="comentarios-container" id="comentariosContainer-' + p.id + '" style="display:none;margin-top:8px;">' +
+                        '<div id="comentariosLista-' + p.id + '"></div>' +
+                        '<div style="display:flex;gap:6px;margin-top:6px;">' +
+                        '<input type="text" id="inputComentario-' + p.id + '" placeholder="Comentar..." style="flex:1;padding:4px 10px;background:rgba(255,255,255,0.05);border:1px solid var(--glass-border);border-radius:20px;color:var(--text-primary);font-size:0.65rem;outline:none;">' +
+                        '<button onclick="enviarComentarioPublicacion(\'' + p.id + '\')" style="background:linear-gradient(135deg,var(--gold),var(--gold-dark));color:var(--space);border:none;padding:4px 14px;border-radius:20px;font-weight:700;font-size:0.65rem;cursor:pointer;">Enviar</button>' +
+                        '</div></div></div>';
+                }).join('');
+            } catch (e) { console.error('Error cargando publicaciones:', e); showToast('Error cargando publicaciones', 'error'); }
+        }
+
+        async function publicarEnGrupo() {
+            if (publicando) { showToast('Ya estás publicando...', 'warning'); return; }
+            if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
+            if (!grupoActualId) { showToast('No hay grupo', 'error'); return; }
+            if (!esMiembro()) { showToast('Debes ser miembro', 'error'); return; }
+            var input = document.getElementById('inputPublicacion');
+            var contenido = input.value.trim();
+            if (!contenido) { showToast('Escribe algo', 'warning'); return; }
+            publicando = true;
+            try {
+                var result = await window.supabase.from('grupos_video_publicaciones').insert({ grupo_id: grupoActualId, usuario_id: sessionUser.id, contenido: contenido, tipo: 'texto', estado: 'publicado' }).select().single();
+                if (result.error) throw result.error;
+                input.value = '';
+                showToast('Publicación creada', 'success');
+                await cargarPublicacionesGrupo(grupoActualId);
+            } catch (e) { console.error('Error publicando:', e); showToast('Error: ' + e.message, 'error'); }
+            finally { publicando = false; }
+        }
+
+        async function subirFotoGrupo() {
+            if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
+            if (!grupoActualId) { showToast('No hay grupo', 'error'); return; }
+            if (!esMiembro()) { showToast('Debes ser miembro', 'error'); return; }
+            var input = document.createElement('input');
+            input.type = 'file'; input.accept = 'image/*';
+            input.onchange = async function(e) {
+                var file = e.target.files[0]; if (!file) return;
+                if (file.size > 10 * 1024 * 1024) { showToast('Imagen > 10MB', 'error'); return; }
+                showToast('Procesando imagen...', '');
+                try {
+                    var processedFile = await procesarConMarcaDeAgua(file, 'imagen');
+                    var fileExt = processedFile.name.split('.').pop();
+                    var filePath = grupoActualId + '/' + sessionUser.id + '/' + Date.now() + '.' + fileExt;
+                    var uploadResult = await window.supabase.storage.from('grupos-publicaciones').upload(filePath, processedFile, { cacheControl: '3600', upsert: true });
+                    if (uploadResult.error) throw uploadResult.error;
+                    var urlData = window.supabase.storage.from('grupos-publicaciones').getPublicUrl(filePath);
+                    var result = await window.supabase.from('grupos_video_publicaciones').insert({ grupo_id: grupoActualId, usuario_id: sessionUser.id, imagen_url: urlData.data.publicUrl, tipo: 'imagen', estado: 'publicado' }).select().single();
+                    if (result.error) throw result.error;
+                    showToast('Foto publicada', 'success');
+                    await cargarPublicacionesGrupo(grupoActualId);
+                } catch (error) { console.error(error); showToast('Error: ' + error.message, 'error'); }
+            };
+            input.click();
+        }
+
+        async function subirVideoGrupo() {
+            if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
+            if (!grupoActualId) { showToast('No hay grupo', 'error'); return; }
+            if (!esMiembro()) { showToast('Debes ser miembro', 'error'); return; }
+            var input = document.createElement('input');
+            input.type = 'file'; input.accept = 'video/*';
+            input.onchange = async function(e) {
+                var file = e.target.files[0]; if (!file) return;
+                if (file.size > 100 * 1024 * 1024) { showToast('Video > 100MB', 'error'); return; }
+                showToast('Procesando video...', '');
+                try {
+                    var processedFile = await procesarConMarcaDeAgua(file, 'video');
+                    var fileExt = processedFile.name.split('.').pop();
+                    var filePath = grupoActualId + '/' + sessionUser.id + '/' + Date.now() + '.' + fileExt;
+                    var uploadResult = await window.supabase.storage.from('grupos-publicaciones').upload(filePath, processedFile, { cacheControl: '3600', upsert: true });
+                    if (uploadResult.error) throw uploadResult.error;
+                    var urlData = window.supabase.storage.from('grupos-publicaciones').getPublicUrl(filePath);
+                    var result = await window.supabase.from('grupos_video_publicaciones').insert({ grupo_id: grupoActualId, usuario_id: sessionUser.id, video_url: urlData.data.publicUrl, tipo: 'video', estado: 'publicado' }).select().single();
+                    if (result.error) throw result.error;
+                    showToast('Video publicado', 'success');
+                    await cargarPublicacionesGrupo(grupoActualId);
+                } catch (error) { console.error(error); showToast('Error: ' + error.message, 'error'); }
+            };
+            input.click();
+        }
+
+        async function reaccionarPublicacion(publicacionId) {
+            if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
+            try {
+                var existing = await window.supabase.from('grupos_video_reacciones').select('id').eq('publicacion_id', publicacionId).eq('usuario_id', sessionUser.id).maybeSingle();
+                var likesSpan = document.getElementById('likes-' + publicacionId);
+                var currentLikes = parseInt(likesSpan?.textContent || 0);
+                if (existing.data) {
+                    await window.supabase.from('grupos_video_reacciones').delete().eq('id', existing.data.id);
+                    if (likesSpan) likesSpan.textContent = Math.max(0, currentLikes - 1);
+                } else {
+                    await window.supabase.from('grupos_video_reacciones').insert({ publicacion_id: publicacionId, usuario_id: sessionUser.id, tipo: 'like' });
+                    if (likesSpan) likesSpan.textContent = currentLikes + 1;
+                }
+            } catch (e) { console.error('Error reaccionando:', e); }
+        }
+
+        function toggleComentariosPublicacion(publicacionId) {
+            var container = document.getElementById('comentariosContainer-' + publicacionId);
+            if (!container) return;
+            var isVisible = container.style.display !== 'none';
+            container.style.display = isVisible ? 'none' : 'block';
+            if (!isVisible) cargarComentariosPublicacion(publicacionId);
+        }
+
+        async function cargarComentariosPublicacion(publicacionId) {
+            var lista = document.getElementById('comentariosLista-' + publicacionId);
+            if (!lista) return;
+            try {
+                var result = await window.supabase.from('grupos_video_comentarios').select(`*, usuarios:usuario_id (id, nombre, handle, avatar_url)`).eq('publicacion_id', publicacionId).order('created_at', { ascending: true });
+                if (result.error) throw result.error;
+                var data = result.data || [];
+                if (data.length === 0) { lista.innerHTML = '<div style="color:var(--text-muted);font-size:0.65rem;padding:4px 0;">Sin comentarios</div>'; return; }
+                lista.innerHTML = data.map(function(c) {
+                    var u = c.usuarios || {};
+                    var avatar = u.avatar_url ? '<img src="' + escapeHTML(u.avatar_url) + '">' : '◈';
+                    return '<div style="display:flex;gap:6px;padding:4px 0;border-bottom:1px solid rgba(212,175,55,0.04);">' +
+                        '<div style="width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,var(--green-deep),var(--gold));display:flex;align-items:center;justify-content:center;font-size:0.5rem;color:#fff;overflow:hidden;flex-shrink:0;">' + avatar + '</div>' +
+                        '<div style="flex:1;font-size:0.65rem;"><strong style="color:var(--gold);">' + escapeHTML(u.nombre || 'Usuario') + '</strong> ' + escapeHTML(c.contenido || '') +
+                        '<div style="font-size:0.5rem;color:var(--text-muted);">' + new Date(c.created_at).toLocaleString() + '</div></div></div>';
+                }).join('');
+            } catch (e) { console.error(e); lista.innerHTML = '<div style="color:var(--danger);font-size:0.65rem;">Error</div>'; }
+        }
+
+        async function enviarComentarioPublicacion(publicacionId) {
+            if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
+            var input = document.getElementById('inputComentario-' + publicacionId);
+            var texto = input.value.trim();
+            if (!texto) return;
+            try {
+                await window.supabase.from('grupos_video_comentarios').insert({ publicacion_id: publicacionId, usuario_id: sessionUser.id, contenido: texto });
+                input.value = '';
+                var countSpan = document.getElementById('comentarios-' + publicacionId);
+                if (countSpan) countSpan.textContent = (parseInt(countSpan.textContent) || 0) + 1;
+                cargarComentariosPublicacion(publicacionId);
+            } catch (e) { console.error(e); showToast('Error', 'error'); }
+        }
+
+        function compartirPublicacion(publicacionId) {
+            var url = window.location.origin + '/features/grupos/grupos.html?publicacion=' + publicacionId;
+            if (navigator.share) { navigator.share({ title: 'Sariel\'s', text: 'Mira esto', url: url }).catch(function() {}); }
+            else { navigator.clipboard.writeText(url).then(function() { showToast('Enlace copiado', 'success'); }); }
         }
 
         // ================================================================
-        // ADMINISTRAR GRUPO
+        // ADMIN (sin cambios)
         // ================================================================
         async function abrirAdminGrupo() {
-            if (!esAdmin && !esModerador) {
-                showToast('No tienes permisos de administrador', 'error');
-                return;
-            }
-            if (!grupoActualId) {
-                showToast('No hay grupo seleccionado', 'error');
-                return;
-            }
-
+            if (!esAdmin && !esModerador) { showToast('Sin permisos', 'error'); return; }
+            if (!grupoActualId) return;
             document.getElementById('modalAdminGrupo').classList.add('show');
             await cargarAdminMiembros();
         }
+        function cerrarModalAdmin() { document.getElementById('modalAdminGrupo').classList.remove('show'); }
 
-        function cerrarModalAdmin() {
-            document.getElementById('modalAdminGrupo').classList.remove('show');
-        }
-
-        // ===== ADMIN: MIEMBROS =====
         async function cargarAdminMiembros() {
             var container = document.getElementById('adminContenido');
-            container.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3 data-clave="grupos_cargando_miembros">Cargando miembros...</h3></div>';
-
+            container.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3>Cargando...</h3></div>';
             try {
-                var result = await window.supabase
-                    .from('grupos_video_miembros')
-                    .select(`
-                        *,
-                        usuarios:usuario_id (id, nombre, handle, avatar_url)
-                    `)
-                    .eq('grupo_id', grupoActualId)
-                    .order('created_at', { ascending: true });
-
+                var result = await window.supabase.from('grupos_video_miembros').select(`*, usuarios:usuario_id (id, nombre, handle, avatar_url)`).eq('grupo_id', grupoActualId).order('created_at', { ascending: true });
                 if (result.error) throw result.error;
-
                 var miembros = result.data || [];
-
-                if (miembros.length === 0) {
-                    container.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3 data-clave="grupos_sin_miembros">Sin miembros</h3></div>';
-                    return;
-                }
-
-                var html = '<h4 style="color:var(--gold);font-size:0.8rem;margin-bottom:12px;">◈ Miembros (' + miembros.length +
-                    ')</h4>';
-
+                if (miembros.length === 0) { container.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3>Sin miembros</h3></div>'; return; }
+                var html = '<h4 style="color:var(--gold);font-size:0.8rem;margin-bottom:12px;">◈ Miembros (' + miembros.length + ')</h4>';
                 miembros.forEach(function(m) {
                     var u = m.usuarios || {};
                     var esCreadorDelGrupo = m.rol === 'administrador';
                     var esYo = m.usuario_id === sessionUser?.id;
                     var estado = m.estado || 'activo';
-
-                    var estadoColor = estado === 'activo' ? 'var(--success)' :
-                        estado === 'bloqueado' ? 'var(--danger)' :
-                        'var(--warning)';
-
+                    var estadoColor = estado === 'activo' ? 'var(--success)' : estado === 'bloqueado' ? 'var(--danger)' : 'var(--warning)';
                     html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--glass-border);">' +
-                        '<div>' +
-                        '<span style="font-weight:600;">' + escapeHTML(u.nombre || 'Usuario') + '</span>' +
+                        '<div><span style="font-weight:600;">' + escapeHTML(u.nombre || 'Usuario') + '</span>' +
                         (esCreadorDelGrupo ? ' <span style="color:var(--gold);font-size:0.6rem;">◈ Admin</span>' : '') +
-                        (m.rol === 'moderador' ? ' <span style="color:var(--cyan);font-size:0.6rem;">◈ Mod</span>' :
-                            '') +
+                        (m.rol === 'moderador' ? ' <span style="color:var(--cyan);font-size:0.6rem;">◈ Mod</span>' : '') +
                         (esYo ? ' <span style="color:var(--text-muted);font-size:0.6rem;">(tú)</span>' : '') +
-                        ' <span style="color:' + estadoColor + ';font-size:0.5rem;">● ' + estado + '</span>' +
-                        '</div>' +
+                        ' <span style="color:' + estadoColor + ';font-size:0.5rem;">● ' + estado + '</span></div>' +
                         (esAdmin && !esCreadorDelGrupo && !esYo ?
                             '<div style="display:flex;gap:4px;flex-wrap:wrap;">' +
-                            (m.rol !== 'moderador' ?
-                                '<button class="btn-outline btn-sm" onclick="asignarModerador(\'' + m.usuario_id +
-                                '\')">◈ Mod</button> ' : '') +
-                            (m.rol === 'moderador' ?
-                                '<button class="btn-outline btn-sm" onclick="quitarModerador(\'' + m.usuario_id +
-                                '\')">◈ Quitar Mod</button> ' : '') +
-                            (estado === 'activo' ?
-                                '<button class="btn-danger btn-sm" onclick="expulsarMiembro(\'' + m.usuario_id +
-                                '\')">◈ Expulsar</button> ' : '') +
-                            (estado === 'activo' ?
-                                '<button class="btn-danger btn-sm" onclick="bloquearMiembro(\'' + m.usuario_id +
-                                '\')">◈ Bloquear</button>' : '') +
-                            '</div>' :
-                            '') +
-                        '</div>';
+                            (m.rol !== 'moderador' ? '<button class="btn-outline btn-sm" onclick="asignarModerador(\'' + m.usuario_id + '\')">◈ Mod</button> ' : '') +
+                            (m.rol === 'moderador' ? '<button class="btn-outline btn-sm" onclick="quitarModerador(\'' + m.usuario_id + '\')">◈ Quitar Mod</button> ' : '') +
+                            (estado === 'activo' ? '<button class="btn-danger btn-sm" onclick="expulsarMiembro(\'' + m.usuario_id + '\')">◈ Expulsar</button> ' : '') +
+                            (estado === 'activo' ? '<button class="btn-danger btn-sm" onclick="bloquearMiembro(\'' + m.usuario_id + '\')">◈ Bloquear</button>' : '') +
+                            '</div>' : '') + '</div>';
                 });
-
                 container.innerHTML = html;
-
-            } catch (e) {
-                console.error('Error cargando miembros admin:', e);
-                container.innerHTML =
-                '<div class="empty-state"><span class="icon">◈</span><h3 data-clave="grupos_error_miembros">Error cargando miembros</h3></div>';
-            }
+            } catch (e) { console.error(e); container.innerHTML = '<div class="empty-state">Error</div>'; }
         }
 
-        // ===== ADMIN: PUBLICACIONES =====
         async function cargarAdminPublicaciones() {
             var container = document.getElementById('adminContenido');
-            container.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3 data-clave="grupos_cargando_publicaciones">Cargando publicaciones...</h3></div>';
-
+            container.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3>Cargando...</h3></div>';
             try {
-                var result = await window.supabase
-                    .from('grupos_video_publicaciones')
-                    .select(`
-                        *,
-                        usuarios:usuario_id (id, nombre, handle, avatar_url)
-                    `)
-                    .eq('grupo_id', grupoActualId)
-                    .order('created_at', { ascending: false });
-
+                var result = await window.supabase.from('grupos_video_publicaciones').select(`*, usuarios:usuario_id (id, nombre, handle, avatar_url)`).eq('grupo_id', grupoActualId).order('created_at', { ascending: false });
                 if (result.error) throw result.error;
-
                 var publicaciones = result.data || [];
-
-                if (publicaciones.length === 0) {
-                    container.innerHTML =
-                        '<div class="empty-state"><span class="icon">◈</span><h3 data-clave="grupos_sin_publicaciones">Sin publicaciones</h3></div>';
-                    return;
-                }
-
-                var html = '<h4 style="color:var(--gold);font-size:0.8rem;margin-bottom:12px;">◈ Publicaciones (' +
-                    publicaciones.length + ')</h4>';
-
+                if (publicaciones.length === 0) { container.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3>Sin publicaciones</h3></div>'; return; }
+                var html = '<h4 style="color:var(--gold);font-size:0.8rem;margin-bottom:12px;">◈ Publicaciones (' + publicaciones.length + ')</h4>';
                 publicaciones.forEach(function(p) {
                     var u = p.usuarios || {};
                     var estado = p.estado || 'publicado';
-                    var estadoColor = estado === 'publicado' ? 'var(--success)' :
-                        estado === 'oculto' ? 'var(--warning)' :
-                        'var(--danger)';
-
+                    var estadoColor = estado === 'publicado' ? 'var(--success)' : estado === 'oculto' ? 'var(--warning)' : 'var(--danger)';
                     var contenido = escapeHTML(p.contenido || '');
-                    if (p.imagen_url) {
-                        contenido +=
-                            '<br><img src="' + escapeHTML(p.imagen_url) +
-                            '" style="max-width:100px;border-radius:8px;margin-top:4px;" />';
-                    }
-                    if (p.video_url) {
-                        contenido +=
-                            '<br><video src="' + escapeHTML(p.video_url) +
-                            '" style="max-width:100px;border-radius:8px;margin-top:4px;" controls></video>';
-                    }
-
                     html += '<div style="padding:8px 0;border-bottom:1px solid var(--glass-border);">' +
-                        '<div style="font-weight:600;font-size:0.75rem;">' + escapeHTML(u.nombre || 'Usuario') +
-                        ' <span style="color:' + estadoColor + ';font-size:0.5rem;">● ' + estado + '</span></div>' +
+                        '<div style="font-weight:600;font-size:0.75rem;">' + escapeHTML(u.nombre || 'Usuario') + ' <span style="color:' + estadoColor + ';font-size:0.5rem;">● ' + estado + '</span></div>' +
                         '<div style="font-size:0.7rem;color:var(--text-secondary);">' + contenido + '</div>' +
                         '<div style="display:flex;gap:4px;margin-top:4px;flex-wrap:wrap;">' +
-                        (estado === 'publicado' && (esAdmin || esModerador) ?
-                            '<button class="btn-outline btn-sm" onclick="ocultarPublicacion(\'' + p.id +
-                            '\')">◈ Ocultar</button>' :
-                            '') +
-                        (estado === 'oculto' && (esAdmin || esModerador) ?
-                            '<button class="btn-outline btn-sm" onclick="mostrarPublicacion(\'' + p.id +
-                            '\')">◈ Mostrar</button>' :
-                            '') +
-                        ((esAdmin || esModerador) ?
-                            '<button class="btn-danger btn-sm" onclick="eliminarPublicacion(\'' + p.id +
-                            '\')">◈ Eliminar</button>' :
-                            '') +
-                        '</div>' +
-                        '</div>';
+                        (estado === 'publicado' && (esAdmin || esModerador) ? '<button class="btn-outline btn-sm" onclick="ocultarPublicacion(\'' + p.id + '\')">◈ Ocultar</button>' : '') +
+                        (estado === 'oculto' && (esAdmin || esModerador) ? '<button class="btn-outline btn-sm" onclick="mostrarPublicacion(\'' + p.id + '\')">◈ Mostrar</button>' : '') +
+                        ((esAdmin || esModerador) ? '<button class="btn-danger btn-sm" onclick="eliminarPublicacion(\'' + p.id + '\')">◈ Eliminar</button>' : '') +
+                        '</div></div>';
                 });
-
                 container.innerHTML = html;
-
-            } catch (e) {
-                console.error('Error cargando publicaciones admin:', e);
-                container.innerHTML =
-                    '<div class="empty-state"><span class="icon">◈</span><h3 data-clave="grupos_error_publicaciones">Error cargando publicaciones</h3></div>';
-            }
+            } catch (e) { console.error(e); container.innerHTML = '<div class="empty-state">Error</div>'; }
         }
 
-        // ===== ADMIN: SOLICITUDES =====
         async function cargarAdminSolicitudes() {
             var container = document.getElementById('adminContenido');
-            container.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3 data-clave="grupos_cargando_solicitudes">Cargando solicitudes...</h3></div>';
-
+            container.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3>Cargando...</h3></div>';
             try {
-                var result = await window.supabase
-                    .from('grupos_video_solicitudes')
-                    .select(`
-                        *,
-                        usuarios:usuario_id (id, nombre, handle, avatar_url)
-                    `)
-                    .eq('grupo_id', grupoActualId)
-                    .eq('estado', 'pendiente')
-                    .order('created_at', { ascending: true });
-
+                var result = await window.supabase.from('grupos_video_solicitudes').select(`*, usuarios:usuario_id (id, nombre, handle, avatar_url)`).eq('grupo_id', grupoActualId).eq('estado', 'pendiente').order('created_at', { ascending: true });
                 if (result.error) throw result.error;
-
                 var solicitudes = result.data || [];
-
-                if (solicitudes.length === 0) {
-                    container.innerHTML =
-                        '<div class="empty-state"><span class="icon">◈</span><h3 data-clave="grupos_sin_solicitudes">Sin solicitudes pendientes</h3></div>';
-                    return;
-                }
-
-                var html = '<h4 style="color:var(--gold);font-size:0.8rem;margin-bottom:12px;">◈ Solicitudes pendientes (' +
-                    solicitudes.length + ')</h4>';
-
+                if (solicitudes.length === 0) { container.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3>Sin solicitudes</h3></div>'; return; }
+                var html = '<h4 style="color:var(--gold);font-size:0.8rem;margin-bottom:12px;">◈ Solicitudes (' + solicitudes.length + ')</h4>';
                 solicitudes.forEach(function(s) {
                     var u = s.usuarios || {};
                     html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--glass-border);">' +
-                        '<div><span style="font-weight:600;">' + escapeHTML(u.nombre || 'Usuario') +
-                        '</span><br><span style="font-size:0.6rem;color:var(--text-muted);">' + new Date(s
-                            .created_at).toLocaleString() + '</span></div>' +
+                        '<div><span style="font-weight:600;">' + escapeHTML(u.nombre || 'Usuario') + '</span></div>' +
                         '<div style="display:flex;gap:4px;">' +
-                        '<button class="btn-gold btn-sm" onclick="aceptarSolicitud(\'' + s.id +
-                        '\')">◈ Aceptar</button>' +
-                        '<button class="btn-danger btn-sm" onclick="rechazarSolicitud(\'' + s.id +
-                        '\')">◈ Rechazar</button>' +
-                        '</div>' +
-                        '</div>';
+                        '<button class="btn-gold btn-sm" onclick="aceptarSolicitud(\'' + s.id + '\')">◈ Aceptar</button>' +
+                        '<button class="btn-danger btn-sm" onclick="rechazarSolicitud(\'' + s.id + '\')">◈ Rechazar</button>' +
+                        '</div></div>';
                 });
-
                 container.innerHTML = html;
-
-            } catch (e) {
-                console.error('Error cargando solicitudes admin:', e);
-                container.innerHTML =
-                    '<div class="empty-state"><span class="icon">◈</span><h3 data-clave="grupos_error_solicitudes">Error cargando solicitudes</h3></div>';
-            }
+            } catch (e) { console.error(e); container.innerHTML = '<div class="empty-state">Error</div>'; }
         }
 
-        // ===== ADMIN: EDITAR GRUPO =====
         async function cargarAdminEditar() {
             var container = document.getElementById('adminContenido');
-            container.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3 data-clave="grupos_cargando_editar">Cargando datos del grupo...</h3></div>';
-
+            container.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3>Cargando...</h3></div>';
             try {
-                var result = await window.supabase
-                    .from('grupos_video')
-                    .select('*')
-                    .eq('id', grupoActualId)
-                    .single();
-
+                var result = await window.supabase.from('grupos_video').select('*').eq('id', grupoActualId).single();
                 if (result.error) throw result.error;
-
                 var g = result.data;
-
                 var html = '<h4 style="color:var(--gold);font-size:0.8rem;margin-bottom:12px;">◈ Editar grupo</h4>' +
-                    '<div class="form-group"><label data-clave="grupos_nombre">Nombre</label><input type="text" id="editGrupoNombre" value="' +
-                    escapeHTML(g.nombre || '') + '" /></div>' +
-                    '<div class="form-group"><label data-clave="grupos_descripcion">Descripción</label><textarea id="editGrupoDescripcion" rows="2">' +
-                    escapeHTML(g.descripcion || '') + '</textarea></div>' +
-                    '<div class="form-group"><label data-clave="grupos_ciudad">Ciudad</label><input type="text" id="editGrupoCiudad" value="' +
-                    escapeHTML(g.ciudad || '') + '" /></div>' +
-                    '<div class="form-group"><label data-clave="grupos_visibilidad">Visibilidad</label><select id="editGrupoVisibilidad">' +
+                    '<div class="form-group"><label>Nombre</label><input type="text" id="editGrupoNombre" value="' + escapeHTML(g.nombre || '') + '" /></div>' +
+                    '<div class="form-group"><label>Descripción</label><textarea id="editGrupoDescripcion" rows="2">' + escapeHTML(g.descripcion || '') + '</textarea></div>' +
+                    '<div class="form-group"><label>Ciudad</label><input type="text" id="editGrupoCiudad" value="' + escapeHTML(g.ciudad || '') + '" /></div>' +
+                    '<div class="form-group"><label>Visibilidad</label><select id="editGrupoVisibilidad">' +
                     '<option value="publico"' + (g.visibilidad === 'publico' ? ' selected' : '') + '>Público</option>' +
-                    '<option value="privado"' + (g.visibilidad === 'privado' ? ' selected' : '') + '>Privado</option>' +
-                    '</select></div>' +
-                    '<div class="form-group"><label data-clave="grupos_modo_ingreso">Modo ingreso</label><select id="editGrupoModoIngreso">' +
+                    '<option value="privado"' + (g.visibilidad === 'privado' ? ' selected' : '') + '>Privado</option></select></div>' +
+                    '<div class="form-group"><label>Modo ingreso</label><select id="editGrupoModoIngreso">' +
                     '<option value="abierto"' + (g.modo_ingreso === 'abierto' ? ' selected' : '') + '>Abierto</option>' +
-                    '<option value="solicitud"' + (g.modo_ingreso === 'solicitud' ? ' selected' : '') +
-                    '>Solicitud</option>' +
-                    '<option value="invitacion"' + (g.modo_ingreso === 'invitacion' ? ' selected' : '') +
-                    '>Invitación</option>' +
-                    '</select></div>' +
+                    '<option value="solicitud"' + (g.modo_ingreso === 'solicitud' ? ' selected' : '') + '>Solicitud</option>' +
+                    '<option value="invitacion"' + (g.modo_ingreso === 'invitacion' ? ' selected' : '') + '>Invitación</option></select></div>' +
                     '<button class="btn-gold" style="width:100%;justify-content:center;padding:10px;" onclick="guardarEdicionGrupo()">◈ Guardar cambios</button>';
-
                 container.innerHTML = html;
-
-            } catch (e) {
-                console.error('Error cargando edición:', e);
-                container.innerHTML =
-                    '<div class="empty-state"><span class="icon">◈</span><h3 data-clave="grupos_error_editar">Error cargando datos del grupo</h3></div>';
-            }
+            } catch (e) { console.error(e); container.innerHTML = '<div class="empty-state">Error</div>'; }
         }
 
         async function guardarEdicionGrupo() {
@@ -2355,491 +1665,163 @@
             var ciudad = document.getElementById('editGrupoCiudad')?.value?.trim();
             var visibilidad = document.getElementById('editGrupoVisibilidad')?.value;
             var modoIngreso = document.getElementById('editGrupoModoIngreso')?.value;
-
             if (!nombre) { showToast('El nombre es requerido', 'warning'); return; }
-
-            showToast('Guardando cambios...', '');
-
             try {
-                var result = await window.supabase
-                    .from('grupos_video')
-                    .update({
-                        nombre: nombre,
-                        descripcion: descripcion || null,
-                        ciudad: ciudad || null,
-                        visibilidad: visibilidad,
-                        modo_ingreso: modoIngreso
-                    })
-                    .eq('id', grupoActualId)
-                    .select()
-                    .single();
-
+                var result = await window.supabase.from('grupos_video').update({ nombre: nombre, descripcion: descripcion || null, ciudad: ciudad || null, visibilidad: visibilidad, modo_ingreso: modoIngreso }).eq('id', grupoActualId).select().single();
                 if (result.error) throw result.error;
-
                 showToast('Grupo actualizado', 'success');
                 cerrarModalAdmin();
                 await abrirGrupo(grupoActualId);
                 await cargarGrupos();
-
-            } catch (e) {
-                console.error('Error guardando edición:', e);
-                showToast('Error al guardar: ' + e.message, 'error');
-            }
+            } catch (e) { console.error(e); showToast('Error: ' + e.message, 'error'); }
         }
 
         // ================================================================
         // ELIMINAR GRUPO
         // ================================================================
-
         function mostrarConfirmacionEliminarGrupo() {
-            if (!sessionUser) {
-                showToast('Inicia sesión para eliminar el grupo', 'error');
-                return;
-            }
-            if (!grupoActualId) {
-                showToast('No hay grupo seleccionado', 'error');
-                return;
-            }
-            if (!esAdmin && !esCreador) {
-                showToast('Solo el creador o un administrador puede eliminar el grupo', 'error');
-                return;
-            }
-
+            if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
+            if (!grupoActualId) return;
+            if (!esAdmin && !esCreador) { showToast('Sin permisos', 'error'); return; }
             document.getElementById('modalConfirmarEliminarGrupo').classList.add('show');
             document.getElementById('eliminarGrupoStatus').textContent = '';
         }
-
         function cerrarConfirmacionEliminarGrupo() {
             document.getElementById('modalConfirmarEliminarGrupo').classList.remove('show');
             document.getElementById('eliminarGrupoStatus').textContent = '';
         }
 
         async function ejecutarEliminarGrupo() {
-            if (eliminandoGrupo) {
-                showToast('Ya se está eliminando el grupo...', 'warning');
-                return;
-            }
-
-            if (!sessionUser) {
-                showToast('Inicia sesión para eliminar el grupo', 'error');
-                return;
-            }
-            if (!grupoActualId) {
-                showToast('No hay grupo seleccionado', 'error');
-                return;
-            }
-            if (!esAdmin && !esCreador) {
-                showToast('No tienes permisos para eliminar este grupo', 'error');
-                return;
-            }
-
-            var grupoId = grupoActualId;
-            var nombreGrupo = grupoActual?.nombre || 'Grupo';
+            if (eliminandoGrupo) return;
+            if (!sessionUser || !grupoActualId) return;
             var statusEl = document.getElementById('eliminarGrupoStatus');
-
+            eliminandoGrupo = true;
+            statusEl.textContent = 'Eliminando...';
+            statusEl.style.color = 'var(--text-secondary)';
             try {
-                const { data: grupo, error: checkError } = await window.supabase
-                    .from('grupos_video')
-                    .select('id, nombre, creador_id')
-                    .eq('id', grupoId)
-                    .single();
-
-                if (checkError || !grupo) {
-                    showToast('El grupo no existe o ya fue eliminado', 'error');
-                    return;
-                }
-
-                if (!esCreador && esAdmin) {
-                    const { data: miembro, error: memberError } = await window.supabase
-                        .from('grupos_video_miembros')
-                        .select('rol')
-                        .eq('grupo_id', grupoId)
-                        .eq('usuario_id', sessionUser.id)
-                        .single();
-
-                    if (memberError || !miembro || miembro.rol !== 'administrador') {
-                        showToast('No eres administrador del grupo', 'error');
-                        return;
-                    }
-                }
-
-                eliminandoGrupo = true;
-                statusEl.textContent = 'Eliminando grupo...';
-                statusEl.style.color = 'var(--text-secondary)';
-
-                const { data, error } = await window.supabase.rpc('eliminar_grupo', {
-                    p_grupo_id: grupoId
-                });
-
-                if (error) {
-                    console.error('Error en RPC eliminar_grupo:', error);
-                    throw error;
-                }
-
-                if (data && data.error) {
-                    throw new Error(data.error);
-                }
-
-                if (!data || !data.success) {
-                    throw new Error('No se pudo eliminar el grupo');
-                }
-
-                showToast(`Grupo "${nombreGrupo}" eliminado correctamente`, 'success');
-
+                const { data, error } = await window.supabase.rpc('eliminar_grupo', { p_grupo_id: grupoActualId });
+                if (error) throw error;
+                if (data && data.error) throw new Error(data.error);
+                showToast('Grupo eliminado', 'success');
                 cerrarConfirmacionEliminarGrupo();
                 cerrarModalAdmin();
-
                 document.getElementById('vistaGrupo').classList.remove('show');
                 document.getElementById('vistaLista').style.display = 'block';
-
-                grupoActual = null;
-                grupoActualId = null;
-                liveActivoEnGrupo = null;
-                isLiveGrupoActivo = false;
-                currentStreamGrupoId = null;
-                esAdmin = false;
-                esModerador = false;
-                esCreador = false;
-                rolEnGrupo = null;
-
+                grupoActual = null; grupoActualId = null; liveActivoEnGrupo = null;
+                isLiveGrupoActivo = false; currentStreamGrupoId = null;
+                esAdmin = false; esModerador = false; esCreador = false; rolEnGrupo = null;
                 await cargarGrupos();
-
             } catch (e) {
-                console.error('Error en ejecutarEliminarGrupo:', e);
-                var errorMsg = 'Error al eliminar el grupo: ';
-                
-                if (e.message?.includes('Permiso denegado')) {
-                    errorMsg += 'No tienes permisos. Solo el creador o administradores pueden eliminar el grupo.';
-                } else if (e.message?.includes('No autenticado')) {
-                    errorMsg += 'Debes iniciar sesión para eliminar el grupo.';
-                } else if (e.message?.includes('Grupo no encontrado')) {
-                    errorMsg += 'El grupo ya fue eliminado o no existe.';
-                } else {
-                    errorMsg += e.message || 'Error desconocido';
-                }
-                
-                statusEl.textContent = errorMsg;
+                console.error(e);
+                statusEl.textContent = 'Error: ' + e.message;
                 statusEl.style.color = 'var(--danger)';
-                showToast(errorMsg, 'error');
-            } finally {
-                eliminandoGrupo = false;
-            }
+            } finally { eliminandoGrupo = false; }
         }
 
         // ================================================================
-        // FUNCIONES DE ADMIN - USANDO RPC
+        // ADMIN RPCs
         // ================================================================
-
         async function aceptarSolicitud(solicitudId) {
             try {
-                var result = await window.supabase.rpc('aceptar_solicitud_grupo', {
-                    p_solicitud_id: solicitudId
-                });
-
-                if (result.error) throw result.error;
-
+                await window.supabase.rpc('aceptar_solicitud_grupo', { p_solicitud_id: solicitudId });
                 showToast('Solicitud aceptada', 'success');
                 await cargarAdminSolicitudes();
-                await cargarPublicacionesGrupo(grupoActualId);
-
-            } catch (e) {
-                console.error('Error aceptando solicitud:', e);
-                showToast('Error al aceptar solicitud: ' + e.message, 'error');
-            }
+            } catch (e) { console.error(e); showToast('Error', 'error'); }
         }
-
         async function rechazarSolicitud(solicitudId) {
             try {
-                var motivo = prompt('Motivo del rechazo:', '');
-                var result = await window.supabase.rpc('rechazar_solicitud_grupo', {
-                    p_solicitud_id: solicitudId,
-                    p_motivo: motivo || 'Rechazado por el administrador'
-                });
-
-                if (result.error) throw result.error;
-
-                showToast('Solicitud rechazada', 'success');
+                var motivo = prompt('Motivo:', '');
+                await window.supabase.rpc('rechazar_solicitud_grupo', { p_solicitud_id: solicitudId, p_motivo: motivo || 'Rechazado' });
+                showToast('Rechazada', 'success');
                 await cargarAdminSolicitudes();
-
-            } catch (e) {
-                console.error('Error rechazando solicitud:', e);
-                showToast('Error al rechazar solicitud: ' + e.message, 'error');
-            }
+            } catch (e) { console.error(e); showToast('Error', 'error'); }
         }
-
         async function asignarModerador(usuarioId) {
-            if (!confirm('¿Asignar como moderador a este usuario?')) return;
-
-            try {
-                var result = await window.supabase.rpc('asignar_moderador_grupo', {
-                    p_grupo_id: grupoActualId,
-                    p_usuario_id: usuarioId
-                });
-
-                if (result.error) throw result.error;
-
-                showToast('Moderador asignado', 'success');
-                await cargarAdminMiembros();
-
-            } catch (e) {
-                console.error('Error asignando moderador:', e);
-                showToast('Error al asignar moderador: ' + e.message, 'error');
-            }
+            if (!confirm('¿Asignar moderador?')) return;
+            try { await window.supabase.rpc('asignar_moderador_grupo', { p_grupo_id: grupoActualId, p_usuario_id: usuarioId }); showToast('Moderador asignado', 'success'); await cargarAdminMiembros(); }
+            catch (e) { console.error(e); showToast('Error', 'error'); }
         }
-
         async function quitarModerador(usuarioId) {
-            if (!confirm('¿Quitar moderador a este usuario?')) return;
-
-            try {
-                var result = await window.supabase.rpc('quitar_moderador_grupo', {
-                    p_grupo_id: grupoActualId,
-                    p_usuario_id: usuarioId
-                });
-
-                if (result.error) throw result.error;
-
-                showToast('Moderador removido', 'success');
-                await cargarAdminMiembros();
-
-            } catch (e) {
-                console.error('Error quitando moderador:', e);
-                showToast('Error al quitar moderador: ' + e.message, 'error');
-            }
+            if (!confirm('¿Quitar moderador?')) return;
+            try { await window.supabase.rpc('quitar_moderador_grupo', { p_grupo_id: grupoActualId, p_usuario_id: usuarioId }); showToast('Quitado', 'success'); await cargarAdminMiembros(); }
+            catch (e) { console.error(e); showToast('Error', 'error'); }
         }
-
         async function expulsarMiembro(usuarioId) {
-            if (!confirm('¿Expulsar a este miembro del grupo?')) return;
-
-            var motivo = prompt('Motivo de expulsión:', '');
-            if (motivo === null) return;
-
-            try {
-                var result = await window.supabase.rpc('expulsar_miembro_grupo', {
-                    p_grupo_id: grupoActualId,
-                    p_usuario_id: usuarioId,
-                    p_motivo: motivo || 'Expulsado por el administrador'
-                });
-
-                if (result.error) throw result.error;
-
-                showToast('Miembro expulsado', 'success');
-                await cargarAdminMiembros();
-
-            } catch (e) {
-                console.error('Error expulsando miembro:', e);
-                showToast('Error al expulsar: ' + e.message, 'error');
-            }
+            if (!confirm('¿Expulsar?')) return;
+            var motivo = prompt('Motivo:', ''); if (motivo === null) return;
+            try { await window.supabase.rpc('expulsar_miembro_grupo', { p_grupo_id: grupoActualId, p_usuario_id: usuarioId, p_motivo: motivo || 'Expulsado' }); showToast('Expulsado', 'success'); await cargarAdminMiembros(); }
+            catch (e) { console.error(e); showToast('Error', 'error'); }
         }
-
         async function bloquearMiembro(usuarioId) {
-            if (!confirm('¿Bloquear a este miembro del grupo?')) return;
-
-            var motivo = prompt('Motivo de bloqueo:', '');
-            if (motivo === null) return;
-
-            try {
-                var result = await window.supabase.rpc('bloquear_miembro_grupo', {
-                    p_grupo_id: grupoActualId,
-                    p_usuario_id: usuarioId,
-                    p_motivo: motivo || 'Bloqueado por el administrador'
-                });
-
-                if (result.error) throw result.error;
-
-                showToast('Miembro bloqueado', 'success');
-                await cargarAdminMiembros();
-
-            } catch (e) {
-                console.error('Error bloqueando miembro:', e);
-                showToast('Error al bloquear: ' + e.message, 'error');
-            }
+            if (!confirm('¿Bloquear?')) return;
+            var motivo = prompt('Motivo:', ''); if (motivo === null) return;
+            try { await window.supabase.rpc('bloquear_miembro_grupo', { p_grupo_id: grupoActualId, p_usuario_id: usuarioId, p_motivo: motivo || 'Bloqueado' }); showToast('Bloqueado', 'success'); await cargarAdminMiembros(); }
+            catch (e) { console.error(e); showToast('Error', 'error'); }
         }
-
         async function ocultarPublicacion(publicacionId) {
-            var motivo = prompt('Motivo para ocultar:', 'Contenido inapropiado');
-            if (motivo === null) return;
-
-            try {
-                var result = await window.supabase.rpc('ocultar_publicacion_grupo', {
-                    p_publicacion_id: publicacionId,
-                    p_motivo: motivo || 'Ocultado por moderación'
-                });
-
-                if (result.error) throw result.error;
-
-                showToast('Publicación oculta', 'success');
-                await cargarAdminPublicaciones();
-
-            } catch (e) {
-                console.error('Error ocultando publicación:', e);
-                showToast('Error al ocultar: ' + e.message, 'error');
-            }
+            var motivo = prompt('Motivo:', 'Inapropiado'); if (motivo === null) return;
+            try { await window.supabase.rpc('ocultar_publicacion_grupo', { p_publicacion_id: publicacionId, p_motivo: motivo }); showToast('Ocultada', 'success'); await cargarAdminPublicaciones(); }
+            catch (e) { console.error(e); showToast('Error', 'error'); }
         }
-
         async function mostrarPublicacion(publicacionId) {
-            try {
-                var result = await window.supabase.rpc('mostrar_publicacion_grupo', {
-                    p_publicacion_id: publicacionId
-                });
-
-                if (result.error) throw result.error;
-
-                showToast('Publicación visible', 'success');
-                await cargarAdminPublicaciones();
-
-            } catch (e) {
-                console.error('Error mostrando publicación:', e);
-                showToast('Error al mostrar: ' + e.message, 'error');
-            }
+            try { await window.supabase.rpc('mostrar_publicacion_grupo', { p_publicacion_id: publicacionId }); showToast('Visible', 'success'); await cargarAdminPublicaciones(); }
+            catch (e) { console.error(e); showToast('Error', 'error'); }
         }
-
         async function eliminarPublicacion(publicacionId) {
-            if (!confirm('¿Eliminar esta publicación definitivamente?')) return;
-
-            var motivo = prompt('Motivo para eliminar:', 'Contenido inapropiado');
-            if (motivo === null) return;
-
-            try {
-                var result = await window.supabase.rpc('eliminar_publicacion_grupo', {
-                    p_publicacion_id: publicacionId,
-                    p_motivo: motivo || 'Eliminado por moderación'
-                });
-
-                if (result.error) throw result.error;
-
-                showToast('Publicación eliminada', 'success');
-                await cargarAdminPublicaciones();
-
-            } catch (e) {
-                console.error('Error eliminando publicación:', e);
-                showToast('Error al eliminar: ' + e.message, 'error');
-            }
+            if (!confirm('¿Eliminar?')) return;
+            var motivo = prompt('Motivo:', 'Inapropiado'); if (motivo === null) return;
+            try { await window.supabase.rpc('eliminar_publicacion_grupo', { p_publicacion_id: publicacionId, p_motivo: motivo }); showToast('Eliminada', 'success'); await cargarAdminPublicaciones(); }
+            catch (e) { console.error(e); showToast('Error', 'error'); }
         }
 
         // ================================================================
-        // REGALOS (MONETIZACIÓN)
+        // REGALOS
         // ================================================================
         function abrirModalRegalos(streamerId, streamerNombre) {
             document.getElementById('giftStreamerName').textContent = streamerNombre || 'el creador';
-            document.getElementById('giftStatus').textContent = 'Selecciona un monto para apoyar';
+            document.getElementById('giftStatus').textContent = 'Selecciona un monto';
             document.getElementById('modalRegalos').classList.add('show');
         }
-
-        function cerrarModalRegalos() {
-            document.getElementById('modalRegalos').classList.remove('show');
-        }
+        function cerrarModalRegalos() { document.getElementById('modalRegalos').classList.remove('show'); }
 
         async function enviarRegalo(monto) {
-            if (!sessionUser) { showToast('Inicia sesión para enviar regalos', 'error'); return; }
-            if (!grupoActualId) { showToast('No hay grupo seleccionado', 'error'); return; }
-
+            if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
+            if (!grupoActualId) return;
             var statusEl = document.getElementById('giftStatus');
-            statusEl.textContent = 'Procesando pago con NOWPayments...';
-            statusEl.style.color = 'var(--text-secondary)';
-
+            statusEl.textContent = 'Procesando...';
             try {
                 var response = await fetch('/api/payments/gift/create', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + (await getSession())?.access_token || ''
-                    },
-                    body: JSON.stringify({
-                        grupo_id: grupoActualId,
-                        streamer_id: liveActivoEnGrupo ? liveActivoEnGrupo.streamer_id : grupoActual.creador_id,
-                        monto: monto,
-                        moneda: 'USDC'
-                    })
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (await getSession())?.access_token || '' },
+                    body: JSON.stringify({ grupo_id: grupoActualId, streamer_id: liveActivoEnGrupo ? liveActivoEnGrupo.streamer_id : grupoActual.creador_id, monto: monto, moneda: 'USDC' })
                 });
-
                 var data = await response.json();
-
-                if (!data.success) {
-                    throw new Error(data.error || 'Error creando pago');
-                }
-
-                statusEl.innerHTML = 'Pago iniciado correctamente<br>' +
-                    'Monto: ' + data.monto + ' USDC<br>' +
-                    'Dirección: ' + data.pay_address + '<br>' +
-                    'ID: ' + data.payment_id +
-                    '<button onclick="verificarRegalo(\'' + data.payment_id + '\')" style="margin-top:8px;padding:6px 20px;border-radius:20px;border:none;background:linear-gradient(135deg,var(--gold),var(--gold-dark));color:var(--space);font-weight:700;font-size:0.7rem;cursor:pointer;">Verificar pago</button>';
-
+                if (!data.success) throw new Error(data.error);
+                statusEl.innerHTML = 'Pago iniciado<br>Monto: ' + data.monto + ' USDC<br>ID: ' + data.payment_id +
+                    '<button onclick="verificarRegalo(\'' + data.payment_id + '\')" style="margin-top:8px;padding:6px 20px;border-radius:20px;border:none;background:linear-gradient(135deg,var(--gold),var(--gold-dark));color:var(--space);font-weight:700;font-size:0.7rem;cursor:pointer;">Verificar</button>';
                 statusEl.style.color = 'var(--success)';
-                showToast('Pago iniciado. Realiza la transferencia.', 'success');
-
-            } catch (e) {
-                console.error('Error enviando regalo:', e);
-                statusEl.textContent = 'Error: ' + e.message;
-                statusEl.style.color = 'var(--danger)';
-                showToast('Error al procesar regalo', 'error');
-            }
+            } catch (e) { console.error(e); statusEl.textContent = 'Error: ' + e.message; statusEl.style.color = 'var(--danger)'; }
         }
-
         async function verificarRegalo(paymentId) {
             var statusEl = document.getElementById('giftStatus');
-            statusEl.textContent = 'Verificando pago...';
-            statusEl.style.color = 'var(--text-secondary)';
-
+            statusEl.textContent = 'Verificando...';
             try {
-                var response = await fetch('/api/payments/gift/status/' + paymentId, {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': 'Bearer ' + (await getSession())?.access_token || ''
-                    }
-                });
-
+                var response = await fetch('/api/payments/gift/status/' + paymentId, { method: 'GET', headers: { 'Authorization': 'Bearer ' + (await getSession())?.access_token || '' } });
                 var data = await response.json();
-
-                if (!data.success) {
-                    throw new Error(data.error || 'Error verificando pago');
-                }
-
-                if (data.estado === 'finished') {
-                    statusEl.innerHTML = 'Regalo enviado con éxito<br>' +
-                        'Monto: ' + data.monto + ' USDC<br>' +
-                        'Destinatario: ' + data.destinatario +
-                        '<br><br>Gracias por apoyar a la comunidad';
-                    statusEl.style.color = 'var(--success)';
-                    showToast('Regalo enviado exitosamente', 'success');
-                } else if (data.estado === 'pending') {
-                    statusEl.textContent = 'El pago está en proceso. Espera la confirmación...';
-                    statusEl.style.color = 'var(--warning)';
-                    showToast('Pago en proceso', 'warning');
-                } else {
-                    statusEl.textContent = 'El pago no fue completado. Estado: ' + data.estado;
-                    statusEl.style.color = 'var(--danger)';
-                    showToast('Pago no completado', 'warning');
-                }
-
-            } catch (e) {
-                console.error('Error verificando regalo:', e);
-                statusEl.textContent = 'Error al verificar: ' + e.message;
-                statusEl.style.color = 'var(--danger)';
-                showToast('Error al verificar pago', 'error');
-            }
-        }
-
-        // ================================================================
-        // ABRIR MODAL CREAR GRUPO
-        // ================================================================
-        function abrirModalCrearGrupo() {
-            document.getElementById('modalCrearGrupo').classList.add('show');
-            document.getElementById('inputNombreGrupo').focus();
-        }
-
-        function cerrarModalCrearGrupo() {
-            document.getElementById('modalCrearGrupo').classList.remove('show');
+                if (data.estado === 'finished') { statusEl.textContent = 'Regalo enviado'; statusEl.style.color = 'var(--success)'; }
+                else if (data.estado === 'pending') { statusEl.textContent = 'Pendiente'; statusEl.style.color = 'var(--warning)'; }
+                else { statusEl.textContent = 'Estado: ' + data.estado; }
+            } catch (e) { console.error(e); }
         }
 
         // ================================================================
         // CREAR GRUPO
         // ================================================================
-        async function crearGrupo() {
-            if (!sessionUser) {
-                showToast('Inicia sesión para crear grupo', 'error');
-                return;
-            }
+        function abrirModalCrearGrupo() { document.getElementById('modalCrearGrupo').classList.add('show'); document.getElementById('inputNombreGrupo').focus(); }
+        function cerrarModalCrearGrupo() { document.getElementById('modalCrearGrupo').classList.remove('show'); }
 
+        async function crearGrupo() {
+            if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
             var nombre = document.getElementById('inputNombreGrupo').value.trim();
             var descripcion = document.getElementById('inputDescripcionGrupo').value.trim();
             var categoriaNombre = document.getElementById('inputCategoriaGrupo').value;
@@ -2848,128 +1830,47 @@
             var pais = document.getElementById('inputPaisGrupo').value.trim();
             var visibilidad = document.getElementById('inputVisibilidadGrupo').value;
             var modoIngreso = document.getElementById('inputModoIngresoGrupo').value;
-
-            if (!nombre) {
-                showToast('El nombre es requerido', 'warning');
-                return;
-            }
-
+            if (!nombre) { showToast('Nombre requerido', 'warning'); return; }
             var btn = document.getElementById('btnCrearGrupo');
-            btn.disabled = true;
-            btn.textContent = 'Creando...';
-
+            btn.disabled = true; btn.textContent = 'Creando...';
             try {
-                var categoriaId = null;
-                var catResult = await window.supabase
-                    .from('grupos_video_categorias')
-                    .select('id, nombre')
-                    .eq('nombre', categoriaNombre)
-                    .maybeSingle();
-
-                if (catResult.data && catResult.data.id) {
-                    categoriaId = catResult.data.id;
-                } else {
-                    categoriaId = '2822d03e-c8aa-4e65-a537-736dd432ed36';
-                    showToast('Categoría "' + categoriaNombre + '" no encontrada, usando "General"', 'warning');
-                }
-
-                if (!categoriaId) {
-                    throw new Error('No se pudo obtener un ID de categoría válido');
-                }
-
-                var groupResult = await window.supabase
-                    .from('grupos_video')
-                    .insert({
-                        nombre: nombre,
-                        descripcion: descripcion || null,
-                        categoria_id: categoriaId,
-                        ciudad: ciudad || null,
-                        estado_region: estadoRegion || null,
-                        pais: pais || null,
-                        visibilidad: visibilidad,
-                        modo_ingreso: modoIngreso,
-                        creador_id: sessionUser.id,
-                        activo: true
-                    })
-                    .select()
-                    .single();
-
-                if (groupResult.error) {
-                    console.error('Error en INSERT grupo:', groupResult.error);
-                    throw groupResult.error;
-                }
-
-                var grupo = groupResult.data;
-                showToast('Grupo "' + nombre + '" creado', 'success');
+                var catResult = await window.supabase.from('grupos_video_categorias').select('id').eq('nombre', categoriaNombre).maybeSingle();
+                var categoriaId = catResult.data?.id || '2822d03e-c8aa-4e65-a537-736dd432ed36';
+                var groupResult = await window.supabase.from('grupos_video').insert({ nombre: nombre, descripcion: descripcion || null, categoria_id: categoriaId, ciudad: ciudad || null, estado_region: estadoRegion || null, pais: pais || null, visibilidad: visibilidad, modo_ingreso: modoIngreso, creador_id: sessionUser.id, activo: true }).select().single();
+                if (groupResult.error) throw groupResult.error;
+                showToast('Grupo creado', 'success');
                 cerrarModalCrearGrupo();
-
                 document.getElementById('inputNombreGrupo').value = '';
                 document.getElementById('inputDescripcionGrupo').value = '';
                 document.getElementById('inputCiudadGrupo').value = '';
                 document.getElementById('inputEstadoGrupo').value = '';
                 document.getElementById('inputPaisGrupo').value = '';
-
                 cargarGrupos();
-
-            } catch (e) {
-                console.error('Error creando grupo:', e);
-                showToast('Error al crear grupo: ' + e.message, 'error');
-            } finally {
-                btn.disabled = false;
-                btn.textContent = '◈ Crear grupo';
-            }
+            } catch (e) { console.error(e); showToast('Error: ' + e.message, 'error'); }
+            finally { btn.disabled = false; btn.textContent = '◈ Crear grupo'; }
         }
 
         // ================================================================
-        // FUNCIONES DE UTILIDAD PARA PUBLICACIONES
+        // EMOJIS
         // ================================================================
-
         function abrirFormPublicacion() {
             var form = document.getElementById('formPublicacion');
-            if (form.style.display === 'none') {
-                form.style.display = 'block';
-                document.getElementById('inputPublicacion').focus();
-            } else {
-                form.style.display = 'none';
-            }
+            form.style.display = form.style.display === 'none' ? 'block' : 'none';
+            if (form.style.display === 'block') document.getElementById('inputPublicacion').focus();
         }
 
-        // ================================================================
-        // SELECTOR DE EMOJIS
-        // ================================================================
-
-        var emojisDisponibles = [
-            '🧌', '🫨', '🪭', '🐋', '🧰', '💥',
-            '🫩', '👈', '👉', '🦋', '🥒', '🗼', '☄️', '🧽', '🪤', '🩹',
-            '💸', '💵', '💴', '💶', '💷', '🪙', '💰', '💳', '💎',
-            '🔥', '⚡', '✨', '🌟', '💫', '🚀', '🪐',
-            '👀', '👁️', '👁️‍🗨️', '🤩', '😍', '😳', '🫣',
-            '👉', '👈', '☝️', '👇', '🫵', '🤏', '✋', '🤚', '👋',
-            '🥹', '🥺', '😍', '🤩', '🤤', '😎', '😏', '🤗', '🫶', '🥰', '😘',
-            '⏰', '⏳', '⌛', '⏲️', '🚨', '⚠️',
-            '✅', '☑️', '✔️', '🔒', '📌', '📍', '📝',
-            '📦', '📤', '📥', '🚚', '🚀', '🏍️', '💨',
-            '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '💖', '💝', '💘', '💗'
-        ];
+        var emojisDisponibles = ['🧌','🫨','🪭','🐋','🧰','💥','🫩','👈','👉','🦋','🥒','🗼','☄️','🧽','🪤','🩹','💸','💵','💴','💶','💷','🪙','💰','💳','💎','🔥','⚡','✨','🌟','💫','🚀','🪐','👀','👁️','🤩','😍','😳','🫣','☝️','👇','🫵','🤏','✋','👋','🥹','🥺','🤤','😎','😏','🤗','🫶','🥰','😘','⏰','⏳','⌛','⏲️','🚨','⚠️','✅','☑️','✔️','🔒','📌','📍','📝','📦','📤','📥','🚚','🏍️','💨','❤️','🧡','💛','💚','💙','💜','🖤','🤍','💖','💝','💘','💗'];
 
         function toggleEmojiPickerGrupo() {
             var picker = document.getElementById('emojiPickerGrupo');
             if (!picker) return;
-            if (picker.classList.contains('show')) {
-                picker.classList.remove('show');
-                return;
-            }
+            if (picker.classList.contains('show')) { picker.classList.remove('show'); return; }
             var grid = document.getElementById('emojiGridGrupo');
             if (grid && grid.children.length === 0) {
                 emojisDisponibles.forEach(function(emoji) {
                     var btn = document.createElement('button');
                     btn.textContent = emoji;
-                    btn.setAttribute('data-emoji', emoji);
-                    btn.addEventListener('click', function(e) {
-                        e.stopPropagation();
-                        insertarEmojiSeleccionadoGrupo(emoji);
-                        picker.classList.remove('show');
-                    });
+                    btn.addEventListener('click', function(e) { e.stopPropagation(); insertarEmojiSeleccionadoGrupo(emoji); picker.classList.remove('show'); });
                     grid.appendChild(btn);
                 });
             }
@@ -2984,18 +1885,10 @@
             var texto = input.value;
             input.value = texto.substring(0, start) + emoji + texto.substring(end);
             input.focus();
-            var newPos = start + emoji.length;
-            input.selectionStart = input.selectionEnd = newPos;
-            input.dispatchEvent(new Event('input', { bubbles: true }));
+            input.selectionStart = input.selectionEnd = start + emoji.length;
         }
 
-        function insertarEmojiGrupo() {
-            toggleEmojiPickerGrupo();
-        }
-
-        // ================================================================
-        // FUNCIONES DE UTILIDAD
-        // ================================================================
+        function insertarEmojiGrupo() { toggleEmojiPickerGrupo(); }
 
         function insertarHashtagGrupo() {
             var input = document.getElementById('inputPublicacion');
@@ -3014,64 +1907,43 @@
         function volverALista() {
             document.getElementById('vistaLista').style.display = 'block';
             document.getElementById('vistaGrupo').classList.remove('show');
-            grupoActual = null;
-            grupoActualId = null;
-            liveActivoEnGrupo = null;
-            isLiveGrupoActivo = false;
-            currentStreamGrupoId = null;
-            if (liveKitRoomGrupo) {
-                try { liveKitRoomGrupo.disconnect(); } catch(e) {}
-                liveKitRoomGrupo = null;
-            }
-            // Detener anuncios al volver
+            grupoActual = null; grupoActualId = null; liveActivoEnGrupo = null;
+            isLiveGrupoActivo = false; currentStreamGrupoId = null;
+            if (liveKitRoomGrupo) { try { liveKitRoomGrupo.disconnect(); } catch(e) {} liveKitRoomGrupo = null; }
+            if (channelChatGrupo) { try { window.supabase.removeChannel(channelChatGrupo); } catch(e) {} channelChatGrupo = null; }
+            cerrarLiveGrupoInline();
             detenerRefrescoAnuncios();
             cerrarAnuncio();
             cargarGrupos();
         }
 
-        // ================================================================
-        // VER TOKENS
-        // ================================================================
         function verTokens() { window.location.href = '/features/perfil/perfil.html'; }
 
         // ================================================================
         // INICIALIZACIÓN
         // ================================================================
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('Sariel\'s - Grupos con Marketing');
-
+            console.log('Sariel\'s - Grupos con Live independiente');
             cargarUsuarioActual().then(function() {
                 cargarCategorias();
                 cargarCiudades();
                 cargarGrupos();
             });
-
             document.addEventListener('keydown', function(e) {
                 if (e.key === 'Escape') {
-                    cerrarModalCrearGrupo();
-                    cerrarModalAdmin();
-                    cerrarModalRegalos();
-                    cerrarConfirmacionEliminarGrupo();
+                    cerrarModalCrearGrupo(); cerrarModalAdmin(); cerrarModalRegalos(); cerrarConfirmacionEliminarGrupo();
                 }
-            });
-
-            document.querySelectorAll('.modal-overlay').forEach(function(modal) {
-                modal.addEventListener('click', function(e) {
-                    if (e.target === this) {
-                        this.classList.remove('show');
-                    }
-                });
-            });
-
-            document.addEventListener('keydown', function(e) {
                 if (e.key === 'Enter') {
                     var input = e.target;
+                    if (input.id === 'grupoLiveChatInput') { e.preventDefault(); enviarMensajeLiveGrupo(); }
                     if (input.id && input.id.startsWith('inputComentario-')) {
                         e.preventDefault();
-                        var publicacionId = input.id.replace('inputComentario-', '');
-                        enviarComentarioPublicacion(publicacionId);
+                        enviarComentarioPublicacion(input.id.replace('inputComentario-', ''));
                     }
                 }
+            });
+            document.querySelectorAll('.modal-overlay').forEach(function(modal) {
+                modal.addEventListener('click', function(e) { if (e.target === this) this.classList.remove('show'); });
             });
         });
 
@@ -3091,6 +1963,9 @@
         window.iniciarLiveEnGrupo = iniciarLiveEnGrupo;
         window.verLiveActivo = verLiveActivo;
         window.finalizarLiveGrupo = finalizarLiveGrupo;
+        window.cerrarLiveGrupoInline = cerrarLiveGrupoInline;
+        window.toggleMuteGrupoLive = toggleMuteGrupoLive;
+        window.enviarMensajeLiveGrupo = enviarMensajeLiveGrupo;
         window.abrirModalCrearGrupo = abrirModalCrearGrupo;
         window.cerrarModalCrearGrupo = cerrarModalCrearGrupo;
         window.crearGrupo = crearGrupo;
@@ -3125,7 +2000,6 @@
         window.cerrarConfirmacionEliminarGrupo = cerrarConfirmacionEliminarGrupo;
         window.ejecutarEliminarGrupo = ejecutarEliminarGrupo;
         window.procesarConMarcaDeAgua = procesarConMarcaDeAgua;
-        // ✅ Anuncios
         window.cerrarAnuncio = cerrarAnuncio;
         window.registrarClicAnuncio = registrarClicAnuncio;
     </script>
