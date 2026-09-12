@@ -6,7 +6,6 @@
     <title>◈ Grupos · Sariel's</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
-
     <style>
         :root {
             --gold: #D4AF37; --gold-dark: #b8923a; --gold-light: #e8c84a; --gold-bright: #f0d060;
@@ -80,94 +79,30 @@
         .grupo-header-interno .info-text .descripcion { color: var(--text-secondary); font-size: 0.85rem; margin-top: 4px; }
         .grupo-header-interno .info-text .meta { display: flex; gap: 12px; font-size: 0.65rem; color: var(--text-muted); margin-top: 6px; flex-wrap: wrap; }
         .grupo-header-interno .acciones { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
-
-        /* ===== LIVE DE GRUPO INLINE ===== */
-        .grupo-live-container {
-            display: none;
-            margin-bottom: 20px;
-            background: var(--glass-bg);
-            border: 1px solid var(--live-red);
-            border-radius: var(--radius-xl);
-            overflow: hidden;
-            box-shadow: 0 10px 40px rgba(255, 0, 68, 0.2);
-            animation: adFadeIn 0.5s ease;
-        }
+        .grupo-live-container { display: none; margin-bottom: 20px; background: var(--glass-bg); border: 1px solid var(--live-red); border-radius: var(--radius-xl); overflow: hidden; box-shadow: 0 10px 40px rgba(255, 0, 68, 0.2); animation: adFadeIn 0.5s ease; }
         .grupo-live-container.visible { display: block; }
-        .grupo-live-container .live-header-bar {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 10px 16px; border-bottom: 1px solid rgba(255, 0, 68, 0.2);
-            background: rgba(255, 0, 68, 0.05);
-        }
-        .grupo-live-container .live-header-bar .live-tag {
-            display: flex; align-items: center; gap: 8px;
-            color: var(--live-red); font-weight: 700; font-size: 0.75rem;
-            font-family: 'Orbitron', monospace; letter-spacing: 1px;
-        }
-        .grupo-live-container .live-header-bar .live-tag .dot {
-            width: 8px; height: 8px; border-radius: 50%; background: var(--live-red);
-            animation: pulse-live 1s infinite;
-        }
-        .grupo-live-container .live-header-bar .live-close {
-            background: transparent; border: none; color: var(--text-muted);
-            font-size: 1.2rem; cursor: pointer; padding: 4px 10px; border-radius: 8px;
-        }
+        .grupo-live-container .live-header-bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; border-bottom: 1px solid rgba(255, 0, 68, 0.2); background: rgba(255, 0, 68, 0.05); }
+        .grupo-live-container .live-header-bar .live-tag { display: flex; align-items: center; gap: 8px; color: var(--live-red); font-weight: 700; font-size: 0.75rem; font-family: 'Orbitron', monospace; letter-spacing: 1px; }
+        .grupo-live-container .live-header-bar .live-tag .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--live-red); animation: pulse-live 1s infinite; }
+        .grupo-live-container .live-header-bar .live-close { background: transparent; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer; padding: 4px 10px; border-radius: 8px; }
         .grupo-live-container .live-header-bar .live-close:hover { color: var(--danger); background: rgba(255,0,68,0.1); }
-        .grupo-live-container .live-video-wrap {
-            position: relative; width: 100%; background: #000;
-            aspect-ratio: 16/9; max-height: 60vh;
-        }
-        .grupo-live-container .live-video-wrap video {
-            width: 100%; height: 100%; object-fit: cover;
-        }
-        .grupo-live-container .live-controls-inline {
-            position: absolute; bottom: 0; left: 0; right: 0;
-            padding: 16px;
-            background: linear-gradient(to top, rgba(0,0,0,0.85), transparent);
-            display: flex; gap: 8px; justify-content: center; align-items: center;
-        }
-        .grupo-live-container .live-ctrl-btn {
-            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15);
-            border-radius: 50%; width: 44px; height: 44px;
-            display: flex; align-items: center; justify-content: center;
-            color: #fff; cursor: pointer; transition: var(--transition);
-            backdrop-filter: blur(8px);
-        }
+        .grupo-live-container .live-video-wrap { position: relative; width: 100%; background: #000; aspect-ratio: 16/9; max-height: 60vh; }
+        .grupo-live-container .live-video-wrap video { width: 100%; height: 100%; object-fit: cover; }
+        .grupo-live-container .live-controls-inline { position: absolute; bottom: 0; left: 0; right: 0; padding: 16px; background: linear-gradient(to top, rgba(0,0,0,0.85), transparent); display: flex; gap: 8px; justify-content: center; align-items: center; }
+        .grupo-live-container .live-ctrl-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); border-radius: 50%; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: #fff; cursor: pointer; transition: var(--transition); backdrop-filter: blur(8px); }
         .grupo-live-container .live-ctrl-btn:hover { transform: scale(1.08); border-color: var(--gold); color: var(--gold); }
         .grupo-live-container .live-ctrl-btn.muted { background: rgba(255, 51, 102, 0.3); border-color: var(--danger); color: var(--danger); }
         .grupo-live-container .live-ctrl-btn.end { background: rgba(255, 0, 68, 0.3); border-color: var(--live-red); }
         .grupo-live-container .live-ctrl-btn svg { width: 20px; height: 20px; }
-        .grupo-live-container .live-info {
-            padding: 12px 16px; border-top: 1px solid var(--glass-border);
-            display: flex; justify-content: space-between; align-items: center;
-            font-size: 0.7rem; color: var(--text-secondary);
-        }
-        .grupo-live-container .live-chat-inline {
-            max-height: 150px; overflow-y: auto; padding: 8px 16px;
-            border-top: 1px solid var(--glass-border); background: rgba(0,0,0,0.2);
-            display: flex; flex-direction: column; gap: 4px;
-        }
-        .grupo-live-container .live-chat-inline .chat-msg {
-            font-size: 0.7rem; color: var(--text-secondary);
-            padding: 2px 0; border-bottom: 1px solid rgba(212,175,55,0.04);
-        }
+        .grupo-live-container .live-info { padding: 12px 16px; border-top: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center; font-size: 0.7rem; color: var(--text-secondary); }
+        .grupo-live-container .live-chat-inline { max-height: 150px; overflow-y: auto; padding: 8px 16px; border-top: 1px solid var(--glass-border); background: rgba(0,0,0,0.2); display: flex; flex-direction: column; gap: 4px; }
+        .grupo-live-container .live-chat-inline .chat-msg { font-size: 0.7rem; color: var(--text-secondary); padding: 2px 0; border-bottom: 1px solid rgba(212,175,55,0.04); }
         .grupo-live-container .live-chat-inline .chat-msg strong { color: var(--gold); font-weight: 600; }
-        .grupo-live-container .live-chat-input-row {
-            display: flex; gap: 8px; padding: 10px 16px;
-            border-top: 1px solid var(--glass-border); background: rgba(0,0,0,0.3);
-        }
-        .grupo-live-container .live-chat-input-row input {
-            flex: 1; padding: 8px 14px; background: rgba(255,255,255,0.05);
-            border: 1px solid var(--glass-border); border-radius: 20px;
-            color: var(--text-primary); font-size: 0.75rem; outline: none;
-        }
+        .grupo-live-container .live-chat-input-row { display: flex; gap: 8px; padding: 10px 16px; border-top: 1px solid var(--glass-border); background: rgba(0,0,0,0.3); }
+        .grupo-live-container .live-chat-input-row input { flex: 1; padding: 8px 14px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 20px; color: var(--text-primary); font-size: 0.75rem; outline: none; }
         .grupo-live-container .live-chat-input-row input:focus { border-color: var(--gold); }
-        .grupo-live-container .live-chat-input-row button {
-            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
-            color: var(--space); border: none; padding: 8px 18px;
-            border-radius: 20px; font-weight: 700; font-size: 0.7rem; cursor: pointer;
-        }
+        .grupo-live-container .live-chat-input-row button { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); border: none; padding: 8px 18px; border-radius: 20px; font-weight: 700; font-size: 0.7rem; cursor: pointer; }
         .grupo-live-container .live-chat-input-row button:hover { transform: scale(1.03); }
-
         .marketing-ad-container { display: none; margin-bottom: 16px; background: linear-gradient(155deg, rgba(15, 45, 26, 0.55), rgba(8, 15, 26, 0.75)); border: 1px solid rgba(212, 175, 55, 0.25); border-radius: var(--radius-xl); overflow: hidden; backdrop-filter: blur(14px); position: relative; box-shadow: 0 10px 40px rgba(212, 175, 55, 0.08); animation: adFadeIn 0.5s ease; }
         .marketing-ad-container.visible { display: block; }
         @keyframes adFadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -185,7 +120,6 @@
         .marketing-ad-cta { display: inline-flex; align-items: center; gap: 6px; padding: 8px 20px; border-radius: 30px; background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); font-size: 0.7rem; font-weight: 700; text-decoration: none; border: none; cursor: pointer; transition: var(--transition); font-family: 'Inter', sans-serif; text-transform: uppercase; letter-spacing: 0.5px; }
         .marketing-ad-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(212, 175, 55, 0.4); }
         @media (max-width: 480px) { .marketing-ad-body { flex-direction: column; } .marketing-ad-media { width: 100%; height: 140px; } }
-
         .publicaciones-container { margin-top: 16px; }
         .publicacion-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 12px; }
         .publicacion-card .header { display: flex; gap: 10px; align-items: center; margin-bottom: 8px; }
@@ -264,9 +198,7 @@
     </style>
 </head>
 <body>
-
     <div class="app">
-
         <header class="header">
             <a href="/" class="logo">
                 <span class="logo-hex">◈</span>
@@ -280,7 +212,6 @@
                 </span>
             </div>
         </header>
-
         <nav class="main-nav">
             <a href="/" class="nav-link">⌂ Inicio</a>
             <a href="/features/muro/muro.html" class="nav-link">◇ Muro</a>
@@ -292,10 +223,6 @@
             <a href="/features/grupos/grupos.html" class="nav-link active">◇ Grupos</a>
             <a href="/marketing/marketing.html" class="nav-link">◈ Marketing</a>
         </nav>
-
-        <!-- ============================================================ -->
-        <!-- LISTA DE GRUPOS -->
-        <!-- ============================================================ -->
         <div id="vistaLista">
             <div class="grupos-header">
                 <h1 data-clave="grupos_titulo">◈ Grupos</h1>
@@ -311,18 +238,12 @@
                     <button class="btn-gold btn-sm" onclick="abrirModalCrearGrupo()">+ Crear grupo</button>
                 </div>
             </div>
-
             <div class="grupos-grid" id="gruposGrid">
                 <div class="empty-state"><span class="icon">◈</span><h3 data-clave="grupos_cargando">Cargando grupos...</h3></div>
             </div>
         </div>
-
-        <!-- ============================================================ -->
-        <!-- VISTA INTERNA DEL GRUPO -->
-        <!-- ============================================================ -->
         <div class="grupo-interno" id="vistaGrupo">
             <button class="btn-outline btn-sm" onclick="volverALista()" style="margin-bottom:12px;">← Volver a grupos</button>
-
             <div class="grupo-header-interno" id="grupoHeaderInterno">
                 <div class="portada" id="grupoPortada">◈</div>
                 <div class="info-row">
@@ -348,10 +269,6 @@
                     <button class="btn-outline btn-sm" onclick="abrirAdminGrupo()" id="btnAdminGrupo" style="display:none;">◈ Administrar</button>
                 </div>
             </div>
-
-            <!-- ============================================================ -->
-            <!-- 🎥 CONTENEDOR DE LIVE DEL GRUPO (INLINE) -->
-            <!-- ============================================================ -->
             <div class="grupo-live-container" id="grupoLiveContainer">
                 <div class="live-header-bar">
                     <div class="live-tag">
@@ -386,19 +303,13 @@
                     <button onclick="enviarMensajeLiveGrupo()">Enviar</button>
                 </div>
             </div>
-
-            <!-- ============================================================ -->
-            <!-- ANUNCIO DE MARKETING -->
-            <!-- ============================================================ -->
             <div class="marketing-ad-container" id="marketingAdContainer">
                 <div class="marketing-ad-header">
                     <span class="marketing-ad-label">Patrocinado</span>
                     <button class="marketing-ad-close" onclick="cerrarAnuncio()" aria-label="Cerrar anuncio">&times;</button>
                 </div>
                 <div class="marketing-ad-body">
-                    <div class="marketing-ad-media" id="marketingAdMedia">
-                        <span>◈</span>
-                    </div>
+                    <div class="marketing-ad-media" id="marketingAdMedia"><span>◈</span></div>
                     <div class="marketing-ad-content">
                         <div class="marketing-ad-title" id="marketingAdTitle">Cargando anuncio...</div>
                         <div class="marketing-ad-desc" id="marketingAdDesc"></div>
@@ -406,8 +317,6 @@
                     </div>
                 </div>
             </div>
-
-            <!-- Formulario de publicación -->
             <div class="form-publicacion" id="formPublicacion" style="display:none;">
                 <textarea id="inputPublicacion" placeholder="¿Qué está pasando en el grupo?"></textarea>
                 <div class="acciones">
@@ -420,16 +329,10 @@
                     </div>
                 </div>
             </div>
-
-            <!-- Publicaciones -->
             <div class="publicaciones-container" id="publicacionesContainer">
                 <div class="empty-state"><span class="icon">◈</span><h3 data-clave="grupos_sin_publicaciones">Sin publicaciones aún</h3><p data-clave="grupos_sin_publicaciones_desc">Sé el primero en publicar</p></div>
             </div>
         </div>
-
-        <!-- ============================================================ -->
-        <!-- MODAL CREAR GRUPO -->
-        <!-- ============================================================ -->
         <div class="modal-overlay" id="modalCrearGrupo">
             <div class="modal">
                 <div class="modal-header">
@@ -437,72 +340,32 @@
                     <button class="btn-cerrar" onclick="cerrarModalCrearGrupo()">×</button>
                 </div>
                 <form id="formCrearGrupo" onsubmit="event.preventDefault(); crearGrupo();">
-                    <div class="form-group">
-                        <label data-clave="grupos_nombre_grupo">Nombre del grupo *</label>
-                        <input type="text" id="inputNombreGrupo" required />
-                    </div>
-                    <div class="form-group">
-                        <label data-clave="grupos_descripcion_grupo">Descripción</label>
-                        <textarea id="inputDescripcionGrupo" rows="2"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label data-clave="grupos_categoria">Categoría</label>
+                    <div class="form-group"><label data-clave="grupos_nombre_grupo">Nombre del grupo *</label><input type="text" id="inputNombreGrupo" required /></div>
+                    <div class="form-group"><label data-clave="grupos_descripcion_grupo">Descripción</label><textarea id="inputDescripcionGrupo" rows="2"></textarea></div>
+                    <div class="form-group"><label data-clave="grupos_categoria">Categoría</label>
                         <select id="inputCategoriaGrupo">
-                            <option value="General">General</option>
-                            <option value="Música">Música</option>
-                            <option value="Gaming">Gaming</option>
-                            <option value="Arte">Arte</option>
-                            <option value="Deportes">Deportes</option>
-                            <option value="Educación">Educación</option>
-                            <option value="Tecnología">Tecnología</option>
-                            <option value="Cultura">Cultura</option>
-                            <option value="Comunidad">Comunidad</option>
+                            <option value="General">General</option><option value="Música">Música</option><option value="Gaming">Gaming</option>
+                            <option value="Arte">Arte</option><option value="Deportes">Deportes</option><option value="Educación">Educación</option>
+                            <option value="Tecnología">Tecnología</option><option value="Cultura">Cultura</option><option value="Comunidad">Comunidad</option>
                         </select>
                     </div>
-                    <div class="form-group">
-                        <label data-clave="grupos_ciudad">Ciudad</label>
-                        <input type="text" id="inputCiudadGrupo" placeholder="Ej: Puebla" />
+                    <div class="form-group"><label data-clave="grupos_ciudad">Ciudad</label><input type="text" id="inputCiudadGrupo" placeholder="Ej: Puebla" /></div>
+                    <div class="form-group"><label data-clave="grupos_estado">Estado/Región</label><input type="text" id="inputEstadoGrupo" placeholder="Ej: Puebla" /></div>
+                    <div class="form-group"><label data-clave="grupos_pais">País</label><input type="text" id="inputPaisGrupo" placeholder="Ej: México" /></div>
+                    <div class="form-group"><label data-clave="grupos_visibilidad">Visibilidad</label>
+                        <select id="inputVisibilidadGrupo"><option value="publico">Público</option><option value="privado">Privado</option></select>
                     </div>
-                    <div class="form-group">
-                        <label data-clave="grupos_estado">Estado/Región</label>
-                        <input type="text" id="inputEstadoGrupo" placeholder="Ej: Puebla" />
-                    </div>
-                    <div class="form-group">
-                        <label data-clave="grupos_pais">País</label>
-                        <input type="text" id="inputPaisGrupo" placeholder="Ej: México" />
-                    </div>
-                    <div class="form-group">
-                        <label data-clave="grupos_visibilidad">Visibilidad</label>
-                        <select id="inputVisibilidadGrupo">
-                            <option value="publico">Público</option>
-                            <option value="privado">Privado</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label data-clave="grupos_modo_ingreso">Modo de ingreso</label>
-                        <select id="inputModoIngresoGrupo">
-                            <option value="abierto">Abierto</option>
-                            <option value="solicitud">Solicitud</option>
-                            <option value="invitacion">Invitación</option>
-                        </select>
+                    <div class="form-group"><label data-clave="grupos_modo_ingreso">Modo de ingreso</label>
+                        <select id="inputModoIngresoGrupo"><option value="abierto">Abierto</option><option value="solicitud">Solicitud</option><option value="invitacion">Invitación</option></select>
                     </div>
                     <button class="btn-guardar" id="btnCrearGrupo">◈ Crear grupo</button>
                 </form>
             </div>
         </div>
-
-        <!-- ============================================================ -->
-        <!-- MODAL ADMINISTRAR GRUPO -->
-        <!-- ============================================================ -->
         <div class="modal-overlay" id="modalAdminGrupo">
             <div class="modal">
-                <div class="modal-header">
-                    <h2>◈ Administrar grupo</h2>
-                    <button class="btn-cerrar" onclick="cerrarModalAdmin()">×</button>
-                </div>
-                <div id="adminContenido">
-                    <div class="empty-state"><span class="icon">◈</span><h3 data-clave="grupos_cargando_admin">Cargando...</h3></div>
-                </div>
+                <div class="modal-header"><h2>◈ Administrar grupo</h2><button class="btn-cerrar" onclick="cerrarModalAdmin()">×</button></div>
+                <div id="adminContenido"><div class="empty-state"><span class="icon">◈</span><h3 data-clave="grupos_cargando_admin">Cargando...</h3></div></div>
                 <div style="margin-top:16px; display:flex; gap:8px; flex-wrap:wrap;">
                     <button class="btn-gold btn-sm" onclick="cargarAdminMiembros()" style="flex:1;">◈ Miembros</button>
                     <button class="btn-gold btn-sm" onclick="cargarAdminPublicaciones()" style="flex:1;">◈ Publicaciones</button>
@@ -514,16 +377,9 @@
                 </div>
             </div>
         </div>
-
-        <!-- ============================================================ -->
-        <!-- MODAL CONFIRMAR ELIMINAR GRUPO -->
-        <!-- ============================================================ -->
         <div class="modal-overlay" id="modalConfirmarEliminarGrupo">
             <div class="modal">
-                <div class="modal-header">
-                    <h2 style="color:var(--danger);">◈ Eliminar grupo</h2>
-                    <button class="btn-cerrar" onclick="cerrarConfirmacionEliminarGrupo()">×</button>
-                </div>
+                <div class="modal-header"><h2 style="color:var(--danger);">◈ Eliminar grupo</h2><button class="btn-cerrar" onclick="cerrarConfirmacionEliminarGrupo()">×</button></div>
                 <div style="padding:12px 0;">
                     <p style="color:var(--text-secondary); font-size:0.9rem; margin-bottom:12px;">¿Eliminar este grupo?</p>
                     <p style="color:var(--danger); font-size:0.85rem; font-weight:600; margin-bottom:8px;">Esta acción es permanente.</p>
@@ -536,16 +392,9 @@
                 </div>
             </div>
         </div>
-
-        <!-- ============================================================ -->
-        <!-- MODAL REGALOS -->
-        <!-- ============================================================ -->
         <div class="modal-overlay" id="modalRegalos">
             <div class="modal">
-                <div class="modal-header">
-                    <h2>◈ Enviar regalo</h2>
-                    <button class="btn-cerrar" onclick="cerrarModalRegalos()">×</button>
-                </div>
+                <div class="modal-header"><h2>◈ Enviar regalo</h2><button class="btn-cerrar" onclick="cerrarModalRegalos()">×</button></div>
                 <div style="text-align:center;padding:10px 0;">
                     <p style="color:var(--text-muted);font-size:0.8rem;margin-bottom:12px;">Apoya a <strong id="giftStreamerName" style="color:var(--gold);">el creador</strong></p>
                     <div class="gift-options" id="giftOptions">
@@ -559,9 +408,7 @@
                 </div>
             </div>
         </div>
-
         <div class="toast" id="toast"></div>
-
         <footer class="footer">
             <span><span class="brand">◈ Sariel's</span> · Sabor al Paladar · WEB3</span>
             <div class="footer-links">
@@ -571,17 +418,10 @@
                 <span style="opacity:0.3;">⚡ Polygon</span>
             </div>
         </footer>
-
     </div>
-
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="/app.js"></script>
-
     <script>
-        // ================================================================
-        // GRUPOS - TODAS LAS FUNCIONES
-        // ================================================================
-
         var sessionUser = null;
         var grupoActual = null;
         var grupoActualId = null;
@@ -595,17 +435,13 @@
         var publicando = false;
         var eliminandoGrupo = false;
 
-        // ===== ESTADO ANUNCIO =====
         var anuncioActual = null;
         var adRefreshInterval = null;
         var adSessionId = null;
         var adVistaTimer = null;
         var adCerrado = false;
 
-        // ===== CONFIGURACIÓN LIVEKIT =====
-        const LIVEKIT_CONFIG = {
-            url: 'wss://csariels-domo-57ujk04t.livekit.cloud'
-        };
+        const LIVEKIT_CONFIG = { url: 'wss://csariels-domo-57ujk04t.livekit.cloud' };
 
         var liveKitRoomGrupo = null;
         var localStreamGrupo = null;
@@ -616,7 +452,6 @@
         var currentStreamGrupoId = null;
         var esStreamerDelLiveGrupo = false;
 
-        // ===== TOAST =====
         function showToast(msg, type) {
             var t = document.getElementById('toast');
             if (!t) { t = document.createElement('div'); t.id = 'toast'; t.className = 'toast'; document.body.appendChild(t); }
@@ -630,7 +465,6 @@
             t._timeout = setTimeout(function() { t.classList.remove('show'); }, 3500);
         }
 
-        // ===== OBTENER SESIÓN =====
         async function getSession() {
             try {
                 if (typeof window.supabase === 'undefined') { console.warn('Supabase no disponible'); return null; }
@@ -639,7 +473,6 @@
             } catch (e) { console.error('Error sesión:', e); return null; }
         }
 
-        // ===== ESCAPE HTML =====
         function escapeHTML(texto) {
             if (!texto) return '';
             var div = document.createElement('div');
@@ -647,12 +480,10 @@
             return div.innerHTML;
         }
 
-        // ===== CARGAR LIBRERÍA LIVEKIT (v2) =====
         async function cargarLiveKit() {
             return await import('https://cdn.jsdelivr.net/npm/livekit-client@2/dist/livekit-client.esm.mjs');
         }
 
-        // ===== CARGAR USUARIO ACTUAL =====
         async function cargarUsuarioActual() {
             try {
                 var session = await getSession();
@@ -666,9 +497,6 @@
             } catch (e) { console.error('Error cargando usuario:', e); return null; }
         }
 
-        // ================================================================
-        // ✅ ANUNCIOS DE MARKETING EN GRUPOS
-        // ================================================================
         function getOrCreateAdSessionId() {
             if (adSessionId) return adSessionId;
             adSessionId = `ads_grupo_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
@@ -769,9 +597,6 @@
             if (adVistaTimer) { clearTimeout(adVistaTimer); adVistaTimer = null; }
         }
 
-        // ================================================================
-        // 📷 PROCESAR IMAGEN CON MARCA DE AGUA
-        // ================================================================
         async function procesarConMarcaDeAgua(file, tipo) {
             return new Promise((resolve) => {
                 try {
@@ -814,9 +639,6 @@
             });
         }
 
-        // ================================================================
-        // CARGAR CATEGORÍAS / CIUDADES / GRUPOS
-        // ================================================================
         async function cargarCategorias() {
             try {
                 var result = await window.supabase.from('grupos_video_categorias').select('*').eq('activo', true).order('nombre', { ascending: true });
@@ -856,9 +678,6 @@
             } catch (e) { console.error('Error cargando ciudades:', e); }
         }
 
-        // ================================================================
-        // CARGAR GRUPOS (con filtro de live por grupo_id)
-        // ================================================================
         async function cargarGrupos() {
             var grid = document.getElementById('gruposGrid');
             try {
@@ -897,18 +716,11 @@
                     return;
                 }
 
-                // ✅ Solo buscar vivos de ESTOS grupos (filtro estricto)
                 var liveMap = {};
                 for (var i = 0; i < grupos.length; i++) {
                     try {
                         var g = grupos[i];
-                        var liveResult = await window.supabase
-                            .from('transmisiones')
-                            .select('id, titulo, streamer_id')
-                            .eq('grupo_id', g.id)
-                            .eq('estado', 'en_vivo')
-                            .eq('is_live', true)
-                            .maybeSingle();
+                        var liveResult = await window.supabase.from('transmisiones').select('id, titulo, streamer_id').eq('grupo_id', g.id).eq('estado', 'en_vivo').eq('is_live', true).maybeSingle();
                         if (liveResult.data) liveMap[g.id] = liveResult.data;
                     } catch (e) { console.warn('Error verificando live para grupo:', grupos[i].id, e); }
                 }
@@ -922,8 +734,7 @@
                         '<div class="avatar">' + (g.avatar_url ? '<img src="' + escapeHTML(g.avatar_url) + '">' : '◈') + '</div>' +
                         '<div class="nombre">' + escapeHTML(g.nombre) + '</div>' +
                         '<div class="descripcion">' + escapeHTML((g.descripcion || '').substring(0, 80)) + '</div>' +
-                        '<div class="meta">' +
-                        '<span class="ciudad">◈ ' + escapeHTML(g.ciudad || 'Sin ciudad') + '</span>' +
+                        '<div class="meta"><span class="ciudad">◈ ' + escapeHTML(g.ciudad || 'Sin ciudad') + '</span>' +
                         '<span>◈ ' + miembros + '</span>' + visBadge +
                         (tieneLive ? ' <span class="live-badge">◉ EN VIVO</span>' : '') +
                         '</div></div>';
@@ -943,9 +754,6 @@
             cargarGrupos();
         }
 
-        // ================================================================
-        // ABRIR GRUPO
-        // ================================================================
         async function abrirGrupo(grupoId) {
             try {
                 var result = await window.supabase.from('grupos_video').select('*, miembros:grupos_video_miembros(count)').eq('id', grupoId).single();
@@ -1000,19 +808,14 @@
                 }
 
                 await cargarPublicacionesGrupo(grupoId);
-
                 adCerrado = false;
                 iniciarRefrescoAnuncios();
-
             } catch (e) {
                 console.error('Error abriendo grupo:', e);
                 showToast('Error al abrir grupo', 'error');
             }
         }
 
-        // ================================================================
-        // VERIFICAR MEMBRESÍA
-        // ================================================================
         async function verificarMembresia(grupoId) {
             try {
                 if (!sessionUser) { esAdmin = false; esModerador = false; esCreador = false; rolEnGrupo = null; return; }
@@ -1028,18 +831,9 @@
 
         function esMiembro() { return rolEnGrupo !== null || esCreador; }
 
-        // ================================================================
-        // VERIFICAR LIVE ACTIVO EN GRUPO (filtro estricto por grupo_id)
-        // ================================================================
         async function verificarLiveActivoGrupo(grupoId) {
             try {
-                var result = await window.supabase
-                    .from('transmisiones')
-                    .select('*')
-                    .eq('grupo_id', grupoId)
-                    .eq('estado', 'en_vivo')
-                    .eq('is_live', true)
-                    .maybeSingle();
+                var result = await window.supabase.from('transmisiones').select('*').eq('grupo_id', grupoId).eq('estado', 'en_vivo').eq('is_live', true).maybeSingle();
                 liveActivoEnGrupo = result.data || null;
                 if (liveActivoEnGrupo) currentStreamGrupoId = liveActivoEnGrupo.id;
                 return liveActivoEnGrupo;
@@ -1050,9 +844,7 @@
             }
         }
 
-        // ================================================================
-        // 🎥 INICIAR LIVE EN GRUPO (con LiveKit v2)
-        // ================================================================
+        // ✅ FIX: p_room_name = null para que el trigger genere "live_UUID" automáticamente
         async function iniciarLiveEnGrupo() {
             console.log('🎬 [1] Iniciando live de grupo...');
             if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
@@ -1065,15 +857,13 @@
 
             try {
                 var titulo = prompt('Título del LIVE:', 'Live en ' + (grupoActual.nombre || 'grupo')) || 'Live en grupo';
-                var roomName = 'grupo-live-' + sessionUser.id + '-' + Date.now();
-                console.log('🎬 [2] RoomName:', roomName);
-
+                console.log('🎬 [2] Creando transmisión (room_name lo genera el trigger)...');
                 showToast('Creando transmisión de grupo...', '');
 
                 const { data: rpcResult, error } = await window.supabase.rpc('crear_transmision', {
                     p_titulo: titulo,
                     p_categoria: 'grupo',
-                    p_room_name: roomName,
+                    p_room_name: null,
                     p_grupo_id: grupoActualId
                 });
 
@@ -1082,67 +872,53 @@
                     throw new Error(error.message || 'Error al crear LIVE de grupo');
                 }
 
-                // La RPC devuelve bigint
                 const nuevoId = (typeof rpcResult === 'object' && rpcResult !== null) ? rpcResult.id : rpcResult;
                 if (!nuevoId) throw new Error('No se pudo crear la transmisión (ID vacío)');
                 console.log('🎬 [3] Transmisión creada con ID:', nuevoId);
 
-                // Traer fila completa
-                const { data: transmision, error: fetchError } = await window.supabase
-                    .from('transmisiones')
-                    .select('*')
-                    .eq('id', nuevoId)
-                    .single();
+                const { data: transmision, error: fetchError } = await window.supabase.from('transmisiones').select('*').eq('id', nuevoId).single();
                 if (fetchError || !transmision) { console.error('❌ Error recuperando transmisión:', fetchError); throw new Error('No se pudo recuperar la transmisión'); }
 
                 currentStreamGrupoId = transmision.id;
                 liveActivoEnGrupo = transmision;
                 isLiveGrupoActivo = true;
                 esStreamerDelLiveGrupo = true;
+                console.log('🎬 [4] RoomName REAL generado por la BD:', transmision.room_name);
 
-                // Mostrar panel de live
                 mostrarLiveGrupoInline(transmision);
                 document.getElementById('grupoLiveBadge').style.display = 'inline';
                 document.getElementById('btnIniciarLive').style.display = 'none';
                 document.getElementById('btnFinalizarLive').style.display = 'inline-block';
                 document.getElementById('btnVerLive').style.display = 'inline-block';
 
-                // ===== CONECTAR A LIVEKIT v2 =====
                 try {
                     showToast('🔗 Conectando a LiveKit...', '', 2000);
-                    console.log('🎬 [4] Cargando LiveKit v2...');
+                    console.log('🎬 [5] Cargando LiveKit v2...');
                     const { Room, Track } = await cargarLiveKit();
                     liveKitRoomGrupo = new Room();
 
-                    console.log('🎬 [5] Pidiendo token...');
+                    console.log('🎬 [6] Pidiendo token con room_name:', transmision.room_name);
                     const token = await obtenerTokenLiveKitGrupo(transmision.room_name, sessionUser.id, 'publisher');
-                    console.log('🎬 [6] Token recibido');
+                    console.log('🎬 [7] Token recibido');
 
                     await liveKitRoomGrupo.connect(LIVEKIT_CONFIG.url, token);
-                    console.log('🎬 [7] Conectado');
+                    console.log('🎬 [8] Conectado a LiveKit');
 
                     await liveKitRoomGrupo.localParticipant.setCameraEnabled(true);
                     await liveKitRoomGrupo.localParticipant.setMicrophoneEnabled(true);
-                    console.log('🎬 [8] Cámara y micrófono activados');
+                    console.log('🎬 [9] Cámara y micrófono activados');
 
-                    // ✅ Attach local
                     const localVideoTrack = liveKitRoomGrupo.localParticipant.getTrackPublication(Track.Source.Camera)?.videoTrack;
                     if (localVideoTrack) {
                         localVideoTrack.attach(document.getElementById('grupoLiveVideo'));
-                        console.log('🎬 [9] Video local adjuntado');
+                        console.log('🎬 [10] Video local adjuntado');
                     }
 
                     document.getElementById('grupoLiveEstado').textContent = '● En vivo';
                     showToast('✅ Transmitiendo en el grupo', 'success');
 
-                    liveKitRoomGrupo.on('participantConnected', () => {
-                        espectadoresGrupo++;
-                        document.getElementById('grupoLiveEspectadores').textContent = espectadoresGrupo;
-                    });
-                    liveKitRoomGrupo.on('participantDisconnected', () => {
-                        espectadoresGrupo = Math.max(0, espectadoresGrupo - 1);
-                        document.getElementById('grupoLiveEspectadores').textContent = espectadoresGrupo;
-                    });
+                    liveKitRoomGrupo.on('participantConnected', () => { espectadoresGrupo++; document.getElementById('grupoLiveEspectadores').textContent = espectadoresGrupo; });
+                    liveKitRoomGrupo.on('participantDisconnected', () => { espectadoresGrupo = Math.max(0, espectadoresGrupo - 1); document.getElementById('grupoLiveEspectadores').textContent = espectadoresGrupo; });
 
                 } catch (e) {
                     console.error('❌ Error LiveKit:', e);
@@ -1151,7 +927,6 @@
                 }
 
                 suscribirseAlChatGrupo();
-
             } catch (e) {
                 console.error('❌ Error iniciando live de grupo:', e);
                 showToast('Error: ' + e.message, 'error');
@@ -1159,9 +934,6 @@
             }
         }
 
-        // ================================================================
-        // OBTENER TOKEN LIVEKIT (para grupo)
-        // ================================================================
         async function obtenerTokenLiveKitGrupo(roomName, participantName, role) {
             try {
                 const session = await getSession();
@@ -1171,22 +943,12 @@
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
                     body: JSON.stringify({ roomName: roomName, participantName: participantName })
                 });
-                if (!response.ok) {
-                    let error = { message: 'Error' };
-                    try { error = await response.json(); } catch (e) {}
-                    throw new Error(error.message || error.error || `HTTP ${response.status}`);
-                }
+                if (!response.ok) { let error = { message: 'Error' }; try { error = await response.json(); } catch (e) {} throw new Error(error.message || error.error || `HTTP ${response.status}`); }
                 const data = await response.json();
                 return data.token;
-            } catch (error) {
-                console.error('Error obteniendo token LiveKit:', error);
-                throw error;
-            }
+            } catch (error) { console.error('Error obteniendo token LiveKit:', error); throw error; }
         }
 
-        // ================================================================
-        // MOSTRAR LIVE INLINE EN GRUPO
-        // ================================================================
         function mostrarLiveGrupoInline(transmision) {
             const container = document.getElementById('grupoLiveContainer');
             const titulo = document.getElementById('grupoLiveTitulo');
@@ -1200,14 +962,9 @@
             if (container) container.classList.remove('visible');
         }
 
-        // ================================================================
-        // VER LIVE ACTIVO
-        // ================================================================
+        // ✅ FIX: usa el room_name REAL de la BD
         async function verLiveActivo() {
-            if (!liveActivoEnGrupo) {
-                showToast('No hay LIVE activo en este grupo', 'warning');
-                return;
-            }
+            if (!liveActivoEnGrupo) { showToast('No hay LIVE activo en este grupo', 'warning'); return; }
             mostrarLiveGrupoInline(liveActivoEnGrupo);
             esStreamerDelLiveGrupo = (sessionUser && liveActivoEnGrupo.streamer_id === sessionUser.id);
             document.getElementById('grupoLiveEndBtn').style.display = esStreamerDelLiveGrupo ? 'inline-flex' : 'none';
@@ -1217,48 +974,32 @@
                 const { Room } = await cargarLiveKit();
                 liveKitRoomGrupo = new Room();
 
+                console.log('🎬 Viendo live con room_name:', liveActivoEnGrupo.room_name);
                 const token = await obtenerTokenLiveKitGrupo(liveActivoEnGrupo.room_name, sessionUser.id, 'subscriber');
                 await liveKitRoomGrupo.connect(LIVEKIT_CONFIG.url, token);
 
                 liveKitRoomGrupo.on('trackSubscribed', (track) => {
                     if (track.kind === 'video') {
                         const video = document.getElementById('grupoLiveVideo');
-                        if (video) {
-                            track.attach(video);
-                            video.play().catch(e => console.warn('Autoplay bloqueado:', e));
-                        }
+                        if (video) { track.attach(video); video.play().catch(e => console.warn('Autoplay bloqueado:', e)); }
                     }
                 });
 
                 document.getElementById('grupoLiveEstado').textContent = '● En vivo';
                 showToast('Conectado al LIVE', 'success');
-
                 suscribirseAlChatGrupo();
-
             } catch (e) {
                 console.error('Error al ver live:', e);
                 showToast('⚠️ Error al conectar: ' + e.message, 'warning');
             }
         }
 
-        // ================================================================
-        // CHAT DEL LIVE DEL GRUPO
-        // ================================================================
         function suscribirseAlChatGrupo() {
             if (!currentStreamGrupoId) return;
-            if (channelChatGrupo) {
-                window.supabase.removeChannel(channelChatGrupo);
-            }
-            channelChatGrupo = window.supabase
-                .channel(`grupo-live-${currentStreamGrupoId}`)
-                .on('postgres_changes', {
-                    event: 'INSERT',
-                    schema: 'public',
-                    table: 'mensajes_live',
-                    filter: `transmision_id=eq.${currentStreamGrupoId}`
-                }, (payload) => {
-                    agregarMensajeChatGrupo(payload.new);
-                })
+            if (channelChatGrupo) { window.supabase.removeChannel(channelChatGrupo); }
+            channelChatGrupo = window.supabase.channel(`grupo-live-${currentStreamGrupoId}`)
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mensajes_live', filter: `transmision_id=eq.${currentStreamGrupoId}` },
+                    (payload) => { agregarMensajeChatGrupo(payload.new); })
                 .subscribe();
         }
 
@@ -1268,21 +1009,14 @@
             if (!mensaje) return;
             if (!sessionUser) { showToast('Inicia sesión para chatear', 'error'); return; }
             if (!currentStreamGrupoId) { showToast('No hay LIVE activo', 'error'); return; }
-
             try {
                 const { error } = await window.supabase.from('mensajes_live').insert({
-                    transmision_id: currentStreamGrupoId,
-                    usuario_id: sessionUser.id,
-                    mensaje: mensaje,
-                    nombre_usuario: sessionUser.user_metadata?.nombre || 'Usuario',
-                    creado_en: new Date().toISOString()
+                    transmision_id: currentStreamGrupoId, usuario_id: sessionUser.id, mensaje: mensaje,
+                    nombre_usuario: sessionUser.user_metadata?.nombre || 'Usuario', creado_en: new Date().toISOString()
                 });
                 if (error) throw error;
                 input.value = '';
-            } catch (e) {
-                console.error('Error enviando mensaje:', e);
-                showToast('Error al enviar mensaje', 'error');
-            }
+            } catch (e) { console.error('Error enviando mensaje:', e); showToast('Error al enviar mensaje', 'error'); }
         }
 
         function agregarMensajeChatGrupo(mensaje) {
@@ -1295,82 +1029,46 @@
             container.scrollTop = container.scrollHeight;
         }
 
-        // ================================================================
-        // TOGGLE MUTE DEL LIVE DEL GRUPO
-        // ================================================================
         async function toggleMuteGrupoLive() {
-            if (!liveKitRoomGrupo || !esStreamerDelLiveGrupo) {
-                showToast('Solo el streamer puede silenciar el micrófono', 'warning');
-                return;
-            }
+            if (!liveKitRoomGrupo || !esStreamerDelLiveGrupo) { showToast('Solo el streamer puede silenciar el micrófono', 'warning'); return; }
             try {
                 const enabled = liveKitRoomGrupo.localParticipant.isMicrophoneEnabled;
                 await liveKitRoomGrupo.localParticipant.setMicrophoneEnabled(!enabled);
                 const btn = document.getElementById('grupoLiveMuteBtn');
                 if (btn) btn.classList.toggle('muted', enabled);
                 showToast(enabled ? '🎤 Micrófono silenciado' : '🎤 Micrófono activado', 'success', 2000);
-            } catch (e) {
-                console.error('Error cambiando micrófono:', e);
-            }
+            } catch (e) { console.error('Error cambiando micrófono:', e); }
         }
 
-        // ================================================================
-        // FINALIZAR LIVE DE GRUPO
-        // ================================================================
         async function finalizarLiveGrupo() {
             if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
             if (!grupoActualId) { showToast('No hay grupo seleccionado', 'error'); return; }
-
-            const { data: transmisionActiva, error: buscarError } = await window.supabase
-                .from('transmisiones')
-                .select('*')
-                .eq('grupo_id', grupoActualId)
-                .eq('estado', 'en_vivo')
-                .eq('is_live', true)
-                .maybeSingle();
-
+            const { data: transmisionActiva, error: buscarError } = await window.supabase.from('transmisiones').select('*').eq('grupo_id', grupoActualId).eq('estado', 'en_vivo').eq('is_live', true).maybeSingle();
             if (buscarError) { console.error(buscarError); return; }
             if (!transmisionActiva) { showToast('No hay LIVE activo', 'warning'); return; }
             if (transmisionActiva.streamer_id !== sessionUser.id) { showToast('Solo el streamer puede finalizar', 'error'); return; }
             if (!confirm('¿Finalizar el LIVE del grupo?')) return;
-
             showToast('Finalizando...', '');
-
             try {
-                const { error } = await window.supabase.rpc('finalizar_transmision', {
-                    p_transmision_id: transmisionActiva.id
-                });
+                const { error } = await window.supabase.rpc('finalizar_transmision', { p_transmision_id: transmisionActiva.id });
                 if (error) {
                     console.error('Error RPC:', error);
                     await window.supabase.from('transmisiones').update({ estado: 'finalizada', is_live: false, fecha_fin: new Date().toISOString() }).eq('id', transmisionActiva.id);
                 }
                 showToast('LIVE finalizado', 'success');
-
                 if (liveKitRoomGrupo) { try { await liveKitRoomGrupo.disconnect(); } catch (e) {} liveKitRoomGrupo = null; }
                 if (channelChatGrupo) { try { window.supabase.removeChannel(channelChatGrupo); } catch (e) {} channelChatGrupo = null; }
-
-                liveActivoEnGrupo = null;
-                isLiveGrupoActivo = false;
-                currentStreamGrupoId = null;
-                esStreamerDelLiveGrupo = false;
-
+                liveActivoEnGrupo = null; isLiveGrupoActivo = false; currentStreamGrupoId = null; esStreamerDelLiveGrupo = false;
                 cerrarLiveGrupoInline();
                 document.getElementById('grupoLiveBadge').style.display = 'none';
                 document.getElementById('btnIniciarLive').style.display = 'inline-block';
                 document.getElementById('btnVerLive').style.display = 'none';
                 document.getElementById('btnFinalizarLive').style.display = 'none';
-
                 await cargarPublicacionesGrupo(grupoActualId);
                 await cargarGrupos();
-            } catch (e) {
-                console.error('Error finalizando live:', e);
-                showToast('Error: ' + e.message, 'error');
-            }
+            } catch (e) { console.error('Error finalizando live:', e); showToast('Error: ' + e.message, 'error'); }
         }
 
-        // ================================================================
-        // RESTO DE FUNCIONES (SIN CAMBIOS)
-        // ================================================================
         async function cargarPublicacionesGrupo(grupoId) {
             try {
                 var result = await window.supabase.from('grupos_video_publicaciones').select(`*, usuarios:usuario_id (id, nombre, handle, avatar_url)`).eq('grupo_id', grupoId).eq('estado', 'publicado').order('created_at', { ascending: false });
@@ -1543,9 +1241,6 @@
             else { navigator.clipboard.writeText(url).then(function() { showToast('Enlace copiado', 'success'); }); }
         }
 
-        // ================================================================
-        // ADMIN (sin cambios)
-        // ================================================================
         async function abrirAdminGrupo() {
             if (!esAdmin && !esModerador) { showToast('Sin permisos', 'error'); return; }
             if (!grupoActualId) return;
@@ -1676,9 +1371,6 @@
             } catch (e) { console.error(e); showToast('Error: ' + e.message, 'error'); }
         }
 
-        // ================================================================
-        // ELIMINAR GRUPO
-        // ================================================================
         function mostrarConfirmacionEliminarGrupo() {
             if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
             if (!grupoActualId) return;
@@ -1718,9 +1410,6 @@
             } finally { eliminandoGrupo = false; }
         }
 
-        // ================================================================
-        // ADMIN RPCs
-        // ================================================================
         async function aceptarSolicitud(solicitudId) {
             try {
                 await window.supabase.rpc('aceptar_solicitud_grupo', { p_solicitud_id: solicitudId });
@@ -1774,9 +1463,6 @@
             catch (e) { console.error(e); showToast('Error', 'error'); }
         }
 
-        // ================================================================
-        // REGALOS
-        // ================================================================
         function abrirModalRegalos(streamerId, streamerNombre) {
             document.getElementById('giftStreamerName').textContent = streamerNombre || 'el creador';
             document.getElementById('giftStatus').textContent = 'Selecciona un monto';
@@ -1814,9 +1500,6 @@
             } catch (e) { console.error(e); }
         }
 
-        // ================================================================
-        // CREAR GRUPO
-        // ================================================================
         function abrirModalCrearGrupo() { document.getElementById('modalCrearGrupo').classList.add('show'); document.getElementById('inputNombreGrupo').focus(); }
         function cerrarModalCrearGrupo() { document.getElementById('modalCrearGrupo').classList.remove('show'); }
 
@@ -1850,9 +1533,6 @@
             finally { btn.disabled = false; btn.textContent = '◈ Crear grupo'; }
         }
 
-        // ================================================================
-        // EMOJIS
-        // ================================================================
         function abrirFormPublicacion() {
             var form = document.getElementById('formPublicacion');
             form.style.display = form.style.display === 'none' ? 'block' : 'none';
@@ -1887,7 +1567,6 @@
             input.focus();
             input.selectionStart = input.selectionEnd = start + emoji.length;
         }
-
         function insertarEmojiGrupo() { toggleEmojiPickerGrupo(); }
 
         function insertarHashtagGrupo() {
@@ -1901,9 +1580,6 @@
             input.selectionStart = input.selectionEnd = start + 1;
         }
 
-        // ================================================================
-        // VOLVER A LISTA
-        // ================================================================
         function volverALista() {
             document.getElementById('vistaLista').style.display = 'block';
             document.getElementById('vistaGrupo').classList.remove('show');
@@ -1919,9 +1595,6 @@
 
         function verTokens() { window.location.href = '/features/perfil/perfil.html'; }
 
-        // ================================================================
-        // INICIALIZACIÓN
-        // ================================================================
         document.addEventListener('DOMContentLoaded', function() {
             console.log('Sariel\'s - Grupos con Live independiente');
             cargarUsuarioActual().then(function() {
@@ -1947,9 +1620,6 @@
             });
         });
 
-        // ================================================================
-        // EXPOSICIÓN GLOBAL
-        // ================================================================
         window.cargarGrupos = cargarGrupos;
         window.abrirGrupo = abrirGrupo;
         window.volverALista = volverALista;
