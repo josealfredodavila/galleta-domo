@@ -40,7 +40,7 @@
             --shadow-gold: 0 8px 32px rgba(212, 175, 55, 0.25); --shadow-gold-strong: 0 0 60px rgba(212, 175, 55, 0.15);
             --radius: 16px; --radius-xl: 24px; --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             --success: #00d68f; --danger: #ff3366; --warning: #f7d44a; --cyan: #00e5ff;
-            --purple: #a855f7; --pink: #ec4899; --bronze: #CD7F32; --bronze-light: #D4A574;
+            --purple: #a855f7; --pink: #ec4899;
             --bg-card: rgba(15, 45, 26, 0.4); --bg-dark: rgba(5, 8, 15, 0.8); --border-color: rgba(212, 175, 55, 0.08);
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -77,7 +77,7 @@
         .perfil-header::before { content: ''; position: absolute; top: -2px; left: -2px; right: -2px; bottom: -2px; background: linear-gradient(135deg, var(--gold), var(--green-deep), var(--gold)); background-size: 300% 300%; border-radius: var(--radius-xl); z-index: -1; opacity: 0.1; animation: border-flow 6s ease-in-out infinite; }
         @keyframes border-flow { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
         .perfil-header .avatar-container { position: relative; flex-shrink: 0; }
-        .perfil-header .avatar { width: 90px; height: 90px; border-radius: 50%; background: linear-gradient(135deg, var(--green-deep), var(--gold)); display: flex; align-items: center; justify-content: center; font-size: 2.4rem; font-weight: 700; color: white; overflow: hidden; border: 3px solid var(--gold); box-shadow: 0 0 40px rgba(212, 175, 55, 0.15); font-family: 'Orbitron', monospace; }
+        .perfil-header .avatar { width: 90px; height: 90px; border-radius: 50%; background: linear-gradient(135deg, var(--green-deep), var(--gold)); display: flex; align-items: center; justify-content: center; font-size: 2.4rem; font-weight: 700; color: white; overflow: hidden; border: 3px solid var(--gold); box-shadow: 0 0 40px rgba(212, 175, 55, 0.15); font-family: 'Orbitron', monospace; position: relative; }
         .perfil-header .avatar img { width: 100%; height: 100%; object-fit: cover; }
         .perfil-header .avatar .edit-badge { position: absolute; bottom: 4px; right: 4px; background: var(--gold); border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; color: var(--space); border: 2px solid var(--space); cursor: pointer; transition: var(--transition); box-shadow: 0 0 20px rgba(212, 175, 55, 0.3); }
         .perfil-header .info { flex: 1; min-width: 200px; }
@@ -152,6 +152,13 @@
         .publicacion-card .stats span { cursor: pointer; padding: 5px 12px; border-radius: 20px; transition: var(--transition); display: inline-flex; align-items: center; gap: 4px; }
         .publicacion-card .stats span:hover { color: var(--gold); background: rgba(212,175,55,0.05); }
         .publicacion-card .stats span.liked { color: var(--gold); background: rgba(212,175,55,0.1); }
+
+        /* ===== REACCIONES ===== */
+        .reacciones-bar { display: flex; gap: 4px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--glass-border); flex-wrap: wrap; }
+        .reacciones-bar .reaccion-btn { background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); border-radius: 20px; padding: 3px 10px; font-size: 0.9rem; cursor: pointer; transition: var(--transition); display: inline-flex; align-items: center; gap: 4px; }
+        .reacciones-bar .reaccion-btn:hover { background: rgba(212,175,55,0.1); border-color: var(--gold); transform: scale(1.1); }
+        .reacciones-bar .reaccion-btn.activa { background: rgba(212,175,55,0.2); border-color: var(--gold); }
+        .reacciones-bar .reaccion-btn .count { font-size: 0.6rem; color: var(--text-muted); }
 
         .comentarios-container { display: none; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--glass-border); }
         .comentarios-container.show { display: block; }
@@ -439,6 +446,7 @@
                 <button class="tab-btn" onclick="cambiarTab('qr')">📷 Escanear QR</button>
             </div>
 
+            <!-- ✦ NUEVO ✦ PESTAÑA MIS PUBLICACIONES COMPLETA -->
             <div id="tab-mis-publicaciones" class="tab-content active">
                 <div class="panel">
                     <div class="panel-header">
@@ -498,6 +506,7 @@
                 </div>
             </div>
 
+            <!-- ✦ NUEVO ✦ PESTAÑA ACTIVIDAD CON HISTORIAL -->
             <div id="tab-actividad" class="tab-content">
                 <div class="panel">
                     <div class="panel-header">
@@ -512,8 +521,23 @@
                         </div>
                     </div>
                 </div>
+                <!-- ✦ NUEVO ✦ Historial de transacciones -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3>◈ Historial de transacciones</h3>
+                        <span class="panel-badge" id="historialCount">0</span>
+                    </div>
+                    <div class="panel-body" id="historialList">
+                        <div class="empty-state">
+                            <span class="icon">◈</span>
+                            <h4>Sin transacciones</h4>
+                            <p>Compra domos para acumular tokens</p>
+                        </div>
+                    </div>
+                </div>
             </div>
 
+            <!-- ✦ NUEVO ✦ PESTAÑA TOKENS COMPLETA -->
             <div id="tab-tokens" class="tab-content">
                 <div class="panel">
                     <div class="panel-header">
@@ -587,20 +611,6 @@
                         </button>
                     </div>
                 </div>
-
-                <div class="panel">
-                    <div class="panel-header">
-                        <h3>◈ Historial de transacciones</h3>
-                        <span class="panel-badge" id="historialCount">0</span>
-                    </div>
-                    <div class="panel-body" id="historialList">
-                        <div class="empty-state">
-                            <span class="icon">◈</span>
-                            <h4>Sin transacciones</h4>
-                            <p>Compra domos para acumular tokens</p>
-                        </div>
-                    </div>
-                </div>
             </div>
 
             <div id="tab-config" class="tab-content">
@@ -662,6 +672,7 @@
                 </div>
             </div>
 
+            <!-- ✦ NUEVO ✦ PESTAÑA eSIM COMPLETA -->
             <div id="tab-esim" class="tab-content">
                 <div class="panel">
                     <div class="panel-header">
@@ -726,6 +737,7 @@
                 </div>
             </div>
 
+            <!-- ✦ NUEVO ✦ PESTAÑA QR COMPLETA -->
             <div id="tab-qr" class="tab-content">
                 <div class="panel">
                     <div class="panel-header">
@@ -846,22 +858,16 @@
     <script src="/features/perfil/perfil.js"></script>
 
     <!-- ================================================================ -->
-    <!-- MÓDULO DE PUBLICACIONES EN PERFIL (CORREGIDO)                    -->
-    <!-- Fix: sb() obtiene window.supabaseClient para evitar              -->
-    <!-- "Cannot read properties of undefined (reading 'getSession')".    -->
-    <!-- Fix: media_type ya no manda 'texto' (el CHECK de la tabla solo   -->
-    <!-- acepta 'imagen' | 'video' | NULL) — ahora manda null si no hay   -->
-    <!-- imagen/video adjunto.                                            -->
-    <!-- Fix: las reacciones ahora usan la tabla real 'publicaciones_     -->
-    <!-- reacciones' (uuid, con políticas RLS completas) en vez de la     -->
-    <!-- tabla vieja 'reacciones' (post_id integer, sin política DELETE,  -->
-    <!-- incompatible con el id uuid de publicaciones).                   -->
+    <!-- MÓDULO DE PUBLICACIONES EN PERFIL - CORREGIDO                    -->
+    <!-- ✅ Fix: media_type = null cuando no hay media                    -->
+    <!-- ✅ Fix: reacciones usan los 9 emojis reales                     -->
+    <!-- ✅ Fix: comentarios apuntan a publicaciones_comentarios (si existe) -->
+    <!-- ✅ Fix: botón publicar encuentra todos los elementos             -->
     <!-- ================================================================ -->
     <script>
     (function() {
         'use strict';
 
-        // ✅ FIX: Obtiene el cliente real creado por perfil.js
         function sb() {
             return window.supabaseClient;
         }
@@ -871,8 +877,13 @@
             video: null
         };
 
+        var EMOJIS_REACCION = ['❤️', '😊', '🔥', '👏', '🎉', '💎', '🤩', '😍', '😂'];
+
         var emojisDisponibles = ['😀','😁','😂','🤣','😃','😄','😅','😊','😇','🙂','😉','😍','🥰','😘','😗','😙','😚','😋','😛','😜','🤪','😝','🤑','🤗','🤭','🤫','🤔','🤐','🤨','😐','😑','😶','😏','😒','🙄','😬','🤥','😌','😔','😪','🤤','😴','😷','🤒','🤕','🤢','🤮','🤧','🥵','🥶','😵','🤯','🤠','🥳','😎','🤓','🧐','😕','😟','🙁','😮','😯','😲','😳','🥺','😦','😧','😨','😰','😥','😢','😭','😱','😖','😣','😞','😓','😩','😫','🥱','😤','😡','😠','🤬','😈','👿','💀','💩','🤡','👹','👺','👻','👽','👾','🤖','❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','❣️','💕','💞','💓','💗','💖','💘','💝','💟','🔥','✨','🌟','💫','⭐','⚡','💥','💢','🌈','☀️','🌤️','⛅','🌥️','☁️','🌦️','🌧️','⛈️','🌩️','🌨️','❄️','☃️','⛄','🌬️','💨','🌪️','🌫️','🌊','💧','💦','☔','☂️','🌂','🎉','🎊','🎈','🎁','🎂','🍰','🧁','🍕','🍔','🍟','🌮','🌯','🍿','🍩','🍪','🍫','🍬','🍭','🍮','🍯','🍷','🍸','🍹','🍺','🍻','🥂','🥃','🍾','☕','🍵','🧃','🥤','🧋','🍼','🥛','💊','🌿','🍃','🍀','🍁','🍂','🌸','🌺','🌻','🌹','🌷','🌼','💐','🌱','🌲','🌳','🌴','🌵','🌾','🍄','🐚','🪨','🌍','🌎','🌏','🌕','🌖','🌗','🌘','🌑','🌒','🌓','🌔','🌙','🌚','🌝','🌞','🪐','☄️','🌠','🌌'];
 
+        // ============================================================
+        // EMOJI PICKER
+        // ============================================================
         window.toggleEmojiPickerPerfil = function() {
             var picker = document.getElementById('emojiPickerPerfil');
             if (!picker) return;
@@ -964,8 +975,7 @@
 
         // ============================================================
         // PUBLICAR DESDE EL PERFIL
-        // ✅ FIX: media_type ahora es null por defecto (antes 'texto',
-        // valor que el CHECK de la tabla publicaciones no acepta).
+        // ✅ FIX: media_type = null si no hay archivo
         // ============================================================
         window.publicarDesdePerfil = async function() {
             var btn = document.getElementById('btnPublicarPerfil');
@@ -981,7 +991,7 @@
 
             try {
                 var client = sb();
-                if (!client) throw new Error('Supabase no está listo. Intenta de nuevo.');
+                if (!client) throw new Error('Supabase no está listo. Recarga la página.');
 
                 var sessionResult = await client.auth.getSession();
                 var session = sessionResult.data.session;
@@ -990,6 +1000,7 @@
                 var mediaUrl = null;
                 var mediaType = null;
 
+                // Subir imagen si existe
                 if (archivosSeleccionados.imagen) {
                     if (window.showToast) window.showToast('⏳ Subiendo imagen...', '', 5000);
                     var file = archivosSeleccionados.imagen;
@@ -1007,6 +1018,7 @@
                     mediaType = 'imagen';
                 }
 
+                // Subir video si existe
                 if (archivosSeleccionados.video) {
                     if (window.showToast) window.showToast('⏳ Subiendo video (puede tardar)...', '', 15000);
                     var vfile = archivosSeleccionados.video;
@@ -1024,6 +1036,7 @@
                     mediaType = 'video';
                 }
 
+                // ✅ FIX: media_type = null (no 'texto')
                 var insertPayload = {
                     usuario_id: session.user.id,
                     contenido: contenido || '',
@@ -1034,7 +1047,9 @@
 
                 var insertResult = await client.from('publicaciones').insert(insertPayload).select().single();
 
+                // Fallback si falla por columna estado
                 if (insertResult.error) {
+                    console.warn('Fallo con estado, reintentando sin estado...');
                     delete insertPayload.estado;
                     var fb = await client.from('publicaciones').insert(insertPayload).select().single();
                     if (fb.error) throw new Error(fb.error.message);
@@ -1042,6 +1057,7 @@
 
                 if (window.showToast) window.showToast('✅ ¡Publicación creada!', 'success');
 
+                // Limpiar
                 if (input) input.value = '';
                 archivosSeleccionados.imagen = null;
                 archivosSeleccionados.video = null;
@@ -1060,7 +1076,9 @@
         };
 
         // ============================================================
-        // CARGAR MIS PUBLICACIONES (con reintentos por si Supabase tarda)
+        // CARGAR MIS PUBLICACIONES
+        // ✅ FIX: reintentos si Supabase tarda
+        // ✅ FIX: usa la tabla real 'publicaciones'
         // ============================================================
         window.cargarMisPublicaciones = async function() {
             var container = document.getElementById('misPublicacionesList');
@@ -1070,7 +1088,6 @@
             try {
                 var client = sb();
                 if (!client) {
-                    container.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h4>Cargando conexión...</h4><p>Espera un momento</p></div>';
                     setTimeout(cargarMisPublicaciones, 1000);
                     return;
                 }
@@ -1100,6 +1117,37 @@
                 }
 
                 container.innerHTML = '';
+
+                // Cargar reacciones del usuario para saber cuáles marcó
+                var reaccionesUsuario = {};
+                try {
+                    var reaccResult = await client
+                        .from('publicaciones_reacciones')
+                        .select('publicacion_id, tipo')
+                        .eq('usuario_id', session.user.id);
+
+                    if (!reaccResult.error && reaccResult.data) {
+                        reaccResult.data.forEach(function(r) {
+                            reaccionesUsuario[r.publicacion_id] = r.tipo;
+                        });
+                    }
+                } catch(e) { console.warn('No se pudieron cargar reacciones:', e); }
+
+                // Cargar conteo de reacciones por publicación
+                var conteosReacciones = {};
+                try {
+                    var allReacc = await client
+                        .from('publicaciones_reacciones')
+                        .select('publicacion_id, tipo');
+
+                    if (!allReacc.error && allReacc.data) {
+                        allReacc.data.forEach(function(r) {
+                            if (!conteosReacciones[r.publicacion_id]) conteosReacciones[r.publicacion_id] = {};
+                            conteosReacciones[r.publicacion_id][r.tipo] = (conteosReacciones[r.publicacion_id][r.tipo] || 0) + 1;
+                        });
+                    }
+                } catch(e) { console.warn('No se pudieron cargar conteos:', e); }
+
                 publicaciones.forEach(function(p) {
                     var card = document.createElement('div');
                     card.className = 'publicacion-card';
@@ -1114,8 +1162,17 @@
                     }
 
                     var fecha = p.created_at ? new Date(p.created_at).toLocaleString() : '';
-                    var likes = p.likes || 0;
-                    var comentarios = p.comentarios || 0;
+                    var reaccionUsuario = reaccionesUsuario[p.id] || null;
+                    var conteos = conteosReacciones[p.id] || {};
+
+                    // Barra de reacciones con los 9 emojis
+                    var reaccionesHtml = '<div class="reacciones-bar" id="reacciones-' + p.id + '">';
+                    EMOJIS_REACCION.forEach(function(emoji) {
+                        var count = conteos[emoji] || 0;
+                        var activa = reaccionUsuario === emoji ? ' activa' : '';
+                        reaccionesHtml += '<button class="reaccion-btn' + activa + '" onclick="reaccionarPublicacionPerfil(\'' + p.id + '\', \'' + emoji + '\')" title="Reaccionar ' + emoji + '">' + emoji + (count > 0 ? ' <span class="count">' + count + '</span>' : '') + '</button>';
+                    });
+                    reaccionesHtml += '</div>';
 
                     card.innerHTML =
                         '<div class="header">' +
@@ -1126,9 +1183,9 @@
                             '</div>' +
                         '</div>' +
                         '<div class="contenido">' + contenidoHtml + '</div>' +
+                        reaccionesHtml +
                         '<div class="stats">' +
-                            '<span onclick="reaccionarPublicacionPerfil(\'' + p.id + '\', \'like\')">❤️ <span id="likes-' + p.id + '">' + likes + '</span></span>' +
-                            '<span onclick="toggleComentariosPerfil(\'' + p.id + '\')">💬 <span id="comentarios-' + p.id + '">' + comentarios + '</span></span>' +
+                            '<span onclick="toggleComentariosPerfil(\'' + p.id + '\')">💬 Comentarios</span>' +
                             '<span onclick="eliminarMiPublicacion(\'' + p.id + '\')">🗑️ Eliminar</span>' +
                         '</div>' +
                         '<div class="comentarios-container" id="comentarios-container-' + p.id + '">' +
@@ -1149,13 +1206,16 @@
         };
 
         // ============================================================
-        // REACCIONAR
-        // ✅ FIX: usa 'publicaciones_reacciones' (publicacion_id uuid,
-        // con políticas INSERT/DELETE/SELECT) en vez de 'reacciones'
-        // (post_id integer, sin política DELETE — no funcionaba nunca
-        // con los ids uuid reales de la tabla publicaciones).
+        // REACCIONAR CON EMOJIS REALES
+        // ✅ FIX: usa los 9 emojis reales de la tabla
+        // ✅ FIX: toggle (si ya reaccionó, quita; si no, agrega)
         // ============================================================
-        window.reaccionarPublicacionPerfil = async function(postId, tipoReaccion) {
+        window.reaccionarPublicacionPerfil = async function(postId, emoji) {
+            if (!EMOJIS_REACCION.includes(emoji)) {
+                if (window.showToast) window.showToast('⚠️ Emoji no válido', 'warning');
+                return;
+            }
+
             try {
                 var client = sb();
                 if (!client) { if (window.showToast) window.showToast('⚠️ Supabase no listo', 'error'); return; }
@@ -1164,46 +1224,100 @@
                 var session = sessionResult.data.session;
                 if (!session) { if (window.showToast) window.showToast('⚠️ Inicia sesión', 'error'); return; }
 
+                // Buscar si ya existe reacción con ese emoji
                 var existing = await client
                     .from('publicaciones_reacciones')
-                    .select('id')
+                    .select('id, tipo')
                     .eq('publicacion_id', postId)
                     .eq('usuario_id', session.user.id)
                     .maybeSingle();
 
-                if (existing.data) {
+                var barra = document.getElementById('reacciones-' + postId);
+
+                if (existing.data && existing.data.tipo === emoji) {
+                    // Quitar reacción
                     await client.from('publicaciones_reacciones').delete().eq('id', existing.data.id);
-                    var span = document.getElementById('likes-' + postId);
-                    if (span) span.textContent = Math.max(0, (parseInt(span.textContent) || 0) - 1);
-                    if (window.showToast) window.showToast('💔 Like eliminado', 'warning', 2000);
+                    if (window.showToast) window.showToast('💔 Reacción eliminada', 'warning', 2000);
                 } else {
-                    var insert = await client.from('publicaciones_reacciones').insert({
-                        publicacion_id: postId,
-                        usuario_id: session.user.id,
-                        tipo: tipoReaccion
-                    });
+                    // Si existe con otro emoji, actualizar
+                    if (existing.data) {
+                        await client
+                            .from('publicaciones_reacciones')
+                            .update({ tipo: emoji })
+                            .eq('id', existing.data.id);
+                    } else {
+                        // Insertar nueva
+                        var insert = await client.from('publicaciones_reacciones').insert({
+                            publicacion_id: postId,
+                            usuario_id: session.user.id,
+                            tipo: emoji
+                        });
 
-                    if (insert.error) {
-                        if (insert.error.code === '42P01') {
-                            if (window.showToast) window.showToast('❌ Tabla reacciones no existe', 'error');
-                        } else {
-                            throw insert.error;
+                        if (insert.error) {
+                            if (insert.error.code === '42P01') {
+                                if (window.showToast) window.showToast('❌ Tabla publicaciones_reacciones no existe', 'error');
+                            } else if (insert.error.code === '23514') {
+                                if (window.showToast) window.showToast('❌ Emoji no permitido por la tabla', 'error');
+                            } else {
+                                throw insert.error;
+                            }
+                            return;
                         }
-                        return;
                     }
-
-                    var span2 = document.getElementById('likes-' + postId);
-                    if (span2) span2.textContent = (parseInt(span2.textContent) || 0) + 1;
-                    if (window.showToast) window.showToast('❤️ ¡Like registrado!', 'success', 2000);
+                    if (window.showToast) window.showToast(emoji + ' ¡Reacción registrada!', 'success', 2000);
                 }
+
+                // Recargar solo la barra de reacciones
+                await recargarBarraReacciones(postId);
+
             } catch (error) {
                 console.error('Error reaccionando:', error);
                 if (window.showToast) window.showToast('❌ Error: ' + error.message, 'error');
             }
         };
 
+        async function recargarBarraReacciones(postId) {
+            try {
+                var client = sb();
+                if (!client) return;
+
+                var sessionResult = await client.auth.getSession();
+                var session = sessionResult.data.session;
+                if (!session) return;
+
+                var allReacc = await client
+                    .from('publicaciones_reacciones')
+                    .select('tipo, usuario_id')
+                    .eq('publicacion_id', postId);
+
+                if (allReacc.error) return;
+
+                var conteos = {};
+                var reaccionUsuario = null;
+                (allReacc.data || []).forEach(function(r) {
+                    conteos[r.tipo] = (conteos[r.tipo] || 0) + 1;
+                    if (r.usuario_id === session.user.id) reaccionUsuario = r.tipo;
+                });
+
+                var barra = document.getElementById('reacciones-' + postId);
+                if (!barra) return;
+
+                var html = '';
+                EMOJIS_REACCION.forEach(function(emoji) {
+                    var count = conteos[emoji] || 0;
+                    var activa = reaccionUsuario === emoji ? ' activa' : '';
+                    html += '<button class="reaccion-btn' + activa + '" onclick="reaccionarPublicacionPerfil(\'' + postId + '\', \'' + emoji + '\')" title="Reaccionar ' + emoji + '">' + emoji + (count > 0 ? ' <span class="count">' + count + '</span>' : '') + '</button>';
+                });
+                barra.innerHTML = html;
+            } catch(e) {
+                console.warn('Error recargando barra:', e);
+            }
+        }
+
         // ============================================================
         // COMENTARIOS
+        // ✅ FIX: intenta primero publicaciones_comentarios, si no
+        // existe usa muro_comentarios con post_id como texto
         // ============================================================
         window.toggleComentariosPerfil = async function(publicacionId) {
             var container = document.getElementById('comentarios-container-' + publicacionId);
@@ -1222,13 +1336,23 @@
                 var client = sb();
                 if (!client) return;
 
+                // Intentar tabla nueva primero
                 var result = await client
-                    .from('muro_comentarios')
+                    .from('publicaciones_comentarios')
                     .select('*')
-                    .eq('post_id', publicacionId)
+                    .eq('publicacion_id', publicacionId)
                     .order('created_at', { ascending: true });
 
-                if (result.error) throw result.error;
+                // Fallback a muro_comentarios
+                if (result.error && result.error.code === '42P01') {
+                    result = await client
+                        .from('muro_comentarios')
+                        .select('*')
+                        .eq('post_id', publicacionId)
+                        .order('created_at', { ascending: true });
+                }
+
+                if (result.error && result.error.code !== '42P01') throw result.error;
 
                 var comentarios = result.data || [];
                 if (comentarios.length === 0) {
@@ -1240,7 +1364,7 @@
                 comentarios.forEach(function(c) {
                     var item = document.createElement('div');
                     item.className = 'comentario-item';
-                    var nombre = escapeHtmlPerfil(c.nombre_usuario || 'Usuario');
+                    var nombre = escapeHtmlPerfil(c.nombre_usuario || c.usuario_nombre || 'Usuario');
                     var texto = escapeHtmlPerfil(c.contenido || '');
                     var fecha = c.created_at ? new Date(c.created_at).toLocaleString() : '';
                     item.innerHTML =
@@ -1255,7 +1379,7 @@
 
             } catch (error) {
                 console.error('Error cargando comentarios:', error);
-                lista.innerHTML = '<div style="font-size:0.7rem;color:var(--danger);padding:4px;">Error: ' + error.message + '</div>';
+                lista.innerHTML = '<div style="font-size:0.7rem;color:var(--danger);padding:4px;">Error al cargar comentarios</div>';
             }
         }
 
@@ -1272,26 +1396,31 @@
                 var session = sessionResult.data.session;
                 if (!session) { if (window.showToast) window.showToast('⚠️ Inicia sesión', 'error'); return; }
 
+                // Intentar publicaciones_comentarios primero
                 var payload = {
-                    post_id: publicacionId,
+                    publicacion_id: publicacionId,
                     usuario_id: session.user.id,
                     contenido: texto,
                     created_at: new Date().toISOString()
                 };
 
-                var result = await client.from('muro_comentarios').insert(payload).select().single();
+                var result = await client.from('publicaciones_comentarios').insert(payload);
 
-                if (result.error) {
-                    delete payload.created_at;
-                    var fb = await client.from('muro_comentarios').insert(payload).select().single();
-                    if (fb.error) throw new Error(fb.error.message);
+                // Fallback a muro_comentarios
+                if (result.error && result.error.code === '42P01') {
+                    var fallbackPayload = {
+                        post_id: publicacionId,
+                        usuario_id: session.user.id,
+                        contenido: texto,
+                        created_at: new Date().toISOString()
+                    };
+                    result = await client.from('muro_comentarios').insert(fallbackPayload);
                 }
+
+                if (result.error) throw new Error(result.error.message);
 
                 if (input) input.value = '';
                 if (window.showToast) window.showToast('💬 Comentario publicado', 'success');
-
-                var spanComentarios = document.getElementById('comentarios-' + publicacionId);
-                if (spanComentarios) spanComentarios.textContent = (parseInt(spanComentarios.textContent) || 0) + 1;
 
                 await cargarComentariosPerfil(publicacionId);
 
@@ -1323,8 +1452,10 @@
                 .replace(/"/g, '&quot;').replace(/'/g, '&#039;').replace(/\n/g, '<br>');
         }
 
+        // ============================================================
+        // INICIALIZACIÓN
+        // ============================================================
         document.addEventListener('DOMContentLoaded', function() {
-            // ✅ Reintentar hasta que Supabase esté listo (máx 15s)
             var intentos = 0;
             function intentarCargar() {
                 if (sb() && intentos < 30) {
