@@ -40,7 +40,13 @@
         .toast.warning { border-color: var(--warning); color: var(--warning); }
         .toast.success { border-color: var(--success); color: var(--success); }
         
-        /* VISTA PRINCIPAL: MIS CANALES + EN VIVO AHORA */
+        /* TABS MÓVIL */
+        .mobile-tabs { display: flex; background: rgba(15,45,26,0.5); border: 1px solid var(--glass-border); border-radius: 12px; padding: 4px; margin-bottom: 16px; }
+        .mobile-tab { flex: 1; text-align: center; padding: 10px; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); border-radius: 8px; cursor: pointer; transition: var(--transition); }
+        .mobile-tab.active { background: var(--gold); color: var(--space); }
+        @media (min-width: 900px) { .mobile-tabs { display: none; } }
+
+        /* DASHBOARD GRID */
         .dashboard-grid { display: grid; grid-template-columns: 1fr; gap: 24px; }
         @media (min-width: 900px) { .dashboard-grid { grid-template-columns: 320px 1fr; } }
         
@@ -67,8 +73,25 @@
         .en-vivo-card .info .titulo { font-size: 0.75rem; font-weight: 600; color: var(--gold); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .en-vivo-card .info .canal { font-size: 0.65rem; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
         .en-vivo-card .info .stats { font-size: 0.6rem; color: var(--text-muted); margin-top: 6px; }
-        .no-live-box { grid-column: 1 / -1; text-align: center; padding: 40px 20px; background: var(--glass-bg); border: 1px dashed var(--glass-border); border-radius: var(--radius); color: var(--text-muted); }
-        .no-live-box .icon { font-size: 2.5rem; display: block; margin-bottom: 12px; color: var(--gold); opacity: 0.3; }
+
+        /* EMPTY STATE BONITO */
+        .no-live-box { 
+            grid-column: 1 / -1; 
+            text-align: center; 
+            padding: 40px 20px; 
+            background: linear-gradient(155deg, rgba(15, 45, 26, 0.8), rgba(8, 15, 26, 0.9)); 
+            border: 1px dashed rgba(212, 175, 55, 0.3); 
+            border-radius: var(--radius); 
+            color: var(--text-muted); 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+        }
+        .no-live-box .icon { font-size: 3rem; display: block; margin-bottom: 12px; color: var(--gold); opacity: 0.8; }
+        .no-live-box h3 { font-size: 1rem; color: var(--text-primary); font-family: 'Orbitron', monospace; margin-bottom: 4px; }
+        .no-live-box p { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 16px; }
+        .no-live-box .btn-salir-aire { padding: 12px 30px; font-size: 0.8rem; }
 
         .grupos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
         .grupo-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-xl); padding: 16px; cursor: pointer; transition: var(--transition); position: relative; }
@@ -89,7 +112,6 @@
         .grupo-interno.show { display: block; }
         .grupo-header-interno { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-xl); padding: 20px; margin-bottom: 20px; position: relative; }
         
-        /* BOTÓN DE AJUSTES (ENGRANE) EN EL BANNER */
         .btn-ajustes-canal { position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,0.6); border: 1px solid var(--glass-border); border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; color: var(--gold); cursor: pointer; z-index: 10; backdrop-filter: blur(4px); transition: var(--transition); }
         .btn-ajustes-canal:hover { background: var(--gold); color: var(--space); transform: rotate(90deg); }
         
@@ -110,7 +132,6 @@
         .btn-salir-aire { background: var(--live-red); color: #fff; border: none; padding: 10px 24px; border-radius: 30px; font-weight: 800; font-size: 0.8rem; cursor: pointer; animation: pulse-live 2s infinite; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 0 20px rgba(255, 0, 68, 0.4); }
         .btn-salir-aire:hover { transform: scale(1.05); }
         
-        /* MODAL AJUSTES CANAL */
         .ajustes-menu { display: flex; flex-direction: column; gap: 8px; }
         .ajustes-menu button { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.2); color: var(--text-primary); cursor: pointer; text-align: left; font-size: 0.8rem; transition: var(--transition); }
         .ajustes-menu button:hover { border-color: var(--gold); background: rgba(212,175,55,0.1); color: var(--gold); }
@@ -260,10 +281,16 @@
             <a href="/marketing/marketing.html" class="nav-link">◈ Marketing</a>
         </nav>
         <div id="vistaLista">
+            <!-- TABS MÓVIL -->
+            <div class="mobile-tabs">
+                <div class="mobile-tab active" onclick="switchTab('mis-canales')" id="tabMisCanales">◈ Mis Canales</div>
+                <div class="mobile-tab" onclick="switchTab('en-vivo')" id="tabEnVivo">🔴 En Vivo Ahora</div>
+            </div>
+
             <!-- ESTRUCTURA NETFLIX/SKY -->
             <div class="dashboard-grid">
                 <!-- COLUMNA IZQUIERDA: MIS CANALES -->
-                <div class="col-mis-canales">
+                <div class="col-mis-canales" id="colMisCanales">
                     <div class="seccion-titulo">
                         <span>◈ MIS CANALES</span>
                         <button class="btn-outline btn-sm" onclick="toggleMisGrupos()" id="btnMisGrupos">◈ Ver Todos</button>
@@ -274,7 +301,7 @@
                 </div>
                 
                 <!-- COLUMNA DERECHA: EN VIVO AHORA -->
-                <div class="col-en-vivo">
+                <div class="col-en-vivo" id="colEnVivo">
                     <div class="seccion-titulo">
                         <span>🔴 EN VIVO AHORA</span>
                     </div>
@@ -822,9 +849,10 @@
                 var lives = livesResult.data || [];
                 if (lives.length === 0) {
                     enVivoDiv.innerHTML = `<div class="no-live-box">
-                        <span class="icon">◈</span>
-                        <h3 style="font-size:0.9rem; color:var(--text-secondary);">Nadie al aire</h3>
-                        <p style="font-size:0.7rem; margin-top:4px;">Sé el primero - Inicia un LIVE en tu canal</p>
+                        <span class="icon">📡</span>
+                        <h3>Nadie al aire por ahora</h3>
+                        <p>Sé el primero en transmitir en tu canal</p>
+                        <button class="btn-salir-aire" onclick="abrirModalCrearGrupo()">🔴 SALIR AL AIRE</button>
                     </div>`;
                 } else {
                     enVivoDiv.innerHTML = lives.map(function(l) {
@@ -844,6 +872,21 @@
                 }
 
             } catch (e) { console.error('Error cargando dashboard:', e); }
+        }
+
+        function switchTab(tab) {
+            var tabMis = document.getElementById('tabMisCanales');
+            var tabVivo = document.getElementById('tabEnVivo');
+            var colMis = document.getElementById('colMisCanales');
+            var colVivo = document.getElementById('colEnVivo');
+
+            if (tab === 'mis-canales') {
+                tabMis.classList.add('active'); tabVivo.classList.remove('active');
+                colMis.style.display = 'block'; colVivo.style.display = 'none';
+            } else {
+                tabVivo.classList.add('active'); tabMis.classList.remove('active');
+                colVivo.style.display = 'block'; colMis.style.display = 'none';
+            }
         }
 
         async function cargarGrupos() {
@@ -1177,6 +1220,9 @@
                 document.getElementById('btnFinalizarLive').style.display = 'inline-block';
                 document.getElementById('btnVerLive').style.display = 'inline-block';
 
+                // 🔥 REFRESCAR EL DASHBOARD PARA QUE APAREZCA EN VIVO AHORA
+                await cargarDashboard();
+
                 try {
                     showToast('🔗 Conectando a LiveKit...', '', 2000);
                     console.log('🎬 [5] Cargando LiveKit v2...');
@@ -1350,6 +1396,7 @@
                 document.getElementById('btnVerLive').style.display = 'none';
                 document.getElementById('btnFinalizarLive').style.display = 'none';
                 await cargarPublicacionesGrupo(grupoActualId);
+                await cargarDashboard(); // 🔥 Refrescar dashboard para que desaparezca
                 await cargarGrupos();
             } catch (e) { console.error('Error finalizando live:', e); showToast('Error: ' + e.message, 'error'); }
         }
@@ -1923,6 +1970,11 @@
                 await cargarGrupos();
             }
 
+            // ✅ INICIALIZAR TABS EN MÓVIL
+            if (window.innerWidth < 900) {
+                switchTab('mis-canales');
+            }
+
             document.addEventListener('keydown', function(e) {
                 if (e.key === 'Escape') {
                     cerrarModalCrearGrupo(); cerrarModalAdmin(); cerrarModalRegalos(); cerrarConfirmacionEliminarGrupo(); cerrarAjustesCanal();
@@ -2011,6 +2063,7 @@
         window.toggleEmojiPickerGrupo = toggleEmojiPickerGrupo;
         window.insertarHashtagGrupo = insertarHashtagGrupo;
         window.toggleMisGrupos = toggleMisGrupos;
+        window.switchTab = switchTab;
         window.verTokens = verTokens;
         window.showToast = showToast;
         window.abrirModalRegalos = abrirModalRegalos;
