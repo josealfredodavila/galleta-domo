@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>🦉 Canales · Sariel's</title>
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>🦉</text></svg>" />
+    <title>◈ Canales · Sariel's</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -39,37 +39,36 @@
         .toast.error { border-color: var(--danger); color: var(--danger); }
         .toast.warning { border-color: var(--warning); color: var(--warning); }
         .toast.success { border-color: var(--success); color: var(--success); }
-        .grupos-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
-        .grupos-header h1 { font-family: 'Orbitron', monospace; color: var(--gold); font-size: 1.2rem; }
-        .grupos-header .filtros { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-        .grupos-header .filtros input, .grupos-header .filtros select { padding: 6px 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 20px; color: var(--text-primary); font-size: 0.7rem; outline: none; min-width: 120px; }
-        .grupos-header .filtros input:focus, .grupos-header .filtros select:focus { border-color: var(--gold); }
-        .btn-gold { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); border: none; padding: 8px 20px; border-radius: 30px; font-weight: 700; font-size: 0.7rem; cursor: pointer; transition: var(--transition); }
-        .btn-gold:hover { transform: translateY(-2px); box-shadow: var(--shadow-gold); }
-        .btn-outline { background: transparent; color: var(--text-secondary); border: 1px solid var(--glass-border); padding: 8px 20px; border-radius: 30px; font-weight: 600; font-size: 0.7rem; cursor: pointer; transition: var(--transition); }
-        .btn-outline:hover { border-color: var(--gold); color: var(--gold); }
-        .btn-danger { background: rgba(255, 51, 102, 0.1); color: var(--danger); border: 1px solid rgba(255, 51, 102, 0.2); padding: 8px 20px; border-radius: 30px; font-weight: 600; font-size: 0.7rem; cursor: pointer; }
-        .btn-danger:hover { background: rgba(255, 51, 102, 0.2); }
-        .btn-sm { padding: 4px 12px; font-size: 0.65rem; }
-        .btn-live { background: var(--live-red); color: #fff; border: none; padding: 8px 20px; border-radius: 30px; font-weight: 700; font-size: 0.7rem; cursor: pointer; animation: pulse-live 2s infinite; }
-        .btn-live:hover { transform: scale(1.02); }
-        @keyframes pulse-live { 0%,100% { opacity: 1; } 50% { opacity: 0.7; } }
         
-        /* EN VIVO AHORA */
-        .en-vivo-ahora-container { margin-bottom: 24px; }
-        .en-vivo-ahora-container h2 { font-family: 'Orbitron', monospace; color: var(--live-red); font-size: 1rem; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
-        .en-vivo-ahora-container h2 .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--live-red); animation: pulse-live 1s infinite; }
-        .en-vivo-scroll { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px; }
-        .en-vivo-scroll::-webkit-scrollbar { height: 6px; }
-        .en-vivo-scroll::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 10px; }
-        .en-vivo-card { flex: 0 0 200px; background: var(--glass-bg); border: 1px solid var(--live-red); border-radius: var(--radius); overflow: hidden; cursor: pointer; position: relative; transition: var(--transition); }
+        /* VISTA PRINCIPAL: MIS CANALES + EN VIVO AHORA */
+        .dashboard-grid { display: grid; grid-template-columns: 1fr; gap: 24px; }
+        @media (min-width: 900px) { .dashboard-grid { grid-template-columns: 320px 1fr; } }
+        
+        .seccion-titulo { font-family: 'Orbitron', monospace; color: var(--gold); font-size: 1rem; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; }
+        .seccion-titulo .badge-rojo { color: var(--live-red); font-size: 0.7rem; display: flex; align-items: center; gap: 6px; }
+        .seccion-titulo .badge-rojo .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--live-red); animation: pulse-live 1s infinite; }
+        
+        .mis-canales-lista { display: flex; flex-direction: column; gap: 10px; }
+        .canal-item { display: flex; align-items: center; gap: 12px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius); padding: 10px 14px; cursor: pointer; transition: var(--transition); position: relative; }
+        .canal-item:hover { border-color: var(--gold); transform: translateX(4px); }
+        .canal-item .avatar-mini { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, var(--green-deep), var(--gold)); display: flex; align-items: center; justify-content: center; font-size: 1rem; color: #fff; overflow: hidden; flex-shrink: 0; }
+        .canal-item .avatar-mini img { width: 100%; height: 100%; object-fit: cover; }
+        .canal-item .info { flex: 1; min-width: 0; }
+        .canal-item .info .nombre { font-weight: 700; color: var(--text-primary); font-size: 0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .canal-item .info .stats { font-size: 0.6rem; color: var(--text-muted); }
+        .canal-item .live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--live-red); animation: pulse-live 1s infinite; margin-left: auto; }
+        
+        .en-vivo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+        .en-vivo-card { background: var(--glass-bg); border: 1px solid var(--live-red); border-radius: var(--radius); overflow: hidden; cursor: pointer; transition: var(--transition); position: relative; }
         .en-vivo-card:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(255, 0, 68, 0.2); }
         .en-vivo-card .live-tag-small { position: absolute; top: 8px; left: 8px; background: var(--live-red); color: #fff; font-size: 0.5rem; padding: 2px 8px; border-radius: 10px; font-weight: 700; font-family: 'Orbitron', monospace; }
-        .en-vivo-card .video-preview { width: 100%; height: 110px; background: #000; object-fit: cover; display: block; }
-        .en-vivo-card .info { padding: 8px 10px; }
-        .en-vivo-card .info .titulo { font-size: 0.7rem; font-weight: 600; color: var(--gold); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .en-vivo-card .info .canal { font-size: 0.6rem; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .en-vivo-card .info .stats { font-size: 0.55rem; color: var(--text-muted); margin-top: 4px; }
+        .en-vivo-card .video-preview { width: 100%; height: 130px; background: #000; object-fit: cover; display: block; }
+        .en-vivo-card .info { padding: 10px 12px; }
+        .en-vivo-card .info .titulo { font-size: 0.75rem; font-weight: 600; color: var(--gold); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .en-vivo-card .info .canal { font-size: 0.65rem; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+        .en-vivo-card .info .stats { font-size: 0.6rem; color: var(--text-muted); margin-top: 6px; }
+        .no-live-box { grid-column: 1 / -1; text-align: center; padding: 40px 20px; background: var(--glass-bg); border: 1px dashed var(--glass-border); border-radius: var(--radius); color: var(--text-muted); }
+        .no-live-box .icon { font-size: 2.5rem; display: block; margin-bottom: 12px; color: var(--gold); opacity: 0.3; }
 
         .grupos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
         .grupo-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-xl); padding: 16px; cursor: pointer; transition: var(--transition); position: relative; }
@@ -89,6 +88,11 @@
         .grupo-interno { display: none; }
         .grupo-interno.show { display: block; }
         .grupo-header-interno { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-xl); padding: 20px; margin-bottom: 20px; position: relative; }
+        
+        /* BOTÓN DE AJUSTES (ENGRANE) EN EL BANNER */
+        .btn-ajustes-canal { position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,0.6); border: 1px solid var(--glass-border); border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; color: var(--gold); cursor: pointer; z-index: 10; backdrop-filter: blur(4px); transition: var(--transition); }
+        .btn-ajustes-canal:hover { background: var(--gold); color: var(--space); transform: rotate(90deg); }
+        
         .grupo-header-interno .portada { width: 100%; height: 180px; background: linear-gradient(135deg, var(--green-deep), var(--gold-dark)); border-radius: var(--radius); margin-bottom: 12px; display: flex; align-items: center; justify-content: center; font-size: 3rem; color: rgba(255,255,255,0.1); overflow: hidden; position: relative; }
         .grupo-header-interno .portada img, .grupo-header-interno .portada video { width: 100%; height: 100%; object-fit: cover; }
         .grupo-header-interno .info-row { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; }
@@ -99,9 +103,18 @@
         .grupo-header-interno .info-text .descripcion { color: var(--text-secondary); font-size: 0.85rem; margin-top: 4px; }
         .grupo-header-interno .info-text .meta { display: flex; gap: 12px; font-size: 0.65rem; color: var(--text-muted); margin-top: 6px; flex-wrap: wrap; align-items: center; }
         .grupo-header-interno .búho-firma { margin-top: 8px; font-size: 0.65rem; color: var(--gold); background: rgba(212,175,55,0.1); padding: 4px 10px; border-radius: 10px; display: inline-block; border: 1px dashed var(--gold); }
-        .grupo-header-interno .acciones { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
-        .btn-suscribir { background: linear-gradient(135deg, #00d68f, #00b377); color: #fff; border: none; padding: 8px 20px; border-radius: 30px; font-weight: 700; font-size: 0.7rem; cursor: pointer; display: flex; align-items: center; gap: 6px; }
-        .btn-suscribir:hover { transform: scale(1.02); }
+        
+        .grupo-header-interno .acciones { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; align-items: center; }
+        .btn-donar { background: linear-gradient(135deg, #00d68f, #00b377); color: #fff; border: none; padding: 8px 20px; border-radius: 30px; font-weight: 700; font-size: 0.7rem; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+        .btn-donar:hover { transform: scale(1.02); }
+        .btn-salir-aire { background: var(--live-red); color: #fff; border: none; padding: 10px 24px; border-radius: 30px; font-weight: 800; font-size: 0.8rem; cursor: pointer; animation: pulse-live 2s infinite; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 0 20px rgba(255, 0, 68, 0.4); }
+        .btn-salir-aire:hover { transform: scale(1.05); }
+        
+        /* MODAL AJUSTES CANAL */
+        .ajustes-menu { display: flex; flex-direction: column; gap: 8px; }
+        .ajustes-menu button { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.2); color: var(--text-primary); cursor: pointer; text-align: left; font-size: 0.8rem; transition: var(--transition); }
+        .ajustes-menu button:hover { border-color: var(--gold); background: rgba(212,175,55,0.1); color: var(--gold); }
+
         .grupo-live-container { display: none; margin-bottom: 20px; background: var(--glass-bg); border: 1px solid var(--live-red); border-radius: var(--radius-xl); overflow: hidden; box-shadow: 0 10px 40px rgba(255, 0, 68, 0.2); animation: adFadeIn 0.5s ease; }
         .grupo-live-container.visible { display: block; }
         .grupo-live-container .live-header-bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; border-bottom: 1px solid rgba(255, 0, 68, 0.2); background: rgba(255, 0, 68, 0.05); }
@@ -131,7 +144,7 @@
         @keyframes adFadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .marketing-ad-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; border-bottom: 1px solid rgba(212, 175, 55, 0.1); }
         .marketing-ad-label { font-family: 'Orbitron', monospace; font-size: 0.55rem; color: var(--gold); letter-spacing: 3px; text-transform: uppercase; display: flex; align-items: center; gap: 8px; opacity: 0.85; }
-        .marketing-ad-label::before { content: '🦉'; color: var(--gold); font-size: 0.7rem; }
+        .marketing-ad-label::before { content: '◈'; color: var(--gold); font-size: 0.7rem; }
         .marketing-ad-close { background: transparent; border: none; color: var(--text-muted); font-size: 1.1rem; cursor: pointer; line-height: 1; padding: 4px 8px; transition: var(--transition); }
         .marketing-ad-close:hover { color: var(--gold); }
         .marketing-ad-body { display: flex; gap: 14px; padding: 14px 16px 16px; align-items: flex-start; }
@@ -224,14 +237,14 @@
     <div class="app">
         <header class="header">
             <a href="/" class="logo">
-                <span class="logo-hex">🦉</span>
+                <span class="logo-hex">◈</span>
                 <span class="logo-text">Sariel<span>'s</span></span>
                 <span class="logo-badge">✦ CABLERa</span>
             </a>
             <div class="header-actions">
                 <span class="network-badge"><span class="dot"></span> Polygon</span>
                 <span class="token-badge" id="tokenBadge" onclick="verTokens()">
-                    🦉 <span id="tokenBadgeCantidad">0</span> Es.stoks
+                    ◈ <span id="tokenBadgeCantidad">0</span> Es.stoks
                 </span>
             </div>
         </header>
@@ -243,64 +256,83 @@
             <a href="/features/live/live.html" class="nav-link live">◉ Live</a>
             <a href="/features/internet/internet.html" class="nav-link">◈ Internet</a>
             <a href="/features/videos/videos.html" class="nav-link">▶ Videos</a>
-            <a href="/features/grupos/grupos.html" class="nav-link active">🦉 Canales</a>
+            <a href="/features/grupos/grupos.html" class="nav-link active">◈ Canales</a>
             <a href="/marketing/marketing.html" class="nav-link">◈ Marketing</a>
         </nav>
         <div id="vistaLista">
-            <!-- SECCIÓN EN VIVO AHORA -->
-            <div class="en-vivo-ahora-container" id="enVivoAhoraContainer" style="display:none;">
-                <h2><span class="dot"></span> EN VIVO AHORA</h2>
-                <div class="en-vivo-scroll" id="enVivoScroll"></div>
-            </div>
-
-            <div class="grupos-header">
-                <h1 data-clave="grupos_titulo">🦉 Canales</h1>
-                <div class="filtros">
-                    <input type="text" id="inputBuscar" placeholder="Buscar..." oninput="cargarGrupos()" />
-                    <select id="selectCiudad" onchange="cargarGrupos()">
-                        <option value="">Todas las ciudades</option>
-                    </select>
-                    <select id="selectCategoria" onchange="cargarGrupos()">
-                        <option value="">Todas las categorías</option>
-                    </select>
-                    <button class="btn-outline btn-sm" onclick="toggleMisGrupos()" id="btnMisGrupos">🦉 Mis Canales</button>
-                    <button class="btn-gold btn-sm" onclick="abrirModalCrearGrupo()">+ Activar Búho Blanco</button>
+            <!-- ESTRUCTURA NETFLIX/SKY -->
+            <div class="dashboard-grid">
+                <!-- COLUMNA IZQUIERDA: MIS CANALES -->
+                <div class="col-mis-canales">
+                    <div class="seccion-titulo">
+                        <span>◈ MIS CANALES</span>
+                        <button class="btn-outline btn-sm" onclick="toggleMisGrupos()" id="btnMisGrupos">◈ Ver Todos</button>
+                    </div>
+                    <div class="mis-canales-lista" id="misCanalesLista">
+                        <div class="empty-state" style="padding:20px;"><span class="icon">◈</span><h3>Cargando...</h3></div>
+                    </div>
+                </div>
+                
+                <!-- COLUMNA DERECHA: EN VIVO AHORA -->
+                <div class="col-en-vivo">
+                    <div class="seccion-titulo">
+                        <span>🔴 EN VIVO AHORA</span>
+                    </div>
+                    <div class="en-vivo-grid" id="enVivoGrid">
+                        <div class="empty-state" style="padding:20px;"><span class="icon">◈</span><h3>Cargando parrilla...</h3></div>
+                    </div>
                 </div>
             </div>
-            <div class="grupos-grid" id="gruposGrid">
-                <div class="empty-state"><span class="icon">🦉</span><h3 data-clave="grupos_cargando">Cargando canales...</h3></div>
+
+            <!-- LISTA COMPLETA DE CANALES (Filtros y búsqueda) -->
+            <div style="margin-top: 30px;">
+                <div class="grupos-header">
+                    <h1 data-clave="grupos_titulo">◈ Directorio de Canales</h1>
+                    <div class="filtros">
+                        <input type="text" id="inputBuscar" placeholder="Buscar..." oninput="cargarGrupos()" />
+                        <select id="selectCiudad" onchange="cargarGrupos()">
+                            <option value="">Todas las ciudades</option>
+                        </select>
+                        <select id="selectCategoria" onchange="cargarGrupos()">
+                            <option value="">Todas las categorías</option>
+                        </select>
+                        <button class="btn-gold btn-sm" onclick="abrirModalCrearGrupo()">+ Activar Búho Blanco</button>
+                    </div>
+                </div>
+                <div class="grupos-grid" id="gruposGrid">
+                    <div class="empty-state"><span class="icon">◈</span><h3 data-clave="grupos_cargando">Cargando canales...</h3></div>
+                </div>
             </div>
         </div>
+        
         <div class="grupo-interno" id="vistaGrupo">
             <button class="btn-outline btn-sm" onclick="volverALista()" style="margin-bottom:12px;">← Volver a Canales</button>
             <div class="grupo-header-interno" id="grupoHeaderInterno">
-                <div class="portada" id="grupoPortada">🦉</div>
+                <!-- BOTÓN DE AJUSTES (ENGRANE) -->
+                <button class="btn-ajustes-canal" onclick="abrirAjustesCanal()" id="btnAjustesCanal" style="display:none;" title="Ajustes del Canal">⚙️</button>
+                
+                <div class="portada" id="grupoPortada">◈</div>
                 <div class="info-row">
-                    <div class="avatar-grande" id="grupoAvatar">🦉</div>
+                    <div class="avatar-grande" id="grupoAvatar">◈</div>
                     <div class="info-text">
                         <div class="nombre" id="grupoNombre">Nombre del canal</div>
                         <div class="descripcion" id="grupoDescripcion">Descripción</div>
                         <div class="meta">
-                            <span id="grupoCiudad">🦉 Ciudad</span>
-                            <span id="grupoMiembros">🦉 0 seguidores</span>
-                            <span id="grupoEstadoBadge">🦉 Público</span>
-                            <span id="grupoLiveBadge" style="display:none;" class="live-badge">◉ EN VIVO</span>
+                            <span id="grupoCiudad">◈ Ciudad</span>
+                            <span id="grupoMiembros">◈ 0 seguidores</span>
+                            <span id="grupoEstadoBadge">◈ Público</span>
+                            <span id="grupoLiveBadge" style="display:none;" class="live-badge">🔴 EN VIVO</span>
                         </div>
-                        <div class="búho-firma" id="grupoFirmaLigera">🦉 "Yo me hago cargo de lo que digo aquí"</div>
+                        <div class="búho-firma" id="grupoFirmaLigera">◈ "Yo me hago cargo de lo que digo aquí"</div>
                     </div>
                 </div>
                 <div class="acciones" id="grupoAcciones">
-                    <button class="btn-suscribir btn-sm" onclick="abrirModalRegalos(grupoActual?.creador_id, grupoActual?.nombre)" id="btnSuscribir">🦉 Suscribirse</button>
-                    <button class="btn-gold btn-sm" onclick="abrirFormPublicacion()">◈ Publicar</button>
-                    <button class="btn-outline btn-sm" onclick="subirFotoGrupo()" id="btnSubirFoto">◈ Foto</button>
-                    <button class="btn-outline btn-sm" onclick="subirVideoGrupo()" id="btnSubirVideo">◈ Video</button>
-                    <button class="btn-live btn-sm" onclick="iniciarLiveEnGrupo()" id="btnIniciarLive">◉ Iniciar LIVE</button>
-                    <button class="btn-danger btn-sm" onclick="verLiveActivo()" id="btnVerLive" style="display:none;">◉ VER LIVE</button>
+                    <button class="btn-donar btn-sm" onclick="abrirModalRegalos(grupoActual?.creador_id, grupoActual?.nombre)" id="btnDonar">◈ Donar USDT</button>
+                    <button class="btn-gold btn-sm" onclick="abrirFormPublicacion()">◈ Subir al Canal</button>
+                    <button class="btn-salir-aire" onclick="iniciarLiveEnGrupo()" id="btnIniciarLive">🔴 SALIR AL AIRE</button>
+                    <button class="btn-danger btn-sm" onclick="verLiveActivo()" id="btnVerLive" style="display:none;">🔴 VER LIVE</button>
                     <button class="btn-danger btn-sm" onclick="finalizarLiveGrupo()" id="btnFinalizarLive" style="display:none;">■ Finalizar LIVE</button>
-                    <button class="btn-outline btn-sm" onclick="abrirAdminGrupo()" id="btnAdminGrupo" style="display:none;">🦉 Administrar</button>
-                    <!-- NUEVOS BOTONES DE EDICIÓN DE PORTADA Y AVATAR -->
-                    <button class="btn-outline btn-sm" onclick="cambiarAvatarGrupo()" id="btnCambiarAvatar" style="display:none;">🦉 Cambiar Foto</button>
-                    <button class="btn-outline btn-sm" onclick="cambiarPortadaGrupo()" id="btnCambiarPortada" style="display:none;">🦉 Cambiar Portada</button>
+                    <!-- Los botones de Administrar, Cambiar Foto y Portada ahora están dentro del menú de ajustes -->
                 </div>
             </div>
             <div class="grupo-live-container" id="grupoLiveContainer">
@@ -343,7 +375,7 @@
                     <button class="marketing-ad-close" onclick="cerrarAnuncio()" aria-label="Cerrar anuncio">&times;</button>
                 </div>
                 <div class="marketing-ad-body">
-                    <div class="marketing-ad-media" id="marketingAdMedia"><span>🦉</span></div>
+                    <div class="marketing-ad-media" id="marketingAdMedia"><span>◈</span></div>
                     <div class="marketing-ad-content">
                         <div class="marketing-ad-title" id="marketingAdTitle">Cargando anuncio...</div>
                         <div class="marketing-ad-desc" id="marketingAdDesc"></div>
@@ -354,9 +386,9 @@
             <div class="form-publicacion" id="formPublicacion" style="display:none;">
                 <textarea id="inputPublicacion" placeholder="¿Qué está pasando en el canal?"></textarea>
                 <div class="acciones">
-                    <button onclick="toggleEmojiPickerGrupo()" id="btnEmojiGrupo">🦉 Emoji</button>
+                    <button onclick="toggleEmojiPickerGrupo()" id="btnEmojiGrupo">◈ Emoji</button>
                     <button onclick="insertarHashtagGrupo()"># Hashtag</button>
-                    <button class="btn-publicar" onclick="publicarEnGrupo()">◈ Publicar</button>
+                    <button class="btn-publicar" onclick="publicarEnGrupo()">◈ Subir al Canal</button>
                     <div class="emoji-picker" id="emojiPickerGrupo">
                         <div class="titulo">✦ Elige tu emoji</div>
                         <div class="grid" id="emojiGridGrupo"></div>
@@ -364,7 +396,7 @@
                 </div>
             </div>
             <div class="publicaciones-container" id="publicacionesContainer">
-                <div class="empty-state"><span class="icon">🦉</span><h3 data-clave="grupos_sin_publicaciones">Sin publicaciones aún</h3><p data-clave="grupos_sin_publicaciones_desc">Sé el primero en publicar</p></div>
+                <div class="empty-state"><span class="icon">◈</span><h3 data-clave="grupos_sin_publicaciones">Sin publicaciones aún</h3><p data-clave="grupos_sin_publicaciones_desc">Sé el primero en publicar</p></div>
             </div>
         </div>
         
@@ -372,7 +404,7 @@
         <div class="modal-overlay" id="modalCrearGrupo">
             <div class="modal">
                 <div class="modal-header">
-                    <h2>🦉 Activar Búho Blanco</h2>
+                    <h2>◈ Activar Búho Blanco</h2>
                     <button class="btn-cerrar" onclick="cerrarModalCrearGrupo()">×</button>
                 </div>
                 <form id="formCrearGrupo" onsubmit="event.preventDefault(); crearGrupo();">
@@ -406,29 +438,39 @@
                     <div class="form-group"><label data-clave="grupos_modo_ingreso">Modo de ingreso</label>
                         <select id="inputModoIngresoGrupo"><option value="abierto">Abierto</option><option value="solicitud">Solicitud</option><option value="invitacion">Invitación</option></select>
                     </div>
-                    <button class="btn-guardar" id="btnCrearGrupo">🦉 Activar Canal</button>
+                    <button class="btn-guardar" id="btnCrearGrupo">◈ Activar Canal</button>
                 </form>
+            </div>
+        </div>
+
+        <!-- MODAL AJUSTES DEL CANAL (ENGRANE) -->
+        <div class="modal-overlay" id="modalAjustesCanal">
+            <div class="modal">
+                <div class="modal-header"><h2>⚙️ Ajustes del Canal</h2><button class="btn-cerrar" onclick="cerrarAjustesCanal()">×</button></div>
+                <div class="ajustes-menu">
+                    <button onclick="abrirAdminGrupo()">◈ Administrar Miembros y Publicaciones</button>
+                    <button onclick="cambiarAvatarGrupo()">◈ Cambiar Foto de Perfil</button>
+                    <button onclick="cambiarPortadaGrupo()">◈ Cambiar Portada (Video/Imagen)</button>
+                    <button onclick="mostrarConfirmacionEliminarGrupo()" style="color:var(--danger); border-color:rgba(255,51,102,0.3);">◈ Eliminar Canal</button>
+                </div>
             </div>
         </div>
 
         <div class="modal-overlay" id="modalAdminGrupo">
             <div class="modal">
-                <div class="modal-header"><h2>🦉 Administrar Canal</h2><button class="btn-cerrar" onclick="cerrarModalAdmin()">×</button></div>
-                <div id="adminContenido"><div class="empty-state"><span class="icon">🦉</span><h3 data-clave="grupos_cargando_admin">Cargando...</h3></div></div>
+                <div class="modal-header"><h2>◈ Administrar Canal</h2><button class="btn-cerrar" onclick="cerrarModalAdmin()">×</button></div>
+                <div id="adminContenido"><div class="empty-state"><span class="icon">◈</span><h3 data-clave="grupos_cargando_admin">Cargando...</h3></div></div>
                 <div style="margin-top:16px; display:flex; gap:8px; flex-wrap:wrap;">
-                    <button class="btn-gold btn-sm" onclick="cargarAdminMiembros()" style="flex:1;">🦉 Miembros</button>
-                    <button class="btn-gold btn-sm" onclick="cargarAdminPublicaciones()" style="flex:1;">🦉 Publicaciones</button>
-                    <button class="btn-gold btn-sm" onclick="cargarAdminSolicitudes()" style="flex:1;">🦉 Solicitudes</button>
-                    <button class="btn-gold btn-sm" onclick="cargarAdminEditar()" style="flex:1;">🦉 Editar</button>
-                </div>
-                <div style="margin-top:16px; border-top:1px solid var(--glass-border); padding-top:16px;">
-                    <button class="btn-eliminar-grupo" onclick="mostrarConfirmacionEliminarGrupo()">🦉 Eliminar Canal</button>
+                    <button class="btn-gold btn-sm" onclick="cargarAdminMiembros()" style="flex:1;">◈ Miembros</button>
+                    <button class="btn-gold btn-sm" onclick="cargarAdminPublicaciones()" style="flex:1;">◈ Publicaciones</button>
+                    <button class="btn-gold btn-sm" onclick="cargarAdminSolicitudes()" style="flex:1;">◈ Solicitudes</button>
+                    <button class="btn-gold btn-sm" onclick="cargarAdminEditar()" style="flex:1;">◈ Editar Datos</button>
                 </div>
             </div>
         </div>
         <div class="modal-overlay" id="modalConfirmarEliminarGrupo">
             <div class="modal">
-                <div class="modal-header"><h2 style="color:var(--danger);">🦉 Eliminar Canal</h2><button class="btn-cerrar" onclick="cerrarConfirmacionEliminarGrupo()">×</button></div>
+                <div class="modal-header"><h2 style="color:var(--danger);">◈ Eliminar Canal</h2><button class="btn-cerrar" onclick="cerrarConfirmacionEliminarGrupo()">×</button></div>
                 <div style="padding:12px 0;">
                     <p style="color:var(--text-secondary); font-size:0.9rem; margin-bottom:12px;">¿Eliminar este canal?</p>
                     <p style="color:var(--danger); font-size:0.85rem; font-weight:600; margin-bottom:8px;">Esta acción es permanente.</p>
@@ -443,7 +485,7 @@
         </div>
         <div class="modal-overlay" id="modalRegalos">
             <div class="modal">
-                <div class="modal-header"><h2>🦉 Suscribirse / Regalar</h2><button class="btn-cerrar" onclick="cerrarModalRegalos()">×</button></div>
+                <div class="modal-header"><h2>◈ Donar USDT</h2><button class="btn-cerrar" onclick="cerrarModalRegalos()">×</button></div>
                 <div style="text-align:center;padding:10px 0;">
                     <p style="color:var(--text-muted);font-size:0.8rem;margin-bottom:12px;">Apoya a <strong id="giftStreamerName" style="color:var(--gold);">el creador</strong> con USDT/USDC</p>
                     <div class="gift-options" id="giftOptions">
@@ -459,11 +501,11 @@
         </div>
         <div class="toast" id="toast"></div>
         <footer class="footer">
-            <span><span class="brand">🦉 Sariel's</span> · Cablera Descentralizada · WEB3</span>
+            <span><span class="brand">◈ Sariel's</span> · Cablera Descentralizada · WEB3</span>
             <div class="footer-links">
-                <a href="/terminos" data-clave="grupos_footer_terminos">🦉 Términos</a>
-                <a href="/privacidad" data-clave="grupos_footer_privacidad">🦉 Privacidad</a>
-                <a href="/cookies" data-clave="grupos_footer_cookies">🦉 Cookies</a>
+                <a href="/terminos" data-clave="grupos_footer_terminos">◈ Términos</a>
+                <a href="/privacidad" data-clave="grupos_footer_privacidad">◈ Privacidad</a>
+                <a href="/cookies" data-clave="grupos_footer_cookies">◈ Cookies</a>
                 <span style="opacity:0.3;">⚡ Polygon</span>
             </div>
         </footer>
@@ -483,6 +525,7 @@
         var categoriasCache = [];
         var publicando = false;
         var eliminandoGrupo = false;
+        var misCanalesCache = [];
 
         var anuncioActual = null;
         var adRefreshInterval = null;
@@ -592,11 +635,11 @@
             const cta = document.getElementById('marketingAdCta');
             if (!container || !media || !title || !desc || !cta) return;
             if (ad.imagen_url) {
-                media.innerHTML = `<img src="${escapeHTML(ad.imagen_url)}" alt="${escapeHTML(ad.titulo)}" loading="lazy" onerror="this.parentElement.innerHTML='<span>🦉</span>'">`;
+                media.innerHTML = `<img src="${escapeHTML(ad.imagen_url)}" alt="${escapeHTML(ad.titulo)}" loading="lazy" onerror="this.parentElement.innerHTML='<span>◈</span>'">`;
             } else if (ad.video_url) {
                 media.innerHTML = `<video src="${escapeHTML(ad.video_url)}" muted autoplay loop playsinline></video>`;
             } else {
-                media.innerHTML = '<span>🦉</span>';
+                media.innerHTML = '<span>◈</span>';
             }
             title.textContent = ad.titulo || 'Patrocinado';
             desc.textContent = ad.descripcion || '';
@@ -658,7 +701,7 @@
                                 canvas.width = img.width; canvas.height = img.height;
                                 const ctx = canvas.getContext('2d');
                                 ctx.drawImage(img, 0, 0);
-                                const marca = "🦉 Búho Blanco · Csariel's";
+                                const marca = "◈ Cablera Sariel's";
                                 const fontSize = Math.max(20, Math.min(img.width / 20, 60));
                                 ctx.font = `bold ${fontSize}px 'Inter', sans-serif`;
                                 ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -727,56 +770,93 @@
             } catch (e) { console.error('Error cargando ciudades:', e); }
         }
 
-        // ✅ Cargar EN VIVO AHORA
-        async function cargarEnVivoAhora() {
-            var container = document.getElementById('enVivoAhoraContainer');
-            var scroll = document.getElementById('enVivoScroll');
-            if (!container || !scroll) return;
+        // ✅ Cargar la columna de MIS CANALES y la parrilla EN VIVO AHORA
+        async function cargarDashboard() {
+            var misCanalesDiv = document.getElementById('misCanalesLista');
+            var enVivoDiv = document.getElementById('enVivoGrid');
+            if (!misCanalesDiv || !enVivoDiv) return;
 
             try {
-                var result = await window.supabase.from('transmisiones')
+                if (!sessionUser) await cargarUsuarioActual();
+
+                // 1. Cargar Mis Canales (suscripciones activas del usuario)
+                if (sessionUser) {
+                    var misGruposResult = await window.supabase.from('grupos_video_miembros').select('grupo_id').eq('usuario_id', sessionUser.id).eq('estado', 'activo');
+                    var ids = (misGruposResult.data || []).map(function(m) { return m.grupo_id; });
+                    
+                    if (ids.length > 0) {
+                        var misCanalesData = await window.supabase.from('grupos_video').select('id, nombre, avatar_url, precio_usdt').in('id', ids);
+                        misCanalesCache = misCanalesData.data || [];
+                        
+                        // Verificar en vivo para cada uno
+                        var liveStatus = {};
+                        for (var i = 0; i < misCanalesCache.length; i++) {
+                            var g = misCanalesCache[i];
+                            var liveCheck = await window.supabase.from('transmisiones').select('id').eq('grupo_id', g.id).eq('estado', 'en_vivo').eq('is_live', true).maybeSingle();
+                            if (liveCheck.data) liveStatus[g.id] = true;
+                        }
+
+                        misCanalesDiv.innerHTML = misCanalesCache.map(function(g) {
+                            var isLive = liveStatus[g.id] ? '<span class="live-dot"></span>' : '';
+                            var avatar = g.avatar_url ? '<img src="' + escapeHTML(g.avatar_url) + '">' : '◈';
+                            return '<div class="canal-item" onclick="abrirGrupo(\'' + g.id + '\')">' +
+                                '<div class="avatar-mini">' + avatar + '</div>' +
+                                '<div class="info"><div class="nombre">' + escapeHTML(g.nombre) + '</div>' +
+                                '<div class="stats">' + (g.precio_usdt > 0 ? '$' + g.precio_usdt + ' USDT' : 'Gratis') + '</div></div>' +
+                                isLive + '</div>';
+                        }).join('');
+                    } else {
+                        misCanalesDiv.innerHTML = '<div class="empty-state" style="padding:20px;"><span class="icon">◈</span><p style="font-size:0.7rem;">No sigues ningún canal aún.</p></div>';
+                    }
+                } else {
+                    misCanalesDiv.innerHTML = '<div class="empty-state" style="padding:20px;"><span class="icon">◈</span><p style="font-size:0.7rem;">Inicia sesión para ver tus canales.</p></div>';
+                }
+
+                // 2. Cargar EN VIVO AHORA (todas las transmisiones activas)
+                var livesResult = await window.supabase.from('transmisiones')
                     .select(`*, grupo:grupos_video(id, nombre, avatar_url)`)
                     .eq('estado', 'en_vivo')
                     .eq('is_live', true)
                     .order('created_at', { ascending: false });
 
-                if (result.error) throw result.error;
-                var lives = result.data || [];
-
+                var lives = livesResult.data || [];
                 if (lives.length === 0) {
-                    container.style.display = 'none';
-                    return;
+                    enVivoDiv.innerHTML = `<div class="no-live-box">
+                        <span class="icon">◈</span>
+                        <h3 style="font-size:0.9rem; color:var(--text-secondary);">Nadie al aire</h3>
+                        <p style="font-size:0.7rem; margin-top:4px;">Sé el primero - Inicia un LIVE en tu canal</p>
+                    </div>`;
+                } else {
+                    enVivoDiv.innerHTML = lives.map(function(l) {
+                        var g = l.grupo || {};
+                        return `<div class="en-vivo-card" onclick="abrirGrupo('${g.id}')">
+                            <div class="live-tag-small">🔴 EN VIVO</div>
+                            <div style="width:100%; height:130px; background:#000; display:flex; align-items:center; justify-content:center; color:#fff; font-size:2rem; position:relative;">
+                                ${g.avatar_url ? `<img src="${escapeHTML(g.avatar_url)}" style="width:60px; height:60px; border-radius:50%; border:2px solid var(--gold);">` : '◈'}
+                            </div>
+                            <div class="info">
+                                <div class="titulo">${escapeHTML(l.titulo || 'Sin título')}</div>
+                                <div class="canal">${escapeHTML(g.nombre || 'Canal')}</div>
+                                <div class="stats">👁️ ${l.espectadores || 0} viendo</div>
+                            </div>
+                        </div>`;
+                    }).join('');
                 }
 
-                container.style.display = 'block';
-                scroll.innerHTML = lives.map(function(l) {
-                    var g = l.grupo || {};
-                    var avatar = g.avatar_url ? g.avatar_url : '';
-                    return `<div class="en-vivo-card" onclick="abrirGrupo('${g.id}')">
-                        <div class="live-tag-small">🔴 EN VIVO</div>
-                        <div style="width:100%; height:110px; background:#000; display:flex; align-items:center; justify-content:center; color:#fff; font-size:2rem;">🦉</div>
-                        <div class="info">
-                            <div class="titulo">${escapeHTML(l.titulo || 'Sin título')}</div>
-                            <div class="canal">${escapeHTML(g.nombre || 'Canal')}</div>
-                            <div class="stats">👁️ ${l.espectadores || 0} viendo</div>
-                        </div>
-                    </div>`;
-                }).join('');
-
-            } catch (e) { console.error('Error cargando En Vivo Ahora:', e); }
+            } catch (e) { console.error('Error cargando dashboard:', e); }
         }
 
         async function cargarGrupos() {
             var grid = document.getElementById('gruposGrid');
             try {
                 if (typeof window.supabase === 'undefined') {
-                    grid.innerHTML = '<div class="empty-state"><span class="icon">🦉</span><h3>Error de conexión</h3></div>';
+                    grid.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3>Error de conexión</h3></div>';
                     return;
                 }
                 if (!sessionUser) await cargarUsuarioActual();
 
-                // Cargar la sección En Vivo Ahora
-                await cargarEnVivoAhora();
+                // Cargar dashboard principal (Mis Canales + En Vivo Ahora)
+                await cargarDashboard();
 
                 var buscar = document.getElementById('inputBuscar')?.value?.trim() || '';
                 var ciudad = document.getElementById('selectCiudad')?.value || '';
@@ -792,7 +872,7 @@
                     if (misGruposResult.error) throw misGruposResult.error;
                     var ids = (misGruposResult.data || []).map(function(m) { return m.grupo_id; });
                     if (ids.length === 0) {
-                        grid.innerHTML = '<div class="empty-state"><span class="icon">🦉</span><h3>No sigues ningún canal</h3></div>';
+                        grid.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3>No sigues ningún canal</h3></div>';
                         return;
                     }
                     query = query.in('id', ids);
@@ -803,7 +883,7 @@
                 var grupos = result.data || [];
 
                 if (grupos.length === 0) {
-                    grid.innerHTML = '<div class="empty-state"><span class="icon">🦉</span><h3>No hay canales</h3><p>Activa el primero</p></div>';
+                    grid.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3>No hay canales</h3><p>Activa el primero</p></div>';
                     return;
                 }
 
@@ -820,30 +900,30 @@
                     var miembros = g.miembros ? g.miembros[0]?.count || 0 : 0;
                     var tieneLive = liveMap[g.id] ? true : false;
                     var visibilidad = g.visibilidad || 'publico';
-                    var visBadge = visibilidad === 'publico' ? '<span class="estado-badge">🦉 Público</span>' : '<span class="estado-badge privado">🦉 Privado</span>';
-                    var precio = g.precio_usdt > 0 ? `<span class="precio-badge">🦉 $${g.precio_usdt} USDT</span>` : '';
+                    var visBadge = visibilidad === 'publico' ? '<span class="estado-badge">◈ Público</span>' : '<span class="estado-badge privado">◈ Privado</span>';
+                    var precio = g.precio_usdt > 0 ? `<span class="precio-badge">◈ $${g.precio_usdt} USDT</span>` : '';
                     var liveClass = tieneLive ? 'en-vivo' : '';
                     return '<div class="grupo-card ' + liveClass + '" onclick="abrirGrupo(\'' + g.id + '\')">' +
-                        '<div class="avatar">' + (g.avatar_url ? '<img src="' + escapeHTML(g.avatar_url) + '">' : '🦉') + '</div>' +
+                        '<div class="avatar">' + (g.avatar_url ? '<img src="' + escapeHTML(g.avatar_url) + '">' : '◈') + '</div>' +
                         '<div class="nombre">' + escapeHTML(g.nombre) + '</div>' +
                         '<div class="descripcion">' + escapeHTML((g.descripcion || '').substring(0, 80)) + '</div>' +
-                        '<div class="meta"><span class="ciudad">🦉 ' + escapeHTML(g.ciudad || 'Sin ciudad') + '</span>' +
-                        '<span>🦉 ' + miembros + '</span>' + visBadge + precio +
-                        (tieneLive ? ' <span class="live-badge">◉ EN VIVO</span>' : '') +
+                        '<div class="meta"><span class="ciudad">◈ ' + escapeHTML(g.ciudad || 'Sin ciudad') + '</span>' +
+                        '<span>◈ ' + miembros + '</span>' + visBadge + precio +
+                        (tieneLive ? ' <span class="live-badge">🔴 EN VIVO</span>' : '') +
                         '</div></div>';
                 }).join('');
 
             } catch (e) {
                 console.error('Error cargando canales:', e);
-                grid.innerHTML = '<div class="empty-state"><span class="icon">🦉</span><h3>Error cargando canales</h3><p>' + (e.message || '') + '</p></div>';
+                grid.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3>Error cargando canales</h3><p>' + (e.message || '') + '</p></div>';
             }
         }
 
         function toggleMisGrupos() {
             soloMisGrupos = !soloMisGrupos;
             var btn = document.getElementById('btnMisGrupos');
-            if (soloMisGrupos) { btn.textContent = '🦉 Todos los Canales'; btn.style.borderColor = 'var(--gold)'; btn.style.color = 'var(--gold)'; }
-            else { btn.textContent = '🦉 Mis Canales'; btn.style.borderColor = ''; btn.style.color = ''; }
+            if (soloMisGrupos) { btn.textContent = '◈ Ver Todos'; btn.style.borderColor = 'var(--gold)'; btn.style.color = 'var(--gold)'; }
+            else { btn.textContent = '◈ Ver Todos'; btn.style.borderColor = ''; btn.style.color = ''; }
             cargarGrupos();
         }
 
@@ -866,31 +946,28 @@
 
                 document.getElementById('grupoNombre').textContent = grupoActual.nombre || 'Sin nombre';
                 document.getElementById('grupoDescripcion').textContent = grupoActual.descripcion || 'Sin descripción';
-                document.getElementById('grupoCiudad').textContent = '🦉 ' + (grupoActual.ciudad || 'Sin ciudad');
-                document.getElementById('grupoMiembros').textContent = '🦉 ' + (grupoActual.miembros?.[0]?.count || 0) + ' seguidores';
+                document.getElementById('grupoCiudad').textContent = '◈ ' + (grupoActual.ciudad || 'Sin ciudad');
+                document.getElementById('grupoMiembros').textContent = '◈ ' + (grupoActual.miembros?.[0]?.count || 0) + ' seguidores';
 
                 var vis = grupoActual.visibilidad || 'publico';
-                document.getElementById('grupoEstadoBadge').textContent = vis === 'publico' ? '🦉 Público' : '🦉 Privado';
+                document.getElementById('grupoEstadoBadge').textContent = vis === 'publico' ? '◈ Público' : '◈ Privado';
                 
-                // Mostrar firma ligera y precio
                 var firmaEl = document.getElementById('grupoFirmaLigera');
                 if (firmaEl) {
-                    firmaEl.textContent = '🦉 "' + (grupoActual.firma_ligera || 'Yo me hago cargo de lo que digo aquí') + '"';
+                    firmaEl.textContent = '◈ "' + (grupoActual.firma_ligera || 'Yo me hago cargo de lo que digo aquí') + '"';
                 }
-                var btnSusc = document.getElementById('btnSuscribir');
-                if (btnSusc) {
+                var btnDonar = document.getElementById('btnDonar');
+                if (btnDonar) {
                     if (grupoActual.precio_usdt > 0) {
-                        btnSusc.textContent = '🦉 Suscribirse ($' + grupoActual.precio_usdt + ' USDT)';
-                        btnSusc.style.display = 'inline-block';
+                        btnDonar.textContent = '◈ Donar $' + grupoActual.precio_usdt + ' USDT';
                     } else {
-                        btnSusc.textContent = '🦉 Regalar';
-                        btnSusc.style.display = 'inline-block';
+                        btnDonar.textContent = '◈ Donar USDT';
                     }
                 }
 
                 var avatarEl = document.getElementById('grupoAvatar');
                 if (grupoActual.avatar_url) avatarEl.innerHTML = '<img src="' + escapeHTML(grupoActual.avatar_url) + '">';
-                else avatarEl.textContent = '🦉';
+                else avatarEl.textContent = '◈';
 
                 var portadaEl = document.getElementById('grupoPortada');
                 if (grupoActual.portada_url) {
@@ -903,15 +980,12 @@
                         ></video>
                     `;
                 } else {
-                    portadaEl.textContent = '🦉';
+                    portadaEl.textContent = '◈';
                 }
 
-                var btnAdmin = document.getElementById('btnAdminGrupo');
-                btnAdmin.style.display = (esAdmin || esModerador) ? 'inline-block' : 'none';
-                
-                // Mostrar botones de cambiar avatar y portada solo a Admins
-                document.getElementById('btnCambiarAvatar').style.display = (esAdmin || esCreador) ? 'inline-block' : 'none';
-                document.getElementById('btnCambiarPortada').style.display = (esAdmin || esCreador) ? 'inline-block' : 'none';
+                // Mostrar botón de ajustes (engrane) si es admin o creador
+                var esAdminOGerente = esAdmin || esCreador;
+                document.getElementById('btnAjustesCanal').style.display = esAdminOGerente ? 'flex' : 'none';
 
                 var btnLive = document.getElementById('btnIniciarLive');
                 var btnVerLive = document.getElementById('btnVerLive');
@@ -971,8 +1045,16 @@
             }
         }
 
-        // ✅ NUEVAS FUNCIONES PARA AVATAR Y PORTADA
+        // ✅ FUNCIONES DE AJUSTES DEL CANAL (ENGRANE)
+        function abrirAjustesCanal() {
+            document.getElementById('modalAjustesCanal').classList.add('show');
+        }
+        function cerrarAjustesCanal() {
+            document.getElementById('modalAjustesCanal').classList.remove('show');
+        }
+
         async function cambiarAvatarGrupo() {
+            cerrarAjustesCanal();
             if (!sessionUser || !grupoActualId) { showToast('Error de sesión', 'error'); return; }
             if (!esAdmin && !esCreador) { showToast('Solo administradores', 'error'); return; }
 
@@ -1007,6 +1089,7 @@
         }
 
         async function cambiarPortadaGrupo() {
+            cerrarAjustesCanal();
             if (!sessionUser || !grupoActualId) { showToast('Error de sesión', 'error'); return; }
             if (!esAdmin && !esCreador) { showToast('Solo administradores', 'error'); return; }
 
@@ -1047,7 +1130,7 @@
             input.click();
         }
 
-        // ✅ Lógica de LIVE
+        // ✅ Lógica de LIVE (Ahora llamada "SALIR AL AIRE")
         async function iniciarLiveEnGrupo() {
             console.log('🎬 [1] Iniciando live de canal...');
             if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
@@ -1059,9 +1142,9 @@
             if (liveExistente) { showToast('Ya hay un LIVE activo en este canal', 'warning'); return; }
 
             try {
-                var titulo = prompt('Título del LIVE:', 'Live en ' + (grupoActual.nombre || 'canal')) || 'Live en canal';
+                var titulo = prompt('Título del LIVE:', 'Saliendo al aire en ' + (grupoActual.nombre || 'canal')) || 'Live en canal';
                 console.log('🎬 [2] Creando transmisión...');
-                showToast('Creando transmisión de canal...', '');
+                showToast('Saliendo al aire...', '');
 
                 const { data: rpcResult, error } = await window.supabase.rpc('crear_transmision', {
                     p_titulo: titulo,
@@ -1278,12 +1361,12 @@
                 var container = document.getElementById('publicacionesContainer');
                 var data = result.data || [];
                 if (data.length === 0) {
-                    container.innerHTML = '<div class="empty-state"><span class="icon">🦉</span><h3>Sin publicaciones</h3><p>Sé el primero en publicar algo</p></div>';
+                    container.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3>Sin publicaciones</h3><p>Sé el primero en publicar algo</p></div>';
                     return;
                 }
                 container.innerHTML = data.map(function(p) {
                     var u = p.usuarios || {};
-                    var avatar = u.avatar_url ? '<img src="' + escapeHTML(u.avatar_url) + '">' : '🦉';
+                    var avatar = u.avatar_url ? '<img src="' + escapeHTML(u.avatar_url) + '">' : '◈';
                     var nombre = escapeHTML(u.nombre || 'Usuario');
                     var contenido = escapeHTML(p.contenido || '');
                     if (p.imagen_url) contenido += '<br><img src="' + escapeHTML(p.imagen_url) + '" loading="lazy" />';
@@ -1296,9 +1379,9 @@
                         '<div class="fecha">' + new Date(p.created_at).toLocaleString() + '</div></div></div>' +
                         '<div class="contenido">' + contenido + '</div>' +
                         '<div class="stats">' +
-                        '<span onclick="reaccionarPublicacion(\'' + p.id + '\')">🦉 <span id="likes-' + p.id + '">' + likesCount + '</span></span>' +
-                        '<span onclick="toggleComentariosPublicacion(\'' + p.id + '\')">🦉 <span id="comentarios-' + p.id + '">' + comentariosCount + '</span></span>' +
-                        '<span onclick="compartirPublicacion(\'' + p.id + '\')">🦉 Compartir</span></div>' +
+                        '<span onclick="reaccionarPublicacion(\'' + p.id + '\')">◈ <span id="likes-' + p.id + '">' + likesCount + '</span></span>' +
+                        '<span onclick="toggleComentariosPublicacion(\'' + p.id + '\')">◈ <span id="comentarios-' + p.id + '">' + comentariosCount + '</span></span>' +
+                        '<span onclick="compartirPublicacion(\'' + p.id + '\')">◈ Compartir</span></div>' +
                         '<div class="comentarios-container" id="comentariosContainer-' + p.id + '" style="display:none;margin-top:8px;">' +
                         '<div id="comentariosLista-' + p.id + '"></div>' +
                         '<div style="display:flex;gap:6px;margin-top:6px;">' +
@@ -1414,7 +1497,7 @@
                 if (data.length === 0) { lista.innerHTML = '<div style="color:var(--text-muted);font-size:0.65rem;padding:4px 0;">Sin comentarios</div>'; return; }
                 lista.innerHTML = data.map(function(c) {
                     var u = c.usuarios || {};
-                    var avatar = u.avatar_url ? '<img src="' + escapeHTML(u.avatar_url) + '">' : '🦉';
+                    var avatar = u.avatar_url ? '<img src="' + escapeHTML(u.avatar_url) + '">' : '◈';
                     return '<div style="display:flex;gap:6px;padding:4px 0;border-bottom:1px solid rgba(212,175,55,0.04);">' +
                         '<div style="width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,var(--green-deep),var(--gold));display:flex;align-items:center;justify-content:center;font-size:0.5rem;color:#fff;overflow:hidden;flex-shrink:0;">' + avatar + '</div>' +
                         '<div style="flex:1;font-size:0.65rem;"><strong style="color:var(--gold);">' + escapeHTML(u.nombre || 'Usuario') + '</strong> ' + escapeHTML(c.contenido || '') +
@@ -1444,6 +1527,7 @@
         }
 
         async function abrirAdminGrupo() {
+            cerrarAjustesCanal();
             if (!esAdmin && !esModerador) { showToast('Sin permisos', 'error'); return; }
             if (!grupoActualId) return;
             document.getElementById('modalAdminGrupo').classList.add('show');
@@ -1453,13 +1537,13 @@
 
         async function cargarAdminMiembros() {
             var container = document.getElementById('adminContenido');
-            container.innerHTML = '<div class="empty-state"><span class="icon">🦉</span><h3>Cargando...</h3></div>';
+            container.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3>Cargando...</h3></div>';
             try {
                 var result = await window.supabase.from('grupos_video_miembros').select(`*, usuarios:usuario_id (id, nombre, handle, avatar_url)`).eq('grupo_id', grupoActualId).order('created_at', { ascending: true });
                 if (result.error) throw result.error;
                 var miembros = result.data || [];
-                if (miembros.length === 0) { container.innerHTML = '<div class="empty-state"><span class="icon">🦉</span><h3>Sin miembros</h3></div>'; return; }
-                var html = '<h4 style="color:var(--gold);font-size:0.8rem;margin-bottom:12px;">🦉 Miembros (' + miembros.length + ')</h4>';
+                if (miembros.length === 0) { container.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3>Sin miembros</h3></div>'; return; }
+                var html = '<h4 style="color:var(--gold);font-size:0.8rem;margin-bottom:12px;">◈ Miembros (' + miembros.length + ')</h4>';
                 miembros.forEach(function(m) {
                     var u = m.usuarios || {};
                     var esCreadorDelGrupo = m.rol === 'administrador';
@@ -1468,16 +1552,16 @@
                     var estadoColor = estado === 'activo' ? 'var(--success)' : estado === 'bloqueado' ? 'var(--danger)' : 'var(--warning)';
                     html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--glass-border);">' +
                         '<div><span style="font-weight:600;">' + escapeHTML(u.nombre || 'Usuario') + '</span>' +
-                        (esCreadorDelGrupo ? ' <span style="color:var(--gold);font-size:0.6rem;">🦉 Admin</span>' : '') +
-                        (m.rol === 'moderador' ? ' <span style="color:var(--cyan);font-size:0.6rem;">🦉 Mod</span>' : '') +
+                        (esCreadorDelGrupo ? ' <span style="color:var(--gold);font-size:0.6rem;">◈ Admin</span>' : '') +
+                        (m.rol === 'moderador' ? ' <span style="color:var(--cyan);font-size:0.6rem;">◈ Mod</span>' : '') +
                         (esYo ? ' <span style="color:var(--text-muted);font-size:0.6rem;">(tú)</span>' : '') +
                         ' <span style="color:' + estadoColor + ';font-size:0.5rem;">● ' + estado + '</span></div>' +
                         (esAdmin && !esCreadorDelGrupo && !esYo ?
                             '<div style="display:flex;gap:4px;flex-wrap:wrap;">' +
-                            (m.rol !== 'moderador' ? '<button class="btn-outline btn-sm" onclick="asignarModerador(\'' + m.usuario_id + '\')">🦉 Mod</button> ' : '') +
-                            (m.rol === 'moderador' ? '<button class="btn-outline btn-sm" onclick="quitarModerador(\'' + m.usuario_id + '\')">🦉 Quitar Mod</button> ' : '') +
-                            (estado === 'activo' ? '<button class="btn-danger btn-sm" onclick="expulsarMiembro(\'' + m.usuario_id + '\')">🦉 Expulsar</button> ' : '') +
-                            (estado === 'activo' ? '<button class="btn-danger btn-sm" onclick="bloquearMiembro(\'' + m.usuario_id + '\')">🦉 Bloquear</button>' : '') +
+                            (m.rol !== 'moderador' ? '<button class="btn-outline btn-sm" onclick="asignarModerador(\'' + m.usuario_id + '\')">◈ Mod</button> ' : '') +
+                            (m.rol === 'moderador' ? '<button class="btn-outline btn-sm" onclick="quitarModerador(\'' + m.usuario_id + '\')">◈ Quitar Mod</button> ' : '') +
+                            (estado === 'activo' ? '<button class="btn-danger btn-sm" onclick="expulsarMiembro(\'' + m.usuario_id + '\')">◈ Expulsar</button> ' : '') +
+                            (estado === 'activo' ? '<button class="btn-danger btn-sm" onclick="bloquearMiembro(\'' + m.usuario_id + '\')">◈ Bloquear</button>' : '') +
                             '</div>' : '') + '</div>';
                 });
                 container.innerHTML = html;
@@ -1486,13 +1570,13 @@
 
         async function cargarAdminPublicaciones() {
             var container = document.getElementById('adminContenido');
-            container.innerHTML = '<div class="empty-state"><span class="icon">🦉</span><h3>Cargando...</h3></div>';
+            container.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3>Cargando...</h3></div>';
             try {
                 var result = await window.supabase.from('grupos_video_publicaciones').select(`*, usuarios:usuario_id (id, nombre, handle, avatar_url)`).eq('grupo_id', grupoActualId).order('created_at', { ascending: false });
                 if (result.error) throw result.error;
                 var publicaciones = result.data || [];
-                if (publicaciones.length === 0) { container.innerHTML = '<div class="empty-state"><span class="icon">🦉</span><h3>Sin publicaciones</h3></div>'; return; }
-                var html = '<h4 style="color:var(--gold);font-size:0.8rem;margin-bottom:12px;">🦉 Publicaciones (' + publicaciones.length + ')</h4>';
+                if (publicaciones.length === 0) { container.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3>Sin publicaciones</h3></div>'; return; }
+                var html = '<h4 style="color:var(--gold);font-size:0.8rem;margin-bottom:12px;">◈ Publicaciones (' + publicaciones.length + ')</h4>';
                 publicaciones.forEach(function(p) {
                     var u = p.usuarios || {};
                     var estado = p.estado || 'publicado';
@@ -1502,9 +1586,9 @@
                         '<div style="font-weight:600;font-size:0.75rem;">' + escapeHTML(u.nombre || 'Usuario') + ' <span style="color:' + estadoColor + ';font-size:0.5rem;">● ' + estado + '</span></div>' +
                         '<div style="font-size:0.7rem;color:var(--text-secondary);">' + contenido + '</div>' +
                         '<div style="display:flex;gap:4px;margin-top:4px;flex-wrap:wrap;">' +
-                        (estado === 'publicado' && (esAdmin || esModerador) ? '<button class="btn-outline btn-sm" onclick="ocultarPublicacion(\'' + p.id + '\')">🦉 Ocultar</button>' : '') +
-                        (estado === 'oculto' && (esAdmin || esModerador) ? '<button class="btn-outline btn-sm" onclick="mostrarPublicacion(\'' + p.id + '\')">🦉 Mostrar</button>' : '') +
-                        ((esAdmin || esModerador) ? '<button class="btn-danger btn-sm" onclick="eliminarPublicacion(\'' + p.id + '\')">🦉 Eliminar</button>' : '') +
+                        (estado === 'publicado' && (esAdmin || esModerador) ? '<button class="btn-outline btn-sm" onclick="ocultarPublicacion(\'' + p.id + '\')">◈ Ocultar</button>' : '') +
+                        (estado === 'oculto' && (esAdmin || esModerador) ? '<button class="btn-outline btn-sm" onclick="mostrarPublicacion(\'' + p.id + '\')">◈ Mostrar</button>' : '') +
+                        ((esAdmin || esModerador) ? '<button class="btn-danger btn-sm" onclick="eliminarPublicacion(\'' + p.id + '\')">◈ Eliminar</button>' : '') +
                         '</div></div>';
                 });
                 container.innerHTML = html;
@@ -1513,20 +1597,20 @@
 
         async function cargarAdminSolicitudes() {
             var container = document.getElementById('adminContenido');
-            container.innerHTML = '<div class="empty-state"><span class="icon">🦉</span><h3>Cargando...</h3></div>';
+            container.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3>Cargando...</h3></div>';
             try {
                 var result = await window.supabase.from('grupos_video_solicitudes').select(`*, usuarios:usuario_id (id, nombre, handle, avatar_url)`).eq('grupo_id', grupoActualId).eq('estado', 'pendiente').order('created_at', { ascending: true });
                 if (result.error) throw result.error;
                 var solicitudes = result.data || [];
-                if (solicitudes.length === 0) { container.innerHTML = '<div class="empty-state"><span class="icon">🦉</span><h3>Sin solicitudes</h3></div>'; return; }
-                var html = '<h4 style="color:var(--gold);font-size:0.8rem;margin-bottom:12px;">🦉 Solicitudes (' + solicitudes.length + ')</h4>';
+                if (solicitudes.length === 0) { container.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3>Sin solicitudes</h3></div>'; return; }
+                var html = '<h4 style="color:var(--gold);font-size:0.8rem;margin-bottom:12px;">◈ Solicitudes (' + solicitudes.length + ')</h4>';
                 solicitudes.forEach(function(s) {
                     var u = s.usuarios || {};
                     html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--glass-border);">' +
                         '<div><span style="font-weight:600;">' + escapeHTML(u.nombre || 'Usuario') + '</span></div>' +
                         '<div style="display:flex;gap:4px;">' +
-                        '<button class="btn-gold btn-sm" onclick="aceptarSolicitud(\'' + s.id + '\')">🦉 Aceptar</button>' +
-                        '<button class="btn-danger btn-sm" onclick="rechazarSolicitud(\'' + s.id + '\')">🦉 Rechazar</button>' +
+                        '<button class="btn-gold btn-sm" onclick="aceptarSolicitud(\'' + s.id + '\')">◈ Aceptar</button>' +
+                        '<button class="btn-danger btn-sm" onclick="rechazarSolicitud(\'' + s.id + '\')">◈ Rechazar</button>' +
                         '</div></div>';
                 });
                 container.innerHTML = html;
@@ -1535,12 +1619,12 @@
 
         async function cargarAdminEditar() {
             var container = document.getElementById('adminContenido');
-            container.innerHTML = '<div class="empty-state"><span class="icon">🦉</span><h3>Cargando...</h3></div>';
+            container.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3>Cargando...</h3></div>';
             try {
                 var result = await window.supabase.from('grupos_video').select('*').eq('id', grupoActualId).single();
                 if (result.error) throw result.error;
                 var g = result.data;
-                var html = '<h4 style="color:var(--gold);font-size:0.8rem;margin-bottom:12px;">🦉 Editar canal</h4>' +
+                var html = '<h4 style="color:var(--gold);font-size:0.8rem;margin-bottom:12px;">◈ Editar canal</h4>' +
                     '<div class="form-group"><label>Nombre</label><input type="text" id="editGrupoNombre" value="' + escapeHTML(g.nombre || '') + '" /></div>' +
                     '<div class="form-group"><label>Descripción</label><textarea id="editGrupoDescripcion" rows="2">' + escapeHTML(g.descripcion || '') + '</textarea></div>' +
                     '<div class="form-group"><label>Ciudad</label><input type="text" id="editGrupoCiudad" value="' + escapeHTML(g.ciudad || '') + '" /></div>' +
@@ -1552,7 +1636,7 @@
                     '<option value="abierto"' + (g.modo_ingreso === 'abierto' ? ' selected' : '') + '>Abierto</option>' +
                     '<option value="solicitud"' + (g.modo_ingreso === 'solicitud' ? ' selected' : '') + '>Solicitud</option>' +
                     '<option value="invitacion"' + (g.modo_ingreso === 'invitacion' ? ' selected' : '') + '>Invitación</option></select></div>' +
-                    '<button class="btn-gold" style="width:100%;justify-content:center;padding:10px;" onclick="guardarEdicionGrupo()">🦉 Guardar cambios</button>';
+                    '<button class="btn-gold" style="width:100%;justify-content:center;padding:10px;" onclick="guardarEdicionGrupo()">◈ Guardar cambios</button>';
                 container.innerHTML = html;
             } catch (e) { console.error(e); container.innerHTML = '<div class="empty-state">Error</div>'; }
         }
@@ -1576,6 +1660,7 @@
         }
 
         function mostrarConfirmacionEliminarGrupo() {
+            cerrarAjustesCanal();
             if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
             if (!grupoActualId) return;
             if (!esAdmin && !esCreador) { showToast('Sin permisos', 'error'); return; }
@@ -1741,7 +1826,7 @@
                     activo: true 
                 }).select().single();
                 if (groupResult.error) throw groupResult.error;
-                showToast('🦉 Búho Blanco Activado', 'success');
+                showToast('◈ Búho Blanco Activado', 'success');
                 cerrarModalCrearGrupo();
                 document.getElementById('inputNombreGrupo').value = '';
                 document.getElementById('inputDescripcionGrupo').value = '';
@@ -1754,7 +1839,7 @@
                     cargarGrupos();
                 }
             } catch (e) { console.error(e); showToast('Error: ' + e.message, 'error'); }
-            finally { btn.disabled = false; btn.textContent = '🦉 Activar Canal'; }
+            finally { btn.disabled = false; btn.textContent = '◈ Activar Canal'; }
         }
 
         function abrirFormPublicacion() {
@@ -1763,7 +1848,7 @@
             if (form.style.display === 'block') document.getElementById('inputPublicacion').focus();
         }
 
-        var emojisDisponibles = ['🦉','🧌','🫨','🪭','🐋','🧰','💥','🫩','👈','👉','🦋','🥒','🗼','☄️','🧽','🪤','🩹','💸','💵','💴','💶','💷','🪙','💰','💳','💎','🔥','⚡','✨','🌟','💫','🚀','🪐','👀','👁️','🤩','😍','😳','🫣','☝️','👇','🫵','🤏','✋','👋','🥹','🥺','🤤','😎','😏','🤗','🫶','🥰','😘','⏰','⏳','⌛','⏲️','🚨','⚠️','✅','☑️','✔️','🔒','📌','📍','📝','📦','📤','📥','🚚','🏍️','💨','❤️','🧡','💛','💚','💙','💜','🖤','🤍','💖','💝','💘','💗'];
+        var emojisDisponibles = ['◈','🧌','🫨','🪭','🐋','🧰','💥','🫩','👈','👉','🦋','🥒','🗼','☄️','🧽','🪤','🩹','💸','💵','💴','💶','💷','🪙','💰','💳','💎','🔥','⚡','✨','🌟','💫','🚀','🪐','👀','👁️','🤩','😍','😳','🫣','☝️','👇','🫵','🤏','✋','👋','🥹','🥺','🤤','😎','😏','🤗','🫶','🥰','😘','⏰','⏳','⌛','⏲️','🚨','⚠️','✅','☑️','✔️','🔒','📌','📍','📝','📦','📤','📥','🚚','🏍️','💨','❤️','🧡','💛','💚','💙','💜','🖤','🤍','💖','💝','💘','💗'];
 
         function toggleEmojiPickerGrupo() {
             var picker = document.getElementById('emojiPickerGrupo');
@@ -1823,7 +1908,7 @@
         function verTokens() { window.location.href = '/features/perfil/perfil.html'; }
 
         document.addEventListener('DOMContentLoaded', async function() {
-            console.log('🦉 Sariel\'s - Cablera Descentralizada');
+            console.log('◈ Sariel\'s - Cablera Descentralizada');
             await cargarUsuarioActual();
             await cargarCategorias();
             await cargarCiudades();
@@ -1840,7 +1925,7 @@
 
             document.addEventListener('keydown', function(e) {
                 if (e.key === 'Escape') {
-                    cerrarModalCrearGrupo(); cerrarModalAdmin(); cerrarModalRegalos(); cerrarConfirmacionEliminarGrupo();
+                    cerrarModalCrearGrupo(); cerrarModalAdmin(); cerrarModalRegalos(); cerrarConfirmacionEliminarGrupo(); cerrarAjustesCanal();
                 }
                 if (e.key === 'Enter') {
                     var input = e.target;
@@ -1940,6 +2025,8 @@
         window.registrarClicAnuncio = registrarClicAnuncio;
         window.cambiarAvatarGrupo = cambiarAvatarGrupo;
         window.cambiarPortadaGrupo = cambiarPortadaGrupo;
+        window.abrirAjustesCanal = abrirAjustesCanal;
+        window.cerrarAjustesCanal = cerrarAjustesCanal;
     </script>
 </body>
 </html>
