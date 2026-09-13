@@ -50,7 +50,7 @@
         .dashboard-grid { display: grid; grid-template-columns: 1fr; gap: 24px; }
         @media (min-width: 900px) { .dashboard-grid { grid-template-columns: 320px 1fr; } }
         
-        .seccion-titulo { font-family: 'Orbitron', monospace; color: var(--gold); font-size: 1rem; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; }
+        .seccion-titulo { font-family: 'Orbitron', monospace; color: var(--gold); font-size: 0.9rem; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; }
         .seccion-titulo .badge-rojo { color: var(--live-red); font-size: 0.7rem; display: flex; align-items: center; gap: 6px; }
         .seccion-titulo .badge-rojo .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--live-red); animation: pulse-live 1s infinite; }
         
@@ -78,7 +78,7 @@
         .no-live-box { 
             grid-column: 1 / -1; 
             text-align: center; 
-            padding: 40px 20px; 
+            padding: 30px 20px; 
             background: linear-gradient(155deg, rgba(15, 45, 26, 0.8), rgba(8, 15, 26, 0.9)); 
             border: 1px dashed rgba(212, 175, 55, 0.3); 
             border-radius: var(--radius); 
@@ -88,10 +88,10 @@
             align-items: center; 
             justify-content: center; 
         }
-        .no-live-box .icon { font-size: 3rem; display: block; margin-bottom: 12px; color: var(--gold); opacity: 0.8; }
-        .no-live-box h3 { font-size: 1rem; color: var(--text-primary); font-family: 'Orbitron', monospace; margin-bottom: 4px; }
-        .no-live-box p { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 16px; }
-        .no-live-box .btn-salir-aire { padding: 12px 30px; font-size: 0.8rem; }
+        .no-live-box .icon { font-size: 2rem; display: block; margin-bottom: 10px; color: var(--gold); opacity: 0.8; }
+        .no-live-box h3 { font-size: 0.9rem; color: var(--text-primary); font-family: 'Orbitron', monospace; margin-bottom: 4px; }
+        .no-live-box p { font-size: 0.7rem; color: var(--text-muted); margin-bottom: 14px; }
+        .no-live-box .btn-salir-aire { padding: 10px 24px; font-size: 0.75rem; }
 
         .grupos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
         .grupo-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-xl); padding: 16px; cursor: pointer; transition: var(--transition); position: relative; }
@@ -252,6 +252,19 @@
             .emoji-picker .grid { grid-template-columns: repeat(5, 1fr); }
             .emoji-picker .grid button { font-size: 1.2rem; padding: 4px; }
         }
+        /* ✅ FORZAR ESTILOS OSCUROS EN INPUTS Y SELECTS */
+        input, select, textarea {
+            background-color: rgba(0,0,0,0.3) !important;
+            color: var(--text-primary) !important;
+            border: 1px solid var(--glass-border) !important;
+        }
+        input::placeholder, textarea::placeholder {
+            color: var(--text-muted) !important;
+        }
+        select option {
+            background-color: var(--space) !important;
+            color: var(--text-primary) !important;
+        }
     </style>
 </head>
 <body>
@@ -323,7 +336,7 @@
                         <select id="selectCategoria" onchange="cargarGrupos()">
                             <option value="">Todas las categorías</option>
                         </select>
-                        <button class="btn-gold btn-sm" onclick="abrirModalCrearGrupo()">+ Activar Búho Blanco</button>
+                        <button class="btn-gold btn-sm" onclick="abrirModalCrearGrupo()">+ Crear Comunidad</button>
                     </div>
                 </div>
                 <div class="grupos-grid" id="gruposGrid">
@@ -431,7 +444,7 @@
         <div class="modal-overlay" id="modalCrearGrupo">
             <div class="modal">
                 <div class="modal-header">
-                    <h2>◈ Activar Búho Blanco</h2>
+                    <h2>◈ Crear Comunidad</h2>
                     <button class="btn-cerrar" onclick="cerrarModalCrearGrupo()">×</button>
                 </div>
                 <form id="formCrearGrupo" onsubmit="event.preventDefault(); crearGrupo();">
@@ -465,7 +478,7 @@
                     <div class="form-group"><label data-clave="grupos_modo_ingreso">Modo de ingreso</label>
                         <select id="inputModoIngresoGrupo"><option value="abierto">Abierto</option><option value="solicitud">Solicitud</option><option value="invitacion">Invitación</option></select>
                     </div>
-                    <button class="btn-guardar" id="btnCrearGrupo">◈ Activar Canal</button>
+                    <button class="btn-guardar" id="btnCrearGrupo">◈ Crear Comunidad</button>
                 </form>
             </div>
         </div>
@@ -849,7 +862,7 @@
                 var lives = livesResult.data || [];
                 if (lives.length === 0) {
                     enVivoDiv.innerHTML = `<div class="no-live-box">
-                        <span class="icon">📡</span>
+                        <span class="icon">🛜</span>
                         <h3>Nadie al aire por ahora</h3>
                         <p>Sé el primero en transmitir en tu canal</p>
                         <button class="btn-salir-aire" onclick="abrirModalCrearGrupo()">🔴 SALIR AL AIRE</button>
@@ -1873,7 +1886,7 @@
                     activo: true 
                 }).select().single();
                 if (groupResult.error) throw groupResult.error;
-                showToast('◈ Búho Blanco Activado', 'success');
+                showToast('◈ Comunidad Creada', 'success');
                 cerrarModalCrearGrupo();
                 document.getElementById('inputNombreGrupo').value = '';
                 document.getElementById('inputDescripcionGrupo').value = '';
@@ -1886,7 +1899,7 @@
                     cargarGrupos();
                 }
             } catch (e) { console.error(e); showToast('Error: ' + e.message, 'error'); }
-            finally { btn.disabled = false; btn.textContent = '◈ Activar Canal'; }
+            finally { btn.disabled = false; btn.textContent = '◈ Crear Comunidad'; }
         }
 
         function abrirFormPublicacion() {
