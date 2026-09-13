@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>◈ Grupos · Sariel's</title>
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+    <title>🦉 Canales · Sariel's</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>🦉</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -54,31 +54,54 @@
         .btn-live { background: var(--live-red); color: #fff; border: none; padding: 8px 20px; border-radius: 30px; font-weight: 700; font-size: 0.7rem; cursor: pointer; animation: pulse-live 2s infinite; }
         .btn-live:hover { transform: scale(1.02); }
         @keyframes pulse-live { 0%,100% { opacity: 1; } 50% { opacity: 0.7; } }
+        
+        /* EN VIVO AHORA */
+        .en-vivo-ahora-container { margin-bottom: 24px; }
+        .en-vivo-ahora-container h2 { font-family: 'Orbitron', monospace; color: var(--live-red); font-size: 1rem; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+        .en-vivo-ahora-container h2 .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--live-red); animation: pulse-live 1s infinite; }
+        .en-vivo-scroll { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px; }
+        .en-vivo-scroll::-webkit-scrollbar { height: 6px; }
+        .en-vivo-scroll::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 10px; }
+        .en-vivo-card { flex: 0 0 200px; background: var(--glass-bg); border: 1px solid var(--live-red); border-radius: var(--radius); overflow: hidden; cursor: pointer; position: relative; transition: var(--transition); }
+        .en-vivo-card:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(255, 0, 68, 0.2); }
+        .en-vivo-card .live-tag-small { position: absolute; top: 8px; left: 8px; background: var(--live-red); color: #fff; font-size: 0.5rem; padding: 2px 8px; border-radius: 10px; font-weight: 700; font-family: 'Orbitron', monospace; }
+        .en-vivo-card .video-preview { width: 100%; height: 110px; background: #000; object-fit: cover; display: block; }
+        .en-vivo-card .info { padding: 8px 10px; }
+        .en-vivo-card .info .titulo { font-size: 0.7rem; font-weight: 600; color: var(--gold); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .en-vivo-card .info .canal { font-size: 0.6rem; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .en-vivo-card .info .stats { font-size: 0.55rem; color: var(--text-muted); margin-top: 4px; }
+
         .grupos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
-        .grupo-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-xl); padding: 16px; cursor: pointer; transition: var(--transition); }
+        .grupo-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-xl); padding: 16px; cursor: pointer; transition: var(--transition); position: relative; }
         .grupo-card:hover { border-color: var(--gold); transform: translateY(-3px); box-shadow: var(--shadow-gold); }
-        .grupo-card .avatar { width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, var(--green-deep), var(--gold)); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: #fff; overflow: hidden; margin-bottom: 8px; }
+        .grupo-card.en-vivo { border-left: 4px solid var(--gold); }
+        .grupo-card .avatar { width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, var(--green-deep), var(--gold)); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: #fff; overflow: hidden; margin-bottom: 8px; }
         .grupo-card .avatar img { width: 100%; height: 100%; object-fit: cover; }
         .grupo-card .nombre { font-family: 'Orbitron', monospace; color: var(--gold); font-size: 0.9rem; font-weight: 700; }
         .grupo-card .descripcion { font-size: 0.7rem; color: var(--text-secondary); margin-top: 4px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-        .grupo-card .meta { display: flex; gap: 12px; font-size: 0.6rem; color: var(--text-muted); margin-top: 8px; flex-wrap: wrap; }
+        .grupo-card .meta { display: flex; gap: 12px; font-size: 0.6rem; color: var(--text-muted); margin-top: 8px; flex-wrap: wrap; align-items: center; }
         .grupo-card .meta .ciudad { color: var(--gold); }
         .grupo-card .estado-badge { font-size: 0.5rem; padding: 2px 10px; border-radius: 12px; background: rgba(212,175,55,0.1); color: var(--gold); }
         .grupo-card .estado-badge.privado { background: rgba(255,51,102,0.1); color: var(--danger); }
         .grupo-card .live-badge { font-size: 0.5rem; padding: 2px 10px; border-radius: 12px; background: var(--live-red); color: #fff; animation: pulse-live 2s infinite; }
+        .grupo-card .precio-badge { font-size: 0.6rem; padding: 2px 8px; border-radius: 12px; background: rgba(0, 214, 143, 0.15); color: var(--success); font-weight: 700; font-family: 'Orbitron', monospace; }
+
         .grupo-interno { display: none; }
         .grupo-interno.show { display: block; }
-        .grupo-header-interno { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-xl); padding: 20px; margin-bottom: 20px; }
-        .grupo-header-interno .portada { width: 100%; height: 120px; background: linear-gradient(135deg, var(--green-deep), var(--gold-dark)); border-radius: var(--radius); margin-bottom: 12px; display: flex; align-items: center; justify-content: center; font-size: 3rem; color: rgba(255,255,255,0.1); overflow: hidden; }
-        .grupo-header-interno .portada img { width: 100%; height: 100%; object-fit: cover; }
+        .grupo-header-interno { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-xl); padding: 20px; margin-bottom: 20px; position: relative; }
+        .grupo-header-interno .portada { width: 100%; height: 180px; background: linear-gradient(135deg, var(--green-deep), var(--gold-dark)); border-radius: var(--radius); margin-bottom: 12px; display: flex; align-items: center; justify-content: center; font-size: 3rem; color: rgba(255,255,255,0.1); overflow: hidden; position: relative; }
+        .grupo-header-interno .portada img, .grupo-header-interno .portada video { width: 100%; height: 100%; object-fit: cover; }
         .grupo-header-interno .info-row { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; }
-        .grupo-header-interno .avatar-grande { width: 70px; height: 70px; border-radius: 50%; background: linear-gradient(135deg, var(--green-deep), var(--gold)); display: flex; align-items: center; justify-content: center; font-size: 1.8rem; color: #fff; overflow: hidden; flex-shrink: 0; }
+        .grupo-header-interno .avatar-grande { width: 70px; height: 70px; border-radius: 50%; background: linear-gradient(135deg, var(--green-deep), var(--gold)); display: flex; align-items: center; justify-content: center; font-size: 2rem; color: #fff; overflow: hidden; flex-shrink: 0; margin-top: -40px; border: 3px solid var(--space); position: relative; z-index: 2; }
         .grupo-header-interno .avatar-grande img { width: 100%; height: 100%; object-fit: cover; }
         .grupo-header-interno .info-text { flex: 1; }
         .grupo-header-interno .info-text .nombre { font-family: 'Orbitron', monospace; color: var(--gold); font-size: 1.2rem; font-weight: 700; }
         .grupo-header-interno .info-text .descripcion { color: var(--text-secondary); font-size: 0.85rem; margin-top: 4px; }
-        .grupo-header-interno .info-text .meta { display: flex; gap: 12px; font-size: 0.65rem; color: var(--text-muted); margin-top: 6px; flex-wrap: wrap; }
+        .grupo-header-interno .info-text .meta { display: flex; gap: 12px; font-size: 0.65rem; color: var(--text-muted); margin-top: 6px; flex-wrap: wrap; align-items: center; }
+        .grupo-header-interno .búho-firma { margin-top: 8px; font-size: 0.65rem; color: var(--gold); background: rgba(212,175,55,0.1); padding: 4px 10px; border-radius: 10px; display: inline-block; border: 1px dashed var(--gold); }
         .grupo-header-interno .acciones { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+        .btn-suscribir { background: linear-gradient(135deg, #00d68f, #00b377); color: #fff; border: none; padding: 8px 20px; border-radius: 30px; font-weight: 700; font-size: 0.7rem; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+        .btn-suscribir:hover { transform: scale(1.02); }
         .grupo-live-container { display: none; margin-bottom: 20px; background: var(--glass-bg); border: 1px solid var(--live-red); border-radius: var(--radius-xl); overflow: hidden; box-shadow: 0 10px 40px rgba(255, 0, 68, 0.2); animation: adFadeIn 0.5s ease; }
         .grupo-live-container.visible { display: block; }
         .grupo-live-container .live-header-bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; border-bottom: 1px solid rgba(255, 0, 68, 0.2); background: rgba(255, 0, 68, 0.05); }
@@ -108,7 +131,7 @@
         @keyframes adFadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .marketing-ad-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; border-bottom: 1px solid rgba(212, 175, 55, 0.1); }
         .marketing-ad-label { font-family: 'Orbitron', monospace; font-size: 0.55rem; color: var(--gold); letter-spacing: 3px; text-transform: uppercase; display: flex; align-items: center; gap: 8px; opacity: 0.85; }
-        .marketing-ad-label::before { content: '◈'; color: var(--gold); font-size: 0.7rem; }
+        .marketing-ad-label::before { content: '🦉'; color: var(--gold); font-size: 0.7rem; }
         .marketing-ad-close { background: transparent; border: none; color: var(--text-muted); font-size: 1.1rem; cursor: pointer; line-height: 1; padding: 4px 8px; transition: var(--transition); }
         .marketing-ad-close:hover { color: var(--gold); }
         .marketing-ad-body { display: flex; gap: 14px; padding: 14px 16px 16px; align-items: flex-start; }
@@ -177,7 +200,7 @@
         @media (max-width: 768px) {
             .app { padding: 12px 14px; }
             .grupos-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
-            .grupo-header-interno .portada { height: 80px; }
+            .grupo-header-interno .portada { height: 120px; }
             .modal { padding: 16px; }
             .grupos-header .filtros input, .grupos-header .filtros select { font-size: 0.65rem; padding: 4px 10px; min-width: 80px; }
             .grupos-header { flex-direction: column; align-items: stretch; }
@@ -201,14 +224,14 @@
     <div class="app">
         <header class="header">
             <a href="/" class="logo">
-                <span class="logo-hex">◈</span>
+                <span class="logo-hex">🦉</span>
                 <span class="logo-text">Sariel<span>'s</span></span>
-                <span class="logo-badge">✦ WEB3</span>
+                <span class="logo-badge">✦ CABLERa</span>
             </a>
             <div class="header-actions">
                 <span class="network-badge"><span class="dot"></span> Polygon</span>
                 <span class="token-badge" id="tokenBadge" onclick="verTokens()">
-                    ◈ <span id="tokenBadgeCantidad">0</span> Es.stoks
+                    🦉 <span id="tokenBadgeCantidad">0</span> Es.stoks
                 </span>
             </div>
         </header>
@@ -220,12 +243,18 @@
             <a href="/features/live/live.html" class="nav-link live">◉ Live</a>
             <a href="/features/internet/internet.html" class="nav-link">◈ Internet</a>
             <a href="/features/videos/videos.html" class="nav-link">▶ Videos</a>
-            <a href="/features/grupos/grupos.html" class="nav-link active">◇ Grupos</a>
+            <a href="/features/grupos/grupos.html" class="nav-link active">🦉 Canales</a>
             <a href="/marketing/marketing.html" class="nav-link">◈ Marketing</a>
         </nav>
         <div id="vistaLista">
+            <!-- SECCIÓN EN VIVO AHORA -->
+            <div class="en-vivo-ahora-container" id="enVivoAhoraContainer" style="display:none;">
+                <h2><span class="dot"></span> EN VIVO AHORA</h2>
+                <div class="en-vivo-scroll" id="enVivoScroll"></div>
+            </div>
+
             <div class="grupos-header">
-                <h1 data-clave="grupos_titulo">◈ Grupos</h1>
+                <h1 data-clave="grupos_titulo">🦉 Canales</h1>
                 <div class="filtros">
                     <input type="text" id="inputBuscar" placeholder="Buscar..." oninput="cargarGrupos()" />
                     <select id="selectCiudad" onchange="cargarGrupos()">
@@ -234,46 +263,51 @@
                     <select id="selectCategoria" onchange="cargarGrupos()">
                         <option value="">Todas las categorías</option>
                     </select>
-                    <button class="btn-outline btn-sm" onclick="toggleMisGrupos()" id="btnMisGrupos">◈ Mis grupos</button>
-                    <button class="btn-gold btn-sm" onclick="abrirModalCrearGrupo()">+ Crear grupo</button>
+                    <button class="btn-outline btn-sm" onclick="toggleMisGrupos()" id="btnMisGrupos">🦉 Mis Canales</button>
+                    <button class="btn-gold btn-sm" onclick="abrirModalCrearGrupo()">+ Activar Búho Blanco</button>
                 </div>
             </div>
             <div class="grupos-grid" id="gruposGrid">
-                <div class="empty-state"><span class="icon">◈</span><h3 data-clave="grupos_cargando">Cargando grupos...</h3></div>
+                <div class="empty-state"><span class="icon">🦉</span><h3 data-clave="grupos_cargando">Cargando canales...</h3></div>
             </div>
         </div>
         <div class="grupo-interno" id="vistaGrupo">
-            <button class="btn-outline btn-sm" onclick="volverALista()" style="margin-bottom:12px;">← Volver a grupos</button>
+            <button class="btn-outline btn-sm" onclick="volverALista()" style="margin-bottom:12px;">← Volver a Canales</button>
             <div class="grupo-header-interno" id="grupoHeaderInterno">
-                <div class="portada" id="grupoPortada">◈</div>
+                <div class="portada" id="grupoPortada">🦉</div>
                 <div class="info-row">
-                    <div class="avatar-grande" id="grupoAvatar">◈</div>
+                    <div class="avatar-grande" id="grupoAvatar">🦉</div>
                     <div class="info-text">
-                        <div class="nombre" id="grupoNombre">Nombre del grupo</div>
+                        <div class="nombre" id="grupoNombre">Nombre del canal</div>
                         <div class="descripcion" id="grupoDescripcion">Descripción</div>
                         <div class="meta">
-                            <span id="grupoCiudad">◈ Ciudad</span>
-                            <span id="grupoMiembros">◈ 0 miembros</span>
-                            <span id="grupoEstadoBadge">◈ Público</span>
+                            <span id="grupoCiudad">🦉 Ciudad</span>
+                            <span id="grupoMiembros">🦉 0 seguidores</span>
+                            <span id="grupoEstadoBadge">🦉 Público</span>
                             <span id="grupoLiveBadge" style="display:none;" class="live-badge">◉ EN VIVO</span>
                         </div>
+                        <div class="búho-firma" id="grupoFirmaLigera">🦉 "Yo me hago cargo de lo que digo aquí"</div>
                     </div>
                 </div>
                 <div class="acciones" id="grupoAcciones">
+                    <button class="btn-suscribir btn-sm" onclick="abrirModalRegalos(grupoActual?.creador_id, grupoActual?.nombre)" id="btnSuscribir">🦉 Suscribirse</button>
                     <button class="btn-gold btn-sm" onclick="abrirFormPublicacion()">◈ Publicar</button>
                     <button class="btn-outline btn-sm" onclick="subirFotoGrupo()" id="btnSubirFoto">◈ Foto</button>
                     <button class="btn-outline btn-sm" onclick="subirVideoGrupo()" id="btnSubirVideo">◈ Video</button>
                     <button class="btn-live btn-sm" onclick="iniciarLiveEnGrupo()" id="btnIniciarLive">◉ Iniciar LIVE</button>
                     <button class="btn-danger btn-sm" onclick="verLiveActivo()" id="btnVerLive" style="display:none;">◉ VER LIVE</button>
                     <button class="btn-danger btn-sm" onclick="finalizarLiveGrupo()" id="btnFinalizarLive" style="display:none;">■ Finalizar LIVE</button>
-                    <button class="btn-outline btn-sm" onclick="abrirAdminGrupo()" id="btnAdminGrupo" style="display:none;">◈ Administrar</button>
+                    <button class="btn-outline btn-sm" onclick="abrirAdminGrupo()" id="btnAdminGrupo" style="display:none;">🦉 Administrar</button>
+                    <!-- NUEVOS BOTONES DE EDICIÓN DE PORTADA Y AVATAR -->
+                    <button class="btn-outline btn-sm" onclick="cambiarAvatarGrupo()" id="btnCambiarAvatar" style="display:none;">🦉 Cambiar Foto</button>
+                    <button class="btn-outline btn-sm" onclick="cambiarPortadaGrupo()" id="btnCambiarPortada" style="display:none;">🦉 Cambiar Portada</button>
                 </div>
             </div>
             <div class="grupo-live-container" id="grupoLiveContainer">
                 <div class="live-header-bar">
                     <div class="live-tag">
                         <span class="dot"></span>
-                        <span>EN VIVO · <span id="grupoLiveTitulo">Transmisión del grupo</span></span>
+                        <span>EN VIVO · <span id="grupoLiveTitulo">Transmisión del canal</span></span>
                     </div>
                     <button class="live-close" onclick="cerrarLiveGrupoInline()" title="Cerrar">×</button>
                 </div>
@@ -309,7 +343,7 @@
                     <button class="marketing-ad-close" onclick="cerrarAnuncio()" aria-label="Cerrar anuncio">&times;</button>
                 </div>
                 <div class="marketing-ad-body">
-                    <div class="marketing-ad-media" id="marketingAdMedia"><span>◈</span></div>
+                    <div class="marketing-ad-media" id="marketingAdMedia"><span>🦉</span></div>
                     <div class="marketing-ad-content">
                         <div class="marketing-ad-title" id="marketingAdTitle">Cargando anuncio...</div>
                         <div class="marketing-ad-desc" id="marketingAdDesc"></div>
@@ -318,9 +352,9 @@
                 </div>
             </div>
             <div class="form-publicacion" id="formPublicacion" style="display:none;">
-                <textarea id="inputPublicacion" placeholder="¿Qué está pasando en el grupo?"></textarea>
+                <textarea id="inputPublicacion" placeholder="¿Qué está pasando en el canal?"></textarea>
                 <div class="acciones">
-                    <button onclick="toggleEmojiPickerGrupo()" id="btnEmojiGrupo">◈ Emoji</button>
+                    <button onclick="toggleEmojiPickerGrupo()" id="btnEmojiGrupo">🦉 Emoji</button>
                     <button onclick="insertarHashtagGrupo()"># Hashtag</button>
                     <button class="btn-publicar" onclick="publicarEnGrupo()">◈ Publicar</button>
                     <div class="emoji-picker" id="emojiPickerGrupo">
@@ -330,17 +364,19 @@
                 </div>
             </div>
             <div class="publicaciones-container" id="publicacionesContainer">
-                <div class="empty-state"><span class="icon">◈</span><h3 data-clave="grupos_sin_publicaciones">Sin publicaciones aún</h3><p data-clave="grupos_sin_publicaciones_desc">Sé el primero en publicar</p></div>
+                <div class="empty-state"><span class="icon">🦉</span><h3 data-clave="grupos_sin_publicaciones">Sin publicaciones aún</h3><p data-clave="grupos_sin_publicaciones_desc">Sé el primero en publicar</p></div>
             </div>
         </div>
+        
+        <!-- MODAL CREAR CANAL (BÚHO BLANCO) -->
         <div class="modal-overlay" id="modalCrearGrupo">
             <div class="modal">
                 <div class="modal-header">
-                    <h2>◈ Crear grupo</h2>
+                    <h2>🦉 Activar Búho Blanco</h2>
                     <button class="btn-cerrar" onclick="cerrarModalCrearGrupo()">×</button>
                 </div>
                 <form id="formCrearGrupo" onsubmit="event.preventDefault(); crearGrupo();">
-                    <div class="form-group"><label data-clave="grupos_nombre_grupo">Nombre del grupo *</label><input type="text" id="inputNombreGrupo" required /></div>
+                    <div class="form-group"><label data-clave="grupos_nombre_grupo">Nombre del Canal *</label><input type="text" id="inputNombreGrupo" required /></div>
                     <div class="form-group"><label data-clave="grupos_descripcion_grupo">Descripción</label><textarea id="inputDescripcionGrupo" rows="2"></textarea></div>
                     <div class="form-group"><label data-clave="grupos_categoria">Categoría</label>
                         <select id="inputCategoriaGrupo">
@@ -352,41 +388,54 @@
                     <div class="form-group"><label data-clave="grupos_ciudad">Ciudad</label><input type="text" id="inputCiudadGrupo" placeholder="Ej: Puebla" /></div>
                     <div class="form-group"><label data-clave="grupos_estado">Estado/Región</label><input type="text" id="inputEstadoGrupo" placeholder="Ej: Puebla" /></div>
                     <div class="form-group"><label data-clave="grupos_pais">País</label><input type="text" id="inputPaisGrupo" placeholder="Ej: México" /></div>
+                    <div class="form-group"><label>Precio del Búho (USDT/Mes)</label>
+                        <select id="inputPrecioUsdt">
+                            <option value="0">Gratis (Sin Búho)</option>
+                            <option value="2">$2 USDT</option>
+                            <option value="5">$5 USDT</option>
+                            <option value="10">$10 USDT</option>
+                            <option value="20">$20 USDT</option>
+                        </select>
+                    </div>
+                    <div class="form-group"><label>Firma Ligera (Legal)</label>
+                        <input type="text" id="inputFirmaLigera" value="Yo me hago cargo de lo que digo aquí" readonly style="opacity:0.7; cursor:not-allowed;" />
+                    </div>
                     <div class="form-group"><label data-clave="grupos_visibilidad">Visibilidad</label>
                         <select id="inputVisibilidadGrupo"><option value="publico">Público</option><option value="privado">Privado</option></select>
                     </div>
                     <div class="form-group"><label data-clave="grupos_modo_ingreso">Modo de ingreso</label>
                         <select id="inputModoIngresoGrupo"><option value="abierto">Abierto</option><option value="solicitud">Solicitud</option><option value="invitacion">Invitación</option></select>
                     </div>
-                    <button class="btn-guardar" id="btnCrearGrupo">◈ Crear grupo</button>
+                    <button class="btn-guardar" id="btnCrearGrupo">🦉 Activar Canal</button>
                 </form>
             </div>
         </div>
+
         <div class="modal-overlay" id="modalAdminGrupo">
             <div class="modal">
-                <div class="modal-header"><h2>◈ Administrar grupo</h2><button class="btn-cerrar" onclick="cerrarModalAdmin()">×</button></div>
-                <div id="adminContenido"><div class="empty-state"><span class="icon">◈</span><h3 data-clave="grupos_cargando_admin">Cargando...</h3></div></div>
+                <div class="modal-header"><h2>🦉 Administrar Canal</h2><button class="btn-cerrar" onclick="cerrarModalAdmin()">×</button></div>
+                <div id="adminContenido"><div class="empty-state"><span class="icon">🦉</span><h3 data-clave="grupos_cargando_admin">Cargando...</h3></div></div>
                 <div style="margin-top:16px; display:flex; gap:8px; flex-wrap:wrap;">
-                    <button class="btn-gold btn-sm" onclick="cargarAdminMiembros()" style="flex:1;">◈ Miembros</button>
-                    <button class="btn-gold btn-sm" onclick="cargarAdminPublicaciones()" style="flex:1;">◈ Publicaciones</button>
-                    <button class="btn-gold btn-sm" onclick="cargarAdminSolicitudes()" style="flex:1;">◈ Solicitudes</button>
-                    <button class="btn-gold btn-sm" onclick="cargarAdminEditar()" style="flex:1;">◈ Editar grupo</button>
+                    <button class="btn-gold btn-sm" onclick="cargarAdminMiembros()" style="flex:1;">🦉 Miembros</button>
+                    <button class="btn-gold btn-sm" onclick="cargarAdminPublicaciones()" style="flex:1;">🦉 Publicaciones</button>
+                    <button class="btn-gold btn-sm" onclick="cargarAdminSolicitudes()" style="flex:1;">🦉 Solicitudes</button>
+                    <button class="btn-gold btn-sm" onclick="cargarAdminEditar()" style="flex:1;">🦉 Editar</button>
                 </div>
                 <div style="margin-top:16px; border-top:1px solid var(--glass-border); padding-top:16px;">
-                    <button class="btn-eliminar-grupo" onclick="mostrarConfirmacionEliminarGrupo()">◈ Eliminar grupo</button>
+                    <button class="btn-eliminar-grupo" onclick="mostrarConfirmacionEliminarGrupo()">🦉 Eliminar Canal</button>
                 </div>
             </div>
         </div>
         <div class="modal-overlay" id="modalConfirmarEliminarGrupo">
             <div class="modal">
-                <div class="modal-header"><h2 style="color:var(--danger);">◈ Eliminar grupo</h2><button class="btn-cerrar" onclick="cerrarConfirmacionEliminarGrupo()">×</button></div>
+                <div class="modal-header"><h2 style="color:var(--danger);">🦉 Eliminar Canal</h2><button class="btn-cerrar" onclick="cerrarConfirmacionEliminarGrupo()">×</button></div>
                 <div style="padding:12px 0;">
-                    <p style="color:var(--text-secondary); font-size:0.9rem; margin-bottom:12px;">¿Eliminar este grupo?</p>
+                    <p style="color:var(--text-secondary); font-size:0.9rem; margin-bottom:12px;">¿Eliminar este canal?</p>
                     <p style="color:var(--danger); font-size:0.85rem; font-weight:600; margin-bottom:8px;">Esta acción es permanente.</p>
-                    <p style="color:var(--text-muted); font-size:0.8rem; margin-bottom:16px;">Se eliminarán el grupo y su contenido asociado (publicaciones, comentarios, miembros, etc.). Esta acción no se puede deshacer.</p>
+                    <p style="color:var(--text-muted); font-size:0.8rem; margin-bottom:16px;">Se eliminarán el canal y su contenido asociado. Esta acción no se puede deshacer.</p>
                     <div style="display:flex; gap:8px; flex-wrap:wrap;">
                         <button class="btn-outline" onclick="cerrarConfirmacionEliminarGrupo()" style="flex:1; text-align:center;">Cancelar</button>
-                        <button class="btn-confirmar-eliminar" onclick="ejecutarEliminarGrupo()" style="flex:1; text-align:center;">Eliminar grupo</button>
+                        <button class="btn-confirmar-eliminar" onclick="ejecutarEliminarGrupo()" style="flex:1; text-align:center;">Eliminar Canal</button>
                     </div>
                     <div id="eliminarGrupoStatus" style="margin-top:12px; font-size:0.75rem; color:var(--text-muted); text-align:center;"></div>
                 </div>
@@ -394,15 +443,15 @@
         </div>
         <div class="modal-overlay" id="modalRegalos">
             <div class="modal">
-                <div class="modal-header"><h2>◈ Enviar regalo</h2><button class="btn-cerrar" onclick="cerrarModalRegalos()">×</button></div>
+                <div class="modal-header"><h2>🦉 Suscribirse / Regalar</h2><button class="btn-cerrar" onclick="cerrarModalRegalos()">×</button></div>
                 <div style="text-align:center;padding:10px 0;">
-                    <p style="color:var(--text-muted);font-size:0.8rem;margin-bottom:12px;">Apoya a <strong id="giftStreamerName" style="color:var(--gold);">el creador</strong></p>
+                    <p style="color:var(--text-muted);font-size:0.8rem;margin-bottom:12px;">Apoya a <strong id="giftStreamerName" style="color:var(--gold);">el creador</strong> con USDT/USDC</p>
                     <div class="gift-options" id="giftOptions">
-                        <button class="gift-btn" onclick="enviarRegalo(5)"><span class="monto">$5</span><span class="label">Bronce</span></button>
-                        <button class="gift-btn" onclick="enviarRegalo(10)"><span class="monto">$10</span><span class="label">Plata</span></button>
-                        <button class="gift-btn" onclick="enviarRegalo(20)"><span class="monto">$20</span><span class="label">Oro</span></button>
-                        <button class="gift-btn" onclick="enviarRegalo(50)" style="border-color:var(--bronze);"><span class="monto" style="color:var(--bronze);">$50</span><span class="label" style="color:var(--bronze-light);">Cohete</span></button>
-                        <button class="gift-btn" onclick="enviarRegalo(100)" style="border-color:var(--esmeralda);"><span class="monto" style="color:var(--esmeralda);">$100</span><span class="label" style="color:var(--esmeralda);">Esmeralda</span></button>
+                        <button class="gift-btn" onclick="enviarRegalo(2)"><span class="monto">$2</span><span class="label">Búho Básico</span></button>
+                        <button class="gift-btn" onclick="enviarRegalo(5)"><span class="monto">$5</span><span class="label">Búho Plata</span></button>
+                        <button class="gift-btn" onclick="enviarRegalo(10)"><span class="monto">$10</span><span class="label">Búho Oro</span></button>
+                        <button class="gift-btn" onclick="enviarRegalo(20)" style="border-color:var(--bronze);"><span class="monto" style="color:var(--bronze);">$20</span><span class="label" style="color:var(--bronze-light);">Búho Platino</span></button>
+                        <button class="gift-btn" onclick="enviarRegalo(50)" style="border-color:var(--esmeralda);"><span class="monto" style="color:var(--esmeralda);">$50</span><span class="label" style="color:var(--esmeralda);">Búho Esmeralda</span></button>
                     </div>
                     <div id="giftStatus" style="margin-top:12px;font-size:0.7rem;color:var(--text-muted);">Selecciona un monto para apoyar</div>
                 </div>
@@ -410,11 +459,11 @@
         </div>
         <div class="toast" id="toast"></div>
         <footer class="footer">
-            <span><span class="brand">◈ Sariel's</span> · Sabor al Paladar · WEB3</span>
+            <span><span class="brand">🦉 Sariel's</span> · Cablera Descentralizada · WEB3</span>
             <div class="footer-links">
-                <a href="/terminos" data-clave="grupos_footer_terminos">◈ Términos</a>
-                <a href="/privacidad" data-clave="grupos_footer_privacidad">◈ Privacidad</a>
-                <a href="/cookies" data-clave="grupos_footer_cookies">◈ Cookies</a>
+                <a href="/terminos" data-clave="grupos_footer_terminos">🦉 Términos</a>
+                <a href="/privacidad" data-clave="grupos_footer_privacidad">🦉 Privacidad</a>
+                <a href="/cookies" data-clave="grupos_footer_cookies">🦉 Cookies</a>
                 <span style="opacity:0.3;">⚡ Polygon</span>
             </div>
         </footer>
@@ -543,11 +592,11 @@
             const cta = document.getElementById('marketingAdCta');
             if (!container || !media || !title || !desc || !cta) return;
             if (ad.imagen_url) {
-                media.innerHTML = `<img src="${escapeHTML(ad.imagen_url)}" alt="${escapeHTML(ad.titulo)}" loading="lazy" onerror="this.parentElement.innerHTML='<span>◈</span>'">`;
+                media.innerHTML = `<img src="${escapeHTML(ad.imagen_url)}" alt="${escapeHTML(ad.titulo)}" loading="lazy" onerror="this.parentElement.innerHTML='<span>🦉</span>'">`;
             } else if (ad.video_url) {
                 media.innerHTML = `<video src="${escapeHTML(ad.video_url)}" muted autoplay loop playsinline></video>`;
             } else {
-                media.innerHTML = '<span>◈</span>';
+                media.innerHTML = '<span>🦉</span>';
             }
             title.textContent = ad.titulo || 'Patrocinado';
             desc.textContent = ad.descripcion || '';
@@ -609,7 +658,7 @@
                                 canvas.width = img.width; canvas.height = img.height;
                                 const ctx = canvas.getContext('2d');
                                 ctx.drawImage(img, 0, 0);
-                                const marca = "Csariel's Ecosystem";
+                                const marca = "🦉 Búho Blanco · Csariel's";
                                 const fontSize = Math.max(20, Math.min(img.width / 20, 60));
                                 ctx.font = `bold ${fontSize}px 'Inter', sans-serif`;
                                 ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -678,14 +727,56 @@
             } catch (e) { console.error('Error cargando ciudades:', e); }
         }
 
+        // ✅ Cargar EN VIVO AHORA
+        async function cargarEnVivoAhora() {
+            var container = document.getElementById('enVivoAhoraContainer');
+            var scroll = document.getElementById('enVivoScroll');
+            if (!container || !scroll) return;
+
+            try {
+                var result = await window.supabase.from('transmisiones')
+                    .select(`*, grupo:grupos_video(id, nombre, avatar_url)`)
+                    .eq('estado', 'en_vivo')
+                    .eq('is_live', true)
+                    .order('created_at', { ascending: false });
+
+                if (result.error) throw result.error;
+                var lives = result.data || [];
+
+                if (lives.length === 0) {
+                    container.style.display = 'none';
+                    return;
+                }
+
+                container.style.display = 'block';
+                scroll.innerHTML = lives.map(function(l) {
+                    var g = l.grupo || {};
+                    var avatar = g.avatar_url ? g.avatar_url : '';
+                    return `<div class="en-vivo-card" onclick="abrirGrupo('${g.id}')">
+                        <div class="live-tag-small">🔴 EN VIVO</div>
+                        <div style="width:100%; height:110px; background:#000; display:flex; align-items:center; justify-content:center; color:#fff; font-size:2rem;">🦉</div>
+                        <div class="info">
+                            <div class="titulo">${escapeHTML(l.titulo || 'Sin título')}</div>
+                            <div class="canal">${escapeHTML(g.nombre || 'Canal')}</div>
+                            <div class="stats">👁️ ${l.espectadores || 0} viendo</div>
+                        </div>
+                    </div>`;
+                }).join('');
+
+            } catch (e) { console.error('Error cargando En Vivo Ahora:', e); }
+        }
+
         async function cargarGrupos() {
             var grid = document.getElementById('gruposGrid');
             try {
                 if (typeof window.supabase === 'undefined') {
-                    grid.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3>Error de conexión</h3></div>';
+                    grid.innerHTML = '<div class="empty-state"><span class="icon">🦉</span><h3>Error de conexión</h3></div>';
                     return;
                 }
                 if (!sessionUser) await cargarUsuarioActual();
+
+                // Cargar la sección En Vivo Ahora
+                await cargarEnVivoAhora();
 
                 var buscar = document.getElementById('inputBuscar')?.value?.trim() || '';
                 var ciudad = document.getElementById('selectCiudad')?.value || '';
@@ -701,7 +792,7 @@
                     if (misGruposResult.error) throw misGruposResult.error;
                     var ids = (misGruposResult.data || []).map(function(m) { return m.grupo_id; });
                     if (ids.length === 0) {
-                        grid.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3>No perteneces a ningún grupo</h3></div>';
+                        grid.innerHTML = '<div class="empty-state"><span class="icon">🦉</span><h3>No sigues ningún canal</h3></div>';
                         return;
                     }
                     query = query.in('id', ids);
@@ -712,7 +803,7 @@
                 var grupos = result.data || [];
 
                 if (grupos.length === 0) {
-                    grid.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3>No hay grupos</h3><p>Crea el primero</p></div>';
+                    grid.innerHTML = '<div class="empty-state"><span class="icon">🦉</span><h3>No hay canales</h3><p>Activa el primero</p></div>';
                     return;
                 }
 
@@ -729,32 +820,33 @@
                     var miembros = g.miembros ? g.miembros[0]?.count || 0 : 0;
                     var tieneLive = liveMap[g.id] ? true : false;
                     var visibilidad = g.visibilidad || 'publico';
-                    var visBadge = visibilidad === 'publico' ? '<span class="estado-badge">◈ Público</span>' : '<span class="estado-badge privado">◈ Privado</span>';
-                    return '<div class="grupo-card" onclick="abrirGrupo(\'' + g.id + '\')">' +
-                        '<div class="avatar">' + (g.avatar_url ? '<img src="' + escapeHTML(g.avatar_url) + '">' : '◈') + '</div>' +
+                    var visBadge = visibilidad === 'publico' ? '<span class="estado-badge">🦉 Público</span>' : '<span class="estado-badge privado">🦉 Privado</span>';
+                    var precio = g.precio_usdt > 0 ? `<span class="precio-badge">🦉 $${g.precio_usdt} USDT</span>` : '';
+                    var liveClass = tieneLive ? 'en-vivo' : '';
+                    return '<div class="grupo-card ' + liveClass + '" onclick="abrirGrupo(\'' + g.id + '\')">' +
+                        '<div class="avatar">' + (g.avatar_url ? '<img src="' + escapeHTML(g.avatar_url) + '">' : '🦉') + '</div>' +
                         '<div class="nombre">' + escapeHTML(g.nombre) + '</div>' +
                         '<div class="descripcion">' + escapeHTML((g.descripcion || '').substring(0, 80)) + '</div>' +
-                        '<div class="meta"><span class="ciudad">◈ ' + escapeHTML(g.ciudad || 'Sin ciudad') + '</span>' +
-                        '<span>◈ ' + miembros + '</span>' + visBadge +
+                        '<div class="meta"><span class="ciudad">🦉 ' + escapeHTML(g.ciudad || 'Sin ciudad') + '</span>' +
+                        '<span>🦉 ' + miembros + '</span>' + visBadge + precio +
                         (tieneLive ? ' <span class="live-badge">◉ EN VIVO</span>' : '') +
                         '</div></div>';
                 }).join('');
 
             } catch (e) {
-                console.error('Error cargando grupos:', e);
-                grid.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3>Error cargando grupos</h3><p>' + (e.message || '') + '</p></div>';
+                console.error('Error cargando canales:', e);
+                grid.innerHTML = '<div class="empty-state"><span class="icon">🦉</span><h3>Error cargando canales</h3><p>' + (e.message || '') + '</p></div>';
             }
         }
 
         function toggleMisGrupos() {
             soloMisGrupos = !soloMisGrupos;
             var btn = document.getElementById('btnMisGrupos');
-            if (soloMisGrupos) { btn.textContent = '◈ Todos los grupos'; btn.style.borderColor = 'var(--gold)'; btn.style.color = 'var(--gold)'; }
-            else { btn.textContent = '◈ Mis grupos'; btn.style.borderColor = ''; btn.style.color = ''; }
+            if (soloMisGrupos) { btn.textContent = '🦉 Todos los Canales'; btn.style.borderColor = 'var(--gold)'; btn.style.color = 'var(--gold)'; }
+            else { btn.textContent = '🦉 Mis Canales'; btn.style.borderColor = ''; btn.style.color = ''; }
             cargarGrupos();
         }
 
-        // ✅ FIX: Actualiza la URL con ?grupo=UUID para que al recargar vuelva al grupo
         async function abrirGrupo(grupoId) {
             try {
                 var result = await window.supabase.from('grupos_video').select('*, miembros:grupos_video_miembros(count)').eq('id', grupoId).single();
@@ -762,7 +854,6 @@
                 grupoActual = result.data;
                 grupoActualId = grupoId;
 
-                // ✅ Actualizar URL sin recargar la página
                 var url = new URL(window.location);
                 url.searchParams.set('grupo', grupoId);
                 window.history.replaceState({ grupoId: grupoId }, '', url);
@@ -775,22 +866,52 @@
 
                 document.getElementById('grupoNombre').textContent = grupoActual.nombre || 'Sin nombre';
                 document.getElementById('grupoDescripcion').textContent = grupoActual.descripcion || 'Sin descripción';
-                document.getElementById('grupoCiudad').textContent = '◈ ' + (grupoActual.ciudad || 'Sin ciudad');
-                document.getElementById('grupoMiembros').textContent = '◈ ' + (grupoActual.miembros?.[0]?.count || 0) + ' miembros';
+                document.getElementById('grupoCiudad').textContent = '🦉 ' + (grupoActual.ciudad || 'Sin ciudad');
+                document.getElementById('grupoMiembros').textContent = '🦉 ' + (grupoActual.miembros?.[0]?.count || 0) + ' seguidores';
 
                 var vis = grupoActual.visibilidad || 'publico';
-                document.getElementById('grupoEstadoBadge').textContent = vis === 'publico' ? '◈ Público' : '◈ Privado';
+                document.getElementById('grupoEstadoBadge').textContent = vis === 'publico' ? '🦉 Público' : '🦉 Privado';
+                
+                // Mostrar firma ligera y precio
+                var firmaEl = document.getElementById('grupoFirmaLigera');
+                if (firmaEl) {
+                    firmaEl.textContent = '🦉 "' + (grupoActual.firma_ligera || 'Yo me hago cargo de lo que digo aquí') + '"';
+                }
+                var btnSusc = document.getElementById('btnSuscribir');
+                if (btnSusc) {
+                    if (grupoActual.precio_usdt > 0) {
+                        btnSusc.textContent = '🦉 Suscribirse ($' + grupoActual.precio_usdt + ' USDT)';
+                        btnSusc.style.display = 'inline-block';
+                    } else {
+                        btnSusc.textContent = '🦉 Regalar';
+                        btnSusc.style.display = 'inline-block';
+                    }
+                }
 
                 var avatarEl = document.getElementById('grupoAvatar');
                 if (grupoActual.avatar_url) avatarEl.innerHTML = '<img src="' + escapeHTML(grupoActual.avatar_url) + '">';
-                else avatarEl.textContent = '◈';
+                else avatarEl.textContent = '🦉';
 
                 var portadaEl = document.getElementById('grupoPortada');
-                if (grupoActual.portada_url) portadaEl.innerHTML = '<img src="' + escapeHTML(grupoActual.portada_url) + '">';
-                else portadaEl.textContent = '◈';
+                if (grupoActual.portada_url) {
+                    // Lógica de VIDEO EN BUCLE
+                    portadaEl.innerHTML = `
+                        <video 
+                            src="${escapeHTML(grupoActual.portada_url)}" 
+                            autoplay loop muted playsinline 
+                            style="width:100%; height:100%; object-fit:cover;"
+                        ></video>
+                    `;
+                } else {
+                    portadaEl.textContent = '🦉';
+                }
 
                 var btnAdmin = document.getElementById('btnAdminGrupo');
                 btnAdmin.style.display = (esAdmin || esModerador) ? 'inline-block' : 'none';
+                
+                // Mostrar botones de cambiar avatar y portada solo a Admins
+                document.getElementById('btnCambiarAvatar').style.display = (esAdmin || esCreador) ? 'inline-block' : 'none';
+                document.getElementById('btnCambiarPortada').style.display = (esAdmin || esCreador) ? 'inline-block' : 'none';
 
                 var btnLive = document.getElementById('btnIniciarLive');
                 var btnVerLive = document.getElementById('btnVerLive');
@@ -817,8 +938,8 @@
                 adCerrado = false;
                 iniciarRefrescoAnuncios();
             } catch (e) {
-                console.error('Error abriendo grupo:', e);
-                showToast('Error al abrir grupo', 'error');
+                console.error('Error abriendo canal:', e);
+                showToast('Error al abrir canal', 'error');
             }
         }
 
@@ -850,20 +971,97 @@
             }
         }
 
+        // ✅ NUEVAS FUNCIONES PARA AVATAR Y PORTADA
+        async function cambiarAvatarGrupo() {
+            if (!sessionUser || !grupoActualId) { showToast('Error de sesión', 'error'); return; }
+            if (!esAdmin && !esCreador) { showToast('Solo administradores', 'error'); return; }
+
+            var input = document.createElement('input');
+            input.type = 'file'; input.accept = 'image/*';
+            input.onchange = async function(e) {
+                var file = e.target.files[0]; if (!file) return;
+                if (file.size > 5 * 1024 * 1024) { showToast('Imagen > 5MB', 'error'); return; }
+
+                showToast('Subiendo avatar...', '');
+                try {
+                    var fileExt = file.name.split('.').pop();
+                    var filePath = `avatares/${grupoActualId}/${Date.now()}.${fileExt}`;
+                    
+                    var uploadResult = await window.supabase.storage.from('grupos-publicaciones').upload(filePath, file, { cacheControl: '3600', upsert: true });
+                    if (uploadResult.error) throw uploadResult.error;
+
+                    var urlData = window.supabase.storage.from('grupos-publicaciones').getPublicUrl(filePath);
+                    var publicUrl = urlData.data.publicUrl;
+
+                    var updateResult = await window.supabase.from('grupos_video').update({ avatar_url: publicUrl }).eq('id', grupoActualId);
+                    if (updateResult.error) throw updateResult.error;
+
+                    document.getElementById('grupoAvatar').innerHTML = '<img src="' + publicUrl + '">';
+                    showToast('Foto de canal actualizada', 'success');
+                } catch (error) {
+                    console.error('Error cambiando avatar:', error);
+                    showToast('Error: ' + error.message, 'error');
+                }
+            };
+            input.click();
+        }
+
+        async function cambiarPortadaGrupo() {
+            if (!sessionUser || !grupoActualId) { showToast('Error de sesión', 'error'); return; }
+            if (!esAdmin && !esCreador) { showToast('Solo administradores', 'error'); return; }
+
+            var input = document.createElement('input');
+            input.type = 'file'; input.accept = 'video/mp4,video/webm';
+            input.onchange = async function(e) {
+                var file = e.target.files[0]; if (!file) return;
+                if (file.size > 15 * 1024 * 1024) { showToast('Video > 15MB. Intenta comprimirlo.', 'error'); return; }
+
+                showToast('Subiendo portada...', '');
+                try {
+                    var fileExt = file.name.split('.').pop();
+                    var filePath = `portadas/${grupoActualId}/${Date.now()}.${fileExt}`;
+                    
+                    var uploadResult = await window.supabase.storage.from('grupos-publicaciones').upload(filePath, file, { cacheControl: '3600', upsert: true });
+                    if (uploadResult.error) throw uploadResult.error;
+
+                    var urlData = window.supabase.storage.from('grupos-publicaciones').getPublicUrl(filePath);
+                    var publicUrl = urlData.data.publicUrl;
+
+                    var updateResult = await window.supabase.from('grupos_video').update({ portada_url: publicUrl }).eq('id', grupoActualId);
+                    if (updateResult.error) throw updateResult.error;
+
+                    var portadaEl = document.getElementById('grupoPortada');
+                    portadaEl.innerHTML = `
+                        <video 
+                            src="${publicUrl}" 
+                            autoplay loop muted playsinline 
+                            style="width:100%; height:100%; object-fit:cover;"
+                        ></video>
+                    `;
+                    showToast('Portada actualizada', 'success');
+                } catch (error) {
+                    console.error('Error cambiando portada:', error);
+                    showToast('Error: ' + error.message, 'error');
+                }
+            };
+            input.click();
+        }
+
+        // ✅ Lógica de LIVE
         async function iniciarLiveEnGrupo() {
-            console.log('🎬 [1] Iniciando live de grupo...');
+            console.log('🎬 [1] Iniciando live de canal...');
             if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
-            if (!grupoActualId) { showToast('No hay grupo seleccionado', 'error'); return; }
-            if (!esMiembro()) { showToast('Debes ser miembro del grupo', 'error'); return; }
-            if (isLiveGrupoActivo) { showToast('Ya hay un LIVE activo en este grupo', 'warning'); return; }
+            if (!grupoActualId) { showToast('No hay canal seleccionado', 'error'); return; }
+            if (!esMiembro()) { showToast('Debes ser miembro del canal', 'error'); return; }
+            if (isLiveGrupoActivo) { showToast('Ya hay un LIVE activo en este canal', 'warning'); return; }
 
             var liveExistente = await verificarLiveActivoGrupo(grupoActualId);
-            if (liveExistente) { showToast('Ya hay un LIVE activo en este grupo', 'warning'); return; }
+            if (liveExistente) { showToast('Ya hay un LIVE activo en este canal', 'warning'); return; }
 
             try {
-                var titulo = prompt('Título del LIVE:', 'Live en ' + (grupoActual.nombre || 'grupo')) || 'Live en grupo';
-                console.log('🎬 [2] Creando transmisión (room_name lo genera el trigger)...');
-                showToast('Creando transmisión de grupo...', '');
+                var titulo = prompt('Título del LIVE:', 'Live en ' + (grupoActual.nombre || 'canal')) || 'Live en canal';
+                console.log('🎬 [2] Creando transmisión...');
+                showToast('Creando transmisión de canal...', '');
 
                 const { data: rpcResult, error } = await window.supabase.rpc('crear_transmision', {
                     p_titulo: titulo,
@@ -874,7 +1072,7 @@
 
                 if (error) {
                     console.error('❌ Error en RPC crear_transmision:', error);
-                    throw new Error(error.message || 'Error al crear LIVE de grupo');
+                    throw new Error(error.message || 'Error al crear LIVE de canal');
                 }
 
                 const nuevoId = (typeof rpcResult === 'object' && rpcResult !== null) ? rpcResult.id : rpcResult;
@@ -920,7 +1118,7 @@
                     }
 
                     document.getElementById('grupoLiveEstado').textContent = '● En vivo';
-                    showToast('✅ Transmitiendo en el grupo', 'success');
+                    showToast('✅ Transmitiendo en el canal', 'success');
 
                     liveKitRoomGrupo.on('participantConnected', () => { espectadoresGrupo++; document.getElementById('grupoLiveEspectadores').textContent = espectadoresGrupo; });
                     liveKitRoomGrupo.on('participantDisconnected', () => { espectadoresGrupo = Math.max(0, espectadoresGrupo - 1); document.getElementById('grupoLiveEspectadores').textContent = espectadoresGrupo; });
@@ -933,7 +1131,7 @@
 
                 suscribirseAlChatGrupo();
             } catch (e) {
-                console.error('❌ Error iniciando live de grupo:', e);
+                console.error('❌ Error iniciando live de canal:', e);
                 showToast('Error: ' + e.message, 'error');
                 isLiveGrupoActivo = false;
             }
@@ -959,7 +1157,7 @@
             const titulo = document.getElementById('grupoLiveTitulo');
             if (!container) return;
             container.classList.add('visible');
-            if (titulo) titulo.textContent = transmision.titulo || 'Transmisión del grupo';
+            if (titulo) titulo.textContent = transmision.titulo || 'Transmisión del canal';
         }
 
         function cerrarLiveGrupoInline() {
@@ -968,13 +1166,13 @@
         }
 
         async function verLiveActivo() {
-            if (!liveActivoEnGrupo) { showToast('No hay LIVE activo en este grupo', 'warning'); return; }
+            if (!liveActivoEnGrupo) { showToast('No hay LIVE activo en este canal', 'warning'); return; }
             mostrarLiveGrupoInline(liveActivoEnGrupo);
             esStreamerDelLiveGrupo = (sessionUser && liveActivoEnGrupo.streamer_id === sessionUser.id);
             document.getElementById('grupoLiveEndBtn').style.display = esStreamerDelLiveGrupo ? 'inline-flex' : 'none';
 
             try {
-                showToast('Conectando al LIVE del grupo...', '', 2000);
+                showToast('Conectando al LIVE del canal...', '', 2000);
                 const { Room } = await cargarLiveKit();
                 liveKitRoomGrupo = new Room();
 
@@ -1046,12 +1244,12 @@
 
         async function finalizarLiveGrupo() {
             if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
-            if (!grupoActualId) { showToast('No hay grupo seleccionado', 'error'); return; }
+            if (!grupoActualId) { showToast('No hay canal seleccionado', 'error'); return; }
             const { data: transmisionActiva, error: buscarError } = await window.supabase.from('transmisiones').select('*').eq('grupo_id', grupoActualId).eq('estado', 'en_vivo').eq('is_live', true).maybeSingle();
             if (buscarError) { console.error(buscarError); return; }
             if (!transmisionActiva) { showToast('No hay LIVE activo', 'warning'); return; }
             if (transmisionActiva.streamer_id !== sessionUser.id) { showToast('Solo el streamer puede finalizar', 'error'); return; }
-            if (!confirm('¿Finalizar el LIVE del grupo?')) return;
+            if (!confirm('¿Finalizar el LIVE del canal?')) return;
             showToast('Finalizando...', '');
             try {
                 const { error } = await window.supabase.rpc('finalizar_transmision', { p_transmision_id: transmisionActiva.id });
@@ -1080,12 +1278,12 @@
                 var container = document.getElementById('publicacionesContainer');
                 var data = result.data || [];
                 if (data.length === 0) {
-                    container.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3>Sin publicaciones</h3><p>Sé el primero en publicar algo</p></div>';
+                    container.innerHTML = '<div class="empty-state"><span class="icon">🦉</span><h3>Sin publicaciones</h3><p>Sé el primero en publicar algo</p></div>';
                     return;
                 }
                 container.innerHTML = data.map(function(p) {
                     var u = p.usuarios || {};
-                    var avatar = u.avatar_url ? '<img src="' + escapeHTML(u.avatar_url) + '">' : '◈';
+                    var avatar = u.avatar_url ? '<img src="' + escapeHTML(u.avatar_url) + '">' : '🦉';
                     var nombre = escapeHTML(u.nombre || 'Usuario');
                     var contenido = escapeHTML(p.contenido || '');
                     if (p.imagen_url) contenido += '<br><img src="' + escapeHTML(p.imagen_url) + '" loading="lazy" />';
@@ -1098,9 +1296,9 @@
                         '<div class="fecha">' + new Date(p.created_at).toLocaleString() + '</div></div></div>' +
                         '<div class="contenido">' + contenido + '</div>' +
                         '<div class="stats">' +
-                        '<span onclick="reaccionarPublicacion(\'' + p.id + '\')">◈ <span id="likes-' + p.id + '">' + likesCount + '</span></span>' +
-                        '<span onclick="toggleComentariosPublicacion(\'' + p.id + '\')">◈ <span id="comentarios-' + p.id + '">' + comentariosCount + '</span></span>' +
-                        '<span onclick="compartirPublicacion(\'' + p.id + '\')">◈ Compartir</span></div>' +
+                        '<span onclick="reaccionarPublicacion(\'' + p.id + '\')">🦉 <span id="likes-' + p.id + '">' + likesCount + '</span></span>' +
+                        '<span onclick="toggleComentariosPublicacion(\'' + p.id + '\')">🦉 <span id="comentarios-' + p.id + '">' + comentariosCount + '</span></span>' +
+                        '<span onclick="compartirPublicacion(\'' + p.id + '\')">🦉 Compartir</span></div>' +
                         '<div class="comentarios-container" id="comentariosContainer-' + p.id + '" style="display:none;margin-top:8px;">' +
                         '<div id="comentariosLista-' + p.id + '"></div>' +
                         '<div style="display:flex;gap:6px;margin-top:6px;">' +
@@ -1114,7 +1312,7 @@
         async function publicarEnGrupo() {
             if (publicando) { showToast('Ya estás publicando...', 'warning'); return; }
             if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
-            if (!grupoActualId) { showToast('No hay grupo', 'error'); return; }
+            if (!grupoActualId) { showToast('No hay canal', 'error'); return; }
             if (!esMiembro()) { showToast('Debes ser miembro', 'error'); return; }
             var input = document.getElementById('inputPublicacion');
             var contenido = input.value.trim();
@@ -1132,7 +1330,7 @@
 
         async function subirFotoGrupo() {
             if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
-            if (!grupoActualId) { showToast('No hay grupo', 'error'); return; }
+            if (!grupoActualId) { showToast('No hay canal', 'error'); return; }
             if (!esMiembro()) { showToast('Debes ser miembro', 'error'); return; }
             var input = document.createElement('input');
             input.type = 'file'; input.accept = 'image/*';
@@ -1158,7 +1356,7 @@
 
         async function subirVideoGrupo() {
             if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
-            if (!grupoActualId) { showToast('No hay grupo', 'error'); return; }
+            if (!grupoActualId) { showToast('No hay canal', 'error'); return; }
             if (!esMiembro()) { showToast('Debes ser miembro', 'error'); return; }
             var input = document.createElement('input');
             input.type = 'file'; input.accept = 'video/*';
@@ -1216,7 +1414,7 @@
                 if (data.length === 0) { lista.innerHTML = '<div style="color:var(--text-muted);font-size:0.65rem;padding:4px 0;">Sin comentarios</div>'; return; }
                 lista.innerHTML = data.map(function(c) {
                     var u = c.usuarios || {};
-                    var avatar = u.avatar_url ? '<img src="' + escapeHTML(u.avatar_url) + '">' : '◈';
+                    var avatar = u.avatar_url ? '<img src="' + escapeHTML(u.avatar_url) + '">' : '🦉';
                     return '<div style="display:flex;gap:6px;padding:4px 0;border-bottom:1px solid rgba(212,175,55,0.04);">' +
                         '<div style="width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,var(--green-deep),var(--gold));display:flex;align-items:center;justify-content:center;font-size:0.5rem;color:#fff;overflow:hidden;flex-shrink:0;">' + avatar + '</div>' +
                         '<div style="flex:1;font-size:0.65rem;"><strong style="color:var(--gold);">' + escapeHTML(u.nombre || 'Usuario') + '</strong> ' + escapeHTML(c.contenido || '') +
@@ -1255,13 +1453,13 @@
 
         async function cargarAdminMiembros() {
             var container = document.getElementById('adminContenido');
-            container.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3>Cargando...</h3></div>';
+            container.innerHTML = '<div class="empty-state"><span class="icon">🦉</span><h3>Cargando...</h3></div>';
             try {
                 var result = await window.supabase.from('grupos_video_miembros').select(`*, usuarios:usuario_id (id, nombre, handle, avatar_url)`).eq('grupo_id', grupoActualId).order('created_at', { ascending: true });
                 if (result.error) throw result.error;
                 var miembros = result.data || [];
-                if (miembros.length === 0) { container.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3>Sin miembros</h3></div>'; return; }
-                var html = '<h4 style="color:var(--gold);font-size:0.8rem;margin-bottom:12px;">◈ Miembros (' + miembros.length + ')</h4>';
+                if (miembros.length === 0) { container.innerHTML = '<div class="empty-state"><span class="icon">🦉</span><h3>Sin miembros</h3></div>'; return; }
+                var html = '<h4 style="color:var(--gold);font-size:0.8rem;margin-bottom:12px;">🦉 Miembros (' + miembros.length + ')</h4>';
                 miembros.forEach(function(m) {
                     var u = m.usuarios || {};
                     var esCreadorDelGrupo = m.rol === 'administrador';
@@ -1270,16 +1468,16 @@
                     var estadoColor = estado === 'activo' ? 'var(--success)' : estado === 'bloqueado' ? 'var(--danger)' : 'var(--warning)';
                     html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--glass-border);">' +
                         '<div><span style="font-weight:600;">' + escapeHTML(u.nombre || 'Usuario') + '</span>' +
-                        (esCreadorDelGrupo ? ' <span style="color:var(--gold);font-size:0.6rem;">◈ Admin</span>' : '') +
-                        (m.rol === 'moderador' ? ' <span style="color:var(--cyan);font-size:0.6rem;">◈ Mod</span>' : '') +
+                        (esCreadorDelGrupo ? ' <span style="color:var(--gold);font-size:0.6rem;">🦉 Admin</span>' : '') +
+                        (m.rol === 'moderador' ? ' <span style="color:var(--cyan);font-size:0.6rem;">🦉 Mod</span>' : '') +
                         (esYo ? ' <span style="color:var(--text-muted);font-size:0.6rem;">(tú)</span>' : '') +
                         ' <span style="color:' + estadoColor + ';font-size:0.5rem;">● ' + estado + '</span></div>' +
                         (esAdmin && !esCreadorDelGrupo && !esYo ?
                             '<div style="display:flex;gap:4px;flex-wrap:wrap;">' +
-                            (m.rol !== 'moderador' ? '<button class="btn-outline btn-sm" onclick="asignarModerador(\'' + m.usuario_id + '\')">◈ Mod</button> ' : '') +
-                            (m.rol === 'moderador' ? '<button class="btn-outline btn-sm" onclick="quitarModerador(\'' + m.usuario_id + '\')">◈ Quitar Mod</button> ' : '') +
-                            (estado === 'activo' ? '<button class="btn-danger btn-sm" onclick="expulsarMiembro(\'' + m.usuario_id + '\')">◈ Expulsar</button> ' : '') +
-                            (estado === 'activo' ? '<button class="btn-danger btn-sm" onclick="bloquearMiembro(\'' + m.usuario_id + '\')">◈ Bloquear</button>' : '') +
+                            (m.rol !== 'moderador' ? '<button class="btn-outline btn-sm" onclick="asignarModerador(\'' + m.usuario_id + '\')">🦉 Mod</button> ' : '') +
+                            (m.rol === 'moderador' ? '<button class="btn-outline btn-sm" onclick="quitarModerador(\'' + m.usuario_id + '\')">🦉 Quitar Mod</button> ' : '') +
+                            (estado === 'activo' ? '<button class="btn-danger btn-sm" onclick="expulsarMiembro(\'' + m.usuario_id + '\')">🦉 Expulsar</button> ' : '') +
+                            (estado === 'activo' ? '<button class="btn-danger btn-sm" onclick="bloquearMiembro(\'' + m.usuario_id + '\')">🦉 Bloquear</button>' : '') +
                             '</div>' : '') + '</div>';
                 });
                 container.innerHTML = html;
@@ -1288,13 +1486,13 @@
 
         async function cargarAdminPublicaciones() {
             var container = document.getElementById('adminContenido');
-            container.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3>Cargando...</h3></div>';
+            container.innerHTML = '<div class="empty-state"><span class="icon">🦉</span><h3>Cargando...</h3></div>';
             try {
                 var result = await window.supabase.from('grupos_video_publicaciones').select(`*, usuarios:usuario_id (id, nombre, handle, avatar_url)`).eq('grupo_id', grupoActualId).order('created_at', { ascending: false });
                 if (result.error) throw result.error;
                 var publicaciones = result.data || [];
-                if (publicaciones.length === 0) { container.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3>Sin publicaciones</h3></div>'; return; }
-                var html = '<h4 style="color:var(--gold);font-size:0.8rem;margin-bottom:12px;">◈ Publicaciones (' + publicaciones.length + ')</h4>';
+                if (publicaciones.length === 0) { container.innerHTML = '<div class="empty-state"><span class="icon">🦉</span><h3>Sin publicaciones</h3></div>'; return; }
+                var html = '<h4 style="color:var(--gold);font-size:0.8rem;margin-bottom:12px;">🦉 Publicaciones (' + publicaciones.length + ')</h4>';
                 publicaciones.forEach(function(p) {
                     var u = p.usuarios || {};
                     var estado = p.estado || 'publicado';
@@ -1304,9 +1502,9 @@
                         '<div style="font-weight:600;font-size:0.75rem;">' + escapeHTML(u.nombre || 'Usuario') + ' <span style="color:' + estadoColor + ';font-size:0.5rem;">● ' + estado + '</span></div>' +
                         '<div style="font-size:0.7rem;color:var(--text-secondary);">' + contenido + '</div>' +
                         '<div style="display:flex;gap:4px;margin-top:4px;flex-wrap:wrap;">' +
-                        (estado === 'publicado' && (esAdmin || esModerador) ? '<button class="btn-outline btn-sm" onclick="ocultarPublicacion(\'' + p.id + '\')">◈ Ocultar</button>' : '') +
-                        (estado === 'oculto' && (esAdmin || esModerador) ? '<button class="btn-outline btn-sm" onclick="mostrarPublicacion(\'' + p.id + '\')">◈ Mostrar</button>' : '') +
-                        ((esAdmin || esModerador) ? '<button class="btn-danger btn-sm" onclick="eliminarPublicacion(\'' + p.id + '\')">◈ Eliminar</button>' : '') +
+                        (estado === 'publicado' && (esAdmin || esModerador) ? '<button class="btn-outline btn-sm" onclick="ocultarPublicacion(\'' + p.id + '\')">🦉 Ocultar</button>' : '') +
+                        (estado === 'oculto' && (esAdmin || esModerador) ? '<button class="btn-outline btn-sm" onclick="mostrarPublicacion(\'' + p.id + '\')">🦉 Mostrar</button>' : '') +
+                        ((esAdmin || esModerador) ? '<button class="btn-danger btn-sm" onclick="eliminarPublicacion(\'' + p.id + '\')">🦉 Eliminar</button>' : '') +
                         '</div></div>';
                 });
                 container.innerHTML = html;
@@ -1315,20 +1513,20 @@
 
         async function cargarAdminSolicitudes() {
             var container = document.getElementById('adminContenido');
-            container.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3>Cargando...</h3></div>';
+            container.innerHTML = '<div class="empty-state"><span class="icon">🦉</span><h3>Cargando...</h3></div>';
             try {
                 var result = await window.supabase.from('grupos_video_solicitudes').select(`*, usuarios:usuario_id (id, nombre, handle, avatar_url)`).eq('grupo_id', grupoActualId).eq('estado', 'pendiente').order('created_at', { ascending: true });
                 if (result.error) throw result.error;
                 var solicitudes = result.data || [];
-                if (solicitudes.length === 0) { container.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3>Sin solicitudes</h3></div>'; return; }
-                var html = '<h4 style="color:var(--gold);font-size:0.8rem;margin-bottom:12px;">◈ Solicitudes (' + solicitudes.length + ')</h4>';
+                if (solicitudes.length === 0) { container.innerHTML = '<div class="empty-state"><span class="icon">🦉</span><h3>Sin solicitudes</h3></div>'; return; }
+                var html = '<h4 style="color:var(--gold);font-size:0.8rem;margin-bottom:12px;">🦉 Solicitudes (' + solicitudes.length + ')</h4>';
                 solicitudes.forEach(function(s) {
                     var u = s.usuarios || {};
                     html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--glass-border);">' +
                         '<div><span style="font-weight:600;">' + escapeHTML(u.nombre || 'Usuario') + '</span></div>' +
                         '<div style="display:flex;gap:4px;">' +
-                        '<button class="btn-gold btn-sm" onclick="aceptarSolicitud(\'' + s.id + '\')">◈ Aceptar</button>' +
-                        '<button class="btn-danger btn-sm" onclick="rechazarSolicitud(\'' + s.id + '\')">◈ Rechazar</button>' +
+                        '<button class="btn-gold btn-sm" onclick="aceptarSolicitud(\'' + s.id + '\')">🦉 Aceptar</button>' +
+                        '<button class="btn-danger btn-sm" onclick="rechazarSolicitud(\'' + s.id + '\')">🦉 Rechazar</button>' +
                         '</div></div>';
                 });
                 container.innerHTML = html;
@@ -1337,15 +1535,16 @@
 
         async function cargarAdminEditar() {
             var container = document.getElementById('adminContenido');
-            container.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3>Cargando...</h3></div>';
+            container.innerHTML = '<div class="empty-state"><span class="icon">🦉</span><h3>Cargando...</h3></div>';
             try {
                 var result = await window.supabase.from('grupos_video').select('*').eq('id', grupoActualId).single();
                 if (result.error) throw result.error;
                 var g = result.data;
-                var html = '<h4 style="color:var(--gold);font-size:0.8rem;margin-bottom:12px;">◈ Editar grupo</h4>' +
+                var html = '<h4 style="color:var(--gold);font-size:0.8rem;margin-bottom:12px;">🦉 Editar canal</h4>' +
                     '<div class="form-group"><label>Nombre</label><input type="text" id="editGrupoNombre" value="' + escapeHTML(g.nombre || '') + '" /></div>' +
                     '<div class="form-group"><label>Descripción</label><textarea id="editGrupoDescripcion" rows="2">' + escapeHTML(g.descripcion || '') + '</textarea></div>' +
                     '<div class="form-group"><label>Ciudad</label><input type="text" id="editGrupoCiudad" value="' + escapeHTML(g.ciudad || '') + '" /></div>' +
+                    '<div class="form-group"><label>Precio Búho (USDT)</label><input type="number" id="editGrupoPrecio" value="' + (g.precio_usdt || 0) + '" min="0" step="1" /></div>' +
                     '<div class="form-group"><label>Visibilidad</label><select id="editGrupoVisibilidad">' +
                     '<option value="publico"' + (g.visibilidad === 'publico' ? ' selected' : '') + '>Público</option>' +
                     '<option value="privado"' + (g.visibilidad === 'privado' ? ' selected' : '') + '>Privado</option></select></div>' +
@@ -1353,7 +1552,7 @@
                     '<option value="abierto"' + (g.modo_ingreso === 'abierto' ? ' selected' : '') + '>Abierto</option>' +
                     '<option value="solicitud"' + (g.modo_ingreso === 'solicitud' ? ' selected' : '') + '>Solicitud</option>' +
                     '<option value="invitacion"' + (g.modo_ingreso === 'invitacion' ? ' selected' : '') + '>Invitación</option></select></div>' +
-                    '<button class="btn-gold" style="width:100%;justify-content:center;padding:10px;" onclick="guardarEdicionGrupo()">◈ Guardar cambios</button>';
+                    '<button class="btn-gold" style="width:100%;justify-content:center;padding:10px;" onclick="guardarEdicionGrupo()">🦉 Guardar cambios</button>';
                 container.innerHTML = html;
             } catch (e) { console.error(e); container.innerHTML = '<div class="empty-state">Error</div>'; }
         }
@@ -1362,13 +1561,14 @@
             var nombre = document.getElementById('editGrupoNombre')?.value?.trim();
             var descripcion = document.getElementById('editGrupoDescripcion')?.value?.trim();
             var ciudad = document.getElementById('editGrupoCiudad')?.value?.trim();
+            var precio = document.getElementById('editGrupoPrecio')?.value;
             var visibilidad = document.getElementById('editGrupoVisibilidad')?.value;
             var modoIngreso = document.getElementById('editGrupoModoIngreso')?.value;
             if (!nombre) { showToast('El nombre es requerido', 'warning'); return; }
             try {
-                var result = await window.supabase.from('grupos_video').update({ nombre: nombre, descripcion: descripcion || null, ciudad: ciudad || null, visibilidad: visibilidad, modo_ingreso: modoIngreso }).eq('id', grupoActualId).select().single();
+                var result = await window.supabase.from('grupos_video').update({ nombre: nombre, descripcion: descripcion || null, ciudad: ciudad || null, precio_usdt: parseFloat(precio) || 0, visibilidad: visibilidad, modo_ingreso: modoIngreso }).eq('id', grupoActualId).select().single();
                 if (result.error) throw result.error;
-                showToast('Grupo actualizado', 'success');
+                showToast('Canal actualizado', 'success');
                 cerrarModalAdmin();
                 await abrirGrupo(grupoActualId);
                 await cargarGrupos();
@@ -1398,7 +1598,7 @@
                 const { data, error } = await window.supabase.rpc('eliminar_grupo', { p_grupo_id: grupoActualId });
                 if (error) throw error;
                 if (data && data.error) throw new Error(data.error);
-                showToast('Grupo eliminado', 'success');
+                showToast('Canal eliminado', 'success');
                 cerrarConfirmacionEliminarGrupo();
                 cerrarModalAdmin();
                 document.getElementById('vistaGrupo').classList.remove('show');
@@ -1406,7 +1606,6 @@
                 grupoActual = null; grupoActualId = null; liveActivoEnGrupo = null;
                 isLiveGrupoActivo = false; currentStreamGrupoId = null;
                 esAdmin = false; esModerador = false; esCreador = false; rolEnGrupo = null;
-                // Limpiar URL
                 var url = new URL(window.location); url.searchParams.delete('grupo'); window.history.replaceState({}, '', url);
                 await cargarGrupos();
             } catch (e) {
@@ -1517,31 +1716,45 @@
             var ciudad = document.getElementById('inputCiudadGrupo').value.trim();
             var estadoRegion = document.getElementById('inputEstadoGrupo').value.trim();
             var pais = document.getElementById('inputPaisGrupo').value.trim();
+            var precioUsdt = document.getElementById('inputPrecioUsdt').value;
+            var firmaLigera = document.getElementById('inputFirmaLigera').value;
             var visibilidad = document.getElementById('inputVisibilidadGrupo').value;
             var modoIngreso = document.getElementById('inputModoIngresoGrupo').value;
             if (!nombre) { showToast('Nombre requerido', 'warning'); return; }
             var btn = document.getElementById('btnCrearGrupo');
-            btn.disabled = true; btn.textContent = 'Creando...';
+            btn.disabled = true; btn.textContent = 'Activando...';
             try {
                 var catResult = await window.supabase.from('grupos_video_categorias').select('id').eq('nombre', categoriaNombre).maybeSingle();
                 var categoriaId = catResult.data?.id || '2822d03e-c8aa-4e65-a537-736dd432ed36';
-                var groupResult = await window.supabase.from('grupos_video').insert({ nombre: nombre, descripcion: descripcion || null, categoria_id: categoriaId, ciudad: ciudad || null, estado_region: estadoRegion || null, pais: pais || null, visibilidad: visibilidad, modo_ingreso: modoIngreso, creador_id: sessionUser.id, activo: true }).select().single();
+                var groupResult = await window.supabase.from('grupos_video').insert({ 
+                    nombre: nombre, 
+                    descripcion: descripcion || null, 
+                    categoria_id: categoriaId, 
+                    ciudad: ciudad || null, 
+                    estado_region: estadoRegion || null, 
+                    pais: pais || null, 
+                    precio_usdt: parseFloat(precioUsdt) || 0,
+                    firma_ligera: firmaLigera,
+                    visibilidad: visibilidad, 
+                    modo_ingreso: modoIngreso, 
+                    creador_id: sessionUser.id, 
+                    activo: true 
+                }).select().single();
                 if (groupResult.error) throw groupResult.error;
-                showToast('Grupo creado', 'success');
+                showToast('🦉 Búho Blanco Activado', 'success');
                 cerrarModalCrearGrupo();
                 document.getElementById('inputNombreGrupo').value = '';
                 document.getElementById('inputDescripcionGrupo').value = '';
                 document.getElementById('inputCiudadGrupo').value = '';
                 document.getElementById('inputEstadoGrupo').value = '';
                 document.getElementById('inputPaisGrupo').value = '';
-                // ✅ Abrir el grupo recién creado
                 if (groupResult.data?.id) {
                     await abrirGrupo(groupResult.data.id);
                 } else {
                     cargarGrupos();
                 }
             } catch (e) { console.error(e); showToast('Error: ' + e.message, 'error'); }
-            finally { btn.disabled = false; btn.textContent = '◈ Crear grupo'; }
+            finally { btn.disabled = false; btn.textContent = '🦉 Activar Canal'; }
         }
 
         function abrirFormPublicacion() {
@@ -1550,7 +1763,7 @@
             if (form.style.display === 'block') document.getElementById('inputPublicacion').focus();
         }
 
-        var emojisDisponibles = ['🧌','🫨','🪭','🐋','🧰','💥','🫩','👈','👉','🦋','🥒','🗼','☄️','🧽','🪤','🩹','💸','💵','💴','💶','💷','🪙','💰','💳','💎','🔥','⚡','✨','🌟','💫','🚀','🪐','👀','👁️','🤩','😍','😳','🫣','☝️','👇','🫵','🤏','✋','👋','🥹','🥺','🤤','😎','😏','🤗','🫶','🥰','😘','⏰','⏳','⌛','⏲️','🚨','⚠️','✅','☑️','✔️','🔒','📌','📍','📝','📦','📤','📥','🚚','🏍️','💨','❤️','🧡','💛','💚','💙','💜','🖤','🤍','💖','💝','💘','💗'];
+        var emojisDisponibles = ['🦉','🧌','🫨','🪭','🐋','🧰','💥','🫩','👈','👉','🦋','🥒','🗼','☄️','🧽','🪤','🩹','💸','💵','💴','💶','💷','🪙','💰','💳','💎','🔥','⚡','✨','🌟','💫','🚀','🪐','👀','👁️','🤩','😍','😳','🫣','☝️','👇','🫵','🤏','✋','👋','🥹','🥺','🤤','😎','😏','🤗','🫶','🥰','😘','⏰','⏳','⌛','⏲️','🚨','⚠️','✅','☑️','✔️','🔒','📌','📍','📝','📦','📤','📥','🚚','🏍️','💨','❤️','🧡','💛','💚','💙','💜','🖤','🤍','💖','💝','💘','💗'];
 
         function toggleEmojiPickerGrupo() {
             var picker = document.getElementById('emojiPickerGrupo');
@@ -1601,7 +1814,6 @@
             cerrarLiveGrupoInline();
             detenerRefrescoAnuncios();
             cerrarAnuncio();
-            // ✅ Limpiar URL del grupo
             var url = new URL(window.location);
             url.searchParams.delete('grupo');
             window.history.replaceState({}, '', url);
@@ -1610,19 +1822,17 @@
 
         function verTokens() { window.location.href = '/features/perfil/perfil.html'; }
 
-        // ✅ NUEVO: Restaurar grupo desde URL al cargar + al volver de otra app/pestaña
         document.addEventListener('DOMContentLoaded', async function() {
-            console.log('Sariel\'s - Grupos con Live independiente');
+            console.log('🦉 Sariel\'s - Cablera Descentralizada');
             await cargarUsuarioActual();
             await cargarCategorias();
             await cargarCiudades();
 
-            // ✅ Leer el parámetro ?grupo=UUID de la URL y abrir el grupo automáticamente
             var params = new URLSearchParams(window.location.search);
             var grupoIdDesdeUrl = params.get('grupo');
 
             if (grupoIdDesdeUrl) {
-                console.log('📡 Restaurando grupo desde URL:', grupoIdDesdeUrl);
+                console.log('📡 Restaurando canal desde URL:', grupoIdDesdeUrl);
                 await abrirGrupo(grupoIdDesdeUrl);
             } else {
                 await cargarGrupos();
@@ -1645,14 +1855,12 @@
                 modal.addEventListener('click', function(e) { if (e.target === this) this.classList.remove('show'); });
             });
 
-            // ✅ NUEVO: Manejar botón "atrás" del navegador
             window.addEventListener('popstate', async function(e) {
                 var params = new URLSearchParams(window.location.search);
                 var grupoId = params.get('grupo');
                 if (grupoId) {
                     if (grupoId !== grupoActualId) await abrirGrupo(grupoId);
                 } else {
-                    // Volver a la lista sin recargar
                     document.getElementById('vistaLista').style.display = 'block';
                     document.getElementById('vistaGrupo').classList.remove('show');
                     grupoActual = null; grupoActualId = null; liveActivoEnGrupo = null;
@@ -1666,13 +1874,12 @@
                 }
             });
 
-            // ✅ NUEVO: Cuando el usuario vuelve a la pestaña/app, verificar si sigue en el grupo
             document.addEventListener('visibilitychange', async function() {
                 if (document.visibilityState === 'visible') {
                     var params = new URLSearchParams(window.location.search);
                     var grupoId = params.get('grupo');
                     if (grupoId && grupoId !== grupoActualId) {
-                        console.log('📡 Visibilitychange: restaurando grupo', grupoId);
+                        console.log('📡 Visibilitychange: restaurando canal', grupoId);
                         await abrirGrupo(grupoId);
                     }
                 }
@@ -1731,6 +1938,8 @@
         window.procesarConMarcaDeAgua = procesarConMarcaDeAgua;
         window.cerrarAnuncio = cerrarAnuncio;
         window.registrarClicAnuncio = registrarClicAnuncio;
+        window.cambiarAvatarGrupo = cambiarAvatarGrupo;
+        window.cambiarPortadaGrupo = cambiarPortadaGrupo;
     </script>
 </body>
 </html>
