@@ -8,19 +8,22 @@
 
 // ================================================================
 // CONFIGURACIÓN SUPABASE
-// ✅ EXPONEMOS EL CLIENTE GLOBALMENTE COMO window.supabaseClient
-// para que el módulo de publicaciones del perfil.html pueda usarlo.
 // ================================================================
 const supabaseClient = window.supabase.createClient(
     'https://zultnlogdoajehbswlih.supabase.co',
     'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
 );
 
-// ✅ Exponer globalmente para otros scripts
 window.supabaseClient = supabaseClient;
-
-// ✅ Alias interno
 const supabase = supabaseClient;
+
+// ================================================================
+// ✦ PRO: CONSTANTES DE MEMBRESÍA
+// ================================================================
+const PRO_PLAN_ID = 1; // ⚠️ CONFIRMA ESTE ID EN SUPABASE (SELECT id FROM planes_pro;)
+const PRO_PRECIO_MXN = 60;
+const PRO_DURACION_DIAS = 30;
+const PRO_GB = 5;
 
 // ================================================================
 // CONFIGURACIÓN DE ENTORNO
@@ -80,6 +83,258 @@ function showToast(msg, type = '', duration = 3500) {
         t.style.animation = 'slideOutRight 0.3s ease-in';
         setTimeout(() => t.classList.remove('show'), 300);
     }, duration);
+}
+
+// ================================================================
+// ✦ PRO: CARGAR ESTADO DE MEMBRESÍA
+// ================================================================
+async function cargarEstadoPro() {
+    try {
+        const session = await getSession();
+        if (!session) return;
+
+        // Llamar RPC obtener_estado_pro()
+        const { data, error } = await supabase.rpc('obtener_estado_pro');
+
+        if (error) {
+            console.warn('RPC obtener_estado_pro no disponible:', error.message);
+            // Fallback: leer directo de usuarios
+            const { data: usuario } = await supabase
+                .from('usuarios')
+                .select('plan, plan_expira_at, plan_meta')
+                .eq('id', session.user.id)
+                .maybeSingle();
+            if (usuario) aplicarEstadoProUI(usuario);
+            return;
+        }
+
+        if (data && data.success) {
+            aplicarEstadoProUI({
+                plan: data.plan,
+                plan_expira_at: data.expira_at,
+                plan_meta: data.meta,
+                dias_restantes: data.dias_restantes
+            });
+        } else {
+            aplicarEstadoProUI({
+                plan: 'Gratis',
+                plan_expira_at: null,
+                plan_meta: '1 GB · 90 días'
+            });
+        }
+    } catch (error) {
+        console.warn('Error cargando estado Pro:', error.message);
+    }
+}
+
+function aplicarEstadoProUI(usuario) {
+    const planActualEl = document.getElementById('planActual');
+    const planMetaEl = document.getElementById('planMeta');
+    const proUpgradeCard = document.getElementById('proUpgradeCard');
+    const proActiveInfo = document.getElementById('proActiveInfo');
+    const proExpiraEl = document.getElementById('proExpira');
+    const btnContratarPro = document.getElementById('btnContratarPro');
+
+    const planActual = usuario.plan || 'Gratis';
+    const planMeta = usuario.plan_meta || '1 GB · 90 días';
+    const esPro = planActual.toLowerCase().includes('pro');
+
+    if (planActualEl) planActualEl.textContent = planActual;
+    if (planMetaEl) planMetaEl.textContent = planMeta;
+
+    if (esPro) {
+        if (proUpgradeCard) proUpgradeCard.style.display = 'none';
+        if (proActiveInfo) proActiveInfo.style.display = 'block';
+        if (proExpiraEl && usuario.plan_expira_at) {
+            const fecha = new Date(usuario.plan_expira_at);
+            const dias = usuario.dias_restantes || 0;
+            proExpiraEl.textContent = fecha.toLocaleDateString('es-MX', {
+                day: 'numeric', month: 'long', year: 'numeric'
+            }) + (dias > 0 ? ` (${dias} días)` : ' (expira hoy)');
+        }
+        if (btnContratarPro) btnContratarPro.textContent = '✅ Ya eres Pro';
+    } else {
+        if (proUpgradeCard) proUpgradeCard.style.display = 'block';
+        if (proActiveInfo) proActiveInfo.style.display = 'none';
+        if (btnContratarPro) btnContratarPro.textContent = `🚀 Contratar Pro por $${PRO_PRECIO_MXN} MXN`;
+    }
+}
+
+// ================================================================
+// ✦ PRO: CONTRATAR MEMBRESÍA
+// ================================================================
+async function contratarPro() {
+    try {
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ Inicia sesión para contratar Pro', 'error');
+            return;
+        }
+
+        // Verificar si ya es Pro
+        const { data: usuario } = await supabase
+            .from('usuarios')
+            .select('plan, plan_expira_at')
+            .eq('id', session.user.id)
+            .maybeSingle();
+
+        if (usuario && usuario.plan && usuario.plan.toLowerCase().includes('pro')) {
+            const expira = usuario.plan_expira_at ? new Date(usuario.plan_expira_at).toLocaleDateString('es-MX') : '';
+            showToast(`✅ Ya eres Pro. Expira: ${expira}`, 'success', 4000);
+            return;
+        }
+
+        // Confirmar
+        if (!confirm(`¿Contratar Sariel's Pro por $${PRO_PRECIO_MXN} MXN / ${PRO_DURACION_DIAS} días?\n\nIncluye: ${PRO_GB} GB · Conservación ampliada`)) {
+            return;
+        }
+
+        showToast('⏳ Iniciando contratación...', '', 4000);
+
+        // 1. Registrar intento de pago en pagos_pro
+        const { data: pago, error: pagoError } = await supabase
+            .from('pagos_pro')
+            .insert({
+                usuario_id: session.user.id,
+                plan_id: PRO_PLAN_ID,
+                monto_mxn: PRO_PRECIO_MXN,
+                estado: 'pendiente',
+                metodo_pago: 'por_definir'
+            })
+            .select()
+            .single();
+
+        if (pagoError) {
+            console.warn('No se pudo registrar intento de pago:', pagoError.message);
+        }
+
+        // 2. Intentar llamar al backend de pagos
+        try {
+            const response = await fetch(`${API_ENDPOINTS.pagos}/crear`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}`
+                },
+                body: JSON.stringify({
+                    transmisionId: null,
+                    tipo: 'membresia_pro',
+                    planId: PRO_PLAN_ID,
+                    monto_mxn: PRO_PRECIO_MXN,
+                    pago_pro_id: pago?.id || null,
+                    idempotency_key: `pro_${session.user.id}_${Date.now()}`
+                })
+            });
+
+            const result = await response.json();
+
+            if (result.success && result.data) {
+                if (result.data.payment_url) {
+                    window.open(result.data.payment_url, '_blank');
+                    showToast('💳 Completa el pago en la ventana que se abrió', 'success', 5000);
+                    // Polling para verificar pago
+                    iniciarPollingPagoPro(pago?.id);
+                    return;
+                }
+            }
+        } catch (backendError) {
+            console.warn('Backend de pagos no disponible:', backendError.message);
+        }
+
+        // 3. Fallback: activar Pro directo (modo prueba / pago manual)
+        // ⚠️ ESTO SE QUITA CUANDO TENGAS PASARELA REAL
+        const activar = confirm(
+            'No se pudo conectar con la pasarela de pago.\n\n' +
+            '¿Quieres activar Pro en modo manual (prueba)?\n' +
+            'Se activará por ' + PRO_DURACION_DIAS + ' días.'
+        );
+
+        if (activar) {
+            await activarProDirecto(session.user.id, pago?.id);
+        }
+
+    } catch (error) {
+        console.error('Error contratando Pro:', error);
+        showToast('❌ Error: ' + error.message, 'error');
+    }
+}
+
+// ✦ PRO: Activar Pro llamando RPC activar_pro()
+async function activarProDirecto(usuarioId, pagoProId) {
+    try {
+        showToast('⏳ Activando Sariel\'s Pro...', '', 4000);
+
+        // Llamar RPC activar_pro
+        const { data, error } = await supabase.rpc('activar_pro', {
+            p_usuario_id: usuarioId,
+            p_plan_id: PRO_PLAN_ID
+        });
+
+        if (error) throw new Error(error.message);
+
+        if (!data || !data.success) {
+            throw new Error(data?.error || 'Error al activar Pro');
+        }
+
+        // Actualizar pagos_pro si tenemos el id
+        if (pagoProId) {
+            await supabase
+                .from('pagos_pro')
+                .update({ estado: 'completado', metodo_pago: 'manual_prueba' })
+                .eq('id', pagoProId);
+        }
+
+        showToast('🎉 ¡Sariel\'s Pro activado!', 'success', 5000);
+        crearConfeti();
+
+        // Recargar UI
+        await cargarEstadoPro();
+        await cargarPerfil(true);
+
+    } catch (error) {
+        console.error('Error activando Pro:', error);
+        showToast('❌ Error al activar Pro: ' + error.message, 'error');
+    }
+}
+
+// ✦ PRO: Polling para verificar pago cuando se abre pasarela externa
+let pollingPagoProInterval = null;
+function iniciarPollingPagoPro(pagoProId) {
+    if (!pagoProId) return;
+    if (pollingPagoProInterval) clearInterval(pollingPagoProInterval);
+
+    let intentos = 0;
+    const maxIntentos = 60; // 5 minutos (60 * 5s)
+
+    pollingPagoProInterval = setInterval(async () => {
+        intentos++;
+
+        try {
+            const { data: pago } = await supabase
+                .from('pagos_pro')
+                .select('estado')
+                .eq('id', pagoProId)
+                .maybeSingle();
+
+            if (pago && pago.estado === 'completado') {
+                clearInterval(pollingPagoProInterval);
+                pollingPagoProInterval = null;
+                showToast('🎉 ¡Pago confirmado! Pro activado', 'success', 5000);
+                crearConfeti();
+                await cargarEstadoPro();
+                await cargarPerfil(true);
+                return;
+            }
+        } catch (e) {
+            console.warn('Polling pago Pro:', e.message);
+        }
+
+        if (intentos >= maxIntentos) {
+            clearInterval(pollingPagoProInterval);
+            pollingPagoProInterval = null;
+            showToast('⏳ El pago aún no se confirma. Revísalo más tarde.', 'warning', 5000);
+        }
+    }, 5000);
 }
 
 // ================================================================
@@ -156,6 +411,7 @@ async function cargarPerfil(forzarActualizacion = false) {
             await cargarEstadoConexion();
             await cargarAmigosEnLinea();
             await cargarHistorialQR();
+            await cargarEstadoPro(); // ✦ PRO
         } else {
             const defaultData = {
                 nombre: session.user.user_metadata?.nombre || 'Explorador',
@@ -178,6 +434,7 @@ async function cargarPerfil(forzarActualizacion = false) {
             ultimaActualizacion = ahora;
             await actualizarEstadoEnLinea(true);
             actualizarUI(defaultData);
+            await cargarEstadoPro(); // ✦ PRO
         }
     } catch (error) {
         console.error('Error cargando perfil:', error);
@@ -697,7 +954,6 @@ function iniciarEscuchaConexion() {
 // ================================================================
 // eSIM - TELNYX FUNCTIONS
 // ================================================================
-
 function actualizarUIESIM(data) {
     const esimStatus = document.getElementById('esimStatus');
     const esimDataUsed = document.getElementById('esimDataUsed');
@@ -1088,7 +1344,6 @@ async function obtenerPlanesESIM() {
 // ================================================================
 // MODALES DE PAGO
 // ================================================================
-
 function mostrarModalPagoReal(paymentUrl, ordenId, plan) {
     const modal = document.createElement('div');
     modal.id = 'pagoModal';
@@ -1284,7 +1539,6 @@ async function verificarPago(ordenId) {
 // ================================================================
 // ESCANEO QR
 // ================================================================
-
 let qrScannerInterval = null;
 let scannerActive = false;
 let qrHistorial = [];
@@ -2692,5 +2946,10 @@ window.cerrarCamaraQR = cerrarCamaraQR;
 window.cargarHistorialQR = cargarHistorialQR;
 window.actualizarUIHistorialQR = actualizarUIHistorialQR;
 window.procesarQR = procesarQR;
+
+// ✦ PRO
+window.cargarEstadoPro = cargarEstadoPro;
+window.contratarPro = contratarPro;
+window.activarProDirecto = activarProDirecto;
 
 })();
