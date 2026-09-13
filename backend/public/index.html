@@ -7,35 +7,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet" />
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     
-    <!-- ✅ GUARD DE AUTH - REDIRIGE AL PERFIL SI YA ESTÁS LOGUEADO -->
-    <style>
-        html:not(.auth-checked) .app { display: none !important; }
-    </style>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-    <script>
-        (function () {
-            'use strict';
-            // Bandera global: la usan protegerYNavegar() y cualquier otro módulo
-            // que quiera saber, sin volver a consultar Supabase, si hay sesión activa.
-            window.__sarielsAuthenticated = false;
-            var GUARD_SUPABASE_URL = 'https://zultnlogdoajehbswlih.supabase.co';
-            var GUARD_SUPABASE_KEY = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
-            function irAlPerfil() { window.location.replace('/features/perfil/perfil.html'); }
-            function mostrarIndex() { document.documentElement.classList.add('auth-checked'); }
-            var salvaguarda = setTimeout(mostrarIndex, 4000);
-            try {
-                if (typeof window.supabase === 'undefined') { clearTimeout(salvaguarda); mostrarIndex(); return; }
-                var guardClient = window.supabase.createClient(GUARD_SUPABASE_URL, GUARD_SUPABASE_KEY);
-                guardClient.auth.getSession().then(function (resultado) {
-                    clearTimeout(salvaguarda);
-                    var session = resultado && resultado.data ? resultado.data.session : null;
-                    window.__sarielsAuthenticated = !!session;
-                    if (session) { irAlPerfil(); } else { mostrarIndex(); }
-                }).catch(function () { clearTimeout(salvaguarda); window.__sarielsAuthenticated = false; mostrarIndex(); });
-            } catch (e) { clearTimeout(salvaguarda); window.__sarielsAuthenticated = false; mostrarIndex(); }
-        })();
-    </script>
-    
     <style>
         :root {
             --gold: #D4AF37;
@@ -355,7 +326,7 @@
                 
                 <div class="idioma-selector">
                     <span>🌐</span>
-                    <select id="selectorIdioma" onchange="cambiarIdiomaGlobal(this.value)">
+                    <select id="selectorIdioma" onchange="cambiarIdioma(this.value)">
                         <option value="">Cargando idiomas...</option>
                     </select>
                 </div>
@@ -371,7 +342,7 @@
         <section class="hero">
             <h1 data-clave="bienvenido_titulo">◈ Bienvenido a Sariel's</h1>
             <p data-clave="bienvenido_descripcion">Compra domos físicos, acumula <strong>Es.stoks</strong>, canjea NFTs y conecta con tu comunidad en un ecosistema Web3 sin custodia.</p>
-            <a href="/features/perfil/perfil.html" class="ir-perfil-btn protected-link" onclick="return protegerYNavegar(event, this.href)" data-clave="ir_perfil">◆ Ir a mi perfil</a>
+            <a href="/features/perfil/perfil.html" class="ir-perfil-btn" data-clave="ir_perfil">◆ Ir a mi perfil</a>
         </section>
 
         <div class="tabs-container">
@@ -426,7 +397,7 @@
                             </p>
                             <p style="font-size:0.5rem;color:var(--text-muted);margin-top:4px;" data-clave="comprar_domo_disclaimer_8">◈ Venta física en Puebla · Sin envíos</p>
                             
-                            <p style="font-size:0.55rem;color:var(--text-muted);margin-top:6px;" data-clave="comprar_domo_wallet">◈ Conecta tu wallet en tu <a href="/features/perfil/perfil.html" style="color:var(--gold);" class="protected-link" onclick="return protegerYNavegar(event, this.href)">perfil</a></p>
+                            <p style="font-size:0.55rem;color:var(--text-muted);margin-top:6px;" data-clave="comprar_domo_wallet">◈ Conecta tu wallet en tu <a href="/features/perfil/perfil.html" style="color:var(--gold);">perfil</a></p>
                         </div>
                     </div>
                 </section>
@@ -440,7 +411,7 @@
                             <div class="status-item" style="grid-column: span 2;"><div class="status-label" data-clave="estado_progreso">◈ Progreso NFT</div><div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%;"></div></div><span id="progressText">0 / 12</span></div>
                             <div class="status-item" style="grid-column: span 2;"><div class="status-label" data-clave="estado_nft">◈ NFT</div><div class="status-value" id="haCanjeado">No</div></div>
                         </div>
-                        <div style="font-size:0.6rem;color:var(--text-muted);text-align:center;margin-top:8px;" data-clave="estado_canjea">Canjea tu NFT desde tu <a href="/features/perfil/perfil.html" style="color:var(--gold);" class="protected-link" onclick="return protegerYNavegar(event, this.href)">perfil</a></div>
+                        <div style="font-size:0.6rem;color:var(--text-muted);text-align:center;margin-top:8px;" data-clave="estado_canjea">Canjea tu NFT desde tu <a href="/features/perfil/perfil.html" style="color:var(--gold);">perfil</a></div>
                     </div>
                 </section>
             </div>
@@ -577,46 +548,6 @@
         window.addEventListener('error', function (event) { mostrarErrorEnPantalla((event.message || 'Error desconocido') + ' — línea ' + event.lineno); });
         window.addEventListener('unhandledrejection', function (event) { mostrarErrorEnPantalla('Promesa rechazada: ' + (event.reason?.message || event.reason)); });
 
-        // ✅ NUEVO: bloquea la entrada a módulos protegidos (perfil, etc.) si no hay sesión.
-        // Esto es solo una mejora de UX (evita el rebote silencioso): la protección real
-        // sigue estando en el guard del propio módulo (perfil.html ya redirige a "/" si
-        // no hay sesión). Cuando agreguen muro.html, contactos.html, etc., copien ese
-        // mismo guard ahí y usen class="protected-link" + este mismo onclick en sus enlaces.
-        function protegerYNavegar(event, url) {
-            if (!window.__sarielsAuthenticated) {
-                if (event && event.preventDefault) event.preventDefault();
-                if (window.showToast) { window.showToast('⚠️ Regístrate o inicia sesión para entrar a tu perfil', 'warning'); }
-                mostrarRegistro();
-                var authSection = document.querySelector('.auth-section');
-                if (authSection) authSection.scrollIntoView({ behavior: 'smooth' });
-                return false;
-            }
-            return true;
-        }
-
-        // ✅ NUEVO: al cambiar el idioma en el selector, se guarda (cambiarIdioma, ya
-        // existente en idiomas.js) y de inmediato se vuelve a pintar la página con
-        // inicializarIdiomas(), sin esperar a un recargo. Las demás páginas del
-        // ecosistema deben seguir leyendo esa misma preferencia guardada (perfil +
-        // localStorage) al cargar, por eso todas deben llamar a inicializarIdiomas()
-        // en su propio DOMContentLoaded, igual que ya hace perfil.html.
-        async function cambiarIdiomaGlobal(codigo) {
-            if (!codigo) return;
-            try {
-                if (typeof window.cambiarIdioma === 'function') {
-                    await window.cambiarIdioma(codigo);
-                }
-                if (typeof window.inicializarIdiomas === 'function') {
-                    await window.inicializarIdiomas();
-                } else {
-                    window.location.reload();
-                }
-            } catch (e) {
-                console.error('Error cambiando idioma:', e);
-                window.location.reload();
-            }
-        }
-
         function cambiarTab(tab) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
@@ -716,8 +647,6 @@
         window.generarQR = generarQR;
         window.comprarDomo = comprarDomo;
         window.mostrarErrorEnPantalla = mostrarErrorEnPantalla;
-        window.protegerYNavegar = protegerYNavegar;
-        window.cambiarIdiomaGlobal = cambiarIdiomaGlobal;
 
         document.addEventListener('DOMContentLoaded', function() {
             const qtyDisplay = document.getElementById('domoQuantity');
