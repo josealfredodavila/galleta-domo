@@ -74,11 +74,11 @@
         .en-vivo-card .info .canal { font-size: 0.65rem; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
         .en-vivo-card .info .stats { font-size: 0.6rem; color: var(--text-muted); margin-top: 6px; }
 
-        /* EMPTY STATE BONITO */
+        /* EMPTY STATE BONITO Y ANGOSTO */
         .no-live-box { 
             grid-column: 1 / -1; 
             text-align: center; 
-            padding: 30px 20px; 
+            padding: 20px 16px; 
             background: linear-gradient(155deg, rgba(15, 45, 26, 0.8), rgba(8, 15, 26, 0.9)); 
             border: 1px dashed rgba(212, 175, 55, 0.3); 
             border-radius: var(--radius); 
@@ -88,10 +88,10 @@
             align-items: center; 
             justify-content: center; 
         }
-        .no-live-box .icon { font-size: 2rem; display: block; margin-bottom: 10px; color: var(--gold); opacity: 0.8; }
-        .no-live-box h3 { font-size: 0.9rem; color: var(--text-primary); font-family: 'Orbitron', monospace; margin-bottom: 4px; }
-        .no-live-box p { font-size: 0.7rem; color: var(--text-muted); margin-bottom: 14px; }
-        .no-live-box .btn-salir-aire { padding: 10px 24px; font-size: 0.75rem; }
+        .no-live-box .icon { font-size: 1.5rem; display: block; margin-bottom: 8px; color: var(--gold); opacity: 0.8; }
+        .no-live-box h3 { font-size: 0.85rem; color: var(--text-primary); font-family: 'Orbitron', monospace; margin-bottom: 4px; }
+        .no-live-box p { font-size: 0.7rem; color: var(--text-muted); margin-bottom: 12px; }
+        .no-live-box .btn-salir-aire { padding: 8px 20px; font-size: 0.7rem; }
 
         .grupos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
         .grupo-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-xl); padding: 16px; cursor: pointer; transition: var(--transition); position: relative; }
@@ -112,7 +112,8 @@
         .grupo-interno.show { display: block; }
         .grupo-header-interno { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-xl); padding: 20px; margin-bottom: 20px; position: relative; }
         
-        .btn-ajustes-canal { position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,0.6); border: 1px solid var(--glass-border); border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; color: var(--gold); cursor: pointer; z-index: 10; backdrop-filter: blur(4px); transition: var(--transition); }
+        /* ✅ BOTÓN DE AJUSTES (ENGRANE) EN ESQUINA INFERIOR DERECHA */
+        .btn-ajustes-canal { position: absolute; bottom: 12px; right: 12px; background: rgba(0,0,0,0.7); border: 1px solid var(--glass-border); border-radius: 50%; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; color: var(--gold); cursor: pointer; z-index: 10; backdrop-filter: blur(4px); transition: var(--transition); }
         .btn-ajustes-canal:hover { background: var(--gold); color: var(--space); transform: rotate(90deg); }
         
         .grupo-header-interno .portada { width: 100%; height: 180px; background: linear-gradient(135deg, var(--green-deep), var(--gold-dark)); border-radius: var(--radius); margin-bottom: 12px; display: flex; align-items: center; justify-content: center; font-size: 3rem; color: rgba(255,255,255,0.1); overflow: hidden; position: relative; }
@@ -265,6 +266,17 @@
             background-color: var(--space) !important;
             color: var(--text-primary) !important;
         }
+        /* ✅ FORZAR BOTONES OUTLINE A OSCURO */
+        .btn-outline {
+            background: rgba(0,0,0,0.3) !important;
+            color: var(--text-secondary) !important;
+            border: 1px solid var(--glass-border) !important;
+        }
+        .btn-outline:hover {
+            border-color: var(--gold) !important;
+            color: var(--gold) !important;
+            background: rgba(212,175,55,0.1) !important;
+        }
     </style>
 </head>
 <body>
@@ -327,7 +339,7 @@
             <!-- LISTA COMPLETA DE CANALES (Filtros y búsqueda) -->
             <div style="margin-top: 30px;">
                 <div class="grupos-header">
-                    <h1 data-clave="grupos_titulo">◈ Directorio de Canales</h1>
+                    <h1 data-clave="grupos_titulo" style="color: var(--gold) !important;">◈ Directorio de Canales</h1>
                     <div class="filtros">
                         <input type="text" id="inputBuscar" placeholder="Buscar..." oninput="cargarGrupos()" />
                         <select id="selectCiudad" onchange="cargarGrupos()">
@@ -348,7 +360,7 @@
         <div class="grupo-interno" id="vistaGrupo">
             <button class="btn-outline btn-sm" onclick="volverALista()" style="margin-bottom:12px;">← Volver a Canales</button>
             <div class="grupo-header-interno" id="grupoHeaderInterno">
-                <!-- BOTÓN DE AJUSTES (ENGRANE) -->
+                <!-- BOTÓN DE AJUSTES (ENGRANE) EN ESQUINA INFERIOR DERECHA -->
                 <button class="btn-ajustes-canal" onclick="abrirAjustesCanal()" id="btnAjustesCanal" style="display:none;" title="Ajustes del Canal">⚙️</button>
                 
                 <div class="portada" id="grupoPortada">◈</div>
@@ -862,7 +874,7 @@
                 var lives = livesResult.data || [];
                 if (lives.length === 0) {
                     enVivoDiv.innerHTML = `<div class="no-live-box">
-                        <span class="icon">🛜</span>
+                        <span class="icon">◈</span>
                         <h3>Nadie al aire por ahora</h3>
                         <p>Sé el primero en transmitir en tu canal</p>
                         <button class="btn-salir-aire" onclick="abrirModalCrearGrupo()">🔴 SALIR AL AIRE</button>
