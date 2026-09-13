@@ -1,5 +1,6 @@
 // ================================================================
-// IDIOMAS - FUNCIONES GLOBALES
+// IDIOMAS - VERSIÓN COMPLETA
+// Funciones globales: cargar, cambiar, aplicar, llenar selector
 // ================================================================
 
 // ===== OBTENER SESIÓN - FUNCIÓN INDEPENDIENTE =====
@@ -25,6 +26,10 @@ let traducciones = {};
  */
 async function obtenerIdiomaUsuario() {
     try {
+        if (typeof window.supabase === 'undefined') {
+            return { codigo: 'es-MX', nombre: 'Español', nombre_nativo: 'Español', bandera: '🌐' };
+        }
+
         const session = await getSession();
         if (session) {
             const { data, error } = await window.supabase
@@ -65,6 +70,7 @@ async function obtenerIdiomaUsuario() {
             .from('idiomas_sistema')
             .select('*')
             .eq('codigo', 'es-MX')
+            .eq('activo', true)
             .single();
         
         idiomaActual = idiomaDefault;
@@ -72,7 +78,7 @@ async function obtenerIdiomaUsuario() {
         
     } catch (error) {
         console.error('Error obteniendo idioma:', error);
-        return { codigo: 'es-MX', nombre: 'Español' };
+        return { codigo: 'es-MX', nombre: 'Español', nombre_nativo: 'Español', bandera: '🌐' };
     }
 }
 
@@ -81,6 +87,10 @@ async function obtenerIdiomaUsuario() {
  */
 async function cargarTraducciones(idiomaId) {
     try {
+        if (typeof window.supabase === 'undefined') {
+            return {};
+        }
+
         const { data, error } = await window.supabase
             .from('traducciones')
             .select('clave, valor, modulo')
@@ -89,9 +99,11 @@ async function cargarTraducciones(idiomaId) {
         if (error) throw error;
         
         traducciones = {};
-        data.forEach(item => {
-            traducciones[item.clave] = item.valor;
-        });
+        if (data) {
+            data.forEach(item => {
+                traducciones[item.clave] = item.valor;
+            });
+        }
         
         return traducciones;
     } catch (error) {
@@ -102,9 +114,10 @@ async function cargarTraducciones(idiomaId) {
 
 /**
  * Obtener texto traducido por clave
- * ✅ CORREGIDO: Reemplaza TODOS los guiones bajos
  */
 function t(clave, modulo = null) {
+    if (!clave) return '';
+
     if (traducciones[clave]) {
         return traducciones[clave];
     }
@@ -116,7 +129,6 @@ function t(clave, modulo = null) {
         }
     }
     
-    // ✅ CORREGIDO: reemplaza TODOS los guiones bajos
     return clave.replace(/_/g, ' ');
 }
 
@@ -125,6 +137,8 @@ function t(clave, modulo = null) {
  */
 async function cambiarIdioma(idiomaId) {
     try {
+        if (!idiomaId) return;
+
         localStorage.setItem('idioma_preferido', idiomaId);
         
         const session = await getSession();
@@ -139,7 +153,9 @@ async function cambiarIdioma(idiomaId) {
         
     } catch (error) {
         console.error('Error cambiando idioma:', error);
-        showToast('❌ Error al cambiar idioma', 'error');
+        if (typeof window.showToast === 'function') {
+            window.showToast('❌ Error al cambiar idioma', 'error');
+        }
     }
 }
 
@@ -166,6 +182,100 @@ function aplicarTraducciones() {
     });
 }
 
+/**
+ * ✅ NUEVA FUNCIÓN: Cargar el selector de idiomas
+ * Esta función llena el <select id="selectorIdioma"> con los idiomas
+ * activos de Supabase. Sin duplicados.
+ */
+async function cargarSelectorIdiomas() {
+    try {
+        const select = document.getElementById('selectorIdioma');
+        if (!select) {
+            console.warn('⚠️ No se encontró #selectorIdioma');
+            return;
+        }
+
+        if (typeof window.supabase === 'undefined') {
+            console.warn('⚠️ Supabase no disponible para cargar idiomas');
+            select.innerHTML = '<option value="es-MX" selected>🌐 Español</option>';
+            return;
+        }
+
+        // Limpiar el select completamente
+        select.innerHTML = '';
+
+        // Traer idiomas activos
+        const { data, error } = await window.supabase
+            .from('idiomas_sistema')
+            .select('id, codigo, nombre, nombre_nativo, bandera')
+            .eq('activo', true)
+            .order('nombre', { ascending: true });
+
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+            // Fallback: solo español si no hay idiomas
+            select.innerHTML = '<option value="es-MX" selected>🌐 Español</option>';
+            return;
+        }
+
+        // Obtener idioma actual del usuario
+        const idiomaUsuario = await obtenerIdiomaUsuario();
+        const idiomaIdActual = idiomaUsuario?.id;
+
+        // Llenar el select con los idiomas (sin duplicados)
+        const codigosVistos = new Set();
+        data.forEach(idioma => {
+            // Evitar duplicados por código
+            if (codigosVistos.has(idioma.codigo)) {
+                return;
+            }
+            codigosVistos.add(idioma.codigo);
+
+            const option = document.createElement('option');
+            option.value = idioma.id;
+            const bandera = idioma.bandera || '🌐';
+            const nombre = idioma.nombre_nativo || idioma.nombre;
+            option.textContent = `${bandera} ${nombre}`;
+            
+            if (idioma.id === idiomaIdActual) {
+                option.selected = true;
+            }
+            
+            select.appendChild(option);
+        });
+
+        console.log(`✅ Selector de idiomas cargado: ${select.options.length} idiomas`);
+
+    } catch (error) {
+        console.error('Error cargando selector de idiomas:', error);
+        // Fallback: al menos mostrar español
+        const select = document.getElementById('selectorIdioma');
+        if (select) {
+            select.innerHTML = '<option value="es-MX" selected>🌐 Español</option>';
+        }
+    }
+}
+
+/**
+ * ✅ NUEVA FUNCIÓN: Inicializar el sistema completo
+ * Carga traducciones + llena el selector
+ */
+async function inicializarIdiomas() {
+    try {
+        const idioma = await obtenerIdiomaUsuario();
+        if (idioma && idioma.id) {
+            await cargarTraducciones(idioma.id);
+            aplicarTraducciones();
+        }
+        await cargarSelectorIdiomas();
+    } catch (error) {
+        console.error('Error inicializando idiomas:', error);
+        // Aún así intentar llenar el selector
+        await cargarSelectorIdiomas();
+    }
+}
+
 // ================================================================
 // EXPOSICIÓN GLOBAL
 // ================================================================
@@ -176,5 +286,7 @@ window.cargarTraducciones = cargarTraducciones;
 window.t = t;
 window.cambiarIdioma = cambiarIdioma;
 window.aplicarTraducciones = aplicarTraducciones;
+window.cargarSelectorIdiomas = cargarSelectorIdiomas;
+window.inicializarIdiomas = inicializarIdiomas;
 
 console.log('✅ Sistema de idiomas cargado correctamente');
