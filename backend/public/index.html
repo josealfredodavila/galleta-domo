@@ -102,7 +102,6 @@
             transform: translateY(-2px);
         }
 
-        /* ===== SELECTOR DE IDIOMA ===== */
         .idioma-selector {
             display: flex;
             align-items: center;
@@ -243,7 +242,6 @@
         }
         .admin-link:hover { border-bottom-color: var(--gold); }
 
-        /* ===== ESTRELLAS ===== */
         .stars-canvas {
             position: fixed;
             top: 0;
@@ -311,7 +309,6 @@
 </head>
 <body>
 
-    <!-- ===== FONDO ===== -->
     <canvas id="stars-canvas" class="stars-canvas"></canvas>
     <div class="nebula nebula-1"></div>
     <div class="nebula nebula-2"></div>
@@ -327,18 +324,17 @@
             <div class="header-actions">
                 <a href="https://polygon.technology/" target="_blank" rel="noopener noreferrer" class="network-badge"><span class="dot"></span> Polygon</a>
                 
-                <!-- ===== SELECTOR DE IDIOMA ===== -->
                 <div class="idioma-selector">
                     <span>🌐</span>
                     <select id="selectorIdioma" onchange="cambiarIdioma(this.value)">
-                        <!-- Se llena dinámicamente desde JavaScript -->
+                        <option value="es-MX" selected>🌐 Español</option>
                     </select>
                 </div>
                 
                 <div id="sessionInfo">
                     <span>🔐</span>
                     <span class="email" id="userEmail" data-clave="no_autenticado">No autenticado</span>
-                    <button class="logout-btn" onclick="cerrarSesion()" id="logoutBtn" style="display:none;" data-clave="cerrar">Cerrar</button>
+                    <button class="logout-btn" onclick="cerrarSesionGlobal()" id="logoutBtn" style="display:none;" data-clave="cerrar">Cerrar</button>
                 </div>
             </div>
         </header>
@@ -365,9 +361,9 @@
                     <input type="email" id="regEmail" data-placeholder="registro_email" placeholder="Correo electrónico" />
                     <input type="password" id="regPassword" data-placeholder="registro_password" placeholder="Contraseña" />
                     <input type="text" id="regName" data-placeholder="registro_nombre" placeholder="Nombre (opcional)" />
-                    <button class="btn btn-gold" onclick="registrarUsuario()" data-clave="registro_btn">⟡ Crear cuenta</button>
+                    <button class="btn btn-gold" id="registerBtn" onclick="registrarUsuarioGlobal()" data-clave="registro_btn">⟡ Crear cuenta</button>
                     <p style="font-size:0.6rem;color:var(--text-muted);margin-top:8px;text-align:center;">
-                        <span data-clave="registro_tienes_cuenta">¿Ya tienes cuenta?</span> <a href="#" onclick="mostrarLogin()" style="color:var(--gold);" data-clave="registro_iniciar_sesion">Inicia sesión</a>
+                        <span data-clave="registro_tienes_cuenta">¿Ya tienes cuenta?</span> <a href="#" onclick="mostrarLogin();return false;" style="color:var(--gold);" data-clave="registro_iniciar_sesion">Inicia sesión</a>
                     </p>
                 </div>
 
@@ -376,9 +372,9 @@
                     <div class="sub" data-clave="login_sub">Entra con tu email</div>
                     <input type="email" id="loginEmail" data-placeholder="login_email" placeholder="Correo electrónico" />
                     <input type="password" id="loginPassword" data-placeholder="login_password" placeholder="Contraseña" />
-                    <button class="btn btn-gold" onclick="iniciarSesion()" data-clave="login_btn">◈ Iniciar sesión</button>
+                    <button class="btn btn-gold" id="loginBtn" onclick="iniciarSesionGlobal()" data-clave="login_btn">◈ Iniciar sesión</button>
                     <p style="font-size:0.6rem;color:var(--text-muted);margin-top:8px;text-align:center;">
-                        <span data-clave="login_no_tienes_cuenta">¿No tienes cuenta?</span> <a href="#" onclick="mostrarRegistro()" style="color:var(--gold);" data-clave="login_registrate">Regístrate</a>
+                        <span data-clave="login_no_tienes_cuenta">¿No tienes cuenta?</span> <a href="#" onclick="mostrarRegistro();return false;" style="color:var(--gold);" data-clave="login_registrate">Regístrate</a>
                     </p>
                 </div>
             </div>
@@ -421,7 +417,6 @@
             </div>
         </div>
 
-        <!-- ===== PESTAÑA INTERNET ===== -->
         <div id="tab-internet" class="tab-content">
             <div class="panel">
                 <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
@@ -495,25 +490,6 @@
 
     <div class="toast" id="toast"></div>
 
-    <!-- ============================================================ -->
-    <!-- SCRIPTS - ORDEN CORRECTO                                     -->
-    <!-- ============================================================ -->
-
-    <!-- 1. Supabase -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-
-    <!-- 2. QRCode.js -->
-    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
-
-    <!-- 3. App.js - Configuración global -->
-    <script src="/app.js"></script>
-
-    <!-- 4. IDIOMAS.js - Sistema de traducciones -->
-    <script src="/features/shared/js/idiomas.js"></script>
-
-    <!-- ============================================================ -->
-    <!-- BANNER DE ERRORES                                           -->
-    <!-- ============================================================ -->
     <div id="errorBanner" style="
         display:none; position:fixed; top:0; left:0; right:0; z-index:99999;
         background:#ff3366; color:#fff; padding:12px 16px; font-family:monospace;
@@ -527,6 +503,22 @@
         </button>
     </div>
 
+    <!-- ============================================================ -->
+    <!-- SCRIPTS - ORDEN CORRECTO                                     -->
+    <!-- ============================================================ -->
+
+    <!-- 1. Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
+    <!-- 2. QRCode.js -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+
+    <!-- 3. App.js - ÚNICO sistema de auth -->
+    <script src="/app.js"></script>
+
+    <!-- ============================================================ -->
+    <!-- SCRIPT INLINE - SOLO UI, SIN AUTH DUPLICADO                   -->
+    <!-- ============================================================ -->
     <script>
         // ================================================================
         // ESTRELLAS DE FONDO
@@ -591,7 +583,7 @@
         window.addEventListener('error', function (event) {
             mostrarErrorEnPantalla(
                 (event.message || 'Error desconocido') +
-                ' — línea ' + event.lineno + ' de ' + (event.filename || 'este archivo')
+                ' — línea ' + event.lineno
             );
         });
 
@@ -599,311 +591,21 @@
             mostrarErrorEnPantalla('Promesa rechazada: ' + (event.reason?.message || event.reason));
         });
 
-        window.addEventListener('load', function () {
-            if (typeof window.supabase === 'undefined') {
-                mostrarErrorEnPantalla(
-                    'No se pudo cargar la conexión a la base de datos (Supabase). ' +
-                    'Revisa tu internet o si algo está bloqueando cdn.jsdelivr.net.'
-                );
-            }
-        });
-
         // ================================================================
-        // CONFIGURACIÓN SUPABASE - app.js YA LA DECLARA COMO window.supabase
-        // ================================================================
-
-        let currentUser = null;
-        let userTokens = 0;
-        let userDomos = 0;
-        let userHasNft = false;
-        let isRegistering = false;
-
-        // ================================================================
-        // OBTENER SESIÓN - FUNCIÓN INDEPENDIENTE
-        // ================================================================
-        async function getSession() {
-            try {
-                if (typeof window.supabase === 'undefined') {
-                    console.warn('⚠️ Supabase no disponible');
-                    return null;
-                }
-                const { data: { session } } = await window.supabase.auth.getSession();
-                return session;
-            } catch (e) {
-                console.error('❌ Error obteniendo sesión:', e);
-                return null;
-            }
-        }
-
-        // ================================================================
-        // CAMBIAR IDIOMA
-        // ================================================================
-        async function cambiarIdioma(idiomaId) {
-            try {
-                localStorage.setItem('idioma_preferido', idiomaId);
-                
-                const session = await getSession();
-                if (session) {
-                    await window.supabase
-                        .from('usuarios')
-                        .update({ idioma_preferido_id: idiomaId })
-                        .eq('id', session.user.id);
-                }
-                
-                window.location.reload();
-                
-            } catch (error) {
-                console.error('Error cambiando idioma:', error);
-                showToast('❌ Error al cambiar idioma', 'error');
-            }
-        }
-
-        // ================================================================
-        // TOAST
-        // ================================================================
-        function showToast(msg, type = '') {
-            const t = document.getElementById('toast');
-            t.textContent = msg;
-            t.className = 'toast show';
-            if (type === 'error') t.classList.add('error');
-            else if (type === 'warning') t.classList.add('warning');
-            else if (type === 'success') t.classList.add('success');
-            else t.classList.remove('error', 'warning', 'success');
-            clearTimeout(t._timeout);
-            t._timeout = setTimeout(() => t.classList.remove('show'), 4000);
-        }
-
-        // ================================================================
-        // TABS
+        // UI - TABS
         // ================================================================
         function cambiarTab(tab) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-            document.getElementById('tab-' + tab).classList.add('active');
-            document.querySelector(`.tab-btn[onclick="cambiarTab('${tab}')"]`).classList.add('active');
+            const tabContent = document.getElementById('tab-' + tab);
+            if (tabContent) tabContent.classList.add('active');
+            const tabBtn = document.querySelector(`.tab-btn[onclick="cambiarTab('${tab}')"]`);
+            if (tabBtn) tabBtn.classList.add('active');
         }
 
         // ================================================================
-        // CARGAR SELECTOR DE IDIOMAS
+        // UI - MOSTRAR LOGIN/REGISTRO
         // ================================================================
-        async function cargarSelectorIdiomas() {
-            try {
-                const { data, error } = await window.supabase
-                    .from('idiomas_sistema')
-                    .select('*')
-                    .eq('activo', true)
-                    .order('nombre', { ascending: true });
-
-                if (error) throw error;
-
-                const select = document.getElementById('selectorIdioma');
-                if (!select) return;
-
-                const idiomaActual = await window.obtenerIdiomaUsuario?.() || { id: null };
-
-                select.innerHTML = data.map(idioma => `
-                    <option value="${idioma.id}" ${idioma.id === idiomaActual.id ? 'selected' : ''}>
-                        ${idioma.bandera || '🌐'} ${idioma.nombre_nativo || idioma.nombre}
-                    </option>
-                `).join('');
-
-            } catch (error) {
-                console.error('Error cargando idiomas:', error);
-                // Fallback por si no hay idiomas en la BD
-                const select = document.getElementById('selectorIdioma');
-                if (select && !select.innerHTML.trim()) {
-                    select.innerHTML = `
-                        <option value="es-MX" selected>🌐 Español</option>
-                        <option value="en-US">🌐 English</option>
-                    `;
-                }
-            }
-        }
-
-        // ================================================================
-        // INICIALIZAR IDIOMAS
-        // ================================================================
-        async function inicializarIdiomas() {
-            try {
-                const idioma = await window.obtenerIdiomaUsuario?.();
-                if (idioma) {
-                    await window.cargarTraducciones?.(idioma.id);
-                    window.aplicarTraducciones?.();
-                }
-                await cargarSelectorIdiomas();
-            } catch (error) {
-                console.error('Error inicializando idiomas:', error);
-            }
-        }
-
-        // ================================================================
-        // SESIÓN - usando window.supabase
-        // ================================================================
-        async function checkSession() {
-            if (!window.supabase) {
-                console.error('❌ window.supabase no está disponible');
-                mostrarErrorEnPantalla('Supabase no está disponible. Revisa la carga de app.js');
-                return;
-            }
-
-            const { data: { session }, error } = await window.supabase.auth.getSession();
-            if (error) {
-                console.error('Error checking session:', error);
-                return;
-            }
-            
-            if (session) {
-                currentUser = session.user;
-                const nombre = currentUser.user_metadata?.full_name || currentUser.email || 'Usuario';
-                const displayName = nombre.length > 15 ? nombre.substring(0, 12) + '…' : nombre;
-                document.getElementById('userEmail').textContent = displayName;
-                document.getElementById('logoutBtn').style.display = 'inline-block';
-                document.getElementById('registerCard').style.display = 'none';
-                document.getElementById('loginCard').style.display = 'none';
-                await loadUserData();
-            } else {
-                document.getElementById('userEmail').textContent = 'No autenticado';
-                document.getElementById('logoutBtn').style.display = 'none';
-                document.getElementById('registerCard').style.display = 'block';
-                document.getElementById('loginCard').style.display = 'none';
-                userTokens = 0;
-                userDomos = 0;
-                userHasNft = false;
-                actualizarEstado();
-            }
-        }
-
-        // ================================================================
-        // REGISTRO DE USUARIO
-        // ================================================================
-        async function registrarUsuario() {
-            const email = document.getElementById('regEmail').value.trim();
-            const password = document.getElementById('regPassword').value.trim();
-            const name = document.getElementById('regName').value.trim();
-            const btn = document.querySelector('#registerCard .btn-gold');
-
-            btn.disabled = true;
-            btn.textContent = '⏳ Procesando...';
-
-            if (!email || !password) {
-                showToast('⚠️ Correo y contraseña son obligatorios', 'error');
-                btn.disabled = false;
-                btn.textContent = '⟡ Crear cuenta';
-                return;
-            }
-
-            if (password.length < 6) {
-                showToast('⚠️ La contraseña debe tener al menos 6 caracteres', 'error');
-                btn.disabled = false;
-                btn.textContent = '⟡ Crear cuenta';
-                return;
-            }
-
-            if (isRegistering) {
-                btn.disabled = false;
-                btn.textContent = '⟡ Crear cuenta';
-                return;
-            }
-            isRegistering = true;
-
-            try {
-                const { data, error } = await window.supabase.auth.signUp({
-                    email: email,
-                    password: password,
-                    options: { 
-                        data: { full_name: name || 'Explorador' } 
-                    }
-                });
-
-                if (error) throw error;
-
-                if (data.session) {
-                    currentUser = data.user;
-                    showToast('✅ Cuenta creada. Sesión iniciada.', 'success');
-                    await checkSession();
-                } else if (data.user) {
-                    showToast('✅ Cuenta creada. Revisa tu correo para confirmar.', 'success');
-                    document.getElementById('regEmail').value = '';
-                    document.getElementById('regPassword').value = '';
-                    document.getElementById('regName').value = '';
-                } else {
-                    showToast('⚠️ Cuenta creada, pero no se pudo iniciar sesión. Intenta iniciar sesión.', 'warning');
-                }
-
-            } catch (error) {
-                console.error('Error registrando usuario:', error);
-                let msg = error.message;
-                if (msg.includes('already registered')) {
-                    msg = '⚠️ Este correo ya está registrado';
-                } else if (msg.includes('password')) {
-                    msg = '⚠️ Contraseña inválida';
-                } else if (msg.includes('rate limit')) {
-                    msg = '⏳ Demasiados intentos. Espera unos minutos.';
-                }
-                showToast('❌ ' + msg, 'error');
-            } finally {
-                isRegistering = false;
-                btn.disabled = false;
-                btn.textContent = '⟡ Crear cuenta';
-            }
-        }
-
-        // ================================================================
-        // INICIO DE SESIÓN
-        // ================================================================
-        async function iniciarSesion() {
-            const email = document.getElementById('loginEmail').value.trim();
-            const password = document.getElementById('loginPassword').value.trim();
-            const btn = document.querySelector('#loginCard .btn-gold');
-
-            btn.disabled = true;
-            btn.textContent = '⏳ Entrando...';
-
-            if (!email || !password) {
-                showToast('⚠️ Correo y contraseña son obligatorios', 'error');
-                btn.disabled = false;
-                btn.textContent = '◈ Iniciar sesión';
-                return;
-            }
-
-            try {
-                const { data, error } = await window.supabase.auth.signInWithPassword({
-                    email: email,
-                    password: password
-                });
-
-                if (error) throw error;
-
-                showToast('✅ Sesión iniciada correctamente', 'success');
-                await checkSession();
-            } catch (error) {
-                console.error('Error iniciando sesión:', error);
-                let msg = error.message;
-                if (msg.includes('Invalid login credentials')) {
-                    msg = '⚠️ Correo o contraseña incorrectos';
-                }
-                showToast('❌ ' + msg, 'error');
-            } finally {
-                btn.disabled = false;
-                btn.textContent = '◈ Iniciar sesión';
-            }
-        }
-
-        // ================================================================
-        // CERRAR SESIÓN
-        // ================================================================
-        async function cerrarSesion() {
-            try {
-                await window.supabase.auth.signOut();
-                currentUser = null;
-                showToast('🔌 Sesión cerrada', 'success');
-                await checkSession();
-            } catch (error) {
-                console.error('Error cerrando sesión:', error);
-                showToast('❌ ' + error.message, 'error');
-            }
-        }
-
         function mostrarLogin() {
             document.getElementById('registerCard').style.display = 'none';
             document.getElementById('loginCard').style.display = 'block';
@@ -915,115 +617,87 @@
         }
 
         // ================================================================
-        // CARGAR DATOS DEL USUARIO
+        // UI - CAMBIAR IDIOMA (SOLO CAMBIA SELECTOR, NO AUTH)
         // ================================================================
-        async function loadUserData() {
-            if (!currentUser) {
-                userTokens = 0;
-                userDomos = 0;
-                userHasNft = false;
-                actualizarEstado();
-                return;
-            }
-
+        function cambiarIdioma(idiomaId) {
             try {
-                const { data, error } = await window.supabase.rpc('obtener_mi_perfil');
-
-                if (error) {
-                    console.error('Error en obtener_mi_perfil:', error);
-                    userTokens = 0;
-                    userDomos = 0;
-                    userHasNft = false;
-                    actualizarEstado();
-                    return;
-                }
-
-                const perfil = data && data.length > 0 ? data[0] : null;
-
-                if (perfil) {
-                    userTokens = perfil.tokens || 0;
-                    userDomos = perfil.domos || 0;
-                    userHasNft = perfil.nft_canjeado || false;
-                } else {
-                    userTokens = 0;
-                    userDomos = 0;
-                    userHasNft = false;
-                }
-
-                actualizarEstado();
+                localStorage.setItem('idioma_preferido', idiomaId);
+                window.location.reload();
             } catch (error) {
-                console.error('Error in loadUserData:', error);
-                userTokens = 0;
-                userDomos = 0;
-                userHasNft = false;
-                actualizarEstado();
+                console.error('Error cambiando idioma:', error);
             }
         }
 
         // ================================================================
-        // ACTUALIZAR ESTADO UI
+        // AUTH - WRAPPERS QUE LLAMAN A LA CLASE app (app.js)
         // ================================================================
-        function actualizarEstado() {
-            const domosEl = document.getElementById('domosCount');
-            const tokensEl = document.getElementById('tokensCount');
-            const progressFillEl = document.getElementById('progressFill');
-            const progressTextEl = document.getElementById('progressText');
-            const haCanjeadoEl = document.getElementById('haCanjeado');
+        async function registrarUsuarioGlobal() {
+            const email = document.getElementById('regEmail').value.trim();
+            const password = document.getElementById('regPassword').value;
+            const name = document.getElementById('regName').value.trim();
+            const btn = document.getElementById('registerBtn');
 
-            if (domosEl) domosEl.textContent = userDomos || 0;
-            if (tokensEl) tokensEl.textContent = userTokens || 0;
-
-            const progreso = Math.min(userTokens || 0, 12);
-            if (progressFillEl) {
-                progressFillEl.style.width = `${(progreso / 12) * 100}%`;
-            }
-            if (progressTextEl) {
-                progressTextEl.textContent = `${progreso} / 12`;
-            }
-            if (haCanjeadoEl) {
-                haCanjeadoEl.textContent = userHasNft ? '✅ Sí' : 'No';
-            }
-        }
-
-        // ================================================================
-        // COMPRAR DOMO
-        // ================================================================
-        async function comprarDomo() {
-            if (!currentUser) {
-                showToast('⚠️ Inicia sesión para comprar', 'error');
+            if (!window.app || typeof window.app.registrarUsuario !== 'function') {
+                console.error('❌ app.registrarUsuario no está disponible');
                 return;
             }
 
-            const qty = parseInt(document.getElementById('domoQuantity').textContent);
-            const btn = document.getElementById('buyDomo');
-            btn.disabled = true;
-            btn.textContent = '⏳ Procesando...';
+            if (btn) { btn.disabled = true; btn.textContent = '⏳ Creando...'; }
 
             try {
-                const { data, error } = await window.supabase.rpc('comprar_domo', {
-                    p_cantidad: qty
-                });
-
-                if (error) throw error;
-
-                await loadUserData();
-                showToast(`✅ Compra exitosa de ${qty} domo(s)`);
-            } catch (error) {
-                console.error('Error comprando domo:', error);
-                showToast('❌ Error al comprar: ' + error.message, 'error');
+                await window.app.registrarUsuario(email, password, name);
+                document.getElementById('regEmail').value = '';
+                document.getElementById('regPassword').value = '';
+                document.getElementById('regName').value = '';
+            } catch (e) {
+                console.error('Error en registrarUsuarioGlobal:', e);
             } finally {
-                btn.disabled = false;
-                btn.textContent = 'Comprar Domo';
+                if (btn) { btn.disabled = false; btn.textContent = '⟡ Crear cuenta'; }
+            }
+        }
+
+        async function iniciarSesionGlobal() {
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            const btn = document.getElementById('loginBtn');
+
+            if (!window.app || typeof window.app.iniciarSesion !== 'function') {
+                console.error('❌ app.iniciarSesion no está disponible');
+                return;
+            }
+
+            if (btn) { btn.disabled = true; btn.textContent = '⏳ Entrando...'; }
+
+            try {
+                await window.app.iniciarSesion(email, password);
+                document.getElementById('loginEmail').value = '';
+                document.getElementById('loginPassword').value = '';
+            } catch (e) {
+                console.error('Error en iniciarSesionGlobal:', e);
+            } finally {
+                if (btn) { btn.disabled = false; btn.textContent = '◈ Iniciar sesión'; }
+            }
+        }
+
+        async function cerrarSesionGlobal() {
+            if (window.app && typeof window.app.cerrarSesion === 'function') {
+                await window.app.cerrarSesion();
             }
         }
 
         // ================================================================
-        // GENERADOR QR (Admin)
+        // QR - ADMIN
         // ================================================================
         function generarQR() {
-            const data = document.getElementById('qrData').value;
+            const data = document.getElementById('qrData').value.trim();
             const container = document.getElementById('qrContainer');
             container.innerHTML = '';
+
+            if (!data) {
+                window.showToast('⚠️ Introduce datos para el QR', 'warning');
+                return;
+            }
+
             try {
                 new QRCode(container, {
                     text: data,
@@ -1033,87 +707,104 @@
                     colorLight: '#ffffff',
                     correctLevel: QRCode.CorrectLevel.H
                 });
-                showToast('✅ QR generado correctamente');
+                window.showToast('✅ QR generado correctamente');
             } catch (error) {
-                showToast('❌ Error generando QR', 'error');
+                window.showToast('❌ Error generando QR', 'error');
             }
         }
 
-        function abrirQRAdmin() {
-            cambiarTab('admin');
-        }
-
         // ================================================================
-        // CONTROLES DE CANTIDAD Y DOMContentLoaded
+        // COMPRAR DOMO
         // ================================================================
-        document.addEventListener('DOMContentLoaded', function() {
-            const qtyDisplay = document.getElementById('domoQuantity');
-            document.getElementById('decreaseQty').addEventListener('click', () => {
-                let val = parseInt(qtyDisplay.textContent);
-                if (val > 1) qtyDisplay.textContent = val - 1;
-            });
-            document.getElementById('increaseQty').addEventListener('click', () => {
-                let val = parseInt(qtyDisplay.textContent);
-                if (val < 10) qtyDisplay.textContent = val + 1;
-            });
+        async function comprarDomo() {
+            const qtyEl = document.getElementById('domoQuantity');
+            const qty = parseInt(qtyEl.textContent, 10) || 1;
+            const btn = document.getElementById('buyDomo');
 
-            inicializarIdiomas().then(() => {
-                checkSession();
-            }).catch(() => {
-                checkSession();
-            });
+            if (!window.app || !window.app.usuario) {
+                window.showToast('⚠️ Inicia sesión para comprar', 'error');
+                return;
+            }
 
-            if (window.supabase) {
-                window.supabase.auth.onAuthStateChange((event, session) => {
-                    if (event === 'SIGNED_IN' && session) {
-                        currentUser = session.user;
-                        const nombre = currentUser.user_metadata?.full_name || currentUser.email || 'Usuario';
-                        const displayName = nombre.length > 15 ? nombre.substring(0, 12) + '…' : nombre;
-                        document.getElementById('userEmail').textContent = displayName;
-                        document.getElementById('logoutBtn').style.display = 'inline-block';
-                        document.getElementById('registerCard').style.display = 'none';
-                        document.getElementById('loginCard').style.display = 'none';
-                        loadUserData();
-                    } else if (event === 'SIGNED_OUT') {
-                        currentUser = null;
-                        userDomos = 0;
-                        userTokens = 0;
-                        userHasNft = false;
-                        document.getElementById('userEmail').textContent = 'No autenticado';
-                        document.getElementById('logoutBtn').style.display = 'none';
-                        document.getElementById('registerCard').style.display = 'block';
-                        document.getElementById('loginCard').style.display = 'none';
-                        actualizarEstado();
-                    } else if (event === 'USER_UPDATED') {
-                        if (session) {
-                            currentUser = session.user;
-                            loadUserData();
-                        }
-                    }
+            btn.disabled = true;
+            btn.textContent = '⏳ Creando pago...';
+
+            try {
+                const { data: sessionData, error: sessionError } = await window.supabase.auth.getSession();
+                if (sessionError) throw sessionError;
+                const accessToken = sessionData.session?.access_token;
+                if (!accessToken) throw new Error('Sesión no disponible');
+
+                const idempotencyKey = 'domo_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8);
+
+                const response = await fetch('/api/domos/comprar', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + accessToken,
+                        'Idempotency-Key': idempotencyKey
+                    },
+                    body: JSON.stringify({ cantidad: qty })
                 });
-            } else {
-                mostrarErrorEnPantalla('⚠️ Supabase no está disponible. La app no funcionará correctamente.');
+
+                const result = await response.json().catch(() => ({}));
+
+                if (!response.ok || !result.success) {
+                    throw new Error(result.error || 'No se pudo crear el pago');
+                }
+
+                const paymentUrl = result.data?.payment_url;
+                if (paymentUrl) {
+                    window.location.href = paymentUrl;
+                    return;
+                }
+
+                throw new Error('NOWPayments no devolvió un enlace de pago');
+
+            } catch (e) {
+                console.error('Error comprando domo:', e);
+                window.showToast('❌ ' + (e.message || 'No se pudo crear el pago'), 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Comprar Domo';
             }
-        });
+        }
 
         // ================================================================
-        // EXPONER FUNCIONES GLOBALES
+        // EXPONER FUNCIONES GLOBALES (solo UI)
         // ================================================================
-        window.getSession = getSession;
-        window.cambiarIdioma = cambiarIdioma;
         window.cambiarTab = cambiarTab;
         window.mostrarLogin = mostrarLogin;
         window.mostrarRegistro = mostrarRegistro;
-        window.registrarUsuario = registrarUsuario;
-        window.iniciarSesion = iniciarSesion;
-        window.cerrarSesion = cerrarSesion;
-        window.comprarDomo = comprarDomo;
-        window.actualizarEstado = actualizarEstado;
-        window.showToast = showToast;
-        window.abrirQRAdmin = abrirQRAdmin;
+        window.cambiarIdioma = cambiarIdioma;
+        window.registrarUsuarioGlobal = registrarUsuarioGlobal;
+        window.iniciarSesionGlobal = iniciarSesionGlobal;
+        window.cerrarSesionGlobal = cerrarSesionGlobal;
         window.generarQR = generarQR;
-        window.cargarSelectorIdiomas = cargarSelectorIdiomas;
-        window.inicializarIdiomas = inicializarIdiomas;
+        window.comprarDomo = comprarDomo;
+        window.mostrarErrorEnPantalla = mostrarErrorEnPantalla;
+
+        // ================================================================
+        // CONTROLES DE CANTIDAD
+        // ================================================================
+        document.addEventListener('DOMContentLoaded', function() {
+            const qtyDisplay = document.getElementById('domoQuantity');
+            const decreaseBtn = document.getElementById('decreaseQty');
+            const increaseBtn = document.getElementById('increaseQty');
+
+            if (decreaseBtn) {
+                decreaseBtn.addEventListener('click', () => {
+                    let val = parseInt(qtyDisplay.textContent, 10) || 1;
+                    if (val > 1) qtyDisplay.textContent = val - 1;
+                });
+            }
+            if (increaseBtn) {
+                increaseBtn.addEventListener('click', () => {
+                    let val = parseInt(qtyDisplay.textContent, 10) || 1;
+                    if (val < 10) qtyDisplay.textContent = val + 1;
+                });
+            }
+        });
     </script>
 </body>
 </html>
