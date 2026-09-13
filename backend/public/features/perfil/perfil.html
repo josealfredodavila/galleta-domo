@@ -116,7 +116,6 @@
         .panel-badge { font-size: 0.6rem; background: rgba(212, 175, 55, 0.12); color: var(--gold); padding: 2px 12px; border-radius: 20px; font-weight: 600; text-transform: uppercase; border: 1px solid rgba(212, 175, 55, 0.08); }
         .panel-body { padding: 18px; }
 
-        /* ===== PUBLICACIONES EN PERFIL ===== */
         .form-publicacion { background: rgba(0,0,0,0.15); border: 1px solid var(--glass-border); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 16px; }
         .form-publicacion textarea { width: 100%; padding: 12px 14px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 10px; color: var(--text-primary); font-size: 0.85rem; resize: vertical; min-height: 70px; outline: none; font-family: 'Inter', sans-serif; }
         .form-publicacion textarea:focus { border-color: var(--gold); box-shadow: 0 0 30px rgba(212, 175, 55, 0.05); }
@@ -151,9 +150,7 @@
         .publicacion-card .stats { display: flex; gap: 12px; font-size: 0.65rem; color: var(--text-muted); margin-top: 8px; padding-top: 10px; border-top: 1px solid var(--glass-border); flex-wrap: wrap; }
         .publicacion-card .stats span { cursor: pointer; padding: 5px 12px; border-radius: 20px; transition: var(--transition); display: inline-flex; align-items: center; gap: 4px; }
         .publicacion-card .stats span:hover { color: var(--gold); background: rgba(212,175,55,0.05); }
-        .publicacion-card .stats span.liked { color: var(--gold); background: rgba(212,175,55,0.1); }
 
-        /* ===== REACCIONES ===== */
         .reacciones-bar { display: flex; gap: 4px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--glass-border); flex-wrap: wrap; }
         .reacciones-bar .reaccion-btn { background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); border-radius: 20px; padding: 3px 10px; font-size: 0.9rem; cursor: pointer; transition: var(--transition); display: inline-flex; align-items: center; gap: 4px; }
         .reacciones-bar .reaccion-btn:hover { background: rgba(212,175,55,0.1); border-color: var(--gold); transform: scale(1.1); }
@@ -216,7 +213,6 @@
         #amigosContainer .amigo-item .info .estado { font-size: 0.6rem; }
         #amigosContainer .amigo-item .badge-online { background: rgba(0, 214, 143, 0.1); border: 1px solid rgba(0, 214, 143, 0.2); border-radius: 20px; padding: 2px 10px; font-size: 0.5rem; color: var(--success); font-weight: 600; }
 
-        /* ===== SARIEL'S PRO ===== */
         .pro-section { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius); padding: 15px; margin-top: 15px; }
         .pro-section .pro-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
         .pro-section .pro-header h3 { font-size: 0.85rem; font-weight: 600; color: var(--gold); }
@@ -377,40 +373,40 @@
                 </div>
                 <div class="info">
                     <div class="nombre" id="perfilNombre">
-                        Explorador
-                        <span class="verified">✦ VERIFICADO</span>
+                        <span data-clave="perfil_nombre_usuario">Explorador</span>
+                        <span class="verified" data-clave="perfil_badge_verificado">✦ VERIFICADO</span>
                     </div>
                     <div class="handle" id="perfilHandle">@explorador</div>
-                    <div class="bio" id="perfilBio">Explorando el ecosistema Sariel's · WEB3 · Comunidad</div>
+                    <div class="bio" id="perfilBio" data-clave="perfil_biografia">Explorando el ecosistema Sariel's · WEB3 · Comunidad</div>
                     <div class="badges">
-                        <span class="badge gold">✦ MIEMBRO</span>
-                        <span class="badge success">● ACTIVO</span>
-                        <span class="badge">◈ WEB3</span>
+                        <span class="badge gold" data-clave="perfil_badge_miembro">✦ MIEMBRO</span>
+                        <span class="badge success" data-clave="perfil_badge_activo">● ACTIVO</span>
+                        <span class="badge" data-clave="perfil_badge_web3">◈ WEB3</span>
                         <span class="badge" id="nivelUsuario" style="border-color:var(--purple);color:var(--purple);background:rgba(168,85,247,0.05);">🌱 Explorador</span>
                     </div>
                 </div>
                 <div class="stats">
                     <div class="stat">
                         <div class="number" id="statTokens">0</div>
-                        <div class="label">◈ Tokens</div>
+                        <div class="label" data-clave="perfil_stat_tokens">◈ Tokens</div>
                     </div>
                     <div class="stat">
                         <div class="number" id="statNFTS">0</div>
-                        <div class="label">◈ NFTs</div>
+                        <div class="label" data-clave="perfil_stat_nfts">◈ NFTs</div>
                     </div>
                     <div class="stat">
                         <div class="number" id="statSeguidores">0</div>
-                        <div class="label">◈ Seguidores</div>
+                        <div class="label" data-clave="perfil_stat_seguidores">◈ Seguidores</div>
                     </div>
                     <div class="stat">
                         <div class="number" id="statSiguiendo">0</div>
-                        <div class="label">◈ Siguiendo</div>
+                        <div class="label" data-clave="perfil_stat_siguiendo">◈ Siguiendo</div>
                     </div>
                 </div>
                 <div class="acciones">
-                    <button class="btn btn-gold btn-sm" onclick="editarPerfil()">✎ Editar perfil</button>
-                    <button class="btn btn-outline btn-sm" onclick="compartirPerfil()">◈ Compartir</button>
-                    <button class="btn btn-outline btn-sm" onclick="generarQRPerfil()">📱 QR</button>
+                    <button class="btn btn-gold btn-sm" onclick="editarPerfil()" data-clave="perfil_editar_perfil">✎ Editar perfil</button>
+                    <button class="btn btn-outline btn-sm" onclick="compartirPerfil()" data-clave="perfil_btn_compartir">◈ Compartir</button>
+                    <button class="btn btn-outline btn-sm" onclick="generarQRPerfil()" data-clave="perfil_btn_qr">📱 QR</button>
                 </div>
             </div>
 
@@ -418,21 +414,21 @@
                 <div class="estado-header">
                     <div class="estado-info">
                         <span class="badge" id="estadoBadge">🟢</span>
-                        <span class="texto" id="estadoTexto" style="color:var(--success);">Activo ahora</span>
-                        <span class="amigos-online">· <span id="amigosEnLineaContador">0</span> amigos en línea</span>
+                        <span class="texto" id="estadoTexto" style="color:var(--success);" data-clave="perfil_activo_ahora">Activo ahora</span>
+                        <span class="amigos-online">· <span id="amigosEnLineaContador">0</span> <span data-clave="perfil_amigos_en_linea">amigos en línea</span></span>
                     </div>
                     <div class="estado-buttons">
-                        <button class="btn-estado online" onclick="cambiarEstado(true)">🟢 Activo</button>
-                        <button class="btn-estado offline" onclick="cambiarEstado(false)">⭕ Inactivo</button>
+                        <button class="btn-estado online" onclick="cambiarEstado(true)" data-clave="perfil_btn_activo">🟢 Activo</button>
+                        <button class="btn-estado offline" onclick="cambiarEstado(false)" data-clave="perfil_btn_inactivo">⭕ Inactivo</button>
                     </div>
                 </div>
 
                 <div id="solicitudesSection">
-                    <h4>📨 Solicitudes pendientes <span id="solicitudesContador" style="font-size:0.7rem;color:var(--warning);">0</span></h4>
+                    <h4><span data-clave="perfil_solicitudes_pendientes">📨 Solicitudes pendientes</span> <span id="solicitudesContador" style="font-size:0.7rem;color:var(--warning);">0</span></h4>
                     <div id="solicitudesContainer" style="max-height: 200px; overflow-y: auto;">
                         <div style="text-align:center; padding:10px; color:var(--text-muted); font-size:0.7rem;">
                             <span style="font-size:1.2rem;">✅</span>
-                            <p>No tienes solicitudes pendientes</p>
+                            <p data-clave="perfil_sin_solicitudes">No tienes solicitudes pendientes</p>
                         </div>
                     </div>
                 </div>
@@ -440,19 +436,16 @@
                 <div id="amigosContainer"></div>
             </div>
 
-            <!-- ============================================================ -->
-            <!-- ✦ PANEL SARIEL'S PRO ✦ (entre estado y conexión)             -->
-            <!-- ============================================================ -->
             <div class="pro-section" id="proSection">
                 <div class="pro-header">
                     <h3>⟡ Sariel's Pro</h3>
-                    <span class="pro-badge">MEMBRESÍA</span>
+                    <span class="pro-badge" data-clave="perfil_pro_membresia">MEMBRESÍA</span>
                 </div>
                 <div class="pro-body">
                     <div class="pro-current">
                         <div>
-                            <span class="pro-label">Plan actual:</span>
-                            <span class="pro-value" id="planActual">Gratis</span>
+                            <span class="pro-label" data-clave="perfil_pro_plan_actual">Plan actual:</span>
+                            <span class="pro-value" id="planActual" data-clave="perfil_pro_gratis">Gratis</span>
                         </div>
                         <div>
                             <span class="pro-meta" id="planMeta">1 GB · 90 días</span>
@@ -468,18 +461,18 @@
                             <span id="proPrecio">$60 MXN</span>
                             <span class="pro-upgrade-period">/ 30 días</span>
                         </div>
-                        <div class="pro-upgrade-features" id="proFeatures">
+                        <div class="pro-upgrade-features" id="proFeatures" data-clave="perfil_pro_features">
                             Conservación ampliada · 5 GB
                         </div>
-                        <button class="btn btn-gold pro-btn" onclick="contratarPro()" id="btnContratarPro">
+                        <button class="btn btn-gold pro-btn" onclick="contratarPro()" id="btnContratarPro" data-clave="perfil_pro_contratar">
                             🚀 Contratar Pro por $60 MXN
                         </button>
                     </div>
 
                     <div class="pro-active-info" id="proActiveInfo" style="display:none;">
-                        <div class="pro-active-badge">✅ PRO ACTIVO</div>
+                        <div class="pro-active-badge" data-clave="perfil_pro_activo">✅ PRO ACTIVO</div>
                         <div class="pro-active-expira">
-                            Expira: <span id="proExpira">--</span>
+                            <span data-clave="perfil_pro_expira">Expira:</span> <span id="proExpira">--</span>
                         </div>
                     </div>
                 </div>
@@ -488,58 +481,58 @@
             <div class="conexion-section">
                 <div class="conexion-header">
                     <div class="conexion-info">
-                        <span class="status" id="conexionStatus">🛜 WiFi</span>
+                        <span class="status" id="conexionStatus" data-clave="perfil_conexion_wifi">🛜 WiFi</span>
                         <span class="velocidad" id="conexionVelocidad">0 Mbps</span>
                         <span class="señal" id="conexionSeñal" style="color:var(--success);">████</span>
                     </div>
                     <div class="conexion-buttons">
-                        <button class="btn-conexion wifi active" id="btnWifi" onclick="cambiarConexion('wifi')">🛜 WiFi</button>
-                        <button class="btn-conexion datos" id="btnDatos" onclick="cambiarConexion('datos')">📶 Datos</button>
+                        <button class="btn-conexion wifi active" id="btnWifi" onclick="cambiarConexion('wifi')" data-clave="perfil_conexion_wifi">🛜 WiFi</button>
+                        <button class="btn-conexion datos" id="btnDatos" onclick="cambiarConexion('datos')" data-clave="perfil_conexion_datos">📶 Datos</button>
                     </div>
                 </div>
                 <div style="font-size:0.6rem;color:var(--text-muted);margin-top:6px;">
-                    Conexión: <span id="conexionTipo">🛜 WiFi</span>
-                    · Operador: <span id="conexionOperador">Sariel's Net</span>
+                    <span data-clave="perfil_conexion">Conexión:</span> <span id="conexionTipo">🛜 WiFi</span>
+                    · <span>Operador:</span> <span id="conexionOperador">Sariel's Net</span>
                 </div>
             </div>
 
             <div class="perfil-tabs">
-                <button class="tab-btn active" onclick="cambiarTab('mis-publicaciones')">◈ Mis Publicaciones</button>
-                <button class="tab-btn" onclick="cambiarTab('actividad')">◆ Actividad</button>
-                <button class="tab-btn" onclick="cambiarTab('tokens')">⟡ Tokens</button>
-                <button class="tab-btn" onclick="cambiarTab('config')">⚙ Configuración</button>
-                <button class="tab-btn" onclick="cambiarTab('esim')">📱 eSIM</button>
-                <button class="tab-btn" onclick="cambiarTab('qr')">📷 Escanear QR</button>
+                <button class="tab-btn active" onclick="cambiarTab('mis-publicaciones')" data-clave="perfil_mis_publicaciones">◈ Mis Publicaciones</button>
+                <button class="tab-btn" onclick="cambiarTab('actividad')" data-clave="perfil_tab_actividad">◆ Actividad</button>
+                <button class="tab-btn" onclick="cambiarTab('tokens')" data-clave="perfil_tab_tokens">⟡ Tokens</button>
+                <button class="tab-btn" onclick="cambiarTab('config')" data-clave="perfil_tab_config">⚙ Configuración</button>
+                <button class="tab-btn" onclick="cambiarTab('esim')" data-clave="perfil_tab_esim">📱 eSIM</button>
+                <button class="tab-btn" onclick="cambiarTab('qr')" data-clave="perfil_tab_qr">📷 Escanear QR</button>
             </div>
 
             <div id="tab-mis-publicaciones" class="tab-content active">
                 <div class="panel">
                     <div class="panel-header">
-                        <h3>✦ Crear publicación</h3>
+                        <h3 data-clave="perfil_crear_publicacion">✦ Crear publicación</h3>
                         <span class="panel-badge">Nuevo</span>
                     </div>
                     <div class="panel-body">
                         <div class="form-publicacion">
-                            <textarea id="inputNuevaPublicacion" placeholder="¿Qué estás pensando? Puedes usar #hashtags, @menciones y emojis ✨"></textarea>
+                            <textarea id="inputNuevaPublicacion" data-placeholder="perfil_que_piensas" placeholder="¿Qué estás pensando? Puedes usar #hashtags, @menciones y emojis ✨"></textarea>
                             
                             <div class="acciones">
-                                <button type="button" class="accion-btn" onclick="toggleEmojiPickerPerfil()" id="btnEmojiPerfil">
+                                <button type="button" class="accion-btn" onclick="toggleEmojiPickerPerfil()" id="btnEmojiPerfil" data-clave="perfil_emoji">
                                     😀 Emoji
                                 </button>
-                                <button type="button" class="accion-btn" onclick="insertarHashtagPerfil()">
+                                <button type="button" class="accion-btn" onclick="insertarHashtagPerfil()" data-clave="perfil_hashtag">
                                     # Hashtag
                                 </button>
-                                <button type="button" class="accion-btn" onclick="document.getElementById('inputFotoPerfilPost').click()">
+                                <button type="button" class="accion-btn" onclick="document.getElementById('inputFotoPerfilPost').click()" data-clave="perfil_foto">
                                     📸 Foto
                                 </button>
-                                <button type="button" class="accion-btn" onclick="document.getElementById('inputVideoPerfilPost').click()">
+                                <button type="button" class="accion-btn" onclick="document.getElementById('inputVideoPerfilPost').click()" data-clave="perfil_video">
                                     🎬 Video
                                 </button>
                                 
                                 <input type="file" id="inputFotoPerfilPost" accept="image/*" style="display:none;" onchange="seleccionarArchivoPerfil(event, 'imagen')" />
                                 <input type="file" id="inputVideoPerfilPost" accept="video/*" style="display:none;" onchange="seleccionarArchivoPerfil(event, 'video')" />
                                 
-                                <button type="button" class="btn-publicar" onclick="publicarDesdePerfil()" id="btnPublicarPerfil">
+                                <button type="button" class="btn-publicar" onclick="publicarDesdePerfil()" id="btnPublicarPerfil" data-clave="perfil_publicar">
                                     ◈ Publicar
                                 </button>
 
@@ -556,15 +549,15 @@
 
                 <div class="panel">
                     <div class="panel-header">
-                        <h3>◈ Mis publicaciones</h3>
+                        <h3 data-clave="perfil_mis_publicaciones">◈ Mis publicaciones</h3>
                         <span class="panel-badge" id="misPostsCount">0</span>
                     </div>
                     <div class="panel-body">
                         <div id="misPublicacionesList">
                             <div class="empty-state">
                                 <span class="icon">◈</span>
-                                <h4>Sin publicaciones aún</h4>
-                                <p>Publica algo para verlo aquí</p>
+                                <h4 data-clave="perfil_sin_publicaciones">Sin publicaciones aún</h4>
+                                <p data-clave="perfil_crea_primera">Publica algo para verlo aquí</p>
                             </div>
                         </div>
                     </div>
@@ -574,7 +567,7 @@
             <div id="tab-actividad" class="tab-content">
                 <div class="panel">
                     <div class="panel-header">
-                        <h3>◈ Última actividad</h3>
+                        <h3 data-clave="perfil_seccion_ultima_actividad">◈ Última actividad</h3>
                         <span class="panel-badge">En tiempo real</span>
                     </div>
                     <div class="panel-body" id="actividadList">
@@ -587,7 +580,7 @@
                 </div>
                 <div class="panel">
                     <div class="panel-header">
-                        <h3>◈ Historial de transacciones</h3>
+                        <h3 data-clave="perfil_seccion_historial_tx">◈ Historial de transacciones</h3>
                         <span class="panel-badge" id="historialCount">0</span>
                     </div>
                     <div class="panel-body" id="historialList">
@@ -603,18 +596,18 @@
             <div id="tab-tokens" class="tab-content">
                 <div class="panel">
                     <div class="panel-header">
-                        <h3>⟡ Estado de tokens</h3>
+                        <h3 data-clave="perfil_seccion_estado_tokens">⟡ Estado de tokens</h3>
                         <span class="panel-badge">Actualizado</span>
                     </div>
                     <div class="panel-body">
                         <div class="token-status">
                             <div class="item">
                                 <div class="value" id="tokenTotal">0</div>
-                                <div class="label">◈ Total tokens</div>
+                                <div class="label" data-clave="perfil_balance_tokens">◈ Total tokens</div>
                             </div>
                             <div class="item">
                                 <div class="value" id="tokenDisponibles">0</div>
-                                <div class="label">◈ Disponibles</div>
+                                <div class="label" data-clave="perfil_disponibles">◈ Disponibles</div>
                             </div>
                             <div class="item">
                                 <div class="value" id="tokenVendidos">0</div>
@@ -622,7 +615,7 @@
                             </div>
                             <div class="item">
                                 <div class="value" id="tokenNFTs">0</div>
-                                <div class="label">◈ NFTs</div>
+                                <div class="label" data-clave="perfil_nfts_info">◈ NFTs</div>
                             </div>
                         </div>
 
@@ -631,7 +624,7 @@
                                 <div class="fill" id="progressFill" style="width: 0%;"></div>
                             </div>
                             <div class="label">
-                                <span>Progreso NFT</span>
+                                <span data-clave="perfil_progreso_meta">Progreso NFT</span>
                                 <span id="progressText">0 / 12</span>
                             </div>
                         </div>
@@ -640,15 +633,15 @@
                             <button class="btn btn-gold" style="flex:1;justify-content:center;" onclick="comprarDomo(1)">
                                 ⟡ Comprar Domo (MXN)
                             </button>
-                            <button class="btn btn-gold" style="flex:1;justify-content:center;" id="canjearNft" onclick="canjearNFT()" disabled>
+                            <button class="btn btn-gold" style="flex:1;justify-content:center;" id="canjearNft" onclick="canjearNFT()" disabled data-clave="perfil_canjear_nft">
                                 🔒 CANJEAR NFT
                             </button>
                         </div>
 
                         <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--glass-border);">
                             <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
-                                <span style="font-size:0.75rem;color:var(--gold);font-weight:600;">💳 Comprar con Cripto</span>
-                                <span style="font-size:0.55rem;color:var(--text-muted);">USDT / USDC · 2% comisión</span>
+                                <span style="font-size:0.75rem;color:var(--gold);font-weight:600;" data-clave="perfil_pagar_usdt">💳 Comprar con Cripto</span>
+                                <span style="font-size:0.55rem;color:var(--text-muted);" data-clave="perfil_usdt_trc20">USDT / USDC · 2% comisión</span>
                             </div>
                             <div class="crypto-controls">
                                 <div class="qty-group">
@@ -660,10 +653,10 @@
                                     <span class="crypto-total" id="cryptoTotal">$4.59 USDT</span>
                                 </div>
                             </div>
-                            <button class="btn btn-crypto" style="width:100%;justify-content:center;margin-top:8px;padding:10px;" onclick="comprarConCripto()">
+                            <button class="btn btn-crypto" style="width:100%;justify-content:center;margin-top:8px;padding:10px;" onclick="comprarConCripto()" data-clave="perfil_pagar_usdt">
                                 💳 Pagar con USDT/USDC
                             </button>
-                            <div class="crypto-hint">
+                            <div class="crypto-hint" data-clave="perfil_usdt_trc20">
                                 ⚡ Red: TRC-20 (tarifas bajas) · Acepta USDT y USDC
                             </div>
                         </div>
@@ -678,28 +671,28 @@
             <div id="tab-config" class="tab-content">
                 <div class="panel">
                     <div class="panel-header">
-                        <h3>◆ Editar perfil</h3>
-                        <span class="panel-badge">Privado</span>
+                        <h3 data-clave="perfil_editar_perfil">◆ Editar perfil</h3>
+                        <span class="panel-badge" data-clave="perfil_config_privado">Privado</span>
                     </div>
                     <div class="panel-body">
                         <div class="config-group">
-                            <label>Nombre</label>
+                            <label data-clave="perfil_config_nombre">Nombre</label>
                             <input type="text" id="editNombre" value="Explorador" />
                         </div>
                         <div class="config-group">
-                            <label>Handle</label>
+                            <label data-clave="perfil_config_handle">Handle</label>
                             <input type="text" id="editHandle" value="explorador" />
                         </div>
                         <div class="config-group">
-                            <label>Biografía</label>
+                            <label data-clave="perfil_biografia">Biografía</label>
                             <textarea id="editBio" rows="3">Explorando el ecosistema Sariel's · WEB3 · Comunidad</textarea>
                         </div>
                         <div class="config-group">
-                            <label>Foto de perfil</label>
-                            <button class="btn btn-outline" style="width:100%;" onclick="abrirSelectorArchivo()">📸 Subir foto</button>
-                            <div class="hint">◈ Sube una foto para personalizar tu perfil</div>
+                            <label data-clave="perfil_imagen_perfil">Foto de perfil</label>
+                            <button class="btn btn-outline" style="width:100%;" onclick="abrirSelectorArchivo()" data-clave="perfil_subir_foto">📸 Subir foto</button>
+                            <div class="hint" data-clave="perfil_imagen_perfil">◈ Sube una foto para personalizar tu perfil</div>
                         </div>
-                        <button class="btn btn-gold" style="width:100%;justify-content:center;" onclick="guardarPerfil()">
+                        <button class="btn btn-gold" style="width:100%;justify-content:center;" onclick="guardarPerfil()" data-clave="perfil_guardar_cambios">
                             ◆ Guardar cambios
                         </button>
                     </div>
@@ -707,27 +700,27 @@
 
                 <div class="panel">
                     <div class="panel-header">
-                        <h3>◆ Seguridad</h3>
-                        <span class="panel-badge">Recomendado</span>
+                        <h3 data-clave="perfil_seguridad">◆ Seguridad</h3>
+                        <span class="panel-badge" data-clave="perfil_config_recomendado">Recomendado</span>
                     </div>
                     <div class="panel-body">
                         <div class="config-group">
-                            <label>Wallet conectada</label>
+                            <label data-clave="perfil_config_wallet">Wallet conectada</label>
                             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-                                <span id="walletDisplay" style="font-family:monospace;font-size:0.85rem;color:var(--text-secondary);">⚠️ No conectada</span>
-                                <button class="btn btn-gold btn-sm" onclick="conectarWallet()" id="btnConectarWallet">
+                                <span id="walletDisplay" style="font-family:monospace;font-size:0.85rem;color:var(--text-secondary);" data-clave="perfil_config_no_conectada">⚠️ No conectada</span>
+                                <button class="btn btn-gold btn-sm" onclick="conectarWallet()" id="btnConectarWallet" data-clave="perfil_config_conectar">
                                     ◈ Conectar
                                 </button>
-                                <button class="btn btn-danger btn-sm" onclick="desconectarWallet()" style="display:none;" id="btnDesconectarWallet">
+                                <button class="btn btn-danger btn-sm" onclick="desconectarWallet()" style="display:none;" id="btnDesconectarWallet" data-clave="perfil_config_desconectar">
                                     ✕ Desconectar
                                 </button>
                             </div>
-                            <div class="hint">◈ Conecta tu wallet para interactuar con el ecosistema</div>
+                            <div class="hint" data-clave="perfil_seguridad_wallet">◈ Conecta tu wallet para interactuar con el ecosistema</div>
                             <div style="font-size:0.6rem;color:var(--text-muted);margin-top:4px;">
-                                Red: <span id="walletRed">Polygon Amoy</span>
+                                <span data-clave="perfil_config_red_actual">Red:</span> <span id="walletRed">Polygon Amoy</span>
                             </div>
                         </div>
-                        <button class="btn btn-danger" style="width:100%;justify-content:center;margin-top:8px;" onclick="cerrarSesion()">
+                        <button class="btn btn-danger" style="width:100%;justify-content:center;margin-top:8px;" onclick="cerrarSesion()" data-clave="perfil_cerrar_sesion">
                             ✕ Cerrar sesión
                         </button>
                     </div>
@@ -737,29 +730,29 @@
             <div id="tab-esim" class="tab-content">
                 <div class="panel">
                     <div class="panel-header">
-                        <h3>📱 Mi eSIM</h3>
-                        <span class="panel-badge">Telnyx</span>
+                        <h3 data-clave="perfil_telnyx">📱 Mi eSIM</h3>
+                        <span class="panel-badge" data-clave="perfil_telnyx">Telnyx</span>
                     </div>
                     <div class="panel-body">
                         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
                             <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;border:1px solid var(--glass-border);">
-                                <span style="color:var(--text-muted);font-size:0.6rem;">ESTADO</span>
+                                <span style="color:var(--text-muted);font-size:0.6rem;" data-clave="perfil_esim_estado">ESTADO</span>
                                 <div id="esimStatus" style="font-weight:600;font-size:0.9rem;">⏳ Sin eSIM</div>
                             </div>
                             <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;border:1px solid var(--glass-border);">
-                                <span style="color:var(--text-muted);font-size:0.6rem;">DATOS USADOS</span>
+                                <span style="color:var(--text-muted);font-size:0.6rem;" data-clave="perfil_datos_consumidos">DATOS USADOS</span>
                                 <div id="esimDataUsed" style="font-weight:600;font-size:0.9rem;">0 GB</div>
                             </div>
                             <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;border:1px solid var(--glass-border);">
-                                <span style="color:var(--text-muted);font-size:0.6rem;">LÍMITE</span>
+                                <span style="color:var(--text-muted);font-size:0.6rem;" data-clave="perfil_limite_plan">LÍMITE</span>
                                 <div id="esimDataLimit" style="font-weight:600;font-size:0.9rem;">0 GB</div>
                             </div>
                             <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;border:1px solid var(--glass-border);">
-                                <span style="color:var(--text-muted);font-size:0.6rem;">RESTANTE</span>
+                                <span style="color:var(--text-muted);font-size:0.6rem;" data-clave="perfil_datos_restantes">RESTANTE</span>
                                 <div id="esimDataRestante" style="font-weight:600;font-size:0.9rem;color:var(--success);">0 GB</div>
                             </div>
                             <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;border:1px solid var(--glass-border);grid-column:span 2;">
-                                <span style="color:var(--text-muted);font-size:0.6rem;">ICCID</span>
+                                <span style="color:var(--text-muted);font-size:0.6rem;" data-clave="perfil_iccid">ICCID</span>
                                 <div id="esimIccid" style="font-weight:600;font-size:0.8rem;font-family:monospace;">No asignado</div>
                             </div>
                         </div>
@@ -771,28 +764,28 @@
                         </div>
 
                         <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
-                            <button class="btn btn-gold" style="flex:1;justify-content:center;padding:10px;" onclick="comprarESIM(1)">
+                            <button class="btn btn-gold" style="flex:1;justify-content:center;padding:10px;" onclick="comprarESIM(1)" data-clave="perfil_adquirir_esim">
                                 📱 Comprar eSIM
                             </button>
-                            <button class="btn btn-outline" style="flex:1;justify-content:center;padding:10px;" onclick="generarQRESIM()">
+                            <button class="btn btn-outline" style="flex:1;justify-content:center;padding:10px;" onclick="generarQRESIM()" data-clave="perfil_obtener_qr">
                                 📲 QR Activación
                             </button>
-                            <button class="btn btn-outline" style="flex:1;justify-content:center;padding:10px;" onclick="sincronizarESIM()">
+                            <button class="btn btn-outline" style="flex:1;justify-content:center;padding:10px;" onclick="sincronizarESIM()" data-clave="perfil_sincronizar">
                                 🔄 Sincronizar
                             </button>
                         </div>
 
                         <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
-                            <button class="btn btn-outline btn-sm" onclick="activarESIM()" style="border-color:var(--success);color:var(--success);">
+                            <button class="btn btn-outline btn-sm" onclick="activarESIM()" style="border-color:var(--success);color:var(--success);" data-clave="perfil_activar_esim">
                                 ✅ Activar
                             </button>
-                            <button class="btn btn-danger btn-sm" onclick="desactivarESIM()">
+                            <button class="btn btn-danger btn-sm" onclick="desactivarESIM()" data-clave="perfil_desactivar_esim">
                                 ⛔ Desactivar
                             </button>
                         </div>
 
                         <div style="margin-top:10px;font-size:0.6rem;color:var(--text-muted);">
-                            APN: <span id="esimApn" style="font-family:monospace;color:var(--text-secondary);">data00.telnyx</span>
+                            <span data-clave="perfil_apn_requerido">APN:</span> <span id="esimApn" style="font-family:monospace;color:var(--text-secondary);">data00.telnyx</span>
                         </div>
                     </div>
                 </div>
@@ -801,30 +794,30 @@
             <div id="tab-qr" class="tab-content">
                 <div class="panel">
                     <div class="panel-header">
-                        <h3>📱 Escanear QR</h3>
-                        <span class="panel-badge">Recibe Es.stoks</span>
+                        <h3 data-clave="perfil_escanear_qr">📱 Escanear QR</h3>
+                        <span class="panel-badge" data-clave="perfil_registrar_domo">Recibe Es.stoks</span>
                     </div>
                     <div class="panel-body">
                         <div class="config-group">
-                            <label>Código del QR (escanea o escribe)</label>
+                            <label data-clave="perfil_codigo_qr">Código del QR (escanea o escribe)</label>
                             <div style="display:flex;gap:8px;flex-wrap:wrap;">
                                 <input type="text" id="qrInput" placeholder="Ej: DOMO-2025-ABC123" 
                                        style="flex:1;padding:10px 14px;background:rgba(0,0,0,0.3);border:1px solid var(--glass-border);border-radius:10px;color:var(--text-primary);font-size:0.85rem;outline:none;">
-                                <button class="btn btn-gold" onclick="escanearQR()" id="btnEscanearQR">
+                                <button class="btn btn-gold" onclick="escanearQR()" id="btnEscanearQR" data-clave="perfil_validar_codigo">
                                     🔍 Escanear QR
                                 </button>
                             </div>
-                            <div class="hint">⚡ Escanea el QR de tu domo físico para recibir 1 Es.stok</div>
+                            <div class="hint" data-clave="perfil_escanea_qr_hint">⚡ Escanea el QR de tu domo físico para recibir 1 Es.stok</div>
                         </div>
 
-                        <button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:8px;" onclick="abrirCamaraQR()">
+                        <button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:8px;" onclick="abrirCamaraQR()" data-clave="perfil_abrir_camara">
                             📷 Escanear con cámara
                         </button>
 
                         <div id="qrReaderContainer">
                             <video id="qrVideo" style="width:100%;max-width:300px;border-radius:10px;background:black;"></video>
                             <canvas id="qrCanvas" style="display:none;"></canvas>
-                            <button class="btn btn-danger btn-sm" onclick="cerrarCamaraQR()" style="margin-top:8px;">
+                            <button class="btn btn-danger btn-sm" onclick="cerrarCamaraQR()" style="margin-top:8px;" data-clave="perfil_cerrar_camara">
                                 ✕ Cerrar cámara
                             </button>
                             <div id="qrCamaraStatus" style="font-size:0.7rem;color:var(--text-muted);margin-top:4px;"></div>
@@ -834,13 +827,13 @@
 
                         <div style="margin-top:16px;border-top:1px solid var(--glass-border);padding-top:12px;">
                             <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.7rem;color:var(--text-muted);">
-                                <span>📋 Últimos escaneos</span>
+                                <span data-clave="perfil_historial">📋 Últimos escaneos</span>
                                 <span id="qrHistorialCount">0</span>
                             </div>
                             <div id="qrHistorialList" style="margin-top:8px;">
                                 <div class="empty-state" style="padding:10px;">
                                     <span class="icon" style="font-size:1.5rem;">◈</span>
-                                    <p style="font-size:0.7rem;">Sin escaneos recientes</p>
+                                    <p style="font-size:0.7rem;" data-clave="perfil_sin_registros">Sin escaneos recientes</p>
                                 </div>
                             </div>
                         </div>
@@ -853,9 +846,9 @@
         <footer class="footer">
             <span><span class="brand">◈ Sariel's</span> · Sabor al Paladar · WEB3</span>
             <div class="footer-links">
-                <a href="/terminos">◈ Términos</a>
-                <a href="/privacidad">◈ Privacidad</a>
-                <a href="/cookies">◈ Cookies</a>
+                <a href="/terminos" data-clave="perfil_footer_terminos">◈ Términos</a>
+                <a href="/privacidad" data-clave="perfil_footer_privacidad">◈ Privacidad</a>
+                <a href="/cookies" data-clave="perfil_footer_cookies">◈ Cookies</a>
                 <a href="/live-terminos">◈ Términos Live</a>
                 <span style="opacity:0.3;">⚡ Polygon</span>
             </div>
@@ -868,13 +861,13 @@
     <div class="modal-overlay" id="cryptoPaymentModal">
         <div class="modal-content">
             <button class="close-btn" onclick="cerrarModalPago()">✕</button>
-            <h2>💳 Pagar con Cripto</h2>
-            <p class="subtitle">Escanea el QR o copia la dirección para pagar</p>
+            <h2 data-clave="perfil_pagar_usdt">💳 Pagar con Cripto</h2>
+            <p class="subtitle" data-clave="perfil_obtencion_cripto">Escanea el QR o copia la dirección para pagar</p>
             <div class="qr-container">
                 <img id="cryptoQR" src="" alt="QR de pago" />
             </div>
             <div class="address-box">
-                <div class="label">📤 Dirección de pago</div>
+                <div class="label" data-clave="perfil_codigo_qr">📤 Dirección de pago</div>
                 <div class="address" id="cryptoAddress">Cargando dirección...</div>
             </div>
             <div class="amount">
@@ -882,10 +875,10 @@
             </div>
             <div class="actions">
                 <button class="btn btn-outline btn-sm" onclick="copiarDireccion()">📋 Copiar dirección</button>
-                <button class="btn btn-gold btn-sm" onclick="verificarPagoCrypto()">✅ Verificar pago</button>
+                <button class="btn btn-gold btn-sm" onclick="verificarPagoCrypto()" data-clave="perfil_validacion_real">✅ Verificar pago</button>
                 <button class="btn btn-outline btn-sm" onclick="cerrarModalPago()">Cerrar</button>
             </div>
-            <div class="status" id="cryptoStatus">⏳ Esperando confirmación de pago...</div>
+            <div class="status" id="cryptoStatus" data-clave="perfil_cargando_membresia">⏳ Esperando confirmación de pago...</div>
         </div>
     </div>
 
@@ -918,11 +911,30 @@
     <script src="/features/perfil/perfil.js"></script>
 
     <!-- ================================================================ -->
-    <!-- MÓDULO DE PUBLICACIONES EN PERFIL - CORREGIDO                    -->
-    <!-- ✅ Fix: media_type = null cuando no hay media                    -->
-    <!-- ✅ Fix: reacciones usan los 9 emojis reales                     -->
-    <!-- ✅ Fix: comentarios apuntan a publicaciones_comentarios (si existe) -->
-    <!-- ✅ Fix: botón publicar encuentra todos los elementos             -->
+    <!-- SISTEMA DE IDIOMAS - CARGAR TRADUCCIONES                       -->
+    <!-- ================================================================ -->
+    <script src="/features/shared/js/idiomas.js"></script>
+
+    <script>
+        // Inicializar idiomas al cargar el perfil
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(async () => {
+                try {
+                    if (typeof window.inicializarIdiomas === 'function') {
+                        await window.inicializarIdiomas();
+                        console.log('✅ Idiomas aplicados al perfil');
+                    } else {
+                        console.warn('⚠️ idiomas.js no cargó correctamente');
+                    }
+                } catch (error) {
+                    console.error('Error inicializando idiomas en perfil:', error);
+                }
+            }, 500);
+        });
+    </script>
+
+    <!-- ================================================================ -->
+    <!-- MÓDULO DE PUBLICACIONES EN PERFIL                                -->
     <!-- ================================================================ -->
     <script>
     (function() {
@@ -941,9 +953,6 @@
 
         var emojisDisponibles = ['😀','😁','😂','🤣','😃','😄','😅','😊','😇','🙂','😉','😍','🥰','😘','😗','😙','😚','😋','😛','😜','🤪','😝','🤑','🤗','🤭','🤫','🤔','🤐','🤨','😐','😑','😶','😏','😒','🙄','😬','🤥','😌','😔','😪','🤤','😴','😷','🤒','🤕','🤢','🤮','🤧','🥵','🥶','😵','🤯','🤠','🥳','😎','🤓','🧐','😕','😟','🙁','😮','😯','😲','😳','🥺','😦','😧','😨','😰','😥','😢','😭','😱','😖','😣','😞','😓','😩','😫','🥱','😤','😡','😠','🤬','😈','👿','💀','💩','🤡','👹','👺','👻','👽','👾','🤖','❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','❣️','💕','💞','💓','💗','💖','💘','💝','💟','🔥','✨','🌟','💫','⭐','⚡','💥','💢','🌈','☀️','🌤️','⛅','🌥️','☁️','🌦️','🌧️','⛈️','🌩️','🌨️','❄️','☃️','⛄','🌬️','💨','🌪️','🌫️','🌊','💧','💦','☔','☂️','🌂','🎉','🎊','🎈','🎁','🎂','🍰','🧁','🍕','🍔','🍟','🌮','🌯','🍿','🍩','🍪','🍫','🍬','🍭','🍮','🍯','🍷','🍸','🍹','🍺','🍻','🥂','🥃','🍾','☕','🍵','🧃','🥤','🧋','🍼','🥛','💊','🌿','🍃','🍀','🍁','🍂','🌸','🌺','🌻','🌹','🌷','🌼','💐','🌱','🌲','🌳','🌴','🌵','🌾','🍄','🐚','🪨','🌍','🌎','🌏','🌕','🌖','🌗','🌘','🌑','🌒','🌓','🌔','🌙','🌚','🌝','🌞','🪐','☄️','🌠','🌌'];
 
-        // ============================================================
-        // EMOJI PICKER
-        // ============================================================
         window.toggleEmojiPickerPerfil = function() {
             var picker = document.getElementById('emojiPickerPerfil');
             if (!picker) return;
@@ -990,7 +999,6 @@
         window.seleccionarArchivoPerfil = function(event, tipo) {
             var file = event.target.files[0];
             if (!file) return;
-
             if (tipo === 'imagen') {
                 if (file.size > 10 * 1024 * 1024) { if (window.showToast) window.showToast('❌ Imagen mayor a 10 MB', 'error'); event.target.value = ''; return; }
                 if (!file.type.startsWith('image/')) { if (window.showToast) window.showToast('❌ Solo imágenes', 'error'); event.target.value = ''; return; }
@@ -998,7 +1006,6 @@
                 if (file.size > 100 * 1024 * 1024) { if (window.showToast) window.showToast('❌ Video mayor a 100 MB', 'error'); event.target.value = ''; return; }
                 if (!file.type.startsWith('video/')) { if (window.showToast) window.showToast('❌ Solo videos', 'error'); event.target.value = ''; return; }
             }
-
             archivosSeleccionados[tipo] = file;
             renderizarPreviewPerfil();
         };
@@ -1033,93 +1040,60 @@
             renderizarPreviewPerfil();
         };
 
-        // ============================================================
-        // PUBLICAR DESDE EL PERFIL
-        // ============================================================
         window.publicarDesdePerfil = async function() {
             var btn = document.getElementById('btnPublicarPerfil');
             var input = document.getElementById('inputNuevaPublicacion');
             var contenido = input ? input.value.trim() : '';
-
             if (!contenido && !archivosSeleccionados.imagen && !archivosSeleccionados.video) {
                 if (window.showToast) window.showToast('⚠️ Escribe algo o sube una foto/video', 'warning');
                 return;
             }
-
             if (btn) { btn.disabled = true; btn.textContent = '⏳ Publicando...'; }
-
             try {
                 var client = sb();
                 if (!client) throw new Error('Supabase no está listo. Recarga la página.');
-
                 var sessionResult = await client.auth.getSession();
                 var session = sessionResult.data.session;
                 if (!session) { if (window.showToast) window.showToast('⚠️ Inicia sesión', 'error'); return; }
-
                 var mediaUrl = null;
                 var mediaType = null;
-
                 if (archivosSeleccionados.imagen) {
                     if (window.showToast) window.showToast('⏳ Subiendo imagen...', '', 5000);
                     var file = archivosSeleccionados.imagen;
                     var ext = file.name.split('.').pop().toLowerCase();
                     var filePath = session.user.id + '/post_' + Date.now() + '.' + ext;
-
-                    var uploadResult = await client.storage
-                        .from('posts')
-                        .upload(filePath, file, { cacheControl: '3600', upsert: false, contentType: file.type });
-
+                    var uploadResult = await client.storage.from('posts').upload(filePath, file, { cacheControl: '3600', upsert: false, contentType: file.type });
                     if (uploadResult.error) throw new Error('Error subiendo imagen: ' + uploadResult.error.message);
-
                     var urlData = client.storage.from('posts').getPublicUrl(filePath);
                     mediaUrl = urlData.data.publicUrl;
                     mediaType = 'imagen';
                 }
-
                 if (archivosSeleccionados.video) {
-                    if (window.showToast) window.showToast('⏳ Subiendo video (puede tardar)...', '', 15000);
+                    if (window.showToast) window.showToast('⏳ Subiendo video...', '', 15000);
                     var vfile = archivosSeleccionados.video;
                     var vext = vfile.name.split('.').pop().toLowerCase();
                     var vfilePath = session.user.id + '/video_' + Date.now() + '.' + vext;
-
-                    var vuploadResult = await client.storage
-                        .from('posts')
-                        .upload(vfilePath, vfile, { cacheControl: '3600', upsert: false, contentType: vfile.type });
-
+                    var vuploadResult = await client.storage.from('posts').upload(vfilePath, vfile, { cacheControl: '3600', upsert: false, contentType: vfile.type });
                     if (vuploadResult.error) throw new Error('Error subiendo video: ' + vuploadResult.error.message);
-
                     var vurlData = client.storage.from('posts').getPublicUrl(vfilePath);
                     mediaUrl = vurlData.data.publicUrl;
                     mediaType = 'video';
                 }
-
-                var insertPayload = {
-                    usuario_id: session.user.id,
-                    contenido: contenido || '',
-                    media_url: mediaUrl,
-                    media_type: mediaType,
-                    estado: 'publicado'
-                };
-
+                var insertPayload = { usuario_id: session.user.id, contenido: contenido || '', media_url: mediaUrl, media_type: mediaType, estado: 'publicado' };
                 var insertResult = await client.from('publicaciones').insert(insertPayload).select().single();
-
                 if (insertResult.error) {
                     delete insertPayload.estado;
                     var fb = await client.from('publicaciones').insert(insertPayload).select().single();
                     if (fb.error) throw new Error(fb.error.message);
                 }
-
                 if (window.showToast) window.showToast('✅ ¡Publicación creada!', 'success');
-
                 if (input) input.value = '';
                 archivosSeleccionados.imagen = null;
                 archivosSeleccionados.video = null;
                 var i1 = document.getElementById('inputFotoPerfilPost'); if (i1) i1.value = '';
                 var i2 = document.getElementById('inputVideoPerfilPost'); if (i2) i2.value = '';
                 renderizarPreviewPerfil();
-
                 await cargarMisPublicaciones();
-
             } catch (error) {
                 console.error('Error publicando:', error);
                 if (window.showToast) window.showToast('❌ Error: ' + error.message, 'error');
@@ -1128,92 +1102,56 @@
             }
         };
 
-        // ============================================================
-        // CARGAR MIS PUBLICACIONES
-        // ============================================================
         window.cargarMisPublicaciones = async function() {
             var container = document.getElementById('misPublicacionesList');
             var contador = document.getElementById('misPostsCount');
             if (!container) return;
-
             try {
                 var client = sb();
-                if (!client) {
-                    setTimeout(cargarMisPublicaciones, 1000);
-                    return;
-                }
-
+                if (!client) { setTimeout(cargarMisPublicaciones, 1000); return; }
                 var sessionResult = await client.auth.getSession();
                 var session = sessionResult.data.session;
                 if (!session) {
                     container.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h4>Inicia sesión</h4><p>Para ver tus publicaciones</p></div>';
                     return;
                 }
-
-                var result = await client
-                    .from('publicaciones')
-                    .select('*')
-                    .eq('usuario_id', session.user.id)
-                    .order('created_at', { ascending: false })
-                    .limit(50);
-
+                var result = await client.from('publicaciones').select('*').eq('usuario_id', session.user.id).order('created_at', { ascending: false }).limit(50);
                 if (result.error) throw result.error;
-
                 var publicaciones = result.data || [];
                 if (contador) contador.textContent = publicaciones.length;
-
                 if (publicaciones.length === 0) {
-                    container.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h4>Sin publicaciones aún</h4><p>Publica algo para verlo aquí</p></div>';
+                    container.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h4 data-clave="perfil_sin_publicaciones">Sin publicaciones aún</h4><p data-clave="perfil_crea_primera">Publica algo para verlo aquí</p></div>';
                     return;
                 }
-
                 container.innerHTML = '';
-
                 var reaccionesUsuario = {};
                 try {
-                    var reaccResult = await client
-                        .from('publicaciones_reacciones')
-                        .select('publicacion_id, tipo')
-                        .eq('usuario_id', session.user.id);
-
+                    var reaccResult = await client.from('publicaciones_reacciones').select('publicacion_id, tipo').eq('usuario_id', session.user.id);
                     if (!reaccResult.error && reaccResult.data) {
-                        reaccResult.data.forEach(function(r) {
-                            reaccionesUsuario[r.publicacion_id] = r.tipo;
-                        });
+                        reaccResult.data.forEach(function(r) { reaccionesUsuario[r.publicacion_id] = r.tipo; });
                     }
-                } catch(e) { console.warn('No se pudieron cargar reacciones:', e); }
-
+                } catch(e) {}
                 var conteosReacciones = {};
                 try {
-                    var allReacc = await client
-                        .from('publicaciones_reacciones')
-                        .select('publicacion_id, tipo');
-
+                    var allReacc = await client.from('publicaciones_reacciones').select('publicacion_id, tipo');
                     if (!allReacc.error && allReacc.data) {
                         allReacc.data.forEach(function(r) {
                             if (!conteosReacciones[r.publicacion_id]) conteosReacciones[r.publicacion_id] = {};
                             conteosReacciones[r.publicacion_id][r.tipo] = (conteosReacciones[r.publicacion_id][r.tipo] || 0) + 1;
                         });
                     }
-                } catch(e) { console.warn('No se pudieron cargar conteos:', e); }
-
+                } catch(e) {}
                 publicaciones.forEach(function(p) {
                     var card = document.createElement('div');
                     card.className = 'publicacion-card';
-
                     var contenidoHtml = escapeHtmlPerfil(p.contenido || '');
                     if (p.media_url) {
-                        if (p.media_type === 'video') {
-                            contenidoHtml += '<video src="' + p.media_url + '" controls preload="metadata"></video>';
-                        } else if (p.media_type === 'imagen') {
-                            contenidoHtml += '<img src="' + p.media_url + '" alt="Imagen" loading="lazy" />';
-                        }
+                        if (p.media_type === 'video') contenidoHtml += '<video src="' + p.media_url + '" controls preload="metadata"></video>';
+                        else if (p.media_type === 'imagen') contenidoHtml += '<img src="' + p.media_url + '" alt="Imagen" loading="lazy" />';
                     }
-
                     var fecha = p.created_at ? new Date(p.created_at).toLocaleString() : '';
                     var reaccionUsuario = reaccionesUsuario[p.id] || null;
                     var conteos = conteosReacciones[p.id] || {};
-
                     var reaccionesHtml = '<div class="reacciones-bar" id="reacciones-' + p.id + '">';
                     EMOJIS_REACCION.forEach(function(emoji) {
                         var count = conteos[emoji] || 0;
@@ -1221,17 +1159,9 @@
                         reaccionesHtml += '<button class="reaccion-btn' + activa + '" onclick="reaccionarPublicacionPerfil(\'' + p.id + '\', \'' + emoji + '\')" title="Reaccionar ' + emoji + '">' + emoji + (count > 0 ? ' <span class="count">' + count + '</span>' : '') + '</button>';
                     });
                     reaccionesHtml += '</div>';
-
                     card.innerHTML =
-                        '<div class="header">' +
-                            '<div class="avatar">◈</div>' +
-                            '<div>' +
-                                '<div class="nombre">Mi publicación</div>' +
-                                '<div class="fecha">' + fecha + '</div>' +
-                            '</div>' +
-                        '</div>' +
-                        '<div class="contenido">' + contenidoHtml + '</div>' +
-                        reaccionesHtml +
+                        '<div class="header"><div class="avatar">◈</div><div><div class="nombre" data-clave="perfil_mis_publicaciones">Mi publicación</div><div class="fecha">' + fecha + '</div></div></div>' +
+                        '<div class="contenido">' + contenidoHtml + '</div>' + reaccionesHtml +
                         '<div class="stats">' +
                             '<span onclick="toggleComentariosPerfil(\'' + p.id + '\')">💬 Comentarios</span>' +
                             '<span onclick="eliminarMiPublicacion(\'' + p.id + '\')">🗑️ Eliminar</span>' +
@@ -1243,75 +1173,38 @@
                                 '<button onclick="enviarComentarioPerfil(\'' + p.id + '\')">Enviar</button>' +
                             '</div>' +
                         '</div>';
-
                     container.appendChild(card);
                 });
-
             } catch (error) {
                 console.error('Error cargando mis publicaciones:', error);
                 container.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h4>Error al cargar</h4><p>' + error.message + '</p></div>';
             }
         };
 
-        // ============================================================
-        // REACCIONAR CON EMOJIS REALES
-        // ============================================================
         window.reaccionarPublicacionPerfil = async function(postId, emoji) {
-            if (!EMOJIS_REACCION.includes(emoji)) {
-                if (window.showToast) window.showToast('⚠️ Emoji no válido', 'warning');
-                return;
-            }
-
+            if (!EMOJIS_REACCION.includes(emoji)) return;
             try {
                 var client = sb();
-                if (!client) { if (window.showToast) window.showToast('⚠️ Supabase no listo', 'error'); return; }
-
+                if (!client) return;
                 var sessionResult = await client.auth.getSession();
                 var session = sessionResult.data.session;
                 if (!session) { if (window.showToast) window.showToast('⚠️ Inicia sesión', 'error'); return; }
-
-                var existing = await client
-                    .from('publicaciones_reacciones')
-                    .select('id, tipo')
-                    .eq('publicacion_id', postId)
-                    .eq('usuario_id', session.user.id)
-                    .maybeSingle();
-
+                var existing = await client.from('publicaciones_reacciones').select('id, tipo').eq('publicacion_id', postId).eq('usuario_id', session.user.id).maybeSingle();
                 if (existing.data && existing.data.tipo === emoji) {
                     await client.from('publicaciones_reacciones').delete().eq('id', existing.data.id);
                     if (window.showToast) window.showToast('💔 Reacción eliminada', 'warning', 2000);
                 } else {
                     if (existing.data) {
-                        await client
-                            .from('publicaciones_reacciones')
-                            .update({ tipo: emoji })
-                            .eq('id', existing.data.id);
+                        await client.from('publicaciones_reacciones').update({ tipo: emoji }).eq('id', existing.data.id);
                     } else {
-                        var insert = await client.from('publicaciones_reacciones').insert({
-                            publicacion_id: postId,
-                            usuario_id: session.user.id,
-                            tipo: emoji
-                        });
-
-                        if (insert.error) {
-                            if (insert.error.code === '42P01') {
-                                if (window.showToast) window.showToast('❌ Tabla publicaciones_reacciones no existe', 'error');
-                            } else if (insert.error.code === '23514') {
-                                if (window.showToast) window.showToast('❌ Emoji no permitido por la tabla', 'error');
-                            } else {
-                                throw insert.error;
-                            }
-                            return;
-                        }
+                        var insert = await client.from('publicaciones_reacciones').insert({ publicacion_id: postId, usuario_id: session.user.id, tipo: emoji });
+                        if (insert.error) throw insert.error;
                     }
                     if (window.showToast) window.showToast(emoji + ' ¡Reacción registrada!', 'success', 2000);
                 }
-
                 await recargarBarraReacciones(postId);
-
             } catch (error) {
                 console.error('Error reaccionando:', error);
-                if (window.showToast) window.showToast('❌ Error: ' + error.message, 'error');
             }
         };
 
@@ -1319,28 +1212,19 @@
             try {
                 var client = sb();
                 if (!client) return;
-
                 var sessionResult = await client.auth.getSession();
                 var session = sessionResult.data.session;
                 if (!session) return;
-
-                var allReacc = await client
-                    .from('publicaciones_reacciones')
-                    .select('tipo, usuario_id')
-                    .eq('publicacion_id', postId);
-
+                var allReacc = await client.from('publicaciones_reacciones').select('tipo, usuario_id').eq('publicacion_id', postId);
                 if (allReacc.error) return;
-
                 var conteos = {};
                 var reaccionUsuario = null;
                 (allReacc.data || []).forEach(function(r) {
                     conteos[r.tipo] = (conteos[r.tipo] || 0) + 1;
                     if (r.usuario_id === session.user.id) reaccionUsuario = r.tipo;
                 });
-
                 var barra = document.getElementById('reacciones-' + postId);
                 if (!barra) return;
-
                 var html = '';
                 EMOJIS_REACCION.forEach(function(emoji) {
                     var count = conteos[emoji] || 0;
@@ -1348,14 +1232,9 @@
                     html += '<button class="reaccion-btn' + activa + '" onclick="reaccionarPublicacionPerfil(\'' + postId + '\', \'' + emoji + '\')" title="Reaccionar ' + emoji + '">' + emoji + (count > 0 ? ' <span class="count">' + count + '</span>' : '') + '</button>';
                 });
                 barra.innerHTML = html;
-            } catch(e) {
-                console.warn('Error recargando barra:', e);
-            }
+            } catch(e) {}
         }
 
-        // ============================================================
-        // COMENTARIOS
-        // ============================================================
         window.toggleComentariosPerfil = async function(publicacionId) {
             var container = document.getElementById('comentarios-container-' + publicacionId);
             if (!container) return;
@@ -1368,33 +1247,19 @@
             var lista = document.getElementById('comentarios-lista-' + publicacionId);
             if (!lista) return;
             lista.innerHTML = '<div style="font-size:0.7rem;color:var(--text-muted);padding:4px;">Cargando...</div>';
-
             try {
                 var client = sb();
                 if (!client) return;
-
-                var result = await client
-                    .from('publicaciones_comentarios')
-                    .select('*')
-                    .eq('publicacion_id', publicacionId)
-                    .order('created_at', { ascending: true });
-
+                var result = await client.from('publicaciones_comentarios').select('*').eq('publicacion_id', publicacionId).order('created_at', { ascending: true });
                 if (result.error && result.error.code === '42P01') {
-                    result = await client
-                        .from('muro_comentarios')
-                        .select('*')
-                        .eq('post_id', publicacionId)
-                        .order('created_at', { ascending: true });
+                    result = await client.from('muro_comentarios').select('*').eq('post_id', publicacionId).order('created_at', { ascending: true });
                 }
-
                 if (result.error && result.error.code !== '42P01') throw result.error;
-
                 var comentarios = result.data || [];
                 if (comentarios.length === 0) {
                     lista.innerHTML = '<div style="font-size:0.7rem;color:var(--text-muted);padding:4px;">Sin comentarios. ¡Sé el primero!</div>';
                     return;
                 }
-
                 lista.innerHTML = '';
                 comentarios.forEach(function(c) {
                     var item = document.createElement('div');
@@ -1402,16 +1267,9 @@
                     var nombre = escapeHtmlPerfil(c.nombre_usuario || c.usuario_nombre || 'Usuario');
                     var texto = escapeHtmlPerfil(c.contenido || '');
                     var fecha = c.created_at ? new Date(c.created_at).toLocaleString() : '';
-                    item.innerHTML =
-                        '<div class="avatar-mini">' + (nombre.charAt(0).toUpperCase() || '◈') + '</div>' +
-                        '<div class="contenido-comentario">' +
-                            '<div class="nombre">' + nombre + '</div>' +
-                            '<div class="texto">' + texto + '</div>' +
-                            '<div class="fecha">' + fecha + '</div>' +
-                        '</div>';
+                    item.innerHTML = '<div class="avatar-mini">' + (nombre.charAt(0).toUpperCase() || '◈') + '</div><div class="contenido-comentario"><div class="nombre">' + nombre + '</div><div class="texto">' + texto + '</div><div class="fecha">' + fecha + '</div></div>';
                     lista.appendChild(item);
                 });
-
             } catch (error) {
                 console.error('Error cargando comentarios:', error);
                 lista.innerHTML = '<div style="font-size:0.7rem;color:var(--danger);padding:4px;">Error al cargar comentarios</div>';
@@ -1421,45 +1279,24 @@
         window.enviarComentarioPerfil = async function(publicacionId) {
             var input = document.getElementById('comentario-input-' + publicacionId);
             var texto = input ? input.value.trim() : '';
-            if (!texto) { if (window.showToast) window.showToast('⚠️ Escribe un comentario', 'warning'); return; }
-
+            if (!texto) return;
             try {
                 var client = sb();
-                if (!client) { if (window.showToast) window.showToast('⚠️ Supabase no listo', 'error'); return; }
-
+                if (!client) return;
                 var sessionResult = await client.auth.getSession();
                 var session = sessionResult.data.session;
-                if (!session) { if (window.showToast) window.showToast('⚠️ Inicia sesión', 'error'); return; }
-
-                var payload = {
-                    publicacion_id: publicacionId,
-                    usuario_id: session.user.id,
-                    contenido: texto,
-                    created_at: new Date().toISOString()
-                };
-
+                if (!session) return;
+                var payload = { publicacion_id: publicacionId, usuario_id: session.user.id, contenido: texto, created_at: new Date().toISOString() };
                 var result = await client.from('publicaciones_comentarios').insert(payload);
-
                 if (result.error && result.error.code === '42P01') {
-                    var fallbackPayload = {
-                        post_id: publicacionId,
-                        usuario_id: session.user.id,
-                        contenido: texto,
-                        created_at: new Date().toISOString()
-                    };
-                    result = await client.from('muro_comentarios').insert(fallbackPayload);
+                    result = await client.from('muro_comentarios').insert({ post_id: publicacionId, usuario_id: session.user.id, contenido: texto, created_at: new Date().toISOString() });
                 }
-
                 if (result.error) throw new Error(result.error.message);
-
                 if (input) input.value = '';
                 if (window.showToast) window.showToast('💬 Comentario publicado', 'success');
-
                 await cargarComentariosPerfil(publicacionId);
-
             } catch (error) {
                 console.error('Error enviando comentario:', error);
-                if (window.showToast) window.showToast('❌ Error al comentar: ' + error.message, 'error');
             }
         };
 
@@ -1474,20 +1311,14 @@
                 await cargarMisPublicaciones();
             } catch (error) {
                 console.error('Error eliminando:', error);
-                if (window.showToast) window.showToast('❌ Error al eliminar: ' + error.message, 'error');
             }
         };
 
         function escapeHtmlPerfil(texto) {
             if (!texto) return '';
-            return String(texto)
-                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;').replace(/'/g, '&#039;').replace(/\n/g, '<br>');
+            return String(texto).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;').replace(/\n/g, '<br>');
         }
 
-        // ============================================================
-        // INICIALIZACIÓN
-        // ============================================================
         document.addEventListener('DOMContentLoaded', function() {
             var intentos = 0;
             function intentarCargar() {
@@ -1496,12 +1327,9 @@
                 } else if (intentos < 30) {
                     intentos++;
                     setTimeout(intentarCargar, 500);
-                } else {
-                    console.warn('Supabase no se inicializó después de 15s');
                 }
             }
             intentarCargar();
-
             document.addEventListener('click', function(e) {
                 var picker = document.getElementById('emojiPickerPerfil');
                 if (picker && picker.classList.contains('show')) {
@@ -1511,7 +1339,6 @@
                 }
             });
         });
-
     })();
     </script>
 </body>
