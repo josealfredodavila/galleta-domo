@@ -908,15 +908,15 @@
     </script>
 
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+
+    <!-- ✅ ORDEN CORREGIDO: idiomas.js PRIMERO, luego perfil.js -->
+    <script src="/features/shared/js/idiomas.js"></script>
     <script src="/features/perfil/perfil.js"></script>
 
     <!-- ================================================================ -->
-    <!-- SISTEMA DE IDIOMAS - CARGAR TRADUCCIONES                       -->
+    <!-- INICIALIZAR SISTEMA DE IDIOMAS                                   -->
     <!-- ================================================================ -->
-    <script src="/features/shared/js/idiomas.js"></script>
-
     <script>
-        // Inicializar idiomas al cargar el perfil
         document.addEventListener('DOMContentLoaded', function() {
             setTimeout(async () => {
                 try {
