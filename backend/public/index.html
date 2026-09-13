@@ -344,15 +344,15 @@
             <a href="/" class="logo">
                 <span class="logo-hex">◈</span>
                 <span class="logo-text">Sariel<span>'s</span></span>
-                <a href="/info/web3.html" class="logo-badge" target="_blank" rel="noopener noreferrer">✦ WEB3</a>
+                <a href="/info/web3.html" class="logo-badge" target="_blank" rel="noopener noreferrer" data-clave="logo_badge_web3">✦ WEB3</a>
             </a>
             <div class="header-actions">
-                <a href="https://polygon.technology/" target="_blank" rel="noopener noreferrer" class="network-badge"><span class="dot"></span> Polygon</a>
+                <a href="https://polygon.technology/" target="_blank" rel="noopener noreferrer" class="network-badge"><span class="dot"></span> <span data-clave="network_polygon">Polygon</span></a>
                 
                 <div class="idioma-selector">
                     <span>🌐</span>
-                    <select id="selectorIdioma" onchange="cambiarIdioma(this.value)">
-                        <option value="">Cargando idiomas...</option>
+                    <select id="selectorIdioma" onchange="cambiarIdioma(this.value)" data-clave-title="selector_idioma_titulo" title="Seleccionar idioma">
+                        <option value="" data-clave="selector_cargando">Cargando idiomas...</option>
                     </select>
                 </div>
                 
@@ -409,7 +409,7 @@
                     <div class="panel-header"><h2 data-clave="comprar_domo_titulo">◈ Comprar Domo</h2><span class="panel-badge" data-clave="comprar_domo_badge">Nuevo</span></div>
                     <div class="panel-body">
                         <div class="domo-card">
-                            <span class="domo-price">75 MXN</span>
+                            <span class="domo-price" data-clave="comprar_domo_precio">75 MXN</span>
                             <div class="qty-control">
                                 <button class="qty-btn" id="decreaseQty">−</button>
                                 <span class="qty-value" id="domoQuantity">1</span>
@@ -418,11 +418,11 @@
                             <button class="btn btn-gold" style="width:100%;" id="buyDomo" onclick="comprarDomo()" data-clave="comprar_domo_btn">Comprar Domo</button>
                             
                             <p style="font-size:0.55rem;color:var(--text-muted);margin-top:8px;line-height:1.5;">
-                                <span data-clave="comprar_domo_disclaimer_1">◈ Recibes</span> <strong style="color:var(--gold);">1 ES.stoks</strong> <span data-clave="comprar_domo_disclaimer_2">por domo · ES.stoks es</span> <strong style="color:var(--gold);" data-clave="comprar_domo_disclaimer_3">transferible en P2P</strong> <span data-clave="comprar_domo_disclaimer_4">· NFT Domo</span> <strong style="color:var(--gold);" data-clave="comprar_domo_disclaimer_5">intransferible</strong> <span data-clave="comprar_domo_disclaimer_6">· Canje en Puebla</span> <strong style="color:var(--gold);" data-clave="comprar_domo_disclaimer_7">30 días</strong>
+                                <span data-clave="comprar_domo_disclaimer_1">◈ Recibes</span> <strong style="color:var(--gold);" data-clave="comprar_domo_disclaimer_token">1 ES.stoks</strong> <span data-clave="comprar_domo_disclaimer_2">por domo · ES.stoks es</span> <strong style="color:var(--gold);" data-clave="comprar_domo_disclaimer_3">transferible en P2P</strong> <span data-clave="comprar_domo_disclaimer_4">· NFT Domo</span> <strong style="color:var(--gold);" data-clave="comprar_domo_disclaimer_5">intransferible</strong> <span data-clave="comprar_domo_disclaimer_6">· Canje en Puebla</span> <strong style="color:var(--gold);" data-clave="comprar_domo_disclaimer_7">30 días</strong>
                             </p>
                             <p style="font-size:0.5rem;color:var(--text-muted);margin-top:4px;" data-clave="comprar_domo_disclaimer_8">◈ Venta física en Puebla · Sin envíos</p>
                             
-                            <p style="font-size:0.55rem;color:var(--text-muted);margin-top:6px;" data-clave="comprar_domo_wallet">◈ Conecta tu wallet en tu <a href="/features/perfil/perfil.html" style="color:var(--gold);">perfil</a></p>
+                            <p style="font-size:0.55rem;color:var(--text-muted);margin-top:6px;" data-clave="comprar_domo_wallet">◈ Conecta tu wallet en tu perfil</p>
                         </div>
                     </div>
                 </section>
@@ -434,9 +434,9 @@
                             <div class="status-item"><div class="status-label" data-clave="estado_domos">◈ Domos</div><div class="status-value" id="domosCount">0</div></div>
                             <div class="status-item"><div class="status-label" data-clave="estado_tokens">◈ Es.stoks</div><div class="status-value" id="tokensCount">0</div></div>
                             <div class="status-item" style="grid-column: span 2;"><div class="status-label" data-clave="estado_progreso">◈ Progreso NFT</div><div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%;"></div></div><span id="progressText">0 / 12</span></div>
-                            <div class="status-item" style="grid-column: span 2;"><div class="status-label" data-clave="estado_nft">◈ NFT</div><div class="status-value" id="haCanjeado">No</div></div>
+                            <div class="status-item" style="grid-column: span 2;"><div class="status-label" data-clave="estado_nft">◈ NFT</div><div class="status-value" id="haCanjeado" data-clave="estado_nft_no">No</div></div>
                         </div>
-                        <div style="font-size:0.6rem;color:var(--text-muted);text-align:center;margin-top:8px;" data-clave="estado_canjea">Canjea tu NFT desde tu <a href="/features/perfil/perfil.html" style="color:var(--gold);">perfil</a></div>
+                        <div style="font-size:0.6rem;color:var(--text-muted);text-align:center;margin-top:8px;" data-clave="estado_canjea">Canjea tu NFT desde tu perfil</div>
                     </div>
                 </section>
             </div>
@@ -501,14 +501,14 @@
         </div>
 
         <footer class="footer">
-            <span><span class="brand">◈ Sariel's</span> · Sabor al Paladar · WEB3</span>
+            <span><span class="brand">◈ Sariel's</span> <span data-clave="footer_eslogan">· Sabor al Paladar · WEB3</span></span>
             <div class="footer-links">
                 <a href="/terminos.html" data-clave="footer_terminos">◈ Términos</a>
                 <a href="/privacidad.html" data-clave="footer_privacidad">◈ Privacidad</a>
                 <a href="/cookies.html" data-clave="footer_cookies">◈ Cookies</a>
                 <a href="/eliminar-cuenta.html" data-clave="footer_eliminar_cuenta">◈ Eliminar cuenta</a>
                 <a href="/live-terminos.html" data-clave="footer_live_terminos">◉ Live Términos</a>
-                <span style="opacity:0.3;">⚡ Polygon</span>
+                <span style="opacity:0.3;" data-clave="footer_polygon">⚡ Polygon</span>
             </div>
         </footer>
     </div>
@@ -523,11 +523,12 @@
         <strong>⚠️ Error detectado:</strong>
         <span id="errorBannerText"></span>
         <button onclick="document.getElementById('errorBanner').style.display='none'"
-            style="float:right; background:none; border:1px solid #fff; color:#fff; border-radius:6px; padding:2px 10px; cursor:pointer;">
+            style="float:right; background:none; border:1px solid #fff; color:#fff; border-radius:6px; padding:2px 10px; cursor:pointer;" data-clave="cerrar">
             Cerrar
         </button>
     </div>
 
+    <!-- ✅ Orden correcto: Supabase → QRCode → app.js → idiomas.js (ANTES del inline) -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <script src="/app.js"></script>
@@ -679,11 +680,22 @@
             const increaseBtn = document.getElementById('increaseQty');
             if (decreaseBtn) { decreaseBtn.addEventListener('click', () => { let val = parseInt(qtyDisplay.textContent, 10) || 1; if (val > 1) qtyDisplay.textContent = val - 1; }); }
             if (increaseBtn) { increaseBtn.addEventListener('click', () => { let val = parseInt(qtyDisplay.textContent, 10) || 1; if (val < 10) qtyDisplay.textContent = val + 1; }); }
+
+            // ✅ Inicializar idiomas
             setTimeout(async () => {
                 try {
-                    if (typeof window.inicializarIdiomas === 'function') { await window.inicializarIdiomas(); }
-                    else if (typeof window.cargarSelectorIdiomas === 'function') { await window.cargarSelectorIdiomas(); }
-                } catch (error) { console.error('Error inicializando idiomas:', error); }
+                    if (typeof window.inicializarIdiomas === 'function') {
+                        await window.inicializarIdiomas();
+                        console.log('🌐 idiomas.js: inicializarIdiomas() OK');
+                    } else if (typeof window.cargarSelectorIdiomas === 'function') {
+                        await window.cargarSelectorIdiomas();
+                        console.log('🌐 idiomas.js: cargarSelectorIdiomas() OK');
+                    } else {
+                        console.warn('⚠️ idiomas.js no cargó ninguna función de inicialización');
+                    }
+                } catch (error) {
+                    console.error('Error inicializando idiomas:', error);
+                }
             }, 300);
         });
     </script>
