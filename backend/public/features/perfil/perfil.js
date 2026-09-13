@@ -19,7 +19,7 @@ const supabaseClient = window.supabase.createClient(
 // ✅ Exponer globalmente para otros scripts
 window.supabaseClient = supabaseClient;
 
-// ✅ Alias interno para no tener que cambiar todas las referencias
+// ✅ Alias interno
 const supabase = supabaseClient;
 
 // ================================================================
@@ -284,7 +284,7 @@ async function cambiarEstado(online) {
 }
 
 // ================================================================
-// AMIGOS EN TIEMPO REAL (con fallback a usuarios)
+// AMIGOS EN TIEMPO REAL
 // ================================================================
 let canalAmigos = null;
 
@@ -475,7 +475,7 @@ function haceTiempo(fecha) {
 }
 
 // ================================================================
-// GESTIÓN DE CONEXIÓN (WiFi / Datos Móviles)
+// GESTIÓN DE CONEXIÓN
 // ================================================================
 let estadoConexion = {
     tipo: 'wifi',
@@ -644,7 +644,7 @@ function actualizarUIConexion(estado) {
             conexionStatus.style.color = 'var(--success)';
         } else {
             conexionStatus.innerHTML = '📶 Datos Móviles';
-            conexionStatus.style.color = 'var(--quantum)';
+            conexionStatus.style.color = 'var(--cyan)';
         }
     }
 
@@ -789,10 +789,7 @@ async function cargarDatosESIM(iccid) {
 
     try {
         const session = await getSession();
-        if (!session) {
-            console.warn('⚠️ No hay sesión para cargar datos eSIM');
-            return null;
-        }
+        if (!session) return null;
 
         showToast('⏳ Actualizando datos de eSIM...', '', 3000);
 
