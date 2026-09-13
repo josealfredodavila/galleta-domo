@@ -216,6 +216,27 @@
         #amigosContainer .amigo-item .info .estado { font-size: 0.6rem; }
         #amigosContainer .amigo-item .badge-online { background: rgba(0, 214, 143, 0.1); border: 1px solid rgba(0, 214, 143, 0.2); border-radius: 20px; padding: 2px 10px; font-size: 0.5rem; color: var(--success); font-weight: 600; }
 
+        /* ===== SARIEL'S PRO ===== */
+        .pro-section { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius); padding: 15px; margin-top: 15px; }
+        .pro-section .pro-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+        .pro-section .pro-header h3 { font-size: 0.85rem; font-weight: 600; color: var(--gold); }
+        .pro-section .pro-badge { font-size: 0.55rem; background: rgba(212, 175, 55, 0.12); color: var(--gold); padding: 2px 12px; border-radius: 20px; font-weight: 600; text-transform: uppercase; border: 1px solid rgba(212, 175, 55, 0.08); letter-spacing: 0.5px; font-family: 'Orbitron', monospace; }
+        .pro-section .pro-current { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; padding-bottom: 12px; border-bottom: 1px solid var(--glass-border); margin-bottom: 14px; font-size: 0.8rem; }
+        .pro-section .pro-current .pro-label { color: var(--text-muted); }
+        .pro-section .pro-current .pro-value { color: var(--gold); font-weight: 700; margin-left: 6px; }
+        .pro-section .pro-current .pro-meta { color: var(--text-muted); font-size: 0.7rem; }
+        .pro-section .pro-upgrade { background: linear-gradient(135deg, rgba(212, 175, 55, 0.06), rgba(15, 45, 26, 0.4)); border: 1px solid rgba(212, 175, 55, 0.25); border-radius: 14px; padding: 16px; text-align: center; }
+        .pro-section .pro-upgrade-title { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 8px; }
+        .pro-section .pro-upgrade-icon { font-size: 1.2rem; color: var(--gold); }
+        .pro-section .pro-upgrade-name { font-family: 'Orbitron', monospace; font-size: 1.1rem; font-weight: 700; color: var(--gold); letter-spacing: 1px; }
+        .pro-section .pro-upgrade-price { font-family: 'Orbitron', monospace; font-size: 1.15rem; font-weight: 700; color: var(--text-primary); margin: 8px 0 4px; }
+        .pro-section .pro-upgrade-period { font-size: 0.75rem; color: var(--text-muted); font-weight: 400; }
+        .pro-section .pro-upgrade-features { font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 14px; }
+        .pro-section .pro-btn { width: 100%; justify-content: center; padding: 12px; font-size: 0.8rem; }
+        .pro-section .pro-active-info { text-align: center; padding: 12px; background: rgba(0, 214, 143, 0.06); border: 1px solid rgba(0, 214, 143, 0.2); border-radius: 12px; }
+        .pro-section .pro-active-badge { color: var(--success); font-weight: 700; font-family: 'Orbitron', monospace; font-size: 0.85rem; margin-bottom: 6px; }
+        .pro-section .pro-active-expira { font-size: 0.7rem; color: var(--text-muted); }
+
         .activity-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid rgba(212, 175, 55, 0.04); transition: var(--transition); }
         .activity-item:hover { background: rgba(255, 255, 255, 0.02); padding-left: 8px; border-radius: 8px; }
         .activity-item .icon { font-size: 1.2rem; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: rgba(212, 175, 55, 0.05); flex-shrink: 0; }
@@ -419,6 +440,51 @@
                 <div id="amigosContainer"></div>
             </div>
 
+            <!-- ============================================================ -->
+            <!-- ✦ PANEL SARIEL'S PRO ✦ (entre estado y conexión)             -->
+            <!-- ============================================================ -->
+            <div class="pro-section" id="proSection">
+                <div class="pro-header">
+                    <h3>⟡ Sariel's Pro</h3>
+                    <span class="pro-badge">MEMBRESÍA</span>
+                </div>
+                <div class="pro-body">
+                    <div class="pro-current">
+                        <div>
+                            <span class="pro-label">Plan actual:</span>
+                            <span class="pro-value" id="planActual">Gratis</span>
+                        </div>
+                        <div>
+                            <span class="pro-meta" id="planMeta">1 GB · 90 días</span>
+                        </div>
+                    </div>
+
+                    <div class="pro-upgrade" id="proUpgradeCard">
+                        <div class="pro-upgrade-title">
+                            <span class="pro-upgrade-icon">✦</span>
+                            <span class="pro-upgrade-name">Sariel's Pro</span>
+                        </div>
+                        <div class="pro-upgrade-price">
+                            <span id="proPrecio">$60 MXN</span>
+                            <span class="pro-upgrade-period">/ 30 días</span>
+                        </div>
+                        <div class="pro-upgrade-features" id="proFeatures">
+                            Conservación ampliada · 5 GB
+                        </div>
+                        <button class="btn btn-gold pro-btn" onclick="contratarPro()" id="btnContratarPro">
+                            🚀 Contratar Pro por $60 MXN
+                        </button>
+                    </div>
+
+                    <div class="pro-active-info" id="proActiveInfo" style="display:none;">
+                        <div class="pro-active-badge">✅ PRO ACTIVO</div>
+                        <div class="pro-active-expira">
+                            Expira: <span id="proExpira">--</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="conexion-section">
                 <div class="conexion-header">
                     <div class="conexion-info">
@@ -446,7 +512,6 @@
                 <button class="tab-btn" onclick="cambiarTab('qr')">📷 Escanear QR</button>
             </div>
 
-            <!-- ✦ NUEVO ✦ PESTAÑA MIS PUBLICACIONES COMPLETA -->
             <div id="tab-mis-publicaciones" class="tab-content active">
                 <div class="panel">
                     <div class="panel-header">
@@ -506,7 +571,6 @@
                 </div>
             </div>
 
-            <!-- ✦ NUEVO ✦ PESTAÑA ACTIVIDAD CON HISTORIAL -->
             <div id="tab-actividad" class="tab-content">
                 <div class="panel">
                     <div class="panel-header">
@@ -521,7 +585,6 @@
                         </div>
                     </div>
                 </div>
-                <!-- ✦ NUEVO ✦ Historial de transacciones -->
                 <div class="panel">
                     <div class="panel-header">
                         <h3>◈ Historial de transacciones</h3>
@@ -537,7 +600,6 @@
                 </div>
             </div>
 
-            <!-- ✦ NUEVO ✦ PESTAÑA TOKENS COMPLETA -->
             <div id="tab-tokens" class="tab-content">
                 <div class="panel">
                     <div class="panel-header">
@@ -672,7 +734,6 @@
                 </div>
             </div>
 
-            <!-- ✦ NUEVO ✦ PESTAÑA eSIM COMPLETA -->
             <div id="tab-esim" class="tab-content">
                 <div class="panel">
                     <div class="panel-header">
@@ -737,7 +798,6 @@
                 </div>
             </div>
 
-            <!-- ✦ NUEVO ✦ PESTAÑA QR COMPLETA -->
             <div id="tab-qr" class="tab-content">
                 <div class="panel">
                     <div class="panel-header">
@@ -975,7 +1035,6 @@
 
         // ============================================================
         // PUBLICAR DESDE EL PERFIL
-        // ✅ FIX: media_type = null si no hay archivo
         // ============================================================
         window.publicarDesdePerfil = async function() {
             var btn = document.getElementById('btnPublicarPerfil');
@@ -1000,7 +1059,6 @@
                 var mediaUrl = null;
                 var mediaType = null;
 
-                // Subir imagen si existe
                 if (archivosSeleccionados.imagen) {
                     if (window.showToast) window.showToast('⏳ Subiendo imagen...', '', 5000);
                     var file = archivosSeleccionados.imagen;
@@ -1018,7 +1076,6 @@
                     mediaType = 'imagen';
                 }
 
-                // Subir video si existe
                 if (archivosSeleccionados.video) {
                     if (window.showToast) window.showToast('⏳ Subiendo video (puede tardar)...', '', 15000);
                     var vfile = archivosSeleccionados.video;
@@ -1036,7 +1093,6 @@
                     mediaType = 'video';
                 }
 
-                // ✅ FIX: media_type = null (no 'texto')
                 var insertPayload = {
                     usuario_id: session.user.id,
                     contenido: contenido || '',
@@ -1047,9 +1103,7 @@
 
                 var insertResult = await client.from('publicaciones').insert(insertPayload).select().single();
 
-                // Fallback si falla por columna estado
                 if (insertResult.error) {
-                    console.warn('Fallo con estado, reintentando sin estado...');
                     delete insertPayload.estado;
                     var fb = await client.from('publicaciones').insert(insertPayload).select().single();
                     if (fb.error) throw new Error(fb.error.message);
@@ -1057,7 +1111,6 @@
 
                 if (window.showToast) window.showToast('✅ ¡Publicación creada!', 'success');
 
-                // Limpiar
                 if (input) input.value = '';
                 archivosSeleccionados.imagen = null;
                 archivosSeleccionados.video = null;
@@ -1077,8 +1130,6 @@
 
         // ============================================================
         // CARGAR MIS PUBLICACIONES
-        // ✅ FIX: reintentos si Supabase tarda
-        // ✅ FIX: usa la tabla real 'publicaciones'
         // ============================================================
         window.cargarMisPublicaciones = async function() {
             var container = document.getElementById('misPublicacionesList');
@@ -1118,7 +1169,6 @@
 
                 container.innerHTML = '';
 
-                // Cargar reacciones del usuario para saber cuáles marcó
                 var reaccionesUsuario = {};
                 try {
                     var reaccResult = await client
@@ -1133,7 +1183,6 @@
                     }
                 } catch(e) { console.warn('No se pudieron cargar reacciones:', e); }
 
-                // Cargar conteo de reacciones por publicación
                 var conteosReacciones = {};
                 try {
                     var allReacc = await client
@@ -1165,7 +1214,6 @@
                     var reaccionUsuario = reaccionesUsuario[p.id] || null;
                     var conteos = conteosReacciones[p.id] || {};
 
-                    // Barra de reacciones con los 9 emojis
                     var reaccionesHtml = '<div class="reacciones-bar" id="reacciones-' + p.id + '">';
                     EMOJIS_REACCION.forEach(function(emoji) {
                         var count = conteos[emoji] || 0;
@@ -1207,8 +1255,6 @@
 
         // ============================================================
         // REACCIONAR CON EMOJIS REALES
-        // ✅ FIX: usa los 9 emojis reales de la tabla
-        // ✅ FIX: toggle (si ya reaccionó, quita; si no, agrega)
         // ============================================================
         window.reaccionarPublicacionPerfil = async function(postId, emoji) {
             if (!EMOJIS_REACCION.includes(emoji)) {
@@ -1224,7 +1270,6 @@
                 var session = sessionResult.data.session;
                 if (!session) { if (window.showToast) window.showToast('⚠️ Inicia sesión', 'error'); return; }
 
-                // Buscar si ya existe reacción con ese emoji
                 var existing = await client
                     .from('publicaciones_reacciones')
                     .select('id, tipo')
@@ -1232,21 +1277,16 @@
                     .eq('usuario_id', session.user.id)
                     .maybeSingle();
 
-                var barra = document.getElementById('reacciones-' + postId);
-
                 if (existing.data && existing.data.tipo === emoji) {
-                    // Quitar reacción
                     await client.from('publicaciones_reacciones').delete().eq('id', existing.data.id);
                     if (window.showToast) window.showToast('💔 Reacción eliminada', 'warning', 2000);
                 } else {
-                    // Si existe con otro emoji, actualizar
                     if (existing.data) {
                         await client
                             .from('publicaciones_reacciones')
                             .update({ tipo: emoji })
                             .eq('id', existing.data.id);
                     } else {
-                        // Insertar nueva
                         var insert = await client.from('publicaciones_reacciones').insert({
                             publicacion_id: postId,
                             usuario_id: session.user.id,
@@ -1267,7 +1307,6 @@
                     if (window.showToast) window.showToast(emoji + ' ¡Reacción registrada!', 'success', 2000);
                 }
 
-                // Recargar solo la barra de reacciones
                 await recargarBarraReacciones(postId);
 
             } catch (error) {
@@ -1316,8 +1355,6 @@
 
         // ============================================================
         // COMENTARIOS
-        // ✅ FIX: intenta primero publicaciones_comentarios, si no
-        // existe usa muro_comentarios con post_id como texto
         // ============================================================
         window.toggleComentariosPerfil = async function(publicacionId) {
             var container = document.getElementById('comentarios-container-' + publicacionId);
@@ -1336,14 +1373,12 @@
                 var client = sb();
                 if (!client) return;
 
-                // Intentar tabla nueva primero
                 var result = await client
                     .from('publicaciones_comentarios')
                     .select('*')
                     .eq('publicacion_id', publicacionId)
                     .order('created_at', { ascending: true });
 
-                // Fallback a muro_comentarios
                 if (result.error && result.error.code === '42P01') {
                     result = await client
                         .from('muro_comentarios')
@@ -1396,7 +1431,6 @@
                 var session = sessionResult.data.session;
                 if (!session) { if (window.showToast) window.showToast('⚠️ Inicia sesión', 'error'); return; }
 
-                // Intentar publicaciones_comentarios primero
                 var payload = {
                     publicacion_id: publicacionId,
                     usuario_id: session.user.id,
@@ -1406,7 +1440,6 @@
 
                 var result = await client.from('publicaciones_comentarios').insert(payload);
 
-                // Fallback a muro_comentarios
                 if (result.error && result.error.code === '42P01') {
                     var fallbackPayload = {
                         post_id: publicacionId,
