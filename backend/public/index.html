@@ -327,7 +327,7 @@
                 <div class="idioma-selector">
                     <span>🌐</span>
                     <select id="selectorIdioma" onchange="cambiarIdioma(this.value)">
-                        <option value="es-MX" selected>🌐 Español</option>
+                        <option value="">Cargando idiomas...</option>
                     </select>
                 </div>
                 
@@ -504,7 +504,7 @@
     </div>
 
     <!-- ============================================================ -->
-    <!-- SCRIPTS - ORDEN CORRECTO                                     -->
+    <!-- SCRIPTS                                                       -->
     <!-- ============================================================ -->
 
     <!-- 1. Supabase -->
@@ -513,11 +513,14 @@
     <!-- 2. QRCode.js -->
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 
-    <!-- 3. App.js - ÚNICO sistema de auth -->
+    <!-- 3. App.js (auth, wallet, tokens) -->
     <script src="/app.js"></script>
 
+    <!-- 4. Idiomas (selector + traducciones) -->
+    <script src="/features/shared/js/idiomas.js"></script>
+
     <!-- ============================================================ -->
-    <!-- SCRIPT INLINE - SOLO UI, SIN AUTH DUPLICADO                   -->
+    <!-- SCRIPT INLINE - SOLO UI                                        -->
     <!-- ============================================================ -->
     <script>
         // ================================================================
@@ -581,10 +584,7 @@
         }
 
         window.addEventListener('error', function (event) {
-            mostrarErrorEnPantalla(
-                (event.message || 'Error desconocido') +
-                ' — línea ' + event.lineno
-            );
+            mostrarErrorEnPantalla((event.message || 'Error desconocido') + ' — línea ' + event.lineno);
         });
 
         window.addEventListener('unhandledrejection', function (event) {
@@ -603,9 +603,6 @@
             if (tabBtn) tabBtn.classList.add('active');
         }
 
-        // ================================================================
-        // UI - MOSTRAR LOGIN/REGISTRO
-        // ================================================================
         function mostrarLogin() {
             document.getElementById('registerCard').style.display = 'none';
             document.getElementById('loginCard').style.display = 'block';
@@ -617,19 +614,7 @@
         }
 
         // ================================================================
-        // UI - CAMBIAR IDIOMA (SOLO CAMBIA SELECTOR, NO AUTH)
-        // ================================================================
-        function cambiarIdioma(idiomaId) {
-            try {
-                localStorage.setItem('idioma_preferido', idiomaId);
-                window.location.reload();
-            } catch (error) {
-                console.error('Error cambiando idioma:', error);
-            }
-        }
-
-        // ================================================================
-        // AUTH - WRAPPERS QUE LLAMAN A LA CLASE app (app.js)
+        // AUTH - WRAPPERS QUE LLAMAN A app.js
         // ================================================================
         async function registrarUsuarioGlobal() {
             const email = document.getElementById('regEmail').value.trim();
@@ -694,7 +679,7 @@
             container.innerHTML = '';
 
             if (!data) {
-                window.showToast('⚠️ Introduce datos para el QR', 'warning');
+                if (window.showToast) window.showToast('⚠️ Introduce datos para el QR', 'warning');
                 return;
             }
 
@@ -707,9 +692,9 @@
                     colorLight: '#ffffff',
                     correctLevel: QRCode.CorrectLevel.H
                 });
-                window.showToast('✅ QR generado correctamente');
+                if (window.showToast) window.showToast('✅ QR generado correctamente');
             } catch (error) {
-                window.showToast('❌ Error generando QR', 'error');
+                if (window.showToast) window.showToast('❌ Error generando QR', 'error');
             }
         }
 
@@ -722,7 +707,7 @@
             const btn = document.getElementById('buyDomo');
 
             if (!window.app || !window.app.usuario) {
-                window.showToast('⚠️ Inicia sesión para comprar', 'error');
+                if (window.showToast) window.showToast('⚠️ Inicia sesión para comprar', 'error');
                 return;
             }
 
@@ -763,7 +748,7 @@
 
             } catch (e) {
                 console.error('Error comprando domo:', e);
-                window.showToast('❌ ' + (e.message || 'No se pudo crear el pago'), 'error');
+                if (window.showToast) window.showToast('❌ ' + (e.message || 'No se pudo crear el pago'), 'error');
             } finally {
                 btn.disabled = false;
                 btn.textContent = 'Comprar Domo';
@@ -771,12 +756,11 @@
         }
 
         // ================================================================
-        // EXPONER FUNCIONES GLOBALES (solo UI)
+        // EXPONER GLOBALES
         // ================================================================
         window.cambiarTab = cambiarTab;
         window.mostrarLogin = mostrarLogin;
         window.mostrarRegistro = mostrarRegistro;
-        window.cambiarIdioma = cambiarIdioma;
         window.registrarUsuarioGlobal = registrarUsuarioGlobal;
         window.iniciarSesionGlobal = iniciarSesionGlobal;
         window.cerrarSesionGlobal = cerrarSesionGlobal;
@@ -785,9 +769,10 @@
         window.mostrarErrorEnPantalla = mostrarErrorEnPantalla;
 
         // ================================================================
-        // CONTROLES DE CANTIDAD
+        // INICIALIZACIÓN
         // ================================================================
         document.addEventListener('DOMContentLoaded', function() {
+            // Controles de cantidad
             const qtyDisplay = document.getElementById('domoQuantity');
             const decreaseBtn = document.getElementById('decreaseQty');
             const increaseBtn = document.getElementById('increaseQty');
@@ -804,6 +789,21 @@
                     if (val < 10) qtyDisplay.textContent = val + 1;
                 });
             }
+
+            // Cargar selector de idiomas (con delay para asegurar que idiomas.js esté listo)
+            setTimeout(async () => {
+                try {
+                    if (typeof window.inicializarIdiomas === 'function') {
+                        await window.inicializarIdiomas();
+                    } else if (typeof window.cargarSelectorIdiomas === 'function') {
+                        await window.cargarSelectorIdiomas();
+                    } else {
+                        console.warn('⚠️ No hay función para inicializar idiomas');
+                    }
+                } catch (error) {
+                    console.error('Error inicializando idiomas:', error);
+                }
+            }, 300);
         });
     </script>
 </body>
