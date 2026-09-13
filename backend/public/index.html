@@ -8,6 +8,28 @@
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     
     <style>
+        html:not(.auth-ready) .app { display: none !important; }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script>
+        (function () {
+            'use strict';
+            var GUARD_SUPABASE_URL = 'https://zultnlogdoajehbswlih.supabase.co';
+            var GUARD_SUPABASE_KEY = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
+            function revelarPagina() { document.documentElement.classList.add('auth-ready'); }
+            var salvaguarda = setTimeout(revelarPagina, 4000);
+            try {
+                if (typeof window.supabase === 'undefined') { clearTimeout(salvaguarda); revelarPagina(); return; }
+                var guardClient = window.supabase.createClient(GUARD_SUPABASE_URL, GUARD_SUPABASE_KEY);
+                guardClient.auth.getSession().then(function (resultado) {
+                    clearTimeout(salvaguarda);
+                    revelarPagina();
+                }).catch(function () { clearTimeout(salvaguarda); revelarPagina(); });
+            } catch (e) { clearTimeout(salvaguarda); revelarPagina(); }
+        })();
+    </script>
+    
+    <style>
         :root {
             --gold: #D4AF37;
             --gold-dark: #b8923a;
@@ -523,21 +545,16 @@
     <!-- SCRIPT INLINE - SOLO UI                                        -->
     <!-- ============================================================ -->
     <script>
-        // ================================================================
-        // ESTRELLAS DE FONDO
-        // ================================================================
         (function initStars() {
             const canvas = document.getElementById('stars-canvas');
             if (!canvas) return;
             const ctx = canvas.getContext('2d');
             let stars = [];
-
             function resizeCanvas() {
                 canvas.width = window.innerWidth;
                 canvas.height = window.innerHeight;
                 createStars();
             }
-
             function createStars() {
                 const amount = Math.min(180, Math.floor(window.innerWidth * window.innerHeight / 9000));
                 stars = [];
@@ -551,7 +568,6 @@
                     });
                 }
             }
-
             function drawStars(time) {
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 stars.forEach(function(star) {
@@ -565,15 +581,11 @@
                 ctx.globalAlpha = 1;
                 requestAnimationFrame(drawStars);
             }
-
             window.addEventListener('resize', resizeCanvas);
             resizeCanvas();
             requestAnimationFrame(drawStars);
         })();
 
-        // ================================================================
-        // ERRORES GLOBALES
-        // ================================================================
         function mostrarErrorEnPantalla(mensaje) {
             const banner = document.getElementById('errorBanner');
             const texto = document.getElementById('errorBannerText');
@@ -582,18 +594,13 @@
                 banner.style.display = 'block';
             }
         }
-
         window.addEventListener('error', function (event) {
             mostrarErrorEnPantalla((event.message || 'Error desconocido') + ' — línea ' + event.lineno);
         });
-
         window.addEventListener('unhandledrejection', function (event) {
             mostrarErrorEnPantalla('Promesa rechazada: ' + (event.reason?.message || event.reason));
         });
 
-        // ================================================================
-        // UI - TABS
-        // ================================================================
         function cambiarTab(tab) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
@@ -607,28 +614,21 @@
             document.getElementById('registerCard').style.display = 'none';
             document.getElementById('loginCard').style.display = 'block';
         }
-
         function mostrarRegistro() {
             document.getElementById('registerCard').style.display = 'block';
             document.getElementById('loginCard').style.display = 'none';
         }
 
-        // ================================================================
-        // AUTH - WRAPPERS QUE LLAMAN A app.js
-        // ================================================================
         async function registrarUsuarioGlobal() {
             const email = document.getElementById('regEmail').value.trim();
             const password = document.getElementById('regPassword').value;
             const name = document.getElementById('regName').value.trim();
             const btn = document.getElementById('registerBtn');
-
             if (!window.app || typeof window.app.registrarUsuario !== 'function') {
                 console.error('❌ app.registrarUsuario no está disponible');
                 return;
             }
-
             if (btn) { btn.disabled = true; btn.textContent = '⏳ Creando...'; }
-
             try {
                 await window.app.registrarUsuario(email, password, name);
                 document.getElementById('regEmail').value = '';
@@ -645,14 +645,11 @@
             const email = document.getElementById('loginEmail').value.trim();
             const password = document.getElementById('loginPassword').value;
             const btn = document.getElementById('loginBtn');
-
             if (!window.app || typeof window.app.iniciarSesion !== 'function') {
                 console.error('❌ app.iniciarSesion no está disponible');
                 return;
             }
-
             if (btn) { btn.disabled = true; btn.textContent = '⏳ Entrando...'; }
-
             try {
                 await window.app.iniciarSesion(email, password);
                 document.getElementById('loginEmail').value = '';
@@ -670,19 +667,14 @@
             }
         }
 
-        // ================================================================
-        // QR - ADMIN
-        // ================================================================
         function generarQR() {
             const data = document.getElementById('qrData').value.trim();
             const container = document.getElementById('qrContainer');
             container.innerHTML = '';
-
             if (!data) {
                 if (window.showToast) window.showToast('⚠️ Introduce datos para el QR', 'warning');
                 return;
             }
-
             try {
                 new QRCode(container, {
                     text: data,
@@ -698,30 +690,22 @@
             }
         }
 
-        // ================================================================
-        // COMPRAR DOMO
-        // ================================================================
         async function comprarDomo() {
             const qtyEl = document.getElementById('domoQuantity');
             const qty = parseInt(qtyEl.textContent, 10) || 1;
             const btn = document.getElementById('buyDomo');
-
             if (!window.app || !window.app.usuario) {
                 if (window.showToast) window.showToast('⚠️ Inicia sesión para comprar', 'error');
                 return;
             }
-
             btn.disabled = true;
             btn.textContent = '⏳ Creando pago...';
-
             try {
                 const { data: sessionData, error: sessionError } = await window.supabase.auth.getSession();
                 if (sessionError) throw sessionError;
                 const accessToken = sessionData.session?.access_token;
                 if (!accessToken) throw new Error('Sesión no disponible');
-
                 const idempotencyKey = 'domo_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8);
-
                 const response = await fetch('/api/domos/comprar', {
                     method: 'POST',
                     headers: {
@@ -731,21 +715,16 @@
                     },
                     body: JSON.stringify({ cantidad: qty })
                 });
-
                 const result = await response.json().catch(() => ({}));
-
                 if (!response.ok || !result.success) {
                     throw new Error(result.error || 'No se pudo crear el pago');
                 }
-
                 const paymentUrl = result.data?.payment_url;
                 if (paymentUrl) {
                     window.location.href = paymentUrl;
                     return;
                 }
-
                 throw new Error('NOWPayments no devolvió un enlace de pago');
-
             } catch (e) {
                 console.error('Error comprando domo:', e);
                 if (window.showToast) window.showToast('❌ ' + (e.message || 'No se pudo crear el pago'), 'error');
@@ -755,9 +734,6 @@
             }
         }
 
-        // ================================================================
-        // EXPONER GLOBALES
-        // ================================================================
         window.cambiarTab = cambiarTab;
         window.mostrarLogin = mostrarLogin;
         window.mostrarRegistro = mostrarRegistro;
@@ -768,11 +744,7 @@
         window.comprarDomo = comprarDomo;
         window.mostrarErrorEnPantalla = mostrarErrorEnPantalla;
 
-        // ================================================================
-        // INICIALIZACIÓN
-        // ================================================================
         document.addEventListener('DOMContentLoaded', function() {
-            // Controles de cantidad
             const qtyDisplay = document.getElementById('domoQuantity');
             const decreaseBtn = document.getElementById('decreaseQty');
             const increaseBtn = document.getElementById('increaseQty');
@@ -790,15 +762,12 @@
                 });
             }
 
-            // Cargar selector de idiomas (con delay para asegurar que idiomas.js esté listo)
             setTimeout(async () => {
                 try {
                     if (typeof window.inicializarIdiomas === 'function') {
                         await window.inicializarIdiomas();
                     } else if (typeof window.cargarSelectorIdiomas === 'function') {
                         await window.cargarSelectorIdiomas();
-                    } else {
-                        console.warn('⚠️ No hay función para inicializar idiomas');
                     }
                 } catch (error) {
                     console.error('Error inicializando idiomas:', error);
