@@ -73,6 +73,7 @@ button,input{font:inherit}
 .toast.show{transform:none;opacity:1}
 .toast.error{border-color:var(--danger);color:var(--danger)}
 .toast.success{border-color:var(--success);color:var(--success)}
+.toast.warning{border-color:#ffaa00;color:#ffaa00}
 .call{display:none;position:fixed;inset:0;z-index:150;background:rgba(0,0,0,.96);padding:18px;align-items:center;justify-content:center;flex-direction:column}
 .call.show{display:flex}
 .videos{width:100%;max-width:1100px;display:flex;gap:15px;justify-content:center;align-items:center;flex-wrap:wrap}
@@ -128,9 +129,7 @@ button,input{font:inherit}
         <span>◈ Conversaciones</span>
         <button class="iconbtn" id="newChat" title="Nueva conversación">✎</button>
     </div>
-    <div id="conversationList">
-        <!-- Marquinhos se insertará dinámicamente -->
-    </div>
+    <div id="conversationList"></div>
 </aside>
 <section class="chat">
     <header class="chathead">
@@ -656,7 +655,7 @@ async function searchUsers(q){
         return;
     }
     if(!await auth())return;
-    const term=q.trim().replace(/[%_,]/g,' ');
+    const term=q.trim().replace(/[%_,\\]/g,' ').replace(/\s+/g,' ').trim();
     const r=await db.from('perfiles_publicos').select('id,nombre,handle,avatar_url').or(`nombre.ilike.%${term}%,handle.ilike.%${term}%`).neq('id',user.id).limit(12);
     if(r.error){console.error(r.error);toast('❌ Error al buscar usuarios','error');return}
 
@@ -756,6 +755,7 @@ function subscribeCall(id){
 
 async function incoming(data){
     if(call.active){await db.from('llamadas').update({estado:'rejected',finalizada_at:new Date().toISOString()}).eq('id',data.id);return;}
+    if(data.creador_id===user.id) return;
     incomingId=data.id;
     const p=await profile(data.creador_id);
     $('incomingName').textContent=p.nombre||'Usuario';
@@ -795,6 +795,9 @@ async function cleanupCall(){
     } catch(e) {}
     Object.assign(call,{room:null,id:null,active:false,audio:null,video:null,screen:null});
     $('callOverlay').classList.remove('show');
+    $('toggleMic').textContent='🎤';
+    $('toggleCam').textContent='📷';
+    $('toggleScreen').textContent='🖥️';
 }
 
 async function hangup(){
@@ -827,13 +830,19 @@ async function toggleScreen(){
 /* ============================================
    INIT
    ============================================ */
-function init(){
+async function init(){
     db=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{
         auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true},
         realtime:{params:{eventsPerSecond:10}}
     });
 
-    loadConversations();
+    // ✅ FIX BUG #1: Cargar sesión ANTES de loadConversations
+    try {
+        const s = await session();
+        if(s?.user) user = s.user;
+    } catch(e) { console.warn('Error cargando sesión:', e); }
+
+    await loadConversations();
 
     db.auth.onAuthStateChange((event,s)=>{
         user=s?.user||null;
@@ -843,6 +852,10 @@ function init(){
     $('composer').addEventListener('submit',e=>{e.preventDefault();sendMessage($('messageInput').value);});
     $('newChat').onclick=newConversation;
     $('closeModal').onclick=()=>$('newModal').classList.remove('show');
+    // ✅ FIX BUG #14: Cerrar modal con click fuera y con Escape
+    $('newModal').addEventListener('click', e => { if (e.target.id === 'newModal') $('newModal').classList.remove('show'); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') $('newModal').classList.remove('show'); });
+
     $('userSearch').addEventListener('input',e=>searchUsers(e.target.value));
     $('attach').onclick=()=>{
         if(current?.bot){toast('⚠️ Para Marquinhos usa el botón 🔊','error');return;}
@@ -902,6 +915,10 @@ async function recordAudioNota(){
         recorder.ondataavailable = e => {if(e.data && e.data.size) audioChunks.push(e.data);};
         recorder.onstop = async () => {
             stream.getTracks().forEach(t=>t.stop());
+            // ✅ FIX BUG #2: Resetear botón 🎙️ al terminar
+            $('audio').classList.remove('recording');
+            $('audio').textContent = '🎙️';
+
             const blob = new Blob(audioChunks,{type:recorder.mimeType||mimeType||'audio/webm'});
             audioChunks = [];
             const mode = recordingMode;
@@ -917,6 +934,9 @@ async function recordAudioNota(){
         toast(esBot ? '🎙️ Habla con Marquinhos… presiona otra vez para enviar' : '🎙️ Grabando… presiona otra vez para detener');
     } catch(e) {
         console.error('Micrófono:',e);
+        // ✅ FIX BUG #2: Resetear botón si falla
+        $('audio').classList.remove('recording');
+        $('audio').textContent = '🎙️';
         toast('❌ No se pudo acceder al micrófono','error');
     }
 }
