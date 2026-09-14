@@ -37,6 +37,17 @@ const supabaseAdmin = createClient(
 const VOICE_ID_JORGE = '7b001dff-b8b2-4da7-92e4-5c794798effa';
 
 /* ================================================================
+   TIMEOUTS MEJORADOS PARA PRODUCCIÓN
+   ================================================================ */
+const TIMEOUTS = {
+    GROQ_WHISPER: 60000,      // 60s para transcripción (Groq es rápido)
+    NVIDIA_LLM: 45000,        // 45s para respuesta de IA
+    LIVEKIT_TTS: 90000,       // 90s para síntesis de voz
+    DOWNLOAD_AUDIO: 30000,    // 30s para descargar audio del usuario
+    SUPABASE_UPLOAD: 30000    // 30s para subir a Supabase
+};
+
+/* ================================================================
    MIDDLEWARE DE AUTENTICACIÓN
    ================================================================ */
 async function autenticar(req, res, next) {
@@ -79,28 +90,50 @@ REGLAS PARA VOZ:
 - Máximo 300 caracteres por respuesta para que el audio no sea eterno.
 
 CONOCIMIENTO:
-- Sariel's es una cablera descentralizada Web3 en Polygon.
+- Sariel's es una plataforma descentralizada Web3 en Polygon.
 - Domos = galletas físicas que dan 1 Es.stok cada una.
 - Es.stoks = tokens transferibles en Polygon.
 - 12 Es.stoks = 1 NFT Domo.
 - Puedes ayudar con: cómo comprar Domos, cómo usar Es.stoks, cómo iniciar un LIVE, cómo crear canales.`;
 
 /* ================================================================
-   RUTA POST /chat
+   RUTA POST /chat (MEJORADA PARA PRODUCCIÓN)
    ================================================================ */
 router.post('/chat', autenticar, async (req, res) => {
     const timestamp = Date.now();
     const inputPath = path.join(os.tmpdir(), `voice_input_${timestamp}.webm`);
     const outputPath = path.join(os.tmpdir(), `voice_output_${timestamp}.mp3`);
 
+    // Función auxiliar para limpiar archivos temporales
+    const limpiarTemporales = () => {
+        try {
+            if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
+            if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
+        } catch (e) { /* silencioso */ }
+    };
+
+    // Función para hacer llamadas con reintentos
+    const llamadaConReintentos = async (fn, nombreOperacion, maxReintentos = 3) => {
+        for (let intento = 1; intento <= maxReintentos; intento++) {
+            try {
+                return await fn();
+            } catch (error) {
+                console.warn(`⚠️ Intento ${intento}/${maxReintentos} de ${nombreOperacion} falló:`, error.message);
+                if (intento === maxReintentos) throw error;
+                await new Promise(r => setTimeout(r, 1000 * intento)); // Backoff exponencial
+            }
+        }
+    };
+
     try {
         /* ============================================================
            VALIDAR CLAVES
            ============================================================ */
         if (!NVIDIA_API_KEY || !GROQ_API_KEY) {
+            console.error('❌ Faltan NVIDIA_API_KEY o GROQ_API_KEY en variables de entorno');
             return res.status(500).json({
                 success: false,
-                error: 'Faltan configurar las claves de NVIDIA o Groq en Railway'
+                error: 'Servidor no configurado correctamente'
             });
         }
 
@@ -119,47 +152,62 @@ router.post('/chat', autenticar, async (req, res) => {
         }
 
         /* ============================================================
-           PASO 1: DESCARGAR AUDIO DEL USUARIO
+           PASO 1: DESCARGAR AUDIO DEL USUARIO (CON REINTENTOS)
            ============================================================ */
         console.log('📥 Descargando audio del usuario...');
-        const audioResponse = await axios.get(urlAudio, {
-            responseType: 'arraybuffer',
-            timeout: 60000,
-            maxContentLength: 50 * 1024 * 1024
-        });
+        
+        await llamadaConReintentos(async () => {
+            const audioResponse = await axios.get(urlAudio, {
+                responseType: 'arraybuffer',
+                timeout: TIMEOUTS.DOWNLOAD_AUDIO,
+                maxContentLength: 50 * 1024 * 1024
+            });
 
-        const inputBuffer = Buffer.from(audioResponse.data);
-        if (!inputBuffer.length) {
-            return res.status(400).json({ success: false, error: 'El audio recibido está vacío' });
-        }
-        fs.writeFileSync(inputPath, inputBuffer);
+            const inputBuffer = Buffer.from(audioResponse.data);
+            if (!inputBuffer.length) {
+                throw new Error('Buffer de audio vacío');
+            }
+            fs.writeFileSync(inputPath, inputBuffer);
+            console.log('✅ Audio descargado:', inputBuffer.length, 'bytes');
+        }, 'Descargar audio');
 
         /* ============================================================
            PASO 2: TRANSCRIBIR CON GROQ (WHISPER GRATIS)
            ============================================================ */
-        console.log('🎤 Transcribiendo audio con Groq...');
-        const formData = new FormData();
-        formData.append('file', fs.createReadStream(inputPath));
-        formData.append('model', 'whisper-large-v3');
-        formData.append('language', 'es');
+        console.log('🎤 Transcribiendo audio con Groq Whisper...');
+        
+        let transcripcion = '';
+        
+        await llamadaConReintentos(async () => {
+            const formData = new FormData();
+            formData.append('file', fs.createReadStream(inputPath));
+            formData.append('model', 'whisper-large-v3');
+            formData.append('language', 'es');
 
-        const whisperResponse = await axios.post(
-            'https://api.groq.com/openai/v1/audio/transcriptions',
-            formData,
-            {
-                headers: {
-                    ...formData.getHeaders(),
-                    'Authorization': 'Bearer ' + GROQ_API_KEY
-                },
-                timeout: 120000
+            const whisperResponse = await axios.post(
+                'https://api.groq.com/openai/v1/audio/transcriptions',
+                formData,
+                {
+                    headers: {
+                        ...formData.getHeaders(),
+                        'Authorization': 'Bearer ' + GROQ_API_KEY
+                    },
+                    timeout: TIMEOUTS.GROQ_WHISPER
+                }
+            );
+
+            transcripcion = whisperResponse.data?.text?.trim() || '';
+            
+            if (!transcripcion) {
+                console.warn('⚠️ Groq devolvió transcripción vacía');
+                throw new Error('Transcripción vacía de Groq');
             }
-        );
-
-        const transcripcion = whisperResponse.data?.text?.trim() || '';
-        console.log('📝 Transcripción:', transcripcion);
+            
+            console.log('✅ Transcripción:', transcripcion.substring(0, 100) + '...');
+        }, 'Transcribir con Groq', 2);
 
         if (!transcripcion) {
-            if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
+            limpiarTemporales();
             return res.json({
                 success: true,
                 transcripcion: '',
@@ -173,43 +221,48 @@ router.post('/chat', autenticar, async (req, res) => {
            ============================================================ */
         console.log('🧠 Generando respuesta con Kimi K3...');
         
-        let historialSeguro = [];
-        if (Array.isArray(history)) {
-            historialSeguro = history
-                .filter(item => item && typeof item === 'object' && typeof item.role === 'string' && typeof item.content === 'string')
-                .slice(-6)
-                .map(item => ({ role: item.role, content: item.content }));
-        }
-
-        const payload = {
-            model: 'moonshotai/kimi-k3',
-            messages: [
-                { role: 'system', content: SYSTEM_PROMPT },
-                ...historialSeguro,
-                { role: 'user', content: transcripcion }
-            ],
-            max_tokens: 300,
-            temperature: 0.7,
-            stream: false,
-            seed: 0
-        };
-
-        const nvidiaResponse = await axios.post(
-            'https://integrate.api.nvidia.com/v1/chat/completions',
-            payload,
-            {
-                headers: {
-                    'Authorization': 'Bearer ' + NVIDIA_API_KEY,
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
-                },
-                timeout: 120000
+        let respuestaTexto = '';
+        
+        await llamadaConReintentos(async () => {
+            let historialSeguro = [];
+            if (Array.isArray(history)) {
+                historialSeguro = history
+                    .filter(item => item && typeof item === 'object' && typeof item.role === 'string' && typeof item.content === 'string')
+                    .slice(-6)
+                    .map(item => ({ role: item.role, content: item.content }));
             }
-        );
 
-        const respuestaTexto = nvidiaResponse.data?.choices?.[0]?.message?.content?.trim() ||
-            'No pude generar una respuesta en este momento.';
-        console.log('💬 Respuesta:', respuestaTexto);
+            const payload = {
+                model: 'moonshotai/kimi-k3',
+                messages: [
+                    { role: 'system', content: SYSTEM_PROMPT },
+                    ...historialSeguro,
+                    { role: 'user', content: transcripcion }
+                ],
+                max_tokens: 300,
+                temperature: 0.7,
+                stream: false,
+                seed: 0
+            };
+
+            const nvidiaResponse = await axios.post(
+                'https://integrate.api.nvidia.com/v1/chat/completions',
+                payload,
+                {
+                    headers: {
+                        'Authorization': 'Bearer ' + NVIDIA_API_KEY,
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    timeout: TIMEOUTS.NVIDIA_LLM
+                }
+            );
+
+            respuestaTexto = nvidiaResponse.data?.choices?.[0]?.message?.content?.trim() ||
+                'No pude generar una respuesta en este momento.';
+            
+            console.log('✅ Respuesta de IA:', respuestaTexto.substring(0, 100) + '...');
+        }, 'Generar respuesta con NVIDIA', 2);
 
         /* ============================================================
            PASO 4: CONVERTIR RESPUESTA A VOZ CON LIVEKIT (TTS)
@@ -217,54 +270,56 @@ router.post('/chat', autenticar, async (req, res) => {
         let audioRespuestaUrl = null;
 
         try {
-            console.log('🔊 Convirtiendo respuesta a voz con LiveKit (Jorge)...');
+            console.log('🔊 Convirtiendo respuesta a voz con LiveKit TTS...');
 
-            const at = new AccessToken(
-                LIVEKIT_API_KEY,
-                LIVEKIT_API_SECRET,
-                {
-                    identity: 'marquinhos-tts-' + timestamp,
-                    ttl: '10m',
-                }
-            );
+            await llamadaConReintentos(async () => {
+                const at = new AccessToken(
+                    LIVEKIT_API_KEY,
+                    LIVEKIT_API_SECRET,
+                    {
+                        identity: 'marquinhos-tts-' + timestamp,
+                        ttl: '10m',
+                    }
+                );
 
-            at.addGrant({
-                roomJoin: true,
-                room: 'tts-room-' + timestamp,
-                canPublish: true,
-                canSubscribe: false,
-                roomAdmin: true,
-                roomCreate: true,
-                agent: true,
-                tts: { voiceId: VOICE_ID_JORGE }
-            });
+                at.addGrant({
+                    roomJoin: true,
+                    room: 'tts-room-' + timestamp,
+                    canPublish: true,
+                    canSubscribe: false,
+                    roomAdmin: true,
+                    roomCreate: true,
+                    agent: true,
+                    tts: { voiceId: VOICE_ID_JORGE }
+                });
 
-            const token = await at.toJwt();
+                const token = await at.toJwt();
 
-            const livekitHost = LIVEKIT_URL.replace('wss://', 'https://').replace('ws://', 'http://');
-            
-            const livekitTtsResponse = await axios.post(
-                `${livekitHost}/api/tts`,
-                {
-                    text: respuestaTexto,
-                    voiceId: VOICE_ID_JORGE,
-                    outputFormat: 'mp3'
-                },
-                {
-                    headers: {
-                        'Authorization': 'Bearer ' + token,
-                        'Content-Type': 'application/json'
+                const livekitHost = LIVEKIT_URL.replace('wss://', 'https://').replace('ws://', 'http://');
+                
+                const livekitTtsResponse = await axios.post(
+                    `${livekitHost}/api/tts`,
+                    {
+                        text: respuestaTexto,
+                        voiceId: VOICE_ID_JORGE,
+                        outputFormat: 'mp3'
                     },
-                    responseType: 'arraybuffer',
-                    timeout: 120000
-                }
-            );
+                    {
+                        headers: {
+                            'Authorization': 'Bearer ' + token,
+                            'Content-Type': 'application/json'
+                        },
+                        responseType: 'arraybuffer',
+                        timeout: TIMEOUTS.LIVEKIT_TTS
+                    }
+                );
 
-            fs.writeFileSync(outputPath, Buffer.from(livekitTtsResponse.data));
-            console.log('✅ Audio generado con LiveKit TTS');
+                fs.writeFileSync(outputPath, Buffer.from(livekitTtsResponse.data));
+                console.log('✅ Audio TTS generado');
+            }, 'Generar audio con LiveKit TTS', 2);
 
         } catch (ttsError) {
-            console.error('⚠️ Error generando audio TTS:', ttsError.message);
+            console.error('⚠️ Error en TTS (continuando sin audio):', ttsError.message);
         }
 
         /* ============================================================
@@ -272,7 +327,7 @@ router.post('/chat', autenticar, async (req, res) => {
            ============================================================ */
         if (fs.existsSync(outputPath)) {
             try {
-                console.log('📤 Subiendo audio de respuesta...');
+                console.log('📤 Subiendo audio de respuesta a Supabase...');
 
                 const storagePath = `bot-responses/${req.user.id}/${Date.now()}.mp3`;
                 const audioBuffer = fs.readFileSync(outputPath);
@@ -292,9 +347,10 @@ router.post('/chat', autenticar, async (req, res) => {
 
                     if (!signedError && signedData?.signedUrl) {
                         audioRespuestaUrl = signedData.signedUrl;
-                        console.log('✅ Audio de Marquinhos subido y firmado');
+                        console.log('✅ Audio de Marquinhos subido');
                     }
 
+                    // Guardar en historial
                     try {
                         await supabaseAdmin.from('ai_voice_chats').insert({
                             usuario_id: req.user.id,
@@ -303,6 +359,7 @@ router.post('/chat', autenticar, async (req, res) => {
                             audio_usuario_url: urlAudio,
                             audio_bot_url: `bucket://chat-audio/${storagePath}`
                         });
+                        console.log('✅ Historial guardado');
                     } catch (e) {
                         console.warn('⚠️ No se pudo guardar historial:', e.message);
                     }
@@ -317,14 +374,12 @@ router.post('/chat', autenticar, async (req, res) => {
         /* ============================================================
            LIMPIEZA DE TEMPORALES
            ============================================================ */
-        try {
-            if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
-            if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
-        } catch (e) {}
+        limpiarTemporales();
 
         /* ============================================================
            RESPUESTA FINAL
            ============================================================ */
+        console.log('✅ Respuesta completa enviada al cliente');
         return res.json({
             success: true,
             transcripcion,
@@ -333,16 +388,13 @@ router.post('/chat', autenticar, async (req, res) => {
         });
 
     } catch (error) {
-        console.error('❌ Error en /ai/voice/chat:', error.message);
-        
-        try {
-            if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
-            if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
-        } catch (e) {}
+        console.error('❌ Error crítico en /ai/voice/chat:', error.message);
+        limpiarTemporales();
 
         return res.status(500).json({
             success: false,
-            error: 'Error procesando voz: ' + error.message
+            error: 'Error procesando voz: ' + error.message,
+            details: process.env.NODE_ENV === 'development' ? error.stack : undefined
         });
     }
 });
