@@ -23,13 +23,26 @@ button,input{font:inherit}
 .header-avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--green),var(--gold));display:grid;place-items:center;font-weight:800;cursor:pointer;overflow:hidden;border:2px solid var(--border);position:relative;transition:border-color .2s}
 .header-avatar:hover{border-color:var(--gold)}
 .header-avatar img{width:100%;height:100%;object-fit:cover}
-.header-avatar .cam{position:absolute;bottom:-2px;right:-2px;background:var(--gold);color:var(--space);border-radius:50%;width:16px;height:16px;display:grid;place-items:center;font-size:.6rem;border:1.5px solid var(--space)}
 .nav{display:flex;gap:4px;overflow:auto;margin:14px 0 18px;padding:4px;border:1px solid var(--border);border-radius:var(--r);background:rgba(15,45,26,.25)}
 .nav a{white-space:nowrap;text-decoration:none;color:var(--muted);font-size:.72rem;padding:8px 13px;border-radius:11px}
 .nav a:hover,.nav a.active{color:var(--gold);background:rgba(212,175,55,.1)}
 .panel{display:grid;grid-template-columns:340px 1fr;min-height:620px;border:1px solid var(--border);border-radius:var(--xl);overflow:hidden;background:var(--glass);backdrop-filter:blur(16px);box-shadow:0 8px 32px rgba(212,175,55,.12)}
 .sidebar{border-right:1px solid var(--border);background:rgba(0,0,0,.18);overflow:hidden;display:flex;flex-direction:column;position:relative}
-.sidehead{display:flex;align-items:center;justify-content:space-between;padding:15px 17px 10px;color:var(--gold);font-weight:700;font-size:.82rem}
+.sidehead{display:flex;align-items:center;justify-content:space-between;padding:15px 17px 8px;color:var(--gold);font-weight:700;font-size:.82rem}
+.estados-bar{padding:8px 12px 12px;border-bottom:1px solid rgba(212,175,55,.08);background:rgba(0,0,0,.15)}
+.estados-title{font-size:.7rem;color:var(--gold);font-weight:700;margin-bottom:8px;letter-spacing:.5px}
+.estados-scroll{display:flex;gap:10px;overflow-x:auto;padding-bottom:6px;scrollbar-width:none}
+.estados-scroll::-webkit-scrollbar{display:none}
+.estado-item{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;width:62px}
+.estado-circle{width:56px;height:56px;border-radius:50%;padding:2px;background:linear-gradient(135deg,var(--gold),var(--gold2));display:grid;place-items:center;transition:transform .2s}
+.estado-circle:hover{transform:scale(1.05)}
+.estado-circle.visto{background:rgba(138,168,184,.35)}
+.estado-circle.propio{background:rgba(138,168,184,.25)}
+.estado-inner{width:100%;height:100%;border-radius:50%;background:var(--space);display:grid;place-items:center;overflow:hidden;font-weight:800;color:var(--gold);font-size:1rem}
+.estado-inner img{width:100%;height:100%;object-fit:cover}
+.estado-name{font-size:.6rem;color:var(--muted);text-align:center;max-width:62px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.estado-circle .add-plus{position:absolute;bottom:-2px;right:-2px;width:20px;height:20px;background:var(--gold);color:var(--space);border-radius:50%;display:grid;place-items:center;font-size:.9rem;font-weight:900;border:2px solid var(--space)}
+.estado-circle-wrap{position:relative}
 .searchbox{padding:0 12px 12px}
 .searchbox input{width:100%;padding:9px 14px;border-radius:20px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:var(--text);outline:0;font-size:.78rem}
 .searchbox input:focus{border-color:var(--gold)}
@@ -47,7 +60,8 @@ button,input{font:inherit}
 .fab:hover{transform:scale(1.08)}
 .chat{display:flex;flex-direction:column;min-width:0;min-height:620px;position:relative}
 .chathead{display:flex;align-items:center;gap:10px;padding:13px 17px;border-bottom:1px solid var(--border);background:rgba(0,0,0,.12)}
-.chathead .avatar{width:38px;height:38px;flex-basis:38px}
+.chathead .avatar{width:38px;height:38px;flex-basis:38px;cursor:pointer;transition:transform .2s}
+.chathead .avatar:hover{transform:scale(1.08)}
 .backbtn{display:none;border:0;background:transparent;color:var(--gold);font-size:1.2rem;cursor:pointer;padding:4px 8px;border-radius:8px}
 .backbtn:hover{background:rgba(212,175,55,.1)}
 .chatname{font-weight:700;font-size:.92rem}
@@ -126,7 +140,49 @@ button,input{font:inherit}
 @keyframes badgePulse{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
 @keyframes pulseNew{0%,100%{box-shadow:0 3px 10px rgba(0,0,0,.5)}50%{box-shadow:0 3px 16px rgba(255,51,102,.7)}}
 #scrollAnchor{width:100%;height:1px;flex-shrink:0;opacity:0;pointer-events:none}
+/* Modales de perfil y foto */
+.profile-modal-box{width:min(420px,100%);background:linear-gradient(135deg,#0f2d1a,#05080f);border:2px solid var(--gold);border-radius:var(--xl);padding:26px 22px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.7);animation:scaleIn .3s ease-out}
+.profile-modal-avatar{width:120px;height:120px;border-radius:50%;margin:0 auto 16px;background:linear-gradient(135deg,var(--gold),#b8923a);display:grid;place-items:center;font-size:2.6rem;font-weight:900;color:var(--space);overflow:hidden;border:3px solid var(--gold);box-shadow:0 8px 24px rgba(212,175,55,.4)}
+.profile-modal-avatar img{width:100%;height:100%;object-fit:cover}
+.profile-modal-name{font-size:1.2rem;font-weight:800;color:var(--text);margin-bottom:4px}
+.profile-modal-handle{font-size:.8rem;color:var(--muted);margin-bottom:20px}
+.profile-modal-actions{display:flex;flex-direction:column;gap:10px}
+.profile-modal-btn{padding:12px 18px;border-radius:12px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--text);cursor:pointer;font-weight:600;font-size:.85rem;transition:all .2s;text-align:left;display:flex;align-items:center;gap:12px}
+.profile-modal-btn:hover{background:rgba(212,175,55,.1);border-color:var(--gold);color:var(--gold)}
+.profile-modal-btn.danger:hover{background:rgba(255,51,102,.1);border-color:var(--danger);color:var(--danger)}
+.profile-modal-btn .icon{font-size:1.1rem}
+/* Visor de foto ampliada */
+.photo-viewer{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.95);backdrop-filter:blur(12px);display:none;align-items:center;justify-content:center;flex-direction:column;padding:30px;animation:fadeIn .25s ease-out}
+.photo-viewer.show{display:flex}
+.photo-viewer img{max-width:90vw;max-height:70vh;border-radius:16px;border:2px solid var(--gold);box-shadow:0 20px 60px rgba(0,0,0,.8);object-fit:contain}
+.photo-viewer .pv-name{margin-top:16px;color:var(--gold);font-weight:800;font-size:1.1rem}
+.photo-viewer .pv-handle{color:var(--muted);font-size:.8rem;margin-top:2px}
+.photo-viewer .pv-close{position:absolute;top:20px;right:20px;width:42px;height:42px;border-radius:50%;background:rgba(212,175,55,.15);border:1px solid var(--gold);color:var(--gold);cursor:pointer;font-size:1.2rem;font-weight:800;display:grid;place-items:center}
+.photo-viewer .pv-close:hover{background:var(--gold);color:var(--space)}
+/* Visor de estados */
+.estado-viewer{position:fixed;inset:0;z-index:310;background:#000;display:none;flex-direction:column;animation:fadeIn .2s ease-out}
+.estado-viewer.show{display:flex}
+.estado-viewer-header{padding:14px 18px;display:flex;align-items:center;gap:12px;background:linear-gradient(180deg,rgba(0,0,0,.85),transparent);position:relative;z-index:2}
+.estado-viewer-progress{position:absolute;top:8px;left:12px;right:12px;height:3px;background:rgba(255,255,255,.2);border-radius:2px;overflow:hidden;z-index:3}
+.estado-viewer-progress-inner{height:100%;background:var(--gold);width:0%;transition:width .1s linear}
+.estado-viewer-avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--gold),#b8923a);display:grid;place-items:center;overflow:hidden;font-weight:800;color:var(--space);flex-shrink:0}
+.estado-viewer-avatar img{width:100%;height:100%;object-fit:cover}
+.estado-viewer-info{flex:1;min-width:0}
+.estado-viewer-name{color:#fff;font-weight:700;font-size:.9rem}
+.estado-viewer-time{color:rgba(255,255,255,.7);font-size:.7rem}
+.estado-viewer-close{background:transparent;border:0;color:#fff;font-size:1.4rem;cursor:pointer;padding:8px;border-radius:50%}
+.estado-viewer-close:hover{background:rgba(255,255,255,.15)}
+.estado-viewer-body{flex:1;position:relative;display:grid;place-items:center;padding:20px}
+.estado-viewer-img{max-width:100%;max-height:100%;object-fit:contain;border-radius:12px}
+.estado-viewer-caption{position:absolute;bottom:30px;left:30px;right:30px;text-align:center;color:#fff;background:rgba(0,0,0,.6);padding:10px 18px;border-radius:20px;font-size:.9rem;backdrop-filter:blur(8px)}
+.estado-viewer-nav{position:absolute;top:50%;transform:translateY(-50%);width:44px;height:44px;border-radius:50%;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.2);color:#fff;font-size:1.4rem;cursor:pointer;display:grid;place-items:center;transition:background .2s}
+.estado-viewer-nav:hover{background:rgba(212,175,55,.5)}
+.estado-viewer-nav.prev{left:14px}
+.estado-viewer-nav.next{right:14px}
+.estado-viewer-nav.hidden{display:none}
 .hidden{display:none!important}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes scaleIn{from{transform:scale(.9);opacity:0}to{transform:scale(1);opacity:1}}
 @media(max-width:760px){
     .panel{grid-template-columns:1fr}
     .panel.chat-open .sidebar{display:none}
@@ -139,6 +195,7 @@ button,input{font:inherit}
     .header{align-items:flex-start}
     .network{margin-top:3px}
     .fab{bottom:14px;right:14px;width:48px;height:48px}
+    .photo-viewer img{max-width:95vw;max-height:65vh}
 }
 @media(max-width:430px){.app{padding:10px}.nav a{font-size:.62rem;padding:7px 9px}.composer{flex-wrap:wrap}.composer input{flex-basis:100%}}
 </style>
@@ -151,10 +208,7 @@ button,input{font:inherit}
     <a class="logo" href="/"><b>◈</b><span>Sariel's</span><em class="badge">WEB3</em></a>
     <div class="header-right">
         <div class="network"><i></i>Polygon</div>
-        <div class="header-avatar" id="headerAvatar" title="Cambiar foto de perfil">
-            ◈
-            <span class="cam">📷</span>
-        </div>
+        <div class="header-avatar" id="headerAvatar" title="Mi perfil">◈</div>
         <input type="file" id="avatarInput" hidden accept="image/*">
     </div>
 </header>
@@ -171,6 +225,10 @@ button,input{font:inherit}
     <div class="sidehead">
         <span>◈ Conversaciones</span>
     </div>
+    <div class="estados-bar">
+        <div class="estados-title">◈ ESTADOS</div>
+        <div class="estados-scroll" id="estadosScroll"></div>
+    </div>
     <div class="searchbox">
         <input type="text" id="searchConversations" placeholder="🔍 Buscar conversación…" autocomplete="off">
     </div>
@@ -180,7 +238,7 @@ button,input{font:inherit}
 <section class="chat">
     <header class="chathead">
         <button class="backbtn" id="backBtn" title="Volver">←</button>
-        <div class="avatar" id="chatAvatar">◈</div>
+        <div class="avatar" id="chatAvatar" title="Ver foto">◈</div>
         <div>
             <div class="chatname" id="chatName">Selecciona una conversación</div>
             <div class="status" id="chatStatus">◈ En espera</div>
@@ -215,6 +273,8 @@ button,input{font:inherit}
 </main>
 <footer style="padding:18px 2px;color:var(--muted);font-size:.68rem">◈ Sariel's · Sabor al Paladar · WEB3</footer>
 </div>
+
+<!-- Modal nueva conversación -->
 <div class="modal" id="newModal">
     <div class="modalbox">
         <button class="iconbtn" id="closeModal" style="float:right">✕</button>
@@ -223,6 +283,74 @@ button,input{font:inherit}
         <div id="userResults" style="margin-top:10px"></div>
     </div>
 </div>
+
+<!-- Modal de perfil (al tocar tu foto del header) -->
+<div class="modal" id="profileModal">
+    <div class="profile-modal-box">
+        <div class="profile-modal-avatar" id="profileModalAvatar">◈</div>
+        <div class="profile-modal-name" id="profileModalName">Mi Perfil</div>
+        <div class="profile-modal-handle" id="profileModalHandle">@usuario</div>
+        <div class="profile-modal-actions">
+            <button class="profile-modal-btn" id="btnCambiarFoto">
+                <span class="icon">📷</span>
+                <span>Cambiar foto de perfil</span>
+            </button>
+            <button class="profile-modal-btn" id="btnVerMiPerfil">
+                <span class="icon">👤</span>
+                <span>Ver mi perfil completo</span>
+            </button>
+            <button class="profile-modal-btn danger" id="btnCerrarSesion">
+                <span class="icon">🚪</span>
+                <span>Cerrar sesión</span>
+            </button>
+        </div>
+        <button class="btn" id="btnCerrarProfileModal" style="margin-top:18px;width:100%;">Cerrar</button>
+    </div>
+</div>
+
+<!-- Visor de foto ampliada -->
+<div class="photo-viewer" id="photoViewer">
+    <button class="pv-close" id="pvClose">✕</button>
+    <img id="pvImage" src="" alt="Foto">
+    <div class="pv-name" id="pvName"></div>
+    <div class="pv-handle" id="pvHandle"></div>
+</div>
+
+<!-- Visor de estados -->
+<div class="estado-viewer" id="estadoViewer">
+    <div class="estado-viewer-progress"><div class="estado-viewer-progress-inner" id="estadoProgress"></div></div>
+    <div class="estado-viewer-header">
+        <div class="estado-viewer-avatar" id="evAvatar">◈</div>
+        <div class="estado-viewer-info">
+            <div class="estado-viewer-name" id="evName">Usuario</div>
+            <div class="estado-viewer-time" id="evTime">Hace un momento</div>
+        </div>
+        <button class="estado-viewer-close" id="evClose">✕</button>
+    </div>
+    <div class="estado-viewer-body">
+        <button class="estado-viewer-nav prev" id="evPrev">‹</button>
+        <img class="estado-viewer-img" id="evImage" src="" alt="Estado">
+        <div class="estado-viewer-caption hidden" id="evCaption"></div>
+        <button class="estado-viewer-nav next" id="evNext">›</button>
+    </div>
+</div>
+
+<!-- Modal de subir estado -->
+<div class="modal" id="estadoUploadModal">
+    <div class="modalbox" style="text-align:center;">
+        <button class="iconbtn" id="closeEstadoModal" style="float:right">✕</button>
+        <h2>◈ Nuevo Estado</h2>
+        <p style="color:var(--muted);font-size:.8rem;margin-bottom:14px;">Se mostrará 24 horas</p>
+        <div id="estadoPreviewWrap" style="margin:16px 0;display:none;">
+            <img id="estadoPreviewImg" style="max-width:100%;max-height:240px;border-radius:12px;border:2px solid var(--gold);">
+        </div>
+        <input type="file" id="estadoFileInput" accept="image/*" style="display:none;">
+        <button class="btn" id="btnSeleccionarEstado" style="width:100%;margin-bottom:10px;">📷 Seleccionar imagen</button>
+        <textarea id="estadoCaption" placeholder="Escribe un mensaje (opcional)" maxlength="120" style="width:100%;padding:10px 14px;border-radius:12px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:var(--text);outline:0;font-family:inherit;resize:none;min-height:60px;margin-bottom:12px;"></textarea>
+        <button class="btn send" id="btnPublicarEstado" style="width:100%;" disabled>Publicar estado</button>
+    </div>
+</div>
+
 <div class="call" id="callOverlay">
     <div class="videos">
         <video id="remoteVideo" autoplay playsinline></video>
@@ -246,12 +374,15 @@ button,input{font:inherit}
     </div>
 </div>
 <div class="toast" id="toast"></div>
+
 <script>
 'use strict';
 const SUPABASE_URL='https://zultnlogdoajehbswlih.supabase.co';
 const SUPABASE_ANON_KEY='sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
 const BOT_ID='bot-marquinhos';
 const BOT_UUID='0a000000-0000-4000-8000-000000000001';
+const ESTADOS_BUCKET='sariels-estados';
+
 let db=null,user=null,current=null,msgChannel=null,callChannel=null,incomingId=null;
 let recorder=null,audioChunks=[],recordingMode=null,recordingStartedAt=0;
 let voiceBotRecorder=null,voiceBotChunks=[],voiceBotGrabando=false;
@@ -261,6 +392,11 @@ let unreadCount = 0;
 const SCROLL_THRESHOLD = 100;
 let scrollRetryTimer = null;
 let currentUserProfile = null;
+let estadosCache = [];
+let estadoActualIndex = 0;
+let estadoActualUserId = null;
+let estadoTimer = null;
+let estadoVistos = JSON.parse(localStorage.getItem('sariels_estados_vistos') || '{}');
 const call={room:null,id:null,active:false,audio:null,video:null,screen:null,initiator:false};
 
 const $=id=>document.getElementById(id);
@@ -272,7 +408,7 @@ function avatar(name,url,cls='avatar'){return `<div class="${cls}">${url?`<img s
 async function profile(id){if(id===BOT_ID)return{id:BOT_ID,nombre:"Marquinhos",handle:'marquinhos',avatar_url:null,online:true,bot:true};const r=await db.from('perfiles_publicos').select('id,nombre,handle,avatar_url,online,ultima_conexion').eq('id',id).maybeSingle();return r.data||{id,nombre:'Usuario',avatar_url:null,online:false}}
 
 /* ============================================
-   SUBIR FOTO DE PERFIL (REUTILIZA sariels-avatars)
+   MI PERFIL - CARGAR Y MODAL
    ============================================ */
 async function cargarFotoHeader(){
     if(!user) return;
@@ -282,59 +418,45 @@ async function cargarFotoHeader(){
         currentUserProfile = data;
         const headerAvatar = $('headerAvatar');
         if(data?.avatar_url){
-            headerAvatar.innerHTML = `<img src="${esc(data.avatar_url)}" alt="Mi foto"><span class="cam">📷</span>`;
+            headerAvatar.innerHTML = `<img src="${esc(data.avatar_url)}" alt="Mi foto">`;
         } else {
             const inicial = (data?.nombre || data?.handle || '◈').charAt(0).toUpperCase();
-            headerAvatar.innerHTML = `${esc(inicial)}<span class="cam">📷</span>`;
+            headerAvatar.innerHTML = esc(inicial);
         }
+        // Actualizar modal también
+        $('profileModalAvatar').innerHTML = data?.avatar_url
+            ? `<img src="${esc(data.avatar_url)}" alt="Mi foto">`
+            : esc((data?.nombre || data?.handle || '◈').charAt(0).toUpperCase());
+        $('profileModalName').textContent = data?.nombre || 'Mi Perfil';
+        $('profileModalHandle').textContent = '@' + (data?.handle || 'usuario');
     } catch(e) { console.warn('Error cargando foto del header:', e); }
+}
+
+function abrirProfileModal(){
+    $('profileModal').classList.add('show');
+}
+function cerrarProfileModal(){
+    $('profileModal').classList.remove('show');
 }
 
 async function subirFotoHeader(event){
     const file = event.target.files[0];
     if(!file) return;
-
     if(!await auth()) return;
-
-    if(file.size > 5 * 1024 * 1024){
-        toast('❌ La imagen no puede superar los 5 MB', 'error');
-        event.target.value = '';
-        return;
-    }
-    if(!file.type.startsWith('image/')){
-        toast('❌ Solo se permiten imágenes', 'error');
-        event.target.value = '';
-        return;
-    }
+    if(file.size > 5 * 1024 * 1024){ toast('❌ La imagen no puede superar los 5 MB', 'error'); event.target.value = ''; return; }
+    if(!file.type.startsWith('image/')){ toast('❌ Solo se permiten imágenes', 'error'); event.target.value = ''; return; }
 
     const fileExt = file.name.split('.').pop().toLowerCase();
     const filePath = `${user.id}/avatar.${fileExt}`;
 
     try {
         toast('⏳ Subiendo foto...', '', 5000);
-
-        const { error: uploadError } = await db.storage
-            .from('sariels-avatars')
-            .upload(filePath, file, { upsert: true, contentType: file.type });
-
-        if(uploadError){
-            console.error('Error storage:', uploadError);
-            if(uploadError.message?.includes('not found') || uploadError.message?.includes('Bucket')){
-                toast('❌ Bucket de avatares no configurado', 'error');
-            } else if(uploadError.message?.includes('policy') || uploadError.message?.includes('violates')){
-                toast('❌ Sin permiso para subir foto', 'error');
-            } else {
-                toast('❌ Error: ' + uploadError.message, 'error');
-            }
-            return;
-        }
-
+        const { error: uploadError } = await db.storage.from('sariels-avatars').upload(filePath, file, { upsert: true, contentType: file.type });
+        if(uploadError) throw uploadError;
         const { data: urlData } = db.storage.from('sariels-avatars').getPublicUrl(filePath);
         const publicUrl = urlData.publicUrl + '?t=' + Date.now();
-
         const { error: updateError } = await db.from('usuarios').update({ avatar_url: publicUrl }).eq('id', user.id);
         if(updateError) throw updateError;
-
         toast('✅ Foto actualizada correctamente', 'success');
         event.target.value = '';
         await cargarFotoHeader();
@@ -345,22 +467,309 @@ async function subirFotoHeader(event){
 }
 
 /* ============================================
-   SCROLL ROBUSTO
+   VISOR DE FOTO AMPLIADA
+   ============================================ */
+function verFotoAmpliada(url, nombre, handle){
+    if(!url){ toast('ℹ️ Este usuario no tiene foto de perfil', 'warning'); return; }
+    $('pvImage').src = url;
+    $('pvName').textContent = nombre || 'Usuario';
+    $('pvHandle').textContent = handle ? '@' + handle : '';
+    $('photoViewer').classList.add('show');
+}
+function cerrarPhotoViewer(){ $('photoViewer').classList.remove('show'); }
+
+/* ============================================
+   ESTADOS (24h)
+   ============================================ */
+function marcarEstadoVisto(estadoId){
+    estadoVistos[estadoId] = Date.now();
+    localStorage.setItem('sariels_estados_vistos', JSON.stringify(estadoVistos));
+}
+function estadoEsNuevo(estado){
+    return !estadoVistos[estado.id];
+}
+function limpiarVistosAntiguos(){
+    // Limpiar entradas de más de 48h
+    const limite = Date.now() - (48 * 60 * 60 * 1000);
+    Object.keys(estadoVistos).forEach(k => { if(estadoVistos[k] < limite) delete estadoVistos[k]; });
+    localStorage.setItem('sariels_estados_vistos', JSON.stringify(estadoVistos));
+}
+
+async function cargarEstados(){
+    const scroll = $('estadosScroll');
+    scroll.innerHTML = '';
+
+    // Botón "Tu estado" (siempre primero)
+    const miEstadoHTML = `
+        <div class="estado-item" id="miEstadoItem">
+            <div class="estado-circle-wrap">
+                <div class="estado-circle propio" id="miEstadoCircle">
+                    <div class="estado-inner">
+                        ${currentUserProfile?.avatar_url ? `<img src="${esc(currentUserProfile.avatar_url)}" alt="">` : esc((currentUserProfile?.nombre||'◈').charAt(0).toUpperCase())}
+                    </div>
+                </div>
+                <span class="add-plus">+</span>
+            </div>
+            <div class="estado-name">Tu estado</div>
+        </div>
+    `;
+    scroll.insertAdjacentHTML('beforeend', miEstadoHTML);
+    $('miEstadoItem').onclick = abrirModalEstado;
+
+    if(!user) return;
+
+    try {
+        // Cargar todos los estados no expirados de usuarios que sigo (o todos por simplicidad)
+        const { data, error } = await db
+            .from('estados')
+            .select('id, usuario_id, imagen_url, caption, created_at, expires_at')
+            .gt('expires_at', new Date().toISOString())
+            .order('created_at', { ascending: true });
+
+        if(error){
+            if(error.code === '42P01'){ console.warn('Tabla estados no existe aún'); return; }
+            throw error;
+        }
+
+        estadosCache = data || [];
+
+        // Agrupar por usuario
+        const porUsuario = {};
+        estadosCache.forEach(e => {
+            if(!porUsuario[e.usuario_id]) porUsuario[e.usuario_id] = [];
+            porUsuario[e.usuario_id].push(e);
+        });
+
+        // Cargar info de cada usuario con estados
+        for(const uid of Object.keys(porUsuario)){
+            if(uid === user.id){
+                // Ya tenemos el botón de "Tu estado", saltar
+                continue;
+            }
+            const p = await profile(uid);
+            const estadosUsuario = porUsuario[uid];
+            const tieneNuevos = estadosUsuario.some(e => estadoEsNuevo(e));
+
+            const html = `
+                <div class="estado-item" data-userid="${uid}">
+                    <div class="estado-circle-wrap">
+                        <div class="estado-circle ${tieneNuevos ? '' : 'visto'}">
+                            <div class="estado-inner">
+                                ${p.avatar_url ? `<img src="${esc(p.avatar_url)}" alt="">` : esc((p.nombre||'◈').charAt(0).toUpperCase())}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="estado-name">${esc(p.nombre || 'Usuario')}</div>
+                </div>
+            `;
+            scroll.insertAdjacentHTML('beforeend', html);
+            const el = scroll.querySelector(`[data-userid="${uid}"]`);
+            el.onclick = () => abrirEstadoUsuario(uid);
+        }
+
+        // Estados propios (los del usuario actual)
+        if(porUsuario[user.id] && porUsuario[user.id].length > 0){
+            // Actualizar el círculo de "Tu estado" para reflejar que hay estados
+            const miCircle = $('miEstadoCircle');
+            miCircle.classList.remove('propio');
+            miCircle.classList.add('visto');
+            // Quitar el "+" si ya hay estados
+            const addPlus = document.querySelector('#miEstadoItem .add-plus');
+            if(addPlus) addPlus.remove();
+        }
+
+    } catch(e){
+        console.warn('Error cargando estados:', e);
+    }
+}
+
+function abrirEstadoUsuario(uid){
+    const estados = estadosCache.filter(e => e.usuario_id === uid);
+    if(estados.length === 0){ toast('ℹ️ Este usuario no tiene estados', 'warning'); return; }
+    estadoActualUserId = uid;
+    estadoActualIndex = 0;
+    mostrarEstadoActual();
+    $('estadoViewer').classList.add('show');
+}
+
+function mostrarEstadoActual(){
+    const estados = estadosCache.filter(e => e.usuario_id === estadoActualUserId);
+    if(estadoActualIndex >= estados.length){
+        cerrarEstadoViewer();
+        return;
+    }
+    const estado = estados[estadoActualIndex];
+    const p = estadoActualUserId === user.id ? { nombre: currentUserProfile?.nombre || 'Yo', handle: currentUserProfile?.handle || 'yo', avatar_url: currentUserProfile?.avatar_url } : { nombre: 'Usuario', handle: '', avatar_url: null };
+
+    // Cargar perfil real si no es el mío
+    if(estadoActualUserId !== user.id){
+        db.from('perfiles_publicos').select('nombre, handle, avatar_url').eq('id', estadoActualUserId).maybeSingle().then(r => {
+            if(r.data){
+                $('evAvatar').innerHTML = r.data.avatar_url ? `<img src="${esc(r.data.avatar_url)}" alt="">` : esc((r.data.nombre||'◈').charAt(0).toUpperCase());
+                $('evName').textContent = r.data.nombre || 'Usuario';
+            }
+        });
+    } else {
+        $('evAvatar').innerHTML = p.avatar_url ? `<img src="${esc(p.avatar_url)}" alt="">` : esc((p.nombre||'◈').charAt(0).toUpperCase());
+        $('evName').textContent = p.nombre;
+    }
+
+    $('evImage').src = estado.imagen_url;
+    $('evTime').textContent = haceTiempo(estado.created_at);
+    if(estado.caption){
+        $('evCaption').textContent = estado.caption;
+        $('evCaption').classList.remove('hidden');
+    } else {
+        $('evCaption').classList.add('hidden');
+    }
+
+    // Marcar como visto
+    marcarEstadoVisto(estado.id);
+
+    // Botones de navegación
+    $('evPrev').classList.toggle('hidden', estadoActualIndex === 0);
+    $('evNext').classList.toggle('hidden', estadoActualIndex >= estados.length - 1);
+
+    // Barra de progreso y auto-avance (5s)
+    const progress = $('estadoProgress');
+    progress.style.width = '0%';
+    let pct = 0;
+    if(estadoTimer) clearInterval(estadoTimer);
+    estadoTimer = setInterval(() => {
+        pct += 2;
+        progress.style.width = pct + '%';
+        if(pct >= 100){
+            clearInterval(estadoTimer);
+            siguienteEstado();
+        }
+    }, 100);
+}
+
+function siguienteEstado(){
+    const estados = estadosCache.filter(e => e.usuario_id === estadoActualUserId);
+    if(estadoActualIndex < estados.length - 1){
+        estadoActualIndex++;
+        mostrarEstadoActual();
+    } else {
+        cerrarEstadoViewer();
+    }
+}
+
+function anteriorEstado(){
+    if(estadoActualIndex > 0){
+        estadoActualIndex--;
+        mostrarEstadoActual();
+    }
+}
+
+function cerrarEstadoViewer(){
+    $('estadoViewer').classList.remove('show');
+    if(estadoTimer) clearInterval(estadoTimer);
+    estadoTimer = null;
+    estadoActualUserId = null;
+    cargarEstados(); // Refrescar para actualizar los anillos
+}
+
+function abrirModalEstado(){
+    $('estadoUploadModal').classList.add('show');
+    $('estadoPreviewWrap').style.display = 'none';
+    $('estadoPreviewImg').src = '';
+    $('estadoCaption').value = '';
+    $('btnPublicarEstado').disabled = true;
+    $('estadoFileInput').value = '';
+}
+
+function cerrarModalEstado(){
+    $('estadoUploadModal').classList.remove('show');
+}
+
+async function seleccionarArchivoEstado(){
+    $('estadoFileInput').click();
+}
+
+async function previewEstado(event){
+    const file = event.target.files[0];
+    if(!file) return;
+    if(file.size > 5 * 1024 * 1024){ toast('❌ La imagen no puede superar 5 MB', 'error'); event.target.value = ''; return; }
+    if(!file.type.startsWith('image/')){ toast('❌ Solo se permiten imágenes', 'error'); event.target.value = ''; return; }
+    const reader = new FileReader();
+    reader.onload = e => {
+        $('estadoPreviewImg').src = e.target.result;
+        $('estadoPreviewWrap').style.display = 'block';
+        $('btnPublicarEstado').disabled = false;
+    };
+    reader.readAsDataURL(file);
+}
+
+async function publicarEstado(){
+    const fileInput = $('estadoFileInput');
+    const file = fileInput.files[0];
+    if(!file){ toast('⚠️ Selecciona una imagen', 'error'); return; }
+    if(!await auth()) return;
+
+    const caption = $('estadoCaption').value.trim();
+    const btn = $('btnPublicarEstado');
+    btn.disabled = true;
+    btn.textContent = '⏳ Publicando...';
+
+    try {
+        const fileExt = file.name.split('.').pop().toLowerCase();
+        const filePath = `${user.id}/${Date.now()}.${fileExt}`;
+
+        const { error: uploadError } = await db.storage.from(ESTADOS_BUCKET).upload(filePath, file, { upsert: false, contentType: file.type });
+        if(uploadError) throw uploadError;
+
+        const { data: urlData } = db.storage.from(ESTADOS_BUCKET).getPublicUrl(filePath);
+        const publicUrl = urlData.publicUrl;
+
+        const { error: insertError } = await db.from('estados').insert({
+            usuario_id: user.id,
+            imagen_url: publicUrl,
+            caption: caption || null
+        });
+        if(insertError) throw insertError;
+
+        toast('✅ Estado publicado (24h)', 'success');
+        cerrarModalEstado();
+        await cargarEstados();
+    } catch(e){
+        console.error('Error publicando estado:', e);
+        if(e.message?.includes('Bucket') || e.message?.includes('not found')){
+            toast('❌ Bucket "sariels-estados" no existe. Créalo en Supabase.', 'error');
+        } else if(e.code === '42P01'){
+            toast('❌ Tabla "estados" no existe. Ejecuta el SQL.', 'error');
+        } else {
+            toast('❌ Error: ' + e.message, 'error');
+        }
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Publicar estado';
+    }
+}
+
+function haceTiempo(fecha){
+    if(!fecha) return 'hace tiempo';
+    const diffMin = Math.floor((Date.now() - new Date(fecha).getTime()) / 60000);
+    if(diffMin < 1) return 'hace un momento';
+    if(diffMin < 60) return `hace ${diffMin} min`;
+    if(diffMin < 1440) return `hace ${Math.floor(diffMin/60)} h`;
+    return `hace ${Math.floor(diffMin/1440)} d`;
+}
+
+/* ============================================
+   SCROLL
    ============================================ */
 function scrollToBottom(force = false){
     const box = $('messages');
     if(!box) return;
     if(!force && !isUserAtBottom) return;
-
     const doScroll = () => {
         const anchor = document.getElementById('scrollAnchor');
         if(anchor) anchor.scrollIntoView({ behavior: 'auto', block: 'end' });
         else box.scrollTop = box.scrollHeight;
     };
-
     doScroll();
     requestAnimationFrame(doScroll);
-
     if(scrollRetryTimer) clearInterval(scrollRetryTimer);
     let intentos = 0;
     scrollRetryTimer = setInterval(() => {
@@ -368,7 +777,6 @@ function scrollToBottom(force = false){
         if(force || isUserAtBottom) doScroll();
         if(intentos >= 10){ clearInterval(scrollRetryTimer); scrollRetryTimer = null; }
     }, 100);
-
     if(force || isUserAtBottom){ ocultarFlechaNuevos(); }
 }
 
@@ -537,6 +945,12 @@ async function openConversation(id){
     $('chatStatus').textContent=esBot?'✦ IA · Siempre disponible':(p.online?'◉ En línea':'◈ Desconectado');
     $('chatStatus').className='status'+(p.online?' online':'');
 
+    // ✅ Click en el avatar del chat → abre foto ampliada (excepto bot)
+    $('chatAvatar').onclick = () => {
+        if(esBot){ toast('ℹ️ Marquinhos es un asistente IA', 'warning'); return; }
+        verFotoAmpliada(p.avatar_url, p.nombre, p.handle);
+    };
+
     $('voiceBot').style.display = esBot ? 'inline-flex' : 'none';
     $('chatActions').style.display = 'flex';
     $('composer').style.display = 'flex';
@@ -568,6 +982,7 @@ async function cerrarConversacion(){
     $('chatStatus').textContent = '◈ En espera';
     $('chatAvatar').innerHTML = '◈';
     $('chatAvatar').className = 'avatar';
+    $('chatAvatar').onclick = null;
     $('chatActions').style.display = 'none';
     $('composer').style.display = 'none';
     $('emptyState').style.display = 'block';
@@ -590,7 +1005,6 @@ async function abrirConversacionBot(){
         box.appendChild(newAnchor);
     }
     if(!btn){
-        // Recrear el botón si falta
         const newBtn = document.createElement('button');
         newBtn.className = 'scroll-down-btn';
         newBtn.id = 'scrollDownBtn';
@@ -722,10 +1136,8 @@ async function sendMessage(text){
 async function preguntarAlBot(mensaje){
     const s=await session();
     if(!s) throw new Error('No hay una sesión activa. Inicia sesión nuevamente.');
-
     const controller=new AbortController();
     const timeout=setTimeout(()=>{controller.abort();},50000);
-
     try {
         const r=await fetch('/api/ai/chat',{
             method:'POST',
@@ -733,10 +1145,8 @@ async function preguntarAlBot(mensaje){
             body:JSON.stringify({message: mensaje.trim(),context: 'chat_sariels',history: []}),
             signal: controller.signal
         });
-
         let data={};
         try { data = await r.json(); } catch(jsonError) {
-            console.error('❌ Marquinhos devolvió una respuesta que no es JSON:', jsonError);
             throw new Error('El servidor de Marquinhos devolvió una respuesta inválida.');
         }
         if(!r.ok){ throw new Error(data.error || `Error del servidor (${r.status})`); }
@@ -1178,23 +1588,58 @@ async function init(){
         if(s?.user) user = s.user;
     } catch(e) { console.warn('Error cargando sesión:', e); }
 
-    await loadConversations();
     await cargarFotoHeader();
+    await loadConversations();
+    await cargarEstados();
 
     db.auth.onAuthStateChange((event,s)=>{
         user=s?.user||null;
-        if(event==='SIGNED_IN'||event==='SIGNED_OUT'){ loadConversations(); cargarFotoHeader(); }
+        if(event==='SIGNED_IN'||event==='SIGNED_OUT'){ loadConversations(); cargarFotoHeader(); cargarEstados(); }
     });
 
-    // Header: subir foto
-    $('headerAvatar').onclick = () => $('avatarInput').click();
+    // Header → modal de perfil
+    $('headerAvatar').onclick = abrirProfileModal;
     $('avatarInput').addEventListener('change', subirFotoHeader);
+
+    // Modal de perfil
+    $('btnCambiarFoto').onclick = () => $('avatarInput').click();
+    $('btnVerMiPerfil').onclick = () => window.location.href = '/features/perfil/perfil.html';
+    $('btnCerrarSesion').onclick = async () => {
+        if(!confirm('¿Cerrar sesión?')) return;
+        await db.auth.signOut();
+        window.location.href = '/';
+    };
+    $('btnCerrarProfileModal').onclick = cerrarProfileModal;
+    $('profileModal').addEventListener('click', e => { if(e.target.id === 'profileModal') cerrarProfileModal(); });
+
+    // Visor de foto ampliada
+    $('pvClose').onclick = cerrarPhotoViewer;
+    $('photoViewer').addEventListener('click', e => { if(e.target.id === 'photoViewer') cerrarPhotoViewer(); });
+
+    // Visor de estados
+    $('evClose').onclick = cerrarEstadoViewer;
+    $('evPrev').onclick = anteriorEstado;
+    $('evNext').onclick = siguienteEstado;
+
+    // Modal de subir estado
+    $('closeEstadoModal').onclick = cerrarModalEstado;
+    $('btnSeleccionarEstado').onclick = seleccionarArchivoEstado;
+    $('estadoFileInput').addEventListener('change', previewEstado);
+    $('btnPublicarEstado').onclick = publicarEstado;
+    $('estadoUploadModal').addEventListener('click', e => { if(e.target.id === 'estadoUploadModal') cerrarModalEstado(); });
+
+    // Escape para cerrar modales
+    document.addEventListener('keydown', e => {
+        if(e.key === 'Escape'){
+            cerrarProfileModal(); cerrarPhotoViewer(); cerrarEstadoViewer(); cerrarModalEstado();
+            $('newModal').classList.remove('show');
+        }
+    });
 
     $('composer').addEventListener('submit',e=>{e.preventDefault();sendMessage($('messageInput').value);});
     $('newChat').onclick=newConversation;
     $('closeModal').onclick=()=>$('newModal').classList.remove('show');
     $('newModal').addEventListener('click', e => { if (e.target.id === 'newModal') $('newModal').classList.remove('show'); });
-    document.addEventListener('keydown', e => { if (e.key === 'Escape') $('newModal').classList.remove('show'); });
 
     $('userSearch').addEventListener('input',e=>searchUsers(e.target.value));
     $('searchConversations').addEventListener('input', e => { conversationFilter = e.target.value; aplicarFiltroConversaciones(); });
@@ -1240,6 +1685,9 @@ async function init(){
     db.channel('incoming-calls').on('postgres_changes',{event:'INSERT',schema:'public',table:'llamadas'},p=>{
         if(user && p.new.destinatario_id===user.id && p.new.estado==='ringing'){incoming(p.new);}
     }).subscribe();
+
+    // Refrescar estados cada 5 minutos
+    setInterval(() => { limpiarVistosAntiguos(); cargarEstados(); }, 5 * 60 * 1000);
 }
 
 /* ============================================
