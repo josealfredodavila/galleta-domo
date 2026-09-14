@@ -198,6 +198,7 @@ button,input{font:inherit}
 const SUPABASE_URL='https://zultnlogdoajehbswlih.supabase.co';
 const SUPABASE_ANON_KEY='sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
 const BOT_ID='bot-marquinhos';
+const BOT_UUID='0a000000-0000-4000-8000-000000000001';
 let db=null,user=null,current=null,msgChannel=null,callChannel=null,incomingId=null;
 let recorder=null,audioChunks=[],recordingMode=null,recordingStartedAt=0;
 let voiceBotRecorder=null,voiceBotChunks=[],voiceBotGrabando=false;
@@ -260,7 +261,7 @@ async function loadConversations(){
         <div class="avatar avatar-bot">✦</div>
         <div class="convinfo">
             <div class="convname">Marquinhos</div>
-            <div class="convmsg">Tu asistente personal ✦</div>
+            <div class="convmsg" id="botLastMsg">Tu asistente personal ✦</div>
         </div>
         <div class="convtime" style="color:var(--success);font-size:.55rem">IA</div>
     `;
@@ -269,12 +270,24 @@ async function loadConversations(){
 
     if(!await auth()) return;
 
+    // Vista previa del último mensaje con Marquinhos (si ya hay historial guardado)
+    try {
+        const {data:lastBot}=await db.from('mensajes_chat').select('contenido,tipo,created_at').eq('eliminado',false)
+            .or(`and(remitente_id.eq.${user.id},destinatario_id.eq.${BOT_UUID}),and(remitente_id.eq.${BOT_UUID},destinatario_id.eq.${user.id})`)
+            .order('created_at',{ascending:false}).limit(1).maybeSingle();
+        if(lastBot){
+            const preview=$('botLastMsg');
+            if(preview) preview.textContent = lastBot.tipo==='texto' ? (lastBot.contenido||'') : ('📎 '+(lastBot.contenido||lastBot.tipo));
+        }
+    } catch(e) { /* silencioso: no bloquea la carga del resto de conversaciones */ }
+
     try {
         const {data,error}=await db.from('contactos').select('contacto_id,created_at,fecha,estado').eq('usuario_id',user.id).neq('estado','bloqueado').order('created_at',{ascending:false});
         if(error){console.error('Error cargando contactos:', error);return;}
         if(!data?.length) return;
 
         for(const c of data){
+            if(c.contacto_id===BOT_UUID) continue; // Marquinhos ya tiene su propia entrada fija arriba
             const p=await profile(c.contacto_id);
             const {data:last}=await db.from('mensajes_chat').select('contenido,tipo,created_at,leido,remitente_id').eq('eliminado',false).or(`and(remitente_id.eq.${user.id},destinatario_id.eq.${c.contacto_id}),and(remitente_id.eq.${c.contacto_id},destinatario_id.eq.${user.id})`).order('created_at',{ascending:false}).limit(1).maybeSingle();
 
@@ -314,10 +327,7 @@ async function openConversation(id){
     document.querySelectorAll('.conv').forEach(x=>x.classList.toggle('active',x.dataset.id===id));
 
     if(esBot){
-        const box=$('messages');
-        box.innerHTML='';
-        box.innerHTML=`<div class="bubblewrap received"><div class="bubble"><div class="bubble-bot-info">✦ MARQUINHOS</div>¡Hola! 👋 Soy Marquinhos, el asistente de Sariel's. Puedes:<br><br>◈ Escribirme un mensaje de texto<br>◈ Enviarme una nota de voz con 🎙️<br>◈ Hablarme con el botón 🔊 (te responderé con voz)<br><br>¿En qué te puedo ayudar hoy?</div></div>`;
-        box.scrollTop=box.scrollHeight;
+        await abrirConversacionBot();
         return;
     }
 
@@ -326,6 +336,34 @@ async function openConversation(id){
     await renderMessages(r.data||[]);
     await markRead(id);
     subscribeMessages(id);
+}
+
+/* ============================================
+   ABRIR CONVERSACIÓN CON MARQUINHOS (con historial persistido)
+   ============================================ */
+async function abrirConversacionBot(){
+    const box=$('messages');
+    box.innerHTML='';
+
+    let historial=[];
+    try {
+        const r=await db.from('mensajes_chat').select('*').eq('eliminado',false)
+            .or(`and(remitente_id.eq.${user.id},destinatario_id.eq.${BOT_UUID}),and(remitente_id.eq.${BOT_UUID},destinatario_id.eq.${user.id})`)
+            .order('created_at',{ascending:true}).limit(200);
+        if(!r.error) historial=r.data||[];
+    } catch(e) { console.warn('No se pudo cargar el historial de Marquinhos:', e); }
+
+    if(!historial.length){
+        box.innerHTML=`<div class="bubblewrap received"><div class="bubble"><div class="bubble-bot-info">✦ MARQUINHOS</div>¡Hola! 👋 Soy Marquinhos, el asistente de Sariel's. Puedes:<br><br>◈ Escribirme un mensaje de texto<br>◈ Enviarme una nota de voz con 🎙️<br>◈ Hablarme con el botón 🔊 (te responderé con voz)<br><br>¿En qué te puedo ayudar hoy?</div></div>`;
+        box.scrollTop=box.scrollHeight;
+        return;
+    }
+
+    const signedUrls = await Promise.all(historial.map(m => getSignedUrlForMessage(m)));
+    historial.forEach((m,i) => {
+        box.insertAdjacentHTML('beforeend', messageHTML(m, m.remitente_id===user.id, signedUrls[i]));
+    });
+    box.scrollTop=box.scrollHeight;
 }
 
 /* ============================================
@@ -360,7 +398,7 @@ function messageHTML(m,sent,signedUrl){
             body=`📎 <a href="${esc(urlToUse)}" target="_blank" rel="noopener" style="color:var(--gold)">${displayName}</a>`;
         }
     }
-    const esBotRecibido = !sent && m.bot_message;
+    const esBotRecibido = !sent && (m.es_bot || m.bot_message);
     const headerBot = esBotRecibido ? '<div class="bubble-bot-info">✦ MARQUINHOS</div>' : '';
     return `<div class="bubblewrap ${sent?'sent':'received'}"><div class="bubble">${headerBot}${body}</div><div class="meta">${m.created_at?new Date(m.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):''}${sent?(m.leido?' · ◆◆':' · ◈◈'):''}</div></div>`;
 }
@@ -376,19 +414,29 @@ async function sendMessage(text){
     $('messageInput').value='';
 
     if(current.bot){
-        const userMsg = { contenido: textoLimpio, created_at: new Date().toISOString(), tipo:'texto', remitente_id: user.id, leido:true };
+        // Guarda el mensaje del usuario en Supabase para que Marquinhos "recuerde" la conversación
+        let userMsg = { contenido: textoLimpio, created_at: new Date().toISOString(), tipo:'texto', remitente_id: user.id, leido:true };
+        try {
+            const ins=await db.from('mensajes_chat').insert({remitente_id:user.id,destinatario_id:BOT_UUID,contenido:textoLimpio,tipo:'texto',leido:true,editado:false,eliminado:false}).select('*').single();
+            if(!ins.error) userMsg=ins.data;
+        } catch(e) { console.warn('No se pudo guardar el mensaje del usuario:', e); }
         append(userMsg, true);
         mostrarTypingBot();
 
         try {
             const respuesta = await preguntarAlBot(textoLimpio);
             quitarTypingBot();
-            const botMsg = { contenido: respuesta, created_at: new Date().toISOString(), tipo:'texto', remitente_id: BOT_ID, leido:true, bot_message:true };
+            let botMsg = { contenido: respuesta, created_at: new Date().toISOString(), tipo:'texto', remitente_id: BOT_UUID, leido:true, es_bot:true };
+            try {
+                const insBot=await db.from('mensajes_chat').insert({remitente_id:BOT_UUID,destinatario_id:user.id,contenido:respuesta,tipo:'texto',leido:true,editado:false,eliminado:false}).select('*').single();
+                if(!insBot.error) botMsg={...insBot.data,es_bot:true};
+            } catch(e) { console.warn('No se pudo guardar la respuesta de Marquinhos:', e); }
             append(botMsg, false);
+            loadConversations();
         } catch(e) {
             quitarTypingBot();
             console.error('Error Marquinhos:', e);
-            const errorMsg = { contenido: '⚠️ ' + (e.message || 'Ups, tuve un problema.'), created_at: new Date().toISOString(), tipo:'texto', remitente_id: BOT_ID, leido:true, bot_message:true };
+            const errorMsg = { contenido: '⚠️ ' + (e.message || 'Ups, tuve un problema.'), created_at: new Date().toISOString(), tipo:'texto', remitente_id: BOT_UUID, leido:true, es_bot:true };
             append(errorMsg, false);
         }
         return;
@@ -588,6 +636,27 @@ async function enviarVozAlBot(file){
             throw new Error(data.error || 'Error del servicio de voz');
         }
 
+        // Guardar la nota de voz del usuario (reutilizando el archivo ya subido a chat-audio)
+        try {
+            await db.from('mensajes_chat').insert({
+                remitente_id:user.id, destinatario_id:BOT_UUID,
+                contenido: data.transcripcion || file.name,
+                nombre_archivo: file.name,
+                imagen_url: `bucket://chat-audio/${path}`,
+                tipo:'audio', leido:true, editado:false, eliminado:false
+            });
+        } catch(e) { console.warn('No se pudo guardar la nota de voz:', e); }
+
+        // Guardar la respuesta de texto de Marquinhos (el audio TTS es efímero, no se persiste)
+        try {
+            if(data.reply){
+                await db.from('mensajes_chat').insert({
+                    remitente_id:BOT_UUID, destinatario_id:user.id,
+                    contenido: data.reply, tipo:'texto', leido:true, editado:false, eliminado:false
+                });
+            }
+        } catch(e) { console.warn('No se pudo guardar la respuesta de Marquinhos:', e); }
+
         // Mostrar respuesta del bot con audio
         const botId = 'voice-bot-' + Date.now();
         let botBody = `<div class="bubble-bot-info">✦ MARQUINHOS</div>`;
@@ -606,6 +675,8 @@ async function enviarVozAlBot(file){
             const audio = document.querySelector(`#${botId} audio`);
             if(audio) audio.play().catch(()=>{});
         }
+
+        loadConversations();
 
     } catch(e) {
         console.error('Error voz bot:', e);
@@ -656,7 +727,7 @@ async function searchUsers(q){
     }
     if(!await auth())return;
     const term=q.trim().replace(/[%_,\\]/g,' ').replace(/\s+/g,' ').trim();
-    const r=await db.from('perfiles_publicos').select('id,nombre,handle,avatar_url').or(`nombre.ilike.%${term}%,handle.ilike.%${term}%`).neq('id',user.id).limit(12);
+    const r=await db.from('perfiles_publicos').select('id,nombre,handle,avatar_url').or(`nombre.ilike.%${term}%,handle.ilike.%${term}%`).neq('id',user.id).neq('id',BOT_UUID).limit(12);
     if(r.error){console.error(r.error);toast('❌ Error al buscar usuarios','error');return}
 
     box.innerHTML = r.data?.length ? '' : '<div style="padding:18px;text-align:center;color:var(--muted)">No se encontraron usuarios</div>';
