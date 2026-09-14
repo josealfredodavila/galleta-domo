@@ -1,144 +1,930 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#05080f">
+<title>◈ Mensajes · Sariel's</title>
+<style>
+:root{--gold:#d4af37;--gold2:#e8c84a;--green:#0f2d1a;--green2:#1a4a2a;--space:#05080f;--text:#f0f4f8;--muted:#8aa8b8;--border:rgba(212,175,55,.16);--success:#00d68f;--danger:#ff3366;--glass:rgba(15,45,26,.55);--r:16px;--xl:24px}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:var(--space);color:var(--text);font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+body{background-image:radial-gradient(ellipse at 15% 30%,rgba(42,106,58,.32),transparent 55%),radial-gradient(ellipse at 85% 70%,rgba(212,175,55,.07),transparent 55%)}
+button,input{font:inherit}
+.app{position:relative;z-index:1;max-width:1100px;margin:auto;padding:14px 18px 28px}
+.header{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 0 14px;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:20;background:rgba(5,8,15,.94);backdrop-filter:blur(14px)}
+.logo{display:flex;align-items:center;gap:9px;color:var(--text);text-decoration:none}
+.logo b{font-size:1.65rem;color:var(--gold)}
+.logo span{font-weight:800;letter-spacing:2px}
+.badge{font-size:.55rem;color:var(--space);background:linear-gradient(135deg,var(--gold),var(--gold2));padding:3px 8px;border-radius:99px;font-weight:800}
+.network{font-size:.68rem;color:var(--gold);border:1px solid var(--border);padding:5px 10px;border-radius:99px}
+.network i{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--success);margin-right:5px}
+.nav{display:flex;gap:4px;overflow:auto;margin:14px 0 18px;padding:4px;border:1px solid var(--border);border-radius:var(--r);background:rgba(15,45,26,.25)}
+.nav a{white-space:nowrap;text-decoration:none;color:var(--muted);font-size:.72rem;padding:8px 13px;border-radius:11px}
+.nav a:hover,.nav a.active{color:var(--gold);background:rgba(212,175,55,.1)}
+.panel{display:grid;grid-template-columns:320px 1fr;min-height:620px;border:1px solid var(--border);border-radius:var(--xl);overflow:hidden;background:var(--glass);backdrop-filter:blur(16px);box-shadow:0 8px 32px rgba(212,175,55,.12)}
+.sidebar{border-right:1px solid var(--border);background:rgba(0,0,0,.18);overflow:auto}
+.sidehead{display:flex;align-items:center;justify-content:space-between;padding:15px 17px;border-bottom:1px solid var(--border);color:var(--gold);font-weight:700;font-size:.82rem}
+.iconbtn{border:1px solid transparent;background:transparent;color:var(--muted);cursor:pointer;border-radius:9px;padding:6px 9px}
+.iconbtn:hover{color:var(--gold);background:rgba(212,175,55,.08)}
+.conv{display:flex;gap:11px;align-items:center;padding:11px 14px;border-bottom:1px solid rgba(212,175,55,.05);cursor:pointer}
+.conv:hover{background:rgba(212,175,55,.05)}
+.conv.active{background:rgba(212,175,55,.1);border-left:3px solid var(--gold);padding-left:11px}
+.avatar{width:42px;height:42px;flex:0 0 42px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,var(--green),var(--gold));overflow:hidden;font-weight:800}
+.avatar img{width:100%;height:100%;object-fit:cover}
+.convinfo{min-width:0;flex:1}
+.convname{font-size:.84rem;font-weight:700}
+.convmsg{font-size:.68rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.convtime{font-size:.6rem;color:var(--muted)}
+.chat{display:flex;flex-direction:column;min-width:0;min-height:620px}
+.chathead{display:flex;align-items:center;gap:10px;padding:13px 17px;border-bottom:1px solid var(--border);background:rgba(0,0,0,.12)}
+.chathead .avatar{width:38px;height:38px;flex-basis:38px}
+.chatname{font-weight:700;font-size:.92rem}
+.status{font-size:.63rem;color:var(--muted)}
+.status.online{color:var(--success)}
+.actions{margin-left:auto;display:flex;gap:4px}
+.messages{flex:1;overflow:auto;padding:18px;display:flex;flex-direction:column;gap:9px;min-height:0}
+.empty{margin:auto;text-align:center;color:var(--muted)}
+.empty strong{display:block;color:var(--gold);font-size:2rem;margin-bottom:8px}
+.bubblewrap{display:flex;flex-direction:column;width:100%}
+.bubblewrap.sent{align-items:flex-end}
+.bubblewrap.received{align-items:flex-start}
+.bubble{max-width:min(78%,560px);padding:10px 14px;border-radius:18px;word-break:break-word;font-size:.86rem;line-height:1.45}
+.sent .bubble{background:linear-gradient(135deg,var(--gold),#b8923a);color:var(--space);border-radius:18px 18px 4px 18px}
+.received .bubble{background:rgba(255,255,255,.055);border:1px solid var(--border);color:#c0d8e8;border-radius:18px 18px 18px 4px}
+.bubble img,.bubble video{max-width:100%;border-radius:9px;display:block}
+.bubble audio{max-width:100%}
+.meta{font-size:.58rem;color:var(--muted);margin-top:3px}
+.composer{display:flex;gap:7px;padding:11px;border-top:1px solid var(--border);background:rgba(0,0,0,.14)}
+.composer input{min-width:0;flex:1;border:1px solid var(--border);background:rgba(255,255,255,.05);color:var(--text);border-radius:30px;padding:10px 15px;outline:0}
+.composer input:focus{border-color:var(--gold)}
+.btn{border:1px solid var(--border);background:transparent;color:var(--muted);border-radius:30px;padding:9px 13px;cursor:pointer}
+.btn:hover{color:var(--gold);border-color:var(--gold)}
+.send{background:linear-gradient(135deg,var(--gold),#b8923a);color:var(--space);border:0;font-weight:800}
+.modal{display:none;position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.78);backdrop-filter:blur(7px);align-items:center;justify-content:center;padding:18px}
+.modal.show{display:flex}
+.modalbox{width:min(520px,100%);max-height:80vh;overflow:auto;background:#0f2d1a;border:1px solid var(--gold);border-radius:var(--xl);padding:22px}
+.modalbox h2{margin:0 0 14px;color:var(--gold);font-size:1.1rem}
+.search{width:100%;padding:11px 13px;border-radius:12px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:var(--text);outline:0}
+.result{display:flex;align-items:center;gap:10px;padding:11px 4px;border-bottom:1px solid rgba(212,175,55,.06);cursor:pointer}
+.result:hover{background:rgba(212,175,55,.05)}
+.result .avatar{width:40px;height:40px;flex-basis:40px}
+.toast{position:fixed;right:18px;bottom:18px;z-index:200;background:#0f2d1a;border:1px solid var(--gold);color:var(--gold);padding:12px 17px;border-radius:12px;max-width:min(420px,calc(100vw - 36px));transform:translateY(100px);opacity:0;transition:.25s}
+.toast.show{transform:none;opacity:1}
+.toast.error{border-color:var(--danger);color:var(--danger)}
+.toast.success{border-color:var(--success);color:var(--success)}
+.call{display:none;position:fixed;inset:0;z-index:150;background:rgba(0,0,0,.96);padding:18px;align-items:center;justify-content:center;flex-direction:column}
+.call.show{display:flex}
+.videos{width:100%;max-width:1100px;display:flex;gap:15px;justify-content:center;align-items:center;flex-wrap:wrap}
+.videos video{width:min(48%,620px);min-height:220px;background:#111;border:2px solid var(--gold);border-radius:15px;object-fit:cover}
+.videos video.local{width:min(30%,360px);border-color:#777}
+.callinfo{margin:12px;color:var(--text);font-size:.85rem}
+.controls{display:flex;gap:10px}
+.controls button{width:54px;height:54px;border:0;border-radius:50%;background:#222;color:#fff;cursor:pointer;font-size:1.2rem}
+.controls .hang{background:var(--danger)}
 /* ============================================
-   CHAT TEXTO BOT
+   BOT MARQUINHOS - ESTILOS
    ============================================ */
+.conv-bot{background:linear-gradient(135deg,rgba(212,175,55,.08),rgba(15,45,26,.4))!important;border-bottom:1px solid rgba(212,175,55,.15)!important}
+.conv-bot:hover{background:linear-gradient(135deg,rgba(212,175,55,.15),rgba(15,45,26,.5))!important}
+.conv-bot .convname{color:var(--gold)}
+.conv-bot .convname::after{content:"✦";color:var(--gold);font-size:.6rem;margin-left:4px;opacity:.7}
+.avatar-bot{background:linear-gradient(135deg,#0F2D1A,#D4AF37)!important;position:relative;overflow:visible!important;font-size:1.3rem!important}
+.avatar-bot::after{content:"";position:absolute;bottom:0;right:0;width:12px;height:12px;border-radius:50%;background:var(--success);border:2px solid var(--space);animation:botPulse 2s infinite}
+@keyframes botPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.7;transform:scale(.85)}}
+.typing-indicator{display:flex;gap:4px;align-items:center;padding:12px 16px}
+.typing-indicator span{width:8px;height:8px;border-radius:50%;background:var(--gold);animation:typingBounce 1.4s infinite}
+.typing-indicator span:nth-child(2){animation-delay:.2s}
+.typing-indicator span:nth-child(3){animation-delay:.4s}
+@keyframes typingBounce{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-6px);opacity:1}}
+.bubble-bot-info{font-size:.6rem;color:var(--gold);opacity:.7;margin-bottom:4px;font-family:'Orbitron',monospace;letter-spacing:.5px}
+#voiceBot.recording{background:var(--danger)!important;border-color:var(--danger)!important;color:#fff!important;animation:pulse-recording 1s infinite}
+@keyframes pulse-recording{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.7;transform:scale(1.05)}}
+.bot-transcripcion{font-size:.7rem;color:var(--muted);margin-bottom:8px;font-style:italic;border-left:2px solid var(--gold);padding-left:10px;opacity:.85}
+.bubble audio.bot-audio{margin-top:8px;height:36px;width:100%;max-width:280px;border-radius:20px}
+@media(max-width:760px){.panel{grid-template-columns:1fr;min-height:0}.sidebar{border-right:0;border-bottom:1px solid var(--border);max-height:190px}.chat{min-height:500px}.bubble{max-width:90%}.videos video{width:95%}.videos video.local{width:35%}.header{align-items:flex-start}.network{margin-top:3px}}
+@media(max-width:430px){.app{padding:10px}.nav a{font-size:.62rem;padding:7px 9px}.composer{flex-wrap:wrap}.composer input{flex-basis:100%}}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/livekit-client@1/dist/livekit-client.umd.min.js"></script>
+</head>
+<body>
+<div class="app">
+<header class="header">
+    <a class="logo" href="/"><b>◈</b><span>Sariel's</span><em class="badge">WEB3</em></a>
+    <div class="network"><i></i>Polygon</div>
+</header>
+<nav class="nav">
+    <a href="/">⌂ Inicio</a>
+    <a href="/features/muro/muro.html">◇ Muro</a>
+    <a href="/features/perfil/perfil.html">◆ Perfil</a>
+    <a href="/features/mensajes/contactos.html">◈ Contactos</a>
+    <a class="active" href="/features/mensajes/mensajes.html">◈ Mensajes</a>
+    <a href="/features/live/live.html">◉ Live</a>
+</nav>
+<main class="panel">
+<aside class="sidebar">
+    <div class="sidehead">
+        <span>◈ Conversaciones</span>
+        <button class="iconbtn" id="newChat" title="Nueva conversación">✎</button>
+    </div>
+    <div id="conversationList">
+        <!-- Marquinhos se insertará dinámicamente -->
+    </div>
+</aside>
+<section class="chat">
+    <header class="chathead">
+        <div class="avatar" id="chatAvatar">◈</div>
+        <div>
+            <div class="chatname" id="chatName">Selecciona una conversación</div>
+            <div class="status" id="chatStatus">◈ En espera</div>
+        </div>
+        <div class="actions">
+            <button class="iconbtn" id="videoCall" title="Videollamada">📹</button>
+            <button class="iconbtn" id="searchChat" title="Buscar">🔍</button>
+        </div>
+    </header>
+    <div class="messages" id="messages">
+        <div class="empty">
+            <strong>◈</strong>
+            <div>Selecciona una conversación</div>
+            <small>Elige un chat para empezar a hablar</small>
+        </div>
+    </div>
+    <form class="composer" id="composer">
+        <button type="button" class="btn" id="attach" title="Adjuntar">📎</button>
+        <button type="button" class="btn" id="audio" title="Grabar audio">🎙️</button>
+        <button type="button" class="btn" id="voiceBot" title="Hablar con Marquinhos" style="display:none;">🔊</button>
+        <input id="messageInput" autocomplete="off" placeholder="Escribe un mensaje…">
+        <button class="btn send" type="submit">Enviar</button>
+        <input id="fileInput" type="file" hidden multiple accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt">
+    </form>
+</section>
+</main>
+<footer style="padding:18px 2px;color:var(--muted);font-size:.68rem">◈ Sariel's · Sabor al Paladar · WEB3</footer>
+</div>
+<div class="modal" id="newModal">
+    <div class="modalbox">
+        <button class="iconbtn" id="closeModal" style="float:right">✕</button>
+        <h2>◈ Nueva conversación</h2>
+        <input class="search" id="userSearch" placeholder="Buscar por nombre o usuario…">
+        <div id="userResults" style="margin-top:10px"></div>
+    </div>
+</div>
+<div class="call" id="callOverlay">
+    <div class="videos">
+        <video id="remoteVideo" autoplay playsinline></video>
+        <video id="localVideo" class="local" autoplay playsinline muted></video>
+    </div>
+    <div class="callinfo" id="callInfo">◈ Conectando…</div>
+    <div class="controls">
+        <button id="toggleMic">🎤</button>
+        <button id="toggleCam">📷</button>
+        <button id="toggleScreen">🖥️</button>
+        <button class="hang" id="hangup">📞</button>
+    </div>
+</div>
+<div class="call" id="incomingOverlay">
+    <div class="avatar" style="width:80px;height:80px;font-size:2rem" id="incomingAvatar">◈</div>
+    <h2 id="incomingName">Usuario</h2>
+    <div class="callinfo">📞 Llamada entrante…</div>
+    <div class="controls">
+        <button id="acceptCall">📞</button>
+        <button class="hang" id="rejectCall">✕</button>
+    </div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+'use strict';
+const SUPABASE_URL='https://zultnlogdoajehbswlih.supabase.co';
+const SUPABASE_ANON_KEY='sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
+const BOT_ID='bot-marquinhos';
+let db=null,user=null,current=null,msgChannel=null,callChannel=null,incomingId=null;
+let recorder=null,audioChunks=[],recordingMode=null,recordingStartedAt=0;
+let voiceBotRecorder=null,voiceBotChunks=[],voiceBotGrabando=false;
+const call={room:null,id:null,active:false,audio:null,video:null,screen:null,initiator:false};
 
-async function preguntarAlBot(mensaje){
+const $=id=>document.getElementById(id);
+function toast(text,type=''){const el=$('toast');el.textContent=text;el.className='toast show '+type;clearTimeout(el.t);el.t=setTimeout(()=>el.classList.remove('show'),3500)}
+function esc(v){const d=document.createElement('div');d.textContent=v??'';return d.innerHTML}
+async function session(){if(!db)return null;const r=await db.auth.getSession();if(r.error)throw r.error;return r.data.session}
+async function auth(){const s=await session();if(!s){toast('⚠️ Inicia sesión para usar Mensajes','error');return false}user=s.user;return true}
+function avatar(name,url,cls='avatar'){return `<div class="${cls}">${url?`<img src="${esc(url)}" alt="">`:esc((name||'◈').charAt(0).toUpperCase())}</div>`}
+async function profile(id){if(id===BOT_ID)return{id:BOT_ID,nombre:"Marquinhos",handle:'marquinhos',avatar_url:null,online:true,bot:true};const r=await db.from('perfiles_publicos').select('id,nombre,handle,avatar_url,online,ultima_conexion').eq('id',id).maybeSingle();return r.data||{id,nombre:'Usuario',avatar_url:null,online:false}}
 
-    const s=await session();
+/* ============================================
+   FIRMA URLS DE STORAGE
+   ============================================ */
+async function getSignedUrlForMessage(m) {
+    if (!m.imagen_url) return null;
+    const raw = m.imagen_url;
+    if (raw.startsWith('http')) {
+        if (raw.includes('/object/public/')) return raw;
+        try {
+            const url = new URL(raw);
+            const parts = url.pathname.split('/').filter(Boolean);
+            const idx = parts.findIndex(p => p === 'chat-audio' || p === 'chat-attachments');
+            if (idx === -1) return raw;
+            const bucket = parts[idx];
+            const filePath = parts.slice(idx + 1).join('/');
+            const { data, error } = await db.storage.from(bucket).createSignedUrl(filePath, 3600);
+            if (error) return raw;
+            return data.signedUrl;
+        } catch (e) { return raw; }
+    }
+    if (raw.startsWith('bucket://')) {
+        try {
+            const withoutPrefix = raw.replace('bucket://', '');
+            const slashIdx = withoutPrefix.indexOf('/');
+            if (slashIdx === -1) return null;
+            const bucket = withoutPrefix.slice(0, slashIdx);
+            const filePath = withoutPrefix.slice(slashIdx + 1);
+            const { data, error } = await db.storage.from(bucket).createSignedUrl(filePath, 3600);
+            if (error) { console.warn('Error firmando:', error); return null; }
+            return data.signedUrl;
+        } catch (e) { console.warn('Error parseando ruta:', e); return null; }
+    }
+    return null;
+}
 
-    if(!s){
-        throw new Error(
-            'No hay una sesión activa. Inicia sesión nuevamente.'
-        );
+/* ============================================
+   CARGAR CONVERSACIONES + BOT
+   ============================================ */
+async function loadConversations(){
+    const list=$('conversationList');
+    list.innerHTML='';
+    // Insertar Marquinhos SIEMPRE
+    const botEl=document.createElement('div');
+    botEl.className='conv conv-bot'+(current?.id===BOT_ID?' active':'');
+    botEl.dataset.id=BOT_ID;
+    botEl.innerHTML=`
+        <div class="avatar avatar-bot">✦</div>
+        <div class="convinfo">
+            <div class="convname">Marquinhos</div>
+            <div class="convmsg">Tu asistente personal ✦</div>
+        </div>
+        <div class="convtime" style="color:var(--success);font-size:.55rem">IA</div>
+    `;
+    botEl.onclick=()=>openConversation(BOT_ID);
+    list.appendChild(botEl);
+
+    if(!await auth()) return;
+
+    try {
+        const {data,error}=await db.from('contactos').select('contacto_id,created_at,fecha,estado').eq('usuario_id',user.id).neq('estado','bloqueado').order('created_at',{ascending:false});
+        if(error){console.error('Error cargando contactos:', error);return;}
+        if(!data?.length) return;
+
+        for(const c of data){
+            const p=await profile(c.contacto_id);
+            const {data:last}=await db.from('mensajes_chat').select('contenido,tipo,created_at,leido,remitente_id').eq('eliminado',false).or(`and(remitente_id.eq.${user.id},destinatario_id.eq.${c.contacto_id}),and(remitente_id.eq.${c.contacto_id},destinatario_id.eq.${user.id})`).order('created_at',{ascending:false}).limit(1).maybeSingle();
+
+            const el=document.createElement('div');
+            el.className='conv'+(current?.id===c.contacto_id?' active':'');
+            el.dataset.id=c.contacto_id;
+            el.innerHTML=avatar(p.nombre,p.avatar_url)+`
+                <div class="convinfo">
+                    <div class="convname">${esc(p.nombre||'Usuario')}</div>
+                    <div class="convmsg">${esc(last?.contenido||'Sin mensajes')}</div>
+                </div>
+                <div class="convtime">${last?.created_at?new Date(last.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):''}</div>
+            `;
+            el.onclick=()=>openConversation(c.contacto_id);
+            list.appendChild(el);
+        }
+    } catch (e) { console.error('Error en loadConversations:', e); }
+}
+
+/* ============================================
+   ABRIR CONVERSACIÓN
+   ============================================ */
+async function openConversation(id){
+    if(!await auth())return;
+    const p=await profile(id);
+    const esBot=(id===BOT_ID);
+    current={id,profile:p,bot:esBot};
+
+    $('chatName').textContent=p.nombre||'Usuario';
+    $('chatAvatar').innerHTML=esBot?'✦':(p.avatar_url?`<img src="${esc(p.avatar_url)}" alt="">`:esc((p.nombre||'◈').charAt(0).toUpperCase()));
+    $('chatAvatar').className='avatar'+(esBot?' avatar-bot':'');
+    $('chatStatus').textContent=esBot?'✦ IA · Siempre disponible':(p.online?'◉ En línea':'◈ Desconectado');
+    $('chatStatus').className='status'+(p.online?' online':'');
+
+    $('voiceBot').style.display = esBot ? 'inline-flex' : 'none';
+
+    document.querySelectorAll('.conv').forEach(x=>x.classList.toggle('active',x.dataset.id===id));
+
+    if(esBot){
+        const box=$('messages');
+        box.innerHTML='';
+        box.innerHTML=`<div class="bubblewrap received"><div class="bubble"><div class="bubble-bot-info">✦ MARQUINHOS</div>¡Hola! 👋 Soy Marquinhos, el asistente de Sariel's. Puedes:<br><br>◈ Escribirme un mensaje de texto<br>◈ Enviarme una nota de voz con 🎙️<br>◈ Hablarme con el botón 🔊 (te responderé con voz)<br><br>¿En qué te puedo ayudar hoy?</div></div>`;
+        box.scrollTop=box.scrollHeight;
+        return;
     }
 
-    const controller=
-        new AbortController();
+    const r=await db.from('mensajes_chat').select('*').eq('eliminado',false).or(`and(remitente_id.eq.${user.id},destinatario_id.eq.${id}),and(remitente_id.eq.${id},destinatario_id.eq.${user.id})`).order('created_at',{ascending:true}).limit(100);
+    if(r.error){console.error(r.error);toast('❌ Error al cargar mensajes','error');return}
+    await renderMessages(r.data||[]);
+    await markRead(id);
+    subscribeMessages(id);
+}
 
-    const timeout=
-        setTimeout(
-            ()=>{
-                controller.abort();
+/* ============================================
+   RENDER MENSAJES
+   ============================================ */
+async function renderMessages(rows){
+    const box=$('messages');
+    box.innerHTML='';
+    if(!rows.length){
+        box.innerHTML='<div class="empty"><strong>◈</strong><div>Sin mensajes</div><small>Envía el primer mensaje</small></div>';
+        return;
+    }
+    const signedUrls = await Promise.all(rows.map(m => getSignedUrlForMessage(m)));
+    rows.forEach((m,i) => {
+        box.insertAdjacentHTML('beforeend', messageHTML(m, m.remitente_id===user.id, signedUrls[i]));
+    });
+    box.scrollTop=box.scrollHeight;
+}
+
+function messageHTML(m,sent,signedUrl){
+    let body=esc(m.contenido||'');
+    const urlToUse = signedUrl || m.imagen_url;
+    if(urlToUse){
+        if(m.tipo==='imagen'){
+            body=`<img src="${esc(urlToUse)}" alt="${esc(m.nombre_archivo||'Imagen')}" loading="lazy">`;
+        } else if(m.tipo==='video'){
+            body=`<video controls playsinline src="${esc(urlToUse)}"></video>`;
+        } else if(m.tipo==='audio'){
+            body=`<audio controls preload="metadata" src="${esc(urlToUse)}"></audio>`;
+        } else {
+            const displayName = esc(m.nombre_archivo || m.contenido || 'Archivo');
+            body=`📎 <a href="${esc(urlToUse)}" target="_blank" rel="noopener" style="color:var(--gold)">${displayName}</a>`;
+        }
+    }
+    const esBotRecibido = !sent && m.bot_message;
+    const headerBot = esBotRecibido ? '<div class="bubble-bot-info">✦ MARQUINHOS</div>' : '';
+    return `<div class="bubblewrap ${sent?'sent':'received'}"><div class="bubble">${headerBot}${body}</div><div class="meta">${m.created_at?new Date(m.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):''}${sent?(m.leido?' · ◆◆':' · ◈◈'):''}</div></div>`;
+}
+
+/* ============================================
+   ENVIAR MENSAJE
+   ============================================ */
+async function sendMessage(text){
+    if(!current||!text.trim())return;
+    if(!await auth())return;
+
+    const textoLimpio=text.trim();
+    $('messageInput').value='';
+
+    if(current.bot){
+        const userMsg = { contenido: textoLimpio, created_at: new Date().toISOString(), tipo:'texto', remitente_id: user.id, leido:true };
+        append(userMsg, true);
+        mostrarTypingBot();
+
+        try {
+            const respuesta = await preguntarAlBot(textoLimpio);
+            quitarTypingBot();
+            const botMsg = { contenido: respuesta, created_at: new Date().toISOString(), tipo:'texto', remitente_id: BOT_ID, leido:true, bot_message:true };
+            append(botMsg, false);
+        } catch(e) {
+            quitarTypingBot();
+            console.error('Error Marquinhos:', e);
+            const errorMsg = { contenido: '⚠️ ' + (e.message || 'Ups, tuve un problema.'), created_at: new Date().toISOString(), tipo:'texto', remitente_id: BOT_ID, leido:true, bot_message:true };
+            append(errorMsg, false);
+        }
+        return;
+    }
+
+    const r=await db.from('mensajes_chat').insert({remitente_id:user.id,destinatario_id:current.id,contenido:textoLimpio,tipo:'texto',leido:false,editado:false,eliminado:false}).select('*').single();
+    if(r.error){console.error(r.error);toast('❌ Error al enviar mensaje','error');return}
+    await append(r.data,true);
+    loadConversations();
+}
+
+/* ============================================
+   LLAMAR AL BACKEND DEL BOT (TEXTO) - CON TIMEOUT
+   ============================================ */
+async function preguntarAlBot(mensaje){
+    const s=await session();
+    if(!s){
+        throw new Error('No hay una sesión activa. Inicia sesión nuevamente.');
+    }
+
+    const controller=new AbortController();
+    const timeout=setTimeout(()=>{controller.abort();},50000);
+
+    try {
+        const r=await fetch('/api/ai/chat',{
+            method:'POST',
+            headers:{
+                'Content-Type':'application/json',
+                'Accept':'application/json',
+                'Authorization':'Bearer '+s.access_token
             },
-            50000
-        );
-
-    try{
-
-        const r=await fetch(
-            '/api/ai/chat',
-            {
-                method:'POST',
-
-                headers:{
-                    'Content-Type':
-                        'application/json',
-
-                    'Accept':
-                        'application/json',
-
-                    'Authorization':
-                        'Bearer '+s.access_token
-                },
-
-                body:JSON.stringify({
-                    message:
-                        mensaje.trim(),
-
-                    context:
-                        'chat_sariels',
-
-                    history:[]
-                }),
-
-                signal:
-                    controller.signal
-            }
-        );
+            body:JSON.stringify({
+                message: mensaje.trim(),
+                context: 'chat_sariels',
+                history: []
+            }),
+            signal: controller.signal
+        });
 
         let data={};
-
-        try{
-
-            data=
-                await r.json();
-
-        }catch(jsonError){
-
-            console.error(
-                '❌ Marquinhos devolvió una respuesta que no es JSON:',
-                jsonError
-            );
-
-            throw new Error(
-                'El servidor de Marquinhos devolvió una respuesta inválida.'
-            );
+        try { data = await r.json(); } catch(jsonError) {
+            console.error('❌ Marquinhos devolvió una respuesta que no es JSON:', jsonError);
+            throw new Error('El servidor de Marquinhos devolvió una respuesta inválida.');
         }
 
         if(!r.ok){
-
-            console.error(
-                '❌ Error HTTP Marquinhos:',
-                {
-                    status:r.status,
-                    data:data
-                }
-            );
-
-            throw new Error(
-                data.error ||
-                `Error del servidor (${r.status})`
-            );
+            console.error('❌ Error HTTP Marquinhos:', {status:r.status, data:data});
+            throw new Error(data.error || `Error del servidor (${r.status})`);
         }
-
         if(!data.success){
-
-            throw new Error(
-                data.error ||
-                'Marquinhos no pudo responder.'
-            );
+            throw new Error(data.error || 'Marquinhos no pudo responder.');
         }
 
-        const respuesta=
-            typeof data.reply==='string'
-                ? data.reply.trim()
-                : '';
-
+        const respuesta = typeof data.reply==='string' ? data.reply.trim() : '';
         if(!respuesta){
-
-            throw new Error(
-                'Marquinhos respondió sin contenido.'
-            );
+            throw new Error('Marquinhos respondió sin contenido.');
         }
-
         return respuesta;
-
-    }catch(error){
-
-        if(
-            error.name==='AbortError'
-        ){
-
-            console.error(
-                '⏱️ Timeout esperando a Marquinhos'
-            );
-
-            throw new Error(
-                'Marquinhos está tardando demasiado en responder. Intenta nuevamente.'
-            );
+    } catch(error){
+        if(error.name==='AbortError'){
+            console.error('⏱️ Timeout esperando a Marquinhos');
+            throw new Error('Marquinhos está tardando demasiado en responder. Intenta nuevamente.');
         }
-
-        console.error(
-            '❌ Error comunicando con Marquinhos:',
-            error
-        );
-
+        console.error('❌ Error comunicando con Marquinhos:', error);
         throw error;
-
-    }finally{
-
-        clearTimeout(
-            timeout
-        );
+    } finally {
+        clearTimeout(timeout);
     }
 }
+
+/* ============================================
+   TYPING BOT
+   ============================================ */
+function mostrarTypingBot(){
+    const box=$('messages');
+    const empty=box.querySelector('.empty');
+    if(empty)empty.remove();
+    box.insertAdjacentHTML('beforeend',`<div class="bubblewrap received" id="typing-bot"><div class="bubble"><div class="bubble-bot-info">✦ MARQUINHOS</div><div class="typing-indicator"><span></span><span></span><span></span></div></div></div>`);
+    box.scrollTop=box.scrollHeight;
+}
+function quitarTypingBot(){
+    const el=$('typing-bot');
+    if(el)el.remove();
+}
+
+/* ============================================
+   APPEND
+   ============================================ */
+async function append(m,sent){
+    const box=$('messages');
+    const empty=box.querySelector('.empty');
+    if(empty)empty.remove();
+    const signedUrl = await getSignedUrlForMessage(m);
+    box.insertAdjacentHTML('beforeend', messageHTML(m, sent, signedUrl));
+    box.scrollTop=box.scrollHeight;
+}
+
+/* ============================================
+   MARCAR LEÍDO
+   ============================================ */
+async function markRead(id){
+    if(!user||id===BOT_ID)return;
+    await db.from('mensajes_chat').update({leido:true}).eq('remitente_id',id).eq('destinatario_id',user.id).eq('leido',false).eq('eliminado',false);
+}
+
+/* ============================================
+   REALTIME MENSAJES
+   ============================================ */
+function subscribeMessages(id){
+    if(id===BOT_ID)return;
+    if(msgChannel){db.removeChannel(msgChannel);}
+    msgChannel=db.channel('chat-'+id).on('postgres_changes',{event:'INSERT',schema:'public',table:'mensajes_chat'},p=>{
+        const m=p.new;
+        if(current?.id===id && m.remitente_id===id && m.destinatario_id===user.id){
+            append(m,false);
+            markRead(id);
+        }
+    }).subscribe();
+}
+
+/* ============================================
+   VOZ CON MARQUINHOS (Botón 🔊)
+   ============================================ */
+async function grabarVozParaBot() {
+    if(!current?.bot) return;
+    if(!await auth()) return;
+
+    if(voiceBotGrabando){
+        // Detener grabación
+        if(voiceBotRecorder && voiceBotRecorder.state !== 'inactive'){
+            voiceBotRecorder.stop();
+        }
+        return;
+    }
+
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({audio:true});
+        voiceBotChunks = [];
+        voiceBotRecorder = new MediaRecorder(stream);
+
+        voiceBotRecorder.ondataavailable = e => {
+            if(e.data && e.data.size) voiceBotChunks.push(e.data);
+        };
+
+        voiceBotRecorder.onstop = async () => {
+            stream.getTracks().forEach(t => t.stop());
+            voiceBotGrabando = false;
+            $('voiceBot').classList.remove('recording');
+            $('voiceBot').textContent = '🔊';
+
+            const blob = new Blob(voiceBotChunks, {type: voiceBotRecorder.mimeType || 'audio/webm'});
+            voiceBotChunks = [];
+            if(!blob.size){ toast('⚠️ No se capturó audio', 'error'); return; }
+            const file = new File([blob], `voz-${Date.now()}.webm`, {type: blob.type});
+            await enviarVozAlBot(file);
+        };
+
+        voiceBotRecorder.start();
+        voiceBotGrabando = true;
+        $('voiceBot').classList.add('recording');
+        $('voiceBot').textContent = '⏹️';
+        toast('🎙️ Habla ahora… presiona otra vez para enviar');
+    } catch(e) {
+        console.error('Error micrófono:', e);
+        toast('❌ No se pudo acceder al micrófono', 'error');
+    }
+}
+
+async function enviarVozAlBot(file){
+    const s = await session();
+    if(!s) return;
+
+    // Subir audio
+    const path = `${user.id}/bot-voice/${Date.now()}.webm`;
+    const { error: upErr } = await db.storage.from('chat-audio').upload(path, file, {contentType: file.type, upsert:false});
+    if(upErr){ toast('❌ Error subiendo audio', 'error'); return; }
+
+    const { data: signed } = await db.storage.from('chat-audio').createSignedUrl(path, 3600);
+    if(!signed?.signedUrl){ toast('❌ Error firmando audio', 'error'); return; }
+
+    // Mostrar burbuja con "Procesando..."
+    const tempId = 'voice-user-' + Date.now();
+    const box = $('messages');
+    box.insertAdjacentHTML('beforeend', `<div class="bubblewrap sent" id="${tempId}"><div class="bubble"><div class="voice-label">🎙️ TU VOZ</div><div class="voice-loading">Enviando a Marquinhos…</div></div></div>`);
+    box.scrollTop = box.scrollHeight;
+
+    try {
+        const r = await fetch('/api/ai/voice/chat', {
+            method:'POST',
+            headers:{'Content-Type':'application/json','Authorization':'Bearer '+s.access_token},
+            body: JSON.stringify({audio_url: signed.signedUrl})
+        });
+        const data = await r.json().catch(()=>({}));
+        document.getElementById(tempId)?.remove();
+
+        if(!r.ok || data.success === false){
+            throw new Error(data.error || 'Error del servicio de voz');
+        }
+
+        // Mostrar respuesta del bot con audio
+        const botId = 'voice-bot-' + Date.now();
+        let botBody = `<div class="bubble-bot-info">✦ MARQUINHOS</div>`;
+        if(data.transcripcion){
+            botBody += `<div class="bot-transcripcion">🎙️ "${esc(data.transcripcion)}"</div>`;
+        }
+        botBody += `<div>${esc(data.reply || 'Sin respuesta')}</div>`;
+        if(data.audio_url){
+            botBody += `<audio class="bot-audio" controls src="${esc(data.audio_url)}"></audio>`;
+        }
+        box.insertAdjacentHTML('beforeend', `<div class="bubblewrap received" id="${botId}"><div class="bubble">${botBody}</div></div>`);
+        box.scrollTop = box.scrollHeight;
+
+        // Autoplay
+        if(data.audio_url){
+            const audio = document.querySelector(`#${botId} audio`);
+            if(audio) audio.play().catch(()=>{});
+        }
+
+    } catch(e) {
+        console.error('Error voz bot:', e);
+        document.getElementById(tempId)?.remove();
+        toast('❌ ' + e.message, 'error');
+    }
+}
+
+/* ============================================
+   SUBIR ARCHIVO NORMAL
+   ============================================ */
+async function uploadFile(file){
+    if(!current||!await auth())return;
+    if(current.bot){toast('⚠️ Para Marquinhos usa el botón 🔊, o envía nota de voz con 🎙️','error');return;}
+    if(file.size>50*1024*1024){toast('⚠️ El archivo supera 50 MB','error');return}
+
+    const type = file.type.startsWith('image/')?'imagen':file.type.startsWith('video/')?'video':file.type.startsWith('audio/')?'audio':'archivo';
+    const bucket = type==='audio'?'chat-audio':'chat-attachments';
+    const safe = file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+    const path = `${user.id}/mensajes/${Date.now()}_${Math.random().toString(36).slice(2,8)}_${safe}`;
+
+    const up = await db.storage.from(bucket).upload(path, file, {contentType: file.type||'application/octet-stream', cacheControl:'3600', upsert:false});
+    if(up.error){console.error(up.error);toast('❌ No se pudo subir el archivo','error');return}
+
+    const storageRef = `bucket://${bucket}/${path}`;
+    const r = await db.from('mensajes_chat').insert({remitente_id:user.id,destinatario_id:current.id,contenido:file.name,nombre_archivo:file.name,imagen_url:storageRef,tipo,leido:false,editado:false,eliminado:false}).select('*').single();
+    if(r.error){console.error(r.error);toast('❌ No se pudo guardar el archivo','error');return}
+
+    await append(r.data,true);
+    loadConversations();
+}
+
+/* ============================================
+   NUEVA CONVERSACIÓN
+   ============================================ */
+function newConversation(){
+    $('newModal').classList.add('show');
+    $('userSearch').value='';
+    $('userResults').innerHTML='';
+    setTimeout(()=>$('userSearch').focus(),50);
+}
+
+async function searchUsers(q){
+    const box=$('userResults');
+    if(!q||q.trim().length<2){
+        box.innerHTML='<div style="padding:18px;text-align:center;color:var(--muted)">Escribe al menos 2 caracteres</div>';
+        return;
+    }
+    if(!await auth())return;
+    const term=q.trim().replace(/[%_,]/g,' ');
+    const r=await db.from('perfiles_publicos').select('id,nombre,handle,avatar_url').or(`nombre.ilike.%${term}%,handle.ilike.%${term}%`).neq('id',user.id).limit(12);
+    if(r.error){console.error(r.error);toast('❌ Error al buscar usuarios','error');return}
+
+    box.innerHTML = r.data?.length ? '' : '<div style="padding:18px;text-align:center;color:var(--muted)">No se encontraron usuarios</div>';
+
+    for(const p of r.data||[]){
+        const el=document.createElement('div');
+        el.className='result';
+        el.innerHTML=avatar(p.nombre,p.avatar_url)+`
+            <div style="flex:1">
+                <b>${esc(p.nombre||'Usuario')}</b>
+                <div style="font-size:.68rem;color:var(--muted)">@${esc(p.handle||'usuario')}</div>
+            </div>
+            <span style="color:var(--gold);font-size:.7rem">Iniciar ›</span>
+        `;
+        el.onclick=()=>createConversation(p.id);
+        box.appendChild(el);
+    }
+}
+
+async function createConversation(id){
+    if(!await auth())return;
+    const r=await db.from('contactos').select('id').eq('usuario_id',user.id).eq('contacto_id',id).maybeSingle();
+    if(r.error){toast('❌ Error comprobando contacto','error');return}
+    if(!r.data){
+        const ins=await db.from('contactos').insert({usuario_id:user.id,contacto_id:id,estado:'activo'});
+        if(ins.error){console.error(ins.error);toast('❌ No se pudo crear la conversación','error');return}
+    }
+    $('newModal').classList.remove('show');
+    await loadConversations();
+    await openConversation(id);
+}
+
+/* ============================================
+   LLAMADAS VIDEO
+   ============================================ */
+async function token(roomName,participantName){
+    const s=await session();
+    if(!s) throw Error('No autenticado');
+    const r=await fetch('/api/livekit/token',{
+        method:'POST',
+        headers:{'Content-Type':'application/json',Authorization:'Bearer '+s.access_token},
+        body:JSON.stringify({roomName,participantName})
+    });
+    const d=await r.json().catch(()=>({}));
+    if(!r.ok) throw Error(d.error||'No se pudo obtener token LiveKit');
+    return d;
+}
+
+async function startCall(){
+    if(current?.bot){toast('⚠️ Marquinhos no acepta llamadas','warning');return}
+    if(!current){toast('⚠️ Selecciona una conversación','error');return}
+    if(call.active){$('callOverlay').classList.add('show');return}
+    try {
+        const s=await session();
+        if(!s){toast('⚠️ Inicia sesión para llamar','error');return}
+        const id=crypto.randomUUID();
+        const roomName='call_'+id;
+        const ins=await db.from('llamadas').insert({id,creador_id:user.id,destinatario_id:current.id,tipo:'video',estado:'ringing',room_name:roomName,conversation_id:current.id});
+        if(ins.error) throw ins.error;
+        const pi=await db.from('llamadas_participantes').insert({llamada_id:id,usuario_id:user.id,rol:'creador',estado:'conectado',entro_at:new Date().toISOString()});
+        if(pi.error) throw pi.error;
+        call.id=id; call.initiator=true;
+        await connectCall(roomName,user.id);
+        subscribeCall(id);
+        $('callOverlay').classList.add('show');
+        $('callInfo').textContent='📞 Llamando a '+(current.profile.nombre||'usuario')+'…';
+    } catch(e) {
+        console.error(e); toast('❌ '+e.message,'error'); cleanupCall();
+    }
+}
+
+async function connectCall(roomName,name){
+    if(!window.LivekitClient){throw Error('LiveKit no está cargado');}
+    const td=await token(roomName,name);
+    const room=new LivekitClient.Room();
+    room.on(LivekitClient.RoomEvent.TrackSubscribed,track=>{
+        if(track.kind==='video') track.attach($('remoteVideo'));
+        if(track.kind==='audio') track.attach();
+    });
+    room.on(LivekitClient.RoomEvent.Disconnected,()=>{if(call.active) cleanupCall();});
+    await room.connect(td.url,td.token);
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true,video:{facingMode:'user',width:{ideal:640},height:{ideal:480}}});
+    const at=stream.getAudioTracks()[0];
+    const vt=stream.getVideoTracks()[0];
+    if(at){await room.localParticipant.publishTrack(at,{name:'microphone',source:LivekitClient.TrackSource.Microphone});call.audio=at;}
+    if(vt){await room.localParticipant.publishTrack(vt,{name:'camera',source:LivekitClient.TrackSource.Camera});call.video=vt;$('localVideo').srcObject=new MediaStream([vt]);}
+    call.room=room; call.active=true;
+}
+
+function subscribeCall(id){
+    if(callChannel) db.removeChannel(callChannel);
+    callChannel=db.channel('call-'+id).on('postgres_changes',{event:'UPDATE',schema:'public',table:'llamadas',filter:'id=eq.'+id},p=>{
+        if(['ended','rejected','missed'].includes(p.new.estado)){toast('📞 La llamada terminó','');cleanupCall();}
+    }).subscribe();
+}
+
+async function incoming(data){
+    if(call.active){await db.from('llamadas').update({estado:'rejected',finalizada_at:new Date().toISOString()}).eq('id',data.id);return;}
+    incomingId=data.id;
+    const p=await profile(data.creador_id);
+    $('incomingName').textContent=p.nombre||'Usuario';
+    $('incomingAvatar').innerHTML=p.avatar_url?`<img src="${esc(p.avatar_url)}" alt="">`:esc((p.nombre||'◈').charAt(0).toUpperCase());
+    $('incomingOverlay').classList.add('show');
+}
+
+async function acceptCall(){
+    if(!incomingId)return;
+    try {
+        const r=await db.from('llamadas').select('room_name,creador_id').eq('id',incomingId).single();
+        if(r.error) throw r.error;
+        await db.from('llamadas').update({estado:'active',contestada_at:new Date().toISOString()}).eq('id',incomingId);
+        await db.from('llamadas_participantes').insert({llamada_id:incomingId,usuario_id:user.id,rol:'invitado',estado:'conectado',entro_at:new Date().toISOString()});
+        call.id=incomingId; call.initiator=false;
+        $('incomingOverlay').classList.remove('show');
+        await connectCall(r.data.room_name,user.id);
+        subscribeCall(incomingId);
+    } catch(e) {console.error(e);toast('❌ '+e.message,'error');cleanupCall();}
+}
+
+async function rejectCall(){
+    if(incomingId){await db.from('llamadas').update({estado:'rejected',finalizada_at:new Date().toISOString()}).eq('id',incomingId);}
+    incomingId=null;
+    $('incomingOverlay').classList.remove('show');
+}
+
+async function cleanupCall(){
+    try {
+        if(call.room) call.room.disconnect();
+        if(call.audio) call.audio.stop();
+        if(call.video) call.video.stop();
+        if(call.screen) call.screen.stop();
+        $('localVideo').srcObject=null;
+        $('remoteVideo').srcObject=null;
+        if(callChannel) db.removeChannel(callChannel);
+    } catch(e) {}
+    Object.assign(call,{room:null,id:null,active:false,audio:null,video:null,screen:null});
+    $('callOverlay').classList.remove('show');
+}
+
+async function hangup(){
+    if(call.id){await db.from('llamadas').update({estado:'ended',finalizada_at:new Date().toISOString()}).eq('id',call.id);}
+    await cleanupCall();
+}
+
+async function toggleMic(){if(!call.audio)return;call.audio.enabled=!call.audio.enabled;$('toggleMic').textContent=call.audio.enabled?'🎤':'🔇';}
+async function toggleCam(){if(!call.video)return;call.video.enabled=!call.video.enabled;$('toggleCam').textContent=call.video.enabled?'📷':'📷❌';}
+
+async function toggleScreen(){
+    if(!call.room)return;
+    try {
+        if(call.screen){
+            await call.room.localParticipant.unpublishTrack(call.screen);
+            call.screen.stop();
+            call.screen=null;
+            $('toggleScreen').textContent='🖥️';
+            return;
+        }
+        const s=await navigator.mediaDevices.getDisplayMedia({video:true});
+        const t=s.getVideoTracks()[0];
+        await call.room.localParticipant.publishTrack(t,{name:'screen',source:LivekitClient.TrackSource.ScreenShare});
+        call.screen=t;
+        $('toggleScreen').textContent='🖥️⏹️';
+        t.onended=()=>toggleScreen();
+    } catch(e) {if(e.name!=='NotAllowedError'){toast('❌ No se pudo compartir pantalla','error');}}
+}
+
+/* ============================================
+   INIT
+   ============================================ */
+function init(){
+    db=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{
+        auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true},
+        realtime:{params:{eventsPerSecond:10}}
+    });
+
+    loadConversations();
+
+    db.auth.onAuthStateChange((event,s)=>{
+        user=s?.user||null;
+        if(event==='SIGNED_IN'||event==='SIGNED_OUT'){loadConversations();}
+    });
+
+    $('composer').addEventListener('submit',e=>{e.preventDefault();sendMessage($('messageInput').value);});
+    $('newChat').onclick=newConversation;
+    $('closeModal').onclick=()=>$('newModal').classList.remove('show');
+    $('userSearch').addEventListener('input',e=>searchUsers(e.target.value));
+    $('attach').onclick=()=>{
+        if(current?.bot){toast('⚠️ Para Marquinhos usa el botón 🔊','error');return;}
+        $('fileInput').click();
+    };
+    $('fileInput').addEventListener('change',async e=>{
+        for(const f of e.target.files){await uploadFile(f);}
+        e.target.value='';
+    });
+    $('audio').onclick=recordAudioNota;
+    $('voiceBot').onclick=grabarVozParaBot;
+    $('videoCall').onclick=startCall;
+    $('hangup').onclick=hangup;
+    $('toggleMic').onclick=toggleMic;
+    $('toggleCam').onclick=toggleCam;
+    $('toggleScreen').onclick=toggleScreen;
+    $('acceptCall').onclick=acceptCall;
+    $('rejectCall').onclick=rejectCall;
+
+    $('searchChat').onclick=async()=>{
+        if(!current){toast('⚠️ Selecciona una conversación','error');return}
+        if(current.bot){toast('ℹ️ Marquinhos no tiene búsqueda local aún','warning');return}
+        const q=prompt('🔍 Buscar en la conversación:');
+        if(!q?.trim())return;
+        const r=await db.from('mensajes_chat').select('*').eq('eliminado',false).or(`and(remitente_id.eq.${user.id},destinatario_id.eq.${current.id}),and(remitente_id.eq.${current.id},destinatario_id.eq.${user.id})`).ilike('contenido','%'+q.trim()+'%').order('created_at',{ascending:true});
+        if(r.error){toast('❌ Error al buscar','error');return}
+        await renderMessages(r.data||[]);
+    };
+
+    db.channel('incoming-calls').on('postgres_changes',{event:'INSERT',schema:'public',table:'llamadas'},p=>{
+        if(user && p.new.destinatario_id===user.id && p.new.estado==='ringing'){incoming(p.new);}
+    }).subscribe();
+}
+
+/* ============================================
+   NOTA DE VOZ NORMAL (🎙️) - Para chats NO bot
+   ============================================ */
+function getSupportedAudioMime(){
+    const candidates=['audio/webm;codecs=opus','audio/webm','audio/ogg;codecs=opus','audio/ogg','audio/mp4'];
+    for(const type of candidates){if(window.MediaRecorder && MediaRecorder.isTypeSupported(type)) return type;}
+    return '';
+}
+function extensionForMime(mime){if(mime.includes('ogg')) return 'ogg';if(mime.includes('mp4')) return 'm4a';return 'webm';}
+
+async function recordAudioNota(){
+    if(recorder && recorder.state==='recording'){recorder.stop();return;}
+    if(!current){toast('⚠️ Selecciona una conversación','error');return;}
+    if(!await auth())return;
+    const esBot = current.bot;
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({audio:true});
+        audioChunks = [];
+        const mimeType = getSupportedAudioMime();
+        recorder = mimeType ? new MediaRecorder(stream,{mimeType}) : new MediaRecorder(stream);
+        recordingMode = esBot ? 'bot' : 'normal';
+        recordingStartedAt = Date.now();
+        recorder.ondataavailable = e => {if(e.data && e.data.size) audioChunks.push(e.data);};
+        recorder.onstop = async () => {
+            stream.getTracks().forEach(t=>t.stop());
+            const blob = new Blob(audioChunks,{type:recorder.mimeType||mimeType||'audio/webm'});
+            audioChunks = [];
+            const mode = recordingMode;
+            recorder = null; recordingMode = null;
+            if(!blob.size){toast('⚠️ No se capturó audio','error');return;}
+            const ext = extensionForMime(blob.type);
+            const file = new File([blob],`audio-${Date.now()}.${ext}`,{type:blob.type});
+            if(mode==='bot'){await enviarVozAlBot(file);}else{await uploadFile(file);}
+        };
+        recorder.start();
+        $('audio').classList.add('recording');
+        $('audio').textContent = '⏹️';
+        toast(esBot ? '🎙️ Habla con Marquinhos… presiona otra vez para enviar' : '🎙️ Grabando… presiona otra vez para detener');
+    } catch(e) {
+        console.error('Micrófono:',e);
+        toast('❌ No se pudo acceder al micrófono','error');
+    }
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+    if(window.supabase?.createClient){init();}
+    else{toast('❌ No se pudo cargar Supabase','error');}
+});
+</script>
+</body>
+</html>
