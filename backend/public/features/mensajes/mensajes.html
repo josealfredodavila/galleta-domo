@@ -43,7 +43,7 @@ button,input{font:inherit}
 .status{font-size:.63rem;color:var(--muted)}
 .status.online{color:var(--success)}
 .actions{margin-left:auto;display:flex;gap:4px}
-.messages{flex:1;overflow:auto;padding:18px;display:flex;flex-direction:column;gap:9px;min-height:0}
+.messages{flex:1;overflow:auto;padding:18px;display:flex;flex-direction:column;gap:9px;min-height:0;position:relative}
 .empty{margin:auto;text-align:center;color:var(--muted)}
 .empty strong{display:block;color:var(--gold);font-size:2rem;margin-bottom:8px}
 .bubblewrap{display:flex;flex-direction:column;width:100%}
@@ -104,6 +104,65 @@ button,input{font:inherit}
 @keyframes pulse-recording{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.7;transform:scale(1.05)}}
 .bot-transcripcion{font-size:.7rem;color:var(--muted);margin-bottom:8px;font-style:italic;border-left:2px solid var(--gold);padding-left:10px;opacity:.85}
 .bubble audio.bot-audio{margin-top:8px;height:36px;width:100%;max-width:280px;border-radius:20px}
+/* ============================================
+   FLECHA FLOTANTE PARA BAJAR AL FINAL (estilo WhatsApp/Twitter)
+   ============================================ */
+.scroll-down-btn{
+    position:sticky;
+    bottom:18px;
+    align-self:flex-end;
+    margin-top:auto;
+    width:44px;
+    height:44px;
+    border-radius:50%;
+    background:linear-gradient(135deg,var(--gold),#b8923a);
+    color:var(--space);
+    border:2px solid var(--space);
+    box-shadow:0 4px 14px rgba(0,0,0,.5);
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:1.2rem;
+    font-weight:900;
+    opacity:0;
+    visibility:hidden;
+    transform:translateY(10px) scale(.9);
+    transition:opacity .25s, transform .25s, visibility .25s;
+    z-index:50;
+    pointer-events:none;
+}
+.scroll-down-btn.show{
+    opacity:1;
+    visibility:visible;
+    transform:translateY(0) scale(1);
+    pointer-events:auto;
+}
+.scroll-down-btn:hover{
+    transform:translateY(0) scale(1.1);
+}
+.scroll-down-btn .badge-new{
+    position:absolute;
+    top:-6px;
+    right:-6px;
+    background:var(--danger);
+    color:#fff;
+    font-size:.62rem;
+    font-weight:800;
+    min-width:20px;
+    height:20px;
+    padding:0 5px;
+    border-radius:99px;
+    border:2px solid var(--space);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    animation:badgePulse 1.5s infinite;
+}
+@keyframes badgePulse{
+    0%,100%{transform:scale(1)}
+    50%{transform:scale(1.15)}
+}
 @media(max-width:760px){.panel{grid-template-columns:1fr;min-height:0}.sidebar{border-right:0;border-bottom:1px solid var(--border);max-height:190px}.chat{min-height:500px}.bubble{max-width:90%}.videos video{width:95%}.videos video.local{width:35%}.header{align-items:flex-start}.network{margin-top:3px}}
 @media(max-width:430px){.app{padding:10px}.nav a{font-size:.62rem;padding:7px 9px}.composer{flex-wrap:wrap}.composer input{flex-basis:100%}}
 </style>
@@ -206,6 +265,10 @@ let recorder=null,audioChunks=[],recordingMode=null,recordingStartedAt=0;
 let voiceBotRecorder=null,voiceBotChunks=[],voiceBotGrabando=false;
 // ✅ NUEVA VARIABLE: Bloqueo para evitar envíos simultáneos al bot
 let enviandoVozBot = false;
+// ✅ Variables para control del scroll (estilo WhatsApp)
+let isUserAtBottom = true;
+let unreadCount = 0;
+const SCROLL_THRESHOLD = 80; // px de margen para considerar "pegado abajo"
 const call={room:null,id:null,active:false,audio:null,video:null,screen:null,initiator:false};
 
 const $=id=>document.getElementById(id);
@@ -215,6 +278,70 @@ async function session(){if(!db)return null;const r=await db.auth.getSession();i
 async function auth(){const s=await session();if(!s){toast('⚠️ Inicia sesión para usar Mensajes','error');return false}user=s.user;return true}
 function avatar(name,url,cls='avatar'){return `<div class="${cls}">${url?`<img src="${esc(url)}" alt="">`:esc((name||'◈').charAt(0).toUpperCase())}</div>`}
 async function profile(id){if(id===BOT_ID)return{id:BOT_ID,nombre:"Marquinhos",handle:'marquinhos',avatar_url:null,online:true,bot:true};const r=await db.from('perfiles_publicos').select('id,nombre,handle,avatar_url,online,ultima_conexion').eq('id',id).maybeSingle();return r.data||{id,nombre:'Usuario',avatar_url:null,online:false}}
+
+/* ============================================
+   ✅ SCROLL ESTILO WHATSAPP/TWITTER
+   ============================================ */
+function scrollToBottom(force = false){
+    const box = $('messages');
+    if(!box) return;
+    if(!force && !isUserAtBottom) return;
+
+    requestAnimationFrame(() => {
+        box.scrollTop = box.scrollHeight;
+    });
+
+    setTimeout(() => {
+        if(force || isUserAtBottom){
+            box.scrollTop = box.scrollHeight;
+        }
+    }, 150);
+
+    if(force || isUserAtBottom){
+        ocultarFlechaNuevos();
+    }
+}
+
+function mostrarFlechaNuevos(){
+    let btn = document.getElementById('scrollDownBtn');
+    if(!btn){
+        // Crear el botón dinámicamente si no existe
+        btn = document.createElement('button');
+        btn.className = 'scroll-down-btn';
+        btn.id = 'scrollDownBtn';
+        btn.innerHTML = '↓<span class="badge-new" id="newMsgBadge" style="display:none;">1</span>';
+        btn.title = 'Ir al final';
+        btn.onclick = () => {
+            isUserAtBottom = true;
+            scrollToBottom(true);
+        };
+        $('messages').appendChild(btn);
+    }
+    const badge = document.getElementById('newMsgBadge');
+    if(badge){
+        badge.textContent = unreadCount > 9 ? '9+' : unreadCount;
+        badge.style.display = unreadCount > 0 ? 'flex' : 'none';
+    }
+    btn.classList.add('show');
+}
+
+function ocultarFlechaNuevos(){
+    const btn = document.getElementById('scrollDownBtn');
+    if(btn) btn.classList.remove('show');
+    unreadCount = 0;
+    const badge = document.getElementById('newMsgBadge');
+    if(badge) badge.style.display = 'none';
+}
+
+function detectarSiEstaAbajo(){
+    const box = $('messages');
+    if(!box) return;
+    const distanciaAlFondo = box.scrollHeight - box.scrollTop - box.clientHeight;
+    isUserAtBottom = distanciaAlFondo < SCROLL_THRESHOLD;
+    if(isUserAtBottom){
+        ocultarFlechaNuevos();
+    }
+}
 
 /* ============================================
    FIRMA URLS DE STORAGE
@@ -274,7 +401,6 @@ async function loadConversations(){
 
     if(!await auth()) return;
 
-    // Vista previa del último mensaje con Marquinhos (si ya hay historial guardado)
     try {
         const {data:lastBot}=await db.from('mensajes_chat').select('contenido,tipo,created_at').eq('eliminado',false)
             .or(`and(remitente_id.eq.${user.id},destinatario_id.eq.${BOT_UUID}),and(remitente_id.eq.${BOT_UUID},destinatario_id.eq.${user.id})`)
@@ -283,7 +409,7 @@ async function loadConversations(){
             const preview=$('botLastMsg');
             if(preview) preview.textContent = lastBot.tipo==='texto' ? (lastBot.contenido||'') : ('📎 '+(lastBot.contenido||lastBot.tipo));
         }
-    } catch(e) { /* silencioso: no bloquea la carga del resto de conversaciones */ }
+    } catch(e) { }
 
     try {
         const {data,error}=await db.from('contactos').select('contacto_id,created_at,fecha,estado').eq('usuario_id',user.id).neq('estado','bloqueado').order('created_at',{ascending:false});
@@ -291,7 +417,7 @@ async function loadConversations(){
         if(!data?.length) return;
 
         for(const c of data){
-            if(c.contacto_id===BOT_UUID) continue; // Marquinhos ya tiene su propia entrada fija arriba
+            if(c.contacto_id===BOT_UUID) continue;
             const p=await profile(c.contacto_id);
             const {data:last}=await db.from('mensajes_chat').select('contenido,tipo,created_at,leido,remitente_id').eq('eliminado',false).or(`and(remitente_id.eq.${user.id},destinatario_id.eq.${c.contacto_id}),and(remitente_id.eq.${c.contacto_id},destinatario_id.eq.${user.id})`).order('created_at',{ascending:false}).limit(1).maybeSingle();
 
@@ -327,10 +453,14 @@ async function openConversation(id){
     $('chatStatus').className='status'+(p.online?' online':'');
 
     $('voiceBot').style.display = esBot ? 'inline-flex' : 'none';
-    // ✅ MOSTRAR BOTÓN ELIMINAR CUANDO HAY CONVERSACIÓN ABIERTA
     $('deleteChat').style.display = 'inline-flex';
 
     document.querySelectorAll('.conv').forEach(x=>x.classList.toggle('active',x.dataset.id===id));
+
+    // ✅ Resetear estado de scroll al cambiar de conversación
+    isUserAtBottom = true;
+    unreadCount = 0;
+    ocultarFlechaNuevos();
 
     if(esBot){
         await abrirConversacionBot();
@@ -345,7 +475,7 @@ async function openConversation(id){
 }
 
 /* ============================================
-   ABRIR CONVERSACIÓN CON MARQUINHOS (con historial persistido)
+   ABRIR CONVERSACIÓN CON MARQUINHOS
    ============================================ */
 async function abrirConversacionBot(){
     const box=$('messages');
@@ -361,7 +491,7 @@ async function abrirConversacionBot(){
 
     if(!historial.length){
         box.innerHTML=`<div class="bubblewrap received"><div class="bubble"><div class="bubble-bot-info">✦ MARQUINHOS</div>¡Hola! 👋 Soy Marquinhos, el asistente de Sariel's. Puedes:<br><br>◈ Escribirme un mensaje de texto<br>◈ Enviarme una nota de voz con 🎙️<br>◈ Hablarme con el botón 🔊 (te responderé con voz)<br><br>¿En qué te puedo ayudar hoy?</div></div>`;
-        box.scrollTop=box.scrollHeight;
+        scrollToBottom(true);
         return;
     }
 
@@ -369,7 +499,9 @@ async function abrirConversacionBot(){
     historial.forEach((m,i) => {
         box.insertAdjacentHTML('beforeend', messageHTML(m, m.remitente_id===user.id, signedUrls[i]));
     });
-    box.scrollTop=box.scrollHeight;
+    // ✅ Scroll al final al abrir la conversación
+    isUserAtBottom = true;
+    scrollToBottom(true);
 }
 
 /* ============================================
@@ -386,7 +518,9 @@ async function renderMessages(rows){
     rows.forEach((m,i) => {
         box.insertAdjacentHTML('beforeend', messageHTML(m, m.remitente_id===user.id, signedUrls[i]));
     });
-    box.scrollTop=box.scrollHeight;
+    // ✅ Scroll al final
+    isUserAtBottom = true;
+    scrollToBottom(true);
 }
 
 function messageHTML(m,sent,signedUrl){
@@ -420,7 +554,6 @@ async function sendMessage(text){
     $('messageInput').value='';
 
     if(current.bot){
-        // Guarda el mensaje del usuario en Supabase para que Marquinhos "recuerde" la conversación
         let userMsg = { contenido: textoLimpio, created_at: new Date().toISOString(), tipo:'texto', remitente_id: user.id, leido:true };
         try {
             const ins=await db.from('mensajes_chat').insert({remitente_id:user.id,destinatario_id:BOT_UUID,contenido:textoLimpio,tipo:'texto',leido:true,editado:false,eliminado:false}).select('*').single();
@@ -455,7 +588,7 @@ async function sendMessage(text){
 }
 
 /* ============================================
-   LLAMAR AL BACKEND DEL BOT (TEXTO) - CON TIMEOUT
+   LLAMAR AL BACKEND DEL BOT (TEXTO)
    ============================================ */
 async function preguntarAlBot(mensaje){
     const s=await session();
@@ -521,7 +654,8 @@ function mostrarTypingBot(){
     const empty=box.querySelector('.empty');
     if(empty)empty.remove();
     box.insertAdjacentHTML('beforeend',`<div class="bubblewrap received" id="typing-bot"><div class="bubble"><div class="bubble-bot-info">✦ MARQUINHOS</div><div class="typing-indicator"><span></span><span></span><span></span></div></div></div>`);
-    box.scrollTop=box.scrollHeight;
+    // ✅ Bajar para mostrar el indicador
+    scrollToBottom(true);
 }
 function quitarTypingBot(){
     const el=$('typing-bot');
@@ -537,7 +671,17 @@ async function append(m,sent){
     if(empty)empty.remove();
     const signedUrl = await getSignedUrlForMessage(m);
     box.insertAdjacentHTML('beforeend', messageHTML(m, sent, signedUrl));
-    box.scrollTop=box.scrollHeight;
+
+    // ✅ Si es un mensaje recibido (no enviado por mí) y estoy arriba, mostrar flecha
+    if(!sent && !isUserAtBottom){
+        unreadCount++;
+        mostrarFlechaNuevos();
+        return;
+    }
+
+    // ✅ Si es enviado por mí o estoy abajo, bajar al final
+    isUserAtBottom = true;
+    scrollToBottom(true);
 }
 
 /* ============================================
@@ -549,7 +693,7 @@ async function markRead(id){
 }
 
 /* ============================================
-   ✅ NUEVA FUNCIÓN: ELIMINAR CONVERSACIÓN COMPLETA
+   ELIMINAR CONVERSACIÓN COMPLETA
    ============================================ */
 async function deleteConversation(){
     if(!current){toast('⚠️ Selecciona una conversación','error');return}
@@ -557,13 +701,12 @@ async function deleteConversation(){
 
     const nombre = current.bot ? 'Marquinhos' : (current.profile.nombre || 'este usuario');
     const confirmar = confirm(`⚠️ ¿Estás seguro de que quieres eliminar TODA la conversación con ${nombre}?\n\nEsta acción no se puede deshacer y perderás todo el historial de mensajes.`);
-    
+
     if(!confirmar) return;
 
     try {
         const targetId = current.bot ? BOT_UUID : current.id;
 
-        // Borrado lógico: marcar todos los mensajes como eliminados
         const { error } = await db.from('mensajes_chat')
             .update({ eliminado: true })
             .or(`and(remitente_id.eq.${user.id},destinatario_id.eq.${targetId}),and(remitente_id.eq.${targetId},destinatario_id.eq.${user.id})`);
@@ -572,11 +715,9 @@ async function deleteConversation(){
 
         toast('✅ Conversación eliminada correctamente', 'success');
 
-        // Limpiar el panel de mensajes
         const box = $('messages');
         box.innerHTML = '<div class="empty"><strong>◈</strong><div>Conversación eliminada</div><small>Envía un mensaje para empezar de nuevo</small></div>';
 
-        // Recargar la lista de conversaciones
         await loadConversations();
 
     } catch(e) {
@@ -607,14 +748,12 @@ async function grabarVozParaBot() {
     if(!current?.bot) return;
     if(!await auth()) return;
 
-    // ✅ SI YA SE ESTÁ ENVIANDO UN AUDIO, BLOQUEAR
     if (enviandoVozBot) {
         toast('⏳ Procesando audio anterior. Espera un momento…', 'warning');
         return;
     }
 
     if(voiceBotGrabando){
-        // Detener grabación
         if(voiceBotRecorder && voiceBotRecorder.state !== 'inactive'){
             voiceBotRecorder.stop();
         }
@@ -655,14 +794,12 @@ async function grabarVozParaBot() {
 }
 
 async function enviarVozAlBot(file){
-    // ✅ BLOQUEO: Evitar envíos simultáneos
     if (enviandoVozBot) {
         toast('⏳ Ya hay un audio en proceso. Espera…', 'warning');
         return;
     }
     enviandoVozBot = true;
-    
-    // ✅ DESHABILITAR BOTÓN VISUALMENTE
+
     const $btn = $('voiceBot');
     $btn.classList.add('processing');
     $btn.textContent = '⏳';
@@ -678,35 +815,32 @@ async function enviarVozAlBot(file){
             return;
         }
 
-        // Subir audio
         const path = `${user.id}/bot-voice/${Date.now()}.webm`;
         const { error: upErr } = await db.storage.from('chat-audio').upload(path, file, {contentType: file.type, upsert:false});
-        if(upErr){ 
-            toast('❌ Error subiendo audio', 'error'); 
+        if(upErr){
+            toast('❌ Error subiendo audio', 'error');
             enviandoVozBot = false;
             $btn.classList.remove('processing');
             $btn.textContent = '🔊';
             $btn.disabled = false;
-            return; 
+            return;
         }
 
         const { data: signed } = await db.storage.from('chat-audio').createSignedUrl(path, 3600);
-        if(!signed?.signedUrl){ 
-            toast('❌ Error firmando audio', 'error'); 
+        if(!signed?.signedUrl){
+            toast('❌ Error firmando audio', 'error');
             enviandoVozBot = false;
             $btn.classList.remove('processing');
             $btn.textContent = '🔊';
             $btn.disabled = false;
-            return; 
+            return;
         }
 
-        // Mostrar burbuja con "Procesando..."
         const tempId = 'voice-user-' + Date.now();
         const box = $('messages');
         box.insertAdjacentHTML('beforeend', `<div class="bubblewrap sent" id="${tempId}"><div class="bubble"><div class="voice-label">🎙️ TU VOZ</div><div class="voice-loading">Enviando a Marquinhos…</div></div></div>`);
-        box.scrollTop = box.scrollHeight;
+        scrollToBottom(true);
 
-        // ✅ REINTENTOS CON BACKOFF EXPONENCIAL PARA ERROR 429
         let intentos = 0;
         const maxIntentos = 3;
         let exito = false;
@@ -718,12 +852,12 @@ async function enviarVozAlBot(file){
                 headers:{'Content-Type':'application/json','Authorization':'Bearer '+s.access_token},
                 body: JSON.stringify({audio_url: signed.signedUrl})
             });
-            
+
             data = await r.json().catch(()=>({}));
 
             if (r.status === 429) {
                 intentos++;
-                const waitTime = intentos * 2000; // 2s, 4s, 6s
+                const waitTime = intentos * 2000;
                 console.warn(`⚠️ Rate Limit (429). Reintentando en ${waitTime/1000}s... Intento ${intentos}/${maxIntentos}`);
                 toast(`⏳ Servidor ocupado. Reintentando en ${waitTime/1000}s...`, 'warning');
                 await new Promise(resolve => setTimeout(resolve, waitTime));
@@ -742,7 +876,6 @@ async function enviarVozAlBot(file){
 
         document.getElementById(tempId)?.remove();
 
-        // Guardar la nota de voz del usuario
         try {
             await db.from('mensajes_chat').insert({
                 remitente_id:user.id, destinatario_id:BOT_UUID,
@@ -753,7 +886,6 @@ async function enviarVozAlBot(file){
             });
         } catch(e) { console.warn('No se pudo guardar la nota de voz:', e); }
 
-        // Guardar la respuesta de texto de Marquinhos
         try {
             if(data.reply){
                 await db.from('mensajes_chat').insert({
@@ -763,7 +895,6 @@ async function enviarVozAlBot(file){
             }
         } catch(e) { console.warn('No se pudo guardar la respuesta de Marquinhos:', e); }
 
-        // Mostrar respuesta del bot con audio
         const botId = 'voice-bot-' + Date.now();
         let botBody = `<div class="bubble-bot-info">✦ MARQUINHOS</div>`;
         if(data.transcripcion){
@@ -774,9 +905,8 @@ async function enviarVozAlBot(file){
             botBody += `<audio class="bot-audio" controls src="${esc(data.audio_url)}"></audio>`;
         }
         box.insertAdjacentHTML('beforeend', `<div class="bubblewrap received" id="${botId}"><div class="bubble">${botBody}</div></div>`);
-        box.scrollTop = box.scrollHeight;
+        scrollToBottom(true);
 
-        // Autoplay
         if(data.audio_url){
             const audio = document.querySelector(`#${botId} audio`);
             if(audio) audio.play().catch(()=>{});
@@ -787,15 +917,13 @@ async function enviarVozAlBot(file){
     } catch(e) {
         console.error('Error voz bot:', e);
         document.getElementById(tempId)?.remove();
-        
-        // ✅ MENSAJE AMIGABLE SI ES 429
+
         if (e.message.includes('429') || e.message.includes('Too Many Requests') || e.message.includes('saturado')) {
             toast('⏳ El asistente está saturado. Por favor, espera unos segundos e intenta de nuevo.', 'warning');
         } else {
             toast('❌ ' + e.message, 'error');
         }
     } finally {
-        // ✅ LIBERAR BLOQUEO Y RESTAURAR BOTÓN
         enviandoVozBot = false;
         $btn.classList.remove('processing');
         $btn.textContent = '🔊';
@@ -1025,7 +1153,6 @@ async function init(){
         realtime:{params:{eventsPerSecond:10}}
     });
 
-    // ✅ FIX BUG #1: Cargar sesión ANTES de loadConversations
     try {
         const s = await session();
         if(s?.user) user = s.user;
@@ -1041,7 +1168,6 @@ async function init(){
     $('composer').addEventListener('submit',e=>{e.preventDefault();sendMessage($('messageInput').value);});
     $('newChat').onclick=newConversation;
     $('closeModal').onclick=()=>$('newModal').classList.remove('show');
-    // ✅ FIX BUG #14: Cerrar modal con click fuera y con Escape
     $('newModal').addEventListener('click', e => { if (e.target.id === 'newModal') $('newModal').classList.remove('show'); });
     document.addEventListener('keydown', e => { if (e.key === 'Escape') $('newModal').classList.remove('show'); });
 
@@ -1064,6 +1190,9 @@ async function init(){
     $('toggleScreen').onclick=toggleScreen;
     $('acceptCall').onclick=acceptCall;
     $('rejectCall').onclick=rejectCall;
+
+    // ✅ Listener de scroll para detectar si el usuario está abajo
+    $('messages').addEventListener('scroll', detectarSiEstaAbajo);
 
     $('searchChat').onclick=async()=>{
         if(!current){toast('⚠️ Selecciona una conversación','error');return}
@@ -1105,7 +1234,6 @@ async function recordAudioNota(){
         recorder.ondataavailable = e => {if(e.data && e.data.size) audioChunks.push(e.data);};
         recorder.onstop = async () => {
             stream.getTracks().forEach(t=>t.stop());
-            // ✅ FIX BUG #2: Resetear botón 🎙️ al terminar
             $('audio').classList.remove('recording');
             $('audio').textContent = '🎙️';
 
@@ -1124,7 +1252,6 @@ async function recordAudioNota(){
         toast(esBot ? '🎙️ Habla con Marquinhos… presiona otra vez para enviar' : '🎙️ Grabando… presiona otra vez para detener');
     } catch(e) {
         console.error('Micrófono:',e);
-        // ✅ FIX BUG #2: Resetear botón si falla
         $('audio').classList.remove('recording');
         $('audio').textContent = '🎙️';
         toast('❌ No se pudo acceder al micrófono','error');
