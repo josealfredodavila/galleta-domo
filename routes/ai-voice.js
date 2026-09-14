@@ -1,5 +1,5 @@
 /* ================================================================
-   routes/ai-voice.js - VOZ CON MARQUINHOS
+   routes/ai-voice.js - VOZ CON MARQUINHOS (100% GRATIS)
    ================================================================ */
 
 const express = require('express');
@@ -10,18 +10,18 @@ const path = require('path');
 const os = require('os');
 const axios = require('axios');
 const FormData = require('form-data');
-const ffmpeg = require('fluent-ffmpeg');
-const ffmpegPath = require('ffmpeg-static');
-
-ffmpeg.setFfmpegPath(ffmpegPath);
 
 /* ================================================================
-   SUPABASE ADMIN
+   CONFIGURACIÓN DE VARIABLES DE ENTORNO (RAILWAY)
    ================================================================ */
+const NVIDIA_API_KEY = process.env.NVIDIA_API_KEY; // Tu clave nvapi-...
+const GROQ_API_KEY = process.env.GROQ_API_KEY;     // Tu clave de Groq (gsk_...)
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 const supabaseAdmin = createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY,
+    SUPABASE_URL,
+    SUPABASE_SERVICE_ROLE_KEY,
     {
         auth: {
             autoRefreshToken: false,
@@ -33,60 +33,31 @@ const supabaseAdmin = createClient(
 /* ================================================================
    MIDDLEWARE DE AUTENTICACIÓN
    ================================================================ */
-
 async function autenticar(req, res, next) {
     try {
         const auth = req.headers.authorization || '';
-
         if (!auth.startsWith('Bearer ')) {
-            return res.status(401).json({
-                success: false,
-                error: 'No autenticado'
-            });
+            return res.status(401).json({ success: false, error: 'No autenticado' });
         }
-
         const token = auth.slice(7).trim();
-
         if (!token) {
-            return res.status(401).json({
-                success: false,
-                error: 'Token no proporcionado'
-            });
+            return res.status(401).json({ success: false, error: 'Token no proporcionado' });
         }
-
-        const {
-            data: { user },
-            error
-        } = await supabaseAdmin.auth.getUser(token);
-
+        const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
         if (error || !user) {
-            return res.status(401).json({
-                success: false,
-                error: 'Token inválido'
-            });
+            return res.status(401).json({ success: false, error: 'Token inválido' });
         }
-
         req.user = user;
-
         next();
-
     } catch (err) {
-        console.error(
-            '❌ Error autenticando voz:',
-            err.message
-        );
-
-        return res.status(500).json({
-            success: false,
-            error: 'Error de autenticación'
-        });
+        console.error('❌ Error autenticando voz:', err.message);
+        return res.status(500).json({ success: false, error: 'Error de autenticación' });
     }
 }
 
 /* ================================================================
    PERSONALIDAD DE MARQUINHOS
    ================================================================ */
-
 const SYSTEM_PROMPT = `Eres "Marquinhos", el asistente oficial del ecosistema Sariel's.
 
 TU PERSONALIDAD:
@@ -111,476 +82,143 @@ CONOCIMIENTO:
 /* ================================================================
    RUTA POST /chat
    ================================================================ */
-
 router.post('/chat', autenticar, async (req, res) => {
-
     const timestamp = Date.now();
-
-    const inputPath = path.join(
-        os.tmpdir(),
-        `voice_input_${timestamp}.webm`
-    );
-
-    const outputPath = path.join(
-        os.tmpdir(),
-        `voice_output_${timestamp}.mp3`
-    );
+    const inputPath = path.join(os.tmpdir(), `voice_input_${timestamp}.webm`);
 
     try {
-
         /* ============================================================
-           VALIDAR OPENAI
+           VALIDAR CLAVES
            ============================================================ */
-
-        const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-
-        if (!OPENAI_API_KEY) {
-
+        if (!NVIDIA_API_KEY || !GROQ_API_KEY) {
             return res.status(500).json({
                 success: false,
-                error: 'OPENAI_API_KEY no configurada'
+                error: 'Faltan configurar las claves de NVIDIA o Groq en Railway'
             });
+        }
+
+        const { audioUrl, history = [] } = req.body || {};
+        if (!audioUrl || typeof audioUrl !== 'string' || !audioUrl.startsWith('http')) {
+            return res.status(400).json({ success: false, error: 'audioUrl inválido' });
         }
 
         /* ============================================================
-           DATOS RECIBIDOS
+           PASO 1: DESCARGAR AUDIO DEL USUARIO
            ============================================================ */
-
-        const {
-            audioUrl,
-            history = []
-        } = req.body || {};
-
-        if (!audioUrl) {
-
-            return res.status(400).json({
-                success: false,
-                error: 'audioUrl requerido'
-            });
-        }
-
-        if (
-            typeof audioUrl !== 'string' ||
-            !audioUrl.startsWith('http')
-        ) {
-
-            return res.status(400).json({
-                success: false,
-                error: 'audioUrl inválido'
-            });
-        }
-
-        /* ============================================================
-           PASO 1
-           DESCARGAR AUDIO DEL USUARIO
-           ============================================================ */
-
         console.log('📥 Descargando audio del usuario...');
+        const audioResponse = await axios.get(audioUrl, {
+            responseType: 'arraybuffer',
+            timeout: 60000,
+            maxContentLength: 50 * 1024 * 1024
+        });
 
-        const audioResponse = await axios.get(
-            audioUrl,
-            {
-                responseType: 'arraybuffer',
-                timeout: 60000,
-                maxContentLength: 50 * 1024 * 1024,
-                maxBodyLength: 50 * 1024 * 1024
-            }
-        );
-
-        const inputBuffer = Buffer.from(
-            audioResponse.data
-        );
-
+        const inputBuffer = Buffer.from(audioResponse.data);
         if (!inputBuffer.length) {
-
-            return res.status(400).json({
-                success: false,
-                error: 'El audio recibido está vacío'
-            });
+            return res.status(400).json({ success: false, error: 'El audio recibido está vacío' });
         }
-
-        if (
-            inputBuffer.length >
-            50 * 1024 * 1024
-        ) {
-
-            return res.status(413).json({
-                success: false,
-                error: 'El audio supera el límite de 50 MB'
-            });
-        }
-
-        fs.writeFileSync(
-            inputPath,
-            inputBuffer
-        );
+        fs.writeFileSync(inputPath, inputBuffer);
 
         /* ============================================================
-           PASO 2
-           TRANSCRIBIR CON WHISPER
+           PASO 2: TRANSCRIBIR CON GROQ (WHISPER GRATIS)
            ============================================================ */
-
-        console.log('🎤 Transcribiendo audio...');
-
+        console.log('🎤 Transcribiendo audio con Groq...');
         const formData = new FormData();
-
-        formData.append(
-            'file',
-            fs.createReadStream(inputPath)
-        );
-
-        formData.append(
-            'model',
-            'whisper-1'
-        );
-
-        formData.append(
-            'language',
-            'es'
-        );
+        formData.append('file', fs.createReadStream(inputPath));
+        formData.append('model', 'whisper-large-v3');
+        formData.append('language', 'es');
 
         const whisperResponse = await axios.post(
-            'https://api.openai.com/v1/audio/transcriptions',
+            'https://api.groq.com/openai/v1/audio/transcriptions',
             formData,
             {
                 headers: {
                     ...formData.getHeaders(),
-                    'Authorization':
-                        'Bearer ' + OPENAI_API_KEY
+                    'Authorization': 'Bearer ' + GROQ_API_KEY
                 },
                 timeout: 120000
             }
         );
 
-        const transcripcion =
-            whisperResponse.data?.text?.trim() || '';
-
-        console.log(
-            '📝 Transcripción:',
-            transcripcion
-        );
-
-        /* ============================================================
-           AUDIO SIN TEXTO
-           ============================================================ */
+        const transcripcion = whisperResponse.data?.text?.trim() || '';
+        console.log('📝 Transcripción:', transcripcion);
 
         if (!transcripcion) {
-
-            const respuestaVacia =
-                'No escuché nada. ¿Puedes repetir?';
-
             return res.json({
                 success: true,
                 transcripcion: '',
-                reply: respuestaVacia,
+                reply: 'No escuché nada. ¿Puedes repetir?',
                 audio_url: null
             });
         }
 
         /* ============================================================
-           PASO 3
-           GENERAR RESPUESTA CON GPT
+           PASO 3: GENERAR RESPUESTA CON NVIDIA (KIMI K3)
            ============================================================ */
-
-        console.log(
-            '🧠 Generando respuesta...'
-        );
-
+        console.log('🧠 Generando respuesta con Kimi K3...');
+        
         let historialSeguro = [];
-
         if (Array.isArray(history)) {
-
             historialSeguro = history
-                .filter(item =>
-                    item &&
-                    typeof item === 'object' &&
-                    typeof item.role === 'string' &&
-                    typeof item.content === 'string'
-                )
+                .filter(item => item && typeof item === 'object' && typeof item.role === 'string' && typeof item.content === 'string')
                 .slice(-6)
-                .map(item => ({
-                    role: item.role,
-                    content: item.content
-                }));
+                .map(item => ({ role: item.role, content: item.content }));
         }
 
-        const messages = [
-            {
-                role: 'system',
-                content: SYSTEM_PROMPT
-            },
-            ...historialSeguro,
-            {
-                role: 'user',
-                content: transcripcion
-            }
-        ];
+        const payload = {
+            model: 'moonshotai/kimi-k3',
+            messages: [
+                { role: 'system', content: SYSTEM_PROMPT },
+                ...historialSeguro,
+                { role: 'user', content: transcripcion }
+            ],
+            max_tokens: 300,
+            temperature: 0.7,
+            stream: false,
+            seed: 0
+        };
 
-        const gptResponse = await axios.post(
-            'https://api.openai.com/v1/chat/completions',
-            {
-                model: 'gpt-4o-mini',
-                messages,
-                temperature: 0.7,
-                max_tokens: 300
-            },
+        const nvidiaResponse = await axios.post(
+            'https://integrate.api.nvidia.com/v1/chat/completions',
+            payload,
             {
                 headers: {
-                    'Authorization':
-                        'Bearer ' + OPENAI_API_KEY,
-                    'Content-Type':
-                        'application/json'
+                    'Authorization': 'Bearer ' + NVIDIA_API_KEY,
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
                 },
                 timeout: 120000
             }
         );
 
-        const respuestaTexto =
-            gptResponse.data?.choices?.[0]?.message?.content?.trim() ||
+        const respuestaTexto = nvidiaResponse.data?.choices?.[0]?.message?.content?.trim() ||
             'No pude generar una respuesta en este momento.';
-
-        console.log(
-            '💬 Respuesta:',
-            respuestaTexto
-        );
+        console.log('💬 Respuesta:', respuestaTexto);
 
         /* ============================================================
-           PASO 4
-           CONVERTIR RESPUESTA A VOZ
+           PASO 4: RESPUESTA (TTS PENDIENTE)
            ============================================================ */
-
-        console.log(
-            '🔊 Convirtiendo respuesta a voz...'
-        );
-
-        const ttsResponse = await axios.post(
-            'https://api.openai.com/v1/audio/speech',
-            {
-                model: 'tts-1',
-                input: respuestaTexto,
-                voice: 'nova',
-                response_format: 'mp3',
-                speed: 1.0
-            },
-            {
-                headers: {
-                    'Authorization':
-                        'Bearer ' + OPENAI_API_KEY,
-                    'Content-Type':
-                        'application/json'
-                },
-                responseType: 'arraybuffer',
-                timeout: 120000
-            }
-        );
-
-        fs.writeFileSync(
-            outputPath,
-            Buffer.from(ttsResponse.data)
-        );
-
-        /* ============================================================
-           PASO 5
-           SUBIR AUDIO DE MARQUINHOS
-           
-           Bucket:
-           chat-audio
-
-           Ruta:
-           bot-responses/<usuario_id>/<timestamp>.mp3
-           ============================================================ */
-
-        console.log(
-            '📤 Subiendo audio de respuesta...'
-        );
-
-        const storagePath =
-            `bot-responses/${req.user.id}/${Date.now()}.mp3`;
-
-        const audioBuffer =
-            fs.readFileSync(outputPath);
-
-        const {
-            error: uploadError
-        } = await supabaseAdmin.storage
-            .from('chat-audio')
-            .upload(
-                storagePath,
-                audioBuffer,
-                {
-                    contentType: 'audio/mpeg',
-                    cacheControl: '3600',
-                    upsert: false
-                }
-            );
-
-        if (uploadError) {
-
-            console.error(
-                '❌ Error subiendo audio:',
-                uploadError.message
-            );
-
-            return res.status(500).json({
-                success: false,
-                error:
-                    'No se pudo guardar el audio de Marquinhos'
-            });
-        }
-
-        /* ============================================================
-           PASO 6
-           CREAR SIGNED URL
-           
-           chat-audio ES PRIVADO.
-           NO usamos getPublicUrl().
-           ============================================================ */
-
-        console.log(
-            '🔐 Generando URL firmada...'
-        );
-
-        const {
-            data: signedData,
-            error: signedError
-        } = await supabaseAdmin.storage
-            .from('chat-audio')
-            .createSignedUrl(
-                storagePath,
-                3600
-            );
-
-        if (signedError || !signedData?.signedUrl) {
-
-            console.error(
-                '❌ Error creando signed URL:',
-                signedError?.message
-            );
-
-            return res.status(500).json({
-                success: false,
-                error:
-                    'El audio fue generado pero no se pudo crear su URL segura'
-            });
-        }
-
-        const audioRespuestaUrl =
-            signedData.signedUrl;
-
-        /* ============================================================
-           PASO 7
-           GUARDAR HISTORIAL EN ai_voice_chats
-           
-           No se utiliza mensajes_chat.
-           ============================================================ */
-
-        try {
-
-            const {
-                error: historialError
-            } = await supabaseAdmin
-                .from('ai_voice_chats')
-                .insert({
-                    usuario_id: req.user.id,
-                    transcripcion: transcripcion,
-                    respuesta: respuestaTexto,
-                    audio_usuario_url: audioUrl,
-                    audio_bot_url: `bucket://chat-audio/${storagePath}`
-                });
-
-            if (historialError) {
-
-                console.warn(
-                    '⚠️ No se pudo guardar historial de voz:',
-                    historialError.message
-                );
-            }
-
-        } catch (historialException) {
-
-            console.warn(
-                '⚠️ Excepción guardando historial:',
-                historialException.message
-            );
-        }
-
-        /* ============================================================
-           LIMPIEZA
-           ============================================================ */
-
-        try {
-
-            if (fs.existsSync(inputPath)) {
-                fs.unlinkSync(inputPath);
-            }
-
-            if (fs.existsSync(outputPath)) {
-                fs.unlinkSync(outputPath);
-            }
-
-        } catch (cleanupError) {
-
-            console.warn(
-                '⚠️ Error limpiando temporales:',
-                cleanupError.message
-            );
-        }
-
-        /* ============================================================
-           RESPUESTA FINAL
-           ============================================================ */
-
+        // TODO: Aquí irá la conversión a voz con Edge TTS.
+        // Por ahora, devolvemos el texto para que no se rompa el flujo.
+        
         return res.json({
             success: true,
             transcripcion,
             reply: respuestaTexto,
-            audio_url: audioRespuestaUrl
+            audio_url: null // Cambiar cuando implementes TTS real
         });
 
     } catch (error) {
-
-        console.error(
-            '❌ Error en /ai/voice/chat:',
-            error.message
-        );
-
-        /* ============================================================
-           LIMPIEZA EN CASO DE ERROR
-           ============================================================ */
-
+        console.error('❌ Error en /ai/voice/chat:', error.message);
+        
         try {
-
-            if (fs.existsSync(inputPath)) {
-                fs.unlinkSync(inputPath);
-            }
-
-            if (fs.existsSync(outputPath)) {
-                fs.unlinkSync(outputPath);
-            }
-
-        } catch (cleanupError) {
-
-            console.warn(
-                '⚠️ Error durante limpieza:',
-                cleanupError.message
-            );
-        }
-
-        /* ============================================================
-           RESPUESTA DE ERROR
-           ============================================================ */
+            if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
+        } catch (e) {}
 
         return res.status(500).json({
             success: false,
-            error:
-                'Error procesando voz: ' +
-                error.message
+            error: 'Error procesando voz: ' + error.message
         });
     }
 });
-
-/* ================================================================
-   EXPORTAR ROUTER
-   ================================================================ */
 
 module.exports = router;
