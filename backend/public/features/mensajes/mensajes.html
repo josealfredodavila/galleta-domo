@@ -105,53 +105,51 @@ button,input{font:inherit}
 .bot-transcripcion{font-size:.7rem;color:var(--muted);margin-bottom:8px;font-style:italic;border-left:2px solid var(--gold);padding-left:10px;opacity:.85}
 .bubble audio.bot-audio{margin-top:8px;height:36px;width:100%;max-width:280px;border-radius:20px}
 /* ============================================
-   FLECHA FLOTANTE PARA BAJAR AL FINAL (estilo WhatsApp/Twitter)
+   FLECHA FLOTANTE PARA BAJAR AL FINAL (SIEMPRE VISIBLE)
    ============================================ */
 .scroll-down-btn{
-    position:sticky;
+    position:absolute;
     bottom:18px;
-    align-self:flex-end;
-    margin-top:auto;
-    width:44px;
-    height:44px;
+    right:18px;
+    width:46px;
+    height:46px;
     border-radius:50%;
     background:linear-gradient(135deg,var(--gold),#b8923a);
     color:var(--space);
     border:2px solid var(--space);
-    box-shadow:0 4px 14px rgba(0,0,0,.5);
+    box-shadow:0 4px 16px rgba(0,0,0,.55),0 0 0 1px rgba(212,175,55,.3);
     cursor:pointer;
     display:flex;
     align-items:center;
     justify-content:center;
-    font-size:1.2rem;
+    font-size:1.3rem;
     font-weight:900;
-    opacity:0;
-    visibility:hidden;
-    transform:translateY(10px) scale(.9);
-    transition:opacity .25s, transform .25s, visibility .25s;
+    transition:transform .2s, box-shadow .2s, background .2s;
     z-index:50;
-    pointer-events:none;
-}
-.scroll-down-btn.show{
-    opacity:1;
-    visibility:visible;
-    transform:translateY(0) scale(1);
-    pointer-events:auto;
+    opacity:.85;
 }
 .scroll-down-btn:hover{
-    transform:translateY(0) scale(1.1);
+    transform:scale(1.1);
+    opacity:1;
+    box-shadow:0 6px 20px rgba(212,175,55,.5);
+}
+.scroll-down-btn.has-new{
+    background:linear-gradient(135deg,var(--danger),#cc1a4d);
+    color:#fff;
+    opacity:1;
+    animation:pulseNew 1.5s infinite;
 }
 .scroll-down-btn .badge-new{
     position:absolute;
-    top:-6px;
-    right:-6px;
+    top:-8px;
+    right:-8px;
     background:var(--danger);
     color:#fff;
-    font-size:.62rem;
+    font-size:.65rem;
     font-weight:800;
-    min-width:20px;
-    height:20px;
-    padding:0 5px;
+    min-width:22px;
+    height:22px;
+    padding:0 6px;
     border-radius:99px;
     border:2px solid var(--space);
     display:flex;
@@ -162,6 +160,10 @@ button,input{font:inherit}
 @keyframes badgePulse{
     0%,100%{transform:scale(1)}
     50%{transform:scale(1.15)}
+}
+@keyframes pulseNew{
+    0%,100%{box-shadow:0 4px 16px rgba(0,0,0,.55)}
+    50%{box-shadow:0 4px 22px rgba(255,51,102,.7)}
 }
 @media(max-width:760px){.panel{grid-template-columns:1fr;min-height:0}.sidebar{border-right:0;border-bottom:1px solid var(--border);max-height:190px}.chat{min-height:500px}.bubble{max-width:90%}.videos video{width:95%}.videos video.local{width:35%}.header{align-items:flex-start}.network{margin-top:3px}}
 @media(max-width:430px){.app{padding:10px}.nav a{font-size:.62rem;padding:7px 9px}.composer{flex-wrap:wrap}.composer input{flex-basis:100%}}
@@ -205,6 +207,10 @@ button,input{font:inherit}
         </div>
     </header>
     <div class="messages" id="messages">
+        <button class="scroll-down-btn" id="scrollDownBtn" title="Ir al final">
+            ↓
+            <span class="badge-new" id="newMsgBadge" style="display:none;">1</span>
+        </button>
         <div class="empty">
             <strong>◈</strong>
             <div>Selecciona una conversación</div>
@@ -263,12 +269,12 @@ const BOT_UUID='0a000000-0000-4000-8000-000000000001';
 let db=null,user=null,current=null,msgChannel=null,callChannel=null,incomingId=null;
 let recorder=null,audioChunks=[],recordingMode=null,recordingStartedAt=0;
 let voiceBotRecorder=null,voiceBotChunks=[],voiceBotGrabando=false;
-// ✅ NUEVA VARIABLE: Bloqueo para evitar envíos simultáneos al bot
 let enviandoVozBot = false;
-// ✅ Variables para control del scroll (estilo WhatsApp)
+// ✅ Variables para control del scroll
 let isUserAtBottom = true;
 let unreadCount = 0;
-const SCROLL_THRESHOLD = 80; // px de margen para considerar "pegado abajo"
+const SCROLL_THRESHOLD = 100;
+let scrollRetryTimer = null;
 const call={room:null,id:null,active:false,audio:null,video:null,screen:null,initiator:false};
 
 const $=id=>document.getElementById(id);
@@ -280,67 +286,91 @@ function avatar(name,url,cls='avatar'){return `<div class="${cls}">${url?`<img s
 async function profile(id){if(id===BOT_ID)return{id:BOT_ID,nombre:"Marquinhos",handle:'marquinhos',avatar_url:null,online:true,bot:true};const r=await db.from('perfiles_publicos').select('id,nombre,handle,avatar_url,online,ultima_conexion').eq('id',id).maybeSingle();return r.data||{id,nombre:'Usuario',avatar_url:null,online:false}}
 
 /* ============================================
-   ✅ SCROLL ESTILO WHATSAPP/TWITTER
+   ✅ SCROLL ROBUSTO ESTILO WHATSAPP/TELEGRAM
    ============================================ */
 function scrollToBottom(force = false){
     const box = $('messages');
     if(!box) return;
     if(!force && !isUserAtBottom) return;
 
-    requestAnimationFrame(() => {
-        box.scrollTop = box.scrollHeight;
-    });
+    // Bajar inmediatamente
+    box.scrollTop = box.scrollHeight;
 
-    setTimeout(() => {
+    // Cancelar cualquier reintento anterior
+    if(scrollRetryTimer) clearInterval(scrollRetryTimer);
+
+    // Reintentar varias veces durante 1 segundo para asegurar que las imágenes/audios carguen
+    let intentos = 0;
+    scrollRetryTimer = setInterval(() => {
+        intentos++;
         if(force || isUserAtBottom){
             box.scrollTop = box.scrollHeight;
         }
-    }, 150);
+        if(intentos >= 10){
+            clearInterval(scrollRetryTimer);
+            scrollRetryTimer = null;
+        }
+    }, 100);
 
     if(force || isUserAtBottom){
         ocultarFlechaNuevos();
     }
 }
 
-function mostrarFlechaNuevos(){
-    let btn = document.getElementById('scrollDownBtn');
-    if(!btn){
-        // Crear el botón dinámicamente si no existe
-        btn = document.createElement('button');
-        btn.className = 'scroll-down-btn';
-        btn.id = 'scrollDownBtn';
-        btn.innerHTML = '↓<span class="badge-new" id="newMsgBadge" style="display:none;">1</span>';
-        btn.title = 'Ir al final';
-        btn.onclick = () => {
-            isUserAtBottom = true;
-            scrollToBottom(true);
-        };
-        $('messages').appendChild(btn);
+function actualizarFlecha(){
+    const btn = $('scrollDownBtn');
+    const badge = $('newMsgBadge');
+    if(!btn) return;
+
+    // Siempre visible, pero cambia de apariencia si hay nuevos
+    if(unreadCount > 0){
+        btn.classList.add('has-new');
+        if(badge){
+            badge.textContent = unreadCount > 9 ? '9+' : unreadCount;
+            badge.style.display = 'flex';
+        }
+    } else {
+        btn.classList.remove('has-new');
+        if(badge) badge.style.display = 'none';
     }
-    const badge = document.getElementById('newMsgBadge');
-    if(badge){
-        badge.textContent = unreadCount > 9 ? '9+' : unreadCount;
-        badge.style.display = unreadCount > 0 ? 'flex' : 'none';
-    }
-    btn.classList.add('show');
 }
 
 function ocultarFlechaNuevos(){
-    const btn = document.getElementById('scrollDownBtn');
-    if(btn) btn.classList.remove('show');
     unreadCount = 0;
-    const badge = document.getElementById('newMsgBadge');
-    if(badge) badge.style.display = 'none';
+    actualizarFlecha();
 }
 
 function detectarSiEstaAbajo(){
     const box = $('messages');
     if(!box) return;
     const distanciaAlFondo = box.scrollHeight - box.scrollTop - box.clientHeight;
+    const estabaAbajo = isUserAtBottom;
     isUserAtBottom = distanciaAlFondo < SCROLL_THRESHOLD;
-    if(isUserAtBottom){
+
+    // Si el usuario baja manualmente al final, limpiamos el contador
+    if(isUserAtBottom && !estabaAbajo){
         ocultarFlechaNuevos();
     }
+}
+
+// ✅ Cuando una imagen o audio termina de cargar, recalcular el scroll
+function observarCargaMultimedia(box){
+    box.querySelectorAll('img, audio, video').forEach(el => {
+        if(el.dataset.scrollListener) return;
+        el.dataset.scrollListener = '1';
+        const onLoad = () => {
+            if(isUserAtBottom){
+                box.scrollTop = box.scrollHeight;
+            }
+        };
+        el.addEventListener('load', onLoad, { once: true });
+        el.addEventListener('loadedmetadata', onLoad, { once: true });
+        el.addEventListener('error', () => {
+            if(isUserAtBottom){
+                box.scrollTop = box.scrollHeight;
+            }
+        }, { once: true });
+    });
 }
 
 /* ============================================
@@ -384,7 +414,6 @@ async function getSignedUrlForMessage(m) {
 async function loadConversations(){
     const list=$('conversationList');
     list.innerHTML='';
-    // Insertar Marquinhos SIEMPRE
     const botEl=document.createElement('div');
     botEl.className='conv conv-bot'+(current?.id===BOT_ID?' active':'');
     botEl.dataset.id=BOT_ID;
@@ -460,7 +489,7 @@ async function openConversation(id){
     // ✅ Resetear estado de scroll al cambiar de conversación
     isUserAtBottom = true;
     unreadCount = 0;
-    ocultarFlechaNuevos();
+    actualizarFlecha();
 
     if(esBot){
         await abrirConversacionBot();
@@ -479,7 +508,10 @@ async function openConversation(id){
    ============================================ */
 async function abrirConversacionBot(){
     const box=$('messages');
+    // Preservar el botón de scroll
+    const btn = box.querySelector('#scrollDownBtn');
     box.innerHTML='';
+    if(btn) box.appendChild(btn);
 
     let historial=[];
     try {
@@ -490,7 +522,7 @@ async function abrirConversacionBot(){
     } catch(e) { console.warn('No se pudo cargar el historial de Marquinhos:', e); }
 
     if(!historial.length){
-        box.innerHTML=`<div class="bubblewrap received"><div class="bubble"><div class="bubble-bot-info">✦ MARQUINHOS</div>¡Hola! 👋 Soy Marquinhos, el asistente de Sariel's. Puedes:<br><br>◈ Escribirme un mensaje de texto<br>◈ Enviarme una nota de voz con 🎙️<br>◈ Hablarme con el botón 🔊 (te responderé con voz)<br><br>¿En qué te puedo ayudar hoy?</div></div>`;
+        box.insertAdjacentHTML('beforeend',`<div class="bubblewrap received"><div class="bubble"><div class="bubble-bot-info">✦ MARQUINHOS</div>¡Hola! 👋 Soy Marquinhos, el asistente de Sariel's. Puedes:<br><br>◈ Escribirme un mensaje de texto<br>◈ Enviarme una nota de voz con 🎙️<br>◈ Hablarme con el botón 🔊 (te responderé con voz)<br><br>¿En qué te puedo ayudar hoy?</div></div>`);
         scrollToBottom(true);
         return;
     }
@@ -499,8 +531,9 @@ async function abrirConversacionBot(){
     historial.forEach((m,i) => {
         box.insertAdjacentHTML('beforeend', messageHTML(m, m.remitente_id===user.id, signedUrls[i]));
     });
-    // ✅ Scroll al final al abrir la conversación
+    // ✅ Scroll al final + observar carga de multimedia
     isUserAtBottom = true;
+    observarCargaMultimedia(box);
     scrollToBottom(true);
 }
 
@@ -509,17 +542,20 @@ async function abrirConversacionBot(){
    ============================================ */
 async function renderMessages(rows){
     const box=$('messages');
+    const btn = box.querySelector('#scrollDownBtn');
     box.innerHTML='';
+    if(btn) box.appendChild(btn);
+
     if(!rows.length){
-        box.innerHTML='<div class="empty"><strong>◈</strong><div>Sin mensajes</div><small>Envía el primer mensaje</small></div>';
+        box.insertAdjacentHTML('beforeend','<div class="empty"><strong>◈</strong><div>Sin mensajes</div><small>Envía el primer mensaje</small></div>');
         return;
     }
     const signedUrls = await Promise.all(rows.map(m => getSignedUrlForMessage(m)));
     rows.forEach((m,i) => {
         box.insertAdjacentHTML('beforeend', messageHTML(m, m.remitente_id===user.id, signedUrls[i]));
     });
-    // ✅ Scroll al final
     isUserAtBottom = true;
+    observarCargaMultimedia(box);
     scrollToBottom(true);
 }
 
@@ -654,7 +690,6 @@ function mostrarTypingBot(){
     const empty=box.querySelector('.empty');
     if(empty)empty.remove();
     box.insertAdjacentHTML('beforeend',`<div class="bubblewrap received" id="typing-bot"><div class="bubble"><div class="bubble-bot-info">✦ MARQUINHOS</div><div class="typing-indicator"><span></span><span></span><span></span></div></div></div>`);
-    // ✅ Bajar para mostrar el indicador
     scrollToBottom(true);
 }
 function quitarTypingBot(){
@@ -671,11 +706,12 @@ async function append(m,sent){
     if(empty)empty.remove();
     const signedUrl = await getSignedUrlForMessage(m);
     box.insertAdjacentHTML('beforeend', messageHTML(m, sent, signedUrl));
+    observarCargaMultimedia(box);
 
     // ✅ Si es un mensaje recibido (no enviado por mí) y estoy arriba, mostrar flecha
     if(!sent && !isUserAtBottom){
         unreadCount++;
-        mostrarFlechaNuevos();
+        actualizarFlecha();
         return;
     }
 
@@ -716,7 +752,12 @@ async function deleteConversation(){
         toast('✅ Conversación eliminada correctamente', 'success');
 
         const box = $('messages');
+        const btn = box.querySelector('#scrollDownBtn');
         box.innerHTML = '<div class="empty"><strong>◈</strong><div>Conversación eliminada</div><small>Envía un mensaje para empezar de nuevo</small></div>';
+        if(btn) box.appendChild(btn);
+
+        unreadCount = 0;
+        actualizarFlecha();
 
         await loadConversations();
 
@@ -905,6 +946,7 @@ async function enviarVozAlBot(file){
             botBody += `<audio class="bot-audio" controls src="${esc(data.audio_url)}"></audio>`;
         }
         box.insertAdjacentHTML('beforeend', `<div class="bubblewrap received" id="${botId}"><div class="bubble">${botBody}</div></div>`);
+        observarCargaMultimedia(box);
         scrollToBottom(true);
 
         if(data.audio_url){
@@ -1191,8 +1233,15 @@ async function init(){
     $('acceptCall').onclick=acceptCall;
     $('rejectCall').onclick=rejectCall;
 
-    // ✅ Listener de scroll para detectar si el usuario está abajo
+    // ✅ Listener de scroll
     $('messages').addEventListener('scroll', detectarSiEstaAbajo);
+
+    // ✅ Click en la flecha
+    $('scrollDownBtn').onclick = () => {
+        isUserAtBottom = true;
+        scrollToBottom(true);
+        actualizarFlecha();
+    };
 
     $('searchChat').onclick=async()=>{
         if(!current){toast('⚠️ Selecciona una conversación','error');return}
