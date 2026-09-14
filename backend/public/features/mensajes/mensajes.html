@@ -157,7 +157,6 @@ button,input{font:inherit}
 .photo-viewer .pv-handle{color:var(--muted);font-size:.8rem;margin-top:2px}
 .photo-viewer .pv-close{position:absolute;top:20px;right:20px;width:42px;height:42px;border-radius:50%;background:rgba(212,175,55,.15);border:1px solid var(--gold);color:var(--gold);cursor:pointer;font-size:1.2rem;font-weight:800;display:grid;place-items:center}
 .photo-viewer .pv-close:hover{background:var(--gold);color:var(--space)}
-/* Visor de estados - SIN textos ni iconos que estorben */
 .estado-viewer{position:fixed;inset:0;z-index:310;background:#000;display:none;flex-direction:column;animation:fadeIn .2s ease-out;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
 .estado-viewer.show{display:flex}
 .estado-viewer-progress{position:absolute;top:8px;left:12px;right:12px;height:3px;background:rgba(255,255,255,.2);border-radius:2px;overflow:hidden;z-index:5}
@@ -178,8 +177,9 @@ button,input{font:inherit}
 .estado-viewer-nav.prev{left:14px}
 .estado-viewer-nav.next{right:14px}
 .estado-viewer-nav.hidden{display:none}
-.estado-viewer-vistas{position:absolute;bottom:20px;left:0;right:0;text-align:center;color:#fff;font-size:.8rem;pointer-events:none;z-index:4}
-.estado-viewer-vistas-pill{display:inline-block;background:rgba(0,0,0,.55);padding:8px 16px;border-radius:20px;backdrop-filter:blur(8px);text-shadow:0 1px 4px rgba(0,0,0,.9)}
+.estado-viewer-vistas{position:absolute;bottom:20px;left:0;right:0;text-align:center;color:#fff;font-size:.8rem;pointer-events:auto;z-index:4;cursor:pointer}
+.estado-viewer-vistas-pill{display:inline-block;background:rgba(0,0,0,.55);padding:8px 16px;border-radius:20px;backdrop-filter:blur(8px);text-shadow:0 1px 4px rgba(0,0,0,.9);transition:background .2s}
+.estado-viewer-vistas-pill:hover{background:rgba(212,175,55,.4)}
 .hidden{display:none!important}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes scaleIn{from{transform:scale(.9);opacity:0}to{transform:scale(1);opacity:1}}
@@ -301,6 +301,17 @@ button,input{font:inherit}
     </div>
 </div>
 
+<!-- Modal de vistas de estados -->
+<div class="modal" id="vistasModal">
+    <div class="modalbox" style="max-width:420px;">
+        <button class="iconbtn" id="closeVistasModal" style="float:right">✕</button>
+        <h2 style="display:flex;align-items:center;gap:8px;">👁️ Vistas <span id="vistasModalCount" style="color:var(--muted);font-size:.85rem;font-weight:400;"></span></h2>
+        <div id="vistasList" style="margin-top:10px;">
+            <div style="text-align:center;padding:20px;color:var(--muted);font-size:.8rem;">Cargando…</div>
+        </div>
+    </div>
+</div>
+
 <div class="photo-viewer" id="photoViewer">
     <button class="pv-close" id="pvClose">✕</button>
     <img id="pvImage" src="" alt="Foto">
@@ -308,7 +319,6 @@ button,input{font:inherit}
     <div class="pv-handle" id="pvHandle"></div>
 </div>
 
-<!-- Visor de estados: sin textos ni iconos que estorben -->
 <div class="estado-viewer" id="estadoViewer">
     <div class="estado-viewer-progress"><div class="estado-viewer-progress-inner" id="estadoProgress"></div></div>
     <div class="estado-viewer-header">
@@ -541,12 +551,14 @@ async function cargarEstados(){
         if(miEstado && miEstado.length > 0){
             const tieneNuevos = miEstado.some(e => estadoEsNuevo(e));
             const ultimoEstadoId = miEstado[miEstado.length - 1].id;
+            const ultimoEstadoImg = miEstado[miEstado.length - 1].imagen_url;
             const totalVistas = await obtenerVistasEstado(ultimoEstadoId);
+            // ✅ Círculo de "Tú" muestra la imagen del último estado
             const html = `
                 <div class="estado-item" data-userid="${user.id}" style="position:relative;">
                     <div class="estado-circle ${tieneNuevos ? '' : 'visto'}">
                         <div class="estado-inner">
-                            ${currentUserProfile?.avatar_url ? `<img src="${esc(currentUserProfile.avatar_url)}" alt="">` : esc((currentUserProfile?.nombre||'◈').charAt(0).toUpperCase())}
+                            <img src="${esc(ultimoEstadoImg)}" alt="">
                         </div>
                     </div>
                     ${totalVistas > 0 ? `<span class="estado-vistas-badge">${totalVistas}</span>` : ''}
@@ -633,6 +645,8 @@ async function mostrarEstadoActual(){
         const total = await obtenerVistasEstado(estado.id);
         $('evVistasCount').textContent = total;
         $('evVistas').classList.remove('hidden');
+        // Guardar estado actual para el modal de vistas
+        $('evVistas').dataset.estadoId = estado.id;
     } else {
         $('evVistas').classList.add('hidden');
     }
@@ -689,7 +703,7 @@ function cerrarEstadoViewer(){
 }
 
 /* ============================================
-   PAUSA/REANUDAR (SIN ICONO VISIBLE)
+   PAUSA/REANUDAR
    ============================================ */
 function activarPausaEstado(){
     if(!$('estadoViewer').classList.contains('show')) return;
@@ -700,6 +714,84 @@ function desactivarPausaEstado(){
     estadoPausado = false;
 }
 
+/* ============================================
+   MODAL DE VISTAS (¿Quién vio mi estado?)
+   ============================================ */
+async function abrirVistasModal(estadoId){
+    if(!estadoId) return;
+    $('vistasModal').classList.add('show');
+    const list = $('vistasList');
+    list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:.8rem;">Cargando…</div>';
+    $('vistasModalCount').textContent = '';
+
+    try {
+        const { data: vistas, error } = await db
+            .from('estados_vistas')
+            .select('usuario_id, visto_at')
+            .eq('estado_id', estadoId)
+            .order('visto_at', { ascending: false });
+
+        if(error) throw error;
+
+        if(!vistas || vistas.length === 0){
+            list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:.8rem;">Nadie ha visto este estado aún</div>';
+            return;
+        }
+
+        $('vistasModalCount').textContent = `(${vistas.length})`;
+
+        // Cargar info de cada usuario
+        const ids = vistas.map(v => v.usuario_id);
+        const { data: perfiles } = await db
+            .from('perfiles_publicos')
+            .select('id, nombre, handle, avatar_url')
+            .in('id', ids);
+
+        const perfilMap = {};
+        (perfiles || []).forEach(p => { perfilMap[p.id] = p; });
+
+        list.innerHTML = '';
+        vistas.forEach(v => {
+            const p = perfilMap[v.usuario_id] || { nombre: 'Usuario', handle: '', avatar_url: null };
+            const inicial = (p.nombre || '◈').charAt(0).toUpperCase();
+            const avatarHTML = p.avatar_url
+                ? `<img src="${esc(p.avatar_url)}" alt="">`
+                : esc(inicial);
+
+            list.insertAdjacentHTML('beforeend', `
+                <div class="result" style="cursor:pointer;" data-handle="${esc(p.handle||'')}">
+                    <div class="avatar">${avatarHTML}</div>
+                    <div style="flex:1;min-width:0;">
+                        <b>${esc(p.nombre||'Usuario')}</b>
+                        <div style="font-size:.68rem;color:var(--muted);">@${esc(p.handle||'usuario')} · ${haceTiempo(v.visto_at)}</div>
+                    </div>
+                </div>
+            `);
+        });
+
+        // Click en cada fila → abrir perfil
+        list.querySelectorAll('.result').forEach(el => {
+            el.onclick = () => {
+                const handle = el.dataset.handle;
+                if(handle){
+                    window.location.href = `/perfil/${handle}`;
+                }
+            };
+        });
+
+    } catch(e){
+        console.error('Error cargando vistas:', e);
+        list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--danger);font-size:.8rem;">Error al cargar vistas</div>';
+    }
+}
+
+function cerrarVistasModal(){
+    $('vistasModal').classList.remove('show');
+}
+
+/* ============================================
+   SUBIR ESTADO
+   ============================================ */
 function abrirModalEstado(){
     $('estadoUploadModal').classList.add('show');
     $('estadoPreviewWrap').style.display = 'none';
@@ -1628,6 +1720,10 @@ async function init(){
     $('btnCerrarProfileModal').onclick = cerrarProfileModal;
     $('profileModal').addEventListener('click', e => { if(e.target.id === 'profileModal') cerrarProfileModal(); });
 
+    // Modal de vistas
+    $('closeVistasModal').onclick = cerrarVistasModal;
+    $('vistasModal').addEventListener('click', e => { if(e.target.id === 'vistasModal') cerrarVistasModal(); });
+
     $('pvClose').onclick = cerrarPhotoViewer;
     $('photoViewer').addEventListener('click', e => { if(e.target.id === 'photoViewer') cerrarPhotoViewer(); });
 
@@ -1635,7 +1731,13 @@ async function init(){
     $('evPrev').onclick = (e) => { e.stopPropagation(); anteriorEstado(); };
     $('evNext').onclick = (e) => { e.stopPropagation(); siguienteEstado(); };
 
-    // ✅ PAUSA/REANUDAR silenciosa: sin iconos visibles
+    // ✅ Click en el contador de vistas → abrir modal
+    $('evVistas').onclick = (e) => {
+        e.stopPropagation();
+        const estadoId = $('evVistas').dataset.estadoId;
+        if(estadoId) abrirVistasModal(estadoId);
+    };
+
     const evBody = $('evBody');
     evBody.addEventListener('mousedown', activarPausaEstado);
     evBody.addEventListener('mouseup', desactivarPausaEstado);
@@ -1660,7 +1762,7 @@ async function init(){
 
     document.addEventListener('keydown', e => {
         if(e.key === 'Escape'){
-            cerrarProfileModal(); cerrarPhotoViewer(); cerrarEstadoViewer(); cerrarModalEstado();
+            cerrarProfileModal(); cerrarPhotoViewer(); cerrarEstadoViewer(); cerrarModalEstado(); cerrarVistasModal();
             $('newModal').classList.remove('show');
         }
     });
