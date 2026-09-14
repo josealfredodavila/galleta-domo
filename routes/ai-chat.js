@@ -7,9 +7,6 @@ const router = express.Router();
 const { createClient } = require('@supabase/supabase-js');
 const axios = require('axios');
 
-/* ================================================================
-   CONFIGURACIÓN DE VARIABLES DE ENTORNO (RAILWAY)
-   ================================================================ */
 const NVIDIA_API_KEY = process.env.NVIDIA_API_KEY;
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -18,10 +15,7 @@ const supabaseAdmin = createClient(
     SUPABASE_URL,
     SUPABASE_SERVICE_ROLE_KEY,
     {
-        auth: {
-            autoRefreshToken: false,
-            persistSession: false
-        }
+        auth: { autoRefreshToken: false, persistSession: false }
     }
 );
 
@@ -82,17 +76,11 @@ router.post('/chat', autenticar, async (req, res) => {
         const { message, context = 'chat_sariels', history = [] } = req.body || {};
 
         if (!message || typeof message !== 'string' || !message.trim()) {
-            return res.status(400).json({
-                success: false,
-                error: 'Mensaje vacío o inválido'
-            });
+            return res.status(400).json({ success: false, error: 'Mensaje vacío o inválido' });
         }
 
         console.log('💬 Mensaje recibido:', message);
 
-        /* ============================================================
-           CONSTRUIR HISTORIAL SEGURO
-           ============================================================ */
         let historialSeguro = [];
         if (Array.isArray(history)) {
             historialSeguro = history
@@ -114,9 +102,6 @@ router.post('/chat', autenticar, async (req, res) => {
             seed: 0
         };
 
-        /* ============================================================
-           LLAMADA A NVIDIA (KIMI K3)
-           ============================================================ */
         const nvidiaResponse = await axios.post(
             'https://integrate.api.nvidia.com/v1/chat/completions',
             payload,
@@ -135,9 +120,6 @@ router.post('/chat', autenticar, async (req, res) => {
 
         console.log('💬 Respuesta de Marquinhos:', respuestaTexto);
 
-        /* ============================================================
-           RESPUESTA FINAL
-           ============================================================ */
         return res.json({
             success: true,
             reply: respuestaTexto
@@ -146,7 +128,6 @@ router.post('/chat', autenticar, async (req, res) => {
     } catch (error) {
         console.error('❌ Error en /ai/chat:', error.message);
         
-        // Log detallado del error de NVIDIA si existe
         if (error.response?.data) {
             console.error('Detalle del error de NVIDIA:', JSON.stringify(error.response.data, null, 2));
         }
