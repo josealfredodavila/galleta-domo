@@ -1,5 +1,5 @@
 /* ================================================================
-   routes/ai-voice.js - VOZ CON MARQUINHOS (100% GRATIS)
+   routes/ai-voice.js - VOZ CON MARQUINHOS (LiveKit TTS)
    ================================================================ */
 
 const express = require('express');
@@ -10,9 +10,7 @@ const path = require('path');
 const os = require('os');
 const axios = require('axios');
 const FormData = require('form-data');
-const { exec } = require('child_process');
-const util = require('util');
-const execPromise = util.promisify(exec);
+const { AccessToken } = require('livekit-server-sdk');
 
 /* ================================================================
    CONFIGURACIÓN DE VARIABLES DE ENTORNO (RAILWAY)
@@ -21,23 +19,22 @@ const NVIDIA_API_KEY = process.env.NVIDIA_API_KEY;
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const LIVEKIT_API_KEY = process.env.LIVEKIT_API_KEY;
+const LIVEKIT_API_SECRET = process.env.LIVEKIT_API_SECRET;
+const LIVEKIT_URL = process.env.LIVEKIT_URL;
 
 const supabaseAdmin = createClient(
     SUPABASE_URL,
     SUPABASE_SERVICE_ROLE_KEY,
     {
-        auth: {
-            autoRefreshToken: false,
-            persistSession: false
-        }
+        auth: { autoRefreshToken: false, persistSession: false }
     }
 );
 
 /* ================================================================
-   CONFIGURACIÓN DE VOZ - EDGE TTS
+   VOICE ID DE JORGE (LiveKit)
    ================================================================ */
-// Voz de Jorge (es-MX) - Gratis, sin API key
-const EDGE_VOICE = 'es-MX-JorgeNeural';
+const VOICE_ID_JORGE = '7b001dff-b8b2-4da7-92e4-5c794798effa';
 
 /* ================================================================
    MIDDLEWARE DE AUTENTICACIÓN
@@ -89,32 +86,6 @@ CONOCIMIENTO:
 - Puedes ayudar con: cómo comprar Domos, cómo usar Es.stoks, cómo iniciar un LIVE, cómo crear canales.`;
 
 /* ================================================================
-   FUNCIÓN AUXILIAR: GENERAR AUDIO CON EDGE TTS
-   ================================================================ */
-async function generarAudioEdgeTTS(texto, outputPath) {
-    // Limpiar el texto para evitar problemas con las comillas en el shell
-    const textoLimpio = texto.replace(/"/g, '\\"').replace(/\n/g, ' ').replace(/\r/g, '');
-    
-    // Limitar texto a 300 caracteres para que no sea eterno
-    const textoFinal = textoLimpio.length > 500 
-        ? textoLimpio.substring(0, 500) + '...' 
-        : textoLimpio;
-
-    console.log(`🔊 Generando audio con Edge TTS (voz: ${EDGE_VOICE})...`);
-
-    const comando = `edge-tts --voice "${EDGE_VOICE}" --text "${textoFinal}" --write-media "${outputPath}"`;
-
-    try {
-        await execPromise(comando, { timeout: 60000 });
-        console.log('✅ Audio generado exitosamente con Edge TTS');
-        return true;
-    } catch (error) {
-        console.error('❌ Error con Edge TTS:', error.message);
-        throw new Error('No se pudo generar el audio con Edge TTS');
-    }
-}
-
-/* ================================================================
    RUTA POST /chat
    ================================================================ */
 router.post('/chat', autenticar, async (req, res) => {
@@ -135,7 +106,6 @@ router.post('/chat', autenticar, async (req, res) => {
 
         /* ============================================================
            COMPATIBILIDAD CON EL FRONTEND
-           El frontend envía 'audio_url' (snake_case)
            ============================================================ */
         const { audio_url, audioUrl, history = [] } = req.body || {};
         const urlAudio = audio_url || audioUrl;
@@ -189,9 +159,7 @@ router.post('/chat', autenticar, async (req, res) => {
         console.log('📝 Transcripción:', transcripcion);
 
         if (!transcripcion) {
-            // Limpieza
             if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
-            
             return res.json({
                 success: true,
                 transcripcion: '',
@@ -244,64 +212,110 @@ router.post('/chat', autenticar, async (req, res) => {
         console.log('💬 Respuesta:', respuestaTexto);
 
         /* ============================================================
-           PASO 4: CONVERTIR RESPUESTA A VOZ (EDGE TTS)
+           PASO 4: CONVERTIR RESPUESTA A VOZ CON LIVEKIT (TTS)
            ============================================================ */
         let audioRespuestaUrl = null;
 
         try {
-            // Generar audio con Edge TTS (gratis, sin API key)
-            await generarAudioEdgeTTS(respuestaTexto, outputPath);
+            console.log('🔊 Convirtiendo respuesta a voz con LiveKit (Jorge)...');
 
-            /* ============================================================
-               PASO 5: SUBIR AUDIO DE MARQUINHOS A SUPABASE
-               ============================================================ */
-            console.log('📤 Subiendo audio de respuesta...');
-
-            const storagePath = `bot-responses/${req.user.id}/${Date.now()}.mp3`;
-            const audioBuffer = fs.readFileSync(outputPath);
-
-            const { error: uploadError } = await supabaseAdmin.storage
-                .from('chat-audio')
-                .upload(storagePath, audioBuffer, {
-                    contentType: 'audio/mpeg',
-                    cacheControl: '3600',
-                    upsert: false
-                });
-
-            if (uploadError) {
-                console.error('❌ Error subiendo audio:', uploadError.message);
-            } else {
-                // Generar la URL firmada
-                const { data: signedData, error: signedError } = await supabaseAdmin.storage
-                    .from('chat-audio')
-                    .createSignedUrl(storagePath, 3600);
-
-                if (signedError || !signedData?.signedUrl) {
-                    console.error('❌ Error creando signed URL:', signedError?.message);
-                } else {
-                    audioRespuestaUrl = signedData.signedUrl;
-                    console.log('✅ Audio de Marquinhos subido y firmado correctamente');
+            const at = new AccessToken(
+                LIVEKIT_API_KEY,
+                LIVEKIT_API_SECRET,
+                {
+                    identity: 'marquinhos-tts-' + timestamp,
+                    ttl: '10m',
                 }
+            );
 
-                /* ============================================================
-                   GUARDAR HISTORIAL EN ai_voice_chats
-                   ============================================================ */
-                try {
-                    await supabaseAdmin.from('ai_voice_chats').insert({
-                        usuario_id: req.user.id,
-                        transcripcion: transcripcion,
-                        respuesta: respuestaTexto,
-                        audio_usuario_url: urlAudio,
-                        audio_bot_url: `bucket://chat-audio/${storagePath}`
-                    });
-                } catch (e) {
-                    console.warn('⚠️ No se pudo guardar historial:', e.message);
+            at.addGrant({
+                roomJoin: true,
+                room: 'tts-room-' + timestamp,
+                canPublish: true,
+                canSubscribe: false,
+                roomAdmin: true,
+                roomCreate: true,
+                agent: true,
+                tts: { voiceId: VOICE_ID_JORGE }
+            });
+
+            const token = await at.toJwt();
+
+            const livekitHost = LIVEKIT_URL.replace('wss://', 'https://').replace('ws://', 'http://');
+            
+            const livekitTtsResponse = await axios.post(
+                `${livekitHost}/api/tts`,
+                {
+                    text: respuestaTexto,
+                    voiceId: VOICE_ID_JORGE,
+                    outputFormat: 'mp3'
+                },
+                {
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    },
+                    responseType: 'arraybuffer',
+                    timeout: 120000
                 }
-            }
+            );
+
+            fs.writeFileSync(outputPath, Buffer.from(livekitTtsResponse.data));
+            console.log('✅ Audio generado con LiveKit TTS');
 
         } catch (ttsError) {
             console.error('⚠️ Error generando audio TTS:', ttsError.message);
             // No fallamos toda la petición, solo devolvemos texto sin audio
+        }
+
+        /* ============================================================
+           PASO 5: SUBIR AUDIO DE MARQUINHOS A SUPABASE
+           ============================================================ */
+        if (fs.existsSync(outputPath)) {
+            try {
+                console.log('📤 Subiendo audio de respuesta...');
+
+                const storagePath = `bot-responses/${req.user.id}/${Date.now()}.mp3`;
+                const audioBuffer = fs.readFileSync(outputPath);
+
+                const { error: uploadError } = await supabaseAdmin.storage
+                    .from('chat-audio')
+                    .upload(storagePath, audioBuffer, {
+                        contentType: 'audio/mpeg',
+                        cacheControl: '3600',
+                        upsert: false
+                    });
+
+                if (!uploadError) {
+                    const { data: signedData, error: signedError } = await supabaseAdmin.storage
+                        .from('chat-audio')
+                        .createSignedUrl(storagePath, 3600);
+
+                    if (!signedError && signedData?.signedUrl) {
+                        audioRespuestaUrl = signedData.signedUrl;
+                        console.log('✅ Audio de Marquinhos subido y firmado');
+                    }
+
+                    /* ============================================================
+                       GUARDAR HISTORIAL EN ai_voice_chats
+                       ============================================================ */
+                    try {
+                        await supabaseAdmin.from('ai_voice_chats').insert({
+                            usuario_id: req.user.id,
+                            transcripcion: transcripcion,
+                            respuesta: respuestaTexto,
+                            audio_usuario_url: urlAudio,
+                            audio_bot_url: `bucket://chat-audio/${storagePath}`
+                        });
+                    } catch (e) {
+                        console.warn('⚠️ No se pudo guardar historial:', e.message);
+                    }
+                } else {
+                    console.error('❌ Error subiendo audio:', uploadError.message);
+                }
+            } catch (uploadCatch) {
+                console.error('⚠️ Error en subida:', uploadCatch.message);
+            }
         }
 
         /* ============================================================
@@ -310,9 +324,7 @@ router.post('/chat', autenticar, async (req, res) => {
         try {
             if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
             if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
-        } catch (e) {
-            console.warn('⚠️ Error limpiando temporales:', e.message);
-        }
+        } catch (e) {}
 
         /* ============================================================
            RESPUESTA FINAL
@@ -321,7 +333,7 @@ router.post('/chat', autenticar, async (req, res) => {
             success: true,
             transcripcion,
             reply: respuestaTexto,
-            audio_url: audioRespuestaUrl // Puede ser null si TTS falló
+            audio_url: audioRespuestaUrl
         });
 
     } catch (error) {
