@@ -157,7 +157,7 @@ button,input{font:inherit}
 .photo-viewer .pv-handle{color:var(--muted);font-size:.8rem;margin-top:2px}
 .photo-viewer .pv-close{position:absolute;top:20px;right:20px;width:42px;height:42px;border-radius:50%;background:rgba(212,175,55,.15);border:1px solid var(--gold);color:var(--gold);cursor:pointer;font-size:1.2rem;font-weight:800;display:grid;place-items:center}
 .photo-viewer .pv-close:hover{background:var(--gold);color:var(--space)}
-/* Visor de estados - SIN textos que estorben */
+/* Visor de estados - SIN textos ni iconos que estorben */
 .estado-viewer{position:fixed;inset:0;z-index:310;background:#000;display:none;flex-direction:column;animation:fadeIn .2s ease-out;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
 .estado-viewer.show{display:flex}
 .estado-viewer-progress{position:absolute;top:8px;left:12px;right:12px;height:3px;background:rgba(255,255,255,.2);border-radius:2px;overflow:hidden;z-index:5}
@@ -178,9 +178,6 @@ button,input{font:inherit}
 .estado-viewer-nav.prev{left:14px}
 .estado-viewer-nav.next{right:14px}
 .estado-viewer-nav.hidden{display:none}
-.estado-viewer-pause-hint{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:rgba(255,255,255,.9);font-size:3rem;font-weight:900;pointer-events:none;opacity:0;transition:opacity .15s;text-shadow:0 2px 12px rgba(0,0,0,.9);z-index:6}
-.estado-viewer-pause-hint.show{opacity:1}
-/* Contador de vistas (para mis propios estados) */
 .estado-viewer-vistas{position:absolute;bottom:20px;left:0;right:0;text-align:center;color:#fff;font-size:.8rem;pointer-events:none;z-index:4}
 .estado-viewer-vistas-pill{display:inline-block;background:rgba(0,0,0,.55);padding:8px 16px;border-radius:20px;backdrop-filter:blur(8px);text-shadow:0 1px 4px rgba(0,0,0,.9)}
 .hidden{display:none!important}
@@ -311,7 +308,7 @@ button,input{font:inherit}
     <div class="pv-handle" id="pvHandle"></div>
 </div>
 
-<!-- Visor de estados: sin textos, con pausa al mantener presionado -->
+<!-- Visor de estados: sin textos ni iconos que estorben -->
 <div class="estado-viewer" id="estadoViewer">
     <div class="estado-viewer-progress"><div class="estado-viewer-progress-inner" id="estadoProgress"></div></div>
     <div class="estado-viewer-header">
@@ -328,7 +325,6 @@ button,input{font:inherit}
         <div class="estado-viewer-caption hidden" id="evCaption"></div>
         <button class="estado-viewer-nav next" id="evNext">›</button>
     </div>
-    <div class="estado-viewer-pause-hint" id="evPauseHint">⏸</div>
     <div class="estado-viewer-vistas hidden" id="evVistas">
         <div class="estado-viewer-vistas-pill">
             👁️ <span id="evVistasCount">0</span> vistas
@@ -489,7 +485,6 @@ function limpiarVistosAntiguos(){
     localStorage.setItem('sariels_estados_vistos', JSON.stringify(estadoVistos));
 }
 
-// Registrar vista en la tabla estados_vistas
 async function registrarVistaEstado(estadoId){
     if(!user) return;
     try {
@@ -500,7 +495,6 @@ async function registrarVistaEstado(estadoId){
     } catch(e) { /* silencioso */ }
 }
 
-// Obtener cuántas vistas tiene un estado
 async function obtenerVistasEstado(estadoId){
     try {
         const { count, error } = await db
@@ -543,7 +537,6 @@ async function cargarEstados(){
             porUsuario[e.usuario_id].push(e);
         });
 
-        // Mi estado va primero
         const miEstado = porUsuario[user.id];
         if(miEstado && miEstado.length > 0){
             const tieneNuevos = miEstado.some(e => estadoEsNuevo(e));
@@ -636,7 +629,6 @@ async function mostrarEstadoActual(){
     $('evPrev').classList.toggle('hidden', estadoActualIndex === 0);
     $('evNext').classList.toggle('hidden', estadoActualIndex >= estados.length - 1);
 
-    // ✅ Si es mi estado, mostrar contador de vistas
     if(esMiEstado){
         const total = await obtenerVistasEstado(estado.id);
         $('evVistasCount').textContent = total;
@@ -645,7 +637,6 @@ async function mostrarEstadoActual(){
         $('evVistas').classList.add('hidden');
     }
 
-    // Auto-avance con pausa
     iniciarProgresoEstado();
 }
 
@@ -663,7 +654,7 @@ function iniciarProgresoEstado(){
             estadoProgresoActual = 0;
             siguienteEstado();
         }
-    }, 50); // 50ms × 100 = 5s
+    }, 50);
 }
 
 function siguienteEstado(){
@@ -698,17 +689,15 @@ function cerrarEstadoViewer(){
 }
 
 /* ============================================
-   PAUSA/REANUDAR CON EL DEDO O CLIC
+   PAUSA/REANUDAR (SIN ICONO VISIBLE)
    ============================================ */
 function activarPausaEstado(){
     if(!$('estadoViewer').classList.contains('show')) return;
     estadoPausado = true;
-    $('evPauseHint').classList.add('show');
 }
 function desactivarPausaEstado(){
     if(!$('estadoViewer').classList.contains('show')) return;
     estadoPausado = false;
-    $('evPauseHint').classList.remove('show');
 }
 
 function abrirModalEstado(){
@@ -1642,12 +1631,11 @@ async function init(){
     $('pvClose').onclick = cerrarPhotoViewer;
     $('photoViewer').addEventListener('click', e => { if(e.target.id === 'photoViewer') cerrarPhotoViewer(); });
 
-    // Visor de estados: cerrar con botón, navegar con flechas
     $('evClose').onclick = cerrarEstadoViewer;
     $('evPrev').onclick = (e) => { e.stopPropagation(); anteriorEstado(); };
     $('evNext').onclick = (e) => { e.stopPropagation(); siguienteEstado(); };
 
-    // ✅ PAUSA/REANUDAR al presionar el dedo o clic en la pantalla
+    // ✅ PAUSA/REANUDAR silenciosa: sin iconos visibles
     const evBody = $('evBody');
     evBody.addEventListener('mousedown', activarPausaEstado);
     evBody.addEventListener('mouseup', desactivarPausaEstado);
@@ -1656,7 +1644,6 @@ async function init(){
     evBody.addEventListener('touchend', (e) => { e.preventDefault(); desactivarPausaEstado(); }, { passive: false });
     evBody.addEventListener('touchcancel', desactivarPausaEstado);
 
-    // También permitir pausa con tecla espacio
     document.addEventListener('keydown', e => {
         if(e.key === ' ' && $('estadoViewer').classList.contains('show')){
             e.preventDefault();
@@ -1664,7 +1651,6 @@ async function init(){
         }
     });
 
-    // Modal de subir estado
     $('btnSubirEstado').onclick = abrirModalEstado;
     $('closeEstadoModal').onclick = cerrarModalEstado;
     $('btnSeleccionarEstado').onclick = seleccionarArchivoEstado;
