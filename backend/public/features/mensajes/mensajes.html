@@ -30,7 +30,10 @@ button,input{font:inherit}
 .sidebar{border-right:1px solid var(--border);background:rgba(0,0,0,.18);overflow:hidden;display:flex;flex-direction:column;position:relative}
 .sidehead{display:flex;align-items:center;justify-content:space-between;padding:15px 17px 8px;color:var(--gold);font-weight:700;font-size:.82rem}
 .estados-bar{padding:8px 12px 12px;border-bottom:1px solid rgba(212,175,55,.08);background:rgba(0,0,0,.15)}
-.estados-title{font-size:.7rem;color:var(--gold);font-weight:700;margin-bottom:8px;letter-spacing:.5px}
+.estados-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.estados-title{font-size:.7rem;color:var(--gold);font-weight:700;letter-spacing:.5px}
+.btn-subir-estado{background:linear-gradient(135deg,var(--gold),#b8923a);color:var(--space);border:0;border-radius:14px;padding:4px 10px;font-size:.65rem;font-weight:800;cursor:pointer;display:flex;align-items:center;gap:4px;transition:transform .2s}
+.btn-subir-estado:hover{transform:scale(1.05)}
 .estados-scroll{display:flex;gap:10px;overflow-x:auto;padding-bottom:6px;scrollbar-width:none}
 .estados-scroll::-webkit-scrollbar{display:none}
 .estado-item{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;width:62px}
@@ -41,8 +44,6 @@ button,input{font:inherit}
 .estado-inner{width:100%;height:100%;border-radius:50%;background:var(--space);display:grid;place-items:center;overflow:hidden;font-weight:800;color:var(--gold);font-size:1rem}
 .estado-inner img{width:100%;height:100%;object-fit:cover}
 .estado-name{font-size:.6rem;color:var(--muted);text-align:center;max-width:62px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.estado-circle .add-plus{position:absolute;bottom:-2px;right:-2px;width:20px;height:20px;background:var(--gold);color:var(--space);border-radius:50%;display:grid;place-items:center;font-size:.9rem;font-weight:900;border:2px solid var(--space)}
-.estado-circle-wrap{position:relative}
 .searchbox{padding:0 12px 12px}
 .searchbox input{width:100%;padding:9px 14px;border-radius:20px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:var(--text);outline:0;font-size:.78rem}
 .searchbox input:focus{border-color:var(--gold)}
@@ -149,7 +150,6 @@ button,input{font:inherit}
 .profile-modal-actions{display:flex;flex-direction:column;gap:10px}
 .profile-modal-btn{padding:12px 18px;border-radius:12px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--text);cursor:pointer;font-weight:600;font-size:.85rem;transition:all .2s;text-align:left;display:flex;align-items:center;gap:12px}
 .profile-modal-btn:hover{background:rgba(212,175,55,.1);border-color:var(--gold);color:var(--gold)}
-.profile-modal-btn.danger:hover{background:rgba(255,51,102,.1);border-color:var(--danger);color:var(--danger)}
 .profile-modal-btn .icon{font-size:1.1rem}
 /* Visor de foto ampliada */
 .photo-viewer{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.95);backdrop-filter:blur(12px);display:none;align-items:center;justify-content:center;flex-direction:column;padding:30px;animation:fadeIn .25s ease-out}
@@ -225,14 +225,17 @@ button,input{font:inherit}
     <div class="sidehead">
         <span>◈ Conversaciones</span>
     </div>
-    <div class="estados-bar">
-        <div class="estados-title">◈ ESTADOS</div>
-        <div class="estados-scroll" id="estadosScroll"></div>
-    </div>
     <div class="searchbox">
         <input type="text" id="searchConversations" placeholder="🔍 Buscar conversación…" autocomplete="off">
     </div>
     <div class="convlist" id="conversationList"></div>
+    <div class="estados-bar">
+        <div class="estados-header">
+            <div class="estados-title">◈ ESTADOS</div>
+            <button class="btn-subir-estado" id="btnSubirEstado" title="Subir estado">＋ Subir</button>
+        </div>
+        <div class="estados-scroll" id="estadosScroll"></div>
+    </div>
     <button class="fab" id="newChat" title="Nueva conversación">＋</button>
 </aside>
 <section class="chat">
@@ -284,7 +287,7 @@ button,input{font:inherit}
     </div>
 </div>
 
-<!-- Modal de perfil (al tocar tu foto del header) -->
+<!-- Modal de perfil (al tocar tu foto del header) - SIMPLIFICADO -->
 <div class="modal" id="profileModal">
     <div class="profile-modal-box">
         <div class="profile-modal-avatar" id="profileModalAvatar">◈</div>
@@ -294,14 +297,6 @@ button,input{font:inherit}
             <button class="profile-modal-btn" id="btnCambiarFoto">
                 <span class="icon">📷</span>
                 <span>Cambiar foto de perfil</span>
-            </button>
-            <button class="profile-modal-btn" id="btnVerMiPerfil">
-                <span class="icon">👤</span>
-                <span>Ver mi perfil completo</span>
-            </button>
-            <button class="profile-modal-btn danger" id="btnCerrarSesion">
-                <span class="icon">🚪</span>
-                <span>Cerrar sesión</span>
             </button>
         </div>
         <button class="btn" id="btnCerrarProfileModal" style="margin-top:18px;width:100%;">Cerrar</button>
@@ -408,7 +403,7 @@ function avatar(name,url,cls='avatar'){return `<div class="${cls}">${url?`<img s
 async function profile(id){if(id===BOT_ID)return{id:BOT_ID,nombre:"Marquinhos",handle:'marquinhos',avatar_url:null,online:true,bot:true};const r=await db.from('perfiles_publicos').select('id,nombre,handle,avatar_url,online,ultima_conexion').eq('id',id).maybeSingle();return r.data||{id,nombre:'Usuario',avatar_url:null,online:false}}
 
 /* ============================================
-   MI PERFIL - CARGAR Y MODAL
+   MI PERFIL - CARGAR Y MODAL SIMPLIFICADO
    ============================================ */
 async function cargarFotoHeader(){
     if(!user) return;
@@ -423,7 +418,6 @@ async function cargarFotoHeader(){
             const inicial = (data?.nombre || data?.handle || '◈').charAt(0).toUpperCase();
             headerAvatar.innerHTML = esc(inicial);
         }
-        // Actualizar modal también
         $('profileModalAvatar').innerHTML = data?.avatar_url
             ? `<img src="${esc(data.avatar_url)}" alt="Mi foto">`
             : esc((data?.nombre || data?.handle || '◈').charAt(0).toUpperCase());
@@ -432,12 +426,8 @@ async function cargarFotoHeader(){
     } catch(e) { console.warn('Error cargando foto del header:', e); }
 }
 
-function abrirProfileModal(){
-    $('profileModal').classList.add('show');
-}
-function cerrarProfileModal(){
-    $('profileModal').classList.remove('show');
-}
+function abrirProfileModal(){ $('profileModal').classList.add('show'); }
+function cerrarProfileModal(){ $('profileModal').classList.remove('show'); }
 
 async function subirFotoHeader(event){
     const file = event.target.files[0];
@@ -485,11 +475,8 @@ function marcarEstadoVisto(estadoId){
     estadoVistos[estadoId] = Date.now();
     localStorage.setItem('sariels_estados_vistos', JSON.stringify(estadoVistos));
 }
-function estadoEsNuevo(estado){
-    return !estadoVistos[estado.id];
-}
+function estadoEsNuevo(estado){ return !estadoVistos[estado.id]; }
 function limpiarVistosAntiguos(){
-    // Limpiar entradas de más de 48h
     const limite = Date.now() - (48 * 60 * 60 * 1000);
     Object.keys(estadoVistos).forEach(k => { if(estadoVistos[k] < limite) delete estadoVistos[k]; });
     localStorage.setItem('sariels_estados_vistos', JSON.stringify(estadoVistos));
@@ -499,27 +486,9 @@ async function cargarEstados(){
     const scroll = $('estadosScroll');
     scroll.innerHTML = '';
 
-    // Botón "Tu estado" (siempre primero)
-    const miEstadoHTML = `
-        <div class="estado-item" id="miEstadoItem">
-            <div class="estado-circle-wrap">
-                <div class="estado-circle propio" id="miEstadoCircle">
-                    <div class="estado-inner">
-                        ${currentUserProfile?.avatar_url ? `<img src="${esc(currentUserProfile.avatar_url)}" alt="">` : esc((currentUserProfile?.nombre||'◈').charAt(0).toUpperCase())}
-                    </div>
-                </div>
-                <span class="add-plus">+</span>
-            </div>
-            <div class="estado-name">Tu estado</div>
-        </div>
-    `;
-    scroll.insertAdjacentHTML('beforeend', miEstadoHTML);
-    $('miEstadoItem').onclick = abrirModalEstado;
-
     if(!user) return;
 
     try {
-        // Cargar todos los estados no expirados de usuarios que sigo (o todos por simplicidad)
         const { data, error } = await db
             .from('estados')
             .select('id, usuario_id, imagen_url, caption, created_at, expires_at')
@@ -533,6 +502,11 @@ async function cargarEstados(){
 
         estadosCache = data || [];
 
+        if(estadosCache.length === 0){
+            scroll.innerHTML = '<div style="color:var(--muted);font-size:.7rem;padding:8px 4px;text-align:center;width:100%;">Sin estados disponibles</div>';
+            return;
+        }
+
         // Agrupar por usuario
         const porUsuario = {};
         estadosCache.forEach(e => {
@@ -540,42 +514,43 @@ async function cargarEstados(){
             porUsuario[e.usuario_id].push(e);
         });
 
-        // Cargar info de cada usuario con estados
+        // Mi estado (si tengo) va primero
+        const miEstado = porUsuario[user.id];
+        if(miEstado && miEstado.length > 0){
+            const tieneNuevos = miEstado.some(e => estadoEsNuevo(e));
+            const html = `
+                <div class="estado-item" data-userid="${user.id}">
+                    <div class="estado-circle ${tieneNuevos ? '' : 'visto'}">
+                        <div class="estado-inner">
+                            ${currentUserProfile?.avatar_url ? `<img src="${esc(currentUserProfile.avatar_url)}" alt="">` : esc((currentUserProfile?.nombre||'◈').charAt(0).toUpperCase())}
+                        </div>
+                    </div>
+                    <div class="estado-name">Tú</div>
+                </div>
+            `;
+            scroll.insertAdjacentHTML('beforeend', html);
+            scroll.querySelector(`[data-userid="${user.id}"]`).onclick = () => abrirEstadoUsuario(user.id);
+        }
+
+        // Estados de otros usuarios
         for(const uid of Object.keys(porUsuario)){
-            if(uid === user.id){
-                // Ya tenemos el botón de "Tu estado", saltar
-                continue;
-            }
+            if(uid === user.id) continue;
             const p = await profile(uid);
             const estadosUsuario = porUsuario[uid];
             const tieneNuevos = estadosUsuario.some(e => estadoEsNuevo(e));
 
             const html = `
                 <div class="estado-item" data-userid="${uid}">
-                    <div class="estado-circle-wrap">
-                        <div class="estado-circle ${tieneNuevos ? '' : 'visto'}">
-                            <div class="estado-inner">
-                                ${p.avatar_url ? `<img src="${esc(p.avatar_url)}" alt="">` : esc((p.nombre||'◈').charAt(0).toUpperCase())}
-                            </div>
+                    <div class="estado-circle ${tieneNuevos ? '' : 'visto'}">
+                        <div class="estado-inner">
+                            ${p.avatar_url ? `<img src="${esc(p.avatar_url)}" alt="">` : esc((p.nombre||'◈').charAt(0).toUpperCase())}
                         </div>
                     </div>
                     <div class="estado-name">${esc(p.nombre || 'Usuario')}</div>
                 </div>
             `;
             scroll.insertAdjacentHTML('beforeend', html);
-            const el = scroll.querySelector(`[data-userid="${uid}"]`);
-            el.onclick = () => abrirEstadoUsuario(uid);
-        }
-
-        // Estados propios (los del usuario actual)
-        if(porUsuario[user.id] && porUsuario[user.id].length > 0){
-            // Actualizar el círculo de "Tu estado" para reflejar que hay estados
-            const miCircle = $('miEstadoCircle');
-            miCircle.classList.remove('propio');
-            miCircle.classList.add('visto');
-            // Quitar el "+" si ya hay estados
-            const addPlus = document.querySelector('#miEstadoItem .add-plus');
-            if(addPlus) addPlus.remove();
+            scroll.querySelector(`[data-userid="${uid}"]`).onclick = () => abrirEstadoUsuario(uid);
         }
 
     } catch(e){
@@ -599,19 +574,17 @@ function mostrarEstadoActual(){
         return;
     }
     const estado = estados[estadoActualIndex];
-    const p = estadoActualUserId === user.id ? { nombre: currentUserProfile?.nombre || 'Yo', handle: currentUserProfile?.handle || 'yo', avatar_url: currentUserProfile?.avatar_url } : { nombre: 'Usuario', handle: '', avatar_url: null };
 
-    // Cargar perfil real si no es el mío
-    if(estadoActualUserId !== user.id){
+    if(estadoActualUserId === user.id){
+        $('evAvatar').innerHTML = currentUserProfile?.avatar_url ? `<img src="${esc(currentUserProfile.avatar_url)}" alt="">` : esc((currentUserProfile?.nombre||'◈').charAt(0).toUpperCase());
+        $('evName').textContent = 'Tú';
+    } else {
         db.from('perfiles_publicos').select('nombre, handle, avatar_url').eq('id', estadoActualUserId).maybeSingle().then(r => {
             if(r.data){
                 $('evAvatar').innerHTML = r.data.avatar_url ? `<img src="${esc(r.data.avatar_url)}" alt="">` : esc((r.data.nombre||'◈').charAt(0).toUpperCase());
                 $('evName').textContent = r.data.nombre || 'Usuario';
             }
         });
-    } else {
-        $('evAvatar').innerHTML = p.avatar_url ? `<img src="${esc(p.avatar_url)}" alt="">` : esc((p.nombre||'◈').charAt(0).toUpperCase());
-        $('evName').textContent = p.nombre;
     }
 
     $('evImage').src = estado.imagen_url;
@@ -623,14 +596,11 @@ function mostrarEstadoActual(){
         $('evCaption').classList.add('hidden');
     }
 
-    // Marcar como visto
     marcarEstadoVisto(estado.id);
 
-    // Botones de navegación
     $('evPrev').classList.toggle('hidden', estadoActualIndex === 0);
     $('evNext').classList.toggle('hidden', estadoActualIndex >= estados.length - 1);
 
-    // Barra de progreso y auto-avance (5s)
     const progress = $('estadoProgress');
     progress.style.width = '0%';
     let pct = 0;
@@ -667,7 +637,7 @@ function cerrarEstadoViewer(){
     if(estadoTimer) clearInterval(estadoTimer);
     estadoTimer = null;
     estadoActualUserId = null;
-    cargarEstados(); // Refrescar para actualizar los anillos
+    cargarEstados();
 }
 
 function abrirModalEstado(){
@@ -679,13 +649,8 @@ function abrirModalEstado(){
     $('estadoFileInput').value = '';
 }
 
-function cerrarModalEstado(){
-    $('estadoUploadModal').classList.remove('show');
-}
-
-async function seleccionarArchivoEstado(){
-    $('estadoFileInput').click();
-}
+function cerrarModalEstado(){ $('estadoUploadModal').classList.remove('show'); }
+function seleccionarArchivoEstado(){ $('estadoFileInput').click(); }
 
 async function previewEstado(event){
     const file = event.target.files[0];
@@ -945,7 +910,6 @@ async function openConversation(id){
     $('chatStatus').textContent=esBot?'✦ IA · Siempre disponible':(p.online?'◉ En línea':'◈ Desconectado');
     $('chatStatus').className='status'+(p.online?' online':'');
 
-    // ✅ Click en el avatar del chat → abre foto ampliada (excepto bot)
     $('chatAvatar').onclick = () => {
         if(esBot){ toast('ℹ️ Marquinhos es un asistente IA', 'warning'); return; }
         verFotoAmpliada(p.avatar_url, p.nombre, p.handle);
@@ -1601,14 +1565,8 @@ async function init(){
     $('headerAvatar').onclick = abrirProfileModal;
     $('avatarInput').addEventListener('change', subirFotoHeader);
 
-    // Modal de perfil
+    // Modal de perfil simplificado
     $('btnCambiarFoto').onclick = () => $('avatarInput').click();
-    $('btnVerMiPerfil').onclick = () => window.location.href = '/features/perfil/perfil.html';
-    $('btnCerrarSesion').onclick = async () => {
-        if(!confirm('¿Cerrar sesión?')) return;
-        await db.auth.signOut();
-        window.location.href = '/';
-    };
     $('btnCerrarProfileModal').onclick = cerrarProfileModal;
     $('profileModal').addEventListener('click', e => { if(e.target.id === 'profileModal') cerrarProfileModal(); });
 
@@ -1622,13 +1580,13 @@ async function init(){
     $('evNext').onclick = siguienteEstado;
 
     // Modal de subir estado
+    $('btnSubirEstado').onclick = abrirModalEstado;
     $('closeEstadoModal').onclick = cerrarModalEstado;
     $('btnSeleccionarEstado').onclick = seleccionarArchivoEstado;
     $('estadoFileInput').addEventListener('change', previewEstado);
     $('btnPublicarEstado').onclick = publicarEstado;
     $('estadoUploadModal').addEventListener('click', e => { if(e.target.id === 'estadoUploadModal') cerrarModalEstado(); });
 
-    // Escape para cerrar modales
     document.addEventListener('keydown', e => {
         if(e.key === 'Escape'){
             cerrarProfileModal(); cerrarPhotoViewer(); cerrarEstadoViewer(); cerrarModalEstado();
@@ -1686,7 +1644,6 @@ async function init(){
         if(user && p.new.destinatario_id===user.id && p.new.estado==='ringing'){incoming(p.new);}
     }).subscribe();
 
-    // Refrescar estados cada 5 minutos
     setInterval(() => { limpiarVistosAntiguos(); cargarEstados(); }, 5 * 60 * 1000);
 }
 
