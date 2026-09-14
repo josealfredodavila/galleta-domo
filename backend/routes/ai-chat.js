@@ -1,6 +1,6 @@
 /* ================================================================
    routes/ai-chat.js - CHAT DE TEXTO CON MARQUINHOS
-   VERSIÓN PRODUCCIÓN - ESTABLE
+   VERSIÓN PRODUCCIÓN - GROQ (rápido y gratis)
    ================================================================ */
 
 const express = require('express');
@@ -12,140 +12,71 @@ const axios = require('axios');
    CONFIGURACIÓN
 ================================================================ */
 
-const NVIDIA_API_KEY =
-    process.env.NVIDIA_API_KEY;
+const GROQ_API_KEY = process.env.GROQ_API_KEY;
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-const SUPABASE_URL =
-    process.env.SUPABASE_URL;
-
-const SUPABASE_SERVICE_ROLE_KEY =
-    process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-const NVIDIA_ENDPOINT =
-    'https://integrate.api.nvidia.com/v1/chat/completions';
-
-const NVIDIA_MODEL =
-    'moonshotai/kimi-k3';
-
-const NVIDIA_TIMEOUT_MS =
-    45000;
+const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
+const GROQ_MODEL = 'llama-3.3-70b-versatile';
+const GROQ_TIMEOUT_MS = 30000;
 
 /* ================================================================
    SUPABASE ADMIN
 ================================================================ */
 
 const supabaseAdmin =
-    SUPABASE_URL &&
-    SUPABASE_SERVICE_ROLE_KEY
-        ? createClient(
-            SUPABASE_URL,
-            SUPABASE_SERVICE_ROLE_KEY,
-            {
-                auth: {
-                    autoRefreshToken: false,
-                    persistSession: false,
-                    detectSessionInUrl: false
-                }
+    SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY
+        ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+            auth: {
+                autoRefreshToken: false,
+                persistSession: false,
+                detectSessionInUrl: false
             }
-        )
+        })
         : null;
 
 /* ================================================================
    AUTENTICACIÓN
 ================================================================ */
 
-async function autenticar(
-    req,
-    res,
-    next
-) {
-
+async function autenticar(req, res, next) {
     try {
+        const auth = req.headers.authorization || '';
 
-        const auth =
-            req.headers.authorization || '';
-
-        if (
-            !auth.startsWith('Bearer ')
-        ) {
-
-            return res.status(401).json({
-                success: false,
-                error:
-                    'No autenticado'
-            });
+        if (!auth.startsWith('Bearer ')) {
+            return res.status(401).json({ success: false, error: 'No autenticado' });
         }
 
-        const token =
-            auth
-                .slice(7)
-                .trim();
+        const token = auth.slice(7).trim();
 
         if (!token) {
-
-            return res.status(401).json({
-                success: false,
-                error:
-                    'Token no proporcionado'
-            });
+            return res.status(401).json({ success: false, error: 'Token no proporcionado' });
         }
 
         if (!supabaseAdmin) {
-
-            console.error(
-                '❌ Supabase Admin no configurado'
-            );
-
+            console.error('❌ Supabase Admin no configurado');
             return res.status(500).json({
                 success: false,
-                error:
-                    'Supabase no está configurado correctamente'
+                error: 'Supabase no está configurado correctamente'
             });
         }
 
-        const {
-            data: {
-                user
-            },
-            error
-        } =
-            await supabaseAdmin
-                .auth
-                .getUser(token);
+        const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
 
-        if (
-            error ||
-            !user
-        ) {
-
-            console.warn(
-                '⚠️ Token inválido o sesión expirada'
-            );
-
+        if (error || !user) {
+            console.warn('⚠️ Token inválido o sesión expirada');
             return res.status(401).json({
                 success: false,
-                error:
-                    'Sesión inválida o expirada. Inicia sesión nuevamente.'
+                error: 'Sesión inválida o expirada. Inicia sesión nuevamente.'
             });
         }
 
-        req.user =
-            user;
-
+        req.user = user;
         return next();
 
     } catch (error) {
-
-        console.error(
-            '❌ Error autenticando chat:',
-            error
-        );
-
-        return res.status(500).json({
-            success: false,
-            error:
-                'Error de autenticación'
-        });
+        console.error('❌ Error autenticando chat:', error);
+        return res.status(500).json({ success: false, error: 'Error de autenticación' });
     }
 }
 
@@ -186,398 +117,189 @@ REGLAS:
    LIMPIAR HISTORIAL
 ================================================================ */
 
-function limpiarHistorial(
-    history
-) {
-
-    if (!Array.isArray(history)) {
-        return [];
-    }
+function limpiarHistorial(history) {
+    if (!Array.isArray(history)) return [];
 
     return history
-        .filter(
-            item =>
-                item &&
-                typeof item === 'object' &&
-                (
-                    item.role === 'user' ||
-                    item.role === 'assistant'
-                ) &&
-                typeof item.content === 'string' &&
-                item.content.trim()
+        .filter(item =>
+            item &&
+            typeof item === 'object' &&
+            (item.role === 'user' || item.role === 'assistant') &&
+            typeof item.content === 'string' &&
+            item.content.trim()
         )
         .slice(-8)
-        .map(
-            item => ({
-                role:
-                    item.role,
-
-                content:
-                    item.content
-                        .trim()
-                        .slice(0, 4000)
-            })
-        );
+        .map(item => ({
+            role: item.role,
+            content: item.content.trim().slice(0, 4000)
+        }));
 }
 
 /* ================================================================
-   EXTRAER RESPUESTA DE NVIDIA
+   EXTRAER RESPUESTA
 ================================================================ */
 
-function extraerRespuesta(
-    data
-) {
-
-    const respuesta =
-        data
-            ?.choices
-            ?. [0]
-            ?.message
-            ?.content;
-
-    if (
-        typeof respuesta !== 'string'
-    ) {
-        return '';
-    }
-
-    return respuesta.trim();
+function extraerRespuesta(data) {
+    const respuesta = data?.choices?.[0]?.message?.content;
+    return typeof respuesta === 'string' ? respuesta.trim() : '';
 }
 
 /* ================================================================
    POST /chat
 ================================================================ */
 
-router.post(
-    '/chat',
-    autenticar,
-    async (
-        req,
-        res
-    ) => {
-
-        const inicio =
-            Date.now();
-
-        try {
-
-            /* ========================================================
-               VALIDAR NVIDIA
-            ======================================================== */
-
-            if (!NVIDIA_API_KEY) {
-
-                console.error(
-                    '❌ NVIDIA_API_KEY no está configurada'
-                );
-
-                return res.status(500).json({
-                    success: false,
-                    error:
-                        'Marquinhos no está configurado en el servidor.'
-                });
-            }
-
-            /* ========================================================
-               VALIDAR BODY
-            ======================================================== */
-
-            const {
-                message,
-                context = 'chat_sariels',
-                history = []
-            } =
-                req.body || {};
-
-            if (
-                typeof message !== 'string' ||
-                !message.trim()
-            ) {
-
-                return res.status(400).json({
-                    success: false,
-                    error:
-                        'Mensaje vacío o inválido.'
-                });
-            }
-
-            const mensajeLimpio =
-                message
-                    .trim()
-                    .slice(0, 4000);
-
-            console.log(
-                '💬 Marquinhos recibió mensaje:',
-                {
-                    userId:
-                        req.user?.id || null,
-
-                    context,
-
-                    chars:
-                        mensajeLimpio.length
-                }
-            );
-
-            /* ========================================================
-               HISTORIAL
-            ======================================================== */
-
-            const historialSeguro =
-                limpiarHistorial(
-                    history
-                );
-
-            /* ========================================================
-               PAYLOAD KIMI K3
-            ======================================================== */
-
-            const payload = {
-
-                model:
-                    NVIDIA_MODEL,
-
-                messages: [
-                    {
-                        role:
-                            'system',
-
-                        content:
-                            SYSTEM_PROMPT
-                    },
-
-                    ...historialSeguro,
-
-                    {
-                        role:
-                            'user',
-
-                        content:
-                            mensajeLimpio
-                    }
-                ],
-
-                max_tokens:
-                    500,
-
-                temperature:
-                    0.7,
-
-                stream:
-                    false
-            };
-
-            console.log(
-                '🤖 Enviando solicitud a NVIDIA/Kimi K3...'
-            );
-
-            /* ========================================================
-               NVIDIA
-            ======================================================== */
-
-            const nvidiaResponse =
-                await axios.post(
-                    NVIDIA_ENDPOINT,
-                    payload,
-                    {
-                        headers: {
-                            Authorization:
-                                `Bearer ${NVIDIA_API_KEY}`,
-
-                            Accept:
-                                'application/json',
-
-                            'Content-Type':
-                                'application/json'
-                        },
-
-                        timeout:
-                            NVIDIA_TIMEOUT_MS,
-
-                        validateStatus:
-                            () => true
-                    }
-                );
-
-            const status =
-                nvidiaResponse.status;
-
-            const responseData =
-                nvidiaResponse.data;
-
-            /* ========================================================
-               ERROR NVIDIA
-            ======================================================== */
-
-            if (
-                status < 200 ||
-                status >= 300
-            ) {
-
-                console.error(
-                    '❌ NVIDIA respondió con error:',
-                    {
-                        status,
-
-                        data:
-                            responseData
-                    }
-                );
-
-                let mensajeError =
-                    'El servicio de Marquinhos no respondió correctamente.';
-
-                if (
-                    responseData?.error?.message
-                ) {
-
-                    mensajeError =
-                        responseData
-                            .error
-                            .message;
-                }
-
-                return res.status(502).json({
-                    success: false,
-                    error:
-                        mensajeError
-                });
-            }
-
-            /* ========================================================
-               EXTRAER RESPUESTA
-            ======================================================== */
-
-            const respuestaTexto =
-                extraerRespuesta(
-                    responseData
-                );
-
-            if (!respuestaTexto) {
-
-                console.error(
-                    '❌ NVIDIA respondió sin contenido:',
-                    JSON.stringify(
-                        responseData
-                    )
-                );
-
-                return res.status(502).json({
-                    success: false,
-                    error:
-                        'Marquinhos recibió una respuesta vacía del servicio de IA.'
-                });
-            }
-
-            const duracion =
-                Date.now() -
-                inicio;
-
-            console.log(
-                '✅ Marquinhos respondió:',
-                {
-                    ms:
-                        duracion,
-
-                    chars:
-                        respuestaTexto.length
-                }
-            );
-
-            /* ========================================================
-               RESPUESTA ESTABLE PARA FRONTEND
-            ======================================================== */
-
-            return res.status(200).json({
-                success: true,
-                reply:
-                    respuestaTexto
-            });
-
-        } catch (error) {
-
-            const duracion =
-                Date.now() -
-                inicio;
-
-            console.error(
-                '❌ Error en /api/ai/chat:',
-                {
-                    message:
-                        error.message,
-
-                    code:
-                        error.code,
-
-                    duration:
-                        duracion
-                }
-            );
-
-            if (
-                error.response?.data
-            ) {
-
-                console.error(
-                    '❌ Detalle NVIDIA:',
-                    JSON.stringify(
-                        error.response.data,
-                        null,
-                        2
-                    )
-                );
-            }
-
-            /* ========================================================
-               TIMEOUT
-            ======================================================== */
-
-            if (
-                error.code ===
-                    'ECONNABORTED' ||
-                error.code ===
-                    'ETIMEDOUT'
-            ) {
-
-                return res.status(504).json({
-                    success: false,
-                    error:
-                        'Marquinhos tardó demasiado en responder. Intenta nuevamente.'
-                });
-            }
-
-            /* ========================================================
-               ERROR DE CONEXIÓN
-            ======================================================== */
-
-            if (
-                error.code ===
-                    'ENOTFOUND' ||
-                error.code ===
-                    'ECONNRESET' ||
-                error.code ===
-                    'ECONNREFUSED'
-            ) {
-
-                return res.status(502).json({
-                    success: false,
-                    error:
-                        'No fue posible conectar con el servicio de Marquinhos.'
-                });
-            }
-
-            /* ========================================================
-               ERROR GENERAL
-            ======================================================== */
-
+router.post('/chat', autenticar, async (req, res) => {
+    const inicio = Date.now();
+
+    try {
+        /* ============================================================
+           VALIDAR GROQ
+           ============================================================ */
+        if (!GROQ_API_KEY) {
+            console.error('❌ GROQ_API_KEY no está configurada');
             return res.status(500).json({
                 success: false,
-                error:
-                    'Error procesando el mensaje de Marquinhos.'
+                error: 'Marquinhos no está configurado en el servidor.'
             });
         }
-    }
-);
 
-module.exports =
-    router;
+        /* ============================================================
+           VALIDAR BODY
+           ============================================================ */
+        const { message, context = 'chat_sariels', history = [] } = req.body || {};
+
+        if (typeof message !== 'string' || !message.trim()) {
+            return res.status(400).json({ success: false, error: 'Mensaje vacío o inválido.' });
+        }
+
+        const mensajeLimpio = message.trim().slice(0, 4000);
+
+        console.log('💬 Marquinhos recibió mensaje:', {
+            userId: req.user?.id || null,
+            context,
+            chars: mensajeLimpio.length
+        });
+
+        /* ============================================================
+           HISTORIAL
+           ============================================================ */
+        const historialSeguro = limpiarHistorial(history);
+
+        /* ============================================================
+           PAYLOAD GROQ
+           ============================================================ */
+        const payload = {
+            model: GROQ_MODEL,
+            messages: [
+                { role: 'system', content: SYSTEM_PROMPT },
+                ...historialSeguro,
+                { role: 'user', content: mensajeLimpio }
+            ],
+            max_tokens: 500,
+            temperature: 0.7,
+            stream: false
+        };
+
+        console.log('⚡ Enviando solicitud a GROQ/Llama 3.3...');
+
+        /* ============================================================
+           GROQ
+           ============================================================ */
+        const groqResponse = await axios.post(GROQ_ENDPOINT, payload, {
+            headers: {
+                Authorization: `Bearer ${GROQ_API_KEY}`,
+                Accept: 'application/json',
+                'Content-Type': 'application/json'
+            },
+            timeout: GROQ_TIMEOUT_MS,
+            validateStatus: () => true
+        });
+
+        const status = groqResponse.status;
+        const responseData = groqResponse.data;
+
+        /* ============================================================
+           ERROR GROQ
+           ============================================================ */
+        if (status < 200 || status >= 300) {
+            console.error('❌ GROQ respondió con error:', {
+                status,
+                data: responseData
+            });
+
+            let mensajeError = 'El servicio de Marquinhos no respondió correctamente.';
+            if (responseData?.error?.message) {
+                mensajeError = responseData.error.message;
+            }
+
+            return res.status(502).json({ success: false, error: mensajeError });
+        }
+
+        /* ============================================================
+           EXTRAER RESPUESTA
+           ============================================================ */
+        const respuestaTexto = extraerRespuesta(responseData);
+
+        if (!respuestaTexto) {
+            console.error('❌ GROQ respondió sin contenido:', JSON.stringify(responseData));
+            return res.status(502).json({
+                success: false,
+                error: 'Marquinhos recibió una respuesta vacía del servicio de IA.'
+            });
+        }
+
+        const duracion = Date.now() - inicio;
+        console.log('✅ Marquinhos respondió:', { ms: duracion, chars: respuestaTexto.length });
+
+        /* ============================================================
+           RESPUESTA FINAL
+           ============================================================ */
+        return res.status(200).json({
+            success: true,
+            reply: respuestaTexto
+        });
+
+    } catch (error) {
+        const duracion = Date.now() - inicio;
+
+        console.error('❌ Error en /api/ai/chat:', {
+            message: error.message,
+            code: error.code,
+            duration: duracion
+        });
+
+        if (error.response?.data) {
+            console.error('❌ Detalle GROQ:', JSON.stringify(error.response.data, null, 2));
+        }
+
+        /* ============================================================
+           TIMEOUT
+           ============================================================ */
+        if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
+            return res.status(504).json({
+                success: false,
+                error: 'Marquinhos tardó demasiado en responder. Intenta nuevamente.'
+            });
+        }
+
+        /* ============================================================
+           ERROR DE CONEXIÓN
+           ============================================================ */
+        if (error.code === 'ENOTFOUND' || error.code === 'ECONNRESET' || error.code === 'ECONNREFUSED') {
+            return res.status(502).json({
+                success: false,
+                error: 'No fue posible conectar con el servicio de Marquinhos.'
+            });
+        }
+
+        /* ============================================================
+           ERROR GENERAL
+           ============================================================ */
+        return res.status(500).json({
+            success: false,
+            error: 'Error procesando el mensaje de Marquinhos.'
+        });
+    }
+});
+
+module.exports = router;
