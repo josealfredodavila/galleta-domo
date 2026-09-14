@@ -17,7 +17,9 @@ const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
-const GROQ_MODEL = 'llama-3.3-70b-versatile';
+// ⚠️ 'llama-3.3-70b-versatile' fue retirado por Groq el 16 de agosto de 2026.
+// Reemplazo recomendado por Groq: openai/gpt-oss-120b (también válido: qwen/qwen3.6-27b)
+const GROQ_MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
 const GROQ_TIMEOUT_MS = 30000;
 
 /* ================================================================
@@ -200,7 +202,7 @@ router.post('/chat', autenticar, async (req, res) => {
             stream: false
         };
 
-        console.log('⚡ Enviando solicitud a GROQ/Llama 3.3...');
+        console.log(`⚡ Enviando solicitud a GROQ (${GROQ_MODEL})...`);
 
         /* ============================================================
            GROQ
