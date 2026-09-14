@@ -10,14 +10,18 @@ const path = require('path');
 const os = require('os');
 const axios = require('axios');
 const FormData = require('form-data');
+const { AccessToken } = require('livekit-server-sdk');
 
 /* ================================================================
    CONFIGURACIÓN DE VARIABLES DE ENTORNO (RAILWAY)
    ================================================================ */
-const NVIDIA_API_KEY = process.env.NVIDIA_API_KEY; // Tu clave nvapi-...
-const GROQ_API_KEY = process.env.GROQ_API_KEY;     // Tu clave de Groq (gsk_...)
+const NVIDIA_API_KEY = process.env.NVIDIA_API_KEY;
+const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const LIVEKIT_API_KEY = process.env.LIVEKIT_API_KEY;
+const LIVEKIT_API_SECRET = process.env.LIVEKIT_API_SECRET;
+const LIVEKIT_URL = process.env.LIVEKIT_URL; // ej: wss://tu-proyecto.livekit.cloud
 
 const supabaseAdmin = createClient(
     SUPABASE_URL,
@@ -85,15 +89,16 @@ CONOCIMIENTO:
 router.post('/chat', autenticar, async (req, res) => {
     const timestamp = Date.now();
     const inputPath = path.join(os.tmpdir(), `voice_input_${timestamp}.webm`);
+    const outputPath = path.join(os.tmpdir(), `voice_output_${timestamp}.mp3`);
 
     try {
         /* ============================================================
            VALIDAR CLAVES
            ============================================================ */
-        if (!NVIDIA_API_KEY || !GROQ_API_KEY) {
+        if (!NVIDIA_API_KEY || !GROQ_API_KEY || !LIVEKIT_API_KEY) {
             return res.status(500).json({
                 success: false,
-                error: 'Faltan configurar las claves de NVIDIA o Groq en Railway'
+                error: 'Faltan configurar las claves de NVIDIA, Groq o LiveKit en Railway'
             });
         }
 
@@ -195,16 +200,133 @@ router.post('/chat', autenticar, async (req, res) => {
         console.log('💬 Respuesta:', respuestaTexto);
 
         /* ============================================================
-           PASO 4: RESPUESTA (TTS PENDIENTE)
+           PASO 4: CONVERTIR RESPUESTA A VOZ CON LIVEKIT (TTS)
            ============================================================ */
-        // TODO: Aquí irá la conversión a voz con Edge TTS.
-        // Por ahora, devolvemos el texto para que no se rompa el flujo.
+        console.log('🔊 Convirtiendo respuesta a voz con LiveKit...');
+
+        // ⚠️ IMPORTANTE: Reemplaza 'TU_VOICE_ID' por el ID real que te dio LiveKit
+        const VOICE_ID = 'TU_VOICE_ID';
+
+        // 1. Crear un token temporal para el TTS
+        const at = new AccessToken(
+            LIVEKIT_API_KEY,
+            LIVEKIT_API_SECRET,
+            {
+                identity: 'marquinhos-tts-' + timestamp,
+                ttl: '10m',
+            }
+        );
+
+        at.addGrant({
+            roomJoin: true,
+            room: 'tts-room-' + timestamp,
+            canPublish: true,
+            canSubscribe: false,
+            roomAdmin: true,
+            roomCreate: true,
+            agent: true,
+            tts: {
+                voiceId: VOICE_ID,
+            }
+        });
+
+        const token = await at.toJwt();
+
+        // 2. Llamar a la API de LiveKit Inference para generar el audio
+        // ⚠️ La URL puede variar. Verifica en la documentación de LiveKit Cloud.
+        const livekitHost = LIVEKIT_URL.replace('wss://', 'https://').replace('ws://', 'http://');
         
+        const livekitTtsResponse = await axios.post(
+            `${livekitHost}/api/tts`,
+            {
+                text: respuestaTexto,
+                voiceId: VOICE_ID,
+                outputFormat: 'mp3'
+            },
+            {
+                headers: {
+                    'Authorization': 'Bearer ' + token,
+                    'Content-Type': 'application/json'
+                },
+                responseType: 'arraybuffer',
+                timeout: 120000
+            }
+        );
+
+        // 3. Guardar el audio generado
+        fs.writeFileSync(outputPath, Buffer.from(livekitTtsResponse.data));
+
+        /* ============================================================
+           PASO 5: SUBIR AUDIO DE MARQUINHOS A SUPABASE
+           ============================================================ */
+        console.log('📤 Subiendo audio de respuesta...');
+
+        const storagePath = `bot-responses/${req.user.id}/${Date.now()}.mp3`;
+        const audioBuffer = fs.readFileSync(outputPath);
+
+        const { error: uploadError } = await supabaseAdmin.storage
+            .from('chat-audio')
+            .upload(storagePath, audioBuffer, {
+                contentType: 'audio/mpeg',
+                cacheControl: '3600',
+                upsert: false
+            });
+
+        if (uploadError) {
+            console.error('❌ Error subiendo audio:', uploadError.message);
+            return res.json({
+                success: true,
+                transcripcion,
+                reply: respuestaTexto,
+                audio_url: null
+            });
+        }
+
+        // Generar la URL firmada
+        const { data: signedData, error: signedError } = await supabaseAdmin.storage
+            .from('chat-audio')
+            .createSignedUrl(storagePath, 3600);
+
+        if (signedError || !signedData?.signedUrl) {
+            console.error('❌ Error creando signed URL:', signedError?.message);
+            return res.json({
+                success: true,
+                transcripcion,
+                reply: respuestaTexto,
+                audio_url: null
+            });
+        }
+
+        const audioRespuestaUrl = signedData.signedUrl;
+
+        /* ============================================================
+           GUARDAR HISTORIAL Y LIMPIAR TEMPORALES
+           ============================================================ */
+        try {
+            await supabaseAdmin.from('ai_voice_chats').insert({
+                usuario_id: req.user.id,
+                transcripcion: transcripcion,
+                respuesta: respuestaTexto,
+                audio_usuario_url: audioUrl,
+                audio_bot_url: `bucket://chat-audio/${storagePath}`
+            });
+        } catch (e) {
+            console.warn('⚠️ No se pudo guardar historial:', e.message);
+        }
+
+        try {
+            if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
+            if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
+        } catch (e) {}
+
+        /* ============================================================
+           RESPUESTA FINAL
+           ============================================================ */
         return res.json({
             success: true,
             transcripcion,
             reply: respuestaTexto,
-            audio_url: null // Cambiar cuando implementes TTS real
+            audio_url: audioRespuestaUrl
         });
 
     } catch (error) {
@@ -212,6 +334,7 @@ router.post('/chat', autenticar, async (req, res) => {
         
         try {
             if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
+            if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
         } catch (e) {}
 
         return res.status(500).json({
