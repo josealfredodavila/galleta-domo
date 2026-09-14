@@ -22,6 +22,8 @@
    ✅ Videollamada LiveKit
    ✅ Streaming LIVE_
    ✅ Mensajería
+   ✅ AI Chat (Marquinhos - Kimi K3)
+   ✅ AI Voice (Marquinhos - Groq + Kimi K3 + LiveKit TTS)
    ✅ Content-Type correcto para JS
    ✅ Middleware en orden correcto
    ================================================================ */
@@ -139,6 +141,14 @@ if (
     console.warn(
         '⚠️ LiveKit no está configurado completamente.'
     );
+}
+
+if (!process.env.NVIDIA_API_KEY) {
+    console.warn('⚠️ Falta NVIDIA_API_KEY (Marquinhos no podrá pensar)');
+}
+
+if (!process.env.GROQ_API_KEY) {
+    console.warn('⚠️ Falta GROQ_API_KEY (Marquinhos no podrá escuchar)');
 }
 
 /* ================================================================
@@ -2444,6 +2454,26 @@ app.use(
 );
 
 /* ================================================================
+   AI - MARQUINHOS (CHAT Y VOZ)
+================================================================ */
+
+const aiChatRoutes =
+    require('./routes/ai-chat');
+
+app.use(
+    '/api/ai',
+    aiChatRoutes
+);
+
+const aiVoiceRoutes =
+    require('./routes/ai-voice');
+
+app.use(
+    '/api/ai/voice',
+    aiVoiceRoutes
+);
+
+/* ================================================================
    RUTAS HTML
 ================================================================ */
 
@@ -2782,6 +2812,32 @@ app.get(
                     reportar:
                         '/api/mensajes/reportar/:id'
                 }
+            },
+
+            ai: {
+
+                marquinhos: {
+
+                    enabled:
+                        Boolean(
+                            process.env.NVIDIA_API_KEY
+                        ),
+
+                    voice_enabled:
+                        Boolean(
+                            process.env.NVIDIA_API_KEY &&
+                            process.env.GROQ_API_KEY
+                        ),
+
+                    endpoints: {
+
+                        chat:
+                            'POST /api/ai/chat',
+
+                        voice_chat:
+                            'POST /api/ai/voice/chat'
+                    }
+                }
             }
         });
     }
@@ -2945,6 +3001,14 @@ app.listen(
         );
 
         console.log(
+            '🤖 AI Chat (Marquinhos): ✅ /api/ai/chat'
+        );
+
+        console.log(
+            '🎙️ AI Voice (Marquinhos): ✅ /api/ai/voice/chat'
+        );
+
+        console.log(
             '🌎 I18N: ✅ /api/idiomas'
         );
 
@@ -2993,6 +3057,22 @@ app.listen(
                 LIVEKIT_API_KEY &&
                 LIVEKIT_API_SECRET &&
                 LIVEKIT_URL
+                    ? '✅ Configurado'
+                    : '❌ No configurado'
+            }`
+        );
+
+        console.log(
+            `🧠 NVIDIA (Kimi K3): ${
+                process.env.NVIDIA_API_KEY
+                    ? '✅ Configurado'
+                    : '❌ No configurado'
+            }`
+        );
+
+        console.log(
+            `🎤 Groq (Whisper): ${
+                process.env.GROQ_API_KEY
                     ? '✅ Configurado'
                     : '❌ No configurado'
             }`
