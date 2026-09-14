@@ -17,16 +17,23 @@ button,input{font:inherit}
 .logo b{font-size:1.65rem;color:var(--gold)}
 .logo span{font-weight:800;letter-spacing:2px}
 .badge{font-size:.55rem;color:var(--space);background:linear-gradient(135deg,var(--gold),var(--gold2));padding:3px 8px;border-radius:99px;font-weight:800}
+.header-right{display:flex;align-items:center;gap:10px}
 .network{font-size:.68rem;color:var(--gold);border:1px solid var(--border);padding:5px 10px;border-radius:99px}
 .network i{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--success);margin-right:5px}
+.header-avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--green),var(--gold));display:grid;place-items:center;font-weight:800;cursor:pointer;overflow:hidden;border:2px solid var(--border);position:relative;transition:border-color .2s}
+.header-avatar:hover{border-color:var(--gold)}
+.header-avatar img{width:100%;height:100%;object-fit:cover}
+.header-avatar .cam{position:absolute;bottom:-2px;right:-2px;background:var(--gold);color:var(--space);border-radius:50%;width:16px;height:16px;display:grid;place-items:center;font-size:.6rem;border:1.5px solid var(--space)}
 .nav{display:flex;gap:4px;overflow:auto;margin:14px 0 18px;padding:4px;border:1px solid var(--border);border-radius:var(--r);background:rgba(15,45,26,.25)}
 .nav a{white-space:nowrap;text-decoration:none;color:var(--muted);font-size:.72rem;padding:8px 13px;border-radius:11px}
 .nav a:hover,.nav a.active{color:var(--gold);background:rgba(212,175,55,.1)}
-.panel{display:grid;grid-template-columns:320px 1fr;min-height:620px;border:1px solid var(--border);border-radius:var(--xl);overflow:hidden;background:var(--glass);backdrop-filter:blur(16px);box-shadow:0 8px 32px rgba(212,175,55,.12)}
-.sidebar{border-right:1px solid var(--border);background:rgba(0,0,0,.18);overflow:auto}
-.sidehead{display:flex;align-items:center;justify-content:space-between;padding:15px 17px;border-bottom:1px solid var(--border);color:var(--gold);font-weight:700;font-size:.82rem}
-.iconbtn{border:1px solid transparent;background:transparent;color:var(--muted);cursor:pointer;border-radius:9px;padding:6px 9px}
-.iconbtn:hover{color:var(--gold);background:rgba(212,175,55,.08)}
+.panel{display:grid;grid-template-columns:340px 1fr;min-height:620px;border:1px solid var(--border);border-radius:var(--xl);overflow:hidden;background:var(--glass);backdrop-filter:blur(16px);box-shadow:0 8px 32px rgba(212,175,55,.12)}
+.sidebar{border-right:1px solid var(--border);background:rgba(0,0,0,.18);overflow:hidden;display:flex;flex-direction:column;position:relative}
+.sidehead{display:flex;align-items:center;justify-content:space-between;padding:15px 17px 10px;color:var(--gold);font-weight:700;font-size:.82rem}
+.searchbox{padding:0 12px 12px}
+.searchbox input{width:100%;padding:9px 14px;border-radius:20px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:var(--text);outline:0;font-size:.78rem}
+.searchbox input:focus{border-color:var(--gold)}
+.convlist{flex:1;overflow:auto;padding-bottom:70px}
 .conv{display:flex;gap:11px;align-items:center;padding:11px 14px;border-bottom:1px solid rgba(212,175,55,.05);cursor:pointer}
 .conv:hover{background:rgba(212,175,55,.05)}
 .conv.active{background:rgba(212,175,55,.1);border-left:3px solid var(--gold);padding-left:11px}
@@ -36,16 +43,24 @@ button,input{font:inherit}
 .convname{font-size:.84rem;font-weight:700}
 .convmsg{font-size:.68rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .convtime{font-size:.6rem;color:var(--muted)}
-.chat{display:flex;flex-direction:column;min-width:0;min-height:620px}
+.fab{position:absolute;bottom:18px;right:18px;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--gold),#b8923a);color:var(--space);border:0;cursor:pointer;font-size:1.6rem;font-weight:900;box-shadow:0 4px 16px rgba(212,175,55,.5);z-index:10;transition:transform .2s}
+.fab:hover{transform:scale(1.08)}
+.chat{display:flex;flex-direction:column;min-width:0;min-height:620px;position:relative}
 .chathead{display:flex;align-items:center;gap:10px;padding:13px 17px;border-bottom:1px solid var(--border);background:rgba(0,0,0,.12)}
 .chathead .avatar{width:38px;height:38px;flex-basis:38px}
+.backbtn{display:none;border:0;background:transparent;color:var(--gold);font-size:1.2rem;cursor:pointer;padding:4px 8px;border-radius:8px}
+.backbtn:hover{background:rgba(212,175,55,.1)}
 .chatname{font-weight:700;font-size:.92rem}
 .status{font-size:.63rem;color:var(--muted)}
 .status.online{color:var(--success)}
 .actions{margin-left:auto;display:flex;gap:4px}
+.iconbtn{border:1px solid transparent;background:transparent;color:var(--muted);cursor:pointer;border-radius:9px;padding:6px 9px}
+.iconbtn:hover{color:var(--gold);background:rgba(212,175,55,.08)}
 .messages{flex:1;overflow:auto;padding:18px;display:flex;flex-direction:column;gap:9px;min-height:0;position:relative}
-.empty{margin:auto;text-align:center;color:var(--muted)}
-.empty strong{display:block;color:var(--gold);font-size:2rem;margin-bottom:8px}
+.empty{margin:auto;text-align:center;color:var(--muted);padding:40px 20px}
+.empty strong{display:block;color:var(--gold);font-size:3rem;margin-bottom:12px}
+.empty p{font-size:.95rem;margin:6px 0;color:var(--text)}
+.empty small{font-size:.75rem;color:var(--muted)}
 .bubblewrap{display:flex;flex-direction:column;width:100%}
 .bubblewrap.sent{align-items:flex-end}
 .bubblewrap.received{align-items:flex-start}
@@ -58,8 +73,10 @@ button,input{font:inherit}
 .composer{display:flex;gap:7px;padding:11px;border-top:1px solid var(--border);background:rgba(0,0,0,.14)}
 .composer input{min-width:0;flex:1;border:1px solid var(--border);background:rgba(255,255,255,.05);color:var(--text);border-radius:30px;padding:10px 15px;outline:0}
 .composer input:focus{border-color:var(--gold)}
+.composer input:disabled{opacity:.4;cursor:not-allowed}
 .btn{border:1px solid var(--border);background:transparent;color:var(--muted);border-radius:30px;padding:9px 13px;cursor:pointer}
 .btn:hover{color:var(--gold);border-color:var(--gold)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
 .send{background:linear-gradient(135deg,var(--gold),#b8923a);color:var(--space);border:0;font-weight:800}
 .modal{display:none;position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.78);backdrop-filter:blur(7px);align-items:center;justify-content:center;padding:18px}
 .modal.show{display:flex}
@@ -83,9 +100,6 @@ button,input{font:inherit}
 .controls{display:flex;gap:10px}
 .controls button{width:54px;height:54px;border:0;border-radius:50%;background:#222;color:#fff;cursor:pointer;font-size:1.2rem}
 .controls .hang{background:var(--danger)}
-/* ============================================
-   BOT MARQUINHOS - ESTILOS
-   ============================================ */
 .conv-bot{background:linear-gradient(135deg,rgba(212,175,55,.08),rgba(15,45,26,.4))!important;border-bottom:1px solid rgba(212,175,55,.15)!important}
 .conv-bot:hover{background:linear-gradient(135deg,rgba(212,175,55,.15),rgba(15,45,26,.5))!important}
 .conv-bot .convname{color:var(--gold)}
@@ -104,77 +118,28 @@ button,input{font:inherit}
 @keyframes pulse-recording{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.7;transform:scale(1.05)}}
 .bot-transcripcion{font-size:.7rem;color:var(--muted);margin-bottom:8px;font-style:italic;border-left:2px solid var(--gold);padding-left:10px;opacity:.85}
 .bubble audio.bot-audio{margin-top:8px;height:36px;width:100%;max-width:280px;border-radius:20px}
-/* ============================================
-   FLECHA FLOTANTE (PEQUEÑA, SIEMPRE VISIBLE)
-   ============================================ */
-.scroll-down-btn{
-    position:absolute;
-    bottom:12px;
-    right:12px;
-    width:34px;
-    height:34px;
-    border-radius:50%;
-    background:linear-gradient(135deg,var(--gold),#b8923a);
-    color:var(--space);
-    border:1.5px solid var(--space);
-    box-shadow:0 3px 10px rgba(0,0,0,.5);
-    cursor:pointer;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    font-size:1rem;
-    font-weight:900;
-    line-height:1;
-    transition:transform .2s, box-shadow .2s, background .2s;
-    z-index:50;
-    opacity:.7;
-    padding:0;
+.scroll-down-btn{position:absolute;bottom:12px;right:12px;width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--gold),#b8923a);color:var(--space);border:1.5px solid var(--space);box-shadow:0 3px 10px rgba(0,0,0,.5);cursor:pointer;display:none;align-items:center;justify-content:center;font-size:1rem;font-weight:900;line-height:1;transition:transform .2s;z-index:50;opacity:.75;padding:0}
+.scroll-down-btn.visible{display:flex}
+.scroll-down-btn:hover{transform:scale(1.12);opacity:1}
+.scroll-down-btn.has-new{background:linear-gradient(135deg,var(--danger),#cc1a4d);color:#fff;opacity:1;animation:pulseNew 1.5s infinite}
+.scroll-down-btn .badge-new{position:absolute;top:-5px;right:-5px;background:var(--danger);color:#fff;font-size:.55rem;font-weight:800;min-width:16px;height:16px;padding:0 4px;border-radius:99px;border:1.5px solid var(--space);display:flex;align-items:center;justify-content:center;animation:badgePulse 1.5s infinite}
+@keyframes badgePulse{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
+@keyframes pulseNew{0%,100%{box-shadow:0 3px 10px rgba(0,0,0,.5)}50%{box-shadow:0 3px 16px rgba(255,51,102,.7)}}
+#scrollAnchor{width:100%;height:1px;flex-shrink:0;opacity:0;pointer-events:none}
+.hidden{display:none!important}
+@media(max-width:760px){
+    .panel{grid-template-columns:1fr}
+    .panel.chat-open .sidebar{display:none}
+    .panel.chat-open .chat{display:flex}
+    .panel:not(.chat-open) .chat{display:none}
+    .backbtn{display:inline-flex}
+    .bubble{max-width:90%}
+    .videos video{width:95%}
+    .videos video.local{width:35%}
+    .header{align-items:flex-start}
+    .network{margin-top:3px}
+    .fab{bottom:14px;right:14px;width:48px;height:48px}
 }
-.scroll-down-btn:hover{
-    transform:scale(1.12);
-    opacity:1;
-}
-.scroll-down-btn.has-new{
-    background:linear-gradient(135deg,var(--danger),#cc1a4d);
-    color:#fff;
-    opacity:1;
-    animation:pulseNew 1.5s infinite;
-}
-.scroll-down-btn .badge-new{
-    position:absolute;
-    top:-5px;
-    right:-5px;
-    background:var(--danger);
-    color:#fff;
-    font-size:.55rem;
-    font-weight:800;
-    min-width:16px;
-    height:16px;
-    padding:0 4px;
-    border-radius:99px;
-    border:1.5px solid var(--space);
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    animation:badgePulse 1.5s infinite;
-}
-@keyframes badgePulse{
-    0%,100%{transform:scale(1)}
-    50%{transform:scale(1.15)}
-}
-@keyframes pulseNew{
-    0%,100%{box-shadow:0 3px 10px rgba(0,0,0,.5)}
-    50%{box-shadow:0 3px 16px rgba(255,51,102,.7)}
-}
-/* Ancla invisible al final del contenedor de mensajes */
-#scrollAnchor{
-    width:100%;
-    height:1px;
-    flex-shrink:0;
-    opacity:0;
-    pointer-events:none;
-}
-@media(max-width:760px){.panel{grid-template-columns:1fr;min-height:0}.sidebar{border-right:0;border-bottom:1px solid var(--border);max-height:190px}.chat{min-height:500px}.bubble{max-width:90%}.videos video{width:95%}.videos video.local{width:35%}.header{align-items:flex-start}.network{margin-top:3px}}
 @media(max-width:430px){.app{padding:10px}.nav a{font-size:.62rem;padding:7px 9px}.composer{flex-wrap:wrap}.composer input{flex-basis:100%}}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -184,7 +149,14 @@ button,input{font:inherit}
 <div class="app">
 <header class="header">
     <a class="logo" href="/"><b>◈</b><span>Sariel's</span><em class="badge">WEB3</em></a>
-    <div class="network"><i></i>Polygon</div>
+    <div class="header-right">
+        <div class="network"><i></i>Polygon</div>
+        <div class="header-avatar" id="headerAvatar" title="Cambiar foto de perfil">
+            ◈
+            <span class="cam">📷</span>
+        </div>
+        <input type="file" id="avatarInput" hidden accept="image/*">
+    </div>
 </header>
 <nav class="nav">
     <a href="/">⌂ Inicio</a>
@@ -194,32 +166,36 @@ button,input{font:inherit}
     <a class="active" href="/features/mensajes/mensajes.html">◈ Mensajes</a>
     <a href="/features/live/live.html">◉ Live</a>
 </nav>
-<main class="panel">
+<main class="panel" id="panel">
 <aside class="sidebar">
     <div class="sidehead">
         <span>◈ Conversaciones</span>
-        <button class="iconbtn" id="newChat" title="Nueva conversación">✎</button>
     </div>
-    <div id="conversationList"></div>
+    <div class="searchbox">
+        <input type="text" id="searchConversations" placeholder="🔍 Buscar conversación…" autocomplete="off">
+    </div>
+    <div class="convlist" id="conversationList"></div>
+    <button class="fab" id="newChat" title="Nueva conversación">＋</button>
 </aside>
 <section class="chat">
     <header class="chathead">
+        <button class="backbtn" id="backBtn" title="Volver">←</button>
         <div class="avatar" id="chatAvatar">◈</div>
         <div>
             <div class="chatname" id="chatName">Selecciona una conversación</div>
             <div class="status" id="chatStatus">◈ En espera</div>
         </div>
-        <div class="actions">
-            <button class="iconbtn" id="deleteChat" title="Eliminar conversación" style="display:none;">🗑️</button>
+        <div class="actions" id="chatActions" style="display:none;">
+            <button class="iconbtn" id="deleteChat" title="Eliminar conversación">🗑️</button>
             <button class="iconbtn" id="videoCall" title="Videollamada">📹</button>
-            <button class="iconbtn" id="searchChat" title="Buscar">🔍</button>
+            <button class="iconbtn" id="searchChat" title="Buscar en la conversación">🔍</button>
         </div>
     </header>
     <div class="messages" id="messages">
-        <div class="empty">
+        <div class="empty" id="emptyState">
             <strong>◈</strong>
-            <div>Selecciona una conversación</div>
-            <small>Elige un chat para empezar a hablar</small>
+            <p>Selecciona una conversación</p>
+            <small>Elige un chat de la lista para empezar a hablar</small>
         </div>
         <div id="scrollAnchor"></div>
         <button class="scroll-down-btn" id="scrollDownBtn" title="Ir al final">
@@ -227,7 +203,7 @@ button,input{font:inherit}
             <span class="badge-new" id="newMsgBadge" style="display:none;">1</span>
         </button>
     </div>
-    <form class="composer" id="composer">
+    <form class="composer" id="composer" style="display:none;">
         <button type="button" class="btn" id="attach" title="Adjuntar">📎</button>
         <button type="button" class="btn" id="audio" title="Grabar audio">🎙️</button>
         <button type="button" class="btn" id="voiceBot" title="Hablar con Marquinhos" style="display:none;">🔊</button>
@@ -284,6 +260,7 @@ let isUserAtBottom = true;
 let unreadCount = 0;
 const SCROLL_THRESHOLD = 100;
 let scrollRetryTimer = null;
+let currentUserProfile = null;
 const call={room:null,id:null,active:false,audio:null,video:null,screen:null,initiator:false};
 
 const $=id=>document.getElementById(id);
@@ -295,21 +272,90 @@ function avatar(name,url,cls='avatar'){return `<div class="${cls}">${url?`<img s
 async function profile(id){if(id===BOT_ID)return{id:BOT_ID,nombre:"Marquinhos",handle:'marquinhos',avatar_url:null,online:true,bot:true};const r=await db.from('perfiles_publicos').select('id,nombre,handle,avatar_url,online,ultima_conexion').eq('id',id).maybeSingle();return r.data||{id,nombre:'Usuario',avatar_url:null,online:false}}
 
 /* ============================================
-   ✅ SCROLL ROBUSTO USANDO ANCLA INVISIBLE
+   SUBIR FOTO DE PERFIL (REUTILIZA sariels-avatars)
+   ============================================ */
+async function cargarFotoHeader(){
+    if(!user) return;
+    try {
+        const { data, error } = await db.from('usuarios').select('avatar_url, nombre, handle').eq('id', user.id).maybeSingle();
+        if(error) { console.warn('No se pudo cargar perfil:', error.message); return; }
+        currentUserProfile = data;
+        const headerAvatar = $('headerAvatar');
+        if(data?.avatar_url){
+            headerAvatar.innerHTML = `<img src="${esc(data.avatar_url)}" alt="Mi foto"><span class="cam">📷</span>`;
+        } else {
+            const inicial = (data?.nombre || data?.handle || '◈').charAt(0).toUpperCase();
+            headerAvatar.innerHTML = `${esc(inicial)}<span class="cam">📷</span>`;
+        }
+    } catch(e) { console.warn('Error cargando foto del header:', e); }
+}
+
+async function subirFotoHeader(event){
+    const file = event.target.files[0];
+    if(!file) return;
+
+    if(!await auth()) return;
+
+    if(file.size > 5 * 1024 * 1024){
+        toast('❌ La imagen no puede superar los 5 MB', 'error');
+        event.target.value = '';
+        return;
+    }
+    if(!file.type.startsWith('image/')){
+        toast('❌ Solo se permiten imágenes', 'error');
+        event.target.value = '';
+        return;
+    }
+
+    const fileExt = file.name.split('.').pop().toLowerCase();
+    const filePath = `${user.id}/avatar.${fileExt}`;
+
+    try {
+        toast('⏳ Subiendo foto...', '', 5000);
+
+        const { error: uploadError } = await db.storage
+            .from('sariels-avatars')
+            .upload(filePath, file, { upsert: true, contentType: file.type });
+
+        if(uploadError){
+            console.error('Error storage:', uploadError);
+            if(uploadError.message?.includes('not found') || uploadError.message?.includes('Bucket')){
+                toast('❌ Bucket de avatares no configurado', 'error');
+            } else if(uploadError.message?.includes('policy') || uploadError.message?.includes('violates')){
+                toast('❌ Sin permiso para subir foto', 'error');
+            } else {
+                toast('❌ Error: ' + uploadError.message, 'error');
+            }
+            return;
+        }
+
+        const { data: urlData } = db.storage.from('sariels-avatars').getPublicUrl(filePath);
+        const publicUrl = urlData.publicUrl + '?t=' + Date.now();
+
+        const { error: updateError } = await db.from('usuarios').update({ avatar_url: publicUrl }).eq('id', user.id);
+        if(updateError) throw updateError;
+
+        toast('✅ Foto actualizada correctamente', 'success');
+        event.target.value = '';
+        await cargarFotoHeader();
+    } catch(error){
+        console.error('Error al subir foto:', error);
+        toast('❌ Error al subir foto: ' + error.message, 'error');
+    }
+}
+
+/* ============================================
+   SCROLL ROBUSTO
    ============================================ */
 function scrollToBottom(force = false){
     const box = $('messages');
     if(!box) return;
     if(!force && !isUserAtBottom) return;
 
-    // ✅ Usar el ancla invisible con scrollIntoView (100% confiable con flex)
     const doScroll = () => {
         const anchor = document.getElementById('scrollAnchor');
-        if(anchor){
-            anchor.scrollIntoView({ behavior: 'auto', block: 'end' });
-        } else {
-            box.scrollTop = box.scrollHeight;
-        }
+        if(anchor) anchor.scrollIntoView({ behavior: 'auto', block: 'end' });
+        else box.scrollTop = box.scrollHeight;
     };
 
     doScroll();
@@ -320,38 +366,26 @@ function scrollToBottom(force = false){
     scrollRetryTimer = setInterval(() => {
         intentos++;
         if(force || isUserAtBottom) doScroll();
-        if(intentos >= 10){
-            clearInterval(scrollRetryTimer);
-            scrollRetryTimer = null;
-        }
+        if(intentos >= 10){ clearInterval(scrollRetryTimer); scrollRetryTimer = null; }
     }, 100);
 
-    if(force || isUserAtBottom){
-        ocultarFlechaNuevos();
-    }
+    if(force || isUserAtBottom){ ocultarFlechaNuevos(); }
 }
 
 function actualizarFlecha(){
     const btn = $('scrollDownBtn');
     const badge = $('newMsgBadge');
     if(!btn) return;
-
     if(unreadCount > 0){
         btn.classList.add('has-new');
-        if(badge){
-            badge.textContent = unreadCount > 9 ? '9+' : unreadCount;
-            badge.style.display = 'flex';
-        }
+        if(badge){ badge.textContent = unreadCount > 9 ? '9+' : unreadCount; badge.style.display = 'flex'; }
     } else {
         btn.classList.remove('has-new');
         if(badge) badge.style.display = 'none';
     }
 }
 
-function ocultarFlechaNuevos(){
-    unreadCount = 0;
-    actualizarFlecha();
-}
+function ocultarFlechaNuevos(){ unreadCount = 0; actualizarFlecha(); }
 
 function detectarSiEstaAbajo(){
     const box = $('messages');
@@ -359,10 +393,7 @@ function detectarSiEstaAbajo(){
     const distanciaAlFondo = box.scrollHeight - box.scrollTop - box.clientHeight;
     const estabaAbajo = isUserAtBottom;
     isUserAtBottom = distanciaAlFondo < SCROLL_THRESHOLD;
-
-    if(isUserAtBottom && !estabaAbajo){
-        ocultarFlechaNuevos();
-    }
+    if(isUserAtBottom && !estabaAbajo){ ocultarFlechaNuevos(); }
 }
 
 function observarCargaMultimedia(box){
@@ -418,14 +449,17 @@ async function getSignedUrlForMessage(m) {
 }
 
 /* ============================================
-   CARGAR CONVERSACIONES + BOT
+   CARGAR CONVERSACIONES
    ============================================ */
+let conversationFilter = '';
+
 async function loadConversations(){
     const list=$('conversationList');
     list.innerHTML='';
     const botEl=document.createElement('div');
     botEl.className='conv conv-bot'+(current?.id===BOT_ID?' active':'');
     botEl.dataset.id=BOT_ID;
+    botEl.dataset.name='marquinhos';
     botEl.innerHTML=`
         <div class="avatar avatar-bot">✦</div>
         <div class="convinfo">
@@ -462,6 +496,7 @@ async function loadConversations(){
             const el=document.createElement('div');
             el.className='conv'+(current?.id===c.contacto_id?' active':'');
             el.dataset.id=c.contacto_id;
+            el.dataset.name=(p.nombre||'').toLowerCase()+' '+(p.handle||'').toLowerCase();
             el.innerHTML=avatar(p.nombre,p.avatar_url)+`
                 <div class="convinfo">
                     <div class="convname">${esc(p.nombre||'Usuario')}</div>
@@ -472,7 +507,19 @@ async function loadConversations(){
             el.onclick=()=>openConversation(c.contacto_id);
             list.appendChild(el);
         }
+        aplicarFiltroConversaciones();
     } catch (e) { console.error('Error en loadConversations:', e); }
+}
+
+function aplicarFiltroConversaciones(){
+    const q = conversationFilter.trim().toLowerCase();
+    document.querySelectorAll('.conv').forEach(el => {
+        if(!q || el.dataset.name?.includes(q) || el.querySelector('.convname')?.textContent.toLowerCase().includes(q)){
+            el.style.display='flex';
+        } else {
+            el.style.display='none';
+        }
+    });
 }
 
 /* ============================================
@@ -491,7 +538,10 @@ async function openConversation(id){
     $('chatStatus').className='status'+(p.online?' online':'');
 
     $('voiceBot').style.display = esBot ? 'inline-flex' : 'none';
-    $('deleteChat').style.display = 'inline-flex';
+    $('chatActions').style.display = 'flex';
+    $('composer').style.display = 'flex';
+    $('emptyState').style.display = 'none';
+    $('panel').classList.add('chat-open');
 
     document.querySelectorAll('.conv').forEach(x=>x.classList.toggle('active',x.dataset.id===id));
 
@@ -511,6 +561,21 @@ async function openConversation(id){
     subscribeMessages(id);
 }
 
+async function cerrarConversacion(){
+    current = null;
+    $('panel').classList.remove('chat-open');
+    $('chatName').textContent = 'Selecciona una conversación';
+    $('chatStatus').textContent = '◈ En espera';
+    $('chatAvatar').innerHTML = '◈';
+    $('chatAvatar').className = 'avatar';
+    $('chatActions').style.display = 'none';
+    $('composer').style.display = 'none';
+    $('emptyState').style.display = 'block';
+    const box = $('messages');
+    box.querySelectorAll('.bubblewrap').forEach(el => el.remove());
+    document.querySelectorAll('.conv').forEach(x => x.classList.remove('active'));
+}
+
 /* ============================================
    ABRIR CONVERSACIÓN CON MARQUINHOS
    ============================================ */
@@ -518,15 +583,21 @@ async function abrirConversacionBot(){
     const box=$('messages');
     const btn = box.querySelector('#scrollDownBtn');
     const anchor = box.querySelector('#scrollAnchor');
-    box.innerHTML='';
-    // Reinsertar el ancla y el botón al final
-    if(anchor) box.appendChild(anchor);
-    else {
+    box.querySelectorAll('.bubblewrap').forEach(el => el.remove());
+    if(!anchor){
         const newAnchor = document.createElement('div');
         newAnchor.id = 'scrollAnchor';
         box.appendChild(newAnchor);
     }
-    if(btn) box.appendChild(btn);
+    if(!btn){
+        // Recrear el botón si falta
+        const newBtn = document.createElement('button');
+        newBtn.className = 'scroll-down-btn';
+        newBtn.id = 'scrollDownBtn';
+        newBtn.innerHTML = '↓<span class="badge-new" id="newMsgBadge" style="display:none;">1</span>';
+        box.appendChild(newBtn);
+        newBtn.onclick = () => { isUserAtBottom = true; scrollToBottom(true); actualizarFlecha(); };
+    }
 
     let historial=[];
     try {
@@ -560,20 +631,21 @@ async function abrirConversacionBot(){
    ============================================ */
 async function renderMessages(rows){
     const box=$('messages');
-    const btn = box.querySelector('#scrollDownBtn');
-    box.innerHTML='';
-    const newAnchor = document.createElement('div');
-    newAnchor.id = 'scrollAnchor';
-    box.appendChild(newAnchor);
-    if(btn) box.appendChild(btn);
+    box.querySelectorAll('.bubblewrap').forEach(el => el.remove());
+    let anchor = box.querySelector('#scrollAnchor');
+    if(!anchor){
+        anchor = document.createElement('div');
+        anchor.id = 'scrollAnchor';
+        box.appendChild(anchor);
+    }
 
     if(!rows.length){
-        newAnchor.insertAdjacentHTML('beforebegin','<div class="empty"><strong>◈</strong><div>Sin mensajes</div><small>Envía el primer mensaje</small></div>');
+        anchor.insertAdjacentHTML('beforebegin','<div class="empty"><strong>◈</strong><div>Sin mensajes</div><small>Envía el primer mensaje</small></div>');
         return;
     }
     const signedUrls = await Promise.all(rows.map(m => getSignedUrlForMessage(m)));
     rows.forEach((m,i) => {
-        newAnchor.insertAdjacentHTML('beforebegin', messageHTML(m, m.remitente_id===user.id, signedUrls[i]));
+        anchor.insertAdjacentHTML('beforebegin', messageHTML(m, m.remitente_id===user.id, signedUrls[i]));
     });
     isUserAtBottom = true;
     observarCargaMultimedia(box);
@@ -645,13 +717,11 @@ async function sendMessage(text){
 }
 
 /* ============================================
-   LLAMAR AL BACKEND DEL BOT (TEXTO)
+   LLAMAR AL BACKEND DEL BOT
    ============================================ */
 async function preguntarAlBot(mensaje){
     const s=await session();
-    if(!s){
-        throw new Error('No hay una sesión activa. Inicia sesión nuevamente.');
-    }
+    if(!s) throw new Error('No hay una sesión activa. Inicia sesión nuevamente.');
 
     const controller=new AbortController();
     const timeout=setTimeout(()=>{controller.abort();},50000);
@@ -659,16 +729,8 @@ async function preguntarAlBot(mensaje){
     try {
         const r=await fetch('/api/ai/chat',{
             method:'POST',
-            headers:{
-                'Content-Type':'application/json',
-                'Accept':'application/json',
-                'Authorization':'Bearer '+s.access_token
-            },
-            body:JSON.stringify({
-                message: mensaje.trim(),
-                context: 'chat_sariels',
-                history: []
-            }),
+            headers:{'Content-Type':'application/json','Accept':'application/json','Authorization':'Bearer '+s.access_token},
+            body:JSON.stringify({message: mensaje.trim(),context: 'chat_sariels',history: []}),
             signal: controller.signal
         });
 
@@ -677,30 +739,15 @@ async function preguntarAlBot(mensaje){
             console.error('❌ Marquinhos devolvió una respuesta que no es JSON:', jsonError);
             throw new Error('El servidor de Marquinhos devolvió una respuesta inválida.');
         }
-
-        if(!r.ok){
-            console.error('❌ Error HTTP Marquinhos:', {status:r.status, data:data});
-            throw new Error(data.error || `Error del servidor (${r.status})`);
-        }
-        if(!data.success){
-            throw new Error(data.error || 'Marquinhos no pudo responder.');
-        }
-
+        if(!r.ok){ throw new Error(data.error || `Error del servidor (${r.status})`); }
+        if(!data.success){ throw new Error(data.error || 'Marquinhos no pudo responder.'); }
         const respuesta = typeof data.reply==='string' ? data.reply.trim() : '';
-        if(!respuesta){
-            throw new Error('Marquinhos respondió sin contenido.');
-        }
+        if(!respuesta){ throw new Error('Marquinhos respondió sin contenido.'); }
         return respuesta;
     } catch(error){
-        if(error.name==='AbortError'){
-            console.error('⏱️ Timeout esperando a Marquinhos');
-            throw new Error('Marquinhos está tardando demasiado en responder. Intenta nuevamente.');
-        }
-        console.error('❌ Error comunicando con Marquinhos:', error);
+        if(error.name==='AbortError'){ throw new Error('Marquinhos está tardando demasiado en responder. Intenta nuevamente.'); }
         throw error;
-    } finally {
-        clearTimeout(timeout);
-    }
+    } finally { clearTimeout(timeout); }
 }
 
 /* ============================================
@@ -716,10 +763,7 @@ function mostrarTypingBot(){
     }
     scrollToBottom(true);
 }
-function quitarTypingBot(){
-    const el=$('typing-bot');
-    if(el)el.remove();
-}
+function quitarTypingBot(){ const el=$('typing-bot'); if(el)el.remove(); }
 
 /* ============================================
    APPEND
@@ -730,11 +774,8 @@ async function append(m,sent){
     if(empty)empty.remove();
     const signedUrl = await getSignedUrlForMessage(m);
     const anchorRef = box.querySelector('#scrollAnchor');
-    if(anchorRef){
-        anchorRef.insertAdjacentHTML('beforebegin', messageHTML(m, sent, signedUrl));
-    } else {
-        box.insertAdjacentHTML('beforeend', messageHTML(m, sent, signedUrl));
-    }
+    if(anchorRef){ anchorRef.insertAdjacentHTML('beforebegin', messageHTML(m, sent, signedUrl)); }
+    else { box.insertAdjacentHTML('beforeend', messageHTML(m, sent, signedUrl)); }
     observarCargaMultimedia(box);
 
     if(!sent && !isUserAtBottom){
@@ -742,7 +783,6 @@ async function append(m,sent){
         actualizarFlecha();
         return;
     }
-
     isUserAtBottom = true;
     scrollToBottom(true);
 }
@@ -756,40 +796,33 @@ async function markRead(id){
 }
 
 /* ============================================
-   ELIMINAR CONVERSACIÓN COMPLETA
+   ELIMINAR CONVERSACIÓN
    ============================================ */
 async function deleteConversation(){
     if(!current){toast('⚠️ Selecciona una conversación','error');return}
     if(!await auth())return;
 
     const nombre = current.bot ? 'Marquinhos' : (current.profile.nombre || 'este usuario');
-    const confirmar = confirm(`⚠️ ¿Estás seguro de que quieres eliminar TODA la conversación con ${nombre}?\n\nEsta acción no se puede deshacer y perderás todo el historial de mensajes.`);
-
+    const confirmar = confirm(`⚠️ ¿Estás seguro de que quieres eliminar TODA la conversación con ${nombre}?\n\nEsta acción no se puede deshacer.`);
     if(!confirmar) return;
 
     try {
         const targetId = current.bot ? BOT_UUID : current.id;
-
-        const { error } = await db.from('mensajes_chat')
-            .update({ eliminado: true })
+        const { error } = await db.from('mensajes_chat').update({ eliminado: true })
             .or(`and(remitente_id.eq.${user.id},destinatario_id.eq.${targetId}),and(remitente_id.eq.${targetId},destinatario_id.eq.${user.id})`);
-
         if(error) throw error;
 
         toast('✅ Conversación eliminada correctamente', 'success');
 
         const box = $('messages');
-        const btn = box.querySelector('#scrollDownBtn');
+        box.querySelectorAll('.bubblewrap').forEach(el => el.remove());
         const anchor = box.querySelector('#scrollAnchor');
-        box.innerHTML = '<div class="empty"><strong>◈</strong><div>Conversación eliminada</div><small>Envía un mensaje para empezar de nuevo</small></div>';
-        if(anchor) box.appendChild(anchor);
-        if(btn) box.appendChild(btn);
-
+        if(anchor){
+            anchor.insertAdjacentHTML('beforebegin', '<div class="empty"><strong>◈</strong><div>Conversación eliminada</div><small>Envía un mensaje para empezar de nuevo</small></div>');
+        }
         unreadCount = 0;
         actualizarFlecha();
-
         await loadConversations();
-
     } catch(e) {
         console.error('Error eliminando conversación:', e);
         toast('❌ No se pudo eliminar la conversación', 'error');
@@ -812,21 +845,15 @@ function subscribeMessages(id){
 }
 
 /* ============================================
-   VOZ CON MARQUINHOS (Botón 🔊)
+   VOZ CON MARQUINHOS
    ============================================ */
 async function grabarVozParaBot() {
     if(!current?.bot) return;
     if(!await auth()) return;
-
-    if (enviandoVozBot) {
-        toast('⏳ Procesando audio anterior. Espera un momento…', 'warning');
-        return;
-    }
+    if (enviandoVozBot) { toast('⏳ Procesando audio anterior. Espera un momento…', 'warning'); return; }
 
     if(voiceBotGrabando){
-        if(voiceBotRecorder && voiceBotRecorder.state !== 'inactive'){
-            voiceBotRecorder.stop();
-        }
+        if(voiceBotRecorder && voiceBotRecorder.state !== 'inactive'){ voiceBotRecorder.stop(); }
         return;
     }
 
@@ -834,24 +861,18 @@ async function grabarVozParaBot() {
         const stream = await navigator.mediaDevices.getUserMedia({audio:true});
         voiceBotChunks = [];
         voiceBotRecorder = new MediaRecorder(stream);
-
-        voiceBotRecorder.ondataavailable = e => {
-            if(e.data && e.data.size) voiceBotChunks.push(e.data);
-        };
-
+        voiceBotRecorder.ondataavailable = e => { if(e.data && e.data.size) voiceBotChunks.push(e.data); };
         voiceBotRecorder.onstop = async () => {
             stream.getTracks().forEach(t => t.stop());
             voiceBotGrabando = false;
             $('voiceBot').classList.remove('recording');
             $('voiceBot').textContent = '🔊';
-
             const blob = new Blob(voiceBotChunks, {type: voiceBotRecorder.mimeType || 'audio/webm'});
             voiceBotChunks = [];
             if(!blob.size){ toast('⚠️ No se capturó audio', 'error'); return; }
             const file = new File([blob], `voz-${Date.now()}.webm`, {type: blob.type});
             await enviarVozAlBot(file);
         };
-
         voiceBotRecorder.start();
         voiceBotGrabando = true;
         $('voiceBot').classList.add('recording');
@@ -864,12 +885,8 @@ async function grabarVozParaBot() {
 }
 
 async function enviarVozAlBot(file){
-    if (enviandoVozBot) {
-        toast('⏳ Ya hay un audio en proceso. Espera…', 'warning');
-        return;
-    }
+    if (enviandoVozBot) { toast('⏳ Ya hay un audio en proceso. Espera…', 'warning'); return; }
     enviandoVozBot = true;
-
     const $btn = $('voiceBot');
     $btn.classList.add('processing');
     $btn.textContent = '⏳';
@@ -877,34 +894,14 @@ async function enviarVozAlBot(file){
 
     try {
         const s = await session();
-        if(!s) {
-            enviandoVozBot = false;
-            $btn.classList.remove('processing');
-            $btn.textContent = '🔊';
-            $btn.disabled = false;
-            return;
-        }
+        if(!s) { enviandoVozBot = false; $btn.classList.remove('processing'); $btn.textContent = '🔊'; $btn.disabled = false; return; }
 
         const path = `${user.id}/bot-voice/${Date.now()}.webm`;
         const { error: upErr } = await db.storage.from('chat-audio').upload(path, file, {contentType: file.type, upsert:false});
-        if(upErr){
-            toast('❌ Error subiendo audio', 'error');
-            enviandoVozBot = false;
-            $btn.classList.remove('processing');
-            $btn.textContent = '🔊';
-            $btn.disabled = false;
-            return;
-        }
+        if(upErr){ toast('❌ Error subiendo audio', 'error'); enviandoVozBot = false; $btn.classList.remove('processing'); $btn.textContent = '🔊'; $btn.disabled = false; return; }
 
         const { data: signed } = await db.storage.from('chat-audio').createSignedUrl(path, 3600);
-        if(!signed?.signedUrl){
-            toast('❌ Error firmando audio', 'error');
-            enviandoVozBot = false;
-            $btn.classList.remove('processing');
-            $btn.textContent = '🔊';
-            $btn.disabled = false;
-            return;
-        }
+        if(!signed?.signedUrl){ toast('❌ Error firmando audio', 'error'); enviandoVozBot = false; $btn.classList.remove('processing'); $btn.textContent = '🔊'; $btn.disabled = false; return; }
 
         const tempId = 'voice-user-' + Date.now();
         const box = $('messages');
@@ -918,82 +915,45 @@ async function enviarVozAlBot(file){
         const maxIntentos = 3;
         let exito = false;
         let data = {};
-
         while(intentos < maxIntentos && !exito) {
             const r = await fetch('/api/ai/voice/chat', {
                 method:'POST',
                 headers:{'Content-Type':'application/json','Authorization':'Bearer '+s.access_token},
                 body: JSON.stringify({audio_url: signed.signedUrl})
             });
-
             data = await r.json().catch(()=>({}));
-
             if (r.status === 429) {
                 intentos++;
                 const waitTime = intentos * 2000;
-                console.warn(`⚠️ Rate Limit (429). Reintentando en ${waitTime/1000}s... Intento ${intentos}/${maxIntentos}`);
                 toast(`⏳ Servidor ocupado. Reintentando en ${waitTime/1000}s...`, 'warning');
                 await new Promise(resolve => setTimeout(resolve, waitTime));
                 continue;
             }
-
-            if(!r.ok || data.success === false){
-                throw new Error(data.error || 'Error del servicio de voz');
-            }
+            if(!r.ok || data.success === false){ throw new Error(data.error || 'Error del servicio de voz'); }
             exito = true;
         }
-
-        if (!exito) {
-            throw new Error('El servidor de IA está saturado. Intenta de nuevo en unos minutos.');
-        }
+        if (!exito) throw new Error('El servidor de IA está saturado. Intenta de nuevo en unos minutos.');
 
         document.getElementById(tempId)?.remove();
 
-        try {
-            await db.from('mensajes_chat').insert({
-                remitente_id:user.id, destinatario_id:BOT_UUID,
-                contenido: data.transcripcion || file.name,
-                nombre_archivo: file.name,
-                imagen_url: `bucket://chat-audio/${path}`,
-                tipo:'audio', leido:true, editado:false, eliminado:false
-            });
-        } catch(e) { console.warn('No se pudo guardar la nota de voz:', e); }
-
-        try {
-            if(data.reply){
-                await db.from('mensajes_chat').insert({
-                    remitente_id:BOT_UUID, destinatario_id:user.id,
-                    contenido: data.reply, tipo:'texto', leido:true, editado:false, eliminado:false
-                });
-            }
-        } catch(e) { console.warn('No se pudo guardar la respuesta de Marquinhos:', e); }
+        try { await db.from('mensajes_chat').insert({remitente_id:user.id, destinatario_id:BOT_UUID, contenido: data.transcripcion || file.name, nombre_archivo: file.name, imagen_url: `bucket://chat-audio/${path}`, tipo:'audio', leido:true, editado:false, eliminado:false}); } catch(e) { console.warn('No se pudo guardar la nota de voz:', e); }
+        try { if(data.reply){ await db.from('mensajes_chat').insert({remitente_id:BOT_UUID, destinatario_id:user.id, contenido: data.reply, tipo:'texto', leido:true, editado:false, eliminado:false}); } } catch(e) { console.warn('No se pudo guardar la respuesta de Marquinhos:', e); }
 
         const botId = 'voice-bot-' + Date.now();
         let botBody = `<div class="bubble-bot-info">✦ MARQUINHOS</div>`;
-        if(data.transcripcion){
-            botBody += `<div class="bot-transcripcion">🎙️ "${esc(data.transcripcion)}"</div>`;
-        }
+        if(data.transcripcion){ botBody += `<div class="bot-transcripcion">🎙️ "${esc(data.transcripcion)}"</div>`; }
         botBody += `<div>${esc(data.reply || 'Sin respuesta')}</div>`;
-        if(data.audio_url){
-            botBody += `<audio class="bot-audio" controls src="${esc(data.audio_url)}"></audio>`;
-        }
+        if(data.audio_url){ botBody += `<audio class="bot-audio" controls src="${esc(data.audio_url)}"></audio>`; }
         const botHTML = `<div class="bubblewrap received" id="${botId}"><div class="bubble">${botBody}</div></div>`;
         if(anchorRef) anchorRef.insertAdjacentHTML('beforebegin', botHTML);
         else box.insertAdjacentHTML('beforeend', botHTML);
         observarCargaMultimedia(box);
         scrollToBottom(true);
-
-        if(data.audio_url){
-            const audio = document.querySelector(`#${botId} audio`);
-            if(audio) audio.play().catch(()=>{});
-        }
-
+        if(data.audio_url){ const audio = document.querySelector(`#${botId} audio`); if(audio) audio.play().catch(()=>{}); }
         loadConversations();
-
     } catch(e) {
         console.error('Error voz bot:', e);
         document.getElementById(tempId)?.remove();
-
         if (e.message.includes('429') || e.message.includes('Too Many Requests') || e.message.includes('saturado')) {
             toast('⏳ El asistente está saturado. Por favor, espera unos segundos e intenta de nuevo.', 'warning');
         } else {
@@ -1026,7 +986,6 @@ async function uploadFile(file){
     const storageRef = `bucket://${bucket}/${path}`;
     const r = await db.from('mensajes_chat').insert({remitente_id:user.id,destinatario_id:current.id,contenido:file.name,nombre_archivo:file.name,imagen_url:storageRef,tipo,leido:false,editado:false,eliminado:false}).select('*').single();
     if(r.error){console.error(r.error);toast('❌ No se pudo guardar el archivo','error');return}
-
     await append(r.data,true);
     loadConversations();
 }
@@ -1043,10 +1002,7 @@ function newConversation(){
 
 async function searchUsers(q){
     const box=$('userResults');
-    if(!q||q.trim().length<2){
-        box.innerHTML='<div style="padding:18px;text-align:center;color:var(--muted)">Escribe al menos 2 caracteres</div>';
-        return;
-    }
+    if(!q||q.trim().length<2){ box.innerHTML='<div style="padding:18px;text-align:center;color:var(--muted)">Escribe al menos 2 caracteres</div>'; return; }
     if(!await auth())return;
     const term=q.trim().replace(/[%_,\\]/g,' ').replace(/\s+/g,' ').trim();
     const r=await db.from('perfiles_publicos').select('id,nombre,handle,avatar_url').or(`nombre.ilike.%${term}%,handle.ilike.%${term}%`).neq('id',user.id).neq('id',BOT_UUID).limit(12);
@@ -1088,11 +1044,7 @@ async function createConversation(id){
 async function token(roomName,participantName){
     const s=await session();
     if(!s) throw Error('No autenticado');
-    const r=await fetch('/api/livekit/token',{
-        method:'POST',
-        headers:{'Content-Type':'application/json',Authorization:'Bearer '+s.access_token},
-        body:JSON.stringify({roomName,participantName})
-    });
+    const r=await fetch('/api/livekit/token',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+s.access_token},body:JSON.stringify({roomName,participantName})});
     const d=await r.json().catch(()=>({}));
     if(!r.ok) throw Error(d.error||'No se pudo obtener token LiveKit');
     return d;
@@ -1116,9 +1068,7 @@ async function startCall(){
         subscribeCall(id);
         $('callOverlay').classList.add('show');
         $('callInfo').textContent='📞 Llamando a '+(current.profile.nombre||'usuario')+'…';
-    } catch(e) {
-        console.error(e); toast('❌ '+e.message,'error'); cleanupCall();
-    }
+    } catch(e) { console.error(e); toast('❌ '+e.message,'error'); cleanupCall(); }
 }
 
 async function connectCall(roomName,name){
@@ -1204,13 +1154,7 @@ async function toggleCam(){if(!call.video)return;call.video.enabled=!call.video.
 async function toggleScreen(){
     if(!call.room)return;
     try {
-        if(call.screen){
-            await call.room.localParticipant.unpublishTrack(call.screen);
-            call.screen.stop();
-            call.screen=null;
-            $('toggleScreen').textContent='🖥️';
-            return;
-        }
+        if(call.screen){ await call.room.localParticipant.unpublishTrack(call.screen); call.screen.stop(); call.screen=null; $('toggleScreen').textContent='🖥️'; return; }
         const s=await navigator.mediaDevices.getDisplayMedia({video:true});
         const t=s.getVideoTracks()[0];
         await call.room.localParticipant.publishTrack(t,{name:'screen',source:LivekitClient.TrackSource.ScreenShare});
@@ -1235,11 +1179,16 @@ async function init(){
     } catch(e) { console.warn('Error cargando sesión:', e); }
 
     await loadConversations();
+    await cargarFotoHeader();
 
     db.auth.onAuthStateChange((event,s)=>{
         user=s?.user||null;
-        if(event==='SIGNED_IN'||event==='SIGNED_OUT'){loadConversations();}
+        if(event==='SIGNED_IN'||event==='SIGNED_OUT'){ loadConversations(); cargarFotoHeader(); }
     });
+
+    // Header: subir foto
+    $('headerAvatar').onclick = () => $('avatarInput').click();
+    $('avatarInput').addEventListener('change', subirFotoHeader);
 
     $('composer').addEventListener('submit',e=>{e.preventDefault();sendMessage($('messageInput').value);});
     $('newChat').onclick=newConversation;
@@ -1248,6 +1197,8 @@ async function init(){
     document.addEventListener('keydown', e => { if (e.key === 'Escape') $('newModal').classList.remove('show'); });
 
     $('userSearch').addEventListener('input',e=>searchUsers(e.target.value));
+    $('searchConversations').addEventListener('input', e => { conversationFilter = e.target.value; aplicarFiltroConversaciones(); });
+
     $('attach').onclick=()=>{
         if(current?.bot){toast('⚠️ Para Marquinhos usa el botón 🔊','error');return;}
         $('fileInput').click();
@@ -1260,6 +1211,7 @@ async function init(){
     $('voiceBot').onclick=grabarVozParaBot;
     $('deleteChat').onclick=deleteConversation;
     $('videoCall').onclick=startCall;
+    $('backBtn').onclick=cerrarConversacion;
     $('hangup').onclick=hangup;
     $('toggleMic').onclick=toggleMic;
     $('toggleCam').onclick=toggleCam;
@@ -1291,7 +1243,7 @@ async function init(){
 }
 
 /* ============================================
-   NOTA DE VOZ NORMAL (🎙️) - Para chats NO bot
+   NOTA DE VOZ NORMAL
    ============================================ */
 function getSupportedAudioMime(){
     const candidates=['audio/webm;codecs=opus','audio/webm','audio/ogg;codecs=opus','audio/ogg','audio/mp4'];
@@ -1317,7 +1269,6 @@ async function recordAudioNota(){
             stream.getTracks().forEach(t=>t.stop());
             $('audio').classList.remove('recording');
             $('audio').textContent = '🎙️';
-
             const blob = new Blob(audioChunks,{type:recorder.mimeType||mimeType||'audio/webm'});
             audioChunks = [];
             const mode = recordingMode;
