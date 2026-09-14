@@ -23,13 +23,13 @@
 .typing-indicator span:nth-child(3){animation-delay:.4s}
 @keyframes typingBounce{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-6px);opacity:1}}
 .bubble-bot-info{font-size:.6rem;color:var(--gold);opacity:.7;margin-bottom:4px;font-family:'Orbitron',monospace;letter-spacing:.5px}
-/* Botón de voz activo */
+/* Botón de voz activo (grabando) */
 #voiceBot.recording{background:var(--danger)!important;border-color:var(--danger)!important;color:#fff!important;animation:pulse-recording 1s infinite}
-@keyframes pulse-recording{0%,100%{opacity:1}50%{opacity:.6}}
-/* Transcripción dentro del bubble */
-.bot-transcripcion{font-size:.7rem;color:var(--muted);margin-bottom:6px;font-style:italic;border-left:2px solid var(--gold);padding-left:8px}
+@keyframes pulse-recording{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.7;transform:scale(1.05)}}
+/* Transcripción dentro del bubble del bot */
+.bot-transcripcion{font-size:.7rem;color:var(--muted);margin-bottom:8px;font-style:italic;border-left:2px solid var(--gold);padding-left:10px;opacity:.85}
 /* Reproductor de audio del bot */
-.bubble audio.bot-audio{margin-top:8px;height:36px;width:100%;max-width:280px}
+.bubble audio.bot-audio{margin-top:8px;height:36px;width:100%;max-width:280px;border-radius:20px}
 @media(max-width:760px){.panel{grid-template-columns:1fr;min-height:0}.sidebar{border-right:0;border-bottom:1px solid var(--border);max-height:190px}.chat{min-height:500px}.bubble{max-width:90%}.videos video{width:95%}.videos video.local{width:35%}.header{align-items:flex-start}.network{margin-top:3px}}@media(max-width:430px){.app{padding:10px}.nav a{font-size:.62rem;padding:7px 9px}.composer{flex-wrap:wrap}.composer input{flex-basis:100%}}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -286,7 +286,7 @@ function quitarTypingBot(){
 }
 
 /* ============================================
-   VOZ CON MARQUINHOS (TTS + STT)
+   VOZ CON MARQUINHOS (STT + TTS)
    ============================================ */
 async function grabarVozParaBot() {
     if (!current?.bot) { toast('⚠️ Solo disponible con Marquinhos', 'warning'); return; }
@@ -312,21 +312,4 @@ async function grabarVozParaBot() {
         voiceBotRecorder.onstop = async () => {
             stream.getTracks().forEach(t => t.stop());
             voiceBotGrabando = false;
-            btn.textContent = '🔊';
-            btn.classList.remove('recording');
-            
-            const blob = new Blob(voiceBotChunks, { type: 'audio/webm' });
-            
-            if (blob.size < 1000) {
-                toast('⚠️ Audio muy corto', 'warning');
-                return;
-            }
-            
-            await enviarVozAlBot(blob);
-        };
-        
-        voiceBotRecorder.start();
-        voiceBotGrabando = true;
-        btn.textContent = '⏹️';
-        btn.classList.add('recording');
-        toast('
+            btn.textContent
