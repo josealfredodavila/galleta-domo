@@ -20,7 +20,7 @@ const supabase = supabaseClient;
 // ================================================================
 // ✦ PRO: CONSTANTES DE MEMBRESÍA
 // ================================================================
-const PRO_PLAN_ID = 1; // ⚠️ CONFIRMA ESTE ID EN SUPABASE (SELECT id FROM planes_pro;)
+const PRO_PLAN_ID = 1;
 const PRO_PRECIO_MXN = 60;
 const PRO_DURACION_DIAS = 30;
 const PRO_GB = 5;
@@ -93,12 +93,10 @@ async function cargarEstadoPro() {
         const session = await getSession();
         if (!session) return;
 
-        // Llamar RPC obtener_estado_pro()
         const { data, error } = await supabase.rpc('obtener_estado_pro');
 
         if (error) {
             console.warn('RPC obtener_estado_pro no disponible:', error.message);
-            // Fallback: leer directo de usuarios
             const { data: usuario } = await supabase
                 .from('usuarios')
                 .select('plan, plan_expira_at, plan_meta')
@@ -171,7 +169,6 @@ async function contratarPro() {
             return;
         }
 
-        // Verificar si ya es Pro
         const { data: usuario } = await supabase
             .from('usuarios')
             .select('plan, plan_expira_at')
@@ -184,14 +181,12 @@ async function contratarPro() {
             return;
         }
 
-        // Confirmar
         if (!confirm(`¿Contratar Sariel's Pro por $${PRO_PRECIO_MXN} MXN / ${PRO_DURACION_DIAS} días?\n\nIncluye: ${PRO_GB} GB · Conservación ampliada`)) {
             return;
         }
 
         showToast('⏳ Iniciando contratación...', '', 4000);
 
-        // 1. Registrar intento de pago en pagos_pro
         const { data: pago, error: pagoError } = await supabase
             .from('pagos_pro')
             .insert({
@@ -208,7 +203,6 @@ async function contratarPro() {
             console.warn('No se pudo registrar intento de pago:', pagoError.message);
         }
 
-        // 2. Intentar llamar al backend de pagos
         try {
             const response = await fetch(`${API_ENDPOINTS.pagos}/crear`, {
                 method: 'POST',
@@ -232,7 +226,6 @@ async function contratarPro() {
                 if (result.data.payment_url) {
                     window.open(result.data.payment_url, '_blank');
                     showToast('💳 Completa el pago en la ventana que se abrió', 'success', 5000);
-                    // Polling para verificar pago
                     iniciarPollingPagoPro(pago?.id);
                     return;
                 }
@@ -241,8 +234,6 @@ async function contratarPro() {
             console.warn('Backend de pagos no disponible:', backendError.message);
         }
 
-        // 3. Fallback: activar Pro directo (modo prueba / pago manual)
-        // ⚠️ ESTO SE QUITA CUANDO TENGAS PASARELA REAL
         const activar = confirm(
             'No se pudo conectar con la pasarela de pago.\n\n' +
             '¿Quieres activar Pro en modo manual (prueba)?\n' +
@@ -259,12 +250,10 @@ async function contratarPro() {
     }
 }
 
-// ✦ PRO: Activar Pro llamando RPC activar_pro()
 async function activarProDirecto(usuarioId, pagoProId) {
     try {
         showToast('⏳ Activando Sariel\'s Pro...', '', 4000);
 
-        // Llamar RPC activar_pro
         const { data, error } = await supabase.rpc('activar_pro', {
             p_usuario_id: usuarioId,
             p_plan_id: PRO_PLAN_ID
@@ -276,7 +265,6 @@ async function activarProDirecto(usuarioId, pagoProId) {
             throw new Error(data?.error || 'Error al activar Pro');
         }
 
-        // Actualizar pagos_pro si tenemos el id
         if (pagoProId) {
             await supabase
                 .from('pagos_pro')
@@ -287,7 +275,6 @@ async function activarProDirecto(usuarioId, pagoProId) {
         showToast('🎉 ¡Sariel\'s Pro activado!', 'success', 5000);
         crearConfeti();
 
-        // Recargar UI
         await cargarEstadoPro();
         await cargarPerfil(true);
 
@@ -297,14 +284,13 @@ async function activarProDirecto(usuarioId, pagoProId) {
     }
 }
 
-// ✦ PRO: Polling para verificar pago cuando se abre pasarela externa
 let pollingPagoProInterval = null;
 function iniciarPollingPagoPro(pagoProId) {
     if (!pagoProId) return;
     if (pollingPagoProInterval) clearInterval(pollingPagoProInterval);
 
     let intentos = 0;
-    const maxIntentos = 60; // 5 minutos (60 * 5s)
+    const maxIntentos = 60;
 
     pollingPagoProInterval = setInterval(async () => {
         intentos++;
@@ -411,7 +397,7 @@ async function cargarPerfil(forzarActualizacion = false) {
             await cargarEstadoConexion();
             await cargarAmigosEnLinea();
             await cargarHistorialQR();
-            await cargarEstadoPro(); // ✦ PRO
+            await cargarEstadoPro();
         } else {
             const defaultData = {
                 nombre: session.user.user_metadata?.nombre || 'Explorador',
@@ -434,7 +420,7 @@ async function cargarPerfil(forzarActualizacion = false) {
             ultimaActualizacion = ahora;
             await actualizarEstadoEnLinea(true);
             actualizarUI(defaultData);
-            await cargarEstadoPro(); // ✦ PRO
+            await cargarEstadoPro();
         }
     } catch (error) {
         console.error('Error cargando perfil:', error);
@@ -1916,11 +1902,16 @@ function animarContador(elemento, inicio, fin) {
 }
 
 // ================================================================
-// WALLET
+// WALLET - CONEXIÓN CON METAMASK
 // ================================================================
 async function conectarWallet() {
+    // 1. Detectar si MetaMask está instalado
     if (typeof window.ethereum === 'undefined') {
-        showToast('⚠️ Instala MetaMask para conectar tu wallet', 'error');
+        showToast('⚠️ Instala MetaMask para conectar tu wallet', 'error', 5000);
+        // Abrir la página de descarga de MetaMask
+        setTimeout(() => {
+            window.open('https://metamask.io/es/download', '_blank', 'noopener,noreferrer');
+        }, 800);
         return;
     }
 
@@ -1931,9 +1922,27 @@ async function conectarWallet() {
             return;
         }
 
-        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        // 2. Pedir cuentas a MetaMask
+        let accounts;
+        try {
+            accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        } catch (err) {
+            if (err.code === 4001) {
+                showToast('❌ Cancelaste la conexión en MetaMask', 'warning');
+            } else {
+                showToast('❌ Error al abrir MetaMask: ' + (err.message || 'Desconocido'), 'error');
+            }
+            return;
+        }
+
+        if (!accounts || accounts.length === 0) {
+            showToast('❌ No se obtuvo ninguna cuenta de MetaMask', 'error');
+            return;
+        }
+
         const cuenta = accounts[0];
 
+        // 3. Verificar/cambiar a la red correcta
         const chainId = await window.ethereum.request({ method: 'eth_chainId' });
         
         if (chainId !== ENV.networkChainId) {
@@ -1943,26 +1952,45 @@ async function conectarWallet() {
                     params: [{ chainId: ENV.networkChainId }]
                 });
             } catch (switchError) {
+                // Si la red no existe, agregarla
                 if (switchError.code === 4902) {
-                    await window.ethereum.request({
-                        method: 'wallet_addEthereumChain',
-                        params: [{
-                            chainId: ENV.networkChainId,
-                            chainName: ENV.networkName,
-                            nativeCurrency: { name: ENV.networkCurrency, symbol: ENV.networkCurrency, decimals: 18 },
-                            rpcUrls: [ENV.networkRPC],
-                            blockExplorerUrls: [ENV.networkExplorer]
-                        }]
-                    });
+                    try {
+                        await window.ethereum.request({
+                            method: 'wallet_addEthereumChain',
+                            params: [{
+                                chainId: ENV.networkChainId,
+                                chainName: ENV.networkName,
+                                nativeCurrency: { name: ENV.networkCurrency, symbol: ENV.networkCurrency, decimals: 18 },
+                                rpcUrls: [ENV.networkRPC],
+                                blockExplorerUrls: [ENV.networkExplorer]
+                            }]
+                        });
+                    } catch (addError) {
+                        showToast('❌ No se pudo agregar la red Polygon Amoy', 'error');
+                        console.error(addError);
+                        return;
+                    }
                 } else {
-                    throw switchError;
+                    showToast('❌ No se pudo cambiar a la red Polygon Amoy', 'error');
+                    console.error(switchError);
+                    return;
                 }
             }
         }
 
+        // 4. Vincular wallet en Supabase
         const { error } = await supabase.rpc('vincular_wallet', { p_wallet_address: cuenta });
-        if (error) throw error;
+        if (error) {
+            // Si la RPC no existe, intentar update directo
+            console.warn('RPC vincular_wallet falló, intentando update directo:', error.message);
+            const { error: updateError } = await supabase
+                .from('usuarios')
+                .update({ wallet_address: cuenta })
+                .eq('id', session.user.id);
+            if (updateError) throw updateError;
+        }
 
+        // 5. Actualizar UI
         const walletDisplay = document.getElementById('walletDisplay');
         const btnConectar = document.getElementById('btnConectarWallet');
         const btnDesconectar = document.getElementById('btnDesconectarWallet');
@@ -1974,12 +2002,16 @@ async function conectarWallet() {
         if (btnConectar) btnConectar.style.display = 'none';
         if (btnDesconectar) btnDesconectar.style.display = 'inline-flex';
 
-        showToast(`✅ Wallet conectada a ${ENV.networkName}`, 'success');
+        showToast(`✅ Wallet conectada a ${ENV.networkName}`, 'success', 4000);
         await cargarPerfil(true);
         
     } catch (error) {
         console.error('Error conectando wallet:', error);
-        showToast('❌ Error al conectar wallet: ' + error.message, 'error');
+        if (error.code === -32002) {
+            showToast('⚠️ MetaMask ya tiene una solicitud pendiente. Ábrelo y confirma.', 'warning', 5000);
+        } else {
+            showToast('❌ Error al conectar wallet: ' + (error.message || 'Desconocido'), 'error');
+        }
     }
 }
 
@@ -1991,8 +2023,16 @@ async function desconectarWallet() {
             return;
         }
 
-        const { error } = await supabase.rpc('desvincular_wallet');
-        if (error) console.warn('RPC desvincular_wallet no encontrada:', error);
+        // Intentar RPC primero
+        const { error: rpcError } = await supabase.rpc('desvincular_wallet');
+        if (rpcError) {
+            console.warn('RPC desvincular_wallet no encontrada, usando update directo:', rpcError.message);
+            const { error: updateError } = await supabase
+                .from('usuarios')
+                .update({ wallet_address: null })
+                .eq('id', session.user.id);
+            if (updateError) throw updateError;
+        }
 
         const walletDisplay = document.getElementById('walletDisplay');
         const btnConectar = document.getElementById('btnConectarWallet');
@@ -2947,7 +2987,6 @@ window.cargarHistorialQR = cargarHistorialQR;
 window.actualizarUIHistorialQR = actualizarUIHistorialQR;
 window.procesarQR = procesarQR;
 
-// ✦ PRO
 window.cargarEstadoPro = cargarEstadoPro;
 window.contratarPro = contratarPro;
 window.activarProDirecto = activarProDirecto;
