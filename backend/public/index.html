@@ -101,10 +101,125 @@
         .btn-outline:hover { border-color: var(--gold); color: var(--gold); }
         .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        .hero { text-align: center; padding: 40px 20px 30px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius); margin-bottom: 30px; }
+        .hero { text-align: center; padding: 40px 20px 30px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius); margin-bottom: 20px; }
         .hero h1 { font-family: 'Orbitron', monospace; font-size: 2.2rem; color: var(--gold); margin-bottom: 8px; }
         .hero p { color: var(--text-secondary); font-size: 0.95rem; max-width: 600px; margin: 0 auto 16px; }
         .hero .btn { margin-top: 10px; }
+
+        /* =========================================
+           CARRUSEL EN VIVO - CABLERA BÚHO
+           ========================================= */
+        .carrusel-wrapper {
+            width: 100%;
+            overflow: hidden;
+            position: relative;
+            padding: 20px 0;
+            margin-bottom: 30px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+            -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+        }
+
+        .carrusel-titulo {
+            font-family: 'Orbitron', monospace;
+            color: var(--gold);
+            font-size: 0.9rem;
+            padding: 0 20px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .carrusel-titulo .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--live-red);
+            animation: pulse-live 1s infinite;
+        }
+        @keyframes pulse-live { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+        .carrusel-fila {
+            display: flex;
+            gap: 16px;
+            width: max-content;
+            margin-bottom: 16px;
+        }
+        .carrusel-fila:last-child { margin-bottom: 0; }
+
+        @keyframes scroll-derecha {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+        @keyframes scroll-izquierda {
+            0% { transform: translateX(-50%); }
+            100% { transform: translateX(0); }
+        }
+
+        .carrusel-fila.derecha { animation: scroll-derecha 60s linear infinite; }
+        .carrusel-fila.izquierda { animation: scroll-izquierda 60s linear infinite; }
+        .carrusel-wrapper:hover .carrusel-fila { animation-play-state: paused; }
+
+        .carrusel-item {
+            width: 220px;
+            height: 130px;
+            border-radius: 12px;
+            overflow: hidden;
+            flex-shrink: 0;
+            border: 1px solid var(--glass-border);
+            position: relative;
+            cursor: pointer;
+            transition: var(--transition);
+            background: #000;
+        }
+        .carrusel-item:hover {
+            transform: scale(1.05);
+            border-color: var(--gold);
+            box-shadow: 0 8px 30px rgba(212, 175, 55, 0.3);
+            z-index: 10;
+        }
+        .carrusel-item img,
+        .carrusel-item video {
+            width: 100%; height: 100%; object-fit: cover; display: block;
+        }
+
+        .carrusel-item .live-tag {
+            position: absolute; top: 8px; left: 8px;
+            background: var(--live-red); color: #fff;
+            font-size: 0.5rem; font-weight: 700;
+            padding: 2px 8px; border-radius: 10px;
+            font-family: 'Orbitron', monospace;
+            animation: pulse-live 1s infinite;
+            z-index: 2;
+        }
+        .carrusel-item .etiqueta {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.95), transparent);
+            color: #fff; font-size: 0.65rem; font-weight: 600;
+            padding: 25px 10px 8px;
+            font-family: 'Inter', sans-serif;
+            z-index: 2;
+        }
+        .carrusel-item .etiqueta .canal {
+            color: var(--gold); font-weight: 700;
+            display: block; margin-bottom: 2px;
+        }
+        .carrusel-item .etiqueta .titulo {
+            color: #fff; display: block;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+
+        .carrusel-vacio {
+            width: 100%; text-align: center;
+            padding: 30px 20px; color: var(--text-muted);
+        }
+        .carrusel-vacio .icon { font-size: 2rem; display: block; margin-bottom: 10px; color: var(--gold); opacity: 0.5; }
+
+        @media (max-width: 480px) {
+            .carrusel-item { width: 160px; height: 95px; }
+        }
 
         .ir-perfil-btn {
             background: rgba(212, 175, 55, 0.15);
@@ -122,36 +237,21 @@
             align-items: center;
             gap: 6px;
         }
-        .ir-perfil-btn:hover {
-            background: rgba(212, 175, 55, 0.25);
-            transform: translateY(-2px);
-        }
+        .ir-perfil-btn:hover { background: rgba(212, 175, 55, 0.25); transform: translateY(-2px); }
 
         .idioma-selector {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 0.65rem;
-            color: var(--text-secondary);
-            background: rgba(0,0,0,0.2);
-            padding: 4px 10px;
-            border-radius: 20px;
-            border: 1px solid var(--glass-border);
+            display: flex; align-items: center; gap: 6px;
+            font-size: 0.65rem; color: var(--text-secondary);
+            background: rgba(0,0,0,0.2); padding: 4px 10px;
+            border-radius: 20px; border: 1px solid var(--glass-border);
         }
         .idioma-selector select {
-            background: transparent;
-            border: none;
-            color: var(--gold);
-            font-size: 0.65rem;
-            outline: none;
-            cursor: pointer;
-            font-family: 'Inter', sans-serif;
-            padding: 2px 4px;
+            background: transparent; border: none;
+            color: var(--gold); font-size: 0.65rem;
+            outline: none; cursor: pointer;
+            font-family: 'Inter', sans-serif; padding: 2px 4px;
         }
-        .idioma-selector select option {
-            background: var(--space);
-            color: var(--text-primary);
-        }
+        .idioma-selector select option { background: var(--space); color: var(--text-primary); }
 
         .tabs-container { margin-bottom: 20px; }
         .tabs { display: flex; gap: 4px; background: var(--glass-bg); border-radius: var(--radius); padding: 4px; border: 1px solid var(--glass-border); flex-wrap: wrap; }
@@ -370,6 +470,20 @@
             <a href="/features/perfil/perfil.html" class="ir-perfil-btn protected-link" onclick="return protegerYNavegar(event, this.href)" data-clave="ir_perfil">◆ Ir a mi perfil</a>
         </section>
 
+        <!-- =========================================
+             CARRUSEL EN VIVO - CABLERA BÚHO
+             ========================================= -->
+        <div class="carrusel-wrapper" id="carruselEnVivo">
+            <div class="carrusel-titulo">
+                <span class="dot"></span>
+                <span>EN VIVO AHORA</span>
+            </div>
+            <div class="carrusel-vacio">
+                <span class="icon">◈</span>
+                <p>Cargando lo que está al aire...</p>
+            </div>
+        </div>
+
         <div class="tabs-container">
             <div class="tabs">
                 <button class="tab-btn active" onclick="cambiarTab('inicio')" data-clave="tab_tienda">⌂ Tienda</button>
@@ -574,8 +688,6 @@
         window.addEventListener('unhandledrejection', function (event) { mostrarErrorEnPantalla('Promesa rechazada: ' + (event.reason?.message || event.reason)); });
 
         // ✅ Bloquea la entrada a módulos protegidos (perfil, etc.) si no hay sesión.
-        // No redirige a nadie fuera de index: solo evita que un usuario sin cuenta
-        // navegue a perfil.html, mostrándole el registro en su lugar.
         function protegerYNavegar(event, url) {
             if (!window.__sarielsAuthenticated) {
                 if (event && event.preventDefault) event.preventDefault();
@@ -588,20 +700,13 @@
             return true;
         }
 
-        // ✅ Al cambiar el idioma, se guarda (cambiarIdioma, ya existente en
-        // idiomas.js) y se vuelve a pintar la página de inmediato con
-        // inicializarIdiomas(), sin esperar recarga.
+        // ✅ Cambio de idioma global
         async function cambiarIdiomaGlobal(codigo) {
             if (!codigo) return;
             try {
-                if (typeof window.cambiarIdioma === 'function') {
-                    await window.cambiarIdioma(codigo);
-                }
-                if (typeof window.inicializarIdiomas === 'function') {
-                    await window.inicializarIdiomas();
-                } else {
-                    window.location.reload();
-                }
+                if (typeof window.cambiarIdioma === 'function') { await window.cambiarIdioma(codigo); }
+                if (typeof window.inicializarIdiomas === 'function') { await window.inicializarIdiomas(); }
+                else { window.location.reload(); }
             } catch (e) {
                 console.error('Error cambiando idioma:', e);
                 window.location.reload();
@@ -698,6 +803,120 @@
             finally { btn.disabled = false; btn.textContent = 'Comprar Domo'; }
         }
 
+        // =========================================
+        // CARRUSEL EN VIVO - CONECTADO A SUPABASE
+        // =========================================
+        async function cargarCarruselEnVivo() {
+            const wrapper = document.getElementById('carruselEnVivo');
+            if (!wrapper) return;
+
+            try {
+                // 1. Consultar transmisiones activas + datos del canal
+                const { data: transmisiones, error } = await window.supabase
+                    .from('transmisiones')
+                    .select(`
+                        id,
+                        titulo,
+                        room_name,
+                        espectadores,
+                        streamer_id,
+                        grupo:grupos_video (
+                            id,
+                            nombre,
+                            avatar_url,
+                            categoria_id,
+                            ciudad
+                        )
+                    `)
+                    .eq('estado', 'en_vivo')
+                    .eq('is_live', true)
+                    .order('created_at', { ascending: false })
+                    .limit(10);
+
+                if (error) throw error;
+
+                // 2. Si no hay nadie en vivo, mostrar empty state
+                if (!transmisiones || transmisiones.length === 0) {
+                    wrapper.innerHTML = `
+                        <div class="carrusel-titulo">
+                            <span class="dot" style="background:#8aa8b8;animation:none;"></span>
+                            <span>EN VIVO AHORA</span>
+                        </div>
+                        <div class="carrusel-vacio">
+                            <span class="icon">◈</span>
+                            <p>Nadie al aire por ahora... sé el primero en transmitir</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // 3. Generar el HTML de cada item
+                const generarItemHTML = (t) => {
+                    const g = t.grupo || {};
+                    const avatar = g.avatar_url || '';
+                    const nombre = g.nombre || 'Canal';
+                    const titulo = t.titulo || 'Transmisión en vivo';
+                    const espectadores = t.espectadores || 0;
+
+                    const fondoHTML = avatar
+                        ? `<img src="${avatar}" alt="${nombre}" style="position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; opacity:0.6;">`
+                        : `<div style="position:absolute; top:0; left:0; width:100%; height:100%; display:flex; align-items:center; justify-content:center; font-size:3rem; color:var(--gold); opacity:0.3;">◈</div>`;
+
+                    return `
+                        <div class="carrusel-item" onclick="abrirCanalDesdeCarrusel('${g.id}')">
+                            <div class="live-tag">🔴 EN VIVO</div>
+                            ${fondoHTML}
+                            <div class="etiqueta">
+                                <span class="canal">◈ ${nombre}</span>
+                                <span class="titulo">${titulo}</span>
+                            </div>
+                        </div>
+                    `;
+                };
+
+                // 4. Separar en dos filas
+                const mitad = Math.ceil(transmisiones.length / 2);
+                const fila1 = transmisiones.slice(0, mitad);
+                const fila2 = transmisiones.slice(mitad);
+
+                // 5. Función para construir una fila (con duplicado para scroll infinito)
+                const construirFila = (items, clase) => {
+                    const itemsFila = items.length > 0 ? items : transmisiones;
+                    const itemsHTML = itemsFila.map(generarItemHTML).join('');
+                    const itemsDuplicados = itemsFila.map(generarItemHTML).join('');
+                    return `<div class="carrusel-fila ${clase}">${itemsHTML}${itemsDuplicados}</div>`;
+                };
+
+                // 6. Inyectar ambas filas manteniendo el título
+                wrapper.innerHTML = `
+                    <div class="carrusel-titulo">
+                        <span class="dot"></span>
+                        <span>EN VIVO AHORA</span>
+                    </div>
+                    ${construirFila(fila1, 'derecha')}
+                    ${construirFila(fila2, 'izquierda')}
+                `;
+
+            } catch (e) {
+                console.error('Error cargando carrusel en vivo:', e);
+                wrapper.innerHTML = `
+                    <div class="carrusel-titulo">
+                        <span class="dot" style="background:#8aa8b8;animation:none;"></span>
+                        <span>EN VIVO AHORA</span>
+                    </div>
+                    <div class="carrusel-vacio">
+                        <span class="icon">◈</span>
+                        <p>Error al cargar transmisiones. Reintentando...</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Función auxiliar para cuando el usuario le da clic a un item del carrusel
+        function abrirCanalDesdeCarrusel(grupoId) {
+            window.location.href = `/features/grupos/grupos.html?grupo=${grupoId}`;
+        }
+
         window.cambiarTab = cambiarTab;
         window.mostrarLogin = mostrarLogin;
         window.mostrarRegistro = mostrarRegistro;
@@ -709,8 +928,15 @@
         window.mostrarErrorEnPantalla = mostrarErrorEnPantalla;
         window.protegerYNavegar = protegerYNavegar;
         window.cambiarIdiomaGlobal = cambiarIdiomaGlobal;
+        window.abrirCanalDesdeCarrusel = abrirCanalDesdeCarrusel;
+        window.cargarCarruselEnVivo = cargarCarruselEnVivo;
 
         document.addEventListener('DOMContentLoaded', function() {
+            // Inicializar carrusel en vivo
+            cargarCarruselEnVivo();
+            // Refrescar cada 30 segundos
+            setInterval(cargarCarruselEnVivo, 30000);
+
             const qtyDisplay = document.getElementById('domoQuantity');
             const decreaseBtn = document.getElementById('decreaseQty');
             const increaseBtn = document.getElementById('increaseQty');
