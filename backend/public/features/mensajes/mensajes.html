@@ -100,6 +100,7 @@ button,input{font:inherit}
 @keyframes typingBounce{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-6px);opacity:1}}
 .bubble-bot-info{font-size:.6rem;color:var(--gold);opacity:.7;margin-bottom:4px;font-family:'Orbitron',monospace;letter-spacing:.5px}
 #voiceBot.recording{background:var(--danger)!important;border-color:var(--danger)!important;color:#fff!important;animation:pulse-recording 1s infinite}
+#voiceBot.processing{background:var(--muted)!important;border-color:var(--muted)!important;color:var(--space)!important;cursor:not-allowed!important;opacity:.7!important}
 @keyframes pulse-recording{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.7;transform:scale(1.05)}}
 .bot-transcripcion{font-size:.7rem;color:var(--muted);margin-bottom:8px;font-style:italic;border-left:2px solid var(--gold);padding-left:10px;opacity:.85}
 .bubble audio.bot-audio{margin-top:8px;height:36px;width:100%;max-width:280px;border-radius:20px}
@@ -202,6 +203,8 @@ const BOT_UUID='0a000000-0000-4000-8000-000000000001';
 let db=null,user=null,current=null,msgChannel=null,callChannel=null,incomingId=null;
 let recorder=null,audioChunks=[],recordingMode=null,recordingStartedAt=0;
 let voiceBotRecorder=null,voiceBotChunks=[],voiceBotGrabando=false;
+// ✅ NUEVA VARIABLE: Bloqueo para evitar envíos simultáneos al bot
+let enviandoVozBot = false;
 const call={room:null,id:null,active:false,audio:null,video:null,screen:null,initiator:false};
 
 const $=id=>document.getElementById(id);
@@ -564,6 +567,12 @@ async function grabarVozParaBot() {
     if(!current?.bot) return;
     if(!await auth()) return;
 
+    // ✅ SI YA SE ESTÁ ENVIANDO UN AUDIO, BLOQUEAR
+    if (enviandoVozBot) {
+        toast('⏳ Procesando audio anterior. Espera un momento…', 'warning');
+        return;
+    }
+
     if(voiceBotGrabando){
         // Detener grabación
         if(voiceBotRecorder && voiceBotRecorder.state !== 'inactive'){
@@ -606,37 +615,94 @@ async function grabarVozParaBot() {
 }
 
 async function enviarVozAlBot(file){
-    const s = await session();
-    if(!s) return;
-
-    // Subir audio
-    const path = `${user.id}/bot-voice/${Date.now()}.webm`;
-    const { error: upErr } = await db.storage.from('chat-audio').upload(path, file, {contentType: file.type, upsert:false});
-    if(upErr){ toast('❌ Error subiendo audio', 'error'); return; }
-
-    const { data: signed } = await db.storage.from('chat-audio').createSignedUrl(path, 3600);
-    if(!signed?.signedUrl){ toast('❌ Error firmando audio', 'error'); return; }
-
-    // Mostrar burbuja con "Procesando..."
-    const tempId = 'voice-user-' + Date.now();
-    const box = $('messages');
-    box.insertAdjacentHTML('beforeend', `<div class="bubblewrap sent" id="${tempId}"><div class="bubble"><div class="voice-label">🎙️ TU VOZ</div><div class="voice-loading">Enviando a Marquinhos…</div></div></div>`);
-    box.scrollTop = box.scrollHeight;
+    // ✅ BLOQUEO: Evitar envíos simultáneos
+    if (enviandoVozBot) {
+        toast('⏳ Ya hay un audio en proceso. Espera…', 'warning');
+        return;
+    }
+    enviandoVozBot = true;
+    
+    // ✅ DESHABILITAR BOTÓN VISUALMENTE
+    const $btn = $('voiceBot');
+    $btn.classList.add('processing');
+    $btn.textContent = '⏳';
+    $btn.disabled = true;
 
     try {
-        const r = await fetch('/api/ai/voice/chat', {
-            method:'POST',
-            headers:{'Content-Type':'application/json','Authorization':'Bearer '+s.access_token},
-            body: JSON.stringify({audio_url: signed.signedUrl})
-        });
-        const data = await r.json().catch(()=>({}));
-        document.getElementById(tempId)?.remove();
-
-        if(!r.ok || data.success === false){
-            throw new Error(data.error || 'Error del servicio de voz');
+        const s = await session();
+        if(!s) {
+            enviandoVozBot = false;
+            $btn.classList.remove('processing');
+            $btn.textContent = '🔊';
+            $btn.disabled = false;
+            return;
         }
 
-        // Guardar la nota de voz del usuario (reutilizando el archivo ya subido a chat-audio)
+        // Subir audio
+        const path = `${user.id}/bot-voice/${Date.now()}.webm`;
+        const { error: upErr } = await db.storage.from('chat-audio').upload(path, file, {contentType: file.type, upsert:false});
+        if(upErr){ 
+            toast('❌ Error subiendo audio', 'error'); 
+            enviandoVozBot = false;
+            $btn.classList.remove('processing');
+            $btn.textContent = '🔊';
+            $btn.disabled = false;
+            return; 
+        }
+
+        const { data: signed } = await db.storage.from('chat-audio').createSignedUrl(path, 3600);
+        if(!signed?.signedUrl){ 
+            toast('❌ Error firmando audio', 'error'); 
+            enviandoVozBot = false;
+            $btn.classList.remove('processing');
+            $btn.textContent = '🔊';
+            $btn.disabled = false;
+            return; 
+        }
+
+        // Mostrar burbuja con "Procesando..."
+        const tempId = 'voice-user-' + Date.now();
+        const box = $('messages');
+        box.insertAdjacentHTML('beforeend', `<div class="bubblewrap sent" id="${tempId}"><div class="bubble"><div class="voice-label">🎙️ TU VOZ</div><div class="voice-loading">Enviando a Marquinhos…</div></div></div>`);
+        box.scrollTop = box.scrollHeight;
+
+        // ✅ REINTENTOS CON BACKOFF EXPONENCIAL PARA ERROR 429
+        let intentos = 0;
+        const maxIntentos = 3;
+        let exito = false;
+        let data = {};
+
+        while(intentos < maxIntentos && !exito) {
+            const r = await fetch('/api/ai/voice/chat', {
+                method:'POST',
+                headers:{'Content-Type':'application/json','Authorization':'Bearer '+s.access_token},
+                body: JSON.stringify({audio_url: signed.signedUrl})
+            });
+            
+            data = await r.json().catch(()=>({}));
+
+            if (r.status === 429) {
+                intentos++;
+                const waitTime = intentos * 2000; // 2s, 4s, 6s
+                console.warn(`⚠️ Rate Limit (429). Reintentando en ${waitTime/1000}s... Intento ${intentos}/${maxIntentos}`);
+                toast(`⏳ Servidor ocupado. Reintentando en ${waitTime/1000}s...`, 'warning');
+                await new Promise(resolve => setTimeout(resolve, waitTime));
+                continue;
+            }
+
+            if(!r.ok || data.success === false){
+                throw new Error(data.error || 'Error del servicio de voz');
+            }
+            exito = true;
+        }
+
+        if (!exito) {
+            throw new Error('El servidor de IA está saturado. Intenta de nuevo en unos minutos.');
+        }
+
+        document.getElementById(tempId)?.remove();
+
+        // Guardar la nota de voz del usuario
         try {
             await db.from('mensajes_chat').insert({
                 remitente_id:user.id, destinatario_id:BOT_UUID,
@@ -647,7 +713,7 @@ async function enviarVozAlBot(file){
             });
         } catch(e) { console.warn('No se pudo guardar la nota de voz:', e); }
 
-        // Guardar la respuesta de texto de Marquinhos (el audio TTS es efímero, no se persiste)
+        // Guardar la respuesta de texto de Marquinhos
         try {
             if(data.reply){
                 await db.from('mensajes_chat').insert({
@@ -681,7 +747,19 @@ async function enviarVozAlBot(file){
     } catch(e) {
         console.error('Error voz bot:', e);
         document.getElementById(tempId)?.remove();
-        toast('❌ ' + e.message, 'error');
+        
+        // ✅ MENSAJE AMIGABLE SI ES 429
+        if (e.message.includes('429') || e.message.includes('Too Many Requests') || e.message.includes('saturado')) {
+            toast('⏳ El asistente está saturado. Por favor, espera unos segundos e intenta de nuevo.', 'warning');
+        } else {
+            toast('❌ ' + e.message, 'error');
+        }
+    } finally {
+        // ✅ LIBERAR BLOQUEO Y RESTAURAR BOTÓN
+        enviandoVozBot = false;
+        $btn.classList.remove('processing');
+        $btn.textContent = '🔊';
+        $btn.disabled = false;
     }
 }
 
