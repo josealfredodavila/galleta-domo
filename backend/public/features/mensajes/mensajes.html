@@ -40,14 +40,76 @@
 <header class="header"><a class="logo" href="/"><b>◈</b><span>Sariel's</span><em class="badge">WEB3</em></a><div class="network"><i></i>Polygon</div></header>
 <nav class="nav"><a href="/">⌂ Inicio</a><a href="/features/muro/muro.html">◇ Muro</a><a href="/features/perfil/perfil.html">◆ Perfil</a><a href="/features/mensajes/contactos.html">◈ Contactos</a><a class="active" href="/features/mensajes/mensajes.html">◈ Mensajes</a><a href="/features/live/live.html">◉ Live</a></nav>
 <main class="panel">
-<aside class="sidebar"><div class="sidehead"><span>◈ Conversaciones</span><button class="iconbtn" id="newChat" title="Nueva conversación">✎</button></div><div id="conversationList"></div></aside>
-<section class="chat"><header class="chathead"><div class="avatar" id="chatAvatar">◈</div><div><div class="chatname" id="chatName">Selecciona una conversación</div><div class="status" id="chatStatus">◈ En espera</div></div><div class="actions"><button class="iconbtn" id="videoCall" title="Videollamada">📹</button><button class="iconbtn" id="searchChat" title="Buscar">🔍</button></div></header><div class="messages" id="messages"><div class="empty"><strong>◈</strong><div>Selecciona una conversación</div><small>Elige un chat para empezar a hablar</small></div></div><form class="composer" id="composer"><button type="button" class="btn" id="attach" title="Adjuntar">📎</button><button type="button" class="btn" id="audio" title="Grabar audio">🎙️</button><button type="button" class="btn" id="voiceBot" title="Hablar con Marquinhos" style="display:none;">🔊</button><input id="messageInput" autocomplete="off" placeholder="Escribe un mensaje…"><button class="btn send" type="submit">Enviar</button><input id="fileInput" type="file" hidden multiple accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt"></form></section>
+<aside class="sidebar">
+    <div class="sidehead">
+        <span>◈ Conversaciones</span>
+        <button class="iconbtn" id="newChat" title="Nueva conversación">✎</button>
+    </div>
+    <div id="conversationList">
+        <!-- Marquinhos se insertará aquí dinámicamente vía JS -->
+    </div>
+</aside>
+<section class="chat">
+    <header class="chathead">
+        <div class="avatar" id="chatAvatar">◈</div>
+        <div>
+            <div class="chatname" id="chatName">Selecciona una conversación</div>
+            <div class="status" id="chatStatus">◈ En espera</div>
+        </div>
+        <div class="actions">
+            <button class="iconbtn" id="videoCall" title="Videollamada">📹</button>
+            <button class="iconbtn" id="searchChat" title="Buscar">🔍</button>
+        </div>
+    </header>
+    <div class="messages" id="messages">
+        <div class="empty">
+            <strong>◈</strong>
+            <div>Selecciona una conversación</div>
+            <small>Elige un chat para empezar a hablar</small>
+        </div>
+    </div>
+    <form class="composer" id="composer">
+        <button type="button" class="btn" id="attach" title="Adjuntar">📎</button>
+        <button type="button" class="btn" id="audio" title="Grabar audio">🎙️</button>
+        <button type="button" class="btn" id="voiceBot" title="Hablar con Marquinhos" style="display:none;">🔊</button>
+        <input id="messageInput" autocomplete="off" placeholder="Escribe un mensaje…">
+        <button class="btn send" type="submit">Enviar</button>
+        <input id="fileInput" type="file" hidden multiple accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt">
+    </form>
+</section>
 </main>
 <footer style="padding:18px 2px;color:var(--muted);font-size:.68rem">◈ Sariel's · Sabor al Paladar · WEB3</footer>
 </div>
-<div class="modal" id="newModal"><div class="modalbox"><button class="iconbtn" id="closeModal" style="float:right">✕</button><h2>◈ Nueva conversación</h2><input class="search" id="userSearch" placeholder="Buscar por nombre o usuario…"><div id="userResults" style="margin-top:10px"></div></div></div>
-<div class="call" id="callOverlay"><div class="videos"><video id="remoteVideo" autoplay playsinline></video><video id="localVideo" class="local" autoplay playsinline muted></video></div><div class="callinfo" id="callInfo">◈ Conectando…</div><div class="controls"><button id="toggleMic">🎤</button><button id="toggleCam">📷</button><button id="toggleScreen">🖥️</button><button class="hang" id="hangup">📞</button></div></div>
-<div class="call" id="incomingOverlay"><div class="avatar" style="width:80px;height:80px;font-size:2rem" id="incomingAvatar">◈</div><h2 id="incomingName">Usuario</h2><div class="callinfo">📞 Llamada entrante…</div><div class="controls"><button id="acceptCall">📞</button><button class="hang" id="rejectCall">✕</button></div></div>
+<div class="modal" id="newModal">
+    <div class="modalbox">
+        <button class="iconbtn" id="closeModal" style="float:right">✕</button>
+        <h2>◈ Nueva conversación</h2>
+        <input class="search" id="userSearch" placeholder="Buscar por nombre o usuario…">
+        <div id="userResults" style="margin-top:10px"></div>
+    </div>
+</div>
+<div class="call" id="callOverlay">
+    <div class="videos">
+        <video id="remoteVideo" autoplay playsinline></video>
+        <video id="localVideo" class="local" autoplay playsinline muted></video>
+    </div>
+    <div class="callinfo" id="callInfo">◈ Conectando…</div>
+    <div class="controls">
+        <button id="toggleMic">🎤</button>
+        <button id="toggleCam">📷</button>
+        <button id="toggleScreen">🖥️</button>
+        <button class="hang" id="hangup">📞</button>
+    </div>
+</div>
+<div class="call" id="incomingOverlay">
+    <div class="avatar" style="width:80px;height:80px;font-size:2rem" id="incomingAvatar">◈</div>
+    <h2 id="incomingName">Usuario</h2>
+    <div class="callinfo">📞 Llamada entrante…</div>
+    <div class="controls">
+        <button id="acceptCall">📞</button>
+        <button class="hang" id="rejectCall">✕</button>
+    </div>
+</div>
 <div class="toast" id="toast"></div>
 <script>
 'use strict';
@@ -104,36 +166,78 @@ async function getSignedUrlForMessage(m) {
 }
 
 /* ============================================
-   CARGAR CONVERSACIONES + BOT
+   CARGAR CONVERSACIONES + BOT (SIEMPRE VISIBLE)
    ============================================ */
 async function loadConversations(){
-    if(!await auth())return;
-    
     const list=$('conversationList');
     list.innerHTML='';
-    
-    // Item del bot
+
+    // ============================================================
+    // PASO 1: AGREGAR MARQUINHOS SIEMPRE (antes de cualquier auth)
+    // ============================================================
     const botEl=document.createElement('div');
     botEl.className='conv conv-bot'+(current?.id===BOT_ID?' active':'');
     botEl.dataset.id=BOT_ID;
-    botEl.innerHTML=`<div class="avatar avatar-bot">✦</div><div class="convinfo"><div class="convname">Marquinhos</div><div class="convmsg">Tu asistente personal ✦</div></div><div class="convtime" style="color:var(--success);font-size:.55rem">IA</div>`;
+    botEl.innerHTML=`
+        <div class="avatar avatar-bot">✦</div>
+        <div class="convinfo">
+            <div class="convname">Marquinhos</div>
+            <div class="convmsg">Tu asistente personal ✦</div>
+        </div>
+        <div class="convtime" style="color:var(--success);font-size:.55rem">IA</div>
+    `;
     botEl.onclick=()=>openConversation(BOT_ID);
     list.appendChild(botEl);
-    
-    // Contactos reales
-    const {data,error}=await db.from('contactos').select('contacto_id,created_at,fecha,estado').eq('usuario_id',user.id).neq('estado','bloqueado').order('created_at',{ascending:false});
-    if(error){console.error(error);toast('❌ No se pudieron cargar las conversaciones','error');return}
-    if(!data?.length)return;
-    
-    for(const c of data){
-        const p=await profile(c.contacto_id);
-        const {data:last}=await db.from('mensajes_chat').select('contenido,tipo,created_at,leido,remitente_id').eq('eliminado',false).or(`and(remitente_id.eq.${user.id},destinatario_id.eq.${c.contacto_id}),and(remitente_id.eq.${c.contacto_id},destinatario_id.eq.${user.id})`).order('created_at',{ascending:false}).limit(1).maybeSingle();
-        const el=document.createElement('div');
-        el.className='conv'+(current?.id===c.contacto_id?' active':'');
-        el.dataset.id=c.contacto_id;
-        el.innerHTML=avatar(p.nombre,p.avatar_url)+`<div class="convinfo"><div class="convname">${esc(p.nombre||'Usuario')}</div><div class="convmsg">${esc(last?.contenido||'Sin mensajes')}</div></div><div class="convtime">${last?.created_at?new Date(last.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):''}</div>`;
-        el.onclick=()=>openConversation(c.contacto_id);
-        list.appendChild(el);
+
+    // ============================================================
+    // PASO 2: Si no hay auth, salir (el bot ya está en la lista)
+    // ============================================================
+    if(!await auth()) return;
+
+    // ============================================================
+    // PASO 3: Cargar contactos reales
+    // ============================================================
+    try {
+        const {data,error}=await db
+            .from('contactos')
+            .select('contacto_id,created_at,fecha,estado')
+            .eq('usuario_id',user.id)
+            .neq('estado','bloqueado')
+            .order('created_at',{ascending:false});
+
+        if(error){
+            console.error('Error cargando contactos:', error);
+            return;
+        }
+
+        if(!data?.length) return;
+
+        for(const c of data){
+            const p=await profile(c.contacto_id);
+            const {data:last}=await db
+                .from('mensajes_chat')
+                .select('contenido,tipo,created_at,leido,remitente_id')
+                .eq('eliminado',false)
+                .or(`and(remitente_id.eq.${user.id},destinatario_id.eq.${c.contacto_id}),and(remitente_id.eq.${c.contacto_id},destinatario_id.eq.${user.id})`)
+                .order('created_at',{ascending:false})
+                .limit(1)
+                .maybeSingle();
+
+            const el=document.createElement('div');
+            el.className='conv'+(current?.id===c.contacto_id?' active':'');
+            el.dataset.id=c.contacto_id;
+            el.innerHTML=avatar(p.nombre,p.avatar_url)+`
+                <div class="convinfo">
+                    <div class="convname">${esc(p.nombre||'Usuario')}</div>
+                    <div class="convmsg">${esc(last?.contenido||'Sin mensajes')}</div>
+                </div>
+                <div class="convtime">${last?.created_at?new Date(last.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):''}</div>
+            `;
+            el.onclick=()=>openConversation(c.contacto_id);
+            list.appendChild(el);
+        }
+    } catch (e) {
+        console.error('Error en loadConversations:', e);
     }
 }
 
@@ -145,18 +249,18 @@ async function openConversation(id){
     const p=await profile(id);
     const esBot=(id===BOT_ID);
     current={id,profile:p,bot:esBot};
-    
+
     $('chatName').textContent=p.nombre||'Usuario';
     $('chatAvatar').innerHTML=esBot?'✦':(p.avatar_url?`<img src="${esc(p.avatar_url)}" alt="">`:esc((p.nombre||'◈').charAt(0).toUpperCase()));
     $('chatAvatar').className='avatar'+(esBot?' avatar-bot':'');
     $('chatStatus').textContent=esBot?'✦ IA · Siempre disponible':(p.online?'◉ En línea':'◈ Desconectado');
     $('chatStatus').className='status'+(p.online?' online':'');
-    
+
     // ✅ Mostrar botón de voz solo con Marquinhos
     $('voiceBot').style.display = esBot ? 'inline-flex' : 'none';
-    
+
     document.querySelectorAll('.conv').forEach(x=>x.classList.toggle('active',x.dataset.id===id));
-    
+
     // Si es bot, mostrar welcome
     if(esBot){
         const box=$('messages');
@@ -165,7 +269,7 @@ async function openConversation(id){
         box.scrollTop=box.scrollHeight;
         return;
     }
-    
+
     const r=await db.from('mensajes_chat').select('*').eq('eliminado',false).or(`and(remitente_id.eq.${user.id},destinatario_id.eq.${id}),and(remitente_id.eq.${id},destinatario_id.eq.${user.id})`).order('created_at',{ascending:true}).limit(100);
     if(r.error){console.error(r.error);toast('❌ Error al cargar mensajes','error');return}
     await renderMessages(r.data||[]);
@@ -216,15 +320,15 @@ function messageHTML(m,sent,signedUrl){
 async function sendMessage(text){
     if(!current||!text.trim())return;
     if(!await auth())return;
-    
+
     const textoLimpio=text.trim();
     $('messageInput').value='';
-    
+
     if(current.bot){
         const userMsg = { contenido: textoLimpio, created_at: new Date().toISOString(), tipo:'texto', remitente_id: user.id, leido:true };
         append(userMsg, true);
         mostrarTypingBot();
-        
+
         try {
             const respuesta = await preguntarAlBot(textoLimpio);
             quitarTypingBot();
@@ -237,7 +341,7 @@ async function sendMessage(text){
         }
         return;
     }
-    
+
     const r=await db.from('mensajes_chat').insert({remitente_id:user.id,destinatario_id:current.id,contenido:textoLimpio,tipo:'texto',leido:false,editado:false,eliminado:false}).select('*').single();
     if(r.error){console.error(r.error);toast('❌ Error al enviar mensaje','error');return}
     await append(r.data,true);
@@ -250,7 +354,7 @@ async function sendMessage(text){
 async function preguntarAlBot(mensaje){
     const s=await session();
     if(!s)throw new Error('No autenticado');
-    
+
     const r=await fetch('/api/ai/chat',{
         method:'POST',
         headers:{
@@ -263,7 +367,7 @@ async function preguntarAlBot(mensaje){
             history: []
         })
     });
-    
+
     const data=await r.json().catch(()=>({}));
     if(!r.ok)throw new Error(data.error||'Error del bot');
     if(!data.success)throw new Error(data.error||'Error del bot');
@@ -289,27 +393,4 @@ function quitarTypingBot(){
    VOZ CON MARQUINHOS (STT + TTS)
    ============================================ */
 async function grabarVozParaBot() {
-    if (!current?.bot) { toast('⚠️ Solo disponible con Marquinhos', 'warning'); return; }
-    if (!await auth()) return;
-    
-    const btn = $('voiceBot');
-    
-    // Si ya está grabando, detener
-    if (voiceBotGrabando && voiceBotRecorder) {
-        voiceBotRecorder.stop();
-        return;
-    }
-    
-    try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        voiceBotChunks = [];
-        voiceBotRecorder = new MediaRecorder(stream);
-        
-        voiceBotRecorder.ondataavailable = e => {
-            if (e.data.size) voiceBotChunks.push(e.data);
-        };
-        
-        voiceBotRecorder.onstop = async () => {
-            stream.getTracks().forEach(t => t.stop());
-            voiceBotGrabando = false;
-            btn.textContent
+    if (!current?.bot) {
