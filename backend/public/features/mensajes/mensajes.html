@@ -140,6 +140,7 @@ button,input{font:inherit}
             <div class="status" id="chatStatus">◈ En espera</div>
         </div>
         <div class="actions">
+            <button class="iconbtn" id="deleteChat" title="Eliminar conversación" style="display:none;">🗑️</button>
             <button class="iconbtn" id="videoCall" title="Videollamada">📹</button>
             <button class="iconbtn" id="searchChat" title="Buscar">🔍</button>
         </div>
@@ -326,6 +327,8 @@ async function openConversation(id){
     $('chatStatus').className='status'+(p.online?' online':'');
 
     $('voiceBot').style.display = esBot ? 'inline-flex' : 'none';
+    // ✅ MOSTRAR BOTÓN ELIMINAR CUANDO HAY CONVERSACIÓN ABIERTA
+    $('deleteChat').style.display = 'inline-flex';
 
     document.querySelectorAll('.conv').forEach(x=>x.classList.toggle('active',x.dataset.id===id));
 
@@ -543,6 +546,43 @@ async function append(m,sent){
 async function markRead(id){
     if(!user||id===BOT_ID)return;
     await db.from('mensajes_chat').update({leido:true}).eq('remitente_id',id).eq('destinatario_id',user.id).eq('leido',false).eq('eliminado',false);
+}
+
+/* ============================================
+   ✅ NUEVA FUNCIÓN: ELIMINAR CONVERSACIÓN COMPLETA
+   ============================================ */
+async function deleteConversation(){
+    if(!current){toast('⚠️ Selecciona una conversación','error');return}
+    if(!await auth())return;
+
+    const nombre = current.bot ? 'Marquinhos' : (current.profile.nombre || 'este usuario');
+    const confirmar = confirm(`⚠️ ¿Estás seguro de que quieres eliminar TODA la conversación con ${nombre}?\n\nEsta acción no se puede deshacer y perderás todo el historial de mensajes.`);
+    
+    if(!confirmar) return;
+
+    try {
+        const targetId = current.bot ? BOT_UUID : current.id;
+
+        // Borrado lógico: marcar todos los mensajes como eliminados
+        const { error } = await db.from('mensajes_chat')
+            .update({ eliminado: true })
+            .or(`and(remitente_id.eq.${user.id},destinatario_id.eq.${targetId}),and(remitente_id.eq.${targetId},destinatario_id.eq.${user.id})`);
+
+        if(error) throw error;
+
+        toast('✅ Conversación eliminada correctamente', 'success');
+
+        // Limpiar el panel de mensajes
+        const box = $('messages');
+        box.innerHTML = '<div class="empty"><strong>◈</strong><div>Conversación eliminada</div><small>Envía un mensaje para empezar de nuevo</small></div>';
+
+        // Recargar la lista de conversaciones
+        await loadConversations();
+
+    } catch(e) {
+        console.error('Error eliminando conversación:', e);
+        toast('❌ No se pudo eliminar la conversación', 'error');
+    }
 }
 
 /* ============================================
@@ -1016,6 +1056,7 @@ async function init(){
     });
     $('audio').onclick=recordAudioNota;
     $('voiceBot').onclick=grabarVozParaBot;
+    $('deleteChat').onclick=deleteConversation;
     $('videoCall').onclick=startCall;
     $('hangup').onclick=hangup;
     $('toggleMic').onclick=toggleMic;
