@@ -29,7 +29,10 @@ button,input{font:inherit}
 .panel{display:grid;grid-template-columns:340px 1fr;min-height:620px;border:1px solid var(--border);border-radius:var(--xl);overflow:hidden;background:var(--glass);backdrop-filter:blur(16px);box-shadow:0 8px 32px rgba(212,175,55,.12)}
 .sidebar{border-right:1px solid var(--border);background:rgba(0,0,0,.18);overflow:hidden;display:flex;flex-direction:column;position:relative}
 .sidehead{display:flex;align-items:center;justify-content:space-between;padding:15px 17px 8px;color:var(--gold);font-weight:700;font-size:.82rem}
-.estados-bar{padding:8px 12px 12px;border-bottom:1px solid rgba(212,175,55,.08);background:rgba(0,0,0,.15)}
+.searchbox{padding:0 12px 12px}
+.searchbox input{width:100%;padding:9px 14px;border-radius:20px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:var(--text);outline:0;font-size:.78rem}
+.searchbox input:focus{border-color:var(--gold)}
+.estados-bar{padding:10px 12px 12px;border-top:1px solid rgba(212,175,55,.08);border-bottom:1px solid rgba(212,175,55,.08);background:rgba(0,0,0,.15);margin:0 0 8px}
 .estados-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
 .estados-title{font-size:.7rem;color:var(--gold);font-weight:700;letter-spacing:.5px}
 .btn-subir-estado{background:linear-gradient(135deg,var(--gold),#b8923a);color:var(--space);border:0;border-radius:14px;padding:4px 10px;font-size:.65rem;font-weight:800;cursor:pointer;display:flex;align-items:center;gap:4px;transition:transform .2s}
@@ -40,13 +43,10 @@ button,input{font:inherit}
 .estado-circle{width:56px;height:56px;border-radius:50%;padding:2px;background:linear-gradient(135deg,var(--gold),var(--gold2));display:grid;place-items:center;transition:transform .2s}
 .estado-circle:hover{transform:scale(1.05)}
 .estado-circle.visto{background:rgba(138,168,184,.35)}
-.estado-circle.propio{background:rgba(138,168,184,.25)}
 .estado-inner{width:100%;height:100%;border-radius:50%;background:var(--space);display:grid;place-items:center;overflow:hidden;font-weight:800;color:var(--gold);font-size:1rem}
 .estado-inner img{width:100%;height:100%;object-fit:cover}
 .estado-name{font-size:.6rem;color:var(--muted);text-align:center;max-width:62px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.searchbox{padding:0 12px 12px}
-.searchbox input{width:100%;padding:9px 14px;border-radius:20px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:var(--text);outline:0;font-size:.78rem}
-.searchbox input:focus{border-color:var(--gold)}
+.estado-vistas-badge{position:absolute;bottom:-4px;right:-4px;background:var(--gold);color:var(--space);font-size:.55rem;font-weight:900;padding:2px 6px;border-radius:99px;border:2px solid var(--space);min-width:20px;text-align:center}
 .convlist{flex:1;overflow:auto;padding-bottom:70px}
 .conv{display:flex;gap:11px;align-items:center;padding:11px 14px;border-bottom:1px solid rgba(212,175,55,.05);cursor:pointer}
 .conv:hover{background:rgba(212,175,55,.05)}
@@ -141,7 +141,6 @@ button,input{font:inherit}
 @keyframes badgePulse{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
 @keyframes pulseNew{0%,100%{box-shadow:0 3px 10px rgba(0,0,0,.5)}50%{box-shadow:0 3px 16px rgba(255,51,102,.7)}}
 #scrollAnchor{width:100%;height:1px;flex-shrink:0;opacity:0;pointer-events:none}
-/* Modales de perfil y foto */
 .profile-modal-box{width:min(420px,100%);background:linear-gradient(135deg,#0f2d1a,#05080f);border:2px solid var(--gold);border-radius:var(--xl);padding:26px 22px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.7);animation:scaleIn .3s ease-out}
 .profile-modal-avatar{width:120px;height:120px;border-radius:50%;margin:0 auto 16px;background:linear-gradient(135deg,var(--gold),#b8923a);display:grid;place-items:center;font-size:2.6rem;font-weight:900;color:var(--space);overflow:hidden;border:3px solid var(--gold);box-shadow:0 8px 24px rgba(212,175,55,.4)}
 .profile-modal-avatar img{width:100%;height:100%;object-fit:cover}
@@ -151,7 +150,6 @@ button,input{font:inherit}
 .profile-modal-btn{padding:12px 18px;border-radius:12px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--text);cursor:pointer;font-weight:600;font-size:.85rem;transition:all .2s;text-align:left;display:flex;align-items:center;gap:12px}
 .profile-modal-btn:hover{background:rgba(212,175,55,.1);border-color:var(--gold);color:var(--gold)}
 .profile-modal-btn .icon{font-size:1.1rem}
-/* Visor de foto ampliada */
 .photo-viewer{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.95);backdrop-filter:blur(12px);display:none;align-items:center;justify-content:center;flex-direction:column;padding:30px;animation:fadeIn .25s ease-out}
 .photo-viewer.show{display:flex}
 .photo-viewer img{max-width:90vw;max-height:70vh;border-radius:16px;border:2px solid var(--gold);box-shadow:0 20px 60px rgba(0,0,0,.8);object-fit:contain}
@@ -159,27 +157,32 @@ button,input{font:inherit}
 .photo-viewer .pv-handle{color:var(--muted);font-size:.8rem;margin-top:2px}
 .photo-viewer .pv-close{position:absolute;top:20px;right:20px;width:42px;height:42px;border-radius:50%;background:rgba(212,175,55,.15);border:1px solid var(--gold);color:var(--gold);cursor:pointer;font-size:1.2rem;font-weight:800;display:grid;place-items:center}
 .photo-viewer .pv-close:hover{background:var(--gold);color:var(--space)}
-/* Visor de estados */
-.estado-viewer{position:fixed;inset:0;z-index:310;background:#000;display:none;flex-direction:column;animation:fadeIn .2s ease-out}
+/* Visor de estados - SIN textos que estorben */
+.estado-viewer{position:fixed;inset:0;z-index:310;background:#000;display:none;flex-direction:column;animation:fadeIn .2s ease-out;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
 .estado-viewer.show{display:flex}
-.estado-viewer-header{padding:14px 18px;display:flex;align-items:center;gap:12px;background:linear-gradient(180deg,rgba(0,0,0,.85),transparent);position:relative;z-index:2}
-.estado-viewer-progress{position:absolute;top:8px;left:12px;right:12px;height:3px;background:rgba(255,255,255,.2);border-radius:2px;overflow:hidden;z-index:3}
+.estado-viewer-progress{position:absolute;top:8px;left:12px;right:12px;height:3px;background:rgba(255,255,255,.2);border-radius:2px;overflow:hidden;z-index:5}
 .estado-viewer-progress-inner{height:100%;background:var(--gold);width:0%;transition:width .1s linear}
-.estado-viewer-avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--gold),#b8923a);display:grid;place-items:center;overflow:hidden;font-weight:800;color:var(--space);flex-shrink:0}
+.estado-viewer-header{position:absolute;top:20px;left:0;right:0;padding:0 18px;display:flex;align-items:center;gap:12px;z-index:4;pointer-events:none}
+.estado-viewer-avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--gold),#b8923a);display:grid;place-items:center;overflow:hidden;font-weight:800;color:var(--space);flex-shrink:0;pointer-events:auto}
 .estado-viewer-avatar img{width:100%;height:100%;object-fit:cover}
-.estado-viewer-info{flex:1;min-width:0}
-.estado-viewer-name{color:#fff;font-weight:700;font-size:.9rem}
-.estado-viewer-time{color:rgba(255,255,255,.7);font-size:.7rem}
-.estado-viewer-close{background:transparent;border:0;color:#fff;font-size:1.4rem;cursor:pointer;padding:8px;border-radius:50%}
-.estado-viewer-close:hover{background:rgba(255,255,255,.15)}
-.estado-viewer-body{flex:1;position:relative;display:grid;place-items:center;padding:20px}
-.estado-viewer-img{max-width:100%;max-height:100%;object-fit:contain;border-radius:12px}
-.estado-viewer-caption{position:absolute;bottom:30px;left:30px;right:30px;text-align:center;color:#fff;background:rgba(0,0,0,.6);padding:10px 18px;border-radius:20px;font-size:.9rem;backdrop-filter:blur(8px)}
-.estado-viewer-nav{position:absolute;top:50%;transform:translateY(-50%);width:44px;height:44px;border-radius:50%;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.2);color:#fff;font-size:1.4rem;cursor:pointer;display:grid;place-items:center;transition:background .2s}
+.estado-viewer-info{flex:1;min-width:0;pointer-events:auto}
+.estado-viewer-name{color:#fff;font-weight:700;font-size:.9rem;text-shadow:0 1px 4px rgba(0,0,0,.9)}
+.estado-viewer-time{color:rgba(255,255,255,.85);font-size:.7rem;text-shadow:0 1px 4px rgba(0,0,0,.9)}
+.estado-viewer-close{background:rgba(0,0,0,.4);border:0;color:#fff;font-size:1.2rem;cursor:pointer;padding:8px 12px;border-radius:50%;pointer-events:auto;transition:background .2s}
+.estado-viewer-close:hover{background:rgba(212,175,55,.6)}
+.estado-viewer-body{flex:1;position:relative;display:grid;place-items:center;padding:0;overflow:hidden}
+.estado-viewer-img{max-width:100%;max-height:100%;object-fit:contain;pointer-events:none;user-select:none}
+.estado-viewer-caption{position:absolute;bottom:30px;left:30px;right:30px;text-align:center;color:#fff;background:rgba(0,0,0,.55);padding:10px 18px;border-radius:20px;font-size:.9rem;backdrop-filter:blur(8px);pointer-events:none;text-shadow:0 1px 4px rgba(0,0,0,.9)}
+.estado-viewer-nav{position:absolute;top:50%;transform:translateY(-50%);width:44px;height:44px;border-radius:50%;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.2);color:#fff;font-size:1.4rem;cursor:pointer;display:grid;place-items:center;transition:background .2s;z-index:3;pointer-events:auto}
 .estado-viewer-nav:hover{background:rgba(212,175,55,.5)}
 .estado-viewer-nav.prev{left:14px}
 .estado-viewer-nav.next{right:14px}
 .estado-viewer-nav.hidden{display:none}
+.estado-viewer-pause-hint{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:rgba(255,255,255,.9);font-size:3rem;font-weight:900;pointer-events:none;opacity:0;transition:opacity .15s;text-shadow:0 2px 12px rgba(0,0,0,.9);z-index:6}
+.estado-viewer-pause-hint.show{opacity:1}
+/* Contador de vistas (para mis propios estados) */
+.estado-viewer-vistas{position:absolute;bottom:20px;left:0;right:0;text-align:center;color:#fff;font-size:.8rem;pointer-events:none;z-index:4}
+.estado-viewer-vistas-pill{display:inline-block;background:rgba(0,0,0,.55);padding:8px 16px;border-radius:20px;backdrop-filter:blur(8px);text-shadow:0 1px 4px rgba(0,0,0,.9)}
 .hidden{display:none!important}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes scaleIn{from{transform:scale(.9);opacity:0}to{transform:scale(1);opacity:1}}
@@ -228,7 +231,6 @@ button,input{font:inherit}
     <div class="searchbox">
         <input type="text" id="searchConversations" placeholder="🔍 Buscar conversación…" autocomplete="off">
     </div>
-    <div class="convlist" id="conversationList"></div>
     <div class="estados-bar">
         <div class="estados-header">
             <div class="estados-title">◈ ESTADOS</div>
@@ -236,6 +238,7 @@ button,input{font:inherit}
         </div>
         <div class="estados-scroll" id="estadosScroll"></div>
     </div>
+    <div class="convlist" id="conversationList"></div>
     <button class="fab" id="newChat" title="Nueva conversación">＋</button>
 </aside>
 <section class="chat">
@@ -277,7 +280,6 @@ button,input{font:inherit}
 <footer style="padding:18px 2px;color:var(--muted);font-size:.68rem">◈ Sariel's · Sabor al Paladar · WEB3</footer>
 </div>
 
-<!-- Modal nueva conversación -->
 <div class="modal" id="newModal">
     <div class="modalbox">
         <button class="iconbtn" id="closeModal" style="float:right">✕</button>
@@ -287,7 +289,6 @@ button,input{font:inherit}
     </div>
 </div>
 
-<!-- Modal de perfil (al tocar tu foto del header) - SIMPLIFICADO -->
 <div class="modal" id="profileModal">
     <div class="profile-modal-box">
         <div class="profile-modal-avatar" id="profileModalAvatar">◈</div>
@@ -303,7 +304,6 @@ button,input{font:inherit}
     </div>
 </div>
 
-<!-- Visor de foto ampliada -->
 <div class="photo-viewer" id="photoViewer">
     <button class="pv-close" id="pvClose">✕</button>
     <img id="pvImage" src="" alt="Foto">
@@ -311,7 +311,7 @@ button,input{font:inherit}
     <div class="pv-handle" id="pvHandle"></div>
 </div>
 
-<!-- Visor de estados -->
+<!-- Visor de estados: sin textos, con pausa al mantener presionado -->
 <div class="estado-viewer" id="estadoViewer">
     <div class="estado-viewer-progress"><div class="estado-viewer-progress-inner" id="estadoProgress"></div></div>
     <div class="estado-viewer-header">
@@ -322,15 +322,20 @@ button,input{font:inherit}
         </div>
         <button class="estado-viewer-close" id="evClose">✕</button>
     </div>
-    <div class="estado-viewer-body">
+    <div class="estado-viewer-body" id="evBody">
         <button class="estado-viewer-nav prev" id="evPrev">‹</button>
-        <img class="estado-viewer-img" id="evImage" src="" alt="Estado">
+        <img class="estado-viewer-img" id="evImage" src="" alt="Estado" draggable="false">
         <div class="estado-viewer-caption hidden" id="evCaption"></div>
         <button class="estado-viewer-nav next" id="evNext">›</button>
     </div>
+    <div class="estado-viewer-pause-hint" id="evPauseHint">⏸</div>
+    <div class="estado-viewer-vistas hidden" id="evVistas">
+        <div class="estado-viewer-vistas-pill">
+            👁️ <span id="evVistasCount">0</span> vistas
+        </div>
+    </div>
 </div>
 
-<!-- Modal de subir estado -->
 <div class="modal" id="estadoUploadModal">
     <div class="modalbox" style="text-align:center;">
         <button class="iconbtn" id="closeEstadoModal" style="float:right">✕</button>
@@ -391,6 +396,8 @@ let estadosCache = [];
 let estadoActualIndex = 0;
 let estadoActualUserId = null;
 let estadoTimer = null;
+let estadoProgresoActual = 0;
+let estadoPausado = false;
 let estadoVistos = JSON.parse(localStorage.getItem('sariels_estados_vistos') || '{}');
 const call={room:null,id:null,active:false,audio:null,video:null,screen:null,initiator:false};
 
@@ -403,7 +410,7 @@ function avatar(name,url,cls='avatar'){return `<div class="${cls}">${url?`<img s
 async function profile(id){if(id===BOT_ID)return{id:BOT_ID,nombre:"Marquinhos",handle:'marquinhos',avatar_url:null,online:true,bot:true};const r=await db.from('perfiles_publicos').select('id,nombre,handle,avatar_url,online,ultima_conexion').eq('id',id).maybeSingle();return r.data||{id,nombre:'Usuario',avatar_url:null,online:false}}
 
 /* ============================================
-   MI PERFIL - CARGAR Y MODAL SIMPLIFICADO
+   MI PERFIL - CARGAR Y MODAL
    ============================================ */
 async function cargarFotoHeader(){
     if(!user) return;
@@ -482,6 +489,29 @@ function limpiarVistosAntiguos(){
     localStorage.setItem('sariels_estados_vistos', JSON.stringify(estadoVistos));
 }
 
+// Registrar vista en la tabla estados_vistas
+async function registrarVistaEstado(estadoId){
+    if(!user) return;
+    try {
+        await db.from('estados_vistas').upsert({
+            estado_id: estadoId,
+            usuario_id: user.id
+        }, { onConflict: 'estado_id,usuario_id', ignoreDuplicates: true });
+    } catch(e) { /* silencioso */ }
+}
+
+// Obtener cuántas vistas tiene un estado
+async function obtenerVistasEstado(estadoId){
+    try {
+        const { count, error } = await db
+            .from('estados_vistas')
+            .select('id', { count: 'exact', head: true })
+            .eq('estado_id', estadoId);
+        if(error) return 0;
+        return count || 0;
+    } catch(e) { return 0; }
+}
+
 async function cargarEstados(){
     const scroll = $('estadosScroll');
     scroll.innerHTML = '';
@@ -503,28 +533,30 @@ async function cargarEstados(){
         estadosCache = data || [];
 
         if(estadosCache.length === 0){
-            scroll.innerHTML = '<div style="color:var(--muted);font-size:.7rem;padding:8px 4px;text-align:center;width:100%;">Sin estados disponibles</div>';
+            scroll.innerHTML = '<div style="color:var(--muted);font-size:.7rem;padding:8px 4px;text-align:center;width:100%;">Sin estados</div>';
             return;
         }
 
-        // Agrupar por usuario
         const porUsuario = {};
         estadosCache.forEach(e => {
             if(!porUsuario[e.usuario_id]) porUsuario[e.usuario_id] = [];
             porUsuario[e.usuario_id].push(e);
         });
 
-        // Mi estado (si tengo) va primero
+        // Mi estado va primero
         const miEstado = porUsuario[user.id];
         if(miEstado && miEstado.length > 0){
             const tieneNuevos = miEstado.some(e => estadoEsNuevo(e));
+            const ultimoEstadoId = miEstado[miEstado.length - 1].id;
+            const totalVistas = await obtenerVistasEstado(ultimoEstadoId);
             const html = `
-                <div class="estado-item" data-userid="${user.id}">
+                <div class="estado-item" data-userid="${user.id}" style="position:relative;">
                     <div class="estado-circle ${tieneNuevos ? '' : 'visto'}">
                         <div class="estado-inner">
                             ${currentUserProfile?.avatar_url ? `<img src="${esc(currentUserProfile.avatar_url)}" alt="">` : esc((currentUserProfile?.nombre||'◈').charAt(0).toUpperCase())}
                         </div>
                     </div>
+                    ${totalVistas > 0 ? `<span class="estado-vistas-badge">${totalVistas}</span>` : ''}
                     <div class="estado-name">Tú</div>
                 </div>
             `;
@@ -532,7 +564,6 @@ async function cargarEstados(){
             scroll.querySelector(`[data-userid="${user.id}"]`).onclick = () => abrirEstadoUsuario(user.id);
         }
 
-        // Estados de otros usuarios
         for(const uid of Object.keys(porUsuario)){
             if(uid === user.id) continue;
             const p = await profile(uid);
@@ -563,19 +594,22 @@ function abrirEstadoUsuario(uid){
     if(estados.length === 0){ toast('ℹ️ Este usuario no tiene estados', 'warning'); return; }
     estadoActualUserId = uid;
     estadoActualIndex = 0;
+    estadoProgresoActual = 0;
+    estadoPausado = false;
     mostrarEstadoActual();
     $('estadoViewer').classList.add('show');
 }
 
-function mostrarEstadoActual(){
+async function mostrarEstadoActual(){
     const estados = estadosCache.filter(e => e.usuario_id === estadoActualUserId);
     if(estadoActualIndex >= estados.length){
         cerrarEstadoViewer();
         return;
     }
     const estado = estados[estadoActualIndex];
+    const esMiEstado = (estadoActualUserId === user.id);
 
-    if(estadoActualUserId === user.id){
+    if(esMiEstado){
         $('evAvatar').innerHTML = currentUserProfile?.avatar_url ? `<img src="${esc(currentUserProfile.avatar_url)}" alt="">` : esc((currentUserProfile?.nombre||'◈').charAt(0).toUpperCase());
         $('evName').textContent = 'Tú';
     } else {
@@ -597,28 +631,47 @@ function mostrarEstadoActual(){
     }
 
     marcarEstadoVisto(estado.id);
+    registrarVistaEstado(estado.id);
 
     $('evPrev').classList.toggle('hidden', estadoActualIndex === 0);
     $('evNext').classList.toggle('hidden', estadoActualIndex >= estados.length - 1);
 
+    // ✅ Si es mi estado, mostrar contador de vistas
+    if(esMiEstado){
+        const total = await obtenerVistasEstado(estado.id);
+        $('evVistasCount').textContent = total;
+        $('evVistas').classList.remove('hidden');
+    } else {
+        $('evVistas').classList.add('hidden');
+    }
+
+    // Auto-avance con pausa
+    iniciarProgresoEstado();
+}
+
+function iniciarProgresoEstado(){
     const progress = $('estadoProgress');
-    progress.style.width = '0%';
-    let pct = 0;
     if(estadoTimer) clearInterval(estadoTimer);
+    progress.style.width = estadoProgresoActual + '%';
+
     estadoTimer = setInterval(() => {
-        pct += 2;
-        progress.style.width = pct + '%';
-        if(pct >= 100){
+        if(estadoPausado) return;
+        estadoProgresoActual += 1;
+        progress.style.width = estadoProgresoActual + '%';
+        if(estadoProgresoActual >= 100){
             clearInterval(estadoTimer);
+            estadoProgresoActual = 0;
             siguienteEstado();
         }
-    }, 100);
+    }, 50); // 50ms × 100 = 5s
 }
 
 function siguienteEstado(){
     const estados = estadosCache.filter(e => e.usuario_id === estadoActualUserId);
     if(estadoActualIndex < estados.length - 1){
         estadoActualIndex++;
+        estadoProgresoActual = 0;
+        estadoPausado = false;
         mostrarEstadoActual();
     } else {
         cerrarEstadoViewer();
@@ -628,6 +681,8 @@ function siguienteEstado(){
 function anteriorEstado(){
     if(estadoActualIndex > 0){
         estadoActualIndex--;
+        estadoProgresoActual = 0;
+        estadoPausado = false;
         mostrarEstadoActual();
     }
 }
@@ -636,8 +691,24 @@ function cerrarEstadoViewer(){
     $('estadoViewer').classList.remove('show');
     if(estadoTimer) clearInterval(estadoTimer);
     estadoTimer = null;
+    estadoPausado = false;
+    estadoProgresoActual = 0;
     estadoActualUserId = null;
     cargarEstados();
+}
+
+/* ============================================
+   PAUSA/REANUDAR CON EL DEDO O CLIC
+   ============================================ */
+function activarPausaEstado(){
+    if(!$('estadoViewer').classList.contains('show')) return;
+    estadoPausado = true;
+    $('evPauseHint').classList.add('show');
+}
+function desactivarPausaEstado(){
+    if(!$('estadoViewer').classList.contains('show')) return;
+    estadoPausado = false;
+    $('evPauseHint').classList.remove('show');
 }
 
 function abrirModalEstado(){
@@ -1561,23 +1632,37 @@ async function init(){
         if(event==='SIGNED_IN'||event==='SIGNED_OUT'){ loadConversations(); cargarFotoHeader(); cargarEstados(); }
     });
 
-    // Header → modal de perfil
     $('headerAvatar').onclick = abrirProfileModal;
     $('avatarInput').addEventListener('change', subirFotoHeader);
 
-    // Modal de perfil simplificado
     $('btnCambiarFoto').onclick = () => $('avatarInput').click();
     $('btnCerrarProfileModal').onclick = cerrarProfileModal;
     $('profileModal').addEventListener('click', e => { if(e.target.id === 'profileModal') cerrarProfileModal(); });
 
-    // Visor de foto ampliada
     $('pvClose').onclick = cerrarPhotoViewer;
     $('photoViewer').addEventListener('click', e => { if(e.target.id === 'photoViewer') cerrarPhotoViewer(); });
 
-    // Visor de estados
+    // Visor de estados: cerrar con botón, navegar con flechas
     $('evClose').onclick = cerrarEstadoViewer;
-    $('evPrev').onclick = anteriorEstado;
-    $('evNext').onclick = siguienteEstado;
+    $('evPrev').onclick = (e) => { e.stopPropagation(); anteriorEstado(); };
+    $('evNext').onclick = (e) => { e.stopPropagation(); siguienteEstado(); };
+
+    // ✅ PAUSA/REANUDAR al presionar el dedo o clic en la pantalla
+    const evBody = $('evBody');
+    evBody.addEventListener('mousedown', activarPausaEstado);
+    evBody.addEventListener('mouseup', desactivarPausaEstado);
+    evBody.addEventListener('mouseleave', desactivarPausaEstado);
+    evBody.addEventListener('touchstart', (e) => { e.preventDefault(); activarPausaEstado(); }, { passive: false });
+    evBody.addEventListener('touchend', (e) => { e.preventDefault(); desactivarPausaEstado(); }, { passive: false });
+    evBody.addEventListener('touchcancel', desactivarPausaEstado);
+
+    // También permitir pausa con tecla espacio
+    document.addEventListener('keydown', e => {
+        if(e.key === ' ' && $('estadoViewer').classList.contains('show')){
+            e.preventDefault();
+            if(estadoPausado) desactivarPausaEstado(); else activarPausaEstado();
+        }
+    });
 
     // Modal de subir estado
     $('btnSubirEstado').onclick = abrirModalEstado;
