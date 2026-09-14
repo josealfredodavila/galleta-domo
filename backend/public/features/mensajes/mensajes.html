@@ -105,33 +105,34 @@ button,input{font:inherit}
 .bot-transcripcion{font-size:.7rem;color:var(--muted);margin-bottom:8px;font-style:italic;border-left:2px solid var(--gold);padding-left:10px;opacity:.85}
 .bubble audio.bot-audio{margin-top:8px;height:36px;width:100%;max-width:280px;border-radius:20px}
 /* ============================================
-   FLECHA FLOTANTE PARA BAJAR AL FINAL (SIEMPRE VISIBLE)
+   FLECHA FLOTANTE (PEQUEÑA, SIEMPRE VISIBLE)
    ============================================ */
 .scroll-down-btn{
     position:absolute;
-    bottom:18px;
-    right:18px;
-    width:46px;
-    height:46px;
+    bottom:12px;
+    right:12px;
+    width:34px;
+    height:34px;
     border-radius:50%;
     background:linear-gradient(135deg,var(--gold),#b8923a);
     color:var(--space);
-    border:2px solid var(--space);
-    box-shadow:0 4px 16px rgba(0,0,0,.55),0 0 0 1px rgba(212,175,55,.3);
+    border:1.5px solid var(--space);
+    box-shadow:0 3px 10px rgba(0,0,0,.5);
     cursor:pointer;
     display:flex;
     align-items:center;
     justify-content:center;
-    font-size:1.3rem;
+    font-size:1rem;
     font-weight:900;
+    line-height:1;
     transition:transform .2s, box-shadow .2s, background .2s;
     z-index:50;
-    opacity:.85;
+    opacity:.7;
+    padding:0;
 }
 .scroll-down-btn:hover{
-    transform:scale(1.1);
+    transform:scale(1.12);
     opacity:1;
-    box-shadow:0 6px 20px rgba(212,175,55,.5);
 }
 .scroll-down-btn.has-new{
     background:linear-gradient(135deg,var(--danger),#cc1a4d);
@@ -141,17 +142,17 @@ button,input{font:inherit}
 }
 .scroll-down-btn .badge-new{
     position:absolute;
-    top:-8px;
-    right:-8px;
+    top:-5px;
+    right:-5px;
     background:var(--danger);
     color:#fff;
-    font-size:.65rem;
+    font-size:.55rem;
     font-weight:800;
-    min-width:22px;
-    height:22px;
-    padding:0 6px;
+    min-width:16px;
+    height:16px;
+    padding:0 4px;
     border-radius:99px;
-    border:2px solid var(--space);
+    border:1.5px solid var(--space);
     display:flex;
     align-items:center;
     justify-content:center;
@@ -162,8 +163,16 @@ button,input{font:inherit}
     50%{transform:scale(1.15)}
 }
 @keyframes pulseNew{
-    0%,100%{box-shadow:0 4px 16px rgba(0,0,0,.55)}
-    50%{box-shadow:0 4px 22px rgba(255,51,102,.7)}
+    0%,100%{box-shadow:0 3px 10px rgba(0,0,0,.5)}
+    50%{box-shadow:0 3px 16px rgba(255,51,102,.7)}
+}
+/* Ancla invisible al final del contenedor de mensajes */
+#scrollAnchor{
+    width:100%;
+    height:1px;
+    flex-shrink:0;
+    opacity:0;
+    pointer-events:none;
 }
 @media(max-width:760px){.panel{grid-template-columns:1fr;min-height:0}.sidebar{border-right:0;border-bottom:1px solid var(--border);max-height:190px}.chat{min-height:500px}.bubble{max-width:90%}.videos video{width:95%}.videos video.local{width:35%}.header{align-items:flex-start}.network{margin-top:3px}}
 @media(max-width:430px){.app{padding:10px}.nav a{font-size:.62rem;padding:7px 9px}.composer{flex-wrap:wrap}.composer input{flex-basis:100%}}
@@ -207,15 +216,16 @@ button,input{font:inherit}
         </div>
     </header>
     <div class="messages" id="messages">
-        <button class="scroll-down-btn" id="scrollDownBtn" title="Ir al final">
-            ↓
-            <span class="badge-new" id="newMsgBadge" style="display:none;">1</span>
-        </button>
         <div class="empty">
             <strong>◈</strong>
             <div>Selecciona una conversación</div>
             <small>Elige un chat para empezar a hablar</small>
         </div>
+        <div id="scrollAnchor"></div>
+        <button class="scroll-down-btn" id="scrollDownBtn" title="Ir al final">
+            ↓
+            <span class="badge-new" id="newMsgBadge" style="display:none;">1</span>
+        </button>
     </div>
     <form class="composer" id="composer">
         <button type="button" class="btn" id="attach" title="Adjuntar">📎</button>
@@ -270,7 +280,6 @@ let db=null,user=null,current=null,msgChannel=null,callChannel=null,incomingId=n
 let recorder=null,audioChunks=[],recordingMode=null,recordingStartedAt=0;
 let voiceBotRecorder=null,voiceBotChunks=[],voiceBotGrabando=false;
 let enviandoVozBot = false;
-// ✅ Variables para control del scroll
 let isUserAtBottom = true;
 let unreadCount = 0;
 const SCROLL_THRESHOLD = 100;
@@ -286,26 +295,31 @@ function avatar(name,url,cls='avatar'){return `<div class="${cls}">${url?`<img s
 async function profile(id){if(id===BOT_ID)return{id:BOT_ID,nombre:"Marquinhos",handle:'marquinhos',avatar_url:null,online:true,bot:true};const r=await db.from('perfiles_publicos').select('id,nombre,handle,avatar_url,online,ultima_conexion').eq('id',id).maybeSingle();return r.data||{id,nombre:'Usuario',avatar_url:null,online:false}}
 
 /* ============================================
-   ✅ SCROLL ROBUSTO ESTILO WHATSAPP/TELEGRAM
+   ✅ SCROLL ROBUSTO USANDO ANCLA INVISIBLE
    ============================================ */
 function scrollToBottom(force = false){
     const box = $('messages');
     if(!box) return;
     if(!force && !isUserAtBottom) return;
 
-    // Bajar inmediatamente
-    box.scrollTop = box.scrollHeight;
+    // ✅ Usar el ancla invisible con scrollIntoView (100% confiable con flex)
+    const doScroll = () => {
+        const anchor = document.getElementById('scrollAnchor');
+        if(anchor){
+            anchor.scrollIntoView({ behavior: 'auto', block: 'end' });
+        } else {
+            box.scrollTop = box.scrollHeight;
+        }
+    };
 
-    // Cancelar cualquier reintento anterior
+    doScroll();
+    requestAnimationFrame(doScroll);
+
     if(scrollRetryTimer) clearInterval(scrollRetryTimer);
-
-    // Reintentar varias veces durante 1 segundo para asegurar que las imágenes/audios carguen
     let intentos = 0;
     scrollRetryTimer = setInterval(() => {
         intentos++;
-        if(force || isUserAtBottom){
-            box.scrollTop = box.scrollHeight;
-        }
+        if(force || isUserAtBottom) doScroll();
         if(intentos >= 10){
             clearInterval(scrollRetryTimer);
             scrollRetryTimer = null;
@@ -322,7 +336,6 @@ function actualizarFlecha(){
     const badge = $('newMsgBadge');
     if(!btn) return;
 
-    // Siempre visible, pero cambia de apariencia si hay nuevos
     if(unreadCount > 0){
         btn.classList.add('has-new');
         if(badge){
@@ -347,29 +360,25 @@ function detectarSiEstaAbajo(){
     const estabaAbajo = isUserAtBottom;
     isUserAtBottom = distanciaAlFondo < SCROLL_THRESHOLD;
 
-    // Si el usuario baja manualmente al final, limpiamos el contador
     if(isUserAtBottom && !estabaAbajo){
         ocultarFlechaNuevos();
     }
 }
 
-// ✅ Cuando una imagen o audio termina de cargar, recalcular el scroll
 function observarCargaMultimedia(box){
     box.querySelectorAll('img, audio, video').forEach(el => {
         if(el.dataset.scrollListener) return;
         el.dataset.scrollListener = '1';
         const onLoad = () => {
             if(isUserAtBottom){
-                box.scrollTop = box.scrollHeight;
+                const anchor = document.getElementById('scrollAnchor');
+                if(anchor) anchor.scrollIntoView({ behavior: 'auto', block: 'end' });
+                else box.scrollTop = box.scrollHeight;
             }
         };
         el.addEventListener('load', onLoad, { once: true });
         el.addEventListener('loadedmetadata', onLoad, { once: true });
-        el.addEventListener('error', () => {
-            if(isUserAtBottom){
-                box.scrollTop = box.scrollHeight;
-            }
-        }, { once: true });
+        el.addEventListener('error', onLoad, { once: true });
     });
 }
 
@@ -486,7 +495,6 @@ async function openConversation(id){
 
     document.querySelectorAll('.conv').forEach(x=>x.classList.toggle('active',x.dataset.id===id));
 
-    // ✅ Resetear estado de scroll al cambiar de conversación
     isUserAtBottom = true;
     unreadCount = 0;
     actualizarFlecha();
@@ -508,9 +516,16 @@ async function openConversation(id){
    ============================================ */
 async function abrirConversacionBot(){
     const box=$('messages');
-    // Preservar el botón de scroll
     const btn = box.querySelector('#scrollDownBtn');
+    const anchor = box.querySelector('#scrollAnchor');
     box.innerHTML='';
+    // Reinsertar el ancla y el botón al final
+    if(anchor) box.appendChild(anchor);
+    else {
+        const newAnchor = document.createElement('div');
+        newAnchor.id = 'scrollAnchor';
+        box.appendChild(newAnchor);
+    }
     if(btn) box.appendChild(btn);
 
     let historial=[];
@@ -521,17 +536,20 @@ async function abrirConversacionBot(){
         if(!r.error) historial=r.data||[];
     } catch(e) { console.warn('No se pudo cargar el historial de Marquinhos:', e); }
 
+    const anchorRef = box.querySelector('#scrollAnchor');
+
     if(!historial.length){
-        box.insertAdjacentHTML('beforeend',`<div class="bubblewrap received"><div class="bubble"><div class="bubble-bot-info">✦ MARQUINHOS</div>¡Hola! 👋 Soy Marquinhos, el asistente de Sariel's. Puedes:<br><br>◈ Escribirme un mensaje de texto<br>◈ Enviarme una nota de voz con 🎙️<br>◈ Hablarme con el botón 🔊 (te responderé con voz)<br><br>¿En qué te puedo ayudar hoy?</div></div>`);
+        anchorRef.insertAdjacentHTML('beforebegin',`<div class="bubblewrap received"><div class="bubble"><div class="bubble-bot-info">✦ MARQUINHOS</div>¡Hola! 👋 Soy Marquinhos, el asistente de Sariel's. Puedes:<br><br>◈ Escribirme un mensaje de texto<br>◈ Enviarme una nota de voz con 🎙️<br>◈ Hablarme con el botón 🔊 (te responderé con voz)<br><br>¿En qué te puedo ayudar hoy?</div></div>`);
+        isUserAtBottom = true;
         scrollToBottom(true);
         return;
     }
 
     const signedUrls = await Promise.all(historial.map(m => getSignedUrlForMessage(m)));
     historial.forEach((m,i) => {
-        box.insertAdjacentHTML('beforeend', messageHTML(m, m.remitente_id===user.id, signedUrls[i]));
+        anchorRef.insertAdjacentHTML('beforebegin', messageHTML(m, m.remitente_id===user.id, signedUrls[i]));
     });
-    // ✅ Scroll al final + observar carga de multimedia
+
     isUserAtBottom = true;
     observarCargaMultimedia(box);
     scrollToBottom(true);
@@ -544,15 +562,18 @@ async function renderMessages(rows){
     const box=$('messages');
     const btn = box.querySelector('#scrollDownBtn');
     box.innerHTML='';
+    const newAnchor = document.createElement('div');
+    newAnchor.id = 'scrollAnchor';
+    box.appendChild(newAnchor);
     if(btn) box.appendChild(btn);
 
     if(!rows.length){
-        box.insertAdjacentHTML('beforeend','<div class="empty"><strong>◈</strong><div>Sin mensajes</div><small>Envía el primer mensaje</small></div>');
+        newAnchor.insertAdjacentHTML('beforebegin','<div class="empty"><strong>◈</strong><div>Sin mensajes</div><small>Envía el primer mensaje</small></div>');
         return;
     }
     const signedUrls = await Promise.all(rows.map(m => getSignedUrlForMessage(m)));
     rows.forEach((m,i) => {
-        box.insertAdjacentHTML('beforeend', messageHTML(m, m.remitente_id===user.id, signedUrls[i]));
+        newAnchor.insertAdjacentHTML('beforebegin', messageHTML(m, m.remitente_id===user.id, signedUrls[i]));
     });
     isUserAtBottom = true;
     observarCargaMultimedia(box);
@@ -689,7 +710,10 @@ function mostrarTypingBot(){
     const box=$('messages');
     const empty=box.querySelector('.empty');
     if(empty)empty.remove();
-    box.insertAdjacentHTML('beforeend',`<div class="bubblewrap received" id="typing-bot"><div class="bubble"><div class="bubble-bot-info">✦ MARQUINHOS</div><div class="typing-indicator"><span></span><span></span><span></span></div></div></div>`);
+    const anchorRef = box.querySelector('#scrollAnchor');
+    if(anchorRef){
+        anchorRef.insertAdjacentHTML('beforebegin',`<div class="bubblewrap received" id="typing-bot"><div class="bubble"><div class="bubble-bot-info">✦ MARQUINHOS</div><div class="typing-indicator"><span></span><span></span><span></span></div></div></div>`);
+    }
     scrollToBottom(true);
 }
 function quitarTypingBot(){
@@ -705,17 +729,20 @@ async function append(m,sent){
     const empty=box.querySelector('.empty');
     if(empty)empty.remove();
     const signedUrl = await getSignedUrlForMessage(m);
-    box.insertAdjacentHTML('beforeend', messageHTML(m, sent, signedUrl));
+    const anchorRef = box.querySelector('#scrollAnchor');
+    if(anchorRef){
+        anchorRef.insertAdjacentHTML('beforebegin', messageHTML(m, sent, signedUrl));
+    } else {
+        box.insertAdjacentHTML('beforeend', messageHTML(m, sent, signedUrl));
+    }
     observarCargaMultimedia(box);
 
-    // ✅ Si es un mensaje recibido (no enviado por mí) y estoy arriba, mostrar flecha
     if(!sent && !isUserAtBottom){
         unreadCount++;
         actualizarFlecha();
         return;
     }
 
-    // ✅ Si es enviado por mí o estoy abajo, bajar al final
     isUserAtBottom = true;
     scrollToBottom(true);
 }
@@ -753,7 +780,9 @@ async function deleteConversation(){
 
         const box = $('messages');
         const btn = box.querySelector('#scrollDownBtn');
+        const anchor = box.querySelector('#scrollAnchor');
         box.innerHTML = '<div class="empty"><strong>◈</strong><div>Conversación eliminada</div><small>Envía un mensaje para empezar de nuevo</small></div>';
+        if(anchor) box.appendChild(anchor);
         if(btn) box.appendChild(btn);
 
         unreadCount = 0;
@@ -879,7 +908,10 @@ async function enviarVozAlBot(file){
 
         const tempId = 'voice-user-' + Date.now();
         const box = $('messages');
-        box.insertAdjacentHTML('beforeend', `<div class="bubblewrap sent" id="${tempId}"><div class="bubble"><div class="voice-label">🎙️ TU VOZ</div><div class="voice-loading">Enviando a Marquinhos…</div></div></div>`);
+        const anchorRef = box.querySelector('#scrollAnchor');
+        const tempHTML = `<div class="bubblewrap sent" id="${tempId}"><div class="bubble"><div class="voice-label">🎙️ TU VOZ</div><div class="voice-loading">Enviando a Marquinhos…</div></div></div>`;
+        if(anchorRef) anchorRef.insertAdjacentHTML('beforebegin', tempHTML);
+        else box.insertAdjacentHTML('beforeend', tempHTML);
         scrollToBottom(true);
 
         let intentos = 0;
@@ -945,7 +977,9 @@ async function enviarVozAlBot(file){
         if(data.audio_url){
             botBody += `<audio class="bot-audio" controls src="${esc(data.audio_url)}"></audio>`;
         }
-        box.insertAdjacentHTML('beforeend', `<div class="bubblewrap received" id="${botId}"><div class="bubble">${botBody}</div></div>`);
+        const botHTML = `<div class="bubblewrap received" id="${botId}"><div class="bubble">${botBody}</div></div>`;
+        if(anchorRef) anchorRef.insertAdjacentHTML('beforebegin', botHTML);
+        else box.insertAdjacentHTML('beforeend', botHTML);
         observarCargaMultimedia(box);
         scrollToBottom(true);
 
@@ -1233,10 +1267,8 @@ async function init(){
     $('acceptCall').onclick=acceptCall;
     $('rejectCall').onclick=rejectCall;
 
-    // ✅ Listener de scroll
     $('messages').addEventListener('scroll', detectarSiEstaAbajo);
 
-    // ✅ Click en la flecha
     $('scrollDownBtn').onclick = () => {
         isUserAtBottom = true;
         scrollToBottom(true);
