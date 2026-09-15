@@ -795,6 +795,225 @@ router.post(
 );
 
 // ================================================================
+// CREAR PAGO - CAMPAÑA DE MARKETING
+// ================================================================
+//
+// Flujo:
+//
+// 1. Usuario autenticado ya creó la campaña (estado 'pendiente_pago')
+//    directamente desde marketing.html.
+// 2. El frontend llama a esta ruta con el campaignId.
+// 3. Backend verifica que la campaña sea del usuario y esté
+//    pendiente de pago.
+// 4. Backend crea marketing_pagos en pendiente.
+// 5. Backend crea payment en NOWPayments.
+// 6. Se guarda payment_id y estado.
+// 7. NOWPayments posteriormente notificará al webhook.
+// 8. El webhook llamará a la RPC activar_campana_marketing.
+//
+// IMPORTANTE:
+// - El monto SIEMPRE se toma de marketing_campaigns.presupuesto
+//   (nunca del body del request).
+// - La activación de la campaña ocurre exclusivamente en el
+//   webhook, mediante la RPC.
+// ================================================================
+
+router.post(
+    '/marketing/create',
+    verificarToken,
+    limitadorPagos,
+    async (req, res) => {
+
+        try {
+            const userId = req.usuario.id;
+            const campaignId = req.body?.campaignId;
+
+            if (!campaignId) {
+                return respuestaError(res, 400, 'campaignId es requerido');
+            }
+
+            if (!NOWPAYMENTS_API_KEY) {
+                logger.error('NOWPAYMENTS_API_KEY no está configurada');
+                return respuestaError(res, 500, 'Servicio de pagos no configurado');
+            }
+
+            if (!supabaseAdmin) {
+                logger.error('supabaseAdmin no está configurado');
+                return respuestaError(res, 500, 'Servicio interno no configurado');
+            }
+
+            // ----------------------------------------------------
+            // VALIDAR CAMPAÑA PROPIA Y PENDIENTE DE PAGO
+            // ----------------------------------------------------
+
+            const { data: campaign, error: campaignError } = await supabaseAdmin
+                .from('marketing_campaigns')
+                .select('id, anunciante_id, presupuesto, moneda, estado, nombre')
+                .eq('id', campaignId)
+                .eq('anunciante_id', userId)
+                .maybeSingle();
+
+            if (campaignError) throw campaignError;
+
+            if (!campaign) {
+                return respuestaError(res, 404, 'Campaña no encontrada');
+            }
+
+            if (campaign.estado !== 'pendiente_pago') {
+                return respuestaError(res, 409, 'La campaña no está pendiente de pago');
+            }
+
+            // ----------------------------------------------------
+            // CREAR REGISTRO DE PAGO LOCAL
+            // ----------------------------------------------------
+
+            const { data: pago, error: pagoError } = await supabaseAdmin
+                .from('marketing_pagos')
+                .insert({
+                    campaign_id: campaign.id,
+                    anunciante_id: userId,
+                    monto_mxn: campaign.presupuesto,
+                    estado: 'pendiente'
+                })
+                .select()
+                .single();
+
+            if (pagoError) throw pagoError;
+
+            const orderId = `MKT-${pago.id}`;
+
+            // ----------------------------------------------------
+            // CREAR PAYMENT EN NOWPAYMENTS
+            // ----------------------------------------------------
+
+            let nowPayment;
+
+            try {
+                const response = await axios.post(
+                    NOWPAYMENTS_API_URL,
+                    {
+                        price_amount: Number(campaign.presupuesto),
+                        price_currency: 'mxn',
+                        pay_currency: 'usdt',
+                        order_id: orderId,
+                        order_description: `Campaña de marketing: ${campaign.nombre}`
+                    },
+                    {
+                        headers: {
+                            'x-api-key': NOWPAYMENTS_API_KEY,
+                            'Content-Type': 'application/json'
+                        },
+                        timeout: 15000
+                    }
+                );
+
+                nowPayment = response.data;
+
+            } catch (paymentError) {
+                logger.error(
+                    `Error creando payment Marketing ${orderId}: ${
+                        paymentError.response?.data
+                            ? JSON.stringify(paymentError.response.data)
+                            : paymentError.message
+                    }`
+                );
+
+                await supabaseAdmin
+                    .from('marketing_pagos')
+                    .update({ nowpayments_status: 'creation_failed' })
+                    .eq('id', pago.id);
+
+                return res.status(502).json({
+                    success: false,
+                    error: 'No fue posible crear el pago con NOWPayments',
+                    pago_id: pago.id
+                });
+            }
+
+            const paymentId = nowPayment?.payment_id || null;
+
+            if (!paymentId) {
+                logger.error(
+                    `NOWPayments no devolvió payment_id para ${orderId}`
+                );
+
+                await supabaseAdmin
+                    .from('marketing_pagos')
+                    .update({ nowpayments_status: 'creation_failed' })
+                    .eq('id', pago.id);
+
+                return res.status(502).json({
+                    success: false,
+                    error: 'NOWPayments no devolvió un identificador de pago',
+                    pago_id: pago.id
+                });
+            }
+
+            const {
+                data: pagoActualizado,
+                error: updatePagoError
+            } = await supabaseAdmin
+                .from('marketing_pagos')
+                .update({
+                    payment_id: String(paymentId),
+                    precio_usdt: numeroValido(nowPayment.pay_amount) ? Number(nowPayment.pay_amount) : null,
+                    moneda_pago: nowPayment.pay_currency || 'usdt',
+                    nowpayments_status: nowPayment.payment_status || 'waiting'
+                })
+                .eq('id', pago.id)
+                .select()
+                .single();
+
+            if (updatePagoError) {
+
+                logger.error(
+                    `Error guardando payment_id Marketing ${pago.id}: ${updatePagoError.message}`
+                );
+
+                return res.status(500).json({
+                    success: false,
+                    error: 'El pago fue creado pero no se pudo guardar la orden',
+                    pago_id: pago.id,
+                    payment_id: paymentId
+                });
+            }
+
+            // ----------------------------------------------------
+            // RESPUESTA AL FRONTEND
+            // ----------------------------------------------------
+
+            logger.info(
+                `✅ Pago Marketing creado: pago=${pago.id} payment=${paymentId} order=${orderId}`
+            );
+
+            return res.status(201).json({
+                success: true,
+                data: {
+                    pago_id: pagoActualizado.id,
+                    campaign_id: campaign.id,
+                    estado: pagoActualizado.estado,
+                    monto_mxn: pagoActualizado.monto_mxn,
+                    nowpayments_status: pagoActualizado.nowpayments_status,
+                    payment_id: paymentId,
+                    payment_url: nowPayment.payment_url || null,
+                    pay_address: nowPayment.pay_address || null,
+                    pay_amount: nowPayment.pay_amount || null,
+                    pay_currency: nowPayment.pay_currency || null,
+                    order_id: orderId
+                }
+            });
+
+        } catch (error) {
+            logger.error(`❌ Error creando pago de marketing: ${error.message}`);
+            return res.status(500).json({
+                success: false,
+                error: 'Error interno creando el pago de la campaña'
+            });
+        }
+    }
+);
+
+// ================================================================
 // ESTADO DE PAGO - TRANSMISIONES
 // ================================================================
 
@@ -1228,6 +1447,161 @@ router.get(
                 success: false,
                 error:
                     'Error verificando el estado del pago'
+            });
+        }
+    }
+);
+
+// ================================================================
+// ESTADO REAL NOWPAYMENTS - MARKETING
+// ================================================================
+//
+// Igual que /muro/status/:ventaId, pero para pagos de campañas.
+// Sirve de respaldo si el webhook aún no llegó o falló.
+// ================================================================
+
+router.get(
+    '/marketing/status/:pagoId',
+    verificarToken,
+    async (req, res) => {
+
+        try {
+
+            const pagoId = req.params.pagoId;
+            const userId = req.usuario.id;
+
+            if (!pagoId) {
+                return respuestaError(res, 400, 'pagoId inválido');
+            }
+
+            if (!supabaseAdmin) {
+                return respuestaError(res, 500, 'Servicio interno no configurado');
+            }
+
+            if (!NOWPAYMENTS_API_KEY) {
+                return respuestaError(res, 500, 'Servicio de pagos no configurado');
+            }
+
+            const { data: pago, error: pagoError } = await supabaseAdmin
+                .from('marketing_pagos')
+                .select('*')
+                .eq('id', pagoId)
+                .eq('anunciante_id', userId)
+                .maybeSingle();
+
+            if (pagoError) throw pagoError;
+
+            if (!pago) {
+                return respuestaError(res, 404, 'Pago no encontrado');
+            }
+
+            if (pago.estado === 'pagado') {
+                return res.json({ success: true, data: pago, final: true, paid: true });
+            }
+
+            if (!pago.payment_id) {
+                return res.json({
+                    success: true,
+                    data: pago,
+                    final: false,
+                    paid: false,
+                    message: 'El pago todavía no tiene payment_id'
+                });
+            }
+
+            let payment;
+
+            try {
+                const response = await axios.get(
+                    `${NOWPAYMENTS_API_URL}/${encodeURIComponent(pago.payment_id)}`,
+                    {
+                        headers: {
+                            'x-api-key': NOWPAYMENTS_API_KEY,
+                            'Content-Type': 'application/json'
+                        },
+                        timeout: 15000
+                    }
+                );
+                payment = response.data;
+            } catch (paymentError) {
+                logger.error(
+                    `Error consultando NOWPayments payment ${pago.payment_id}: ${
+                        paymentError.response?.data
+                            ? JSON.stringify(paymentError.response.data)
+                            : paymentError.message
+                    }`
+                );
+                return res.status(502).json({
+                    success: false,
+                    error: 'No fue posible consultar el estado del pago'
+                });
+            }
+
+            const estadoNow = String(payment?.payment_status || 'unknown').toLowerCase();
+            const estaPagado = estadoNow === 'finished';
+            const estaFallido = ['failed', 'refunded', 'expired'].includes(estadoNow);
+
+            let estadoLocal = pago.estado;
+            if (estaPagado) estadoLocal = 'pagado';
+            else if (estaFallido) estadoLocal = 'cancelado';
+            else if (estadoNow === 'confirming' || estadoNow === 'sending') estadoLocal = 'confirmando';
+            else estadoLocal = 'pagando';
+
+            const updates = {
+                nowpayments_status: estadoNow,
+                estado: estadoLocal
+            };
+
+            const { data: pagoActualizado, error: updateError } = await supabaseAdmin
+                .from('marketing_pagos')
+                .update(updates)
+                .eq('id', pago.id)
+                .eq('anunciante_id', userId)
+                .select()
+                .single();
+
+            if (updateError) throw updateError;
+
+            if (estaPagado) {
+                const { error: activarError } = await supabaseAdmin.rpc('activar_campana_marketing', {
+                    p_campaign_id: pago.campaign_id
+                });
+
+                if (activarError) {
+                    logger.error(`Error activando campaña ${pago.campaign_id}: ${activarError.message}`);
+                    return res.json({
+                        success: true,
+                        data: pagoActualizado,
+                        final: true,
+                        paid: true,
+                        activated: false,
+                        message: 'Pago confirmado. La activación está pendiente de procesamiento.'
+                    });
+                }
+
+                return res.json({
+                    success: true,
+                    data: pagoActualizado,
+                    final: true,
+                    paid: true,
+                    activated: true
+                });
+            }
+
+            return res.json({
+                success: true,
+                data: pagoActualizado,
+                final: estaFallido,
+                paid: false,
+                failed: estaFallido,
+                nowpayments: payment
+            });
+
+        } catch (error) {
+            logger.error(`❌ Error verificando estado pago Marketing: ${error.message}`);
+            return res.status(500).json({
+                success: false,
+                error: 'Error verificando el estado del pago'
             });
         }
     }
