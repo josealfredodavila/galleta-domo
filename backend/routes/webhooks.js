@@ -55,7 +55,6 @@ async function procesarWebhookMembresia(payload) {
             return { success: false, error: 'Falta order_id' };
         }
 
-        // 1. Buscar el pago en la base de datos
         const { data: pago, error: pagoError } = await supabaseAdmin
             .from('pagos_membresia')
             .select('id, usuario_id, estado')
@@ -67,13 +66,11 @@ async function procesarWebhookMembresia(payload) {
             return { success: false, error: 'Pago no encontrado', order_id };
         }
 
-        // 2. IDEMPOTENCIA: si ya está confirmado, ignorar
         if (pago.estado === 'confirmado' || pago.estado === 'completado') {
             logger.info('ℹ️ Pago de membresía ya confirmado, ignorando:', order_id);
             return { success: true, message: 'Ya confirmado' };
         }
 
-        // 3. Actualizar estado del pago
         await supabaseAdmin
             .from('pagos_membresia')
             .update({
@@ -83,7 +80,6 @@ async function procesarWebhookMembresia(payload) {
             })
             .eq('id', pago.id);
 
-        // 4. Si el pago está confirmado, activar la membresía
         if (esPagoFinalizado(payment_status)) {
             logger.info('✅ Pago de membresía confirmado:', order_id);
 
@@ -105,7 +101,6 @@ async function procesarWebhookMembresia(payload) {
             return { success: true, data: result.data, order_id };
         }
 
-        // 5. Si el pago fue cancelado
         if (esPagoCancelado(payment_status)) {
             logger.warn('⚠️ Pago de membresía cancelado:', order_id, '-', payment_status);
             await supabaseAdmin
@@ -118,7 +113,6 @@ async function procesarWebhookMembresia(payload) {
             return { success: true, message: 'Pago cancelado', order_id };
         }
 
-        // 6. Estado en proceso
         logger.info('⏳ Pago de membresía en proceso:', order_id, '-', payment_status);
         return { success: true, message: 'Estado actualizado', order_id };
 
@@ -129,13 +123,13 @@ async function procesarWebhookMembresia(payload) {
 }
 
 // ================================================================
-// NOWPAYMENTS IPN - ✅ CORREGIDO CON async
+// NOWPAYMENTS IPN
 // ================================================================
 
 router.post(
     '/nowpayments',
     limitadorWebhook,
-    async (req, res) => { // ✅ AGREGADO async
+    async (req, res) => {
 
         try {
 
@@ -609,7 +603,7 @@ router.post(
             logger.info('Webhook Supabase recibido:', payload?.table || 'desconocido');
 
             if (payload?.table === 'usuarios' && payload?.type === 'INSERT') {
-                logger.info('Nuevo usuario registrado:', payload.record?.email || 'sin email');
+                logger.info('Nuevo usuario registrado:', payload?.record?.email || 'sin email');
             }
 
             return res.status(200).json({ success: true });
