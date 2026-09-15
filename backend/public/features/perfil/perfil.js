@@ -1792,13 +1792,14 @@ function actualizarUI(data) {
 
     if (avatarEl) {
         if (data.avatar_url) {
+            // ✅ NOTA: El onclick ahora está en el div padre, así que aquí solo renderizamos la imagen
             avatarEl.innerHTML = `
                 <img src="${data.avatar_url}" alt="Avatar" style="animation: fadeIn 0.5s ease-out;" 
-                     onerror="this.style.display='none';this.parentElement.innerHTML='◈<span class=\\'edit-badge\\' onclick=\\'abrirSelectorArchivo()\\' title=\\'Cambiar avatar\\'>✎</span>'"/>
-                <span class="edit-badge" onclick="abrirSelectorArchivo()" title="Cambiar avatar">✎</span>
+                     onerror="this.style.display='none';this.parentElement.innerHTML='◈<span class=\\'edit-badge\\' onclick=\\'event.stopPropagation(); abrirSelectorArchivo()\\' title=\\'Cambiar avatar\\'>✎</span>'"/>
+                <span class="edit-badge" onclick="event.stopPropagation(); abrirSelectorArchivo()" title="Cambiar avatar">✎</span>
             `;
         } else {
-            avatarEl.innerHTML = `◈<span class="edit-badge" onclick="abrirSelectorArchivo()" title="Cambiar avatar">✎</span>`;
+            avatarEl.innerHTML = `◈<span class="edit-badge" onclick="event.stopPropagation(); abrirSelectorArchivo()" title="Cambiar avatar">✎</span>`;
         }
     }
 
@@ -2442,6 +2443,50 @@ function abrirSelectorArchivo() {
     if (input) input.click();
 }
 
+// ✅ NUEVA FUNCIÓN PARA EXPANDIR LA FOTO
+function expandirAvatar() {
+    const avatarEl = document.getElementById('perfilAvatar');
+    const img = avatarEl ? avatarEl.querySelector('img') : null;
+    
+    // Si no hay imagen (es el texto ◈ por defecto), no hacer nada
+    if (!img || !img.src) return;
+
+    // Crear el modal de pantalla completa
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.95);
+        backdrop-filter: blur(5px);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 99999;
+        cursor: zoom-out;
+        animation: fadeIn 0.2s ease-out;
+    `;
+    
+    const imgFull = document.createElement('img');
+    imgFull.src = img.src;
+    imgFull.style.cssText = `
+        max-width: 95%;
+        max-height: 95%;
+        object-fit: contain;
+        border-radius: 12px;
+        box-shadow: 0 0 50px rgba(212, 175, 55, 0.3);
+        animation: scaleIn 0.3s ease-out;
+    `;
+
+    modal.appendChild(imgFull);
+    document.body.appendChild(modal);
+
+    // Cerrar al hacer clic en cualquier parte del modal
+    modal.onclick = () => {
+        modal.style.animation = 'fadeOut 0.2s ease-in';
+        setTimeout(() => modal.remove(), 200);
+    };
+}
+
 async function subirFoto(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -2879,6 +2924,10 @@ estilosAnimacion.textContent = `
         from { opacity: 0; transform: translateY(10px); }
         to { opacity: 1; transform: translateY(0); }
     }
+    @keyframes fadeOut {
+        from { opacity: 1; }
+        to { opacity: 0; }
+    }
     @keyframes scaleIn {
         from { transform: scale(0.8); opacity: 0; }
         to { transform: scale(1); opacity: 1; }
@@ -2938,6 +2987,7 @@ window.cambiarTab = cambiarTab;
 window.cargarPerfil = cargarPerfil;
 window.guardarPerfil = guardarPerfil;
 window.abrirSelectorArchivo = abrirSelectorArchivo;
+window.expandirAvatar = expandirAvatar; // <-- Exportada
 window.subirFoto = subirFoto;
 window.subirVideo = subirVideo;
 window.editarPerfil = editarPerfil;
