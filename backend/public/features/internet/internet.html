@@ -506,6 +506,36 @@
         .cobertura-box .cobertura-items .check { color: var(--success); }
         .cobertura-box .cobertura-items .quantum { color: var(--quantum); }
 
+        /* ============================================================
+           NUEVA SECCIÓN: COMPATIBLE CON TODO
+           ============================================================ */
+        .features-box {
+            margin-top: 14px;
+            border-top: 1px solid var(--glass-border);
+            padding-top: 10px;
+        }
+        .features-box .features-title {
+            font-size: 0.65rem;
+            color: var(--text-secondary);
+            font-family: 'Orbitron', monospace;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+        .features-box .features-items {
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            line-height: 1.8;
+        }
+        .features-box .features-items div {
+            display: flex;
+            gap: 4px;
+            align-items: flex-start;
+        }
+        .features-box .features-items div::first-letter {
+            color: var(--success);
+            font-weight: 700;
+        }
+
         .toast {
             position: fixed;
             bottom: 30px;
@@ -649,6 +679,21 @@
                             <div><span class="quantum">◉</span> Activación automática</div>
                         </div>
                     </div>
+
+                    <!-- ✅ NUEVA SECCIÓN: COMPATIBLE CON TODO -->
+                    <div class="features-box">
+                        <div class="features-title">◈ Compatible con todo</div>
+                        <div class="features-items">
+                            <div>✓ WhatsApp · Messenger · Telegram</div>
+                            <div>✓ Instagram · TikTok · YouTube</div>
+                            <div>✓ Netflix · Spotify · Twitch</div>
+                            <div>✓ Google Maps · Uber · Waze</div>
+                            <div>✓ Videojuegos online</div>
+                            <div>✓ Comparte con laptop/tablet (tethering)</div>
+                        </div>
+                    </div>
+                    <!-- ✅ FIN SECCIÓN -->
+
                 </div>
             </div>
         </div>
@@ -699,9 +744,6 @@
     let selectedPack = null;
     let planes = [];
 
-    // ================================================================
-    // TOAST
-    // ================================================================
     function showToast(mensaje, tipo = '') {
         const toast = document.getElementById('toast');
         toast.textContent = mensaje;
@@ -717,9 +759,6 @@
         return session;
     }
 
-    // ================================================================
-    // CARGAR PLANES (SIN FALLBACK)
-    // ================================================================
     async function cargarPlanes() {
         try {
             const { data, error } = await supabase
@@ -742,9 +781,6 @@
         }
     }
 
-    // ================================================================
-    // RENDERIZAR
-    // ================================================================
     function renderPacks() {
         const grid = document.getElementById('internetGrid');
         if (!grid) return;
@@ -790,9 +826,6 @@
         return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     }
 
-    // ================================================================
-    // REDES DE PAGO FILTRADAS POR MONTO
-    // ================================================================
     function getRedesDisponibles(montoMxn) {
         const monto = Number(montoMxn);
         if (!Number.isFinite(monto) || monto <= 0) return [];
@@ -840,9 +873,6 @@
         }
     }
 
-    // ================================================================
-    // SELECCIONAR PAQUETE
-    // ================================================================
     function selectPack(id) {
         selectedPack = planes.find(p => p.id === id);
         if (!selectedPack) return;
@@ -866,9 +896,6 @@
         poblarRedesDePago(selectedPack.precio_mxn);
     }
 
-    // ================================================================
-    // COMPRAR - FLUJO REAL SEGURO
-    // ================================================================
     async function comprarInternet() {
         const phone = document.getElementById('netPhone').value.trim();
         const status = document.getElementById('netStatus');
@@ -896,7 +923,6 @@
 
             status.innerText = '⏳ Creando orden segura...';
 
-            // 🔥 RPC SEGURA: el precio lo pone el backend, no el cliente
             const { data: orden, error } = await supabase.rpc('crear_orden_internet', {
                 p_plan_id: selectedPack.id,
                 p_telefono: phone
@@ -906,7 +932,6 @@
 
             status.innerText = '⏳ Generando pago...';
 
-            // 🔥 LLAMAR AL BACKEND PARA CREAR EL PAGO EN NOWPAYMENTS
             const resp = await fetch(`${BACKEND_URL}/api/payments/internet/create`, {
                 method: 'POST',
                 headers: {
@@ -927,7 +952,6 @@
                 return;
             }
 
-            // ✅ Redirigir a NOWPayments
             window.open(pagoData.data.payment_url, '_blank');
 
             status.innerHTML = `
@@ -964,9 +988,6 @@
         }
     }
 
-    // ================================================================
-    // ESTRELLAS
-    // ================================================================
     function initStars() {
         const canvas = document.getElementById('stars-canvas');
         if (!canvas) return;
@@ -1023,9 +1044,6 @@
         });
     }
 
-    // ================================================================
-    // INIT
-    // ================================================================
     document.addEventListener('DOMContentLoaded', async function() {
         initStars();
         await cargarPlanes();
