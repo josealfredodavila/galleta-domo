@@ -294,14 +294,8 @@ router.post(
                     nowpayments_status: paymentStatus || null
                 };
 
-                if (paymentId) {
-                    datosActualizacion.payment_id = String(paymentId);
-                }
-
-                if (payCurrency) {
-                    datosActualizacion.moneda_pago = String(payCurrency);
-                }
-
+                if (paymentId) datosActualizacion.payment_id = String(paymentId);
+                if (payCurrency) datosActualizacion.moneda_pago = String(payCurrency);
                 if (payAmount !== null && Number.isFinite(Number(payAmount))) {
                     datosActualizacion.precio_usdt = Number(payAmount);
                 }
@@ -387,13 +381,6 @@ router.post(
             // ====================================================
             // MARKETING - PAGO DE CAMPAÑA
             // ====================================================
-            //
-            // El prefijo MKT- permite distinguir el pago de una
-            // campaña de marketing. A diferencia del Muro, aquí no
-            // se liquidan tokens: al confirmarse el pago se llama a
-            // la RPC activar_campana_marketing, que mueve la
-            // campaña de 'pendiente_pago' a 'activa'.
-            // ====================================================
 
             if (typeof ordenId === 'string' && ordenId.startsWith('MKT-')) {
                 const pagoId = ordenId.replace('MKT-', '');
@@ -424,14 +411,8 @@ router.post(
                     nowpayments_status: paymentStatus || null
                 };
 
-                if (paymentId) {
-                    datosActualizacion.payment_id = String(paymentId);
-                }
-
-                if (payCurrency) {
-                    datosActualizacion.moneda_pago = String(payCurrency);
-                }
-
+                if (paymentId) datosActualizacion.payment_id = String(paymentId);
+                if (payCurrency) datosActualizacion.moneda_pago = String(payCurrency);
                 if (payAmount !== null && Number.isFinite(Number(payAmount))) {
                     datosActualizacion.precio_usdt = Number(payAmount);
                 }
@@ -509,6 +490,129 @@ router.post(
                 }
 
                 logger.warn('Estado NOWPayments desconocido para pago Marketing', pagoId, ':', paymentStatus);
+                return res.status(200).json({
+                    success: true,
+                    message: 'Webhook recibido con estado no procesado'
+                });
+            }
+
+            // ====================================================
+            // INTERNET - PAGO DE PAQUETE
+            // ====================================================
+
+            if (typeof ordenId === 'string' && ordenId.startsWith('NET-')) {
+                const ordenIntId = ordenId.replace('NET-', '');
+
+                const { data: ordenInt, error: ordenIntError } = await supabaseAdmin
+                    .from('ordenes_internet')
+                    .select('*')
+                    .eq('id', ordenIntId)
+                    .single();
+
+                if (ordenIntError || !ordenInt) {
+                    logger.error('Orden Internet no encontrada:', ordenIntId);
+                    return res.status(404).json({
+                        success: false,
+                        error: 'Orden Internet no encontrada'
+                    });
+                }
+
+                if (
+                    ordenInt.estado === 'activa' ||
+                    ordenInt.estado === 'activada' ||
+                    ordenInt.estado === 'completado'
+                ) {
+                    logger.info('Orden Internet', ordenIntId, 'ya activada');
+                    return res.status(200).json({
+                        success: true,
+                        message: 'Orden ya activada'
+                    });
+                }
+
+                const datosAct = {
+                    nowpayments_status: paymentStatus || null
+                };
+
+                if (paymentId) datosAct.payment_id = String(paymentId);
+                if (payCurrency) datosAct.pay_currency = String(payCurrency);
+                if (payAmount !== null && Number.isFinite(Number(payAmount))) {
+                    datosAct.precio_usdt = Number(payAmount);
+                }
+
+                if (paymentStatus && esPagoEnProceso(paymentStatus)) {
+                    datosAct.estado = paymentStatus === 'confirming' || paymentStatus === 'sending'
+                        ? 'confirmando'
+                        : 'pagando';
+
+                    const { error: updateError } = await supabaseAdmin
+                        .from('ordenes_internet')
+                        .update(datosAct)
+                        .eq('id', ordenIntId)
+                        .neq('estado', 'activa');
+
+                    if (updateError) throw updateError;
+
+                    logger.info('Orden Internet', ordenIntId, 'actualizada:', paymentStatus);
+                    return res.status(200).json({
+                        success: true,
+                        message: 'Estado recibido: ' + paymentStatus
+                    });
+                }
+
+                if (paymentStatus && esPagoCancelado(paymentStatus)) {
+                    datosAct.estado = 'cancelada';
+
+                    const { error: cancelError } = await supabaseAdmin
+                        .from('ordenes_internet')
+                        .update(datosAct)
+                        .eq('id', ordenIntId)
+                        .neq('estado', 'activa');
+
+                    if (cancelError) throw cancelError;
+
+                    logger.warn('Orden Internet', ordenIntId, 'cancelada:', paymentStatus);
+                    return res.status(200).json({
+                        success: true,
+                        message: 'Pago ' + paymentStatus
+                    });
+                }
+
+                if (paymentStatus && esPagoFinalizado(paymentStatus)) {
+                    const { error: updateError } = await supabaseAdmin
+                        .from('ordenes_internet')
+                        .update({
+                            ...datosAct,
+                            estado: 'pagada',
+                            pagado_en: new Date().toISOString()
+                        })
+                        .eq('id', ordenIntId)
+                        .neq('estado', 'activa');
+
+                    if (updateError) throw updateError;
+
+                    const { error: activarError } = await supabaseAdmin.rpc(
+                        'activar_orden_internet',
+                        { p_orden_id: ordenIntId }
+                    );
+
+                    if (activarError) {
+                        logger.error(
+                            'Error activando orden Internet', ordenIntId, ':', activarError.message
+                        );
+                        return res.status(500).json({
+                            success: false,
+                            error: 'Pago recibido pero la activación está pendiente de procesamiento'
+                        });
+                    }
+
+                    logger.info('✅ Orden Internet', ordenIntId, 'activada correctamente');
+                    return res.status(200).json({
+                        success: true,
+                        message: 'Pago procesado y servicio activado'
+                    });
+                }
+
+                logger.warn('Estado NOWPayments desconocido para orden Internet', ordenIntId, ':', paymentStatus);
                 return res.status(200).json({
                     success: true,
                     message: 'Webhook recibido con estado no procesado'
