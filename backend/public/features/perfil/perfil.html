@@ -99,6 +99,7 @@
         .btn-gold:hover { transform: translateY(-2px); box-shadow: var(--shadow-gold); }
         .btn-outline { background: transparent; color: var(--text-secondary); border: 1px solid var(--glass-border); }
         .btn-outline:hover { border-color: var(--gold); color: var(--gold); box-shadow: 0 0 20px rgba(212, 175, 55, 0.1); }
+        .btn-outline.active { border-color: var(--gold); color: var(--gold); background: rgba(212,175,55,0.1); }
         .btn-sm { padding: 4px 12px; font-size: 0.65rem; }
         .btn-danger { background: rgba(255, 51, 102, 0.1); color: var(--danger); border: 1px solid rgba(255, 51, 102, 0.2); }
         .btn-danger:hover { background: rgba(255, 51, 102, 0.2); }
@@ -365,10 +366,8 @@
 
             <div class="perfil-header" id="perfilHeader">
                 <div class="avatar-container">
-                    <!-- ✅ CAMBIO 1: onclick ahora expande la foto -->
                     <div class="avatar" id="perfilAvatar" onclick="expandirAvatar()">
                         ◈
-                        <!-- ✅ CAMBIO 2: El lápiz detiene la propagación para que siga abriendo la galería -->
                         <span class="edit-badge" onclick="event.stopPropagation(); abrirSelectorArchivo()" title="Cambiar avatar">✎</span>
                     </div>
                     <input type="file" id="fileInput" accept="image/*" style="display:none;" onchange="subirFoto(event)" />
@@ -505,8 +504,8 @@
                 <button class="tab-btn" onclick="cambiarTab('config')" data-clave="perfil_tab_config">⚙ Configuración</button>
                 <button class="tab-btn" onclick="cambiarTab('esim')" data-clave="perfil_tab_esim">📱 eSIM</button>
                 <button class="tab-btn" onclick="cambiarTab('qr')" data-clave="perfil_tab_qr">📷 Escanear QR</button>
+                <button class="tab-btn" onclick="cambiarTab('internet')" data-clave="perfil_tab_internet">📶 Internet</button>
             </div>
-
             <div id="tab-mis-publicaciones" class="tab-content active">
                 <div class="panel">
                     <div class="panel-header">
@@ -843,6 +842,36 @@
                 </div>
             </div>
 
+            <!-- ============================================================ -->
+            <!-- TAB INTERNET - HISTORIAL DE COMPRAS                          -->
+            <!-- ============================================================ -->
+            <div id="tab-internet" class="tab-content">
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3>📶 Mis compras de Internet</h3>
+                        <span class="panel-badge" id="internetOrdenesCount">0</span>
+                    </div>
+                    <div class="panel-body">
+                        <!-- Filtros -->
+                        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">
+                            <button class="btn btn-outline btn-sm internet-filter active" data-filter="all" onclick="filtrarOrdenesInternet('all')">Todas</button>
+                            <button class="btn btn-outline btn-sm internet-filter" data-filter="activa" onclick="filtrarOrdenesInternet('activa')">✅ Activas</button>
+                            <button class="btn btn-outline btn-sm internet-filter" data-filter="pagando" onclick="filtrarOrdenesInternet('pagando')">⏳ Pendientes</button>
+                            <button class="btn btn-outline btn-sm internet-filter" data-filter="cancelada" onclick="filtrarOrdenesInternet('cancelada')">❌ Canceladas</button>
+                            <button class="btn btn-outline btn-sm" onclick="cargarOrdenesInternet()" style="margin-left:auto;">🔄 Refrescar</button>
+                        </div>
+
+                        <!-- Lista -->
+                        <div id="ordenesInternetList">
+                            <div class="empty-state">
+                                <span class="icon">📶</span>
+                                <h4>Cargando órdenes...</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </div>
 
         <footer class="footer">
@@ -911,13 +940,9 @@
 
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 
-    <!-- ✅ ORDEN CORREGIDO: idiomas.js PRIMERO, luego perfil.js -->
     <script src="/features/shared/js/idiomas.js"></script>
     <script src="/features/perfil/perfil.js"></script>
 
-    <!-- ================================================================ -->
-    <!-- INICIALIZAR SISTEMA DE IDIOMAS                                   -->
-    <!-- ================================================================ -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             setTimeout(async () => {
@@ -1341,6 +1366,315 @@
                 }
             });
         });
+    })();
+    </script>
+
+    <!-- ================================================================ -->
+    <!-- MÓDULO: HISTORIAL DE COMPRAS DE INTERNET                        -->
+    <!-- ================================================================ -->
+    <script>
+    (function() {
+        'use strict';
+
+        let ordenesInternet = [];
+        let filtroInternet = 'all';
+
+        function sb() {
+            return window.supabaseClient || window.supabase?.createClient(
+                'https://zultnlogdoajehbswlih.supabase.co',
+                'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
+            );
+        }
+
+        function escapeHTML(t) {
+            if (t === null || t === undefined) return '';
+            return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+
+        function formatearFecha(fecha) {
+            if (!fecha) return '—';
+            try {
+                const d = new Date(fecha);
+                return d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })
+                    + ' · '
+                    + d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+            } catch(e) { return '—'; }
+        }
+
+        function estadoInfo(estado) {
+            const map = {
+                'pendiente': { color: '#f59e0b', icon: '⏳', texto: 'Pendiente de pago', bg: 'rgba(245, 158, 11, 0.12)' },
+                'pagando': { color: '#f59e0b', icon: '⏳', texto: 'Procesando pago', bg: 'rgba(245, 158, 11, 0.12)' },
+                'confirmando': { color: '#22d3ee', icon: '⏱️', texto: 'Confirmando', bg: 'rgba(34, 211, 238, 0.12)' },
+                'pagada': { color: '#00d68f', icon: '💚', texto: 'Pagada', bg: 'rgba(0, 214, 143, 0.12)' },
+                'activa': { color: '#00d68f', icon: '✅', texto: 'Activa', bg: 'rgba(0, 214, 143, 0.12)' },
+                'activada': { color: '#00d68f', icon: '✅', texto: 'Activa', bg: 'rgba(0, 214, 143, 0.12)' },
+                'completado': { color: '#00d68f', icon: '✅', texto: 'Completado', bg: 'rgba(0, 214, 143, 0.12)' },
+                'cancelada': { color: '#ff3366', icon: '❌', texto: 'Cancelada', bg: 'rgba(255, 51, 102, 0.12)' },
+                'cancelado': { color: '#ff3366', icon: '❌', texto: 'Cancelada', bg: 'rgba(255, 51, 102, 0.12)' },
+            };
+            return map[estado] || { color: '#8aa8b8', icon: '◈', texto: estado || 'Desconocido', bg: 'rgba(138, 168, 184, 0.12)' };
+        }
+
+        function redLabel(payCurrency) {
+            if (!payCurrency) return '—';
+            const map = {
+                'usdttrc20': 'USDT · TRON',
+                'usdtbsc':   'USDT · BSC',
+                'usdtmatic': 'USDT · Polygon',
+                'usdtsol':   'USDT · Solana',
+                'usdterc20': 'USDT · Ethereum',
+                'usdcsol':   'USDC · Solana',
+                'usdcmatic': 'USDC · Polygon',
+                'usdcbsc':   'USDC · BSC',
+                'usdc':      'USDC · Ethereum',
+            };
+            return map[payCurrency] || payCurrency.toUpperCase();
+        }
+
+        window.cargarOrdenesInternet = async function() {
+            const list = document.getElementById('ordenesInternetList');
+            const contador = document.getElementById('internetOrdenesCount');
+            if (!list) return;
+
+            list.innerHTML = `
+                <div class="empty-state">
+                    <span class="icon">📶</span>
+                    <h4>Cargando órdenes...</h4>
+                </div>
+            `;
+
+            try {
+                const client = sb();
+                if (!client) throw new Error('Supabase no disponible');
+
+                const sessionResult = await client.auth.getSession();
+                const session = sessionResult.data.session;
+                if (!session) {
+                    list.innerHTML = `
+                        <div class="empty-state">
+                            <span class="icon">📶</span>
+                            <h4>Inicia sesión</h4>
+                            <p>Para ver tu historial de compras</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const { data, error } = await client
+                    .from('ordenes_internet')
+                    .select('*')
+                    .eq('usuario_id', session.user.id)
+                    .order('created_at', { ascending: false })
+                    .limit(100);
+
+                if (error) throw error;
+
+                ordenesInternet = data || [];
+
+                if (contador) contador.textContent = ordenesInternet.length;
+
+                if (ordenesInternet.length === 0) {
+                    list.innerHTML = `
+                        <div class="empty-state">
+                            <span class="icon">📶</span>
+                            <h4>Sin compras de Internet</h4>
+                            <p>Cuando compres un paquete aparecerá aquí</p>
+                            <a href="/features/internet/internet.html" class="btn btn-gold btn-sm" style="margin-top:12px;text-decoration:none;">Ver paquetes disponibles</a>
+                        </div>
+                    `;
+                    return;
+                }
+
+                renderOrdenesInternet();
+
+            } catch (error) {
+                console.error('Error cargando órdenes Internet:', error);
+                list.innerHTML = `
+                    <div class="empty-state">
+                        <span class="icon">❌</span>
+                        <h4>Error al cargar</h4>
+                        <p style="font-size:0.75rem;">${escapeHTML(error.message)}</p>
+                    </div>
+                `;
+            }
+        };
+
+        function renderOrdenesInternet() {
+            const list = document.getElementById('ordenesInternetList');
+            if (!list) return;
+
+            const filtered = filtroInternet === 'all'
+                ? ordenesInternet
+                : ordenesInternet.filter(o => o.estado === filtroInternet);
+
+            if (filtered.length === 0) {
+                list.innerHTML = `
+                    <div class="empty-state">
+                        <span class="icon">📶</span>
+                        <h4>Sin órdenes en este filtro</h4>
+                    </div>
+                `;
+                return;
+            }
+
+            list.innerHTML = filtered.map(o => {
+                const info = estadoInfo(o.estado);
+                const esActiva = ['activa', 'activada', 'completado'].includes(o.estado);
+
+                return `
+                    <div class="publicacion-card" style="border-left:3px solid ${info.color};cursor:pointer;" onclick="verDetalleOrdenInternet('${escapeHTML(o.id)}')">
+                        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;">
+                            <div style="flex:1;min-width:180px;">
+                                <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                                    <span style="font-size:1.3rem;">📦</span>
+                                    <strong style="color:var(--gold);font-size:0.9rem;font-family:'Orbitron',monospace;">${escapeHTML(o.plan_nombre || 'Paquete')}</strong>
+                                </div>
+                                <div style="color:var(--text-secondary);font-size:0.8rem;line-height:1.6;">
+                                    📊 <strong>${o.datos_gb} GB</strong> · 📅 ${o.duracion_dias} días
+                                </div>
+                                <div style="color:var(--text-muted);font-size:0.7rem;margin-top:4px;">
+                                    📱 Activa al: <span style="font-family:monospace;color:var(--text-secondary);">${escapeHTML(o.telefono_activacion || '—')}</span>
+                                </div>
+                            </div>
+                            <div style="text-align:right;min-width:140px;">
+                                <div style="background:${info.bg};color:${info.color};padding:4px 12px;border-radius:20px;font-size:0.65rem;font-weight:700;display:inline-block;margin-bottom:6px;">
+                                    ${info.icon} ${escapeHTML(info.texto)}
+                                </div>
+                                <div style="color:var(--gold);font-family:'Orbitron',monospace;font-size:1rem;font-weight:700;">
+                                    $${parseFloat(o.monto_mxn || 0).toFixed(2)} MXN
+                                </div>
+                                ${o.precio_usdt ? `<div style="color:var(--text-muted);font-size:0.6rem;">≈ $${parseFloat(o.precio_usdt).toFixed(2)} USD</div>` : ''}
+                            </div>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:10px;border-top:1px solid rgba(212,175,55,0.06);font-size:0.65rem;color:var(--text-muted);flex-wrap:wrap;gap:6px;">
+                            <span>🕐 ${formatearFecha(o.created_at)}</span>
+                            <span>${o.pay_currency ? `⚡ ${redLabel(o.pay_currency)}` : ''}</span>
+                            ${esActiva && o.activado_en ? `<span style="color:var(--success);">✓ Activada ${formatearFecha(o.activado_en)}</span>` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        window.filtrarOrdenesInternet = function(filtro) {
+            filtroInternet = filtro;
+            document.querySelectorAll('.internet-filter').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.filter === filtro);
+            });
+            renderOrdenesInternet();
+        };
+
+        window.verDetalleOrdenInternet = function(ordenId) {
+            const orden = ordenesInternet.find(o => o.id === ordenId);
+            if (!orden) return;
+            const info = estadoInfo(orden.estado);
+
+            const html = `
+                <div style="text-align:left;max-width:500px;margin:0 auto;">
+                    <div style="text-align:center;margin-bottom:20px;">
+                        <div style="font-size:3rem;">📦</div>
+                        <h2 style="color:var(--gold);font-family:'Orbitron',monospace;font-size:1.1rem;margin:10px 0 4px;">
+                            ${escapeHTML(orden.plan_nombre || 'Paquete')}
+                        </h2>
+                        <div style="background:${info.bg};color:${info.color};padding:4px 14px;border-radius:20px;font-size:0.7rem;font-weight:700;display:inline-block;">
+                            ${info.icon} ${escapeHTML(info.texto)}
+                        </div>
+                    </div>
+
+                    <div style="background:rgba(0,0,0,0.3);border-radius:12px;padding:14px;margin-bottom:12px;">
+                        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(212,175,55,0.06);font-size:0.75rem;">
+                            <span style="color:var(--text-muted);">📊 Datos</span>
+                            <span style="color:var(--text-primary);font-weight:600;">${orden.datos_gb} GB</span>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(212,175,55,0.06);font-size:0.75rem;">
+                            <span style="color:var(--text-muted);">📅 Duración</span>
+                            <span style="color:var(--text-primary);font-weight:600;">${orden.duracion_dias} días</span>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(212,175,55,0.06);font-size:0.75rem;">
+                            <span style="color:var(--text-muted);">📱 Teléfono</span>
+                            <span style="color:var(--text-primary);font-weight:600;font-family:monospace;">${escapeHTML(orden.telefono_activacion || '—')}</span>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(212,175,55,0.06);font-size:0.75rem;">
+                            <span style="color:var(--text-muted);">💰 Total MXN</span>
+                            <span style="color:var(--gold);font-weight:700;font-family:'Orbitron',monospace;">$${parseFloat(orden.monto_mxn || 0).toFixed(2)}</span>
+                        </div>
+                        ${orden.precio_usdt ? `
+                        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(212,175,55,0.06);font-size:0.75rem;">
+                            <span style="color:var(--text-muted);">💎 Total USD</span>
+                            <span style="color:var(--gold);font-weight:700;font-family:'Orbitron',monospace;">$${parseFloat(orden.precio_usdt).toFixed(2)}</span>
+                        </div>
+                        ` : ''}
+                        ${orden.pay_currency ? `
+                        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(212,175,55,0.06);font-size:0.75rem;">
+                            <span style="color:var(--text-muted);">⚡ Red</span>
+                            <span style="color:var(--text-primary);font-weight:600;">${redLabel(orden.pay_currency)}</span>
+                        </div>
+                        ` : ''}
+                        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(212,175,55,0.06);font-size:0.75rem;">
+                            <span style="color:var(--text-muted);">🕐 Creada</span>
+                            <span style="color:var(--text-primary);font-weight:600;">${formatearFecha(orden.created_at)}</span>
+                        </div>
+                        ${orden.pagado_en ? `
+                        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(212,175,55,0.06);font-size:0.75rem;">
+                            <span style="color:var(--text-muted);">💚 Pagada</span>
+                            <span style="color:var(--success);font-weight:600;">${formatearFecha(orden.pagado_en)}</span>
+                        </div>
+                        ` : ''}
+                        ${orden.activado_en ? `
+                        <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:0.75rem;">
+                            <span style="color:var(--text-muted);">✅ Activada</span>
+                            <span style="color:var(--success);font-weight:600;">${formatearFecha(orden.activado_en)}</span>
+                        </div>
+                        ` : ''}
+                    </div>
+
+                    ${orden.payment_id ? `
+                    <div style="background:rgba(0,0,0,0.3);border-radius:12px;padding:10px;margin-bottom:12px;font-size:0.65rem;color:var(--text-muted);font-family:monospace;word-break:break-all;">
+                        <strong style="color:var(--gold);">Payment ID:</strong><br>${escapeHTML(orden.payment_id)}
+                    </div>
+                    ` : ''}
+
+                    <div style="text-align:center;">
+                        <button class="btn btn-outline btn-sm" onclick="cerrarModalDetalleOrden()">Cerrar</button>
+                    </div>
+                </div>
+            `;
+
+            const modal = document.createElement('div');
+            modal.id = 'modalDetalleOrden';
+            modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);backdrop-filter:blur(12px);display:flex;justify-content:center;align-items:center;z-index:99999;padding:20px;animation:fadeIn 0.3s ease-out;';
+            modal.innerHTML = `
+                <div style="background:linear-gradient(135deg,rgba(15,45,26,0.95),rgba(5,8,15,0.98));border:2px solid var(--gold);border-radius:20px;padding:24px;max-width:560px;width:100%;max-height:90vh;overflow-y:auto;position:relative;animation:scaleIn 0.3s ease-out;">
+                    <button onclick="cerrarModalDetalleOrden()" style="position:absolute;top:10px;right:15px;background:transparent;border:none;color:var(--text-muted);font-size:1.5rem;cursor:pointer;">×</button>
+                    ${html}
+                </div>
+            `;
+            modal.addEventListener('click', (e) => { if (e.target === modal) cerrarModalDetalleOrden(); });
+            document.body.appendChild(modal);
+        };
+
+        window.cerrarModalDetalleOrden = function() {
+            const modal = document.getElementById('modalDetalleOrden');
+            if (modal) modal.remove();
+        };
+
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.perfil-tabs .tab-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const onclick = btn.getAttribute('onclick') || '';
+                    if (onclick.includes("'internet'")) {
+                        setTimeout(() => cargarOrdenesInternet(), 100);
+                    }
+                });
+            });
+
+            const tabInternet = document.getElementById('tab-internet');
+            if (tabInternet && tabInternet.classList.contains('active')) {
+                cargarOrdenesInternet();
+            }
+        });
+
     })();
     </script>
 </body>
