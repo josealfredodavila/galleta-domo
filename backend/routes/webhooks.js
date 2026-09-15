@@ -391,6 +391,137 @@ router.post(
             }
 
             // ====================================================
+            // MARKETING - PAGO DE CAMPAÑA
+            // ====================================================
+            //
+            // El prefijo MKT- permite distinguir el pago de una
+            // campaña de marketing. A diferencia del Muro, aquí no
+            // se liquidan tokens: al confirmarse el pago se llama a
+            // la RPC activar_campana_marketing, que mueve la
+            // campaña de 'pendiente_pago' a 'activa'.
+            // ====================================================
+
+            if (typeof ordenId === 'string' && ordenId.startsWith('MKT-')) {
+                const pagoId = ordenId.replace('MKT-', '');
+
+                const { data: pago, error: pagoError } = await supabaseAdmin
+                    .from('marketing_pagos')
+                    .select('*')
+                    .eq('id', pagoId)
+                    .single();
+
+                if (pagoError || !pago) {
+                    logger.error('Pago Marketing no encontrado:', pagoId);
+                    return res.status(404).json({
+                        success: false,
+                        error: 'Pago no encontrado'
+                    });
+                }
+
+                if (pago.estado === 'pagado') {
+                    logger.info('Pago Marketing', pagoId, 'ya procesado');
+                    return res.status(200).json({
+                        success: true,
+                        message: 'Pago ya procesado'
+                    });
+                }
+
+                const datosActualizacion = {
+                    nowpayments_status: paymentStatus || null
+                };
+
+                if (paymentId) {
+                    datosActualizacion.payment_id = String(paymentId);
+                }
+
+                if (payCurrency) {
+                    datosActualizacion.moneda_pago = String(payCurrency);
+                }
+
+                if (payAmount !== null && Number.isFinite(Number(payAmount))) {
+                    datosActualizacion.precio_usdt = Number(payAmount);
+                }
+
+                if (paymentStatus && esPagoEnProceso(paymentStatus)) {
+                    datosActualizacion.estado = paymentStatus === 'confirming' || paymentStatus === 'sending'
+                        ? 'confirmando'
+                        : 'pagando';
+
+                    const { error: updateError } = await supabaseAdmin
+                        .from('marketing_pagos')
+                        .update(datosActualizacion)
+                        .eq('id', pagoId)
+                        .neq('estado', 'pagado');
+
+                    if (updateError) throw updateError;
+
+                    logger.info('Pago Marketing', pagoId, 'actualizado:', paymentStatus);
+                    return res.status(200).json({
+                        success: true,
+                        message: 'Estado recibido: ' + paymentStatus
+                    });
+                }
+
+                if (paymentStatus && esPagoCancelado(paymentStatus)) {
+                    datosActualizacion.estado = 'cancelado';
+
+                    const { error: cancelError } = await supabaseAdmin
+                        .from('marketing_pagos')
+                        .update(datosActualizacion)
+                        .eq('id', pagoId)
+                        .neq('estado', 'pagado');
+
+                    if (cancelError) throw cancelError;
+
+                    logger.warn('Pago Marketing', pagoId, 'cancelado:', paymentStatus);
+                    return res.status(200).json({
+                        success: true,
+                        message: 'Pago ' + paymentStatus
+                    });
+                }
+
+                if (paymentStatus && esPagoFinalizado(paymentStatus)) {
+                    const { error: updateError } = await supabaseAdmin
+                        .from('marketing_pagos')
+                        .update({
+                            ...datosActualizacion,
+                            estado: 'pagado'
+                        })
+                        .eq('id', pagoId)
+                        .neq('estado', 'pagado');
+
+                    if (updateError) throw updateError;
+
+                    const { error: activarError } = await supabaseAdmin.rpc(
+                        'activar_campana_marketing',
+                        { p_campaign_id: pago.campaign_id }
+                    );
+
+                    if (activarError) {
+                        logger.error(
+                            'Error activando campaña', pago.campaign_id, ':', activarError.message
+                        );
+                        return res.status(500).json({
+                            success: false,
+                            error: 'Pago recibido pero la activación de la campaña está pendiente'
+                        });
+                    }
+
+                    logger.info('✅ Campaña Marketing', pago.campaign_id, 'activada correctamente');
+                    return res.status(200).json({
+                        success: true,
+                        message: 'Pago procesado y campaña activada'
+                    });
+                }
+
+                logger.warn('Estado NOWPayments desconocido para pago Marketing', pagoId, ':', paymentStatus);
+                return res.status(200).json({
+                    success: true,
+                    message: 'Webhook recibido con estado no procesado'
+                });
+            }
+
+            // ====================================================
             // PAGOS DE TRANSMISIÓN
             // ====================================================
 
