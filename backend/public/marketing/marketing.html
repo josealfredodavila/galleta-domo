@@ -554,6 +554,14 @@
             margin-bottom: 4px;
             font-weight: 600;
         }
+        .wizard-step label {
+            color: var(--text-muted);
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+            margin-top: 6px;
+        }
 
         .wizard-step input,
         .wizard-step select,
@@ -675,6 +683,19 @@
         .toast.error { border-color: var(--danger); color: var(--danger); }
         .toast.success { border-color: var(--success); color: var(--success); }
         .toast.warning { border-color: var(--warning); color: var(--warning); }
+
+        .red-info {
+            background: rgba(0, 214, 143, 0.06);
+            border: 1px solid rgba(0, 214, 143, 0.2);
+            border-radius: 10px;
+            padding: 10px 12px;
+            font-size: 0.68rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            margin-top: 6px;
+        }
+        .red-info strong { color: var(--gold); }
+        .red-info .warn { color: var(--warning); }
 
         @media (max-width: 640px) {
             .marketing-hero { flex-direction: column; text-align: center; padding: 22px; }
@@ -824,9 +845,18 @@
                 <button class="btn btn-primary btn-next">Siguiente →</button>
             </div>
             <div id="wizard-step-5" class="wizard-step hidden">
-                <h3>▸ Paso 05 — Presupuesto (MXN)</h3>
-                <p id="pricing-info" style="color: var(--text-muted); font-size: 0.7rem;"></p>
+                <h3>▸ Paso 05 — Presupuesto y Red de Pago</h3>
+                <label for="campaign-budget">Presupuesto (MXN)</label>
                 <input type="number" id="campaign-budget" placeholder="Monto en MXN" min="1" step="0.01">
+
+                <label for="pay-currency">Red de pago (cripto)</label>
+                <select id="pay-currency">
+                    <option value="">Ingresa un presupuesto primero…</option>
+                </select>
+                <div class="red-info" id="red-info">
+                    ◈ Elige cuánto vas a invertir para ver las redes disponibles.
+                </div>
+
                 <button class="btn btn-primary btn-next">Siguiente →</button>
             </div>
             <div id="wizard-step-6" class="wizard-step hidden">
@@ -850,14 +880,37 @@
 
     <script>
     /* ============================================================
-       MARKETING - SARIEL'S ECOSYSTEM · AUDITED VERSION
+       MARKETING - SARIEL'S ECOSYSTEM · AUDITED VERSION (v2)
+       Con selector de red filtrado por monto mínimo (Opción C)
        ============================================================ */
 
     const SUPABASE_URL = 'https://zultnlogdoajehbswlih.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
+    const BACKEND_URL = 'https://galleta-domo-production.up.railway.app';
     const DEBUG = false;
 
     const ESTADOS_VALIDOS = ['borrador', 'pendiente_pago', 'pagada', 'pendiente_revision', 'activa', 'pausada', 'finalizada', 'rechazada', 'cancelada'];
+
+    // ------------------------------------------------------------
+    // TIPO DE CAMBIO APROXIMADO (MXN → USD)
+    // Debe coincidir con el backend para que el filtrado sea real.
+    // ------------------------------------------------------------
+    const MXN_A_USD_APROX = 0.055;
+
+    // ------------------------------------------------------------
+    // REDES DE PAGO (debe coincidir con REDES_PERMITIDAS del backend)
+    // ------------------------------------------------------------
+    const REDES_PAGO = [
+        { value: 'usdttrc20', moneda: 'USDT', red: 'TRON',     min: 1,  label: 'USDT · TRON (TRC20)' },
+        { value: 'usdtbsc',   moneda: 'USDT', red: 'BSC',      min: 1,  label: 'USDT · BSC (BEP20)' },
+        { value: 'usdtmatic', moneda: 'USDT', red: 'Polygon',  min: 1,  label: 'USDT · Polygon' },
+        { value: 'usdtsol',   moneda: 'USDT', red: 'Solana',   min: 1,  label: 'USDT · Solana' },
+        { value: 'usdcsol',   moneda: 'USDC', red: 'Solana',   min: 1,  label: 'USDC · Solana' },
+        { value: 'usdcmatic', moneda: 'USDC', red: 'Polygon',  min: 1,  label: 'USDC · Polygon' },
+        { value: 'usdcbsc',   moneda: 'USDC', red: 'BSC',      min: 1,  label: 'USDC · BSC (BEP20)' },
+        { value: 'usdterc20', moneda: 'USDT', red: 'Ethereum', min: 20, label: 'USDT · Ethereum (ERC20) ⚠ gas alto' },
+        { value: 'usdc',      moneda: 'USDC', red: 'Ethereum', min: 20, label: 'USDC · Ethereum (ERC20) ⚠ gas alto' },
+    ];
 
     let currentUser = null;
     let campaigns = [];
@@ -943,6 +996,68 @@
             script.onerror = () => { chartJsLoading = false; reject(new Error('No se pudo cargar Chart.js')); };
             document.head.appendChild(script);
         });
+    }
+
+    // ------------------------------------------------------------
+    // FILTRAR REDES DISPONIBLES SEGÚN MONTO EN MXN
+    // ------------------------------------------------------------
+    function getRedesDisponibles(montoMxn) {
+        const monto = Number(montoMxn);
+        if (!Number.isFinite(monto) || monto <= 0) return [];
+
+        const montoUsd = monto * MXN_A_USD_APROX;
+
+        return REDES_PAGO.filter(r => montoUsd >= r.min);
+    }
+
+    // ------------------------------------------------------------
+    // REPOBLAR SELECT DE REDES SEGÚN PRESUPUESTO
+    // ------------------------------------------------------------
+    function poblarRedesDePago(montoMxn) {
+        const select = document.getElementById('pay-currency');
+        const info = document.getElementById('red-info');
+        if (!select) return;
+
+        const monto = Number(montoMxn);
+
+        if (!Number.isFinite(monto) || monto <= 0) {
+            select.innerHTML = '<option value="">Ingresa un presupuesto primero…</option>';
+            if (info) {
+                info.innerHTML = '◈ Elige cuánto vas a invertir para ver las redes disponibles.';
+            }
+            return;
+        }
+
+        const redes = getRedesDisponibles(monto);
+
+        if (redes.length === 0) {
+            const minimoMxn = Math.ceil(1 / MXN_A_USD_APROX);
+            select.innerHTML = `<option value="">Monto insuficiente</option>`;
+            if (info) {
+                info.innerHTML = `<span class="warn">⚠ Tu presupuesto ($${monto.toFixed(2)} MXN) es menor al mínimo soportado. Mínimo sugerido: ~$${minimoMxn} MXN (1 USD).</span>`;
+            }
+            return;
+        }
+
+        // Mantener selección previa si sigue siendo válida
+        const previo = select.value;
+        select.innerHTML = redes.map(r => 
+            `<option value="${r.value}">${r.label} · mín ${r.min} USD</option>`
+        ).join('');
+
+        if (redes.some(r => r.value === previo)) {
+            select.value = previo;
+        }
+
+        const montoUsd = (monto * MXN_A_USD_APROX).toFixed(2);
+        const redesDescartadas = REDES_PAGO.length - redes.length;
+
+        if (info) {
+            info.innerHTML = `
+                ◈ Presupuesto: <strong>$${monto.toFixed(2)} MXN</strong> ≈ <strong>$${montoUsd} USD</strong><br>
+                ◈ ${redes.length} red(es) disponibles${redesDescartadas > 0 ? ` · ${redesDescartadas} ocultas por mínimo` : ''}
+            `;
+        }
     }
 
     async function init() {
@@ -1355,6 +1470,18 @@
             });
         });
 
+        // Input del presupuesto: repoblar redes al cambiar
+        const budgetInput = document.getElementById('campaign-budget');
+        if (budgetInput && !budgetInput._bound) {
+            budgetInput._bound = true;
+            budgetInput.addEventListener('input', (e) => {
+                poblarRedesDePago(e.target.value);
+            });
+            budgetInput.addEventListener('change', (e) => {
+                poblarRedesDePago(e.target.value);
+            });
+        }
+
         ['2','3','4','5','6'].forEach(n => {
             const btn = document.querySelector(`#wizard-step-${n} .btn-next`);
             if (btn && !btn._bound) {
@@ -1381,6 +1508,15 @@
         currentWizardData = {};
         document.querySelectorAll('.wizard-step input, .wizard-step select, .wizard-step textarea')
             .forEach(el => el.value = '');
+        // Reset selector de redes
+        const selectRedes = document.getElementById('pay-currency');
+        if (selectRedes) {
+            selectRedes.innerHTML = '<option value="">Ingresa un presupuesto primero…</option>';
+        }
+        const info = document.getElementById('red-info');
+        if (info) {
+            info.innerHTML = '◈ Elige cuánto vas a invertir para ver las redes disponibles.';
+        }
         showWizardStep('1');
     }
 
@@ -1404,7 +1540,15 @@
             const budget = parseFloat(document.getElementById('campaign-budget').value);
             if (!budget || budget <= 0) { showToast('✕ Ingresa un presupuesto válido', 'warning'); return; }
             if (budget > 1000000) { showToast('✕ Presupuesto demasiado alto', 'warning'); return; }
+
+            const payCurrency = document.getElementById('pay-currency').value;
+            if (!payCurrency) {
+                showToast('✕ Selecciona una red de pago válida para tu monto', 'warning');
+                return;
+            }
+
             currentWizardData.presupuesto = budget;
+            currentWizardData.pay_currency = payCurrency;
             showWizardStep('6');
         } else if (step === '6') {
             const titulo = document.getElementById('ad-title').value.trim();
@@ -1425,11 +1569,17 @@
                 cta_texto: cta || 'Ver más',
             };
 
+            const redSeleccionada = REDES_PAGO.find(r => r.value === currentWizardData.pay_currency);
+            const redLabel = redSeleccionada ? redSeleccionada.label : currentWizardData.pay_currency;
+            const montoUsd = (currentWizardData.presupuesto * MXN_A_USD_APROX).toFixed(2);
+
             document.getElementById('summary-content').innerHTML = `
                 <div class="detail-row"><span>Campaña</span><span>${escapeHTML(currentWizardData.nombre)}</span></div>
                 <div class="detail-row"><span>Destino</span><span>${escapeHTML(currentWizardData.target_tipo.toUpperCase())}</span></div>
                 <div class="detail-row"><span>Objetivo</span><span>${escapeHTML(currentWizardData.objetivo)}</span></div>
                 <div class="detail-row"><span>Presupuesto</span><span>$${currentWizardData.presupuesto} MXN</span></div>
+                <div class="detail-row"><span>Red de pago</span><span>${escapeHTML(redLabel)}</span></div>
+                <div class="detail-row"><span>A pagar aprox</span><span>~$${montoUsd} USD</span></div>
                 <div class="detail-row"><span>Contenido</span><span>${escapeHTML(currentWizardData.ad.titulo)}</span></div>
             `;
             showWizardStep('7');
@@ -1491,28 +1641,34 @@
                 [targetField]: currentWizardData.target_id
             }]);
 
-            // 4. Solicitar la creación del pago en NOWPayments a través de tu backend
-            const resp = await fetch('https://galleta-domo-production.up.railway.app/api/payments/marketing/create', {
+            // 4. Solicitar la creación del pago en NOWPayments con la RED elegida
+            const session = await supabaseClient.auth.getSession();
+            const accessToken = session?.data?.session?.access_token;
+
+            const resp = await fetch(`${BACKEND_URL}/api/payments/marketing/create`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': 'Bearer ' + (await supabaseClient.auth.getSession()).data.session.access_token
+                    'Authorization': 'Bearer ' + accessToken
                 },
-                body: JSON.stringify({ campaignId: campaignData.id })
+                body: JSON.stringify({
+                    campaignId: campaignData.id,
+                    payCurrency: currentWizardData.pay_currency
+                })
             });
+
             const pagoData = await resp.json();
 
-            if (!pagoData.success || !pagoData.data?.payment_url) {
+            if (!resp.ok || !pagoData.success || !pagoData.data?.payment_url) {
                 showToast('✕ Error generando el pago: ' + (pagoData.error || 'desconocido'), 'error');
                 return;
             }
 
             // 5. Redirigir al usuario a la pasarela de pago
             window.open(pagoData.data.payment_url, '_blank');
-            showToast('◈ Redirigiendo a pago...', 'success', 4000);
+            showToast('◈ Redirigiendo a pago (' + pagoData.data.pay_currency + ')...', 'success', 4000);
             document.getElementById('modal-create').classList.add('hidden');
 
-            // Recargar la lista de campañas para reflejar el estado "pendiente_pago"
             await loadCampaigns();
 
         } catch (err) {
