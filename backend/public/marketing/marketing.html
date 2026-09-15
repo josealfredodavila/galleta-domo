@@ -324,6 +324,11 @@
             transform: translateY(-2px);
             box-shadow: 0 8px 35px rgba(212, 175, 55, 0.5);
         }
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
 
         .summary-cards {
             display: grid;
@@ -1431,10 +1436,18 @@
         }
     }
 
+    // ============================================================
+    // PAGO: CREAR CAMPAÑA → GENERAR PAGO EN NOWPAYMENTS → REDIRIGIR
+    // ============================================================
     async function processPayment() {
+        const payBtn = document.getElementById('btn-pay');
+        payBtn.disabled = true;
+        payBtn.textContent = '◈ Procesando...';
+
         try {
             if (!currentUser) throw new Error('No hay sesión');
 
+            // 1. Crear la campaña en Supabase
             const { data: campaignData, error: campaignError } = await supabaseClient
                 .from('marketing_campaigns')
                 .insert([{
@@ -1456,6 +1469,7 @@
             const destinoLiveId = destinoTipo === 'live' ? currentWizardData.target_id : null;
             const destinoGrupoId = destinoTipo === 'grupo' ? currentWizardData.target_id : null;
 
+            // 2. Insertar el anuncio
             await supabaseClient.from('marketing_ads').insert([{
                 campaign_id: campaignData.id,
                 titulo: currentWizardData.ad.titulo,
@@ -1469,6 +1483,7 @@
                 activo: true
             }]);
 
+            // 3. Insertar el target de la campaña
             const targetField = destinoTipo === 'live' ? 'live_id' : 'grupo_id';
             await supabaseClient.from('marketing_campaign_targets').insert([{
                 campaign_id: campaignData.id,
@@ -1476,14 +1491,36 @@
                 [targetField]: currentWizardData.target_id
             }]);
 
-            showToast('◈ Campaña creada · Pendiente de pago', 'success', 4000);
+            // 4. Solicitar la creación del pago en NOWPayments a través de tu backend
+            const resp = await fetch('https://galleta-domo-production.up.railway.app/api/payments/marketing/create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + (await supabaseClient.auth.getSession()).data.session.access_token
+                },
+                body: JSON.stringify({ campaignId: campaignData.id })
+            });
+            const pagoData = await resp.json();
+
+            if (!pagoData.success || !pagoData.data?.payment_url) {
+                showToast('✕ Error generando el pago: ' + (pagoData.error || 'desconocido'), 'error');
+                return;
+            }
+
+            // 5. Redirigir al usuario a la pasarela de pago
+            window.open(pagoData.data.payment_url, '_blank');
+            showToast('◈ Redirigiendo a pago...', 'success', 4000);
             document.getElementById('modal-create').classList.add('hidden');
 
+            // Recargar la lista de campañas para reflejar el estado "pendiente_pago"
             await loadCampaigns();
 
         } catch (err) {
             logError('Error creando campaña:', err);
             showToast('✕ Error: ' + err.message, 'error');
+        } finally {
+            payBtn.disabled = false;
+            payBtn.textContent = '◈ Continuar al Pago';
         }
     }
 
