@@ -365,9 +365,11 @@
 
             <div class="perfil-header" id="perfilHeader">
                 <div class="avatar-container">
-                    <div class="avatar" id="perfilAvatar">
+                    <!-- ✅ CAMBIO 1: onclick ahora expande la foto -->
+                    <div class="avatar" id="perfilAvatar" onclick="expandirAvatar()">
                         ◈
-                        <span class="edit-badge" onclick="abrirSelectorArchivo()" title="Cambiar avatar">✎</span>
+                        <!-- ✅ CAMBIO 2: El lápiz detiene la propagación para que siga abriendo la galería -->
+                        <span class="edit-badge" onclick="event.stopPropagation(); abrirSelectorArchivo()" title="Cambiar avatar">✎</span>
                     </div>
                     <input type="file" id="fileInput" accept="image/*" style="display:none;" onchange="subirFoto(event)" />
                 </div>
