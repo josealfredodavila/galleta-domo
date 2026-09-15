@@ -122,6 +122,7 @@ button,input{font:inherit}
 .avatar-bot{background:linear-gradient(135deg,#0F2D1A,#D4AF37)!important;position:relative;overflow:visible!important;font-size:1.3rem!important}
 .avatar-bot::after{content:"";position:absolute;bottom:0;right:0;width:12px;height:12px;border-radius:50%;background:var(--success);border:2px solid var(--space);animation:botPulse 2s infinite}
 @keyframes botPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.7;transform:scale(.85)}}
+@keyframes pulse-badge{0%,100%{transform:scale(1);box-shadow:0 0 0 rgba(255,51,102,0)}50%{transform:scale(1.1);box-shadow:0 0 8px rgba(255,51,102,.6)}}
 .typing-indicator{display:flex;gap:4px;align-items:center;padding:12px 16px}
 .typing-indicator span{width:8px;height:8px;border-radius:50%;background:var(--gold);animation:typingBounce 1.4s infinite}
 .typing-indicator span:nth-child(2){animation-delay:.2s}
@@ -301,7 +302,6 @@ button,input{font:inherit}
     </div>
 </div>
 
-<!-- Modal de vistas de estados -->
 <div class="modal" id="vistasModal">
     <div class="modalbox" style="max-width:420px;">
         <button class="iconbtn" id="closeVistasModal" style="float:right">✕</button>
@@ -415,9 +415,6 @@ async function auth(){const s=await session();if(!s){toast('⚠️ Inicia sesió
 function avatar(name,url,cls='avatar'){return `<div class="${cls}">${url?`<img src="${esc(url)}" alt="">`:esc((name||'◈').charAt(0).toUpperCase())}</div>`}
 async function profile(id){if(id===BOT_ID)return{id:BOT_ID,nombre:"Marquinhos",handle:'marquinhos',avatar_url:null,online:true,bot:true};const r=await db.from('perfiles_publicos').select('id,nombre,handle,avatar_url,online,ultima_conexion').eq('id',id).maybeSingle();return r.data||{id,nombre:'Usuario',avatar_url:null,online:false}}
 
-/* ============================================
-   MI PERFIL - CARGAR Y MODAL
-   ============================================ */
 async function cargarFotoHeader(){
     if(!user) return;
     try {
@@ -469,9 +466,6 @@ async function subirFotoHeader(event){
     }
 }
 
-/* ============================================
-   VISOR DE FOTO AMPLIADA
-   ============================================ */
 function verFotoAmpliada(url, nombre, handle){
     if(!url){ toast('ℹ️ Este usuario no tiene foto de perfil', 'warning'); return; }
     $('pvImage').src = url;
@@ -481,9 +475,6 @@ function verFotoAmpliada(url, nombre, handle){
 }
 function cerrarPhotoViewer(){ $('photoViewer').classList.remove('show'); }
 
-/* ============================================
-   ESTADOS (24h)
-   ============================================ */
 function marcarEstadoVisto(estadoId){
     estadoVistos[estadoId] = Date.now();
     localStorage.setItem('sariels_estados_vistos', JSON.stringify(estadoVistos));
@@ -502,7 +493,7 @@ async function registrarVistaEstado(estadoId){
             estado_id: estadoId,
             usuario_id: user.id
         }, { onConflict: 'estado_id,usuario_id', ignoreDuplicates: true });
-    } catch(e) { /* silencioso */ }
+    } catch(e) { }
 }
 
 async function obtenerVistasEstado(estadoId){
@@ -553,7 +544,6 @@ async function cargarEstados(){
             const ultimoEstadoId = miEstado[miEstado.length - 1].id;
             const ultimoEstadoImg = miEstado[miEstado.length - 1].imagen_url;
             const totalVistas = await obtenerVistasEstado(ultimoEstadoId);
-            // ✅ Círculo de "Tú" muestra la imagen del último estado
             const html = `
                 <div class="estado-item" data-userid="${user.id}" style="position:relative;">
                     <div class="estado-circle ${tieneNuevos ? '' : 'visto'}">
@@ -645,7 +635,6 @@ async function mostrarEstadoActual(){
         const total = await obtenerVistasEstado(estado.id);
         $('evVistasCount').textContent = total;
         $('evVistas').classList.remove('hidden');
-        // Guardar estado actual para el modal de vistas
         $('evVistas').dataset.estadoId = estado.id;
     } else {
         $('evVistas').classList.add('hidden');
@@ -702,9 +691,6 @@ function cerrarEstadoViewer(){
     cargarEstados();
 }
 
-/* ============================================
-   PAUSA/REANUDAR
-   ============================================ */
 function activarPausaEstado(){
     if(!$('estadoViewer').classList.contains('show')) return;
     estadoPausado = true;
@@ -714,9 +700,6 @@ function desactivarPausaEstado(){
     estadoPausado = false;
 }
 
-/* ============================================
-   MODAL DE VISTAS (¿Quién vio mi estado?)
-   ============================================ */
 async function abrirVistasModal(estadoId){
     if(!estadoId) return;
     $('vistasModal').classList.add('show');
@@ -740,7 +723,6 @@ async function abrirVistasModal(estadoId){
 
         $('vistasModalCount').textContent = `(${vistas.length})`;
 
-        // Cargar info de cada usuario
         const ids = vistas.map(v => v.usuario_id);
         const { data: perfiles } = await db
             .from('perfiles_publicos')
@@ -769,7 +751,6 @@ async function abrirVistasModal(estadoId){
             `);
         });
 
-        // Click en cada fila → abrir perfil
         list.querySelectorAll('.result').forEach(el => {
             el.onclick = () => {
                 const handle = el.dataset.handle;
@@ -789,9 +770,6 @@ function cerrarVistasModal(){
     $('vistasModal').classList.remove('show');
 }
 
-/* ============================================
-   SUBIR ESTADO
-   ============================================ */
 function abrirModalEstado(){
     $('estadoUploadModal').classList.add('show');
     $('estadoPreviewWrap').style.display = 'none';
@@ -873,9 +851,6 @@ function haceTiempo(fecha){
     return `hace ${Math.floor(diffMin/1440)} d`;
 }
 
-/* ============================================
-   SCROLL
-   ============================================ */
 function scrollToBottom(force = false){
     const box = $('messages');
     if(!box) return;
@@ -938,9 +913,6 @@ function observarCargaMultimedia(box){
     });
 }
 
-/* ============================================
-   FIRMA URLS DE STORAGE
-   ============================================ */
 async function getSignedUrlForMessage(m) {
     if (!m.imagen_url) return null;
     const raw = m.imagen_url;
@@ -973,9 +945,6 @@ async function getSignedUrlForMessage(m) {
     return null;
 }
 
-/* ============================================
-   CARGAR CONVERSACIONES
-   ============================================ */
 let conversationFilter = '';
 
 async function loadConversations(){
@@ -991,7 +960,7 @@ async function loadConversations(){
             <div class="convname">Marquinhos</div>
             <div class="convmsg" id="botLastMsg">Tu asistente personal ✦</div>
         </div>
-        <div class="convtime" style="color:var(--success);font-size:.55rem">IA</div>
+        <div class="convtime" id="botBadge" style="color:var(--success);font-size:.55rem">IA</div>
     `;
     botEl.onclick=()=>openConversation(BOT_ID);
     list.appendChild(botEl);
@@ -999,14 +968,28 @@ async function loadConversations(){
     if(!await auth()) return;
 
     try {
-        const {data:lastBot}=await db.from('mensajes_chat').select('contenido,tipo,created_at').eq('eliminado',false)
+        const {data:lastBot}=await db.from('mensajes_chat').select('contenido,tipo,created_at')
+            .eq('eliminado',false)
             .or(`and(remitente_id.eq.${user.id},destinatario_id.eq.${BOT_UUID}),and(remitente_id.eq.${BOT_UUID},destinatario_id.eq.${user.id})`)
             .order('created_at',{ascending:false}).limit(1).maybeSingle();
         if(lastBot){
             const preview=$('botLastMsg');
-            if(preview) preview.textContent = lastBot.tipo==='texto' ? (lastBot.contenido||'') : ('📎 '+(lastBot.contenido||lastBot.tipo));
+            if(preview) preview.textContent = lastBot.tipo==='texto' ? (lastBot.contenido||'').slice(0, 60) : ('📎 '+(lastBot.contenido||lastBot.tipo));
         }
-    } catch(e) { }
+
+        // 🔔 Contar mensajes NO LEÍDOS del bot
+        const { count: noLeidos } = await db.from('mensajes_chat')
+            .select('id', { count: 'exact', head: true })
+            .eq('remitente_id', BOT_UUID)
+            .eq('destinatario_id', user.id)
+            .eq('leido', false)
+            .eq('eliminado', false);
+
+        const badge = $('botBadge');
+        if(badge && noLeidos && noLeidos > 0){
+            badge.innerHTML = `<span style="background:var(--danger);color:#fff;font-size:.6rem;font-weight:800;padding:2px 8px;border-radius:99px;min-width:20px;text-align:center;display:inline-block;animation:pulse-badge 1.5s infinite;">${noLeidos > 9 ? '9+' : noLeidos}</span>`;
+        }
+    } catch(e) { console.warn('Error cargando badge bot:', e); }
 
     try {
         const {data,error}=await db.from('contactos').select('contacto_id,created_at,fecha,estado').eq('usuario_id',user.id).neq('estado','bloqueado').order('created_at',{ascending:false});
@@ -1047,9 +1030,6 @@ function aplicarFiltroConversaciones(){
     });
 }
 
-/* ============================================
-   ABRIR CONVERSACIÓN
-   ============================================ */
 async function openConversation(id){
     if(!await auth())return;
     const p=await profile(id);
@@ -1080,6 +1060,15 @@ async function openConversation(id){
     actualizarFlecha();
 
     if(esBot){
+        // 🔔 Marcar todos los mensajes del bot como leídos
+        await db.from('mensajes_chat')
+            .update({ leido: true })
+            .eq('remitente_id', BOT_UUID)
+            .eq('destinatario_id', user.id)
+            .eq('leido', false);
+        // Refrescar el badge
+        const badge = $('botBadge');
+        if(badge){ badge.textContent = 'IA'; badge.style.color = 'var(--success)'; }
         await abrirConversacionBot();
         return;
     }
@@ -1107,9 +1096,6 @@ async function cerrarConversacion(){
     document.querySelectorAll('.conv').forEach(x => x.classList.remove('active'));
 }
 
-/* ============================================
-   ABRIR CONVERSACIÓN CON MARQUINHOS
-   ============================================ */
 async function abrirConversacionBot(){
     const box=$('messages');
     const btn = box.querySelector('#scrollDownBtn');
@@ -1156,9 +1142,6 @@ async function abrirConversacionBot(){
     scrollToBottom(true);
 }
 
-/* ============================================
-   RENDER MENSAJES
-   ============================================ */
 async function renderMessages(rows){
     const box=$('messages');
     box.querySelectorAll('.bubblewrap').forEach(el => el.remove());
@@ -1202,9 +1185,6 @@ function messageHTML(m,sent,signedUrl){
     return `<div class="bubblewrap ${sent?'sent':'received'}"><div class="bubble">${headerBot}${body}</div><div class="meta">${m.created_at?new Date(m.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):''}${sent?(m.leido?' · ◆◆':' · ◈◈'):''}</div></div>`;
 }
 
-/* ============================================
-   ENVIAR MENSAJE
-   ============================================ */
 async function sendMessage(text){
     if(!current||!text.trim())return;
     if(!await auth())return;
@@ -1246,9 +1226,6 @@ async function sendMessage(text){
     loadConversations();
 }
 
-/* ============================================
-   LLAMAR AL BACKEND DEL BOT
-   ============================================ */
 async function preguntarAlBot(mensaje){
     const s=await session();
     if(!s) throw new Error('No hay una sesión activa. Inicia sesión nuevamente.');
@@ -1276,9 +1253,6 @@ async function preguntarAlBot(mensaje){
     } finally { clearTimeout(timeout); }
 }
 
-/* ============================================
-   TYPING BOT
-   ============================================ */
 function mostrarTypingBot(){
     const box=$('messages');
     const empty=box.querySelector('.empty');
@@ -1291,9 +1265,6 @@ function mostrarTypingBot(){
 }
 function quitarTypingBot(){ const el=$('typing-bot'); if(el)el.remove(); }
 
-/* ============================================
-   APPEND
-   ============================================ */
 async function append(m,sent){
     const box=$('messages');
     const empty=box.querySelector('.empty');
@@ -1313,17 +1284,11 @@ async function append(m,sent){
     scrollToBottom(true);
 }
 
-/* ============================================
-   MARCAR LEÍDO
-   ============================================ */
 async function markRead(id){
     if(!user||id===BOT_ID)return;
     await db.from('mensajes_chat').update({leido:true}).eq('remitente_id',id).eq('destinatario_id',user.id).eq('leido',false).eq('eliminado',false);
 }
 
-/* ============================================
-   ELIMINAR CONVERSACIÓN
-   ============================================ */
 async function deleteConversation(){
     if(!current){toast('⚠️ Selecciona una conversación','error');return}
     if(!await auth())return;
@@ -1355,9 +1320,6 @@ async function deleteConversation(){
     }
 }
 
-/* ============================================
-   REALTIME MENSAJES
-   ============================================ */
 function subscribeMessages(id){
     if(id===BOT_ID)return;
     if(msgChannel){db.removeChannel(msgChannel);}
@@ -1370,9 +1332,6 @@ function subscribeMessages(id){
     }).subscribe();
 }
 
-/* ============================================
-   VOZ CON MARQUINHOS
-   ============================================ */
 async function grabarVozParaBot() {
     if(!current?.bot) return;
     if(!await auth()) return;
@@ -1493,9 +1452,6 @@ async function enviarVozAlBot(file){
     }
 }
 
-/* ============================================
-   SUBIR ARCHIVO NORMAL
-   ============================================ */
 async function uploadFile(file){
     if(!current||!await auth())return;
     if(current.bot){toast('⚠️ Para Marquinhos usa el botón 🔊, o envía nota de voz con 🎙️','error');return;}
@@ -1516,9 +1472,6 @@ async function uploadFile(file){
     loadConversations();
 }
 
-/* ============================================
-   NUEVA CONVERSACIÓN
-   ============================================ */
 function newConversation(){
     $('newModal').classList.add('show');
     $('userSearch').value='';
@@ -1564,9 +1517,6 @@ async function createConversation(id){
     await openConversation(id);
 }
 
-/* ============================================
-   LLAMADAS VIDEO
-   ============================================ */
 async function token(roomName,participantName){
     const s=await session();
     if(!s) throw Error('No autenticado');
@@ -1690,9 +1640,6 @@ async function toggleScreen(){
     } catch(e) {if(e.name!=='NotAllowedError'){toast('❌ No se pudo compartir pantalla','error');}}
 }
 
-/* ============================================
-   INIT
-   ============================================ */
 async function init(){
     db=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{
         auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true},
@@ -1720,7 +1667,6 @@ async function init(){
     $('btnCerrarProfileModal').onclick = cerrarProfileModal;
     $('profileModal').addEventListener('click', e => { if(e.target.id === 'profileModal') cerrarProfileModal(); });
 
-    // Modal de vistas
     $('closeVistasModal').onclick = cerrarVistasModal;
     $('vistasModal').addEventListener('click', e => { if(e.target.id === 'vistasModal') cerrarVistasModal(); });
 
@@ -1731,7 +1677,6 @@ async function init(){
     $('evPrev').onclick = (e) => { e.stopPropagation(); anteriorEstado(); };
     $('evNext').onclick = (e) => { e.stopPropagation(); siguienteEstado(); };
 
-    // ✅ Click en el contador de vistas → abrir modal
     $('evVistas').onclick = (e) => {
         e.stopPropagation();
         const estadoId = $('evVistas').dataset.estadoId;
@@ -1820,9 +1765,6 @@ async function init(){
     setInterval(() => { limpiarVistosAntiguos(); cargarEstados(); }, 5 * 60 * 1000);
 }
 
-/* ============================================
-   NOTA DE VOZ NORMAL
-   ============================================ */
 function getSupportedAudioMime(){
     const candidates=['audio/webm;codecs=opus','audio/webm','audio/ogg;codecs=opus','audio/ogg','audio/mp4'];
     for(const type of candidates){if(window.MediaRecorder && MediaRecorder.isTypeSupported(type)) return type;}
