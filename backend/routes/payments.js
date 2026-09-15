@@ -38,6 +38,35 @@ const NOWPAYMENTS_API_KEY =
     process.env.NOWPAYMENTS_API_KEY;
 
 // ================================================================
+// REDES DE PAGO PERMITIDAS (USDT / USDC)
+// ================================================================
+//
+// Cada red declara su mínimo en USD. Si el monto convertido está
+// por debajo del mínimo, se rechaza en el backend.
+//
+// El tipo de cambio es aproximado. Si necesitas precisión, consulta
+// una API de tipo de cambio en vivo.
+// ================================================================
+
+const REDES_PERMITIDAS = {
+    // USDT
+    'usdttrc20': { moneda: 'USDT', red: 'TRON',     minimo_usd: 1  },
+    'usdtbsc':   { moneda: 'USDT', red: 'BSC',      minimo_usd: 1  },
+    'usdtmatic': { moneda: 'USDT', red: 'Polygon',  minimo_usd: 1  },
+    'usdtsol':   { moneda: 'USDT', red: 'Solana',   minimo_usd: 1  },
+    'usdterc20': { moneda: 'USDT', red: 'Ethereum', minimo_usd: 20 },
+
+    // USDC
+    'usdcsol':   { moneda: 'USDC', red: 'Solana',   minimo_usd: 1  },
+    'usdcmatic': { moneda: 'USDC', red: 'Polygon',  minimo_usd: 1  },
+    'usdcbsc':   { moneda: 'USDC', red: 'BSC',      minimo_usd: 1  },
+    'usdc':      { moneda: 'USDC', red: 'Ethereum', minimo_usd: 20 },
+};
+
+// Aproximación MXN → USD (ajústala o consúltala en vivo)
+const MXN_A_USD_APROX = 0.055;
+
+// ================================================================
 // HELPERS
 // ================================================================
 
@@ -56,6 +85,34 @@ function respuestaError(res, status, error) {
         success: false,
         error
     });
+}
+
+// ----------------------------------------------------------------
+// Validar red de pago contra el monto en MXN
+// ----------------------------------------------------------------
+function validarRedPago(payCurrency, montoMxn) {
+    const red = REDES_PERMITIDAS[payCurrency];
+
+    if (!red) {
+        return {
+            valido: false,
+            error: 'Red de pago no soportada'
+        };
+    }
+
+    const montoUsd = Number(montoMxn) * MXN_A_USD_APROX;
+
+    if (montoUsd < red.minimo_usd) {
+        const minimoMxn = Math.ceil(red.minimo_usd / MXN_A_USD_APROX);
+        return {
+            valido: false,
+            error:
+                `El monto es demasiado bajo para ${red.moneda} en ${red.red}. ` +
+                `Mínimo: ${red.minimo_usd} USD (~$${minimoMxn} MXN)`
+        };
+    }
+
+    return { valido: true, red };
 }
 
 // ================================================================
@@ -189,7 +246,7 @@ router.post(
                     {
                         price_amount: montoNumerico,
                         price_currency: 'usd',
-                        pay_currency: 'usdt',
+                        pay_currency: 'usdttrc20',
 
                         order_id: String(orden.id),
 
@@ -305,6 +362,7 @@ router.post(
 // - La cantidad se valida contra la publicación.
 // - Los tokens NO se modifican aquí.
 // - La liquidación se realiza exclusivamente mediante RPC.
+// - Ahora soporta elegir la red de pago (USDT/USDC en varias redes).
 // ================================================================
 
 router.post(
@@ -322,6 +380,9 @@ router.post(
 
             const cantidad =
                 Number(req.body?.cantidad);
+
+            const payCurrency =
+                String(req.body?.payCurrency || 'usdttrc20').toLowerCase();
 
             // ----------------------------------------------------
             // VALIDACIONES BÁSICAS
@@ -499,6 +560,21 @@ router.post(
             }
 
             // ----------------------------------------------------
+            // VALIDAR RED DE PAGO CONTRA MONTO
+            // ----------------------------------------------------
+
+            const validacionRed =
+                validarRedPago(payCurrency, precioTotalMxn);
+
+            if (!validacionRed.valido) {
+                return respuestaError(
+                    res,
+                    400,
+                    validacionRed.error
+                );
+            }
+
+            // ----------------------------------------------------
             // COMISIÓN DEL MURO
             // ----------------------------------------------------
             //
@@ -540,7 +616,8 @@ router.post(
                     estado: 'pendiente',
                     fecha: new Date().toISOString(),
                     moneda_pago: 'USDT',
-                    nowpayments_status: 'waiting'
+                    nowpayments_status: 'waiting',
+                    pay_currency_solicitada: payCurrency
                 })
                 .select()
                 .single();
@@ -586,8 +663,8 @@ router.post(
                         // está expresado en MXN.
                         price_currency: 'mxn',
 
-                        // NOWPayments calcula el importe USDT real.
-                        pay_currency: 'usdt',
+                        // Red elegida por el comprador.
+                        pay_currency: payCurrency,
 
                         order_id: orderId,
 
@@ -625,7 +702,8 @@ router.post(
                 await supabaseAdmin
                     .from('muro_ventas_tokens')
                     .update({
-                        nowpayments_status: 'creation_failed'
+                        nowpayments_status: 'creation_failed',
+                        estado: 'cancelado'
                     })
                     .eq('id', venta.id);
 
@@ -653,7 +731,8 @@ router.post(
                 await supabaseAdmin
                     .from('muro_ventas_tokens')
                     .update({
-                        nowpayments_status: 'creation_failed'
+                        nowpayments_status: 'creation_failed',
+                        estado: 'cancelado'
                     })
                     .eq('id', venta.id);
 
@@ -674,9 +753,9 @@ router.post(
                     ? Number(nowPayment.pay_amount)
                     : 0;
 
-            const payCurrency =
+            const payCurrencyReal =
                 nowPayment.pay_currency ||
-                'usdt';
+                payCurrency;
 
             const paymentStatus =
                 nowPayment.payment_status ||
@@ -698,7 +777,7 @@ router.post(
                         payAmount,
 
                     moneda_pago:
-                        String(payCurrency),
+                        String(payCurrencyReal),
 
                     nowpayments_status:
                         String(paymentStatus),
@@ -732,7 +811,7 @@ router.post(
             // ----------------------------------------------------
 
             logger.info(
-                `✅ Pago Muro creado: venta=${venta.id} payment=${paymentId} order=${orderId}`
+                `✅ Pago Muro creado: venta=${venta.id} payment=${paymentId} order=${orderId} red=${payCurrency}`
             );
 
             return res.status(201).json({
@@ -773,7 +852,7 @@ router.post(
                         nowPayment.pay_amount || null,
 
                     pay_currency:
-                        nowPayment.pay_currency || null,
+                        payCurrencyReal,
 
                     order_id:
                         orderId
@@ -802,14 +881,15 @@ router.post(
 //
 // 1. Usuario autenticado ya creó la campaña (estado 'pendiente_pago')
 //    directamente desde marketing.html.
-// 2. El frontend llama a esta ruta con el campaignId.
+// 2. El frontend llama a esta ruta con el campaignId y payCurrency.
 // 3. Backend verifica que la campaña sea del usuario y esté
 //    pendiente de pago.
-// 4. Backend crea marketing_pagos en pendiente.
-// 5. Backend crea payment en NOWPayments.
-// 6. Se guarda payment_id y estado.
-// 7. NOWPayments posteriormente notificará al webhook.
-// 8. El webhook llamará a la RPC activar_campana_marketing.
+// 4. Backend valida que el monto alcance el mínimo de la red.
+// 5. Backend crea marketing_pagos en pendiente.
+// 6. Backend crea payment en NOWPayments.
+// 7. Se guarda payment_id y estado.
+// 8. NOWPayments posteriormente notificará al webhook.
+// 9. El webhook llamará a la RPC activar_campana_marketing.
 //
 // IMPORTANTE:
 // - El monto SIEMPRE se toma de marketing_campaigns.presupuesto
@@ -827,6 +907,8 @@ router.post(
         try {
             const userId = req.usuario.id;
             const campaignId = req.body?.campaignId;
+            const payCurrency =
+                String(req.body?.payCurrency || 'usdttrc20').toLowerCase();
 
             if (!campaignId) {
                 return respuestaError(res, 400, 'campaignId es requerido');
@@ -864,6 +946,19 @@ router.post(
             }
 
             // ----------------------------------------------------
+            // VALIDAR RED DE PAGO CONTRA MONTO
+            // ----------------------------------------------------
+
+            const validacionRed = validarRedPago(
+                payCurrency,
+                campaign.presupuesto
+            );
+
+            if (!validacionRed.valido) {
+                return respuestaError(res, 400, validacionRed.error);
+            }
+
+            // ----------------------------------------------------
             // CREAR REGISTRO DE PAGO LOCAL
             // ----------------------------------------------------
 
@@ -873,7 +968,8 @@ router.post(
                     campaign_id: campaign.id,
                     anunciante_id: userId,
                     monto_mxn: campaign.presupuesto,
-                    estado: 'pendiente'
+                    estado: 'pendiente',
+                    pay_currency: payCurrency
                 })
                 .select()
                 .single();
@@ -894,7 +990,7 @@ router.post(
                     {
                         price_amount: Number(campaign.presupuesto),
                         price_currency: 'mxn',
-                        pay_currency: 'usdt',
+                        pay_currency: payCurrency,
                         order_id: orderId,
                         order_description: `Campaña de marketing: ${campaign.nombre}`
                     },
@@ -920,7 +1016,10 @@ router.post(
 
                 await supabaseAdmin
                     .from('marketing_pagos')
-                    .update({ nowpayments_status: 'creation_failed' })
+                    .update({
+                        nowpayments_status: 'creation_failed',
+                        estado: 'cancelado'
+                    })
                     .eq('id', pago.id);
 
                 return res.status(502).json({
@@ -939,7 +1038,10 @@ router.post(
 
                 await supabaseAdmin
                     .from('marketing_pagos')
-                    .update({ nowpayments_status: 'creation_failed' })
+                    .update({
+                        nowpayments_status: 'creation_failed',
+                        estado: 'cancelado'
+                    })
                     .eq('id', pago.id);
 
                 return res.status(502).json({
@@ -956,8 +1058,10 @@ router.post(
                 .from('marketing_pagos')
                 .update({
                     payment_id: String(paymentId),
-                    precio_usdt: numeroValido(nowPayment.pay_amount) ? Number(nowPayment.pay_amount) : null,
-                    moneda_pago: nowPayment.pay_currency || 'usdt',
+                    precio_usdt: numeroValido(nowPayment.pay_amount)
+                        ? Number(nowPayment.pay_amount)
+                        : null,
+                    moneda_pago: nowPayment.pay_currency || payCurrency,
                     nowpayments_status: nowPayment.payment_status || 'waiting'
                 })
                 .eq('id', pago.id)
@@ -983,7 +1087,7 @@ router.post(
             // ----------------------------------------------------
 
             logger.info(
-                `✅ Pago Marketing creado: pago=${pago.id} payment=${paymentId} order=${orderId}`
+                `✅ Pago Marketing creado: pago=${pago.id} payment=${paymentId} order=${orderId} red=${payCurrency}`
             );
 
             return res.status(201).json({
@@ -993,12 +1097,13 @@ router.post(
                     campaign_id: campaign.id,
                     estado: pagoActualizado.estado,
                     monto_mxn: pagoActualizado.monto_mxn,
+                    pay_currency: payCurrency,
                     nowpayments_status: pagoActualizado.nowpayments_status,
                     payment_id: paymentId,
                     payment_url: nowPayment.payment_url || null,
                     pay_address: nowPayment.pay_address || null,
                     pay_amount: nowPayment.pay_amount || null,
-                    pay_currency: nowPayment.pay_currency || null,
+                    pay_currency_real: nowPayment.pay_currency || null,
                     order_id: orderId
                 }
             });
