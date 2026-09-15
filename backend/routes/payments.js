@@ -40,13 +40,6 @@ const NOWPAYMENTS_API_KEY =
 // ================================================================
 // REDES DE PAGO PERMITIDAS (USDT / USDC)
 // ================================================================
-//
-// Cada red declara su mínimo en USD. Si el monto convertido está
-// por debajo del mínimo, se rechaza en el backend.
-//
-// El tipo de cambio es aproximado. Si necesitas precisión, consulta
-// una API de tipo de cambio en vivo.
-// ================================================================
 
 const REDES_PERMITIDAS = {
     // USDT
@@ -63,7 +56,6 @@ const REDES_PERMITIDAS = {
     'usdc':      { moneda: 'USDC', red: 'Ethereum', minimo_usd: 20 },
 };
 
-// Aproximación MXN → USD (ajústala o consúltala en vivo)
 const MXN_A_USD_APROX = 0.055;
 
 // ================================================================
@@ -87,17 +79,11 @@ function respuestaError(res, status, error) {
     });
 }
 
-// ----------------------------------------------------------------
-// Validar red de pago contra el monto en MXN
-// ----------------------------------------------------------------
 function validarRedPago(payCurrency, montoMxn) {
     const red = REDES_PERMITIDAS[payCurrency];
 
     if (!red) {
-        return {
-            valido: false,
-            error: 'Red de pago no soportada'
-        };
+        return { valido: false, error: 'Red de pago no soportada' };
     }
 
     const montoUsd = Number(montoMxn) * MXN_A_USD_APROX;
@@ -128,93 +114,37 @@ router.post(
     async (req, res) => {
 
         try {
-            const {
-                transmisionId,
-                monto,
-                metodo
-            } = req.body;
-
+            const { transmisionId, monto, metodo } = req.body;
             const userId = req.usuario.id;
 
-            // ----------------------------------------------------
-            // VALIDACIONES
-            // ----------------------------------------------------
-
             if (!transmisionId) {
-                return respuestaError(
-                    res,
-                    400,
-                    'transmisionId es requerido'
-                );
+                return respuestaError(res, 400, 'transmisionId es requerido');
             }
 
             const montoNumerico = Number(monto);
-
-            if (
-                !Number.isFinite(montoNumerico) ||
-                montoNumerico <= 0
-            ) {
-                return respuestaError(
-                    res,
-                    400,
-                    'Monto inválido'
-                );
+            if (!Number.isFinite(montoNumerico) || montoNumerico <= 0) {
+                return respuestaError(res, 400, 'Monto inválido');
             }
 
             const metodoPago = metodo || 'crypto';
-
             if (!['crypto'].includes(metodoPago)) {
-                return respuestaError(
-                    res,
-                    400,
-                    'Método de pago no soportado'
-                );
+                return respuestaError(res, 400, 'Método de pago no soportado');
             }
 
             if (!NOWPAYMENTS_API_KEY) {
-                logger.error(
-                    'NOWPAYMENTS_API_KEY no está configurada'
-                );
-
-                return respuestaError(
-                    res,
-                    500,
-                    'Servicio de pagos no configurado'
-                );
+                logger.error('NOWPAYMENTS_API_KEY no está configurada');
+                return respuestaError(res, 500, 'Servicio de pagos no configurado');
             }
 
             if (!supabase) {
-                logger.error(
-                    'Cliente Supabase no configurado'
-                );
-
-                return respuestaError(
-                    res,
-                    500,
-                    'Base de datos no configurada'
-                );
+                logger.error('Cliente Supabase no configurado');
+                return respuestaError(res, 500, 'Base de datos no configurada');
             }
 
-            // ----------------------------------------------------
-            // COMISIÓN TRANSMISIONES
-            // ----------------------------------------------------
+            const comisionSariels = Number((montoNumerico * 0.02).toFixed(2));
+            const montoStreamer = Number((montoNumerico - comisionSariels).toFixed(2));
 
-            const comisionSariels =
-                Number((montoNumerico * 0.02).toFixed(2));
-
-            const montoStreamer =
-                Number(
-                    (montoNumerico - comisionSariels).toFixed(2)
-                );
-
-            // ----------------------------------------------------
-            // CREAR ORDEN LOCAL
-            // ----------------------------------------------------
-
-            const {
-                data: orden,
-                error: ordenError
-            } = await supabase
+            const { data: orden, error: ordenError } = await supabase
                 .from('pagos_transmision')
                 .insert({
                     transmision_id: transmisionId,
@@ -229,111 +159,64 @@ router.post(
                 .select()
                 .single();
 
-            if (ordenError) {
-                throw ordenError;
-            }
-
-            // ----------------------------------------------------
-            // CREAR PAYMENT EN NOWPAYMENTS
-            // ----------------------------------------------------
+            if (ordenError) throw ordenError;
 
             let nowPayment;
-
             try {
-
                 const response = await axios.post(
                     NOWPAYMENTS_API_URL,
                     {
                         price_amount: montoNumerico,
                         price_currency: 'usd',
                         pay_currency: 'usdttrc20',
-
                         order_id: String(orden.id),
-
-                        order_description:
-                            `Pago transmisión ${transmisionId}`
+                        order_description: `Pago transmisión ${transmisionId}`
                     },
                     {
                         headers: {
                             'x-api-key': NOWPAYMENTS_API_KEY,
                             'Content-Type': 'application/json'
                         },
-
                         timeout: 15000
                     }
                 );
-
                 nowPayment = response.data;
-
             } catch (paymentError) {
-
                 logger.error(
                     `Error creando payment NOWPayments: ${
                         paymentError.response?.data
-                            ? JSON.stringify(
-                                paymentError.response.data
-                            )
+                            ? JSON.stringify(paymentError.response.data)
                             : paymentError.message
                     }`
                 );
 
                 return res.status(502).json({
                     success: false,
-                    error:
-                        'No fue posible crear el pago con NOWPayments',
-                    orden: {
-                        id: orden.id,
-                        estado: orden.estado
-                    }
+                    error: 'No fue posible crear el pago con NOWPayments',
+                    orden: { id: orden.id, estado: orden.estado }
                 });
             }
 
-            // ----------------------------------------------------
-            // RESPUESTA
-            // ----------------------------------------------------
-
-            logger.info(
-                `Orden de pago creada: ${orden.id}`
-            );
+            logger.info(`Orden de pago creada: ${orden.id}`);
 
             return res.status(201).json({
                 success: true,
-
                 data: {
                     id: orden.id,
-
                     estado: orden.estado,
-
                     monto: orden.monto_pagado,
-
                     moneda: 'USD',
-
-                    metodo_pago:
-                        orden.metodo_pago,
-
-                    payment_id:
-                        nowPayment.payment_id || null,
-
-                    payment_url:
-                        nowPayment.payment_url || null,
-
-                    pay_address:
-                        nowPayment.pay_address || null,
-
-                    pay_amount:
-                        nowPayment.pay_amount || null,
-
-                    pay_currency:
-                        nowPayment.pay_currency || null
+                    metodo_pago: orden.metodo_pago,
+                    payment_id: nowPayment.payment_id || null,
+                    payment_url: nowPayment.payment_url || null,
+                    pay_address: nowPayment.pay_address || null,
+                    pay_amount: nowPayment.pay_amount || null,
+                    pay_currency: nowPayment.pay_currency || null
                 }
             });
 
         } catch (error) {
-
-            logger.error(
-                `Error creando pago: ${error.message}`
-            );
-
+            logger.error(`Error creando pago: ${error.message}`);
             return res.status(500).json({
                 success: false,
                 error: 'Error interno creando el pago'
@@ -345,25 +228,6 @@ router.post(
 // ================================================================
 // CREAR PAGO - MURO / VENTA DE TOKENS
 // ================================================================
-//
-// Flujo:
-//
-// 1. Usuario autenticado solicita comprar tokens.
-// 2. Backend consulta muro_posts.
-// 3. Backend verifica vendedor, inventario y precio.
-// 4. Backend crea muro_ventas_tokens en pendiente.
-// 5. Backend crea payment en NOWPayments.
-// 6. Se guarda payment_id y estado.
-// 7. NOWPayments posteriormente notificará al webhook.
-// 8. El webhook llamará a la RPC atómica de liquidación.
-//
-// IMPORTANTE:
-// - El precio NO se acepta desde el frontend.
-// - La cantidad se valida contra la publicación.
-// - Los tokens NO se modifican aquí.
-// - La liquidación se realiza exclusivamente mediante RPC.
-// - Ahora soporta elegir la red de pago (USDT/USDC en varias redes).
-// ================================================================
 
 router.post(
     '/muro/create',
@@ -372,83 +236,35 @@ router.post(
     async (req, res) => {
 
         try {
-
             const userId = req.usuario.id;
-
-            const postId =
-                Number(req.body?.postId);
-
-            const cantidad =
-                Number(req.body?.cantidad);
-
+            const postId = Number(req.body?.postId);
+            const cantidad = Number(req.body?.cantidad);
             const payCurrency =
                 String(req.body?.payCurrency || 'usdttrc20').toLowerCase();
 
-            // ----------------------------------------------------
-            // VALIDACIONES BÁSICAS
-            // ----------------------------------------------------
-
             if (!Number.isInteger(postId) || postId <= 0) {
-                return respuestaError(
-                    res,
-                    400,
-                    'postId inválido'
-                );
+                return respuestaError(res, 400, 'postId inválido');
             }
 
             if (!enteroPositivo(cantidad)) {
-                return respuestaError(
-                    res,
-                    400,
-                    'La cantidad debe ser un número entero mayor a 0'
-                );
+                return respuestaError(res, 400, 'La cantidad debe ser un número entero mayor a 0');
             }
 
-            // Límite defensivo.
             if (cantidad > 1000000000) {
-                return respuestaError(
-                    res,
-                    400,
-                    'Cantidad inválida'
-                );
+                return respuestaError(res, 400, 'Cantidad inválida');
             }
 
             if (!NOWPAYMENTS_API_KEY) {
-                logger.error(
-                    'NOWPAYMENTS_API_KEY no está configurada'
-                );
-
-                return respuestaError(
-                    res,
-                    500,
-                    'Servicio de pagos no configurado'
-                );
+                logger.error('NOWPAYMENTS_API_KEY no está configurada');
+                return respuestaError(res, 500, 'Servicio de pagos no configurado');
             }
 
             if (!supabaseAdmin) {
-                logger.error(
-                    'supabaseAdmin no está configurado'
-                );
-
-                return respuestaError(
-                    res,
-                    500,
-                    'Servicio interno no configurado'
-                );
+                logger.error('supabaseAdmin no está configurado');
+                return respuestaError(res, 500, 'Servicio interno no configurado');
             }
 
-            // ----------------------------------------------------
-            // CONSULTAR PUBLICACIÓN REAL
-            // ----------------------------------------------------
-            //
-            // El precio viene exclusivamente de la base de datos.
-            // Nunca se utiliza precio enviado por el navegador.
-            //
-
-            const {
-                data: post,
-                error: postError
-            } = await supabaseAdmin
+            const { data: post, error: postError } = await supabaseAdmin
                 .from('muro_posts')
                 .select(`
                     id,
@@ -461,148 +277,49 @@ router.post(
                 .maybeSingle();
 
             if (postError) {
-                logger.error(
-                    `Error consultando publicación Muro ${postId}: ${postError.message}`
-                );
-
-                return respuestaError(
-                    res,
-                    500,
-                    'Error consultando la publicación'
-                );
+                logger.error(`Error consultando publicación Muro ${postId}: ${postError.message}`);
+                return respuestaError(res, 500, 'Error consultando la publicación');
             }
 
             if (!post) {
-                return respuestaError(
-                    res,
-                    404,
-                    'Publicación no encontrada'
-                );
+                return respuestaError(res, 404, 'Publicación no encontrada');
             }
 
-            // ----------------------------------------------------
-            // NO COMPRAR A UNO MISMO
-            // ----------------------------------------------------
-
-            if (
-                String(post.usuario_id) ===
-                String(userId)
-            ) {
-                return respuestaError(
-                    res,
-                    400,
-                    'No puedes comprar tus propios tokens'
-                );
+            if (String(post.usuario_id) === String(userId)) {
+                return respuestaError(res, 400, 'No puedes comprar tus propios tokens');
             }
 
-            // ----------------------------------------------------
-            // VALIDAR PUBLICACIÓN EN VENTA
-            // ----------------------------------------------------
+            const inventario = Number(post.cantidad_venta || 0);
 
-            const inventario =
-                Number(post.cantidad_venta || 0);
-
-            if (
-                post.vendido === true ||
-                inventario <= 0
-            ) {
-                return respuestaError(
-                    res,
-                    409,
-                    'Esta publicación ya no tiene tokens disponibles'
-                );
+            if (post.vendido === true || inventario <= 0) {
+                return respuestaError(res, 409, 'Esta publicación ya no tiene tokens disponibles');
             }
 
             if (cantidad > inventario) {
-                return respuestaError(
-                    res,
-                    409,
-                    `Solo hay ${inventario} tokens disponibles`
-                );
+                return respuestaError(res, 409, `Solo hay ${inventario} tokens disponibles`);
             }
 
-            // ----------------------------------------------------
-            // VALIDAR PRECIO REAL
-            // ----------------------------------------------------
+            const precioUnitarioMxn = Number(post.precio_venta);
 
-            const precioUnitarioMxn =
-                Number(post.precio_venta);
-
-            if (
-                !Number.isFinite(precioUnitarioMxn) ||
-                precioUnitarioMxn <= 0
-            ) {
-                logger.error(
-                    `Precio inválido en muro_posts. post_id=${postId}`
-                );
-
-                return respuestaError(
-                    res,
-                    500,
-                    'La publicación tiene un precio inválido'
-                );
+            if (!Number.isFinite(precioUnitarioMxn) || precioUnitarioMxn <= 0) {
+                logger.error(`Precio inválido en muro_posts. post_id=${postId}`);
+                return respuestaError(res, 500, 'La publicación tiene un precio inválido');
             }
 
-            const precioTotalMxn =
-                Number(
-                    (precioUnitarioMxn * cantidad).toFixed(2)
-                );
+            const precioTotalMxn = Number((precioUnitarioMxn * cantidad).toFixed(2));
 
-            if (
-                !Number.isFinite(precioTotalMxn) ||
-                precioTotalMxn <= 0
-            ) {
-                return respuestaError(
-                    res,
-                    400,
-                    'Importe de compra inválido'
-                );
+            if (!Number.isFinite(precioTotalMxn) || precioTotalMxn <= 0) {
+                return respuestaError(res, 400, 'Importe de compra inválido');
             }
 
-            // ----------------------------------------------------
-            // VALIDAR RED DE PAGO CONTRA MONTO
-            // ----------------------------------------------------
-
-            const validacionRed =
-                validarRedPago(payCurrency, precioTotalMxn);
-
+            const validacionRed = validarRedPago(payCurrency, precioTotalMxn);
             if (!validacionRed.valido) {
-                return respuestaError(
-                    res,
-                    400,
-                    validacionRed.error
-                );
+                return respuestaError(res, 400, validacionRed.error);
             }
 
-            // ----------------------------------------------------
-            // COMISIÓN DEL MURO
-            // ----------------------------------------------------
-            //
-            // El precio de la venta es el importe de la operación.
-            // La comisión se conserva separada.
-            //
-            // La liquidación RPC utiliza este valor para registrar
-            // la operación sin modificar directamente los balances.
-            //
+            const comisionPlataforma = Number((precioTotalMxn * 0.01).toFixed(2));
 
-            const comisionPlataforma =
-                Number(
-                    (precioTotalMxn * 0.01).toFixed(2)
-                );
-
-            // ----------------------------------------------------
-            // CREAR VENTA LOCAL
-            // ----------------------------------------------------
-            //
-            // precio_usdt es NOT NULL.
-            // Se inicializa temporalmente en 0 y se sustituye por
-            // el pay_amount real devuelto por NOWPayments.
-            //
-
-            const {
-                data: venta,
-                error: ventaError
-            } = await supabaseAdmin
+            const { data: venta, error: ventaError } = await supabaseAdmin
                 .from('muro_ventas_tokens')
                 .insert({
                     post_id: post.id,
@@ -623,82 +340,41 @@ router.post(
                 .single();
 
             if (ventaError) {
-
-                logger.error(
-                    `Error creando venta Muro: ${ventaError.message}`
-                );
-
-                return respuestaError(
-                    res,
-                    500,
-                    'No fue posible crear la orden de compra'
-                );
+                logger.error(`Error creando venta Muro: ${ventaError.message}`);
+                return respuestaError(res, 500, 'No fue posible crear la orden de compra');
             }
 
-            // ----------------------------------------------------
-            // ORDER ID NOWPAYMENTS
-            // ----------------------------------------------------
-            //
-            // El prefijo muro_ permite al webhook distinguir esta
-            // operación de los pagos de transmisiones existentes.
-            //
-
-            const orderId =
-                `muro_${venta.id}`;
-
-            // ----------------------------------------------------
-            // CREAR PAYMENT NOWPAYMENTS
-            // ----------------------------------------------------
+            const orderId = `muro_${venta.id}`;
 
             let nowPayment;
-
             try {
-
                 const response = await axios.post(
                     NOWPAYMENTS_API_URL,
                     {
                         price_amount: precioTotalMxn,
-
-                        // El precio comercial de la publicación
-                        // está expresado en MXN.
                         price_currency: 'mxn',
-
-                        // Red elegida por el comprador.
                         pay_currency: payCurrency,
-
                         order_id: orderId,
-
-                        order_description:
-                            `Compra de ${cantidad} tokens en Muro #${post.id}`
+                        order_description: `Compra de ${cantidad} tokens en Muro #${post.id}`
                     },
                     {
                         headers: {
                             'x-api-key': NOWPAYMENTS_API_KEY,
                             'Content-Type': 'application/json'
                         },
-
                         timeout: 15000
                     }
                 );
-
-                nowPayment =
-                    response.data;
-
+                nowPayment = response.data;
             } catch (paymentError) {
-
                 logger.error(
                     `Error creando payment Muro ${orderId}: ${
                         paymentError.response?.data
-                            ? JSON.stringify(
-                                paymentError.response.data
-                            )
+                            ? JSON.stringify(paymentError.response.data)
                             : paymentError.message
                     }`
                 );
 
-                // La venta permanece pendiente.
-                // No se toca inventario ni tokens.
-
                 await supabaseAdmin
                     .from('muro_ventas_tokens')
                     .update({
@@ -709,24 +385,15 @@ router.post(
 
                 return res.status(502).json({
                     success: false,
-                    error:
-                        'No fue posible crear el pago con NOWPayments',
+                    error: 'No fue posible crear el pago con NOWPayments',
                     venta_id: venta.id
                 });
             }
 
-            // ----------------------------------------------------
-            // VALIDAR RESPUESTA NOWPAYMENTS
-            // ----------------------------------------------------
-
-            const paymentId =
-                nowPayment?.payment_id || null;
+            const paymentId = nowPayment?.payment_id || null;
 
             if (!paymentId) {
-
-                logger.error(
-                    `NOWPayments no devolvió payment_id para ${orderId}`
-                );
+                logger.error(`NOWPayments no devolvió payment_id para ${orderId}`);
 
                 await supabaseAdmin
                     .from('muro_ventas_tokens')
@@ -738,133 +405,64 @@ router.post(
 
                 return res.status(502).json({
                     success: false,
-                    error:
-                        'NOWPayments no devolvió un identificador de pago',
+                    error: 'NOWPayments no devolvió un identificador de pago',
                     venta_id: venta.id
                 });
             }
 
-            // ----------------------------------------------------
-            // DATOS DE PAGO REAL
-            // ----------------------------------------------------
+            const payAmount = numeroValido(nowPayment.pay_amount)
+                ? Number(nowPayment.pay_amount)
+                : 0;
 
-            const payAmount =
-                numeroValido(nowPayment.pay_amount)
-                    ? Number(nowPayment.pay_amount)
-                    : 0;
+            const payCurrencyReal = nowPayment.pay_currency || payCurrency;
+            const paymentStatus = nowPayment.payment_status || 'waiting';
 
-            const payCurrencyReal =
-                nowPayment.pay_currency ||
-                payCurrency;
-
-            const paymentStatus =
-                nowPayment.payment_status ||
-                'waiting';
-
-            // ----------------------------------------------------
-            // ACTUALIZAR VENTA
-            // ----------------------------------------------------
-
-            const {
-                data: ventaActualizada,
-                error: updateVentaError
-            } = await supabaseAdmin
+            const { data: ventaActualizada, error: updateVentaError } = await supabaseAdmin
                 .from('muro_ventas_tokens')
                 .update({
                     payment_id: String(paymentId),
-
-                    precio_usdt:
-                        payAmount,
-
-                    moneda_pago:
-                        String(payCurrencyReal),
-
-                    nowpayments_status:
-                        String(paymentStatus),
-
-                    estado:
-                        paymentStatus === 'confirming'
-                            ? 'confirmando'
-                            : 'pagando'
+                    precio_usdt: payAmount,
+                    moneda_pago: String(payCurrencyReal),
+                    nowpayments_status: String(paymentStatus),
+                    estado: paymentStatus === 'confirming' ? 'confirmando' : 'pagando'
                 })
                 .eq('id', venta.id)
                 .select()
                 .single();
 
             if (updateVentaError) {
-
-                logger.error(
-                    `Error guardando payment_id Muro ${venta.id}: ${updateVentaError.message}`
-                );
-
+                logger.error(`Error guardando payment_id Muro ${venta.id}: ${updateVentaError.message}`);
                 return res.status(500).json({
                     success: false,
-                    error:
-                        'El pago fue creado pero no se pudo guardar la orden',
+                    error: 'El pago fue creado pero no se pudo guardar la orden',
                     venta_id: venta.id,
                     payment_id: paymentId
                 });
             }
 
-            // ----------------------------------------------------
-            // RESPUESTA AL FRONTEND
-            // ----------------------------------------------------
-
-            logger.info(
-                `✅ Pago Muro creado: venta=${venta.id} payment=${paymentId} order=${orderId} red=${payCurrency}`
-            );
+            logger.info(`✅ Pago Muro creado: venta=${venta.id} payment=${paymentId} order=${orderId} red=${payCurrency}`);
 
             return res.status(201).json({
                 success: true,
-
                 data: {
-                    venta_id:
-                        ventaActualizada.id,
-
-                    post_id:
-                        ventaActualizada.post_id,
-
-                    cantidad:
-                        ventaActualizada.cantidad,
-
-                    precio_mxn:
-                        ventaActualizada.precio_mxn,
-
-                    precio_usdt:
-                        ventaActualizada.precio_usdt,
-
-                    estado:
-                        ventaActualizada.estado,
-
-                    nowpayments_status:
-                        ventaActualizada.nowpayments_status,
-
-                    payment_id:
-                        paymentId,
-
-                    payment_url:
-                        nowPayment.payment_url || null,
-
-                    pay_address:
-                        nowPayment.pay_address || null,
-
-                    pay_amount:
-                        nowPayment.pay_amount || null,
-
-                    pay_currency:
-                        payCurrencyReal,
-
-                    order_id:
-                        orderId
+                    venta_id: ventaActualizada.id,
+                    post_id: ventaActualizada.post_id,
+                    cantidad: ventaActualizada.cantidad,
+                    precio_mxn: ventaActualizada.precio_mxn,
+                    precio_usdt: ventaActualizada.precio_usdt,
+                    estado: ventaActualizada.estado,
+                    nowpayments_status: ventaActualizada.nowpayments_status,
+                    payment_id: paymentId,
+                    payment_url: nowPayment.payment_url || null,
+                    pay_address: nowPayment.pay_address || null,
+                    pay_amount: nowPayment.pay_amount || null,
+                    pay_currency: payCurrencyReal,
+                    order_id: orderId
                 }
             });
 
         } catch (error) {
-
-            logger.error(
-                `❌ Error creando pago Muro: ${error.message}`
-            );
-
+            logger.error(`❌ Error creando pago Muro: ${error.message}`);
             return res.status(500).json({
                 success: false,
                 error: 'Error interno creando el pago del Muro'
@@ -875,27 +473,6 @@ router.post(
 
 // ================================================================
 // CREAR PAGO - CAMPAÑA DE MARKETING
-// ================================================================
-//
-// Flujo:
-//
-// 1. Usuario autenticado ya creó la campaña (estado 'pendiente_pago')
-//    directamente desde marketing.html.
-// 2. El frontend llama a esta ruta con el campaignId y payCurrency.
-// 3. Backend verifica que la campaña sea del usuario y esté
-//    pendiente de pago.
-// 4. Backend valida que el monto alcance el mínimo de la red.
-// 5. Backend crea marketing_pagos en pendiente.
-// 6. Backend crea payment en NOWPayments.
-// 7. Se guarda payment_id y estado.
-// 8. NOWPayments posteriormente notificará al webhook.
-// 9. El webhook llamará a la RPC activar_campana_marketing.
-//
-// IMPORTANTE:
-// - El monto SIEMPRE se toma de marketing_campaigns.presupuesto
-//   (nunca del body del request).
-// - La activación de la campaña ocurre exclusivamente en el
-//   webhook, mediante la RPC.
 // ================================================================
 
 router.post(
@@ -924,10 +501,6 @@ router.post(
                 return respuestaError(res, 500, 'Servicio interno no configurado');
             }
 
-            // ----------------------------------------------------
-            // VALIDAR CAMPAÑA PROPIA Y PENDIENTE DE PAGO
-            // ----------------------------------------------------
-
             const { data: campaign, error: campaignError } = await supabaseAdmin
                 .from('marketing_campaigns')
                 .select('id, anunciante_id, presupuesto, moneda, estado, nombre')
@@ -945,22 +518,10 @@ router.post(
                 return respuestaError(res, 409, 'La campaña no está pendiente de pago');
             }
 
-            // ----------------------------------------------------
-            // VALIDAR RED DE PAGO CONTRA MONTO
-            // ----------------------------------------------------
-
-            const validacionRed = validarRedPago(
-                payCurrency,
-                campaign.presupuesto
-            );
-
+            const validacionRed = validarRedPago(payCurrency, campaign.presupuesto);
             if (!validacionRed.valido) {
                 return respuestaError(res, 400, validacionRed.error);
             }
-
-            // ----------------------------------------------------
-            // CREAR REGISTRO DE PAGO LOCAL
-            // ----------------------------------------------------
 
             const { data: pago, error: pagoError } = await supabaseAdmin
                 .from('marketing_pagos')
@@ -978,12 +539,7 @@ router.post(
 
             const orderId = `MKT-${pago.id}`;
 
-            // ----------------------------------------------------
-            // CREAR PAYMENT EN NOWPAYMENTS
-            // ----------------------------------------------------
-
             let nowPayment;
-
             try {
                 const response = await axios.post(
                     NOWPAYMENTS_API_URL,
@@ -1002,9 +558,7 @@ router.post(
                         timeout: 15000
                     }
                 );
-
                 nowPayment = response.data;
-
             } catch (paymentError) {
                 logger.error(
                     `Error creando payment Marketing ${orderId}: ${
@@ -1032,9 +586,7 @@ router.post(
             const paymentId = nowPayment?.payment_id || null;
 
             if (!paymentId) {
-                logger.error(
-                    `NOWPayments no devolvió payment_id para ${orderId}`
-                );
+                logger.error(`NOWPayments no devolvió payment_id para ${orderId}`);
 
                 await supabaseAdmin
                     .from('marketing_pagos')
@@ -1051,10 +603,7 @@ router.post(
                 });
             }
 
-            const {
-                data: pagoActualizado,
-                error: updatePagoError
-            } = await supabaseAdmin
+            const { data: pagoActualizado, error: updatePagoError } = await supabaseAdmin
                 .from('marketing_pagos')
                 .update({
                     payment_id: String(paymentId),
@@ -1069,11 +618,7 @@ router.post(
                 .single();
 
             if (updatePagoError) {
-
-                logger.error(
-                    `Error guardando payment_id Marketing ${pago.id}: ${updatePagoError.message}`
-                );
-
+                logger.error(`Error guardando payment_id Marketing ${pago.id}: ${updatePagoError.message}`);
                 return res.status(500).json({
                     success: false,
                     error: 'El pago fue creado pero no se pudo guardar la orden',
@@ -1082,13 +627,7 @@ router.post(
                 });
             }
 
-            // ----------------------------------------------------
-            // RESPUESTA AL FRONTEND
-            // ----------------------------------------------------
-
-            logger.info(
-                `✅ Pago Marketing creado: pago=${pago.id} payment=${paymentId} order=${orderId} red=${payCurrency}`
-            );
+            logger.info(`✅ Pago Marketing creado: pago=${pago.id} payment=${paymentId} order=${orderId} red=${payCurrency}`);
 
             return res.status(201).json({
                 success: true,
@@ -1119,6 +658,186 @@ router.post(
 );
 
 // ================================================================
+// CREAR PAGO - PAQUETE DE INTERNET
+// ================================================================
+//
+// Flujo:
+// 1. El usuario ya creó la orden vía RPC crear_orden_internet
+//    (que garantiza que el precio viene de paquetes_internet).
+// 2. El frontend llama a esta ruta con ordenId y payCurrency.
+// 3. Backend verifica que la orden sea del usuario y esté pendiente.
+// 4. Backend valida el monto contra el mínimo de la red.
+// 5. Backend crea payment en NOWPayments.
+// 6. El webhook detecta "NET-" y llama a activar_orden_internet.
+// ================================================================
+
+router.post(
+    '/internet/create',
+    verificarToken,
+    limitadorPagos,
+    async (req, res) => {
+
+        try {
+            const userId = req.usuario.id;
+            const ordenId = req.body?.ordenId;
+            const payCurrency =
+                String(req.body?.payCurrency || 'usdttrc20').toLowerCase();
+
+            if (!ordenId) {
+                return respuestaError(res, 400, 'ordenId es requerido');
+            }
+
+            if (!NOWPAYMENTS_API_KEY) {
+                logger.error('NOWPAYMENTS_API_KEY no está configurada');
+                return respuestaError(res, 500, 'Servicio de pagos no configurado');
+            }
+
+            if (!supabaseAdmin) {
+                logger.error('supabaseAdmin no está configurado');
+                return respuestaError(res, 500, 'Servicio interno no configurado');
+            }
+
+            const { data: orden, error: ordenError } = await supabaseAdmin
+                .from('ordenes_internet')
+                .select('id, usuario_id, plan_nombre, monto_mxn, estado')
+                .eq('id', ordenId)
+                .eq('usuario_id', userId)
+                .maybeSingle();
+
+            if (ordenError) throw ordenError;
+
+            if (!orden) {
+                return respuestaError(res, 404, 'Orden no encontrada');
+            }
+
+            if (orden.estado !== 'pendiente') {
+                return respuestaError(res, 409, 'La orden no está pendiente de pago');
+            }
+
+            const validacionRed = validarRedPago(payCurrency, orden.monto_mxn);
+            if (!validacionRed.valido) {
+                return respuestaError(res, 400, validacionRed.error);
+            }
+
+            const orderId = `NET-${orden.id}`;
+
+            let nowPayment;
+            try {
+                const response = await axios.post(
+                    NOWPAYMENTS_API_URL,
+                    {
+                        price_amount: Number(orden.monto_mxn),
+                        price_currency: 'mxn',
+                        pay_currency: payCurrency,
+                        order_id: orderId,
+                        order_description: `Paquete Internet: ${orden.plan_nombre}`
+                    },
+                    {
+                        headers: {
+                            'x-api-key': NOWPAYMENTS_API_KEY,
+                            'Content-Type': 'application/json'
+                        },
+                        timeout: 15000
+                    }
+                );
+                nowPayment = response.data;
+            } catch (paymentError) {
+                logger.error(
+                    `Error creando payment Internet ${orderId}: ${
+                        paymentError.response?.data
+                            ? JSON.stringify(paymentError.response.data)
+                            : paymentError.message
+                    }`
+                );
+
+                await supabaseAdmin
+                    .from('ordenes_internet')
+                    .update({
+                        nowpayments_status: 'creation_failed',
+                        estado: 'cancelada'
+                    })
+                    .eq('id', orden.id);
+
+                return res.status(502).json({
+                    success: false,
+                    error: 'No fue posible crear el pago con NOWPayments'
+                });
+            }
+
+            const paymentId = nowPayment?.payment_id || null;
+
+            if (!paymentId) {
+                logger.error(`NOWPayments no devolvió payment_id para ${orderId}`);
+
+                await supabaseAdmin
+                    .from('ordenes_internet')
+                    .update({
+                        nowpayments_status: 'creation_failed',
+                        estado: 'cancelada'
+                    })
+                    .eq('id', orden.id);
+
+                return res.status(502).json({
+                    success: false,
+                    error: 'NOWPayments no devolvió un identificador de pago'
+                });
+            }
+
+            const { data: ordenActualizada, error: updateError } = await supabaseAdmin
+                .from('ordenes_internet')
+                .update({
+                    payment_id: String(paymentId),
+                    precio_usdt: numeroValido(nowPayment.pay_amount)
+                        ? Number(nowPayment.pay_amount)
+                        : null,
+                    pay_currency: payCurrency,
+                    nowpayments_status: nowPayment.payment_status || 'waiting',
+                    estado: 'pagando'
+                })
+                .eq('id', orden.id)
+                .select()
+                .single();
+
+            if (updateError) {
+                logger.error(`Error guardando payment_id Internet ${orden.id}: ${updateError.message}`);
+                return res.status(500).json({
+                    success: false,
+                    error: 'El pago fue creado pero no se pudo guardar la orden',
+                    orden_id: orden.id,
+                    payment_id: paymentId
+                });
+            }
+
+            logger.info(`✅ Pago Internet creado: orden=${orden.id} payment=${paymentId} order=${orderId} red=${payCurrency}`);
+
+            return res.status(201).json({
+                success: true,
+                data: {
+                    orden_id: ordenActualizada.id,
+                    estado: ordenActualizada.estado,
+                    monto_mxn: ordenActualizada.monto_mxn,
+                    pay_currency: payCurrency,
+                    nowpayments_status: ordenActualizada.nowpayments_status,
+                    payment_id: paymentId,
+                    payment_url: nowPayment.payment_url || null,
+                    pay_address: nowPayment.pay_address || null,
+                    pay_amount: nowPayment.pay_amount || null,
+                    pay_currency_real: nowPayment.pay_currency || null,
+                    order_id: orderId
+                }
+            });
+
+        } catch (error) {
+            logger.error(`❌ Error creando pago Internet: ${error.message}`);
+            return res.status(500).json({
+                success: false,
+                error: 'Error interno creando el pago de Internet'
+            });
+        }
+    }
+);
+
+// ================================================================
 // ESTADO DE PAGO - TRANSMISIONES
 // ================================================================
 
@@ -1128,26 +847,14 @@ router.get(
     async (req, res) => {
 
         try {
-
-            const {
-                ordenId
-            } = req.params;
-
-            const userId =
-                req.usuario.id;
+            const { ordenId } = req.params;
+            const userId = req.usuario.id;
 
             if (!ordenId) {
-                return respuestaError(
-                    res,
-                    400,
-                    'ordenId requerido'
-                );
+                return respuestaError(res, 400, 'ordenId requerido');
             }
 
-            const {
-                data,
-                error
-            } = await supabase
+            const { data, error } = await supabase
                 .from('pagos_transmision')
                 .select('*')
                 .eq('id', ordenId)
@@ -1156,27 +863,15 @@ router.get(
 
             if (error) {
                 if (error.code === 'PGRST116') {
-                    return respuestaError(
-                        res,
-                        404,
-                        'Orden no encontrada'
-                    );
+                    return respuestaError(res, 404, 'Orden no encontrada');
                 }
-
                 throw error;
             }
 
-            return res.json({
-                success: true,
-                data
-            });
+            return res.json({ success: true, data });
 
         } catch (error) {
-
-            logger.error(
-                `Error verificando pago: ${error.message}`
-            );
-
+            logger.error(`Error verificando pago: ${error.message}`);
             return res.status(500).json({
                 success: false,
                 error: 'Error verificando el pago'
@@ -1188,20 +883,6 @@ router.get(
 // ================================================================
 // ESTADO REAL NOWPAYMENTS - MURO
 // ================================================================
-//
-// Este endpoint consulta directamente a NOWPayments.
-//
-// El frontend NO decide si un pago está completado.
-//
-// El backend:
-// 1. Busca la venta.
-// 2. Verifica que pertenezca al comprador.
-// 3. Obtiene payment_id.
-// 4. Consulta NOWPayments.
-// 5. Actualiza el estado local.
-// 6. Si el pago está finalizado, delega la liquidación al webhook/RPC.
-//
-// ================================================================
 
 router.get(
     '/muro/status/:ventaId',
@@ -1209,74 +890,35 @@ router.get(
     async (req, res) => {
 
         try {
+            const ventaId = Number(req.params.ventaId);
+            const userId = req.usuario.id;
 
-            const ventaId =
-                Number(req.params.ventaId);
-
-            const userId =
-                req.usuario.id;
-
-            if (
-                !Number.isInteger(ventaId) ||
-                ventaId <= 0
-            ) {
-                return respuestaError(
-                    res,
-                    400,
-                    'ventaId inválido'
-                );
+            if (!Number.isInteger(ventaId) || ventaId <= 0) {
+                return respuestaError(res, 400, 'ventaId inválido');
             }
 
             if (!supabaseAdmin) {
-                return respuestaError(
-                    res,
-                    500,
-                    'Servicio interno no configurado'
-                );
+                return respuestaError(res, 500, 'Servicio interno no configurado');
             }
 
             if (!NOWPAYMENTS_API_KEY) {
-                return respuestaError(
-                    res,
-                    500,
-                    'Servicio de pagos no configurado'
-                );
+                return respuestaError(res, 500, 'Servicio de pagos no configurado');
             }
 
-            // ----------------------------------------------------
-            // BUSCAR VENTA PROPIA
-            // ----------------------------------------------------
-
-            const {
-                data: venta,
-                error: ventaError
-            } = await supabaseAdmin
+            const { data: venta, error: ventaError } = await supabaseAdmin
                 .from('muro_ventas_tokens')
                 .select('*')
                 .eq('id', ventaId)
                 .eq('comprador_id', userId)
                 .maybeSingle();
 
-            if (ventaError) {
-                throw ventaError;
-            }
+            if (ventaError) throw ventaError;
 
             if (!venta) {
-                return respuestaError(
-                    res,
-                    404,
-                    'Venta no encontrada'
-                );
+                return respuestaError(res, 404, 'Venta no encontrada');
             }
 
-            // ----------------------------------------------------
-            // YA LIQUIDADA
-            // ----------------------------------------------------
-
-            if (
-                venta.estado === 'pagado' ||
-                venta.estado === 'completado'
-            ) {
+            if (venta.estado === 'pagado' || venta.estado === 'completado') {
                 return res.json({
                     success: true,
                     data: venta,
@@ -1285,159 +927,72 @@ router.get(
                 });
             }
 
-            // ----------------------------------------------------
-            // SIN PAYMENT ID
-            // ----------------------------------------------------
-
             if (!venta.payment_id) {
                 return res.json({
                     success: true,
                     data: venta,
                     final: false,
                     paid: false,
-                    message:
-                        'El pago todavía no tiene payment_id'
+                    message: 'El pago todavía no tiene payment_id'
                 });
             }
 
-            // ----------------------------------------------------
-            // CONSULTAR NOWPAYMENTS
-            // ----------------------------------------------------
-
             let payment;
-
             try {
-
                 const response = await axios.get(
-                    `${NOWPAYMENTS_API_URL}/${encodeURIComponent(
-                        venta.payment_id
-                    )}`,
+                    `${NOWPAYMENTS_API_URL}/${encodeURIComponent(venta.payment_id)}`,
                     {
                         headers: {
-                            'x-api-key':
-                                NOWPAYMENTS_API_KEY,
-                            'Content-Type':
-                                'application/json'
+                            'x-api-key': NOWPAYMENTS_API_KEY,
+                            'Content-Type': 'application/json'
                         },
-
                         timeout: 15000
                     }
                 );
-
-                payment =
-                    response.data;
-
+                payment = response.data;
             } catch (paymentError) {
-
                 logger.error(
                     `Error consultando NOWPayments payment ${venta.payment_id}: ${
                         paymentError.response?.data
-                            ? JSON.stringify(
-                                paymentError.response.data
-                            )
+                            ? JSON.stringify(paymentError.response.data)
                             : paymentError.message
                     }`
                 );
-
                 return res.status(502).json({
                     success: false,
-                    error:
-                        'No fue posible consultar el estado del pago'
+                    error: 'No fue posible consultar el estado del pago'
                 });
             }
 
-            const estadoNow =
-                String(
-                    payment?.payment_status ||
-                    'unknown'
-                ).toLowerCase();
+            const estadoNow = String(payment?.payment_status || 'unknown').toLowerCase();
+            const payAmount = numeroValido(payment?.pay_amount) ? Number(payment.pay_amount) : null;
 
-            const payAmount =
-                numeroValido(payment?.pay_amount)
-                    ? Number(payment.pay_amount)
-                    : null;
+            const estaPagado = ['finished'].includes(estadoNow);
+            const estaFallido = ['failed', 'refunded', 'expired'].includes(estadoNow);
 
-            // ----------------------------------------------------
-            // ESTADOS
-            // ----------------------------------------------------
-
-            const estadosFinales = [
-                'finished'
-            ];
-
-            const estadosFallidos = [
-                'failed',
-                'refunded',
-                'expired'
-            ];
-
-            const estaPagado =
-                estadosFinales.includes(
-                    estadoNow
-                );
-
-            const estaFallido =
-                estadosFallidos.includes(
-                    estadoNow
-                );
-
-            // ----------------------------------------------------
-            // MAPEAR ESTADO LOCAL
-            // ----------------------------------------------------
-
-            let estadoLocal =
-                venta.estado;
-
-            if (estaPagado) {
-                estadoLocal = 'pagado';
-            } else if (estaFallido) {
-                estadoLocal = 'cancelado';
-            } else if (
-                estadoNow === 'confirming' ||
-                estadoNow === 'sending'
-            ) {
-                estadoLocal = 'confirmando';
-            } else {
-                estadoLocal = 'pagando';
-            }
-
-            // ----------------------------------------------------
-            // ACTUALIZAR ESTADO LOCAL
-            // ----------------------------------------------------
+            let estadoLocal = venta.estado;
+            if (estaPagado) estadoLocal = 'pagado';
+            else if (estaFallido) estadoLocal = 'cancelado';
+            else if (estadoNow === 'confirming' || estadoNow === 'sending') estadoLocal = 'confirmando';
+            else estadoLocal = 'pagando';
 
             const updates = {
-                nowpayments_status:
-                    estadoNow,
-                estado:
-                    estadoLocal
+                nowpayments_status: estadoNow,
+                estado: estadoLocal
             };
 
-            if (
-                payAmount !== null &&
-                payAmount > 0
-            ) {
-                updates.precio_usdt =
-                    payAmount;
+            if (payAmount !== null && payAmount > 0) {
+                updates.precio_usdt = payAmount;
             }
 
             if (estaPagado) {
-                updates.pagado_en =
-                    venta.pagado_en ||
-                    new Date().toISOString();
-
-                if (
-                    payAmount !== null &&
-                    payAmount > 0
-                ) {
-                    updates.monto_recibido =
-                        payAmount;
+                updates.pagado_en = venta.pagado_en || new Date().toISOString();
+                if (payAmount !== null && payAmount > 0) {
+                    updates.monto_recibido = payAmount;
                 }
             }
 
-            const {
-                data: ventaActualizada,
-                error: updateError
-            } = await supabaseAdmin
+            const { data: ventaActualizada, error: updateError } = await supabaseAdmin
                 .from('muro_ventas_tokens')
                 .update(updates)
                 .eq('id', venta.id)
@@ -1445,113 +1000,58 @@ router.get(
                 .select()
                 .single();
 
-            if (updateError) {
-                throw updateError;
-            }
-
-            // ----------------------------------------------------
-            // SI FINALIZÓ
-            // ----------------------------------------------------
-            //
-            // Intentamos liquidar inmediatamente.
-            //
-            // La RPC es idempotente, bloquea la venta y evita
-            // doble acreditación.
-            //
+            if (updateError) throw updateError;
 
             if (estaPagado) {
-
-                const {
-                    data: liquidacion,
-                    error: liquidacionError
-                } = await supabaseAdmin.rpc(
+                const { data: liquidacion, error: liquidacionError } = await supabaseAdmin.rpc(
                     'liquidar_venta_token_muro',
-                    {
-                        p_venta_id:
-                            venta.id
-                    }
+                    { p_venta_id: venta.id }
                 );
 
                 if (liquidacionError) {
-
-                    logger.error(
-                        `Error liquidando venta Muro ${venta.id}: ${liquidacionError.message}`
-                    );
-
-                    // No fingimos que la operación terminó.
-                    // El webhook podrá reintentar la liquidación.
+                    logger.error(`Error liquidando venta Muro ${venta.id}: ${liquidacionError.message}`);
                     return res.json({
                         success: true,
                         data: ventaActualizada,
                         final: true,
                         paid: true,
                         liquidated: false,
-                        message:
-                            'Pago confirmado. La liquidación está pendiente de procesamiento.'
+                        message: 'Pago confirmado. La liquidación está pendiente de procesamiento.'
                     });
                 }
 
-                // Volver a consultar para entregar estado real.
-                const {
-                    data: ventaFinal,
-                    error: ventaFinalError
-                } = await supabaseAdmin
+                const { data: ventaFinal, error: ventaFinalError } = await supabaseAdmin
                     .from('muro_ventas_tokens')
                     .select('*')
                     .eq('id', venta.id)
                     .single();
 
-                if (ventaFinalError) {
-                    throw ventaFinalError;
-                }
+                if (ventaFinalError) throw ventaFinalError;
 
                 return res.json({
                     success: true,
                     data: ventaFinal,
                     final: true,
                     paid: true,
-                    liquidated:
-                        Boolean(
-                            liquidacion?.success
-                        ),
-                    liquidation:
-                        liquidacion || null
+                    liquidated: Boolean(liquidacion?.success),
+                    liquidation: liquidacion || null
                 });
             }
 
-            // ----------------------------------------------------
-            // RESPUESTA ESTADO NO FINAL
-            // ----------------------------------------------------
-
             return res.json({
                 success: true,
-
-                data:
-                    ventaActualizada,
-
-                final:
-                    estaFallido,
-
-                paid:
-                    false,
-
-                failed:
-                    estaFallido,
-
-                nowpayments:
-                    payment
+                data: ventaActualizada,
+                final: estaFallido,
+                paid: false,
+                failed: estaFallido,
+                nowpayments: payment
             });
 
         } catch (error) {
-
-            logger.error(
-                `❌ Error verificando estado pago Muro: ${error.message}`
-            );
-
+            logger.error(`❌ Error verificando estado pago Muro: ${error.message}`);
             return res.status(500).json({
                 success: false,
-                error:
-                    'Error verificando el estado del pago'
+                error: 'Error verificando el estado del pago'
             });
         }
     }
@@ -1560,10 +1060,6 @@ router.get(
 // ================================================================
 // ESTADO REAL NOWPAYMENTS - MARKETING
 // ================================================================
-//
-// Igual que /muro/status/:ventaId, pero para pagos de campañas.
-// Sirve de respaldo si el webhook aún no llegó o falló.
-// ================================================================
 
 router.get(
     '/marketing/status/:pagoId',
@@ -1571,7 +1067,6 @@ router.get(
     async (req, res) => {
 
         try {
-
             const pagoId = req.params.pagoId;
             const userId = req.usuario.id;
 
@@ -1615,7 +1110,6 @@ router.get(
             }
 
             let payment;
-
             try {
                 const response = await axios.get(
                     `${NOWPAYMENTS_API_URL}/${encodeURIComponent(pago.payment_id)}`,
@@ -1713,6 +1207,165 @@ router.get(
 );
 
 // ================================================================
+// ESTADO REAL NOWPAYMENTS - INTERNET
+// ================================================================
+
+router.get(
+    '/internet/status/:ordenId',
+    verificarToken,
+    async (req, res) => {
+
+        try {
+            const ordenId = req.params.ordenId;
+            const userId = req.usuario.id;
+
+            if (!ordenId) {
+                return respuestaError(res, 400, 'ordenId inválido');
+            }
+
+            if (!supabaseAdmin) {
+                return respuestaError(res, 500, 'Servicio interno no configurado');
+            }
+
+            if (!NOWPAYMENTS_API_KEY) {
+                return respuestaError(res, 500, 'Servicio de pagos no configurado');
+            }
+
+            const { data: orden, error: ordenError } = await supabaseAdmin
+                .from('ordenes_internet')
+                .select('*')
+                .eq('id', ordenId)
+                .eq('usuario_id', userId)
+                .maybeSingle();
+
+            if (ordenError) throw ordenError;
+
+            if (!orden) {
+                return respuestaError(res, 404, 'Orden no encontrada');
+            }
+
+            if (orden.estado === 'activa' || orden.estado === 'activada' || orden.estado === 'completado') {
+                return res.json({ success: true, data: orden, final: true, paid: true, activated: true });
+            }
+
+            if (!orden.payment_id) {
+                return res.json({
+                    success: true,
+                    data: orden,
+                    final: false,
+                    paid: false,
+                    message: 'La orden todavía no tiene payment_id'
+                });
+            }
+
+            let payment;
+            try {
+                const response = await axios.get(
+                    `${NOWPAYMENTS_API_URL}/${encodeURIComponent(orden.payment_id)}`,
+                    {
+                        headers: {
+                            'x-api-key': NOWPAYMENTS_API_KEY,
+                            'Content-Type': 'application/json'
+                        },
+                        timeout: 15000
+                    }
+                );
+                payment = response.data;
+            } catch (paymentError) {
+                logger.error(
+                    `Error consultando NOWPayments payment ${orden.payment_id}: ${
+                        paymentError.response?.data
+                            ? JSON.stringify(paymentError.response.data)
+                            : paymentError.message
+                    }`
+                );
+                return res.status(502).json({
+                    success: false,
+                    error: 'No fue posible consultar el estado del pago'
+                });
+            }
+
+            const estadoNow = String(payment?.payment_status || 'unknown').toLowerCase();
+            const estaPagado = estadoNow === 'finished';
+            const estaFallido = ['failed', 'refunded', 'expired'].includes(estadoNow);
+
+            let estadoLocal = orden.estado;
+            if (estaPagado) estadoLocal = 'pagada';
+            else if (estaFallido) estadoLocal = 'cancelada';
+            else if (estadoNow === 'confirming' || estadoNow === 'sending') estadoLocal = 'confirmando';
+            else estadoLocal = 'pagando';
+
+            const updates = {
+                nowpayments_status: estadoNow,
+                estado: estadoLocal
+            };
+
+            if (estaPagado) {
+                updates.pagado_en = orden.pagado_en || new Date().toISOString();
+            }
+
+            const { data: ordenActualizada, error: updateError } = await supabaseAdmin
+                .from('ordenes_internet')
+                .update(updates)
+                .eq('id', orden.id)
+                .eq('usuario_id', userId)
+                .select()
+                .single();
+
+            if (updateError) throw updateError;
+
+            if (estaPagado) {
+                const { error: activarError } = await supabaseAdmin.rpc('activar_orden_internet', {
+                    p_orden_id: orden.id
+                });
+
+                if (activarError) {
+                    logger.error(`Error activando orden Internet ${orden.id}: ${activarError.message}`);
+                    return res.json({
+                        success: true,
+                        data: ordenActualizada,
+                        final: true,
+                        paid: true,
+                        activated: false,
+                        message: 'Pago confirmado. La activación está pendiente de procesamiento.'
+                    });
+                }
+
+                const { data: ordenFinal } = await supabaseAdmin
+                    .from('ordenes_internet')
+                    .select('*')
+                    .eq('id', orden.id)
+                    .single();
+
+                return res.json({
+                    success: true,
+                    data: ordenFinal || ordenActualizada,
+                    final: true,
+                    paid: true,
+                    activated: true
+                });
+            }
+
+            return res.json({
+                success: true,
+                data: ordenActualizada,
+                final: estaFallido,
+                paid: false,
+                failed: estaFallido,
+                nowpayments: payment
+            });
+
+        } catch (error) {
+            logger.error(`❌ Error verificando estado pago Internet: ${error.message}`);
+            return res.status(500).json({
+                success: false,
+                error: 'Error verificando el estado del pago'
+            });
+        }
+    }
+);
+
+// ================================================================
 // HISTORIAL DE PAGOS
 // ================================================================
 
@@ -1722,27 +1375,15 @@ router.get(
     async (req, res) => {
 
         try {
+            const userId = req.usuario.id;
 
-            const userId =
-                req.usuario.id;
-
-            const {
-                data,
-                error
-            } = await supabase
+            const { data, error } = await supabase
                 .from('pagos_transmision')
                 .select('*')
                 .eq('espectador_id', userId)
-                .order(
-                    'created_at',
-                    {
-                        ascending: false
-                    }
-                );
+                .order('created_at', { ascending: false });
 
-            if (error) {
-                throw error;
-            }
+            if (error) throw error;
 
             return res.json({
                 success: true,
@@ -1750,15 +1391,10 @@ router.get(
             });
 
         } catch (error) {
-
-            logger.error(
-                `Error obteniendo historial: ${error.message}`
-            );
-
+            logger.error(`Error obteniendo historial: ${error.message}`);
             return res.status(500).json({
                 success: false,
-                error:
-                    'Error obteniendo historial de pagos'
+                error: 'Error obteniendo historial de pagos'
             });
         }
     }
