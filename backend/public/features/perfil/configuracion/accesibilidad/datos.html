@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#000000" />
+    <title>Uso de datos · Sariel's</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="../../../shared/config-layout.css" />
+    
+    <style>
+        .cfg-subtitle {
+            padding: 0 16px 12px 16px;
+            font-size: 0.72rem;
+            color: var(--cfg-text-muted);
+            line-height: 1.5;
+        }
+
+        .cfg-option-value {
+            font-size: 0.72rem;
+            color: var(--cfg-gold);
+            font-weight: 600;
+            margin-top: 6px;
+            padding: 0 16px 16px 16px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .cfg-section-intro {
+            padding: 0 16px 16px 16px;
+            font-size: 0.75rem;
+            color: var(--cfg-text-muted);
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body class="cfg-page">
+
+    <div id="cfgHeaderSlot"></div>
+
+    <main class="cfg-content">
+
+        <h2 class="cfg-section-title">Ahorrador de datos</h2>
+        <div class="cfg-list" id="seccionAhorrador"></div>
+
+        <h2 class="cfg-section-title">Imágenes</h2>
+        <div class="cfg-list" id="seccionImagenes"></div>
+
+        <h2 class="cfg-section-title">Video</h2>
+        <div class="cfg-list" id="seccionVideo"></div>
+
+        <div class="cfg-aviso cfg-aviso-info">
+            ℹ️ Esta configuración afecta a todas las cuentas de Sariel's en este dispositivo.
+        </div>
+
+        <div class="cfg-footer">
+            <strong>◈ Sariel's</strong> · Accesibilidad · Uso de datos
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="../../../shared/config-icons.js"></script>
+    <script src="../../../shared/config-layout.js"></script>
+
+    <script>
+    (function () {
+        'use strict';
+
+        const $ = (sel) => document.querySelector(sel);
+
+        cfgInitPage({
+            title: 'Uso de datos',
+            subtitle: 'Ahorra datos móviles',
+            backUrl: '/features/perfil/configuracion/index.html',
+        });
+
+        const PREF_KEYS = {
+            ahorrador: 'datos_ahorrador',
+            imagenes_calidad: 'datos_imagenes_calidad',
+            video_calidad: 'datos_video_calidad',
+            video_auto: 'datos_video_reproduccion_auto',
+        };
+
+        // Opciones de calidad
+        const CALIDADES = [
+            { id: 'wifi', label: 'Solo Wi-Fi', desc: 'Ahorra datos móviles' },
+            { id: 'siempre', label: 'Siempre', desc: 'Usa la mejor calidad siempre' },
+            { id: 'nunca', label: 'Nunca', desc: 'Siempre calidad reducida' },
+        ];
+
+        // Opciones de reproducción automática
+        const AUTOPLAY = [
+            { id: 'wifi', label: 'Solo Wi-Fi', desc: 'Reproduce automáticamente en Wi-Fi' },
+            { id: 'siempre', label: 'Siempre', desc: 'Siempre reproduce automáticamente' },
+            { id: 'nunca', label: 'Nunca', desc: 'Nunca reproduce automáticamente' },
+        ];
+
+        function renderSecciones() {
+            // ============================================================
+            // AHORRADOR DE DATOS
+            // ============================================================
+            $('#seccionAhorrador').innerHTML = [
+                cfgRenderToggle({
+                    id: 'toggleAhorrador',
+                    title: 'Ahorrador de datos',
+                    desc: 'Si activas esta configuración, los videos no se reproducirán automáticamente y las imágenes se cargarán en menor calidad. Reduce automáticamente el uso de datos de todas tus cuentas de Sariel\'s en este dispositivo.',
+                    checked: cfgGetPref(PREF_KEYS.ahorrador, false),
+                    onChange: `window.onToggleAhorrador(this.checked)`,
+                }),
+            ].join('');
+
+            // ============================================================
+            // IMÁGENES
+            // ============================================================
+            const imgCalidad = cfgGetPref(PREF_KEYS.imagenes_calidad, 'wifi');
+            $('#seccionImagenes').innerHTML = [
+                cfgRenderItem({
+                    icon: 'image',
+                    title: 'Imágenes de alta calidad',
+                    desc: 'Selecciona cuándo se deben cargar automáticamente las imágenes en alta calidad (hasta 4K).',
+                    onclick: 'window.onConfigImagenes()',
+                    noChevron: false,
+                }),
+            ].join('') + `<div class="cfg-option-value">📸 ${CALIDADES.find(c => c.id === imgCalidad)?.label || 'Solo Wi-Fi'}</div>`;
+
+            // ============================================================
+            // VIDEO
+            // ============================================================
+            const vidCalidad = cfgGetPref(PREF_KEYS.video_calidad, 'wifi');
+            const vidAuto = cfgGetPref(PREF_KEYS.video_auto, 'wifi');
+
+            $('#seccionVideo').innerHTML = [
+                cfgRenderItem({
+                    icon: 'monitor',
+                    title: 'Video de alta calidad',
+                    desc: 'Selecciona cuándo se usará la mejor calidad disponible para la reproducción.',
+                    onclick: 'window.onConfigVideo()',
+                }),
+            ].join('') + `<div class="cfg-option-value">🎬 ${CALIDADES.find(c => c.id === vidCalidad)?.label || 'Solo Wi-Fi'}</div>` +
+            [
+                cfgRenderItem({
+                    icon: 'monitor',
+                    title: 'Reproducción automática de video',
+                    desc: 'Selecciona cuándo los videos se reproducirán automáticamente.',
+                    onclick: 'window.onConfigAutoPlay()',
+                }),
+            ].join('') + `<div class="cfg-option-value">▶️ ${AUTOPLAY.find(c => c.id === vidAuto)?.label || 'Solo Wi-Fi'}</div>`;
+        }
+
+        // ============================================================
+        // CALLBACKS
+        // ============================================================
+        window.onToggleAhorrador = async (value) => {
+            await cfgSetPref(PREF_KEYS.ahorrador, value);
+            cfgToast(
+                value ? '📉 Ahorrador de datos activado' : '📈 Ahorrador de datos desactivado',
+                value ? 'success' : ''
+            );
+        };
+
+        window.onConfigImagenes = async () => {
+            const actual = cfgGetPref(PREF_KEYS.imagenes_calidad, 'wifi');
+            const nuevo = await abrirSelectorCalidad('Imágenes de alta calidad', CALIDADES, actual);
+            if (nuevo) {
+                await cfgSetPref(PREF_KEYS.imagenes_calidad, nuevo);
+                renderSecciones();
+                cfgToast(`📸 Imágenes: ${CALIDADES.find(c => c.id === nuevo).label}`, 'success');
+            }
+        };
+
+        window.onConfigVideo = async () => {
+            const actual = cfgGetPref(PREF_KEYS.video_calidad, 'wifi');
+            const nuevo = await abrirSelectorCalidad('Video de alta calidad', CALIDADES, actual);
+            if (nuevo) {
+                await cfgSetPref(PREF_KEYS.video_calidad, nuevo);
+                renderSecciones();
+                cfgToast(`🎬 Video: ${CALIDADES.find(c => c.id === nuevo).label}`, 'success');
+            }
+        };
+
+        window.onConfigAutoPlay = async () => {
+            const actual = cfgGetPref(PREF_KEYS.video_auto, 'wifi');
+            const nuevo = await abrirSelectorCalidad('Reproducción automática', AUTOPLAY, actual);
+            if (nuevo) {
+                await cfgSetPref(PREF_KEYS.video_auto, nuevo);
+                renderSecciones();
+                cfgToast(`▶️ AutoPlay: ${AUTOPLAY.find(c => c.id === nuevo).label}`, 'success');
+            }
+        };
+
+        // ============================================================
+        // MODAL SELECTOR DE CALIDAD
+        // ============================================================
+        function abrirSelectorCalidad(titulo, opciones, actual) {
+            return new Promise((resolve) => {
+                const overlay = document.createElement('div');
+                overlay.className = 'cfg-modal-overlay';
+
+                const optionsHtml = opciones.map(opt => `
+                    <div class="cfg-radio-item ${opt.id === actual ? 'active' : ''}" data-value="${opt.id}">
+                        <div class="cfg-radio-circle"></div>
+                        <div class="cfg-radio-content">
+                            <div class="cfg-radio-title">${opt.label}</div>
+                            <div class="cfg-radio-desc">${opt.desc}</div>
+                        </div>
+                    </div>
+                `).join('');
+
+                overlay.innerHTML = `
+                    <div class="cfg-modal" style="max-width: 380px;">
+                        <h3 class="cfg-modal-title">${titulo}</h3>
+                        <div class="cfg-radio-group" style="padding: 0 0 16px 0;">
+                            ${optionsHtml}
+                        </div>
+                        <div class="cfg-modal-actions">
+                            <button class="cfg-btn cfg-btn-outline" data-action="cancel">Cancelar</button>
+                            <button class="cfg-btn cfg-btn-primary" data-action="confirm">Aplicar</button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(overlay);
+
+                requestAnimationFrame(() => overlay.classList.add('show'));
+
+                let seleccion = actual;
+
+                overlay.querySelectorAll('.cfg-radio-item').forEach(item => {
+                    item.addEventListener('click', () => {
+                        overlay.querySelectorAll('.cfg-radio-item').forEach(i => i.classList.remove('active'));
+                        item.classList.add('active');
+                        seleccion = item.getAttribute('data-value');
+                    });
+                });
+
+                const close = (resultado) => {
+                    overlay.classList.remove('show');
+                    setTimeout(() => overlay.remove(), 200);
+                    resolve(resultado);
+                };
+
+                overlay.querySelector('[data-action="cancel"]').onclick = () => close(null);
+                overlay.querySelector('[data-action="confirm"]').onclick = () => close(seleccion);
+                overlay.onclick = (e) => { if (e.target === overlay) close(null); };
+            });
+        }
+
+        // ============================================================
+        // INICIALIZAR
+        // ============================================================
+        window.addEventListener('DOMContentLoaded', async () => {
+            await new Promise(resolve => setTimeout(resolve, 400));
+            renderSecciones();
+        });
+
+    })();
+    </script>
+</body>
+</html>
