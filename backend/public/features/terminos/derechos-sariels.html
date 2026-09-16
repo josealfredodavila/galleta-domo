@@ -143,6 +143,73 @@
             text-align: center;
         }
         
+        /* ✅ CARD DEL ALGORITMO */
+        .card-algoritmo {
+            background: linear-gradient(155deg, rgba(0, 229, 255, 0.06), rgba(15, 45, 26, 0.6));
+            border: 2px solid rgba(0, 229, 255, 0.3);
+            border-radius: var(--radius-xl);
+            padding: 26px 24px;
+            margin-bottom: 24px;
+            position: relative;
+        }
+        .card-algoritmo::before {
+            content: '🤖';
+            position: absolute;
+            top: -14px;
+            left: 24px;
+            background: var(--space);
+            padding: 0 10px;
+            font-size: 1.2rem;
+        }
+        .card-algoritmo .titulo {
+            font-family: 'Orbitron', monospace;
+            color: var(--cyan);
+            font-size: 1.05rem;
+            font-weight: 700;
+            margin-bottom: 14px;
+            letter-spacing: 0.5px;
+        }
+        .card-algoritmo p {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            margin-bottom: 12px;
+            line-height: 1.65;
+        }
+        .card-algoritmo ul {
+            list-style: none;
+            padding: 0;
+            margin: 14px 0;
+        }
+        .card-algoritmo ul li {
+            color: var(--text-secondary);
+            font-size: 0.83rem;
+            padding: 8px 0 8px 26px;
+            position: relative;
+            line-height: 1.55;
+        }
+        .card-algoritmo ul li::before {
+            content: '◈';
+            color: var(--cyan);
+            position: absolute;
+            left: 0;
+            top: 8px;
+            font-size: 0.75rem;
+        }
+        .card-algoritmo ul li strong { color: var(--cyan); }
+        
+        .frase-clave {
+            background: rgba(0, 229, 255, 0.1);
+            border: 1px dashed rgba(0, 229, 255, 0.4);
+            border-radius: 12px;
+            padding: 16px 18px;
+            margin-top: 16px;
+            font-size: 0.82rem;
+            color: var(--cyan);
+            text-align: center;
+            line-height: 1.6;
+            font-style: italic;
+        }
+        
         .clausula-legal {
             background: rgba(0, 214, 143, 0.06);
             border-left: 4px solid var(--success);
@@ -388,6 +455,7 @@
             .main-nav .nav-link { font-size: 0.6rem; padding: 6px 10px; }
             .resumen-ejecutivo { padding: 20px 16px; }
             .resumen-item-texto { font-size: 0.78rem; }
+            .card-algoritmo { padding: 20px 16px; }
         }
     </style>
 </head>
@@ -413,10 +481,10 @@
             <div class="icon-grande">🦉</div>
             <h1>Derechos y Usos</h1>
             <p>Reglas de convivencia, propiedad intelectual y uso del ecosistema Sariel's</p>
-            <div class="fecha">VERSIÓN 1.3 · VIGENTE DESDE SEPTIEMBRE 2026</div>
+            <div class="fecha">VERSIÓN 1.4 · VIGENTE DESDE SEPTIEMBRE 2026</div>
         </div>
         
-        <!-- ✅ RESUMEN EJECUTIVO V1.3 -->
+        <!-- ✅ RESUMEN EJECUTIVO -->
         <div class="resumen-ejecutivo">
             <div class="resumen-titulo">📋 Resumen Ejecutivo</div>
             <p class="resumen-intro">Antes de utilizar Sariel's©, es importante que comprendas lo siguiente:</p>
@@ -459,7 +527,7 @@
             <div class="resumen-item">
                 <div class="resumen-item-titulo">6. Contenidos No Permitidos</div>
                 <div class="resumen-item-texto">
-                    Queda prohibido publicar piratería, armas, drogas, animales vivos, alcohol, tabaco, acoso, doxxing, contenido íntimo sin consentimiento, contenido sexual que involucre a menores de edad, spam, bots y activos digitales no autorizados por la plataforma.
+                    Queda prohibido publicar contenido que infrinja la ley, derechos de terceros o estos términos. Categorías restringidas incluyen: <strong>activos digitales no autorizados, artículos regulados por la ley, sustancias controladas, material biológico o de origen humano, contenido para adultos, documentos oficiales, productos que infrinjan propiedad intelectual, prácticas fraudulentas, datos personales de terceros, contenido que involucre a menores, seres vivos, alcohol, tabaco, y cualquier otra categoría que el algoritmo de Sariel's© detecte como infractora.</strong>
                 </div>
             </div>
             
@@ -493,6 +561,33 @@
             
             <div class="resumen-footer">
                 Esta es la versión corta. El detalle completo está abajo en 3 secciones.
+            </div>
+        </div>
+        
+        <!-- ✅ CARD DEL ALGORITMO -->
+        <div class="card-algoritmo">
+            <div class="titulo">🤖 Sistema de Detección Automática</div>
+            <p>Sariel's© opera con un <strong style="color:var(--cyan);">algoritmo de moderación automática</strong> que analiza cada publicación antes de hacerse visible en la plataforma. Este sistema:</p>
+            <ul>
+                <li><span class="check">✓</span> Detecta <strong>palabras clave, imágenes y patrones</strong> asociados a contenido prohibido</li>
+                <li><span class="check">✓</span> <strong>Bloquea automáticamente</strong> publicaciones que coincidan con categorías restringidas</li>
+                <li><span class="check">✓</span> Marca para <strong>revisión manual</strong> los casos ambiguos</li>
+                <li><span class="check">✓</span> Aprende continuamente de nuevos patrones reportados</li>
+                <li><span class="check">✓</span> Analiza <strong>títulos, descripciones, imágenes y videos</strong></li>
+            </ul>
+            
+            <div class="info-box">
+                <div class="titulo">💡 Transparencia</div>
+                <p>El algoritmo no es perfecto. Si tu publicación fue bloqueada por error, puedes apelar mediante el sistema de reportes. Sariel's© revisará tu caso en un plazo máximo de 72 horas.</p>
+            </div>
+            
+            <div class="alerta">
+                <div class="titulo">⚠️ Elusión del sistema</div>
+                <p>Intentar evadir el algoritmo (usando sinónimos, caracteres alterados, imágenes codificadas, etc.) se considera una <strong>infracción agravada</strong> y resultará en <strong>bloqueo permanente inmediato</strong>, sin derecho a apelación.</p>
+            </div>
+            
+            <div class="frase-clave">
+                "Sariel's© cuenta con un algoritmo de detección automática que identifica y bloquea cualquier publicación que infrinja estos términos, <strong>incluso si la categoría no está listada explícitamente</strong>."
             </div>
         </div>
         
@@ -536,23 +631,29 @@
                     <li><span class="check">✓</span> <strong>Memes solo con contenido original o de dominio público.</strong> Si usas imágenes de terceros (personajes, marcas, celebridades), es tu responsabilidad y puede ser retirado por denuncia</li>
                 </ul>
                 
-                <h3>Contenido PROHIBIDO</h3>
+                <h3>Contenido NO permitido</h3>
+                <p>El <strong style="color:var(--cyan);">algoritmo de Sariel's©</strong> detecta y bloquea automáticamente contenido que infrinja derechos de autor o estos términos. Categorías restringidas:</p>
                 <ul>
                     <li><span class="cross">✕</span> <strong>Contenido con copyright de terceros</strong> sin autorización expresa</li>
                     <li><span class="cross">✕</span> Películas, series, música o videos completos de otros</li>
                     <li><span class="cross">✕</span> Contenido descargado de otras plataformas sin permiso</li>
-                    <li><span class="cross">✕</span> <strong>Memes con imágenes de terceros</strong> (Televisa, Disney, Marvel, celebridades, etc.)</li>
-                    <li><span class="cross">✕</span> Contenido sexual explícito, pornografía o nudismo</li>
+                    <li><span class="cross">✕</span> <strong>Memes con imágenes de terceros</strong> (personajes, marcas, celebridades)</li>
+                    <li><span class="cross">✕</span> <strong>Contenido para adultos</strong> (sexual explícito, pornografía, nudismo)</li>
+                    <li><span class="cross">✕</span> <strong>Contenido que involucre a menores de edad</strong> en contextos íntimos o delictivos</li>
                     <li><span class="cross">✕</span> <strong>Contenido íntimo sin consentimiento</strong> (Ley Olimpia en México)</li>
-                    <li><span class="cross">✕</span> <strong>Contenido de menores de edad</strong> (delito penal en México)</li>
                     <li><span class="cross">✕</span> Contenido violento, gore o que promueva el odio</li>
-                    <li><span class="cross">✕</span> Contenido que promueva actividades ilegales</li>
-                    <li><span class="cross">✕</span> <strong>Doxxing:</strong> publicar datos personales de terceros sin consentimiento (dirección, teléfono, escuela, trabajo)</li>
                     <li><span class="cross">✕</span> <strong>Discursos de odio</strong> por género, raza, religión, orientación sexual, discapacidad o nacionalidad</li>
+                    <li><span class="cross">✕</span> <strong>Datos personales de terceros</strong> (doxxing) sin consentimiento</li>
                     <li><span class="cross">✕</span> Acoso, bullying, amenazas o discriminación</li>
-                    <li><span class="cross">✕</span> Spam, phishing, malware o estafas</li>
-                    <li><span class="cross">✕</span> Criptomonedas, tokens, NFTs u otros activos digitales sin autorización expresa</li>
+                    <li><span class="cross">✕</span> <strong>Prácticas fraudulentas</strong> (spam, phishing, malware, estafas)</li>
+                    <li><span class="cross">✕</span> <strong>Activos digitales no autorizados</strong> (cripto, tokens, NFTs)</li>
+                    <li><span class="cross">✕</span> Cualquier otra categoría que el <strong style="color:var(--cyan);">algoritmo detecte como infractora</strong></li>
                 </ul>
+                
+                <div class="info-box">
+                    <div class="titulo">🤖 Filtrado automático</div>
+                    <p>El algoritmo de Sariel's© revisa cada publicación antes de ser visible. Las categorías no listadas aquí quedan igualmente sujetas a revisión y retiro si infringen la ley o estos términos.</p>
+                </div>
             </div>
             
             <div class="card">
@@ -603,7 +704,7 @@
                 
                 <div class="alerta">
                     <div class="titulo">⚠️ Contenido penal</div>
-                    <p>Si detectamos contenido que constituye <strong>delito penal en México</strong> (pornografía infantil, contenido íntimo sin consentimiento, amenazas graves), eliminaremos el contenido inmediatamente, bloquearemos la cuenta y <strong>entregaremos IP, logs y metadatos a las autoridades</strong> sin previo aviso.</p>
+                    <p>Si detectamos contenido que constituye <strong>delito penal en México</strong>, eliminaremos el contenido inmediatamente, bloquearemos la cuenta y <strong>entregaremos IP, logs y metadatos a las autoridades</strong> sin previo aviso.</p>
                 </div>
             </div>
             
@@ -641,19 +742,21 @@
                     <li><span class="check">✓</span> Enviar/recibir regalos con USDT/USDC en transmisiones</li>
                 </ul>
                 
-                <h3>Uso PROHIBIDO de la plataforma</h3>
+                <h3>Uso NO permitido de la plataforma</h3>
+                <p>El <strong style="color:var(--cyan);">algoritmo de Sariel's©</strong> detecta y bloquea automáticamente el uso indebido de la plataforma. Categorías restringidas:</p>
                 <ul>
-                    <li><span class="cross">✕</span> Usar la plataforma para actividades ilegales</li>
-                    <li><span class="cross">✕</span> Crear múltiples cuentas para evadir sanciones</li>
-                    <li><span class="cross">✕</span> Manipular vistas, likes, comentarios o donaciones</li>
-                    <li><span class="cross">✕</span> <strong>Usar bots, scrapers o automatizaciones no autorizadas</strong></li>
-                    <li><span class="cross">✕</span> Intentar hackear, sobrecargar o vulnerar la plataforma</li>
-                    <li><span class="cross">✕</span> Vender criptomonedas, tokens o NFTs no autorizados</li>
-                    <li><span class="cross">✕</span> Suplantar identidad de otros usuarios</li>
-                    <li><span class="cross">✕</span> <strong>Acosar, amenazar o discriminar</strong> a otros</li>
-                    <li><span class="cross">✕</span> <strong>Doxxing</strong> (publicar datos personales de terceros)</li>
-                    <li><span class="cross">✕</span> <strong>Difundir contenido íntimo sin consentimiento (Ley Olimpia)</strong></li>
-                    <li><span class="cross">✕</span> Publicar contenido sexual, violento o ilegal</li>
+                    <li><span class="cross">✕</span> Usar la plataforma para <strong>actividades ilegales</strong></li>
+                    <li><span class="cross">✕</span> Crear <strong>múltiples cuentas</strong> para evadir sanciones</li>
+                    <li><span class="cross">✕</span> <strong>Manipular métricas</strong> (vistas, likes, comentarios, donaciones)</li>
+                    <li><span class="cross">✕</span> <strong>Usar bots, scrapers o automatizaciones</strong> no autorizadas</li>
+                    <li><span class="cross">✕</span> <strong>Intentar vulnerar la plataforma</strong> (hackeo, sobrecarga, exploits)</li>
+                    <li><span class="cross">✕</span> <strong>Activos digitales no autorizados</strong> (cripto, tokens, NFTs)</li>
+                    <li><span class="cross">✕</span> <strong>Suplantar identidad</strong> de otros usuarios</li>
+                    <li><span class="cross">✕</span> <strong>Acosar, amenazar o discriminar</strong></li>
+                    <li><span class="cross">✕</span> <strong>Datos personales de terceros</strong> (doxxing)</li>
+                    <li><span class="cross">✕</span> <strong>Contenido íntimo sin consentimiento</strong> (Ley Olimpia)</li>
+                    <li><span class="cross">✕</span> <strong>Contenido para adultos</strong> sin filtro adecuado</li>
+                    <li><span class="cross">✕</span> Cualquier otra categoría que el <strong style="color:var(--cyan);">algoritmo detecte como infractora</strong></li>
                 </ul>
                 
                 <div class="alerta">
@@ -702,7 +805,7 @@
                     <li><span class="check">✓</span> Los regalos son <strong>propinas voluntarias</strong> y no reembolsables</li>
                     <li><span class="check">✓</span> Sariel's© cobra una pequeña comisión por procesamiento tecnológico</li>
                     <li><span class="check">✓</span> El creador recibe el monto menos la comisión</li>
-                    <li><span class="cross">✕</span> No puedes usar los regalos para lavar dinero</li>
+                    <li><span class="cross">✕</span> No puedes usar los regalos para <strong>lavar dinero</strong></li>
                     <li><span class="cross">✕</span> No puedes solicitar reembolsos por regalos enviados</li>
                 </ul>
                 
@@ -719,7 +822,7 @@
                     <li><span class="cross">✕</span> <strong>Difundir contenido íntimo sin consentimiento</strong> (Ley Olimpia) — hasta 6 años de prisión</li>
                     <li><span class="cross">✕</span> <strong>Doxxing</strong> — exponer datos personales con intención de dañar</li>
                     <li><span class="cross">✕</span> <strong>Discursos de odio</strong> por género, raza, religión, orientación sexual o discapacidad</li>
-                    <li><span class="cross">✕</span> <strong>Pornografía infantil</strong> — 12 a 18 años de prisión</li>
+                    <li><span class="cross">✕</span> <strong>Contenido que involucre a menores de edad</strong> en contextos íntimos o delictivos</li>
                     <li><span class="cross">✕</span> <strong>Amenazas graves</strong> o extorsión</li>
                     <li><span class="cross">✕</span> <strong>Trata de personas</strong> o explotación</li>
                 </ul>
@@ -775,30 +878,35 @@
                     <li><span class="check">✓</span> Servicios personales (plomería, clases, diseño, etc.)</li>
                     <li><span class="check">✓</span> Servicios profesionales (consultoría, contabilidad, etc.)</li>
                     <li><span class="check">✓</span> Renta de espacios, autos, herramientas, etc.</li>
-                    <li><span class="check">✓</span> <strong>Objetos personales en buen estado sin costo</strong> (NO animales vivos)</li>
+                    <li><span class="check">✓</span> <strong>Objetos personales en buen estado sin costo</strong> (NO seres vivos)</li>
                     <li><span class="check">✓</span> Productos de tu negocio propio</li>
                 </ul>
                 
-                <h3>Productos/servicios PROHIBIDOS</h3>
+                <h3>Productos/servicios NO permitidos</h3>
+                <p>El <strong style="color:var(--cyan);">algoritmo de Sariel's©</strong> detecta y bloquea automáticamente publicaciones relacionadas con:</p>
                 <ul>
-                    <li><span class="cross">✕</span> <strong>Criptomonedas, tokens, NFTs u otros activos digitales</strong></li>
-                    <li><span class="cross">✕</span> Es.stoks u otros tokens del ecosistema (para eso existe el Muro)</li>
-                    <li><span class="cross">✕</span> Armas, municiones, explosivos</li>
-                    <li><span class="cross">✕</span> Drogas, medicamentos controlados</li>
-                    <li><span class="cross">✕</span> Productos robados o de origen ilícito</li>
-                    <li><span class="cross">✕</span> <strong>Productos que infrinjan propiedad intelectual</strong> (marcas, patentes, derechos de autor) — el sistema puede bajar la publicación <strong>sin aviso y sin derecho a reembolso</strong></li>
-                    <li><span class="cross">✕</span> Animales vivos (sin excepción)</li>
-                    <li><span class="cross">✕</span> Órganos, sangre, tejidos humanos</li>
-                    <li><span class="cross">✕</span> Documentos falsos, identidades</li>
-                    <li><span class="cross">✕</span> Contenido sexual, pornografía</li>
-                    <li><span class="cross">✕</span> Medicamentos sin receta</li>
-                    <li><span class="cross">✕</span> <strong>Alcohol y tabaco — prohibidos en su totalidad, sin excepción</strong></li>
-                    <li><span class="cross">✕</span> Productos pirateados o falsificados</li>
+                    <li><span class="cross">✕</span> <strong>Activos digitales no autorizados</strong> (cripto, tokens, NFTs, Es.stoks)</li>
+                    <li><span class="cross">✕</span> <strong>Artículos regulados por la ley</strong> (armas, municiones, explosivos)</li>
+                    <li><span class="cross">✕</span> <strong>Sustancias controladas</strong> (drogas, medicamentos sin receta)</li>
+                    <li><span class="cross">✕</span> <strong>Material biológico o de origen humano</strong> (órganos, sangre, tejidos)</li>
+                    <li><span class="cross">✕</span> <strong>Productos que infrinjan propiedad intelectual</strong> (marcas, patentes, derechos de autor)</li>
+                    <li><span class="cross">✕</span> <strong>Seres vivos</strong> (animales, plantas protegidas)</li>
+                    <li><span class="cross">✕</span> <strong>Documentos oficiales o de identidad</strong></li>
+                    <li><span class="cross">✕</span> <strong>Contenido para adultos</strong> (sexual, pornografía)</li>
+                    <li><span class="cross">✕</span> <strong>Productos falsificados o pirateados</strong></li>
+                    <li><span class="cross">✕</span> <strong>Alcohol y tabaco</strong> — prohibidos en su totalidad</li>
+                    <li><span class="cross">✕</span> <strong>Prácticas fraudulentas</strong> (estafas, engaños)</li>
+                    <li><span class="cross">✕</span> Cualquier otra categoría que el <strong style="color:var(--cyan);">algoritmo detecte como infractora</strong></li>
                 </ul>
                 
                 <div class="alerta">
-                    <div class="titulo">⚠️ Bloqueo automático de cripto</div>
-                    <p>El sistema bloquea automáticamente cualquier publicación de Marketplace que mencione criptomonedas, tokens, NFTs, wallets o activos digitales. Si quieres vender tokens del ecosistema (Es.stoks), usa el <strong>Muro</strong>.</p>
+                    <div class="titulo">⚠️ Bloqueo automático</div>
+                    <p>Sariel's© utiliza sistemas automáticos de detección que revisan cada publicación antes de ser visible. Las categorías no listadas aquí quedan igualmente sujetas a revisión y retiro si infringen la ley o estos términos. Si quieres vender tokens del ecosistema (Es.stoks), usa el <strong>Muro</strong>.</p>
+                </div>
+                
+                <div class="info-box">
+                    <div class="titulo">🤖 Filtrado automático</div>
+                    <p>El algoritmo analiza títulos, descripciones, imágenes y videos antes de publicar. Detecta patrones, sinónimos y variantes para evitar evasión.</p>
                 </div>
             </div>
             
@@ -901,6 +1009,10 @@
             <p>Sariel's© y Sevillanos son <strong>entidades jurídicamente independientes</strong>, con titulares distintos, términos y condiciones propios, y operaciones separadas. La eliminación, suspensión o cancelación de una cuenta en Sariel's© <strong>no genera, implica ni condiciona obligación alguna</strong> respecto a la venta, adquisición o entrega de productos de Sevillanos u otras marcas independientes.</p>
             <p><strong>Ni Sariel's© ni Sevillanos pueden recuperar, restaurar, reactivar o revertir la eliminación de una cuenta de usuario</strong> una vez aplicada la sanción conforme a estos términos. Los Es.stoks asociados a la cuenta permanecerán en la wallet externa del usuario en la red Polygon, pero perderán toda funcionalidad dentro del ecosistema Sariel's©.</p>
             
+            <h3>Sistema de detección automática</h3>
+            <p>Sariel's© cuenta con un <strong style="color:var(--cyan);">algoritmo de detección automática</strong> que identifica y bloquea cualquier publicación que infrinja estos términos, <strong>incluso si la categoría no está listada explícitamente</strong>. El algoritmo analiza contenido textual, visual y multimedia antes de su publicación.</p>
+            <p>Intentar evadir el sistema mediante sinónimos, caracteres alterados, imágenes codificadas u otras técnicas constituye una <strong>infracción agravada</strong> y resultará en bloqueo permanente inmediato sin derecho a apelación.</p>
+            
             <h3>Responsabilidad por servicios de terceros</h3>
             <p>Sariel's© no se responsabiliza por:</p>
             <ul>
@@ -929,7 +1041,7 @@
         </div>
         
         <div class="fecha-version">
-            📅 Última actualización: Septiembre 2026 · Versión 1.3
+            📅 Última actualización: Septiembre 2026 · Versión 1.4
         </div>
         
         <div style="text-align: center;">
