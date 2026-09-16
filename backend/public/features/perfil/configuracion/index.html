@@ -46,10 +46,12 @@
         </div>
     </main>
 
+    <!-- ============================================================ -->
+    <!-- SCRIPTS - ORDEN CORRECTO: Supabase PRIMERO                   -->
+    <!-- ============================================================ -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="../../shared/config-icons.js"></script>
     <script src="../../shared/config-layout.js"></script>
-
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
     <script>
     (function () {
@@ -287,7 +289,9 @@
             if (!ok) return;
 
             try {
-                if (window.supabase && window.supabase.auth) {
+                if (window.supabaseClient && window.supabaseClient.auth) {
+                    await window.supabaseClient.auth.signOut();
+                } else if (window.supabase && window.supabase.auth) {
                     await window.supabase.auth.signOut();
                 }
                 cfgToast('Sesión cerrada', 'success');
@@ -305,8 +309,12 @@
         // ============================================================
         (async function cargarUsuario() {
             try {
-                if (!window.supabase || !window.supabase.auth) return;
-                const { data } = await window.supabase.auth.getSession();
+                const client = window.supabaseClient || (window.supabase && window.supabase.createClient(
+                    'https://zultnlogdoajehbswlih.supabase.co',
+                    'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
+                ));
+                if (!client) return;
+                const { data } = await client.auth.getSession();
                 const session = data && data.session;
                 if (!session) return;
                 const handle = session.user.email ? session.user.email.split('@')[0] : 'usuario';
