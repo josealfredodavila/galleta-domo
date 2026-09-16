@@ -575,7 +575,7 @@
                     <span class="hint">Opcional</span>
                 </div>
                 <div style="font-size:0.65rem;color:var(--text-muted);margin:-6px 0 12px 0;line-height:1.5;">
-                    Si activas el Marketplace, los <strong>miembros</strong> del grupo podrán publicar productos/servicios. Si NO lo activas, nadie puede vender.
+                    Si activas el Marketplace, los <strong>miembros</strong> del grupo podrán publicar productos/servicios. Si NO lo activas, nadie puede vender. <strong>Esta opción no se puede cambiar después.</strong>
                 </div>
                 
                 <div class="form-group"><label data-clave="grupos_visibilidad">Visibilidad</label>
@@ -594,12 +594,9 @@
         <div class="modal">
             <div class="modal-header"><h2>⚙️ Ajustes del Canal</h2><button class="btn-cerrar" onclick="cerrarAjustesCanal()">×</button></div>
             <div class="ajustes-menu">
-                <div class="toggle-row">
-                    <span>🛒 Marketplace activo</span>
-                    <input type="checkbox" id="toggleMarketplace" onchange="toggleMarketplace()" />
-                </div>
-                <div style="font-size:0.6rem;color:var(--text-muted);margin-top:-4px;margin-bottom:8px;padding:0 12px;">
-                    Solo miembros del grupo podrán publicar productos/servicios.
+                <!-- ✅ NUEVO: Aviso de Marketplace bloqueado -->
+                <div id="marketplaceAviso" style="font-size:0.65rem;color:var(--text-muted);padding:10px 12px;background:rgba(0,0,0,0.2);border-radius:10px;margin-bottom:8px;line-height:1.5;display:none;">
+                    🛒 El Marketplace se activó (o no) al crear el grupo. <strong>No se puede cambiar después.</strong>
                 </div>
                 <button onclick="abrirAdminGrupo()">◈ Administrar Miembros y Publicaciones</button>
                 <button onclick="cambiarAvatarGrupo()">◈ Cambiar Foto de Perfil</button>
@@ -872,7 +869,9 @@
             'polygon', 'matic', 'cardano', 'ada', 'ripple', 'xrp', 'litecoin', 'ltc', 'tron', 'trx',
             'es.stok', 'es.stoks', 'estok', 'estoks', 'es stok', 'es stoks',
             'staking', 'mining', 'mineria', 'minar', 'p2p cripto', 'exchange cripto',
-            'monedero digital', 'monedero cripto', 'activo digital', 'activos digitales'
+            'monedero digital', 'monedero cripto', 'activo digital', 'activos digitales',
+            'polkadot', 'dot', 'chainlink', 'link', 'uniswap', 'uni', 'aave', 'lend',
+            'tesla', 'apple', 'google', 'amazon', 'microsoft', 'meta', 'facebook', 'acciones', 'bolsa'
         ];
 
         function contienePalabrasCripto(texto) {
@@ -1343,10 +1342,14 @@
                     }
                 }
                 
-                // Sincronizar el toggle del panel de ajustes
-                var toggleMk = document.getElementById('toggleMarketplace');
-                if (toggleMk) {
-                    toggleMk.checked = !!grupoActual.marketplace_activo;
+                // ✅ NUEVO: Mostrar aviso en ajustes si el marketplace no está activo
+                var mkAviso = document.getElementById('marketplaceAviso');
+                if (mkAviso) {
+                    if (!grupoActual.marketplace_activo) {
+                        mkAviso.style.display = 'block';
+                    } else {
+                        mkAviso.style.display = 'none';
+                    }
                 }
                 
                 var btnDonar = document.getElementById('btnDonar');
@@ -2159,44 +2162,9 @@
         }
 
         // ================================================================
-        // TOGGLE MARKETPLACE (desde panel de ajustes)
+        // ❌ TOGGLE MARKETPLACE ELIMINADO
+        // Ya no se puede activar/desactivar después de crear el grupo
         // ================================================================
-        async function toggleMarketplace() {
-            if (!grupoActualId) return;
-            if (!esAdmin && !esCreador) { showToast('Solo administradores', 'error'); return; }
-            
-            var toggle = document.getElementById('toggleMarketplace');
-            var nuevoValor = toggle.checked;
-            
-            try {
-                var result = await window.supabase.from('grupos_video').update({ marketplace_activo: nuevoValor }).eq('id', grupoActualId);
-                if (result.error) throw result.error;
-                
-                grupoActual.marketplace_activo = nuevoValor;
-                
-                // Actualizar badge
-                var mkBadgeEl = document.getElementById('grupoMkBadge');
-                if (mkBadgeEl) {
-                    mkBadgeEl.style.display = nuevoValor ? 'inline-block' : 'none';
-                }
-                
-                // Actualizar botón marketplace del form
-                var btnMk = document.getElementById('btnMarketplace');
-                if (btnMk) {
-                    if (!nuevoValor) {
-                        btnMk.style.display = 'none';
-                    } else if (esMiembro()) {
-                        btnMk.style.display = 'inline-flex';
-                    }
-                }
-                
-                showToast(nuevoValor ? '🛒 Marketplace activado' : '🚫 Marketplace desactivado', 'success');
-            } catch (e) {
-                console.error('Error toggle marketplace:', e);
-                toggle.checked = !nuevoValor;
-                showToast('Error: ' + e.message, 'error');
-            }
-        }
 
         // ================================================================
         // FUNCIONES RESTANTES (admin, live, etc.)
@@ -2266,10 +2234,14 @@
         }
 
         function abrirAjustesCanal() {
-            // Sincronizar el toggle al abrir
-            var toggleMk = document.getElementById('toggleMarketplace');
-            if (toggleMk && grupoActual) {
-                toggleMk.checked = !!grupoActual.marketplace_activo;
+            // Sincronizar el aviso al abrir
+            var mkAviso = document.getElementById('marketplaceAviso');
+            if (mkAviso && grupoActual) {
+                if (!grupoActual.marketplace_activo) {
+                    mkAviso.style.display = 'block';
+                } else {
+                    mkAviso.style.display = 'none';
+                }
             }
             document.getElementById('modalAjustesCanal').classList.add('show');
         }
@@ -2477,7 +2449,7 @@
                     '<option value="abierto"' + (g.modo_ingreso === 'abierto' ? ' selected' : '') + '>Abierto</option>' +
                     '<option value="solicitud"' + (g.modo_ingreso === 'solicitud' ? ' selected' : '') + '>Solicitud</option>' +
                     '<option value="invitacion"' + (g.modo_ingreso === 'invitacion' ? ' selected' : '') + '>Invitación</option></select></div>' +
-                    '<div class="checkbox-row"><input type="checkbox" id="editGrupoMarketplace" ' + (g.marketplace_activo ? 'checked' : '') + ' /><label for="editGrupoMarketplace">🛒 Marketplace activo</label></div>' +
+                    // ❌ Toggle de marketplace eliminado de la edición también
                     '<button class="btn-gold" style="width:100%;justify-content:center;padding:10px;" onclick="guardarEdicionGrupo()">◈ Guardar cambios</button>';
                 container.innerHTML = html;
             } catch (e) { container.innerHTML = '<div class="empty-state">Error</div>'; }
@@ -2492,7 +2464,7 @@
             var precio = document.getElementById('editGrupoPrecio')?.value;
             var visibilidad = document.getElementById('editGrupoVisibilidad')?.value;
             var modoIngreso = document.getElementById('editGrupoModoIngreso')?.value;
-            var marketplaceActivo = document.getElementById('editGrupoMarketplace')?.checked || false;
+            // ❌ Marketplace ya no se edita
             if (!nombre) { showToast('El nombre es requerido', 'warning'); return; }
             try {
                 var result = await window.supabase.from('grupos_video').update({ 
@@ -2503,8 +2475,8 @@
                     ciudad: ciudad || null, 
                     precio_usdt: parseFloat(precio) || 0, 
                     visibilidad: visibilidad, 
-                    modo_ingreso: modoIngreso,
-                    marketplace_activo: marketplaceActivo
+                    modo_ingreso: modoIngreso
+                    // marketplace_activo: marketplaceActivo // ❌ ELIMINADO
                 }).eq('id', grupoActualId).select().single();
                 if (result.error) throw result.error;
                 showToast('Canal actualizado', 'success');
@@ -3076,7 +3048,6 @@
         window.cambiarPortadaGrupo = cambiarPortadaGrupo;
         window.abrirAjustesCanal = abrirAjustesCanal;
         window.cerrarAjustesCanal = cerrarAjustesCanal;
-        window.toggleMarketplace = toggleMarketplace;
         window.togglePostMenu = togglePostMenu;
         window.toggleMeInteresa = toggleMeInteresa;
         window.toggleNoMeInteresa = toggleNoMeInteresa;
