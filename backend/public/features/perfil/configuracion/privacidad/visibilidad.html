@@ -23,7 +23,7 @@
         <div class="cfg-list" id="seccionContactos"></div>
 
         <div class="cfg-aviso">
-            ℹ️ Los cambios se guardan automáticamente en este dispositivo.
+            ℹ️ Los cambios se sincronizan automáticamente en todos tus dispositivos.
         </div>
 
         <div class="cfg-footer">
@@ -31,6 +31,7 @@
         </div>
     </main>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="../../../shared/config-icons.js"></script>
     <script src="../../../shared/config-layout.js"></script>
 
@@ -53,58 +54,57 @@
         };
 
         // ============================================================
-        // VISIBILIDAD
+        // RENDER DINÁMICO (después de que carguen prefs desde Supabase)
         // ============================================================
-        $('#seccionVisibilidad').innerHTML = [
-            cfgRenderToggle({
-                id: 'toggleEmail',
-                title: 'Permite que otros te encuentren por tu correo electrónico',
-                desc: 'Quienes tengan tu correo electrónico podrán conectarse contigo en Sariel\'s.',
-                checked: cfgGetPref(PREF_KEYS.encontrarme_email, true),
-                onChange: `window.onToggleEmail(this.checked)`,
-            }),
-            cfgRenderToggle({
-                id: 'toggleTelefono',
-                title: 'Permitir que otros te encuentren por tu número de teléfono',
-                desc: 'Necesitas añadir un número de teléfono para esta configuración.',
-                checked: cfgGetPref(PREF_KEYS.encontrarme_telefono, false),
-                onChange: `window.onToggleTelefono(this.checked)`,
-            }),
-        ].join('');
+        function renderToggles() {
+            $('#seccionVisibilidad').innerHTML = [
+                cfgRenderToggle({
+                    id: 'toggleEmail',
+                    title: 'Permite que otros te encuentren por tu correo electrónico',
+                    desc: 'Quienes tengan tu correo electrónico podrán conectarse contigo en Sariel\'s.',
+                    checked: cfgGetPref(PREF_KEYS.encontrarme_email, true),
+                    onChange: `window.onToggleEmail(this.checked)`,
+                }),
+                cfgRenderToggle({
+                    id: 'toggleTelefono',
+                    title: 'Permitir que otros te encuentren por tu número de teléfono',
+                    desc: 'Necesitas añadir un número de teléfono para esta configuración.',
+                    checked: cfgGetPref(PREF_KEYS.encontrarme_telefono, false),
+                    onChange: `window.onToggleTelefono(this.checked)`,
+                }),
+            ].join('');
+
+            $('#seccionContactos').innerHTML = [
+                cfgRenderToggle({
+                    id: 'toggleSync',
+                    title: 'Sincronizar contactos de la libreta de direcciones',
+                    desc: 'Los contactos de tu libreta se cargarán en Sariel\'s de forma continua para ayudarte a conectar con tus amigos y personalizar tu contenido.',
+                    checked: cfgGetPref(PREF_KEYS.sync_contactos, false),
+                    onChange: `window.onToggleSync(this.checked)`,
+                }),
+                cfgRenderItem({
+                    icon: 'ban',
+                    title: 'Eliminar todos los contactos',
+                    desc: 'Elimina todos los contactos que hayas subido previamente y desactiva la sincronización en todos tus dispositivos.',
+                    onclick: 'window.onEliminarContactos()',
+                    class: 'cfg-item-plain',
+                    style: 'color: var(--cfg-danger, #ff3366);',
+                }),
+            ].join('');
+        }
 
         // ============================================================
-        // CONTACTOS
+        // CALLBACKS (async, con sync a Supabase)
         // ============================================================
-        $('#seccionContactos').innerHTML = [
-            cfgRenderToggle({
-                id: 'toggleSync',
-                title: 'Sincronizar contactos de la libreta de direcciones',
-                desc: 'Los contactos de tu libreta se cargarán en Sariel\'s de forma continua para ayudarte a conectar con tus amigos y personalizar tu contenido. Puedes desactivar la sincronización y eliminar los contactos cargados previamente.',
-                checked: cfgGetPref(PREF_KEYS.sync_contactos, false),
-                onChange: `window.onToggleSync(this.checked)`,
-            }),
-            cfgRenderItem({
-                icon: 'ban',
-                title: 'Eliminar todos los contactos',
-                desc: 'Elimina todos los contactos que hayas subido previamente y desactiva la sincronización en todos tus dispositivos. Ten en cuenta que el proceso puede tardar unos minutos.',
-                onclick: 'window.onEliminarContactos()',
-                class: 'cfg-item-plain',
-                style: 'color: var(--cfg-danger, #ff3366);',
-            }),
-        ].join('');
-
-        // ============================================================
-        // CALLBACKS
-        // ============================================================
-        window.onToggleEmail = (value) => {
-            cfgSetPref(PREF_KEYS.encontrarme_email, value);
+        window.onToggleEmail = async (value) => {
+            await cfgSetPref(PREF_KEYS.encontrarme_email, value);
             cfgToast(
                 value ? '✅ Permites ser encontrado por correo' : '🚫 Ya no te encontrarán por correo',
                 value ? 'success' : 'warning'
             );
         };
 
-        window.onToggleTelefono = (value) => {
+        window.onToggleTelefono = async (value) => {
             if (value) {
                 cfgToast('📱 Primero añade un número de teléfono en tu cuenta', 'warning');
                 setTimeout(() => {
@@ -113,12 +113,12 @@
                 }, 300);
                 return;
             }
-            cfgSetPref(PREF_KEYS.encontrarme_telefono, value);
+            await cfgSetPref(PREF_KEYS.encontrarme_telefono, value);
             cfgToast('🚫 Ya no te encontrarán por teléfono', 'warning');
         };
 
-        window.onToggleSync = (value) => {
-            cfgSetPref(PREF_KEYS.sync_contactos, value);
+        window.onToggleSync = async (value) => {
+            await cfgSetPref(PREF_KEYS.sync_contactos, value);
             cfgToast(
                 value ? '📇 Sincronización activada' : '🚫 Sincronización desactivada',
                 value ? 'success' : 'warning'
@@ -138,21 +138,37 @@
 
             cfgToast('⏳ Eliminando contactos...', 'warning');
 
+            await cfgSetPref(PREF_KEYS.sync_contactos, false);
+            const t = document.getElementById('toggleSync');
+            if (t) t.checked = false;
+
             setTimeout(() => {
-                cfgSetPref(PREF_KEYS.sync_contactos, false);
-                const t = document.getElementById('toggleSync');
-                if (t) t.checked = false;
                 cfgToast('✅ Todos los contactos eliminados', 'success');
-            }, 1500);
+            }, 800);
         };
+
+        // ============================================================
+        // INICIALIZAR UI cuando estén las prefs listas
+        // ============================================================
+        window.addEventListener('DOMContentLoaded', async () => {
+            // Esperar a que cfgInitPage termine de cargar prefs
+            // cfgInitPage ya llama cfgCargarPreferencias(), solo esperamos un poco
+            await new Promise(resolve => setTimeout(resolve, 400));
+            renderToggles();
+        });
 
         // ============================================================
         // CARGAR HANDLE EN SUBTITLE
         // ============================================================
         (async function cargarUsuario() {
             try {
-                if (!window.supabase || !window.supabase.auth) return;
-                const { data } = await window.supabase.auth.getSession();
+                const client = window.supabaseClient || 
+                    (window.supabase && window.supabase.createClient(
+                        'https://zultnlogdoajehbswlih.supabase.co',
+                        'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
+                    ));
+                if (!client) return;
+                const { data } = await client.auth.getSession();
                 const session = data && data.session;
                 if (!session) return;
                 const handle = session.user.email ? session.user.email.split('@')[0] : 'usuario';
@@ -163,7 +179,5 @@
 
     })();
     </script>
-
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </body>
 </html>
