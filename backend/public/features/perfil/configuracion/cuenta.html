@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#000000" />
+    <title>Tu cuenta · Sariel's</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="../../shared/config-layout.css" />
+    
+    <style>
+        .cfg-profile-card {
+            padding: 24px 16px;
+            text-align: center;
+            border-bottom: 1px solid var(--cfg-border);
+        }
+
+        .cfg-profile-avatar {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #0F2D1A, #D4AF37);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.2rem;
+            color: #fff;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            margin: 0 auto 14px;
+            overflow: hidden;
+            border: 3px solid var(--cfg-gold);
+            box-shadow: 0 0 30px rgba(212, 175, 55, 0.2);
+        }
+
+        .cfg-profile-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .cfg-profile-name {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--cfg-text);
+            margin-bottom: 4px;
+        }
+
+        .cfg-profile-handle {
+            font-size: 0.82rem;
+            color: var(--cfg-text-muted);
+            margin-bottom: 6px;
+        }
+
+        .cfg-profile-bio {
+            font-size: 0.78rem;
+            color: var(--cfg-text-muted);
+            line-height: 1.5;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .cfg-info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--cfg-border);
+            font-size: 0.82rem;
+            gap: 10px;
+        }
+
+        .cfg-info-row:last-child {
+            border-bottom: none;
+        }
+
+        .cfg-info-label {
+            color: var(--cfg-text-muted);
+            font-size: 0.75rem;
+        }
+
+        .cfg-info-value {
+            color: var(--cfg-text);
+            font-weight: 500;
+            text-align: right;
+            word-break: break-all;
+            max-width: 60%;
+            font-family: 'Inter', monospace;
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+<body class="cfg-page">
+
+    <div id="cfgHeaderSlot"></div>
+
+    <main class="cfg-content">
+
+        <!-- ============================================================ -->
+        <!-- TARJETA DEL PERFIL                                           -->
+        <!-- ============================================================ -->
+        <div class="cfg-profile-card" id="perfilCard">
+            <div class="cfg-profile-avatar" id="avatarCuenta">◈</div>
+            <div class="cfg-profile-name" id="nombreCuenta">Explorador</div>
+            <div class="cfg-profile-handle" id="handleCuenta">@explorador</div>
+            <div class="cfg-profile-bio" id="bioCuenta">Explorando el ecosistema Sariel's · WEB3 · Comunidad</div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- INFORMACIÓN DE LA CUENTA                                     -->
+        <!-- ============================================================ -->
+        <h2 class="cfg-section-title">Información de la cuenta</h2>
+        <div class="cfg-list" id="seccionInfo"></div>
+
+        <!-- ============================================================ -->
+        <!-- TU ACTIVIDAD                                                 -->
+        <!-- ============================================================ -->
+        <h2 class="cfg-section-title">Tu actividad en Sariel's</h2>
+        <div class="cfg-list" id="seccionActividad"></div>
+
+        <!-- ============================================================ -->
+        <!-- DESCARGA DE DATOS                                            -->
+        <!-- ============================================================ -->
+        <h2 class="cfg-section-title">Descarga de datos</h2>
+        <div class="cfg-list" id="seccionDescarga"></div>
+
+        <!-- ============================================================ -->
+        <!-- ZONA DE PELIGRO                                              -->
+        <!-- ============================================================ -->
+        <h2 class="cfg-section-title">Zona de peligro</h2>
+        <div class="cfg-list" id="seccionPeligro"></div>
+
+        <div class="cfg-footer">
+            <strong>◈ Sariel's</strong> · Configuración · Tu cuenta
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="../../shared/config-icons.js"></script>
+    <script src="../../shared/config-layout.js"></script>
+
+    <script>
+    (function () {
+        'use strict';
+
+        const $ = (sel) => document.querySelector(sel);
+
+        cfgInitPage({
+            title: 'Tu cuenta',
+            subtitle: 'Información de tu cuenta',
+            backUrl: '/features/perfil/configuracion/index.html',
+        });
+
+        // ============================================================
+        // CARGAR DATOS DEL PERFIL
+        // ============================================================
+        async function cargarDatosCuenta() {
+            try {
+                const client = window.supabaseClient || 
+                    (window.supabase && window.supabase.createClient(
+                        'https://zultnlogdoajehbswlih.supabase.co',
+                        'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
+                    ));
+                if (!client) return;
+
+                const { data: sessionData } = await client.auth.getSession();
+                const session = sessionData.session;
+                if (!session) return;
+
+                // Cargar datos del usuario
+                const { data: usuario } = await client
+                    .from('usuarios')
+                    .select('nombre, handle, avatar_url, bio, email, created_at, plan')
+                    .eq('id', session.user.id)
+                    .maybeSingle();
+
+                if (usuario) {
+                    // Actualizar avatar
+                    const avatarEl = $('#avatarCuenta');
+                    if (usuario.avatar_url) {
+                        avatarEl.innerHTML = `<img src="${usuario.avatar_url}" alt="Avatar">`;
+                    } else {
+                        avatarEl.textContent = '◈';
+                    }
+
+                    // Actualizar datos
+                    if (usuario.nombre) $('#nombreCuenta').textContent = usuario.nombre;
+                    if (usuario.handle) $('#handleCuenta').textContent = '@' + usuario.handle;
+                    if (usuario.bio) $('#bioCuenta').textContent = usuario.bio;
+
+                    // Actualizar info de la cuenta
+                    const email = usuario.email || session.user.email || 'No disponible';
+                    const creado = usuario.created_at 
+                        ? new Date(usuario.created_at).toLocaleDateString('es-MX', {
+                            year: 'numeric', month: 'long', day: 'numeric'
+                        })
+                        : 'Desconocido';
+                    const plan = usuario.plan || 'Gratis';
+
+                    $('#seccionInfo').innerHTML = [
+                        cfgRenderItem({
+                            icon: 'user',
+                            title: 'Nombre de usuario',
+                            desc: usuario.nombre || 'Explorador',
+                            onclick: 'window.onEditarNombre()',
+                        }),
+                        cfgRenderItem({
+                            icon: 'fileText',
+                            title: 'Handle',
+                            desc: '@' + (usuario.handle || 'explorador'),
+                            onclick: 'window.onEditarHandle()',
+                        }),
+                        cfgRenderItem({
+                            icon: 'info',
+                            title: 'Correo electrónico',
+                            desc: email,
+                            onclick: 'window.onEditarEmail()',
+                        }),
+                        cfgRenderItem({
+                            icon: 'crown',
+                            title: 'Plan actual',
+                            desc: plan,
+                            onclick: 'window.onVerPlan()',
+                        }),
+                        cfgRenderItem({
+                            icon: 'info',
+                            title: 'Cuenta creada el',
+                            desc: creado,
+                            noChevron: true,
+                        }),
+                    ].join('');
+                }
+
+            } catch (error) {
+                console.error('Error cargando datos de la cuenta:', error);
+            }
+        }
+
+        // ============================================================
+        // SECCIÓN ACTIVIDAD
+        // ============================================================
+        function renderActividad() {
+            $('#seccionActividad').innerHTML = [
+                cfgRenderItem({
+                    icon: 'fileText',
+                    title: 'Tus publicaciones',
+                    desc: 'Consulta y administra todas tus publicaciones',
+                    href: '/features/perfil/perfil.html',
+                }),
+                cfgRenderItem({
+                    icon: 'users',
+                    title: 'Tus contactos',
+                    desc: 'Administra tus contactos y solicitudes',
+                    href: '/features/mensajes/contactos.html',
+                }),
+                cfgRenderItem({
+                    icon: 'coin',
+                    title: 'Tu historial de transacciones',
+                    desc: 'Consulta tu historial de compras y transacciones',
+                    href: '/features/perfil/perfil.html#actividad',
+                }),
+            ].join('');
+        }
+
+        // ============================================================
+        // SECCIÓN DESCARGA
+        // ============================================================
+        function renderDescarga() {
+            $('#seccionDescarga').innerHTML = [
+                cfgRenderItem({
+                    icon: 'database',
+                    title: 'Descargar archivo con tus datos',
+                    desc: 'Obtén un archivo con toda tu información de Sariel\'s',
+                    onclick: 'window.onDescargarDatos()',
+                }),
+                cfgRenderItem({
+                    icon: 'fileText',
+                    title: 'Solicitar historial de accesos',
+                    desc: 'Consulta información sobre los accesos a tu cuenta',
+                    onclick: 'window.onSolicitarHistorial()',
+                }),
+            ].join('');
+        }
+
+        // ============================================================
+        // SECCIÓN PELIGRO
+        // ============================================================
+        function renderPeligro() {
+            $('#seccionPeligro').innerHTML = [
+                cfgRenderItem({
+                    icon: 'lock',
+                    title: 'Desactivar temporalmente mi cuenta',
+                    desc: 'Oculta tu perfil y contenido temporalmente',
+                    onclick: 'window.onDesactivarCuenta()',
+                    class: 'cfg-item-plain',
+                    style: 'color: var(--cfg-warning, #f7d44a);',
+                }),
+                cfgRenderItem({
+                    icon: 'logout',
+                    title: 'Eliminar mi cuenta',
+                    desc: 'Elimina permanentemente tu cuenta y todos tus datos',
+                    href: '/eliminar-cuenta.html',
+                    class: 'cfg-item-plain',
+                    style: 'color: var(--cfg-danger, #ff3366);',
+                }),
+            ].join('');
+        }
+
+        // ============================================================
+        // CALLBACKS
+        // ============================================================
+        window.onEditarNombre = () => {
+            cfgToast('⏳ Ve a tu perfil para editar tu nombre', 'warning');
+        };
+
+        window.onEditarHandle = () => {
+            cfgToast('⏳ Ve a tu perfil para editar tu handle', 'warning');
+        };
+
+        window.onEditarEmail = () => {
+            cfgToast('⏳ Cambio de correo próximamente', 'warning');
+        };
+
+        window.onVerPlan = () => {
+            window.location.href = '/features/perfil/perfil.html';
+        };
+
+        window.onDescargarDatos = async () => {
+            const ok = await cfgConfirm({
+                title: '¿Descargar tus datos?',
+                text: 'Prepararemos un archivo con toda tu información. Puede tardar unos minutos. Recibirás un correo cuando esté listo.',
+                confirmText: 'Solicitar descarga',
+                cancelText: 'Cancelar',
+                danger: false,
+            });
+
+            if (!ok) return;
+
+            cfgToast('⏳ Preparando tu archivo...', '', 3000);
+            setTimeout(() => {
+                cfgToast('✅ Recibirás un correo cuando esté listo', 'success', 4000);
+            }, 2000);
+        };
+
+        window.onSolicitarHistorial = () => {
+            cfgToast('⏳ Historial de accesos próximamente', 'warning');
+        };
+
+        window.onDesactivarCuenta = async () => {
+            const ok = await cfgConfirm({
+                title: '¿Desactivar tu cuenta?',
+                text: 'Tu perfil y contenido quedarán ocultos temporalmente. Puedes reactivar tu cuenta en cualquier momento iniciando sesión de nuevo.',
+                confirmText: 'Desactivar',
+                cancelText: 'Cancelar',
+                danger: true,
+            });
+
+            if (!ok) return;
+
+            cfgToast('⏳ Desactivación próximamente', 'warning');
+        };
+
+        // ============================================================
+        // INICIALIZAR
+        // ============================================================
+        window.addEventListener('DOMContentLoaded', async () => {
+            await new Promise(resolve => setTimeout(resolve, 400));
+            renderActividad();
+            renderDescarga();
+            renderPeligro();
+            await cargarDatosCuenta();
+        });
+
+    })();
+    </script>
+</body>
+</html>
