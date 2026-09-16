@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#000000" />
+    <title>Idiomas · Sariel's</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="../../../shared/config-layout.css" />
+    
+    <style>
+        .cfg-idioma-card {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--cfg-border);
+            cursor: pointer;
+            transition: var(--cfg-transition);
+        }
+
+        .cfg-idioma-card:last-child {
+            border-bottom: none;
+        }
+
+        .cfg-idioma-card:hover {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .cfg-idioma-card.active {
+            background: rgba(212, 175, 55, 0.08);
+            border-left: 3px solid var(--cfg-gold);
+        }
+
+        .cfg-idioma-flag {
+            font-size: 1.8rem;
+            flex-shrink: 0;
+        }
+
+        .cfg-idioma-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .cfg-idioma-nombre {
+            font-size: 0.92rem;
+            font-weight: 600;
+            color: var(--cfg-text);
+            margin-bottom: 2px;
+        }
+
+        .cfg-idioma-nativo {
+            font-size: 0.72rem;
+            color: var(--cfg-text-muted);
+        }
+
+        .cfg-idioma-codigo {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.65rem;
+            color: var(--cfg-text-dim);
+            background: rgba(255, 255, 255, 0.05);
+            padding: 3px 10px;
+            border-radius: 8px;
+            flex-shrink: 0;
+        }
+
+        .cfg-idioma-card.active .cfg-idioma-codigo {
+            background: var(--cfg-gold);
+            color: var(--cfg-space);
+            font-weight: 700;
+        }
+
+        .cfg-idioma-check {
+            color: var(--cfg-gold);
+            font-size: 1.2rem;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .cfg-loading {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--cfg-text-muted);
+            font-size: 0.85rem;
+        }
+
+        .cfg-loading .spinner {
+            display: inline-block;
+            width: 28px;
+            height: 28px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top-color: var(--cfg-gold);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 12px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="cfg-page">
+
+    <div id="cfgHeaderSlot"></div>
+
+    <main class="cfg-content">
+
+        <h2 class="cfg-section-title">Idioma de la aplicación</h2>
+        <div class="cfg-list" id="seccionIdiomas">
+            <div class="cfg-loading">
+                <div class="spinner"></div>
+                <div>Cargando idiomas disponibles...</div>
+            </div>
+        </div>
+
+        <h2 class="cfg-section-title">Idiomas de contenido</h2>
+        <div class="cfg-list" id="seccionContenido"></div>
+
+        <div class="cfg-aviso cfg-aviso-info">
+            ℹ️ El idioma se sincroniza con tu cuenta. Cambiar aquí afecta a todos tus dispositivos.
+        </div>
+
+        <div class="cfg-footer">
+            <strong>◈ Sariel's</strong> · Accesibilidad · Idiomas
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="../../../shared/config-icons.js"></script>
+    <script src="../../../shared/config-layout.js"></script>
+
+    <script>
+    (function () {
+        'use strict';
+
+        const $ = (sel) => document.querySelector(sel);
+
+        cfgInitPage({
+            title: 'Idiomas',
+            subtitle: 'Personaliza tu experiencia',
+            backUrl: '/features/perfil/configuracion/index.html',
+        });
+
+        // ============================================================
+        // CARGAR IDIOMAS DESDE SUPABASE
+        // ============================================================
+        async function cargarIdiomas() {
+            try {
+                const client = window.supabaseClient || 
+                    (window.supabase && window.supabase.createClient(
+                        'https://zultnlogdoajehbswlih.supabase.co',
+                        'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
+                    ));
+                if (!client) {
+                    mostrarErrorIdiomas();
+                    return;
+                }
+
+                // Obtener idioma actual
+                const sessionResult = await client.auth.getSession();
+                const session = sessionResult.data.session;
+                let idiomaActualId = null;
+
+                if (session) {
+                    const { data: usuario } = await client
+                        .from('usuarios')
+                        .select('idioma_preferido_id')
+                        .eq('id', session.user.id)
+                        .maybeSingle();
+                    if (usuario) idiomaActualId = usuario.idioma_preferido_id;
+                }
+
+                // Fallback: leer de localStorage
+                if (!idiomaActualId) {
+                    idiomaActualId = localStorage.getItem('idioma_preferido');
+                }
+
+                // Cargar todos los idiomas activos
+                const { data: idiomas, error } = await client
+                    .from('idiomas_sistema')
+                    .select('id, codigo, nombre, nombre_nativo, bandera')
+                    .eq('activo', true)
+                    .order('nombre', { ascending: true });
+
+                if (error) throw error;
+
+                if (!idiomas || idiomas.length === 0) {
+                    mostrarSinIdiomas();
+                    return;
+                }
+
+                // Si no hay idioma actual, marcar el primero (español)
+                if (!idiomaActualId) {
+                    const español = idiomas.find(i => i.codigo === 'es-MX') || idiomas[0];
+                    idiomaActualId = español.id;
+                }
+
+                renderizarIdiomas(idiomas, idiomaActualId);
+
+            } catch (error) {
+                console.error('Error cargando idiomas:', error);
+                mostrarErrorIdiomas();
+            }
+        }
+
+        function renderizarIdiomas(idiomas, idiomaActualId) {
+            $('#seccionIdiomas').innerHTML = idiomas.map(idioma => {
+                const activo = idioma.id === idiomaActualId;
+                return `
+                    <div class="cfg-idioma-card ${activo ? 'active' : ''}" 
+                         onclick="window.onSeleccionarIdioma('${idioma.id}', '${idioma.codigo}', '${idioma.nombre.replace(/'/g, "\\'")}')">
+                        <span class="cfg-idioma-flag">${idioma.bandera || '🌐'}</span>
+                        <div class="cfg-idioma-info">
+                            <div class="cfg-idioma-nombre">${idioma.nombre}</div>
+                            <div class="cfg-idioma-nativo">${idioma.nombre_nativo || ''}</div>
+                        </div>
+                        <div class="cfg-idioma-codigo">${idioma.codigo}</div>
+                        ${activo ? '<span class="cfg-idioma-check">✓</span>' : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function mostrarSinIdiomas() {
+            $('#seccionIdiomas').innerHTML = `
+                <div class="cfg-empty">
+                    <span class="cfg-empty-icon">🌐</span>
+                    <div class="cfg-empty-text">No hay idiomas disponibles</div>
+                </div>
+            `;
+        }
+
+        function mostrarErrorIdiomas() {
+            $('#seccionIdiomas').innerHTML = `
+                <div class="cfg-empty">
+                    <span class="cfg-empty-icon">⚠️</span>
+                    <div class="cfg-empty-text">Error al cargar idiomas</div>
+                </div>
+            `;
+        }
+
+        // ============================================================
+        // SELECCIONAR IDIOMA
+        // ============================================================
+        window.onSeleccionarIdioma = async (idiomaId, codigo, nombre) => {
+            const ok = await cfgConfirm({
+                title: `¿Cambiar a ${nombre}?`,
+                text: 'La página se recargará para aplicar el idioma.',
+                confirmText: 'Cambiar',
+                cancelText: 'Cancelar',
+                danger: false,
+            });
+
+            if (!ok) return;
+
+            try {
+                // 1. Guardar en localStorage
+                localStorage.setItem('idioma_preferido', idiomaId);
+
+                // 2. Guardar en Supabase
+                const client = window.supabaseClient || 
+                    (window.supabase && window.supabase.createClient(
+                        'https://zultnlogdoajehbswlih.supabase.co',
+                        'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
+                    ));
+                
+                if (client) {
+                    const sessionResult = await client.auth.getSession();
+                    const session = sessionResult.data.session;
+                    if (session) {
+                        await client
+                            .from('usuarios')
+                            .update({ idioma_preferido_id: idiomaId })
+                            .eq('id', session.user.id);
+                    }
+                }
+
+                cfgToast(`🌐 Idioma cambiado a ${nombre}`, 'success');
+
+                // Recargar página después de un momento
+                setTimeout(() => {
+                    window.location.reload();
+                }, 800);
+
+            } catch (error) {
+                console.error('Error cambiando idioma:', error);
+                cfgToast('❌ Error al cambiar idioma', 'error');
+            }
+        };
+
+        // ============================================================
+        // SECCIÓN IDIOMAS DE CONTENIDO
+        // ============================================================
+        function renderizarContenido() {
+            $('#seccionContenido').innerHTML = [
+                cfgRenderItem({
+                    icon: 'globe',
+                    title: 'Idiomas del contenido que ves',
+                    desc: 'Elige en qué idiomas quieres ver contenido en tu feed',
+                    onclick: 'window.onIdiomasContenido()',
+                }),
+                cfgRenderItem({
+                    icon: 'messageCircle',
+                    title: 'Traducir publicaciones automáticamente',
+                    desc: 'Traduce automáticamente publicaciones en otros idiomas',
+                    onclick: 'window.onTraduccionAuto()',
+                }),
+            ].join('');
+        }
+
+        window.onIdiomasContenido = () => {
+            cfgToast('⏳ Selector de idiomas del feed próximamente', 'warning');
+        };
+
+        window.onTraduccionAuto = () => {
+            cfgToast('⏳ Traducción automática próximamente', 'warning');
+        };
+
+        // ============================================================
+        // INICIALIZAR
+        // ============================================================
+        window.addEventListener('DOMContentLoaded', async () => {
+            await new Promise(resolve => setTimeout(resolve, 400));
+            renderizarContenido();
+            await cargarIdiomas();
+        });
+
+    })();
+    </script>
+</body>
+</html>
