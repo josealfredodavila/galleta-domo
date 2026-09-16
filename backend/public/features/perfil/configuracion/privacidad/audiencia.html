@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#000000" />
+    <title>Audiencia y etiquetas · Sariel's</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="../../../shared/config-layout.css" />
+</head>
+<body class="cfg-page">
+
+    <div id="cfgHeaderSlot"></div>
+
+    <main class="cfg-content">
+
+        <h2 class="cfg-section-title">Foto de perfil</h2>
+        <div class="cfg-list" id="seccionFotoPerfil"></div>
+
+        <h2 class="cfg-section-title">Publicaciones</h2>
+        <div class="cfg-list" id="seccionPublicaciones"></div>
+
+        <h2 class="cfg-section-title">Etiquetas</h2>
+        <div class="cfg-list" id="seccionEtiquetas"></div>
+
+        <div class="cfg-aviso">
+            ℹ️ Los cambios se sincronizan en todos tus dispositivos.
+        </div>
+
+        <div class="cfg-footer">
+            <strong>◈ Sariel's</strong> · Privacidad · Audiencia y etiquetas
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="../../../shared/config-icons.js"></script>
+    <script src="../../../shared/config-layout.js"></script>
+
+    <script>
+    (function () {
+        'use strict';
+
+        const $ = (sel) => document.querySelector(sel);
+
+        cfgInitPage({
+            title: 'Audiencia y etiquetas',
+            subtitle: '@tu_usuario',
+            backUrl: '/features/perfil/configuracion/index.html',
+        });
+
+        const PREF_KEYS = {
+            foto_publica: 'audiencia_foto_publica',
+            posts_publicos: 'audiencia_posts_publicos',
+            permitir_etiquetas: 'audiencia_permitir_etiquetas',
+            etiquetas_solo_conocidos: 'audiencia_etiquetas_solo_conocidos',
+        };
+
+        function renderSecciones() {
+            // ============================================================
+            // FOTO DE PERFIL
+            // ============================================================
+            $('#seccionFotoPerfil').innerHTML = [
+                cfgRenderToggle({
+                    id: 'toggleFotoPublica',
+                    title: 'Foto de perfil pública',
+                    desc: 'Permite que cualquier persona vea tu foto de perfil. Si lo desactivas, solo tus contactos podrán verla.',
+                    checked: cfgGetPref(PREF_KEYS.foto_publica, true),
+                    onChange: `window.onToggleFoto(this.checked)`,
+                }),
+            ].join('');
+
+            // ============================================================
+            // PUBLICACIONES
+            // ============================================================
+            $('#seccionPublicaciones').innerHTML = [
+                cfgRenderToggle({
+                    id: 'togglePostsPublicos',
+                    title: 'Publicaciones visibles para todos',
+                    desc: 'Permite que cualquier persona vea tus publicaciones en el Muro. Si lo desactivas, solo tus contactos podrán verlas.',
+                    checked: cfgGetPref(PREF_KEYS.posts_publicos, true),
+                    onChange: `window.onTogglePosts(this.checked)`,
+                }),
+            ].join('');
+
+            // ============================================================
+            // ETIQUETAS
+            // ============================================================
+            $('#seccionEtiquetas').innerHTML = [
+                cfgRenderToggle({
+                    id: 'toggleEtiquetas',
+                    title: 'Permitir que otros me etiqueten',
+                    desc: 'Cualquier persona puede etiquetarte en fotos o publicaciones.',
+                    checked: cfgGetPref(PREF_KEYS.permitir_etiquetas, true),
+                    onChange: `window.onToggleEtiquetas(this.checked)`,
+                }),
+                cfgRenderToggle({
+                    id: 'toggleEtiquetasConocidos',
+                    title: 'Solo permitir etiquetas de personas que sigo',
+                    desc: 'Solo las personas que sigues podrán etiquetarte.',
+                    checked: cfgGetPref(PREF_KEYS.etiquetas_solo_conocidos, false),
+                    onChange: `window.onToggleEtiquetasConocidos(this.checked)`,
+                }),
+            ].join('');
+        }
+
+        // ============================================================
+        // CALLBACKS
+        // ============================================================
+        window.onToggleFoto = async (value) => {
+            await cfgSetPref(PREF_KEYS.foto_publica, value);
+            cfgToast(
+                value ? '👁️ Foto pública activada' : '🔒 Solo contactos pueden ver tu foto',
+                value ? 'success' : 'warning'
+            );
+        };
+
+        window.onTogglePosts = async (value) => {
+            await cfgSetPref(PREF_KEYS.posts_publicos, value);
+            cfgToast(
+                value ? '🌐 Publicaciones visibles para todos' : '🔒 Solo contactos pueden verlas',
+                value ? 'success' : 'warning'
+            );
+        };
+
+        window.onToggleEtiquetas = async (value) => {
+            await cfgSetPref(PREF_KEYS.permitir_etiquetas, value);
+            cfgToast(
+                value ? '🏷️ Pueden etiquetarte' : '🚫 Ya no pueden etiquetarte',
+                value ? 'success' : 'warning'
+            );
+        };
+
+        window.onToggleEtiquetasConocidos = async (value) => {
+            await cfgSetPref(PREF_KEYS.etiquetas_solo_conocidos, value);
+            cfgToast(
+                value ? '👥 Solo tus contactos pueden etiquetarte' : '🌐 Cualquiera puede etiquetarte',
+                value ? 'success' : 'warning'
+            );
+        };
+
+        // ============================================================
+        // INICIALIZAR
+        // ============================================================
+        window.addEventListener('DOMContentLoaded', async () => {
+            await new Promise(resolve => setTimeout(resolve, 400));
+            renderSecciones();
+        });
+
+        // ============================================================
+        // CARGAR HANDLE EN SUBTITLE
+        // ============================================================
+        (async function cargarUsuario() {
+            try {
+                const client = window.supabaseClient || 
+                    (window.supabase && window.supabase.createClient(
+                        'https://zultnlogdoajehbswlih.supabase.co',
+                        'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
+                    ));
+                if (!client) return;
+                const { data } = await client.auth.getSession();
+                const session = data && data.session;
+                if (!session) return;
+                const handle = session.user.email ? session.user.email.split('@')[0] : 'usuario';
+                const subEl = document.querySelector('.cfg-header-subtitle');
+                if (subEl) subEl.textContent = '@' + handle;
+            } catch (e) { /* silencioso */ }
+        })();
+
+    })();
+    </script>
+</body>
+</html>
