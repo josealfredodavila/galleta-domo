@@ -1,0 +1,697 @@
+/* ================================================================
+   SARIEL'S · CONFIGURACIÓN - LAYOUT ESTILO X (TWITTER)
+   Colores: Dorado Sariel's + Fondo oscuro
+   ================================================================ */
+
+/* ----- Variables específicas de configuración ----- */
+:root {
+    /* Colores base Sariel's (por si no carga styles.css) */
+    --cfg-gold: #D4AF37;
+    --cfg-gold-dark: #b8923a;
+    --cfg-gold-light: #e8c84a;
+    --cfg-space: #05080f;
+    --cfg-bg: #000000;
+    --cfg-bg-2: #0a0a0a;
+    --cfg-bg-3: #16181c;
+    
+    /* Texto */
+    --cfg-text: #f0f4f8;
+    --cfg-text-muted: #8aa8b8;
+    --cfg-text-dim: #5a6870;
+    
+    /* Bordes y separadores */
+    --cfg-border: rgba(255, 255, 255, 0.08);
+    --cfg-border-hover: rgba(212, 175, 55, 0.3);
+    
+    /* Estados */
+    --cfg-success: #00d68f;
+    --cfg-danger: #ff3366;
+    --cfg-warning: #f7d44a;
+    --cfg-info: #1d9bf0;
+    
+    /* Tamaños */
+    --cfg-header-h: 56px;
+    --cfg-padding: 16px;
+    --cfg-radius: 12px;
+    
+    /* Transición */
+    --cfg-transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ----- Reset local ----- */
+.cfg-page * {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.cfg-page {
+    background: var(--cfg-bg);
+    color: var(--cfg-text);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* ================================================================
+   HEADER CON BOTÓN ATRÁS
+   ================================================================ */
+.cfg-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 8px 16px;
+    min-height: var(--cfg-header-h);
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--cfg-border);
+}
+
+.cfg-header-back {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: transparent;
+    border: none;
+    color: var(--cfg-text);
+    font-size: 1.2rem;
+    cursor: pointer;
+    text-decoration: none;
+    transition: var(--cfg-transition);
+    flex-shrink: 0;
+}
+
+.cfg-header-back:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.cfg-header-back svg {
+    width: 20px;
+    height: 20px;
+    fill: currentColor;
+}
+
+.cfg-header-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.cfg-header-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--cfg-text);
+    margin: 0;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cfg-header-subtitle {
+    font-size: 0.72rem;
+    color: var(--cfg-text-muted);
+    margin: 2px 0 0 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cfg-header-action {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: transparent;
+    border: none;
+    color: var(--cfg-text);
+    font-size: 1rem;
+    cursor: pointer;
+    transition: var(--cfg-transition);
+    flex-shrink: 0;
+}
+
+.cfg-header-action:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* ================================================================
+   CONTENEDOR PRINCIPAL
+   ================================================================ */
+.cfg-content {
+    max-width: 640px;
+    margin: 0 auto;
+    padding-bottom: 60px;
+}
+
+/* ================================================================
+   TÍTULOS DE SECCIÓN
+   ================================================================ */
+.cfg-section-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--cfg-gold);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    padding: 24px 16px 8px 16px;
+    margin: 0;
+    font-family: 'Orbitron', monospace;
+}
+
+.cfg-section-title:first-child {
+    padding-top: 12px;
+}
+
+/* ================================================================
+   LISTA DE ITEMS
+   ================================================================ */
+.cfg-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.cfg-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 14px 16px;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--cfg-border);
+    color: var(--cfg-text);
+    text-decoration: none;
+    cursor: pointer;
+    transition: var(--cfg-transition);
+    width: 100%;
+    text-align: left;
+    font-family: inherit;
+    font-size: inherit;
+}
+
+.cfg-item:last-child {
+    border-bottom: none;
+}
+
+.cfg-item:hover,
+.cfg-item:active {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.cfg-item-icon {
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    color: var(--cfg-text-muted);
+    margin-top: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cfg-item-icon svg {
+    width: 100%;
+    height: 100%;
+    fill: currentColor;
+}
+
+.cfg-item-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.cfg-item-title {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--cfg-text);
+    margin: 0 0 2px 0;
+    line-height: 1.3;
+}
+
+.cfg-item-desc {
+    font-size: 0.75rem;
+    color: var(--cfg-text-muted);
+    margin: 0;
+    line-height: 1.4;
+}
+
+.cfg-item-chevron {
+    flex-shrink: 0;
+    color: var(--cfg-text-dim);
+    font-size: 0.9rem;
+    margin-top: 4px;
+    transition: var(--cfg-transition);
+}
+
+.cfg-item:hover .cfg-item-chevron {
+    color: var(--cfg-gold);
+    transform: translateX(2px);
+}
+
+/* Item especial: sin icono, más simple */
+.cfg-item.cfg-item-plain {
+    padding: 14px 16px;
+}
+
+/* ================================================================
+   TOGGLE (SWITCH)
+   ================================================================ */
+.cfg-toggle {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+    flex-shrink: 0;
+    margin-top: 6px;
+    cursor: pointer;
+}
+
+.cfg-toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+    position: absolute;
+}
+
+.cfg-toggle-slider {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #2f3336;
+    border-radius: 12px;
+    transition: var(--cfg-transition);
+}
+
+.cfg-toggle-slider::before {
+    content: '';
+    position: absolute;
+    height: 20px;
+    width: 20px;
+    left: 2px;
+    bottom: 2px;
+    background: #fff;
+    border-radius: 50%;
+    transition: var(--cfg-transition);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.cfg-toggle input:checked + .cfg-toggle-slider {
+    background: var(--cfg-gold);
+}
+
+.cfg-toggle input:checked + .cfg-toggle-slider::before {
+    transform: translateX(20px);
+}
+
+.cfg-toggle input:disabled + .cfg-toggle-slider {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.cfg-toggle input:focus-visible + .cfg-toggle-slider {
+    box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.3);
+}
+
+/* ================================================================
+   BOTÓN SELECTOR (dropdown/radio)
+   ================================================================ */
+.cfg-select {
+    width: 100%;
+    padding: 10px 14px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--cfg-border);
+    border-radius: 8px;
+    color: var(--cfg-text);
+    font-size: 0.85rem;
+    font-family: inherit;
+    outline: none;
+    cursor: pointer;
+    transition: var(--cfg-transition);
+}
+
+.cfg-select:focus {
+    border-color: var(--cfg-gold);
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.cfg-select option {
+    background: var(--cfg-bg-3);
+    color: var(--cfg-text);
+}
+
+/* ================================================================
+   RADIO GROUP (con opciones verticales)
+   ================================================================ */
+.cfg-radio-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 0 16px 16px 16px;
+}
+
+.cfg-radio-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: var(--cfg-transition);
+    border: 1px solid transparent;
+}
+
+.cfg-radio-item:hover {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.cfg-radio-item.active {
+    background: rgba(212, 175, 55, 0.08);
+    border-color: rgba(212, 175, 55, 0.2);
+}
+
+.cfg-radio-circle {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid var(--cfg-text-muted);
+    position: relative;
+    transition: var(--cfg-transition);
+}
+
+.cfg-radio-item.active .cfg-radio-circle {
+    border-color: var(--cfg-gold);
+}
+
+.cfg-radio-item.active .cfg-radio-circle::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--cfg-gold);
+}
+
+.cfg-radio-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.cfg-radio-title {
+    font-size: 0.88rem;
+    font-weight: 500;
+    color: var(--cfg-text);
+    margin: 0 0 2px 0;
+}
+
+.cfg-radio-desc {
+    font-size: 0.72rem;
+    color: var(--cfg-text-muted);
+    margin: 0;
+    line-height: 1.4;
+}
+
+/* ================================================================
+   AVISO / INFO BOX
+   ================================================================ */
+.cfg-aviso {
+    padding: 12px 16px;
+    margin: 8px 16px 12px 16px;
+    font-size: 0.72rem;
+    color: var(--cfg-text-muted);
+    line-height: 1.5;
+    border-radius: 10px;
+    border-left: 3px solid var(--cfg-gold);
+    background: rgba(212, 175, 55, 0.04);
+}
+
+.cfg-aviso.cfg-aviso-info {
+    border-left-color: var(--cfg-info);
+    background: rgba(29, 155, 240, 0.04);
+}
+
+.cfg-aviso.cfg-aviso-danger {
+    border-left-color: var(--cfg-danger);
+    background: rgba(255, 51, 102, 0.04);
+    color: #ffaa88;
+}
+
+.cfg-aviso.cfg-aviso-success {
+    border-left-color: var(--cfg-success);
+    background: rgba(0, 214, 143, 0.04);
+    color: #88e8c0;
+}
+
+/* ================================================================
+   BOTONES
+   ================================================================ */
+.cfg-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border-radius: 30px;
+    border: none;
+    font-size: 0.82rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: var(--cfg-transition);
+    text-decoration: none;
+    line-height: 1;
+}
+
+.cfg-btn-primary {
+    background: linear-gradient(135deg, var(--cfg-gold), var(--cfg-gold-dark));
+    color: var(--cfg-space);
+}
+
+.cfg-btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(212, 175, 55, 0.25);
+}
+
+.cfg-btn-outline {
+    background: transparent;
+    color: var(--cfg-text);
+    border: 1px solid var(--cfg-border);
+}
+
+.cfg-btn-outline:hover {
+    border-color: var(--cfg-gold);
+    color: var(--cfg-gold);
+}
+
+.cfg-btn-danger {
+    background: rgba(255, 51, 102, 0.1);
+    color: var(--cfg-danger);
+    border: 1px solid rgba(255, 51, 102, 0.3);
+}
+
+.cfg-btn-danger:hover {
+    background: rgba(255, 51, 102, 0.2);
+}
+
+.cfg-btn-block {
+    display: flex;
+    width: 100%;
+}
+
+/* ================================================================
+   MODAL DE CONFIRMACIÓN
+   ================================================================ */
+.cfg-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+}
+
+.cfg-modal-overlay.show {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.cfg-modal {
+    background: linear-gradient(160deg, #16181c, #0a0a0a);
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    border-radius: 20px;
+    padding: 24px;
+    max-width: 400px;
+    width: 100%;
+    animation: cfgScaleIn 0.25s ease-out;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+}
+
+@keyframes cfgScaleIn {
+    from { transform: scale(0.9); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+.cfg-modal-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 1.05rem;
+    color: var(--cfg-gold);
+    margin: 0 0 12px 0;
+    text-align: center;
+}
+
+.cfg-modal-text {
+    font-size: 0.85rem;
+    color: var(--cfg-text-muted);
+    line-height: 1.5;
+    margin: 0 0 20px 0;
+    text-align: center;
+}
+
+.cfg-modal-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.cfg-modal-actions .cfg-btn {
+    flex: 1;
+    min-width: 120px;
+}
+
+/* ================================================================
+   EMPTY STATE
+   ================================================================ */
+.cfg-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--cfg-text-muted);
+}
+
+.cfg-empty-icon {
+    font-size: 2.5rem;
+    display: block;
+    margin-bottom: 12px;
+    color: var(--cfg-gold);
+    opacity: 0.4;
+}
+
+.cfg-empty-text {
+    font-size: 0.85rem;
+}
+
+/* ================================================================
+   FOOTER
+   ================================================================ */
+.cfg-footer {
+    text-align: center;
+    padding: 30px 16px;
+    font-size: 0.68rem;
+    color: var(--cfg-text-dim);
+    line-height: 1.6;
+}
+
+.cfg-footer strong {
+    color: var(--cfg-gold);
+    font-weight: 600;
+}
+
+/* ================================================================
+   TOAST
+   ================================================================ */
+.cfg-toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: #16181c;
+    color: var(--cfg-text);
+    padding: 12px 20px;
+    border-radius: 12px;
+    border: 1px solid var(--cfg-border);
+    font-size: 0.8rem;
+    font-weight: 500;
+    z-index: 10000;
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    max-width: 90vw;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    pointer-events: none;
+}
+
+.cfg-toast.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+}
+
+.cfg-toast.cfg-toast-success {
+    border-color: rgba(0, 214, 143, 0.4);
+    color: var(--cfg-success);
+}
+
+.cfg-toast.cfg-toast-error {
+    border-color: rgba(255, 51, 102, 0.4);
+    color: var(--cfg-danger);
+}
+
+.cfg-toast.cfg-toast-warning {
+    border-color: rgba(247, 212, 74, 0.4);
+    color: var(--cfg-warning);
+}
+
+/* ================================================================
+   RESPONSIVE
+   ================================================================ */
+@media (max-width: 480px) {
+    .cfg-header {
+        padding: 6px 12px;
+        gap: 12px;
+    }
+    
+    .cfg-header-title {
+        font-size: 0.98rem;
+    }
+    
+    .cfg-header-subtitle {
+        font-size: 0.68rem;
+    }
+    
+    .cfg-item {
+        padding: 12px 14px;
+        gap: 12px;
+    }
+    
+    .cfg-item-title {
+        font-size: 0.86rem;
+    }
+    
+    .cfg-item-desc {
+        font-size: 0.72rem;
+    }
+    
+    .cfg-section-title {
+        padding: 20px 14px 6px 14px;
+        font-size: 0.7rem;
+    }
+}
