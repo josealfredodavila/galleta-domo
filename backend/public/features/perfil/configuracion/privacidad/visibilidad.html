@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#000000" />
+    <title>Visibilidad y contactos · Sariel's</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="../../../shared/config-layout.css" />
+</head>
+<body class="cfg-page">
+
+    <div id="cfgHeaderSlot"></div>
+
+    <main class="cfg-content">
+
+        <h2 class="cfg-section-title">Visibilidad</h2>
+        <div class="cfg-list" id="seccionVisibilidad"></div>
+
+        <h2 class="cfg-section-title">Contactos</h2>
+        <div class="cfg-list" id="seccionContactos"></div>
+
+        <div class="cfg-aviso">
+            ℹ️ Los cambios se guardan automáticamente en este dispositivo.
+        </div>
+
+        <div class="cfg-footer">
+            <strong>◈ Sariel's</strong> · Privacidad · Visibilidad y contactos
+        </div>
+    </main>
+
+    <script src="../../../shared/config-icons.js"></script>
+    <script src="../../../shared/config-layout.js"></script>
+
+    <script>
+    (function () {
+        'use strict';
+
+        const $ = (sel) => document.querySelector(sel);
+
+        cfgInitPage({
+            title: 'Visibilidad y contactos',
+            subtitle: '@tu_usuario',
+            backUrl: '/features/perfil/configuracion/index.html',
+        });
+
+        const PREF_KEYS = {
+            encontrarme_email: 'visibilidad_encontrarme_email',
+            encontrarme_telefono: 'visibilidad_encontrarme_telefono',
+            sync_contactos: 'visibilidad_sync_contactos',
+        };
+
+        // ============================================================
+        // VISIBILIDAD
+        // ============================================================
+        $('#seccionVisibilidad').innerHTML = [
+            cfgRenderToggle({
+                id: 'toggleEmail',
+                title: 'Permite que otros te encuentren por tu correo electrónico',
+                desc: 'Quienes tengan tu correo electrónico podrán conectarse contigo en Sariel\'s.',
+                checked: cfgGetPref(PREF_KEYS.encontrarme_email, true),
+                onChange: `window.onToggleEmail(this.checked)`,
+            }),
+            cfgRenderToggle({
+                id: 'toggleTelefono',
+                title: 'Permitir que otros te encuentren por tu número de teléfono',
+                desc: 'Necesitas añadir un número de teléfono para esta configuración.',
+                checked: cfgGetPref(PREF_KEYS.encontrarme_telefono, false),
+                onChange: `window.onToggleTelefono(this.checked)`,
+            }),
+        ].join('');
+
+        // ============================================================
+        // CONTACTOS
+        // ============================================================
+        $('#seccionContactos').innerHTML = [
+            cfgRenderToggle({
+                id: 'toggleSync',
+                title: 'Sincronizar contactos de la libreta de direcciones',
+                desc: 'Los contactos de tu libreta se cargarán en Sariel\'s de forma continua para ayudarte a conectar con tus amigos y personalizar tu contenido. Puedes desactivar la sincronización y eliminar los contactos cargados previamente.',
+                checked: cfgGetPref(PREF_KEYS.sync_contactos, false),
+                onChange: `window.onToggleSync(this.checked)`,
+            }),
+            cfgRenderItem({
+                icon: 'ban',
+                title: 'Eliminar todos los contactos',
+                desc: 'Elimina todos los contactos que hayas subido previamente y desactiva la sincronización en todos tus dispositivos. Ten en cuenta que el proceso puede tardar unos minutos.',
+                onclick: 'window.onEliminarContactos()',
+                class: 'cfg-item-plain',
+                style: 'color: var(--cfg-danger, #ff3366);',
+            }),
+        ].join('');
+
+        // ============================================================
+        // CALLBACKS
+        // ============================================================
+        window.onToggleEmail = (value) => {
+            cfgSetPref(PREF_KEYS.encontrarme_email, value);
+            cfgToast(
+                value ? '✅ Permites ser encontrado por correo' : '🚫 Ya no te encontrarán por correo',
+                value ? 'success' : 'warning'
+            );
+        };
+
+        window.onToggleTelefono = (value) => {
+            if (value) {
+                cfgToast('📱 Primero añade un número de teléfono en tu cuenta', 'warning');
+                setTimeout(() => {
+                    const t = document.getElementById('toggleTelefono');
+                    if (t) t.checked = false;
+                }, 300);
+                return;
+            }
+            cfgSetPref(PREF_KEYS.encontrarme_telefono, value);
+            cfgToast('🚫 Ya no te encontrarán por teléfono', 'warning');
+        };
+
+        window.onToggleSync = (value) => {
+            cfgSetPref(PREF_KEYS.sync_contactos, value);
+            cfgToast(
+                value ? '📇 Sincronización activada' : '🚫 Sincronización desactivada',
+                value ? 'success' : 'warning'
+            );
+        };
+
+        window.onEliminarContactos = async () => {
+            const ok = await cfgConfirm({
+                title: '¿Eliminar todos los contactos?',
+                text: 'Esta acción eliminará todos los contactos cargados previamente y desactivará la sincronización. Puede tardar unos minutos.',
+                confirmText: 'Eliminar todo',
+                cancelText: 'Cancelar',
+                danger: true,
+            });
+
+            if (!ok) return;
+
+            cfgToast('⏳ Eliminando contactos...', 'warning');
+
+            setTimeout(() => {
+                cfgSetPref(PREF_KEYS.sync_contactos, false);
+                const t = document.getElementById('toggleSync');
+                if (t) t.checked = false;
+                cfgToast('✅ Todos los contactos eliminados', 'success');
+            }, 1500);
+        };
+
+        // ============================================================
+        // CARGAR HANDLE EN SUBTITLE
+        // ============================================================
+        (async function cargarUsuario() {
+            try {
+                if (!window.supabase || !window.supabase.auth) return;
+                const { data } = await window.supabase.auth.getSession();
+                const session = data && data.session;
+                if (!session) return;
+                const handle = session.user.email ? session.user.email.split('@')[0] : 'usuario';
+                const subEl = document.querySelector('.cfg-header-subtitle');
+                if (subEl) subEl.textContent = '@' + handle;
+            } catch (e) { /* silencioso */ }
+        })();
+
+    })();
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+</body>
+</html>
