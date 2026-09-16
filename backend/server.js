@@ -1635,7 +1635,7 @@ app.post(
             });
 
             const jwt =
-                token.toJwt();
+                await token.toJwt();
 
             console.log(
                 `✅ LiveKit token generado: ${userId} → ${roomName}`
