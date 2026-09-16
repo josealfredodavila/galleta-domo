@@ -1,6 +1,6 @@
 /* ================================================================
    WORKER.JS - SARIEL'S ECOSYSTEM
-   VERSIÓN CORREGIDA - Fix "Filter not found"
+   VERSIÓN FINAL - Fix "Filter not found" + Audio
    ================================================================ */
 
 const { Worker } = require('bullmq');
@@ -82,7 +82,7 @@ async function procesarVideo(job) {
         // PASO 0: Verificar que el logo existe
         // ============================================================
         if (!fs.existsSync(LOGO_PATH)) {
-            throw new Error(`❌ El logo no existe en: ${LOGO_PATH}. Súbelo a la carpeta assets/`);
+            throw new Error(`❌ El logo no existe en: ${LOGO_PATH}`);
         }
 
         // ============================================================
@@ -113,6 +113,8 @@ async function procesarVideo(job) {
         });
 
         const videoStream = metadata.streams.find(s => s.codec_type === 'video');
+        const audioStream = metadata.streams.find(s => s.codec_type === 'audio');
+
         if (!videoStream) {
             throw new Error('No se encontró stream de video');
         }
@@ -120,9 +122,11 @@ async function procesarVideo(job) {
         const width = videoStream.width;
         const height = videoStream.height;
         const duration = metadata.format.duration;
-        const tieneAudio = metadata.streams.some(s => s.codec_type === 'audio');
+        const tieneAudio = !!audioStream;
 
-        console.log(`📐 [JOB ${job.id}] Dimensiones: ${width}x${height}, Duración: ${duration}s, Audio: ${tieneAudio ? 'sí' : 'no'}`);
+        console.log(`📐 [JOB ${job.id}] Dimensiones: ${width}x${height}`);
+        console.log(`⏱️ [JOB ${job.id}] Duración: ${duration}s`);
+        console.log(`🔊 [JOB ${job.id}] Audio: ${tieneAudio ? 'SÍ (' + audioStream.codec_name + ')' : 'NO'}`);
 
         await job.updateProgress(20);
 
@@ -159,7 +163,7 @@ async function procesarVideo(job) {
         await job.updateProgress(25);
 
         // ============================================================
-        // PASO 4: Procesar con FFmpeg (VERSIÓN CORREGIDA)
+        // PASO 4: Procesar con FFmpeg (con AUDIO)
         // ============================================================
         console.log(`🎬 [JOB ${job.id}] Iniciando FFmpeg...`);
 
@@ -167,27 +171,36 @@ async function procesarVideo(job) {
             const command = ffmpeg()
                 .input(inputPath)
                 .input(LOGO_PATH)
-                .complexFilter(filterComplex, 'out')   // ✅ Segundo parámetro 'out'
-                .outputOptions([
-                    '-c:v libx264',
-                    '-preset veryfast',
-                    '-crf 26',
-                    '-pix_fmt yuv420p',
-                    '-profile:v baseline',
-                    '-level 3.1',
-                    '-movflags +faststart',
-                    '-max_muxing_queue_size 1024'
-                ]);
+                .complexFilter(filterComplex, 'out');
 
-            // Audio: si el video tiene audio, mapear; si no, sin audio
+            // ✅ Opciones de video
+            command.outputOptions([
+                '-c:v libx264',
+                '-preset veryfast',
+                '-crf 26',
+                '-pix_fmt yuv420p',
+                '-profile:v baseline',
+                '-level 3.1',
+                '-movflags +faststart',
+                '-max_muxing_queue_size 1024'
+            ]);
+
+            // ✅ Opciones de audio (SOLO si el video tiene audio)
             if (tieneAudio) {
-                command.outputOptions(['-c:a aac', '-b:a 128k']);
+                command.outputOptions([
+                    '-map', '0:a?',      // Mapear audio del input original
+                    '-c:a', 'aac',       // Re-codificar a AAC
+                    '-b:a', '128k',      // Bitrate 128k
+                    '-ac', '2'           // Forzar estéreo (2 canales)
+                ]);
+                console.log(`🔊 [JOB ${job.id}] Audio: AAC 128k estéreo`);
             } else {
-                command.outputOptions(['-an']);  // Sin audio
+                command.outputOptions(['-an']);
+                console.log(`🔇 [JOB ${job.id}] Sin audio (video original no tiene)`);
             }
 
             command
-                .output(outputPath)     // ✅ Output explícito
+                .output(outputPath)
                 .on('start', (cmd) => {
                     console.log(`▶️ [JOB ${job.id}] FFmpeg iniciado`);
                     console.log(`   CMD: ${cmd}`);
@@ -207,7 +220,7 @@ async function procesarVideo(job) {
                     console.error(`❌ [JOB ${job.id}] STDERR:`, stderr);
                     reject(err);
                 })
-                .run();   // ✅ .run() en lugar de .save()
+                .run();
         });
 
         await job.updateProgress(80);
@@ -295,7 +308,8 @@ async function procesarVideo(job) {
         return {
             success: true,
             processedUrl,
-            videoId
+            videoId,
+            tieneAudio
         };
 
     } catch (error) {
@@ -339,6 +353,7 @@ const worker = new Worker(COLA_NOMBRE, procesarVideo, {
 worker.on('completed', (job, result) => {
     console.log(`✅ Worker: Job ${job.id} completado`);
     console.log(`   URL: ${result.processedUrl}`);
+    console.log(`   Audio: ${result.tieneAudio ? 'sí' : 'no'}`);
 });
 
 worker.on('failed', (job, err) => {
@@ -404,4 +419,5 @@ console.log('📡 Cola:', COLA_NOMBRE);
 console.log('🔢 Concurrencia:', MAX_CONCURRENT);
 console.log('📁 Temp dir:', TEMP_DIR);
 console.log('🖼️ Logo:', LOGO_PATH);
+console.log('🔊 Audio: AAC 128k (si el original lo tiene)');
 console.log('========================================');
