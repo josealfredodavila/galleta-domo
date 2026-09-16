@@ -16,7 +16,6 @@
             text-align: center;
             border-bottom: 1px solid var(--cfg-border);
         }
-
         .cfg-profile-avatar {
             width: 90px;
             height: 90px;
@@ -34,26 +33,22 @@
             border: 3px solid var(--cfg-gold);
             box-shadow: 0 0 30px rgba(212, 175, 55, 0.2);
         }
-
         .cfg-profile-avatar img {
             width: 100%;
             height: 100%;
             object-fit: cover;
         }
-
         .cfg-profile-name {
             font-size: 1.1rem;
             font-weight: 700;
             color: var(--cfg-text);
             margin-bottom: 4px;
         }
-
         .cfg-profile-handle {
             font-size: 0.82rem;
             color: var(--cfg-text-muted);
             margin-bottom: 6px;
         }
-
         .cfg-profile-bio {
             font-size: 0.78rem;
             color: var(--cfg-text-muted);
@@ -61,7 +56,6 @@
             max-width: 400px;
             margin: 0 auto;
         }
-
         .cfg-info-row {
             display: flex;
             justify-content: space-between;
@@ -71,16 +65,13 @@
             font-size: 0.82rem;
             gap: 10px;
         }
-
         .cfg-info-row:last-child {
             border-bottom: none;
         }
-
         .cfg-info-label {
             color: var(--cfg-text-muted);
             font-size: 0.75rem;
         }
-
         .cfg-info-value {
             color: var(--cfg-text);
             font-weight: 500;
@@ -90,6 +81,52 @@
             font-family: 'Inter', monospace;
             font-size: 0.8rem;
         }
+        .cfg-historial-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--cfg-border);
+        }
+        .cfg-historial-item:last-child {
+            border-bottom: none;
+        }
+        .cfg-historial-icon {
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+        .cfg-historial-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .cfg-historial-evento {
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--cfg-text);
+        }
+        .cfg-historial-meta {
+            font-size: 0.65rem;
+            color: var(--cfg-text-muted);
+            margin-top: 2px;
+        }
+        .cfg-loading-mini {
+            padding: 20px;
+            text-align: center;
+            color: var(--cfg-text-muted);
+            font-size: 0.75rem;
+        }
+        .cfg-empty-mini {
+            padding: 30px 20px;
+            text-align: center;
+            color: var(--cfg-text-muted);
+            font-size: 0.75rem;
+        }
+        .cfg-empty-mini .icon {
+            font-size: 2rem;
+            display: block;
+            margin-bottom: 8px;
+            opacity: 0.4;
+        }
     </style>
 </head>
 <body class="cfg-page">
@@ -98,37 +135,25 @@
 
     <main class="cfg-content">
 
-        <!-- ============================================================ -->
-        <!-- TARJETA DEL PERFIL                                           -->
-        <!-- ============================================================ -->
         <div class="cfg-profile-card" id="perfilCard">
             <div class="cfg-profile-avatar" id="avatarCuenta">◈</div>
-            <div class="cfg-profile-name" id="nombreCuenta">Explorador</div>
-            <div class="cfg-profile-handle" id="handleCuenta">@explorador</div>
-            <div class="cfg-profile-bio" id="bioCuenta">Explorando el ecosistema Sariel's · WEB3 · Comunidad</div>
+            <div class="cfg-profile-name" id="nombreCuenta">Cargando...</div>
+            <div class="cfg-profile-handle" id="handleCuenta">@...</div>
+            <div class="cfg-profile-bio" id="bioCuenta"></div>
         </div>
 
-        <!-- ============================================================ -->
-        <!-- INFORMACIÓN DE LA CUENTA                                     -->
-        <!-- ============================================================ -->
         <h2 class="cfg-section-title">Información de la cuenta</h2>
         <div class="cfg-list" id="seccionInfo"></div>
 
-        <!-- ============================================================ -->
-        <!-- TU ACTIVIDAD                                                 -->
-        <!-- ============================================================ -->
         <h2 class="cfg-section-title">Tu actividad en Sariel's</h2>
         <div class="cfg-list" id="seccionActividad"></div>
 
-        <!-- ============================================================ -->
-        <!-- DESCARGA DE DATOS                                            -->
-        <!-- ============================================================ -->
+        <h2 class="cfg-section-title">Historial de accesos</h2>
+        <div class="cfg-list" id="seccionHistorial"></div>
+
         <h2 class="cfg-section-title">Descarga de datos</h2>
         <div class="cfg-list" id="seccionDescarga"></div>
 
-        <!-- ============================================================ -->
-        <!-- ZONA DE PELIGRO                                              -->
-        <!-- ============================================================ -->
         <h2 class="cfg-section-title">Zona de peligro</h2>
         <div class="cfg-list" id="seccionPeligro"></div>
 
@@ -147,101 +172,143 @@
 
         const $ = (sel) => document.querySelector(sel);
 
+        function sb() {
+            return window.supabaseClient || 
+                (window.supabase && window.supabase.createClient(
+                    'https://zultnlogdoajehbswlih.supabase.co',
+                    'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
+                ));
+        }
+
         cfgInitPage({
             title: 'Tu cuenta',
             subtitle: 'Información de tu cuenta',
             backUrl: '/features/perfil/configuracion/index.html',
         });
 
+        let usuarioActual = null;
+        let historialAccesos = [];
+
         // ============================================================
-        // CARGAR DATOS DEL PERFIL
+        // CARGAR DATOS DEL USUARIO
         // ============================================================
-        async function cargarDatosCuenta() {
+        async function cargarDatosUsuario() {
             try {
-                const client = window.supabaseClient || 
-                    (window.supabase && window.supabase.createClient(
-                        'https://zultnlogdoajehbswlih.supabase.co',
-                        'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
-                    ));
+                const client = sb();
                 if (!client) return;
 
                 const { data: sessionData } = await client.auth.getSession();
                 const session = sessionData.session;
                 if (!session) return;
 
-                // Cargar datos del usuario
                 const { data: usuario } = await client
                     .from('usuarios')
                     .select('nombre, handle, avatar_url, bio, email, created_at, plan')
                     .eq('id', session.user.id)
                     .maybeSingle();
 
-                if (usuario) {
-                    // Actualizar avatar
-                    const avatarEl = $('#avatarCuenta');
-                    if (usuario.avatar_url) {
-                        avatarEl.innerHTML = `<img src="${usuario.avatar_url}" alt="Avatar">`;
-                    } else {
-                        avatarEl.textContent = '◈';
-                    }
+                usuarioActual = usuario;
+                renderPerfilCard(usuario, session);
 
-                    // Actualizar datos
-                    if (usuario.nombre) $('#nombreCuenta').textContent = usuario.nombre;
-                    if (usuario.handle) $('#handleCuenta').textContent = '@' + usuario.handle;
-                    if (usuario.bio) $('#bioCuenta').textContent = usuario.bio;
+            } catch (e) {
+                console.error('Error cargando usuario:', e);
+            }
+        }
 
-                    // Actualizar info de la cuenta
-                    const email = usuario.email || session.user.email || 'No disponible';
-                    const creado = usuario.created_at 
-                        ? new Date(usuario.created_at).toLocaleDateString('es-MX', {
-                            year: 'numeric', month: 'long', day: 'numeric'
-                        })
-                        : 'Desconocido';
-                    const plan = usuario.plan || 'Gratis';
+        function renderPerfilCard(usuario, session) {
+            if (!usuario) return;
 
-                    $('#seccionInfo').innerHTML = [
-                        cfgRenderItem({
-                            icon: 'user',
-                            title: 'Nombre de usuario',
-                            desc: usuario.nombre || 'Explorador',
-                            onclick: 'window.onEditarNombre()',
-                        }),
-                        cfgRenderItem({
-                            icon: 'fileText',
-                            title: 'Handle',
-                            desc: '@' + (usuario.handle || 'explorador'),
-                            onclick: 'window.onEditarHandle()',
-                        }),
-                        cfgRenderItem({
-                            icon: 'info',
-                            title: 'Correo electrónico',
-                            desc: email,
-                            onclick: 'window.onEditarEmail()',
-                        }),
-                        cfgRenderItem({
-                            icon: 'crown',
-                            title: 'Plan actual',
-                            desc: plan,
-                            onclick: 'window.onVerPlan()',
-                        }),
-                        cfgRenderItem({
-                            icon: 'info',
-                            title: 'Cuenta creada el',
-                            desc: creado,
-                            noChevron: true,
-                        }),
-                    ].join('');
+            // Avatar
+            const avatarEl = $('#avatarCuenta');
+            if (usuario.avatar_url) {
+                avatarEl.innerHTML = `<img src="${escapeHtml(usuario.avatar_url)}" alt="Avatar">`;
+            } else {
+                avatarEl.textContent = '◈';
+            }
+
+            // Nombre / Handle / Bio
+            $('#nombreCuenta').textContent = usuario.nombre || 'Explorador';
+            $('#handleCuenta').textContent = '@' + (usuario.handle || 'explorador');
+            $('#bioCuenta').textContent = usuario.bio || 'Explorando el ecosistema Sariel\'s · WEB3 · Comunidad';
+        }
+
+        // ============================================================
+        // CARGAR HISTORIAL DE ACCESOS
+        // ============================================================
+        async function cargarHistorial() {
+            try {
+                const client = sb();
+                if (!client) return;
+
+                const { data, error } = await client.rpc('obtener_mis_accesos', {
+                    p_limit: 20
+                });
+
+                if (error) {
+                    console.warn('Error RPC obtener_mis_accesos:', error.message);
+                    historialAccesos = [];
+                    return;
                 }
 
-            } catch (error) {
-                console.error('Error cargando datos de la cuenta:', error);
+                historialAccesos = data || [];
+
+            } catch (e) {
+                console.warn('Error historial:', e.message);
+                historialAccesos = [];
             }
         }
 
         // ============================================================
-        // SECCIÓN ACTIVIDAD
+        // RENDERIZAR SECCIONES
         // ============================================================
-        function renderActividad() {
+        function renderSecciones() {
+            // ============================================================
+            // INFORMACIÓN DE LA CUENTA
+            // ============================================================
+            const email = usuarioActual?.email || 'No disponible';
+            const creado = usuarioActual?.created_at 
+                ? new Date(usuarioActual.created_at).toLocaleDateString('es-MX', {
+                    year: 'numeric', month: 'long', day: 'numeric'
+                })
+                : 'Desconocido';
+            const plan = usuarioActual?.plan || 'Gratis';
+
+            $('#seccionInfo').innerHTML = [
+                cfgRenderItem({
+                    icon: 'user',
+                    title: 'Nombre de usuario',
+                    desc: usuarioActual?.nombre || 'Explorador',
+                    onclick: 'window.onEditarNombre()',
+                }),
+                cfgRenderItem({
+                    icon: 'fileText',
+                    title: 'Handle',
+                    desc: '@' + (usuarioActual?.handle || 'explorador'),
+                    onclick: 'window.onEditarHandle()',
+                }),
+                cfgRenderItem({
+                    icon: 'info',
+                    title: 'Correo electrónico',
+                    desc: email,
+                    onclick: 'window.onEditarEmail()',
+                }),
+                cfgRenderItem({
+                    icon: 'crown',
+                    title: 'Plan actual',
+                    desc: plan,
+                    onclick: 'window.onVerPlan()',
+                }),
+                cfgRenderItem({
+                    icon: 'info',
+                    title: 'Cuenta creada el',
+                    desc: creado,
+                    noChevron: true,
+                }),
+            ].join('');
+
+            // ============================================================
+            // ACTIVIDAD
+            // ============================================================
             $('#seccionActividad').innerHTML = [
                 cfgRenderItem({
                     icon: 'fileText',
@@ -259,15 +326,67 @@
                     icon: 'coin',
                     title: 'Tu historial de transacciones',
                     desc: 'Consulta tu historial de compras y transacciones',
-                    href: '/features/perfil/perfil.html#actividad',
+                    href: '/features/perfil/perfil.html',
                 }),
             ].join('');
-        }
 
-        // ============================================================
-        // SECCIÓN DESCARGA
-        // ============================================================
-        function renderDescarga() {
+            // ============================================================
+            // HISTORIAL DE ACCESOS
+            // ============================================================
+            const historialContainer = $('#seccionHistorial');
+            if (historialAccesos.length === 0) {
+                historialContainer.innerHTML = `
+                    <div class="cfg-empty-mini">
+                        <span class="icon">📜</span>
+                        Sin historial de accesos aún
+                    </div>
+                `;
+            } else {
+                historialContainer.innerHTML = historialAccesos.map(h => {
+                    const iconos = {
+                        'login': '🔓',
+                        'logout': '🔒',
+                        'login_fallido': '⚠️',
+                        'cambio_password': '🔑',
+                        'cambio_email': '📧',
+                        'activacion_2fa': '🛡️',
+                        'desactivacion_2fa': '🔓',
+                    };
+                    const nombres = {
+                        'login': 'Inicio de sesión',
+                        'logout': 'Cierre de sesión',
+                        'login_fallido': 'Intento fallido',
+                        'cambio_password': 'Cambio de contraseña',
+                        'cambio_email': 'Cambio de correo',
+                        'activacion_2fa': '2FA activado',
+                        'desactivacion_2fa': '2FA desactivado',
+                    };
+                    const icono = iconos[h.evento] || '📜';
+                    const nombre = nombres[h.evento] || h.evento || 'Evento';
+                    const fecha = h.created_at 
+                        ? new Date(h.created_at).toLocaleString('es-MX', {
+                            day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
+                        })
+                        : '';
+                    const exitoso = h.exitoso !== false;
+
+                    return `
+                        <div class="cfg-historial-item">
+                            <span class="cfg-historial-icon">${icono}</span>
+                            <div class="cfg-historial-info">
+                                <div class="cfg-historial-evento">${escapeHtml(nombre)}</div>
+                                <div class="cfg-historial-meta">
+                                    ${escapeHtml(h.dispositivo || 'Dispositivo')} · ${fecha}${!exitoso ? ' · <span style="color:var(--cfg-danger);">FALLIDO</span>' : ''}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            // ============================================================
+            // DESCARGA
+            // ============================================================
             $('#seccionDescarga').innerHTML = [
                 cfgRenderItem({
                     icon: 'database',
@@ -275,19 +394,11 @@
                     desc: 'Obtén un archivo con toda tu información de Sariel\'s',
                     onclick: 'window.onDescargarDatos()',
                 }),
-                cfgRenderItem({
-                    icon: 'fileText',
-                    title: 'Solicitar historial de accesos',
-                    desc: 'Consulta información sobre los accesos a tu cuenta',
-                    onclick: 'window.onSolicitarHistorial()',
-                }),
             ].join('');
-        }
 
-        // ============================================================
-        // SECCIÓN PELIGRO
-        // ============================================================
-        function renderPeligro() {
+            // ============================================================
+            // PELIGRO
+            // ============================================================
             $('#seccionPeligro').innerHTML = [
                 cfgRenderItem({
                     icon: 'lock',
@@ -309,22 +420,69 @@
         }
 
         // ============================================================
+        // HELPERS
+        // ============================================================
+        function escapeHtml(texto) {
+            if (!texto) return '';
+            const div = document.createElement('div');
+            div.textContent = texto;
+            return div.innerHTML;
+        }
+
+        // ============================================================
         // CALLBACKS
         // ============================================================
         window.onEditarNombre = () => {
-            cfgToast('⏳ Ve a tu perfil para editar tu nombre', 'warning');
+            cfgToast('✏️ Ve a tu perfil para editar tu nombre', 'success', 4000);
+            setTimeout(() => {
+                window.location.href = '/features/perfil/perfil.html';
+            }, 1500);
         };
 
         window.onEditarHandle = () => {
-            cfgToast('⏳ Ve a tu perfil para editar tu handle', 'warning');
+            cfgToast('✏️ Ve a tu perfil para editar tu handle', 'success', 4000);
+            setTimeout(() => {
+                window.location.href = '/features/perfil/perfil.html';
+            }, 1500);
         };
 
-        window.onEditarEmail = () => {
-            cfgToast('⏳ Cambio de correo próximamente', 'warning');
+        window.onEditarEmail = async () => {
+            const nuevoEmail = prompt('Escribe tu nuevo correo electrónico:');
+            if (!nuevoEmail) return;
+
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(nuevoEmail)) {
+                cfgToast('❌ Correo inválido', 'error');
+                return;
+            }
+
+            try {
+                const client = sb();
+                if (!client) throw new Error('Supabase no disponible');
+
+                cfgToast('⏳ Actualizando correo...', '', 4000);
+
+                const { error } = await client.auth.updateUser({
+                    email: nuevoEmail
+                });
+
+                if (error) throw error;
+
+                cfgToast('✅ Revisa tu correo para confirmar el cambio', 'success', 5000);
+
+                // Registrar el evento
+                await client.rpc('registrar_acceso', {
+                    p_evento: 'cambio_email',
+                    p_metadata: { email_nuevo: nuevoEmail }
+                }).catch(() => {});
+
+            } catch (e) {
+                console.error('Error cambiando correo:', e);
+                cfgToast('❌ Error: ' + e.message, 'error');
+            }
         };
 
         window.onVerPlan = () => {
-            window.location.href = '/features/perfil/perfil.html';
+            window.location.href = '/features/perfil/configuracion/sariels/membresia.html';
         };
 
         window.onDescargarDatos = async () => {
@@ -342,10 +500,6 @@
             setTimeout(() => {
                 cfgToast('✅ Recibirás un correo cuando esté listo', 'success', 4000);
             }, 2000);
-        };
-
-        window.onSolicitarHistorial = () => {
-            cfgToast('⏳ Historial de accesos próximamente', 'warning');
         };
 
         window.onDesactivarCuenta = async () => {
@@ -367,10 +521,9 @@
         // ============================================================
         window.addEventListener('DOMContentLoaded', async () => {
             await new Promise(resolve => setTimeout(resolve, 400));
-            renderActividad();
-            renderDescarga();
-            renderPeligro();
-            await cargarDatosCuenta();
+            await cargarDatosUsuario();
+            await cargarHistorial();
+            renderSecciones();
         });
 
     })();
