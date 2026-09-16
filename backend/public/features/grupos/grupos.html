@@ -39,20 +39,14 @@
         .toast.error { border-color: var(--danger); color: var(--danger); }
         .toast.warning { border-color: var(--warning); color: var(--warning); }
         .toast.success { border-color: var(--success); color: var(--success); }
-        
         .mobile-tabs { display: flex; background: rgba(15,45,26,0.5); border: 1px solid var(--glass-border); border-radius: 12px; padding: 4px; margin-bottom: 16px; }
         .mobile-tab { flex: 1; text-align: center; padding: 10px; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); border-radius: 8px; cursor: pointer; transition: var(--transition); }
         .mobile-tab.active { background: var(--gold); color: var(--space); }
         @media (min-width: 900px) { .mobile-tabs { display: none; } }
-
         .dashboard-grid { display: grid; grid-template-columns: 1fr; gap: 24px; }
         @media (min-width: 900px) { .dashboard-grid { grid-template-columns: 320px 1fr; } }
-        
         .seccion-titulo { font-family: 'Orbitron', monospace; color: var(--gold); font-size: 0.9rem; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; }
-        .seccion-titulo .badge-rojo { color: var(--live-red); font-size: 0.7rem; display: flex; align-items: center; gap: 6px; }
-        .seccion-titulo .badge-rojo .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--live-red); animation: pulse-live 1s infinite; }
         @keyframes pulse-live { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.8); } }
-        
         .mis-canales-lista { display: flex; flex-direction: column; gap: 10px; }
         .canal-item { display: flex; align-items: center; gap: 12px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius); padding: 10px 14px; cursor: pointer; transition: var(--transition); position: relative; }
         .canal-item:hover { border-color: var(--gold); transform: translateX(4px); }
@@ -62,7 +56,6 @@
         .canal-item .info .nombre { font-weight: 700; color: var(--text-primary); font-size: 0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .canal-item .info .stats { font-size: 0.6rem; color: var(--text-muted); }
         .canal-item .live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--live-red); animation: pulse-live 1s infinite; margin-left: auto; }
-        
         .en-vivo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
         .en-vivo-card { background: var(--glass-bg); border: 1px solid var(--live-red); border-radius: var(--radius); overflow: hidden; cursor: pointer; transition: var(--transition); position: relative; }
         .en-vivo-card:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(255, 0, 68, 0.2); }
@@ -71,25 +64,11 @@
         .en-vivo-card .info .titulo { font-size: 0.75rem; font-weight: 600; color: var(--gold); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .en-vivo-card .info .canal { font-size: 0.65rem; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
         .en-vivo-card .info .stats { font-size: 0.6rem; color: var(--text-muted); margin-top: 6px; }
-
-        .no-live-box { 
-            grid-column: 1 / -1; 
-            text-align: center; 
-            padding: 20px 16px; 
-            background: linear-gradient(155deg, rgba(15, 45, 26, 0.8), rgba(8, 15, 26, 0.9)); 
-            border: 1px dashed rgba(212, 175, 55, 0.3); 
-            border-radius: var(--radius); 
-            color: var(--text-muted); 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            justify-content: center; 
-        }
+        .no-live-box { grid-column: 1 / -1; text-align: center; padding: 20px 16px; background: linear-gradient(155deg, rgba(15, 45, 26, 0.8), rgba(8, 15, 26, 0.9)); border: 1px dashed rgba(212, 175, 55, 0.3); border-radius: var(--radius); color: var(--text-muted); display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .no-live-box .icon { font-size: 1.5rem; display: block; margin-bottom: 8px; color: var(--gold); opacity: 0.8; }
         .no-live-box h3 { font-size: 0.85rem; color: var(--text-primary); font-family: 'Orbitron', monospace; margin-bottom: 4px; }
         .no-live-box p { font-size: 0.7rem; color: var(--text-muted); margin-bottom: 12px; }
         .no-live-box .btn-salir-aire { padding: 8px 20px; font-size: 0.7rem; }
-
         .grupos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
         .grupo-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-xl); padding: 16px; cursor: pointer; transition: var(--transition); position: relative; }
         .grupo-card:hover { border-color: var(--gold); transform: translateY(-3px); box-shadow: var(--shadow-gold); }
@@ -105,65 +84,27 @@
         .grupo-card .live-badge { font-size: 0.5rem; padding: 2px 10px; border-radius: 12px; background: var(--live-red); color: #fff; animation: pulse-live 2s infinite; }
         .grupo-card .precio-badge { font-size: 0.6rem; padding: 2px 8px; border-radius: 12px; background: rgba(0, 214, 143, 0.15); color: var(--success); font-weight: 700; font-family: 'Orbitron', monospace; }
         .grupo-card .mk-badge { font-size: 0.55rem; padding: 2px 8px; border-radius: 12px; background: rgba(0, 229, 255, 0.15); color: var(--cyan); font-weight: 700; font-family: 'Orbitron', monospace; }
-
-        /* ✅ FILTROS DEL FEED */
         .feed-filtros { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; background: rgba(15,45,26,0.3); padding: 8px; border-radius: 14px; border: 1px solid var(--glass-border); }
         .feed-filtro-btn { padding: 6px 14px; border-radius: 20px; border: 1px solid var(--glass-border); background: transparent; color: var(--text-muted); font-size: 0.65rem; font-weight: 600; cursor: pointer; transition: var(--transition); font-family: 'Inter', sans-serif; }
         .feed-filtro-btn:hover { border-color: var(--gold); color: var(--gold); }
         .feed-filtro-btn.active { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); border-color: var(--gold); }
-
-        /* ✅ MENÚ "..." VERTICAL */
         .post-menu-wrapper { position: relative; margin-left: auto; }
         .post-menu-btn { background: none; border: none; color: var(--text-muted); font-size: 1.2rem; font-weight: 700; cursor: pointer; padding: 4px 10px; border-radius: 8px; line-height: 1; transition: var(--transition); }
         .post-menu-btn:hover { background: rgba(212,175,55,0.1); color: var(--gold); }
-        .post-menu-dropdown {
-            display: none;
-            position: absolute;
-            top: 100%;
-            right: 0;
-            margin-top: 4px;
-            background: linear-gradient(160deg, rgba(15, 45, 26, 0.98), rgba(5, 8, 15, 0.99));
-            border: 1px solid rgba(212,175,55,0.3);
-            border-radius: 14px;
-            padding: 6px;
-            min-width: 240px;
-            z-index: 50;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.7), 0 0 30px rgba(212,175,55,0.15);
-            animation: menuFadeIn 0.15s ease-out;
-        }
+        .post-menu-dropdown { display: none; position: absolute; top: 100%; right: 0; margin-top: 4px; background: linear-gradient(160deg, rgba(15, 45, 26, 0.98), rgba(5, 8, 15, 0.99)); border: 1px solid rgba(212,175,55,0.3); border-radius: 14px; padding: 6px; min-width: 240px; z-index: 50; box-shadow: 0 10px 40px rgba(0,0,0,0.7), 0 0 30px rgba(212,175,55,0.15); animation: menuFadeIn 0.15s ease-out; }
         .post-menu-dropdown.show { display: block; }
         @keyframes menuFadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
-        .post-menu-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 9px 12px;
-            border-radius: 10px;
-            color: var(--text-secondary);
-            font-size: 0.72rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: var(--transition);
-            background: transparent;
-            border: none;
-            width: 100%;
-            text-align: left;
-            font-family: 'Inter', sans-serif;
-        }
+        .post-menu-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 10px; color: var(--text-secondary); font-size: 0.72rem; font-weight: 500; cursor: pointer; transition: var(--transition); background: transparent; border: none; width: 100%; text-align: left; font-family: 'Inter', sans-serif; }
         .post-menu-item:hover { background: rgba(212,175,55,0.12); color: var(--gold); }
         .post-menu-item .icon { font-size: 0.9rem; width: 20px; text-align: center; }
         .post-menu-separator { height: 1px; background: rgba(212,175,55,0.1); margin: 4px 0; }
         .post-menu-item.danger { color: var(--danger); }
         .post-menu-item.danger:hover { background: rgba(255,51,102,0.1); color: var(--danger); }
-
-        /* ✅ PUBLICACIÓN */
         .grupo-interno { display: none; }
         .grupo-interno.show { display: block; }
         .grupo-header-interno { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-xl); padding: 20px; margin-bottom: 20px; position: relative; }
-        
         .btn-ajustes-canal { position: absolute; bottom: 12px; right: 12px; background: rgba(0,0,0,0.7); border: 1px solid var(--glass-border); border-radius: 50%; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; color: var(--gold); cursor: pointer; z-index: 10; backdrop-filter: blur(4px); transition: var(--transition); }
         .btn-ajustes-canal:hover { background: var(--gold); color: var(--space); transform: rotate(90deg); }
-        
         .grupo-header-interno .portada { width: 100%; height: 180px; background: linear-gradient(135deg, var(--green-deep), var(--gold-dark)); border-radius: var(--radius); margin-bottom: 12px; display: flex; align-items: center; justify-content: center; font-size: 3rem; color: rgba(255,255,255,0.1); overflow: hidden; position: relative; }
         .grupo-header-interno .portada img, .grupo-header-interno .portada video { width: 100%; height: 100%; object-fit: cover; }
         .grupo-header-interno .info-row { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; }
@@ -173,42 +114,19 @@
         .grupo-header-interno .info-text .nombre { font-family: 'Orbitron', monospace; color: var(--gold); font-size: 1.2rem; font-weight: 700; }
         .grupo-header-interno .info-text .descripcion { color: var(--text-secondary); font-size: 0.85rem; margin-top: 4px; }
         .grupo-header-interno .info-text .meta { display: flex; gap: 12px; font-size: 0.65rem; color: var(--text-muted); margin-top: 6px; flex-wrap: wrap; align-items: center; }
-        
-        /* ✅ BÚHO FIRMA COMO ENLACE */
-        .buho-enlace {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 44px;
-            height: 44px;
-            border-radius: 50%;
-            background: rgba(212,175,55,0.1);
-            border: 1px dashed var(--gold);
-            font-size: 1.4rem;
-            text-decoration: none;
-            margin-top: 10px;
-            transition: var(--transition);
-            cursor: pointer;
-        }
-        .buho-enlace:hover {
-            background: rgba(212,175,55,0.2);
-            transform: scale(1.1);
-            box-shadow: 0 0 30px rgba(212,175,55,0.3);
-        }
-        
+        .buho-enlace { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 50%; background: rgba(212,175,55,0.1); border: 1px dashed var(--gold); font-size: 1.4rem; text-decoration: none; margin-top: 10px; transition: var(--transition); cursor: pointer; }
+        .buho-enlace:hover { background: rgba(212,175,55,0.2); transform: scale(1.1); box-shadow: 0 0 30px rgba(212,175,55,0.3); }
         .grupo-header-interno .acciones { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; align-items: center; }
         .btn-donar { background: linear-gradient(135deg, #00d68f, #00b377); color: #fff; border: none; padding: 8px 20px; border-radius: 30px; font-weight: 700; font-size: 0.7rem; cursor: pointer; display: flex; align-items: center; gap: 6px; }
         .btn-donar:hover { transform: scale(1.02); }
         .btn-salir-aire { background: var(--live-red); color: #fff; border: none; padding: 10px 24px; border-radius: 30px; font-weight: 800; font-size: 0.8rem; cursor: pointer; animation: pulse-live 2s infinite; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 0 20px rgba(255, 0, 68, 0.4); }
         .btn-salir-aire:hover { transform: scale(1.05); }
-        
         .ajustes-menu { display: flex; flex-direction: column; gap: 8px; }
         .ajustes-menu button { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.2); color: var(--text-primary); cursor: pointer; text-align: left; font-size: 0.8rem; transition: var(--transition); }
         .ajustes-menu button:hover { border-color: var(--gold); background: rgba(212,175,55,0.1); color: var(--gold); }
         .ajustes-menu .toggle-row { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-radius: 12px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.2); }
         .ajustes-menu .toggle-row span { font-size: 0.8rem; color: var(--text-primary); }
         .ajustes-menu .toggle-row input[type="checkbox"] { width: auto; transform: scale(1.3); cursor: pointer; accent-color: var(--gold); }
-
         .grupo-live-container { display: none; margin-bottom: 20px; background: var(--glass-bg); border: 1px solid var(--live-red); border-radius: var(--radius-xl); overflow: hidden; box-shadow: 0 10px 40px rgba(255, 0, 68, 0.2); animation: adFadeIn 0.5s ease; }
         .grupo-live-container.visible { display: block; }
         .grupo-live-container .live-header-bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; border-bottom: 1px solid rgba(255, 0, 68, 0.2); background: rgba(255, 0, 68, 0.05); }
@@ -229,7 +147,6 @@
         .grupo-live-container .live-chat-input-row input { flex: 1; padding: 8px 14px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 20px; color: var(--text-primary); font-size: 0.75rem; outline: none; }
         .grupo-live-container .live-chat-input-row input:focus { border-color: var(--gold); }
         .grupo-live-container .live-chat-input-row button { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); border: none; padding: 8px 18px; border-radius: 20px; font-weight: 700; font-size: 0.7rem; cursor: pointer; }
-
         .marketing-ad-container { display: none; margin-bottom: 16px; background: linear-gradient(155deg, rgba(15, 45, 26, 0.55), rgba(8, 15, 26, 0.75)); border: 1px solid rgba(212, 175, 55, 0.25); border-radius: var(--radius-xl); overflow: hidden; backdrop-filter: blur(14px); position: relative; box-shadow: 0 10px 40px rgba(212, 175, 55, 0.08); animation: adFadeIn 0.5s ease; }
         .marketing-ad-container.visible { display: block; }
         @keyframes adFadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -245,7 +162,6 @@
         .marketing-ad-title { font-family: 'Orbitron', monospace; font-size: 0.85rem; font-weight: 700; color: var(--text-primary); margin-bottom: 6px; line-height: 1.3; }
         .marketing-ad-desc { font-size: 0.7rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 12px; word-wrap: break-word; }
         .marketing-ad-cta { display: inline-flex; align-items: center; gap: 6px; padding: 8px 20px; border-radius: 30px; background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); font-size: 0.7rem; font-weight: 700; text-decoration: none; border: none; cursor: pointer; transition: var(--transition); font-family: 'Inter', sans-serif; text-transform: uppercase; letter-spacing: 0.5px; }
-
         .publicaciones-container { margin-top: 16px; }
         .publicacion-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 12px; position: relative; }
         .publicacion-card.marketplace { border-left: 4px solid var(--success); }
@@ -261,7 +177,6 @@
         .publicacion-card .contenido { color: var(--text-secondary); font-size: 0.8rem; line-height: 1.6; }
         .publicacion-card .contenido img { max-width: 100%; border-radius: 8px; margin-top: 8px; }
         .publicacion-card .contenido video { max-width: 100%; border-radius: 8px; margin-top: 8px; }
-
         .marketplace-info { background: rgba(0,214,143,0.06); border: 1px solid rgba(0,214,143,0.15); border-radius: 12px; padding: 10px 14px; margin-top: 10px; }
         .marketplace-info .titulo-mk { font-family: 'Orbitron', monospace; color: var(--success); font-size: 0.75rem; font-weight: 700; margin-bottom: 6px; }
         .marketplace-info .precio { font-family: 'Orbitron', monospace; color: var(--gold); font-size: 1.1rem; font-weight: 700; }
@@ -271,13 +186,11 @@
         .marketplace-info .contacto a { padding: 6px 14px; border-radius: 20px; font-size: 0.65rem; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; }
         .marketplace-info .contacto .btn-whatsapp { background: linear-gradient(135deg, #25D366, #128C7E); color: #fff; }
         .marketplace-info .contacto .btn-llamar { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); }
-
         .publicacion-card .stats { display: flex; gap: 12px; font-size: 0.6rem; color: var(--text-muted); margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--glass-border); flex-wrap: wrap; align-items: center; }
         .publicacion-card .stats span { cursor: pointer; padding: 4px 8px; border-radius: 12px; transition: var(--transition); }
         .publicacion-card .stats span:hover { color: var(--gold); background: rgba(212,175,55,0.05); }
         .publicacion-card .stats span.interesado { color: var(--success); background: rgba(0,214,143,0.1); }
         .publicacion-card .stats span.no-interesado { color: var(--danger); background: rgba(255,51,102,0.1); }
-
         .form-publicacion { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 16px; }
         .form-publicacion textarea { width: 100%; padding: 10px 14px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 10px; color: var(--text-primary); font-size: 0.8rem; resize: vertical; min-height: 60px; outline: none; }
         .form-publicacion textarea:focus { border-color: var(--gold); }
@@ -288,14 +201,12 @@
         .form-publicacion .acciones .btn-mk { color: var(--success); border: 1px solid rgba(0,214,143,0.3); }
         .form-publicacion .acciones .btn-mk:hover { background: rgba(0,214,143,0.1); color: var(--success); }
         .form-publicacion .acciones .btn-mk:disabled { opacity: 0.3; cursor: not-allowed; }
-
         .emoji-picker { display: none; position: absolute; bottom: 100%; left: 0; background: rgba(15, 25, 20, 0.95); border: 1px solid var(--glass-border); border-radius: var(--radius); padding: 12px; width: 280px; max-width: 90vw; z-index: 1000; box-shadow: var(--shadow-gold-strong); backdrop-filter: blur(12px); margin-bottom: 8px; }
         .emoji-picker.show { display: block; }
         .emoji-picker .grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; }
         .emoji-picker .grid button { background: transparent; border: none; font-size: 1.5rem; padding: 6px 4px; cursor: pointer; border-radius: 8px; transition: var(--transition); line-height: 1; }
         .emoji-picker .grid button:hover { background: rgba(212, 175, 55, 0.15); transform: scale(1.15); }
         .emoji-picker .titulo { color: var(--text-muted); font-size: 0.6rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; text-align: center; font-family: 'Orbitron', monospace; }
-
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5,8,15,0.9); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
         .modal-overlay.show { display: flex; }
         .modal { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-xl); padding: 24px; max-width: 500px; width: 100%; max-height: 85vh; overflow-y: auto; }
@@ -313,7 +224,6 @@
         .modal .btn-guardar { width: 100%; padding: 10px; border-radius: 30px; border: none; background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); font-weight: 700; font-size: 0.85rem; cursor: pointer; }
         .modal .btn-guardar:hover { transform: scale(1.02); }
         .modal .btn-confirmar-eliminar { width: 100%; padding: 10px; border-radius: 30px; border: none; background: var(--danger); color: #fff; font-weight: 700; font-size: 0.85rem; cursor: pointer; }
-
         .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); }
         .empty-state .icon { font-size: 2.5rem; display: block; margin-bottom: 12px; color: var(--gold); opacity: 0.3; }
         .gift-options { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin: 12px 0; }
@@ -321,13 +231,11 @@
         .gift-btn:hover { border-color: var(--gold); transform: scale(1.05); background: rgba(212,175,55,0.1); }
         .gift-btn .monto { font-weight: 700; color: var(--gold); font-size: 0.9rem; }
         .gift-btn .label { font-size: 0.5rem; color: var(--text-muted); display: block; }
-
         .footer { margin-top: 30px; padding-top: 16px; border-top: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center; font-size: 0.7rem; color: var(--text-muted); flex-wrap: wrap; gap: 10px; }
         .footer .brand { color: var(--gold); font-weight: 600; }
         .footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
         .footer-links a { color: var(--text-muted); text-decoration: none; }
         .footer-links a:hover { color: var(--gold); }
-
         @media (max-width: 768px) {
             .app { padding: 12px 14px; }
             .grupos-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -389,7 +297,6 @@
                 <div class="mobile-tab active" onclick="switchTab('mis-canales')" id="tabMisCanales">◈ Mis Canales</div>
                 <div class="mobile-tab" onclick="switchTab('en-vivo')" id="tabEnVivo">🔴 En Vivo Ahora</div>
             </div>
-
             <div class="dashboard-grid">
                 <div class="col-mis-canales" id="colMisCanales">
                     <div class="seccion-titulo">
@@ -400,7 +307,6 @@
                         <div class="empty-state" style="padding:20px;"><span class="icon">◈</span><h3>Cargando...</h3></div>
                     </div>
                 </div>
-                
                 <div class="col-en-vivo" id="colEnVivo">
                     <div class="seccion-titulo">
                         <span>🔴 EN VIVO AHORA</span>
@@ -410,7 +316,6 @@
                     </div>
                 </div>
             </div>
-
             <div style="margin-top: 30px;">
                 <div class="grupos-header">
                     <h1 data-clave="grupos_titulo" style="color: var(--gold) !important;">◈ Directorio de Canales</h1>
@@ -433,12 +338,10 @@
                 </div>
             </div>
         </div>
-        
         <div class="grupo-interno" id="vistaGrupo">
             <button class="btn-outline btn-sm" onclick="volverALista()" style="margin-bottom:12px;">← Volver a Canales</button>
             <div class="grupo-header-interno" id="grupoHeaderInterno">
                 <button class="btn-ajustes-canal" onclick="abrirAjustesCanal()" id="btnAjustesCanal" style="display:none;" title="Ajustes del Canal">⚙️</button>
-                
                 <div class="portada" id="grupoPortada">◈</div>
                 <div class="info-row">
                     <div class="avatar-grande" id="grupoAvatar">◈</div>
@@ -452,7 +355,6 @@
                             <span id="grupoLiveBadge" style="display:none;" class="live-badge">🔴 EN VIVO</span>
                             <span id="grupoMkBadge" style="display:none;" class="mk-badge">🛒 Marketplace</span>
                         </div>
-                        <!-- ✅ BÚHO COMO ENLACE A TÉRMINOS -->
                         <a href="/features/terminos/derechos-sariels.html" target="_blank" class="buho-enlace" title="Ver Derechos y Usos">🦉</a>
                     </div>
                 </div>
@@ -475,13 +377,9 @@
                 <div class="live-video-wrap">
                     <video id="grupoLiveVideo" autoplay playsinline muted></video>
                     <div class="live-controls-inline">
-                        <button class="live-ctrl-btn" onclick="toggleMuteGrupoLive()" id="grupoLiveMuteBtn" title="Micrófono" style="position: absolute; bottom: 12px; right: 12px; background: rgba(0,0,0,0.7); border: 1px solid var(--glass-border); color: var(--gold); font-size: 1.2rem; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 50%; cursor: pointer; z-index: 20; backdrop-filter: blur(4px);">
-                            ◈
-                        </button>
+                        <button class="live-ctrl-btn" onclick="toggleMuteGrupoLive()" id="grupoLiveMuteBtn" title="Micrófono" style="position: absolute; bottom: 12px; right: 12px; background: rgba(0,0,0,0.7); border: 1px solid var(--glass-border); color: var(--gold); font-size: 1.2rem; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 50%; cursor: pointer; z-index: 20; backdrop-filter: blur(4px);">◈</button>
                         <button class="live-ctrl-btn end" onclick="finalizarLiveGrupo()" id="grupoLiveEndBtn" title="Finalizar" style="display:none; position: absolute; bottom: 12px; left: 12px; background: rgba(255,0,68,0.3); border: 1px solid var(--live-red); color: #fff; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 50%; cursor: pointer; z-index: 20; backdrop-filter: blur(4px);">
-                            <svg viewBox="0 0 24 24" fill="currentColor" style="width: 20px; height: 20px;">
-                                <rect x="6" y="6" width="12" height="12" rx="1"/>
-                            </svg>
+                            <svg viewBox="0 0 24 24" fill="currentColor" style="width: 20px; height: 20px;"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>
                         </button>
                     </div>
                 </div>
@@ -524,19 +422,16 @@
                     </div>
                 </div>
             </div>
-            
             <div class="feed-filtros" id="feedFiltros">
                 <button class="feed-filtro-btn active" data-filtro="todo" onclick="filtrarFeed('todo')">◈ Todo</button>
                 <button class="feed-filtro-btn" data-filtro="marketplace" onclick="filtrarFeed('marketplace')">🛒 Solo Marketplace</button>
                 <button class="feed-filtro-btn" data-filtro="publicaciones" onclick="filtrarFeed('publicaciones')">📝 Solo Publicaciones</button>
                 <button class="feed-filtro-btn" data-filtro="interesados" onclick="filtrarFeed('interesados')">✨ Me Interesa</button>
             </div>
-            
             <div class="publicaciones-container" id="publicacionesContainer">
                 <div class="empty-state"><span class="icon">◈</span><h3 data-clave="grupos_sin_publicaciones">Sin publicaciones aún</h3><p data-clave="grupos_sin_publicaciones_desc">Sé el primero en publicar</p></div>
             </div>
         </div>
-    <!-- MODAL CREAR CANAL -->
     <div class="modal-overlay" id="modalCrearGrupo">
         <div class="modal">
             <div class="modal-header">
@@ -567,8 +462,6 @@
                         <option value="20">$20 USDT</option>
                     </select>
                 </div>
-                
-                <!-- ✅ CHECKBOX MARKETPLACE -->
                 <div class="checkbox-row">
                     <input type="checkbox" id="inputMarketplaceActivo" />
                     <label for="inputMarketplaceActivo">🛒 Activar Marketplace del grupo</label>
@@ -577,7 +470,6 @@
                 <div style="font-size:0.65rem;color:var(--text-muted);margin:-6px 0 12px 0;line-height:1.5;">
                     Si activas el Marketplace, los <strong>miembros</strong> del grupo podrán publicar productos/servicios. Si NO lo activas, nadie puede vender. <strong>Esta opción no se puede cambiar después.</strong>
                 </div>
-                
                 <div class="form-group"><label data-clave="grupos_visibilidad">Visibilidad</label>
                     <select id="inputVisibilidadGrupo"><option value="publico">Público</option><option value="privado">Privado</option></select>
                 </div>
@@ -588,13 +480,10 @@
             </form>
         </div>
     </div>
-
-    <!-- MODAL AJUSTES DEL CANAL -->
     <div class="modal-overlay" id="modalAjustesCanal">
         <div class="modal">
             <div class="modal-header"><h2>⚙️ Ajustes del Canal</h2><button class="btn-cerrar" onclick="cerrarAjustesCanal()">×</button></div>
             <div class="ajustes-menu">
-                <!-- ✅ NUEVO: Aviso de Marketplace bloqueado -->
                 <div id="marketplaceAviso" style="font-size:0.65rem;color:var(--text-muted);padding:10px 12px;background:rgba(0,0,0,0.2);border-radius:10px;margin-bottom:8px;line-height:1.5;display:none;">
                     🛒 El Marketplace se activó (o no) al crear el grupo. <strong>No se puede cambiar después.</strong>
                 </div>
@@ -608,8 +497,6 @@
             </div>
         </div>
     </div>
-
-    <!-- MODAL ADMIN -->
     <div class="modal-overlay" id="modalAdminGrupo">
         <div class="modal">
             <div class="modal-header"><h2>◈ Administrar Canal</h2><button class="btn-cerrar" onclick="cerrarModalAdmin()">×</button></div>
@@ -623,8 +510,6 @@
             </div>
         </div>
     </div>
-
-    <!-- MODAL CONFIRMAR ELIMINAR -->
     <div class="modal-overlay" id="modalConfirmarEliminarGrupo">
         <div class="modal">
             <div class="modal-header"><h2 style="color:var(--danger);">◈ Eliminar Canal</h2><button class="btn-cerrar" onclick="cerrarConfirmacionEliminarGrupo()">×</button></div>
@@ -640,8 +525,6 @@
             </div>
         </div>
     </div>
-
-    <!-- MODAL REGALOS -->
     <div class="modal-overlay" id="modalRegalos">
         <div class="modal">
             <div class="modal-header"><h2>◈ Donar USDT</h2><button class="btn-cerrar" onclick="cerrarModalRegalos()">×</button></div>
@@ -658,8 +541,6 @@
             </div>
         </div>
     </div>
-
-    <!-- MODAL REPORTAR PUBLICACIÓN -->
     <div class="modal-overlay" id="modalReportarPublicacion">
         <div class="modal">
             <div class="modal-header"><h2>🚨 Reportar Publicación</h2><button class="btn-cerrar" onclick="cerrarModalReportar()">×</button></div>
@@ -685,8 +566,6 @@
             <div id="reporteStatus" style="margin-top:12px;font-size:0.7rem;color:var(--text-muted);text-align:center;"></div>
         </div>
     </div>
-
-    <!-- MODAL REPORTAR AL ADMINISTRADOR -->
     <div class="modal-overlay" id="modalReportarAdmin">
         <div class="modal">
             <div class="modal-header"><h2>⚠️ Reportar al Administrador</h2><button class="btn-cerrar" onclick="cerrarModalReportarAdmin()">×</button></div>
@@ -718,8 +597,6 @@
             <div id="reporteAdminStatus" style="margin-top:12px;font-size:0.7rem;color:var(--text-muted);text-align:center;"></div>
         </div>
     </div>
-
-    <!-- MODAL ETIQUETAR FOTO -->
     <div class="modal-overlay" id="modalEtiquetarFoto">
         <div class="modal">
             <div class="modal-header"><h2>🏷️ Etiquetar Foto</h2><button class="btn-cerrar" onclick="cerrarModalEtiquetar()">×</button></div>
@@ -735,8 +612,6 @@
             <button class="btn-guardar" onclick="guardarEtiquetas()">◈ Guardar Etiquetas</button>
         </div>
     </div>
-
-    <!-- MODAL MARKETPLACE -->
     <div class="modal-overlay" id="modalMarketplace">
         <div class="modal">
             <div class="modal-header"><h2>🛒 Publicar en Marketplace</h2><button class="btn-cerrar" onclick="cerrarModalMarketplace()">×</button></div>
@@ -800,11 +675,7 @@
             <div id="marketplaceStatus" style="margin-top:12px;font-size:0.7rem;color:var(--text-muted);text-align:center;"></div>
         </div>
     </div>
-
-    <!-- TOAST -->
     <div class="toast" id="toast"></div>
-
-    <!-- FOOTER -->
     <footer class="footer">
         <span><span class="brand">◈ Sariel's</span> · Csariels.s ecosystem · WEB3</span>
         <div class="footer-links">
@@ -818,8 +689,7 @@
 </div>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="/app.js"></script>
-    <script>
-        var sessionUser = null;
+    <script>        var sessionUser = null;
         var grupoActual = null;
         var grupoActualId = null;
         var rolEnGrupo = null;
@@ -858,34 +728,230 @@
         var esStreamerDelLiveGrupo = false;
 
         // ================================================================
-        // 🚫 PALABRAS BLOQUEADAS EN MARKETPLACE (cripto/tokens/NFT)
+        // 🚫 ALGORITMO COMPLETO DE MODERACIÓN - Sariel's
+        // Cumple con TODAS las categorías de derechos-sariels.html
         // ================================================================
-        const PALABRAS_CRIPTO_BLOQUEADAS = [
-            'token', 'tokens', 'cripto', 'criptos', 'crypto', 'cryptos', 'criptomoneda', 'criptomonedas',
-            'bitcoin', 'btc', 'ethereum', 'eth', 'usdt', 'usdc', 'usd tether', 'tether', 'dai', 'busd',
-            'nft', 'nfts', 'blockchain', 'cadena de bloques', 'coin', 'coins', 'altcoin', 'altcoins',
-            'defi', 'web3', 'wallet', 'wallets', 'metamask', 'binance', 'coinbase', 'kraken', 'kucoin',
-            'dogecoin', 'doge', 'shiba', 'shib', 'solana', 'sol', 'bnb', 'binance coin',
-            'polygon', 'matic', 'cardano', 'ada', 'ripple', 'xrp', 'litecoin', 'ltc', 'tron', 'trx',
-            'es.stok', 'es.stoks', 'estok', 'estoks', 'es stok', 'es stoks',
-            'staking', 'mining', 'mineria', 'minar', 'p2p cripto', 'exchange cripto',
-            'monedero digital', 'monedero cripto', 'activo digital', 'activos digitales',
-            'polkadot', 'dot', 'chainlink', 'link', 'uniswap', 'uni', 'aave', 'lend',
-            'tesla', 'apple', 'google', 'amazon', 'microsoft', 'meta', 'facebook', 'acciones', 'bolsa'
-        ];
-
-        function contienePalabrasCripto(texto) {
-            if (!texto) return false;
-            const textoLower = texto.toLowerCase()
-                .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-                .replace(/[.,;:!?¿¡\-_]/g, ' ')
-                .replace(/\s+/g, ' ').trim();
-            
-            return PALABRAS_CRIPTO_BLOQUEADAS.some(function(palabra) {
-                const palabraNorm = palabra.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        
+        const CATEGORIAS_BLOQUEADAS = {
+            activos_digitales: [
+                'token', 'tokens', 'cripto', 'criptos', 'crypto', 'cryptos', 'criptomoneda', 'criptomonedas',
+                'bitcoin', 'btc', 'ethereum', 'eth', 'usdt', 'usdc', 'tether', 'dai', 'busd',
+                'nft', 'nfts', 'blockchain', 'cadena de bloques', 'coin', 'coins', 'altcoin', 'altcoins',
+                'defi', 'web3', 'wallet', 'wallets', 'metamask', 'binance', 'coinbase', 'kraken', 'kucoin',
+                'dogecoin', 'doge', 'shiba', 'shib', 'solana', 'bnb', 'binance coin',
+                'polygon', 'matic', 'cardano', 'ripple', 'xrp', 'litecoin', 'ltc', 'tron', 'trx',
+                'es.stok', 'es.stoks', 'estok', 'estoks', 'es stok', 'es stoks',
+                'staking', 'mining', 'mineria', 'minar', 'p2p cripto', 'exchange cripto',
+                'monedero digital', 'monedero cripto', 'activo digital', 'activos digitales',
+                'polkadot', 'chainlink', 'uniswap', 'aave', 'lend', 'memecoin', 'shitcoin',
+                'airdrop', 'whitelist cripto', 'presale cripto', 'ico', 'ido', 'ieo',
+                'mineria bitcoin', 'rig de mineria', 'hardware wallet', 'ledger nano', 'trezor'
+            ],
+            articulos_regulados: [
+                'arma', 'armas', 'pistola', 'pistolas', 'rifle', 'rifles', 'escopeta', 'escopetas',
+                'municion', 'municiones', 'balas', 'cartuchos', 'explosivo', 'explosivos',
+                'granada', 'granadas', 'dinamita', 'tnt', 'c4', 'polvora', 'mecha',
+                'silenciador', 'supresor', 'cargador extendido', 'arma larga', 'arma corta',
+                'arma de fuego', 'arma blanca', 'cuchillo tactico', 'navaja automatica',
+                'taser', 'paralizante', 'gas pimienta restringido', 'chaleco antibalas',
+                'placa balistica', 'dron armado', 'mira telescopica', 'scope militar'
+            ],
+            sustancias_controladas: [
+                'droga', 'drogas', 'cocaina', 'heroina', 'metanfetamina', 'cristal', 'meth',
+                'marihuana', 'mariguana', 'cannabis', 'weed', 'motita', 'porro',
+                'lsd', 'acido lisergico', 'extasis', 'mdma', 'fentanilo', 'opio', 'opiaceos',
+                'morfina', 'tramadol', 'oxycodone', 'xanax', 'valium', 'clonazepam',
+                'medicamento controlado', 'medicamento sin receta', 'medicamento fraude',
+                'antibiotico sin receta', 'viagra generico', 'esteroides', 'anabolicos',
+                'tramadol sin receta', 'psicotropico', 'estupefaciente'
+            ],
+            contenido_adulto: [
+                'pornografia', 'porno', 'xxx', 'contenido para adultos', 'contenido sexual',
+                'sexo explicito', 'nudismo', 'desnudo', 'desnudos', 'onlyfans',
+                'pack de fotos', 'pack de videos', 'pack intimo', 'fotos intimas',
+                'videos intimas', 'contenido nsfw', 'nsfw', 'hentai', 'ecchi',
+                'juguete sexual', 'juguetes sexuales', 'consolador', 'vibrador',
+                'lenceria erotica', 'traje de latex', 'servicio sexual', 'masaje erotico',
+                'masaje tantrico', 'masaje sensual', 'acompañante', 'escort', 'prepago',
+                'servicios de acompañamiento', 'chica prepago', 'chico prepago'
+            ],
+            documentos_oficiales: [
+                'ine falsa', 'ine falso', 'credencial falsa', 'credencial falsificada',
+                'pasaporte falso', 'pasaporte falsificado', 'licencia de conducir falsa',
+                'licencia falsificada', 'acta de nacimiento falsa', 'acta falsificada',
+                'titulo profesional falso', 'titulo falsificado', 'cedula falsa',
+                'cedula falsificada', 'diploma falso', 'certificado falso',
+                'documento oficial falso', 'documento falsificado', 'tarjeta de circulacion falsa',
+                'placas falsas', 'comprobante de domicilio falso', 'recibo falso',
+                'factura falsa', 'factura falsificada', 'cfdi falso', 'constancia falsa',
+                'curp falsa', 'rfc falso', 'numero de seguro social falso', 'nss falso'
+            ],
+            productos_falsificados: [
+                'replica', 'replicas', 'imitacion', 'imitaciones', 'copia', 'copias',
+                'clon', 'clones', 'falsificacion', 'falsificaciones', 'pirata', 'piratas',
+                'pirateria', 'producto pirata', 'producto replicado', 'producto clon',
+                'primera copia', 'triple a', 'aaa replica', 'espejo original',
+                'outlet replica', 'marca replica', 'bolso replica', 'tenis replica',
+                'reloj replica', 'perfume replica', 'ropa replica', 'software pirata',
+                'windows pirata', 'office pirata', 'adobe pirata', 'photoshop pirata',
+                'juego pirata', 'pelicula pirata', 'serie pirata'
+            ],
+            practicas_fraudulentas: [
+                'estafa', 'estafas', 'fraude', 'fraudes', 'timo', 'timos', 'engano', 'enganos',
+                'piramide', 'esquema piramidal', 'esquema ponzi', 'ponzi', 'multinivel falso',
+                'inversion garantizada', 'inversion segura sin riesgo', 'rendimiento garantizado',
+                'dinero facil', 'gana dinero rapido', 'ganancias garantizadas',
+                'prestamo sin aval', 'prestamo express', 'prestamo gota a gota',
+                'montadeudas', 'cobro por adelantado', 'anticipo por adelantado',
+                'deposito por adelantado', 'transferencia por adelantado',
+                'phishing', 'malware', 'virus informatico', 'spyware', 'ransomware',
+                'tarjeta clonada', 'tarjeta de credito clonada', 'clonar tarjeta',
+                'clonar whatsapp', 'hackear whatsapp', 'hackear facebook', 'hackear instagram',
+                'recuperar cuenta hackeada', 'espiar whatsapp', 'espiar celular',
+                'rastreador de pareja', 'app espia', 'software espia'
+            ],
+            datos_personales: [
+                'venta de datos', 'vendo datos personales', 'base de datos privada',
+                'padron electoral', 'padron de clientes', 'lista de correos', 'lista de telefonos',
+                'lista de whatsapp', 'contactos de famosos', 'datos de usuarios',
+                'informacion confidencial', 'informacion privada', 'datos filtrados',
+                'datos de clientes', 'datos bancarios de terceros',
+                'numero de tarjeta de credito ajeno', 'cvv ajeno', 'nip ajeno',
+                'curp ajena', 'rfc ajeno', 'ine ajena', 'direccion de terceros',
+                'ubicacion de terceros', 'geolocalizacion ajena', 'espiar ubicacion'
+            ],
+            seres_vivos: [
+                'vendo perro', 'vendo gato', 'vendo cachorro', 'vendo gatito',
+                'venta de perros', 'venta de gatos', 'venta de aves', 'venta de reptiles',
+                'venta de peces', 'venta de conejos', 'venta de hamsters',
+                'cachorros en venta', 'gatitos en venta', 'aves exoticas',
+                'animal exotico', 'animal protegido', 'especie protegida',
+                'venta de tortugas', 'venta de iguanas', 'venta de serpientes',
+                'venta de loros', 'venta de guacamayas', 'venta de tucanes',
+                'trafico de animales', 'trafico de especies', 'fauna silvestre',
+                'planta protegida', 'cactacea protegida', 'orquidea silvestre',
+                'madera preciosa', 'palo de rosa', 'caoba', 'cedro rojo'
+            ],
+            alcohol_tabaco: [
+                'vendo alcohol', 'vendo cerveza', 'vendo tequila', 'vendo whisky',
+                'venta de alcohol', 'venta de cerveza', 'venta de tequila',
+                'cerveza artesanal', 'vino artesanal', 'mezcal artesanal',
+                'licor casero', 'destilado casero', 'alcohol casero',
+                'vape', 'vapes', 'vapeador', 'vapeadores', 'cigarro electronico',
+                'cigarrillos electronicos', 'pod', 'pods', 'desechable vape',
+                'cigarros', 'cigarrillos', 'tabaco', 'puros', 'habanos',
+                'picadura de tabaco', 'snus', 'nicotina liquida', 'sales de nicotina'
+            ],
+            discurso_odio: [
+                'muerte a los', 'maten a los', 'odio a los', 'fuera los',
+                'no queremos', 'los malditos', 'raza inferior', 'raza superior',
+                'cancer de la sociedad', 'basura humana', 'escoria humana',
+                'exterminar a', 'eliminar a todos los', 'deberian morir',
+                'deberian desaparecer', 'infieles', 'putos', 'maricones',
+                'sudacas', 'indios de mierda', 'prietos', 'narizones',
+                'nacos', 'pinches indios', 'malinchistas', 'gachupines',
+                'sionistas', 'nazis', 'hitler', 'supremacia blanca',
+                'supremacia aria', 'razas inferiores', 'limpieza etnica'
+            ],
+            contenido_menores: [
+                'menor de edad', 'menores de edad', 'contenido con menores',
+                'fotos de menores', 'videos de menores', 'nino desnudo', 'nina desnuda',
+                'child porn', 'pedofilia', 'pedofilo', 'pederasta',
+                'chico joven sexual', 'chica joven sexual',
+                'adolescente desnuda', 'adolescente desnudo',
+                'preteen', 'lolita', 'lolicon', 'shotacon'
+            ],
+            amenazas_extorsion: [
+                'te voy a matar', 'te voy a encontrar', 'se donde vives',
+                'tengo tu direccion', 'tengo tu familia', 'secuestro', 'secuestrar',
+                'levanton', 'levantar a alguien', 'extorsion', 'extorsionar',
+                'cobro de piso', 'derecho de piso', 'cobro forzoso',
+                'amenaza de muerte', 'amenazas graves', 'te voy a golpear',
+                'te voy a hacer dano', 'vas a pagar', 'vas a ver',
+                'sicario', 'sicarios', 'maton', 'matones', 'por encargo',
+                'ajuste de cuentas', 'cobrar por la fuerza'
+            ],
+            contenido_intimo_sin_consentimiento: [
+                'pack filtrado', 'pack filtrados', 'pack sin permiso',
+                'pack de ex', 'pack de la ex', 'pack de mi ex', 'pack de novia',
+                'fotos filtradas', 'videos filtrados', 'intimo filtrado',
+                'intimo sin permiso', 'sin consentimiento', 'pack de la companera',
+                'pack de la vecina', 'pack de la maestra', 'pack de la alumna',
+                'venganza intima', 'revenge porn', 'porno venganza',
+                'fotos privadas filtradas', 'venganza con fotos',
+                'exponer intimidades', 'venganza con videos'
+            ]
+        };
+        
+        const NOMBRES_CATEGORIAS = {
+            activos_digitales: 'Activos digitales (cripto/tokens/NFT)',
+            articulos_regulados: 'Artículos regulados por la ley',
+            sustancias_controladas: 'Sustancias controladas',
+            contenido_adulto: 'Contenido para adultos',
+            documentos_oficiales: 'Documentos oficiales',
+            productos_falsificados: 'Productos falsificados',
+            practicas_fraudulentas: 'Prácticas fraudulentas',
+            datos_personales: 'Datos personales de terceros',
+            seres_vivos: 'Seres vivos',
+            alcohol_tabaco: 'Alcohol y tabaco',
+            discurso_odio: 'Discursos de odio',
+            contenido_menores: 'Contenido con menores de edad',
+            amenazas_extorsion: 'Amenazas o extorsión',
+            contenido_intimo_sin_consentimiento: 'Contenido íntimo sin consentimiento (Ley Olimpia)'
+        };
+        
+        function normalizarTexto(texto) {
+            if (!texto) return '';
+            return texto
+                .toLowerCase()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/[.,;:!?¿¡\-_\(\)\[\]\{\}\/\\|@#$%^&*+=~`"']/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+        
+        function contienePalabrasDeCategoria(texto, categoria) {
+            if (!texto || !CATEGORIAS_BLOQUEADAS[categoria]) return false;
+            const textoNorm = normalizarTexto(texto);
+            return CATEGORIAS_BLOQUEADAS[categoria].some(function(palabra) {
+                const palabraNorm = normalizarTexto(palabra);
+                if (!palabraNorm) return false;
+                if (palabraNorm.includes(' ')) {
+                    return textoNorm.includes(palabraNorm);
+                }
                 const regex = new RegExp('\\b' + palabraNorm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i');
-                return regex.test(textoLower);
+                return regex.test(textoNorm);
             });
+        }
+        
+        function detectarInfraccion(texto) {
+            const resultado = { bloqueado: false, categorias: [] };
+            if (!texto) return resultado;
+            for (const cat in CATEGORIAS_BLOQUEADAS) {
+                if (contienePalabrasDeCategoria(texto, cat)) {
+                    resultado.bloqueado = true;
+                    resultado.categorias.push(NOMBRES_CATEGORIAS[cat] || cat);
+                }
+            }
+            return resultado;
+        }
+        
+        function contienePalabrasCripto(texto) {
+            return contienePalabrasDeCategoria(texto, 'activos_digitales');
+        }
+        
+        // 🔧 HELPER: valida un texto y muestra mensaje de error
+        // Retorna true si está OK, false si bloqueado
+        function validarTextoPermitido(texto, nombreCampo) {
+            if (!texto) return true;
+            var inf = detectarInfraccion(texto);
+            if (inf.bloqueado) {
+                var cats = inf.categorias.join(', ');
+                showToast('🚫 ' + (nombreCampo || 'Contenido') + ' bloqueado: ' + cats, 'error', 6000);
+                return false;
+            }
+            return true;
         }
 
         function showToast(msg, type) {
@@ -1040,7 +1106,6 @@
         // ✅ SIN MARCA DE AGUA - Ya no aplicamos marca de agua
         // ================================================================
         async function procesarConMarcaDeAgua(file, tipo) {
-            // ✅ Marca de agua REMOVIDA - retorna el archivo tal cual
             return file;
         }
 
@@ -1324,13 +1389,11 @@
                 var vis = grupoActual.visibilidad || 'publico';
                 document.getElementById('grupoEstadoBadge').textContent = vis === 'publico' ? '◈ Público' : '◈ Privado';
                 
-                // Mostrar badge marketplace si está activo
                 var mkBadgeEl = document.getElementById('grupoMkBadge');
                 if (mkBadgeEl) {
                     mkBadgeEl.style.display = grupoActual.marketplace_activo ? 'inline-block' : 'none';
                 }
                 
-                // Mostrar/ocultar botón Marketplace en form
                 var btnMk = document.getElementById('btnMarketplace');
                 if (btnMk) {
                     if (!grupoActual.marketplace_activo) {
@@ -1342,7 +1405,6 @@
                     }
                 }
                 
-                // ✅ NUEVO: Mostrar aviso en ajustes si el marketplace no está activo
                 var mkAviso = document.getElementById('marketplaceAviso');
                 if (mkAviso) {
                     if (!grupoActual.marketplace_activo) {
@@ -1923,7 +1985,7 @@
         }
 
         // ================================================================
-        // PUBLICAR NORMAL
+        // PUBLICAR NORMAL (con validación de algoritmo)
         // ================================================================
         async function publicarEnGrupo() {
             if (publicando) { showToast('Ya estás publicando...', 'warning'); return; }
@@ -1933,6 +1995,10 @@
             var input = document.getElementById('inputPublicacion');
             var contenido = input.value.trim();
             if (!contenido) { showToast('Escribe algo', 'warning'); return; }
+            
+            // 🚫 VALIDACIÓN COMPLETA - TODAS LAS CATEGORÍAS
+            if (!validarTextoPermitido(contenido, 'Publicación')) return;
+            
             publicando = true;
             try {
                 var result = await window.supabase.from('grupos_video_publicaciones').insert({ grupo_id: grupoActualId, usuario_id: sessionUser.id, contenido: contenido, tipo: 'texto', estado: 'publicado' }).select().single();
@@ -1958,7 +2024,6 @@
                 if (file.size > 10 * 1024 * 1024) { showToast('Imagen > 10MB', 'error'); return; }
                 showToast('Subiendo imagen...', '');
                 try {
-                    // ✅ SIN MARCA DE AGUA
                     var fileExt = file.name.split('.').pop();
                     var filePath = grupoActualId + '/' + sessionUser.id + '/' + Date.now() + '.' + fileExt;
                     var uploadResult = await window.supabase.storage.from('grupos-publicaciones').upload(filePath, file, { cacheControl: '3600', upsert: true });
@@ -1987,7 +2052,6 @@
                 if (file.size > 100 * 1024 * 1024) { showToast('Video > 100MB', 'error'); return; }
                 showToast('Subiendo video...', '');
                 try {
-                    // ✅ SIN MARCA DE AGUA
                     var fileExt = file.name.split('.').pop();
                     var filePath = grupoActualId + '/' + sessionUser.id + '/' + Date.now() + '.' + fileExt;
                     var uploadResult = await window.supabase.storage.from('grupos-publicaciones').upload(filePath, file, { cacheControl: '3600', upsert: true });
@@ -2031,7 +2095,6 @@
             document.getElementById('modalMarketplace').classList.remove('show');
         }
 
-        // ✅ VALIDAR DURACIÓN DE VIDEO (MÁX 40 SEGUNDOS)
         function validarDuracionVideo(file) {
             return new Promise(function(resolve) {
                 var video = document.createElement('video');
@@ -2072,17 +2135,22 @@
             if (!descripcion) { statusEl.textContent = '⚠️ Escribe una descripción'; statusEl.style.color = 'var(--warning)'; return; }
             if (!municipio) { statusEl.textContent = '⚠️ Escribe el municipio'; statusEl.style.color = 'var(--warning)'; return; }
             
-            // 🚫 VALIDAR PALABRAS CRIPTO EN TÍTULO Y DESCRIPCIÓN
-            if (contienePalabrasCripto(titulo)) {
-                statusEl.innerHTML = '❌ No se permite vender criptomonedas, tokens, NFTs u otros activos digitales en el Marketplace.<br>Si quieres vender Es.stoks, usa el Muro.';
+            // 🚫 VALIDACIÓN COMPLETA CON TODAS LAS 14 CATEGORÍAS PROHIBIDAS
+            var infTitulo = detectarInfraccion(titulo);
+            if (infTitulo.bloqueado) {
+                var ct = infTitulo.categorias.join(', ');
+                statusEl.innerHTML = '❌ <strong>No se permite publicar este contenido en el Marketplace.</strong><br><br>Categoría(s) detectada(s): <strong style="color:#ff6688;">' + ct + '</strong><br><br>Revisa los <a href="/features/terminos/derechos-sariels.html" target="_blank" style="color:var(--gold);">Derechos y Usos</a> para más información.';
                 statusEl.style.color = 'var(--danger)';
-                showToast('🚫 Contenido bloqueado: tokens/cripto', 'error', 5000);
+                showToast('🚫 Contenido bloqueado: ' + ct, 'error', 6000);
                 return;
             }
-            if (contienePalabrasCripto(descripcion)) {
-                statusEl.innerHTML = '❌ No se permite vender criptomonedas, tokens, NFTs u otros activos digitales en el Marketplace.<br>Si quieres vender Es.stoks, usa el Muro.';
+            
+            var infDesc = detectarInfraccion(descripcion);
+            if (infDesc.bloqueado) {
+                var cd = infDesc.categorias.join(', ');
+                statusEl.innerHTML = '❌ <strong>No se permite publicar este contenido en el Marketplace.</strong><br><br>Categoría(s) detectada(s): <strong style="color:#ff6688;">' + cd + '</strong><br><br>Revisa los <a href="/features/terminos/derechos-sariels.html" target="_blank" style="color:var(--gold);">Derechos y Usos</a> para más información.';
                 statusEl.style.color = 'var(--danger)';
-                showToast('🚫 Contenido bloqueado: tokens/cripto', 'error', 5000);
+                showToast('🚫 Contenido bloqueado: ' + cd, 'error', 6000);
                 return;
             }
             
@@ -2095,7 +2163,6 @@
                 var imagenUrl = null;
                 var videoUrl = null;
                 
-                // Subir imagen (sin marca de agua)
                 if (imagenInput.files && imagenInput.files[0]) {
                     var file = imagenInput.files[0];
                     if (file.size > 10 * 1024 * 1024) throw new Error('Imagen demasiado grande (máx 10MB)');
@@ -2107,12 +2174,10 @@
                     imagenUrl = urlData.data.publicUrl;
                 }
                 
-                // Subir video (sin marca de agua, máx 40 seg)
                 if (videoInput.files && videoInput.files[0]) {
                     var vfile = videoInput.files[0];
                     if (vfile.size > 50 * 1024 * 1024) throw new Error('Video demasiado grande (máx 50MB)');
                     
-                    // Validar duración
                     statusEl.textContent = 'Validando video...';
                     var validacion = await validarDuracionVideo(vfile);
                     if (!validacion.valido) throw new Error('El video excede los 40 segundos permitidos (duración: ' + Math.round(validacion.duracion) + 's)');
@@ -2162,11 +2227,6 @@
         }
 
         // ================================================================
-        // ❌ TOGGLE MARKETPLACE ELIMINADO
-        // Ya no se puede activar/desactivar después de crear el grupo
-        // ================================================================
-
-        // ================================================================
         // FUNCIONES RESTANTES (admin, live, etc.)
         // ================================================================
         async function reaccionarPublicacion(publicacionId) {
@@ -2212,11 +2272,16 @@
             } catch (e) { lista.innerHTML = '<div style="color:var(--danger);font-size:0.65rem;">Error</div>'; }
         }
 
+        // ✅ VALIDACIÓN EN COMENTARIOS
         async function enviarComentarioPublicacion(publicacionId) {
             if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
             var input = document.getElementById('inputComentario-' + publicacionId);
             var texto = input.value.trim();
             if (!texto) return;
+            
+            // 🚫 VALIDACIÓN COMPLETA
+            if (!validarTextoPermitido(texto, 'Comentario')) return;
+            
             try {
                 await window.supabase.from('grupos_video_comentarios').insert({ publicacion_id: publicacionId, usuario_id: sessionUser.id, contenido: texto });
                 input.value = '';
@@ -2234,7 +2299,6 @@
         }
 
         function abrirAjustesCanal() {
-            // Sincronizar el aviso al abrir
             var mkAviso = document.getElementById('marketplaceAviso');
             if (mkAviso && grupoActual) {
                 if (!grupoActual.marketplace_activo) {
@@ -2449,12 +2513,12 @@
                     '<option value="abierto"' + (g.modo_ingreso === 'abierto' ? ' selected' : '') + '>Abierto</option>' +
                     '<option value="solicitud"' + (g.modo_ingreso === 'solicitud' ? ' selected' : '') + '>Solicitud</option>' +
                     '<option value="invitacion"' + (g.modo_ingreso === 'invitacion' ? ' selected' : '') + '>Invitación</option></select></div>' +
-                    // ❌ Toggle de marketplace eliminado de la edición también
                     '<button class="btn-gold" style="width:100%;justify-content:center;padding:10px;" onclick="guardarEdicionGrupo()">◈ Guardar cambios</button>';
                 container.innerHTML = html;
             } catch (e) { container.innerHTML = '<div class="empty-state">Error</div>'; }
         }
 
+        // ✅ VALIDACIÓN AL EDITAR CANAL
         async function guardarEdicionGrupo() {
             var nombre = document.getElementById('editGrupoNombre')?.value?.trim();
             var descripcion = document.getElementById('editGrupoDescripcion')?.value?.trim();
@@ -2464,8 +2528,12 @@
             var precio = document.getElementById('editGrupoPrecio')?.value;
             var visibilidad = document.getElementById('editGrupoVisibilidad')?.value;
             var modoIngreso = document.getElementById('editGrupoModoIngreso')?.value;
-            // ❌ Marketplace ya no se edita
             if (!nombre) { showToast('El nombre es requerido', 'warning'); return; }
+            
+            // 🚫 VALIDACIÓN COMPLETA
+            if (!validarTextoPermitido(nombre, 'Nombre del canal')) return;
+            if (!validarTextoPermitido(descripcion, 'Descripción del canal')) return;
+            
             try {
                 var result = await window.supabase.from('grupos_video').update({ 
                     nombre: nombre, 
@@ -2476,7 +2544,6 @@
                     precio_usdt: parseFloat(precio) || 0, 
                     visibilidad: visibilidad, 
                     modo_ingreso: modoIngreso
-                    // marketplace_activo: marketplaceActivo // ❌ ELIMINADO
                 }).eq('id', grupoActualId).select().single();
                 if (result.error) throw result.error;
                 showToast('Canal actualizado', 'success');
@@ -2573,7 +2640,7 @@
         }
 
         // ================================================================
-        // CREAR GRUPO
+        // CREAR GRUPO (con validación de algoritmo)
         // ================================================================
         function abrirModalCrearGrupo() { document.getElementById('modalCrearGrupo').classList.add('show'); document.getElementById('inputNombreGrupo').focus(); }
         function cerrarModalCrearGrupo() { document.getElementById('modalCrearGrupo').classList.remove('show'); }
@@ -2594,6 +2661,10 @@
             
             if (!nombre) { showToast('Nombre requerido', 'warning'); return; }
             if (!municipio) { showToast('Municipio requerido', 'warning'); return; }
+            
+            // 🚫 VALIDACIÓN COMPLETA
+            if (!validarTextoPermitido(nombre, 'Nombre del canal')) return;
+            if (!validarTextoPermitido(descripcion, 'Descripción del canal')) return;
             
             var btn = document.getElementById('btnCrearGrupo');
             btn.disabled = true; btn.textContent = 'Activando...';
@@ -2729,7 +2800,7 @@
         }
 
         // ================================================================
-        // LIVE (mismas funciones)
+        // LIVE (con validación de título)
         // ================================================================
         async function iniciarLiveEnGrupo() {
             if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
@@ -2742,6 +2813,12 @@
 
             try {
                 var titulo = prompt('Título del LIVE:', 'Saliendo al aire en ' + (grupoActual.nombre || 'canal')) || 'Live en canal';
+                
+                // 🚫 VALIDACIÓN COMPLETA DEL TÍTULO DEL LIVE
+                if (!validarTextoPermitido(titulo, 'Título del Live')) {
+                    return;
+                }
+                
                 showToast('Saliendo al aire...', '');
 
                 const { data: rpcResult, error } = await window.supabase.rpc('crear_transmision', {
@@ -2856,12 +2933,17 @@
                 .subscribe();
         }
 
+        // ✅ VALIDACIÓN EN CHAT DEL LIVE
         async function enviarMensajeLiveGrupo() {
             const input = document.getElementById('grupoLiveChatInput');
             const mensaje = (input?.value || '').trim();
             if (!mensaje) return;
             if (!sessionUser) { showToast('Inicia sesión para chatear', 'error'); return; }
             if (!currentStreamGrupoId) { showToast('No hay LIVE activo', 'error'); return; }
+            
+            // 🚫 VALIDACIÓN COMPLETA
+            if (!validarTextoPermitido(mensaje, 'Mensaje del Live')) return;
+            
             try {
                 await window.supabase.from('mensajes_live').insert({
                     transmision_id: currentStreamGrupoId, usuario_id: sessionUser.id, mensaje: mensaje,
@@ -3072,6 +3154,8 @@
         window.publicarMarketplace = publicarMarketplace;
         window.marcarReporte = marcarReporte;
         window.contienePalabrasCripto = contienePalabrasCripto;
+        window.validarTextoPermitido = validarTextoPermitido;
+        window.detectarInfraccion = detectarInfraccion;
     </script>
 </body>
 </html>
