@@ -9,6 +9,125 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
     
     <link rel="stylesheet" href="../../../shared/config-layout.css" />
+    
+    <style>
+        .cfg-solicitud-card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--cfg-border);
+        }
+        .cfg-solicitud-card:last-child {
+            border-bottom: none;
+        }
+        .cfg-solicitud-card .avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #0F2D1A, #D4AF37);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-weight: 700;
+            font-size: 1rem;
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+        .cfg-solicitud-card .avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .cfg-solicitud-card .info {
+            flex: 1;
+            min-width: 0;
+        }
+        .cfg-solicitud-card .info .nombre {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--cfg-text);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .cfg-solicitud-card .info .handle {
+            font-size: 0.68rem;
+            color: var(--cfg-text-muted);
+        }
+        .cfg-solicitud-card .info .mensaje {
+            font-size: 0.75rem;
+            color: var(--cfg-text-muted);
+            margin-top: 4px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .cfg-solicitud-card .acciones {
+            display: flex;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+        .cfg-solicitud-card .btn-mini {
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: var(--cfg-transition);
+        }
+        .cfg-solicitud-card .btn-aceptar {
+            background: rgba(0, 214, 143, 0.15);
+            color: var(--cfg-success);
+            border: 1px solid rgba(0, 214, 143, 0.3);
+        }
+        .cfg-solicitud-card .btn-aceptar:hover {
+            background: rgba(0, 214, 143, 0.25);
+        }
+        .cfg-solicitud-card .btn-rechazar {
+            background: rgba(255, 51, 102, 0.1);
+            color: var(--cfg-danger);
+            border: 1px solid rgba(255, 51, 102, 0.3);
+        }
+        .cfg-solicitud-card .btn-rechazar:hover {
+            background: rgba(255, 51, 102, 0.2);
+        }
+        .cfg-badge-contador {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 22px;
+            height: 22px;
+            padding: 0 6px;
+            background: var(--cfg-danger);
+            color: #fff;
+            border-radius: 11px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            margin-left: 8px;
+        }
+        .cfg-empty-solicitudes {
+            padding: 40px 20px;
+            text-align: center;
+            color: var(--cfg-text-muted);
+            font-size: 0.78rem;
+        }
+        .cfg-empty-solicitudes .icon {
+            font-size: 2.5rem;
+            display: block;
+            margin-bottom: 10px;
+            opacity: 0.4;
+        }
+        .cfg-loading-mini {
+            padding: 20px;
+            text-align: center;
+            color: var(--cfg-text-muted);
+            font-size: 0.75rem;
+        }
+    </style>
 </head>
 <body class="cfg-page">
 
@@ -20,7 +139,11 @@
         <div class="cfg-list" id="seccionQuienPuede"></div>
 
         <h2 class="cfg-section-title">Solicitudes de mensajes</h2>
-        <div class="cfg-list" id="seccionSolicitudes"></div>
+        <div class="cfg-list">
+            <div id="solicitudesContainer">
+                <div class="cfg-loading-mini">⏳ Cargando solicitudes...</div>
+            </div>
+        </div>
 
         <h2 class="cfg-section-title">Privacidad de chats</h2>
         <div class="cfg-list" id="seccionPrivacidad"></div>
@@ -44,6 +167,15 @@
 
         const $ = (sel) => document.querySelector(sel);
 
+        // Cliente Supabase
+        function sb() {
+            return window.supabaseClient || 
+                (window.supabase && window.supabase.createClient(
+                    'https://zultnlogdoajehbswlih.supabase.co',
+                    'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
+                ));
+        }
+
         cfgInitPage({
             title: 'Chats',
             subtitle: '@tu_usuario',
@@ -57,6 +189,139 @@
             mostrar_escribiendo: 'chats_mostrar_escribiendo',
         };
 
+        let solicitudes = [];
+        let contadorPendientes = 0;
+
+        // ============================================================
+        // CARGAR SOLICITUDES DESDE SUPABASE
+        // ============================================================
+        async function cargarSolicitudes() {
+            try {
+                const client = sb();
+                if (!client) {
+                    mostrarSinSolicitudes();
+                    return;
+                }
+
+                const { data: sessionData } = await client.auth.getSession();
+                const session = sessionData.session;
+                if (!session) {
+                    mostrarSinSolicitudes();
+                    return;
+                }
+
+                // Cargar contador de pendientes
+                const { data: contador, error: errContador } = await client.rpc('contar_solicitudes_pendientes');
+                if (!errContador && typeof contador === 'number') {
+                    contadorPendientes = contador;
+                }
+
+                // Cargar solicitudes (RPC que no existe como tal, usamos query directa)
+                const { data, error } = await client
+                    .from('mensajes_solicitudes')
+                    .select(`
+                        id,
+                        remitente_id,
+                        mensaje_inicial,
+                        estado,
+                        created_at
+                    `)
+                    .eq('destinatario_id', session.user.id)
+                    .eq('estado', 'pendiente')
+                    .order('created_at', { ascending: false })
+                    .limit(50);
+
+                if (error) {
+                    console.warn('Error cargando solicitudes:', error.message);
+                    solicitudes = [];
+                    mostrarSinSolicitudes();
+                    return;
+                }
+
+                solicitudes = data || [];
+
+                if (solicitudes.length === 0) {
+                    mostrarSinSolicitudes();
+                    return;
+                }
+
+                // Cargar info de los remitentes
+                const idsRemitentes = [...new Set(solicitudes.map(s => s.remitente_id))];
+                
+                const { data: perfiles } = await client
+                    .from('perfiles_publicos')
+                    .select('id, nombre, handle, avatar_url')
+                    .in('id', idsRemitentes);
+
+                const perfilesMap = {};
+                (perfiles || []).forEach(p => { perfilesMap[p.id] = p; });
+
+                // Enriquecer solicitudes
+                solicitudes = solicitudes.map(s => ({
+                    ...s,
+                    remitente: perfilesMap[s.remitente_id] || null,
+                }));
+
+                renderSolicitudes();
+
+            } catch (e) {
+                console.error('Error cargando solicitudes:', e);
+                mostrarSinSolicitudes();
+            }
+        }
+
+        // ============================================================
+        // RENDERIZAR SOLICITUDES
+        // ============================================================
+        function renderSolicitudes() {
+            const container = $('#solicitudesContainer');
+            if (!container) return;
+
+            if (solicitudes.length === 0) {
+                mostrarSinSolicitudes();
+                return;
+            }
+
+            container.innerHTML = solicitudes.map(s => {
+                const r = s.remitente || {};
+                const nombre = escapeHtml(r.nombre || 'Usuario');
+                const handle = escapeHtml(r.handle || 'usuario');
+                const avatar = r.avatar_url 
+                    ? `<img src="${escapeHtml(r.avatar_url)}" alt="${nombre}">` 
+                    : nombre.charAt(0).toUpperCase();
+                const mensaje = escapeHtml(s.mensaje_inicial || '');
+
+                return `
+                    <div class="cfg-solicitud-card">
+                        <div class="avatar">${avatar}</div>
+                        <div class="info">
+                            <div class="nombre">${nombre}</div>
+                            <div class="handle">@${handle}</div>
+                            <div class="mensaje">"${mensaje}"</div>
+                        </div>
+                        <div class="acciones">
+                            <button class="btn-mini btn-aceptar" onclick="window.onAceptarSolicitud('${s.id}')">✓</button>
+                            <button class="btn-mini btn-rechazar" onclick="window.onRechazarSolicitud('${s.id}')">✕</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function mostrarSinSolicitudes() {
+            const container = $('#solicitudesContainer');
+            if (!container) return;
+            container.innerHTML = `
+                <div class="cfg-empty-solicitudes">
+                    <span class="icon">📭</span>
+                    No tienes solicitudes pendientes
+                </div>
+            `;
+        }
+
+        // ============================================================
+        // RENDERIZAR SECCIONES
+        // ============================================================
         function renderSecciones() {
             // ============================================================
             // QUIÉN PUEDE ENVIARME MENSAJES
@@ -77,9 +342,9 @@
             ].join('');
 
             // ============================================================
-            // SOLICITUDES DE MENSAJES
+            // PRIVACIDAD DE CHATS
             // ============================================================
-            $('#seccionSolicitudes').innerHTML = [
+            $('#seccionPrivacidad').innerHTML = [
                 cfgRenderToggle({
                     id: 'toggleFiltroSolicitudes',
                     title: 'Filtrar solicitudes de mensajes',
@@ -87,18 +352,6 @@
                     checked: cfgGetPref(PREF_KEYS.filtro_solicitudes, true),
                     onChange: `window.onToggleFiltro(this.checked)`,
                 }),
-                cfgRenderItem({
-                    icon: 'messageCircle',
-                    title: 'Ver solicitudes de mensajes',
-                    desc: 'Consulta y gestiona las solicitudes pendientes',
-                    onclick: 'window.onVerSolicitudes()',
-                }),
-            ].join('');
-
-            // ============================================================
-            // PRIVACIDAD DE CHATS
-            // ============================================================
-            $('#seccionPrivacidad').innerHTML = [
                 cfgRenderToggle({
                     id: 'toggleLeido',
                     title: 'Mostrar confirmación de leído',
@@ -115,6 +368,71 @@
                 }),
             ].join('');
         }
+
+        // ============================================================
+        // HELPERS
+        // ============================================================
+        function escapeHtml(texto) {
+            if (!texto) return '';
+            const div = document.createElement('div');
+            div.textContent = texto;
+            return div.innerHTML;
+        }
+
+        // ============================================================
+        // ACCIONES DE SOLICITUDES
+        // ============================================================
+        window.onAceptarSolicitud = async (solicitudId) => {
+            try {
+                const client = sb();
+                if (!client) throw new Error('Supabase no disponible');
+
+                const { error } = await client.rpc('aceptar_solicitud_mensaje', {
+                    p_solicitud_id: solicitudId
+                });
+
+                if (error) throw error;
+
+                cfgToast('✅ Solicitud aceptada', 'success');
+
+                await cargarSolicitudes();
+
+            } catch (e) {
+                console.error('Error aceptando:', e);
+                cfgToast('❌ Error: ' + e.message, 'error');
+            }
+        };
+
+        window.onRechazarSolicitud = async (solicitudId) => {
+            const ok = await cfgConfirm({
+                title: '¿Rechazar solicitud?',
+                text: 'La persona no podrá enviarte más mensajes hasta que la aceptes.',
+                confirmText: 'Rechazar',
+                cancelText: 'Cancelar',
+                danger: true,
+            });
+
+            if (!ok) return;
+
+            try {
+                const client = sb();
+                if (!client) throw new Error('Supabase no disponible');
+
+                const { error } = await client.rpc('rechazar_solicitud_mensaje', {
+                    p_solicitud_id: solicitudId
+                });
+
+                if (error) throw error;
+
+                cfgToast('🚫 Solicitud rechazada', 'warning');
+
+                await cargarSolicitudes();
+
+            } catch (e) {
+                console.error('Error rechazando:', e);
+                cfgToast('❌ Error: ' + e.message, 'error');
+            }
+        };
 
         // ============================================================
         // CALLBACKS
@@ -151,16 +469,13 @@
             cfgToast('⏳ Lista de contactos de confianza próximamente', 'warning');
         };
 
-        window.onVerSolicitudes = () => {
-            cfgToast('⏳ Bandeja de solicitudes próximamente', 'warning');
-        };
-
         // ============================================================
         // INICIALIZAR
         // ============================================================
         window.addEventListener('DOMContentLoaded', async () => {
             await new Promise(resolve => setTimeout(resolve, 400));
             renderSecciones();
+            await cargarSolicitudes();
         });
 
         // ============================================================
@@ -168,11 +483,7 @@
         // ============================================================
         (async function cargarUsuario() {
             try {
-                const client = window.supabaseClient || 
-                    (window.supabase && window.supabase.createClient(
-                        'https://zultnlogdoajehbswlih.supabase.co',
-                        'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
-                    ));
+                const client = sb();
                 if (!client) return;
                 const { data } = await client.auth.getSession();
                 const session = data && data.session;
