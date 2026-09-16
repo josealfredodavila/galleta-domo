@@ -56,31 +56,6 @@
             max-width: 400px;
             margin: 0 auto;
         }
-        .cfg-info-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 16px;
-            border-bottom: 1px solid var(--cfg-border);
-            font-size: 0.82rem;
-            gap: 10px;
-        }
-        .cfg-info-row:last-child {
-            border-bottom: none;
-        }
-        .cfg-info-label {
-            color: var(--cfg-text-muted);
-            font-size: 0.75rem;
-        }
-        .cfg-info-value {
-            color: var(--cfg-text);
-            font-weight: 500;
-            text-align: right;
-            word-break: break-all;
-            max-width: 60%;
-            font-family: 'Inter', monospace;
-            font-size: 0.8rem;
-        }
         .cfg-historial-item {
             display: flex;
             align-items: center;
@@ -126,6 +101,70 @@
             display: block;
             margin-bottom: 8px;
             opacity: 0.4;
+        }
+        
+        /* Estilos para modal de edición */
+        .cfg-edit-input {
+            width: 100%;
+            padding: 12px 14px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--cfg-border);
+            border-radius: 10px;
+            color: var(--cfg-text);
+            font-size: 0.9rem;
+            outline: none;
+            font-family: 'Inter', sans-serif;
+            transition: var(--cfg-transition);
+        }
+        .cfg-edit-input:focus {
+            border-color: var(--cfg-gold);
+            background: rgba(0,0,0,0.4);
+        }
+        .cfg-edit-textarea {
+            width: 100%;
+            padding: 12px 14px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--cfg-border);
+            border-radius: 10px;
+            color: var(--cfg-text);
+            font-size: 0.9rem;
+            outline: none;
+            font-family: 'Inter', sans-serif;
+            resize: vertical;
+            min-height: 80px;
+            transition: var(--cfg-transition);
+        }
+        .cfg-edit-textarea:focus {
+            border-color: var(--cfg-gold);
+            background: rgba(0,0,0,0.4);
+        }
+        .cfg-edit-label {
+            display: block;
+            font-size: 0.72rem;
+            color: var(--cfg-text-muted);
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+        .cfg-edit-hint {
+            font-size: 0.65rem;
+            color: var(--cfg-text-dim);
+            margin-top: 6px;
+            line-height: 1.5;
+        }
+        .cfg-edit-counter {
+            font-size: 0.65rem;
+            color: var(--cfg-text-dim);
+            margin-top: 4px;
+            text-align: right;
+        }
+        .cfg-edit-error {
+            font-size: 0.68rem;
+            color: var(--cfg-danger);
+            margin-top: 6px;
+            display: none;
+        }
+        .cfg-edit-error.show {
+            display: block;
         }
     </style>
 </head>
@@ -218,7 +257,6 @@
         function renderPerfilCard(usuario, session) {
             if (!usuario) return;
 
-            // Avatar
             const avatarEl = $('#avatarCuenta');
             if (usuario.avatar_url) {
                 avatarEl.innerHTML = `<img src="${escapeHtml(usuario.avatar_url)}" alt="Avatar">`;
@@ -226,7 +264,6 @@
                 avatarEl.textContent = '◈';
             }
 
-            // Nombre / Handle / Bio
             $('#nombreCuenta').textContent = usuario.nombre || 'Explorador';
             $('#handleCuenta').textContent = '@' + (usuario.handle || 'explorador');
             $('#bioCuenta').textContent = usuario.bio || 'Explorando el ecosistema Sariel\'s · WEB3 · Comunidad';
@@ -285,6 +322,12 @@
                     title: 'Handle',
                     desc: '@' + (usuarioActual?.handle || 'explorador'),
                     onclick: 'window.onEditarHandle()',
+                }),
+                cfgRenderItem({
+                    icon: 'info',
+                    title: 'Biografía',
+                    desc: usuarioActual?.bio || 'Sin biografía',
+                    onclick: 'window.onEditarBio()',
                 }),
                 cfgRenderItem({
                     icon: 'info',
@@ -430,22 +473,285 @@
         }
 
         // ============================================================
-        // CALLBACKS
+        // MODAL: EDITAR NOMBRE
         // ============================================================
         window.onEditarNombre = () => {
-            cfgToast('✏️ Ve a tu perfil para editar tu nombre', 'success', 4000);
-            setTimeout(() => {
-                window.location.href = '/features/perfil/perfil.html';
-            }, 1500);
+            const valorActual = usuarioActual?.nombre || '';
+
+            const overlay = document.createElement('div');
+            overlay.className = 'cfg-modal-overlay';
+
+            overlay.innerHTML = `
+                <div class="cfg-modal" style="max-width: 420px;">
+                    <h3 class="cfg-modal-title">✏️ Editar nombre</h3>
+                    <p class="cfg-modal-text" style="text-align:left;margin-bottom:16px;">
+                        Este es el nombre que otros usuarios verán en Sariel's.
+                    </p>
+                    <div class="form-group" style="margin-bottom:14px;">
+                        <label class="cfg-edit-label">Nombre</label>
+                        <input type="text" id="inputEditarNombre" class="cfg-edit-input" value="${escapeHtml(valorActual)}" maxlength="50" placeholder="Tu nombre" />
+                        <div class="cfg-edit-counter" id="counterNombre">${valorActual.length} / 50</div>
+                        <div class="cfg-edit-hint">
+                            ℹ️ Mínimo 2 caracteres. Máximo 50.
+                        </div>
+                    </div>
+                    <div class="cfg-modal-actions">
+                        <button class="cfg-btn cfg-btn-outline" data-action="cancel">Cancelar</button>
+                        <button class="cfg-btn cfg-btn-primary" data-action="save">Guardar</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+            requestAnimationFrame(() => overlay.classList.add('show'));
+
+            const input = overlay.querySelector('#inputEditarNombre');
+            const counter = overlay.querySelector('#counterNombre');
+            setTimeout(() => { input.focus(); input.select(); }, 300);
+
+            input.addEventListener('input', () => {
+                counter.textContent = input.value.length + ' / 50';
+            });
+
+            const close = () => {
+                overlay.classList.remove('show');
+                setTimeout(() => overlay.remove(), 200);
+            };
+
+            overlay.querySelector('[data-action="cancel"]').onclick = close;
+            overlay.onclick = (e) => { if (e.target === overlay) close(); };
+
+            overlay.querySelector('[data-action="save"]').onclick = async () => {
+                const nuevoNombre = input.value.trim();
+
+                if (nuevoNombre.length < 2) {
+                    cfgToast('⚠️ El nombre debe tener al menos 2 caracteres', 'warning');
+                    return;
+                }
+
+                try {
+                    const client = sb();
+                    if (!client) throw new Error('Supabase no disponible');
+
+                    const { data: sessionData } = await client.auth.getSession();
+                    const session = sessionData.session;
+                    if (!session) throw new Error('Sin sesión');
+
+                    const { error } = await client
+                        .from('usuarios')
+                        .update({ nombre: nuevoNombre })
+                        .eq('id', session.user.id);
+
+                    if (error) throw error;
+
+                    cfgToast('✅ Nombre actualizado', 'success');
+                    close();
+
+                    // Actualizar datos
+                    usuarioActual.nombre = nuevoNombre;
+                    $('#nombreCuenta').textContent = nuevoNombre;
+                    renderSecciones();
+
+                } catch (e) {
+                    console.error('Error guardando nombre:', e);
+                    cfgToast('❌ Error: ' + e.message, 'error');
+                }
+            };
         };
 
+        // ============================================================
+        // MODAL: EDITAR HANDLE
+        // ============================================================
         window.onEditarHandle = () => {
-            cfgToast('✏️ Ve a tu perfil para editar tu handle', 'success', 4000);
-            setTimeout(() => {
-                window.location.href = '/features/perfil/perfil.html';
-            }, 1500);
+            const valorActual = usuarioActual?.handle || '';
+
+            const overlay = document.createElement('div');
+            overlay.className = 'cfg-modal-overlay';
+
+            overlay.innerHTML = `
+                <div class="cfg-modal" style="max-width: 420px;">
+                    <h3 class="cfg-modal-title">✏️ Editar handle</h3>
+                    <p class="cfg-modal-text" style="text-align:left;margin-bottom:16px;">
+                        Tu @handle es único. Solo puede contener letras, números y guion bajo.
+                    </p>
+                    <div class="form-group" style="margin-bottom:14px;">
+                        <label class="cfg-edit-label">Handle (@)</label>
+                        <input type="text" id="inputEditarHandle" class="cfg-edit-input" value="${escapeHtml(valorActual)}" maxlength="30" placeholder="usuario" />
+                        <div class="cfg-edit-counter" id="counterHandle">${valorActual.length} / 30</div>
+                        <div class="cfg-edit-hint">
+                            ℹ️ Sin @. Solo letras (a-z), números (0-9) y guion bajo (_).
+                        </div>
+                        <div class="cfg-edit-error" id="errorHandle"></div>
+                    </div>
+                    <div class="cfg-modal-actions">
+                        <button class="cfg-btn cfg-btn-outline" data-action="cancel">Cancelar</button>
+                        <button class="cfg-btn cfg-btn-primary" data-action="save">Guardar</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+            requestAnimationFrame(() => overlay.classList.add('show'));
+
+            const input = overlay.querySelector('#inputEditarHandle');
+            const counter = overlay.querySelector('#counterHandle');
+            const errorEl = overlay.querySelector('#errorHandle');
+            setTimeout(() => { input.focus(); input.select(); }, 300);
+
+            input.addEventListener('input', () => {
+                const val = input.value.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
+                input.value = val;
+                counter.textContent = val.length + ' / 30';
+                errorEl.classList.remove('show');
+            });
+
+            const close = () => {
+                overlay.classList.remove('show');
+                setTimeout(() => overlay.remove(), 200);
+            };
+
+            overlay.querySelector('[data-action="cancel"]').onclick = close;
+            overlay.onclick = (e) => { if (e.target === overlay) close(); };
+
+            overlay.querySelector('[data-action="save"]').onclick = async () => {
+                const nuevoHandle = input.value.trim().toLowerCase();
+
+                if (nuevoHandle.length < 3) {
+                    errorEl.textContent = '⚠️ El handle debe tener al menos 3 caracteres';
+                    errorEl.classList.add('show');
+                    return;
+                }
+
+                if (!/^[a-z0-9_]+$/.test(nuevoHandle)) {
+                    errorEl.textContent = '⚠️ Solo letras, números y guion bajo';
+                    errorEl.classList.add('show');
+                    return;
+                }
+
+                try {
+                    const client = sb();
+                    if (!client) throw new Error('Supabase no disponible');
+
+                    const { data: sessionData } = await client.auth.getSession();
+                    const session = sessionData.session;
+                    if (!session) throw new Error('Sin sesión');
+
+                    // Verificar que no esté tomado
+                    const { data: existente } = await client
+                        .from('usuarios')
+                        .select('id')
+                        .eq('handle', nuevoHandle)
+                        .neq('id', session.user.id)
+                        .maybeSingle();
+
+                    if (existente) {
+                        errorEl.textContent = '⚠️ Este handle ya está en uso';
+                        errorEl.classList.add('show');
+                        return;
+                    }
+
+                    const { error } = await client
+                        .from('usuarios')
+                        .update({ handle: nuevoHandle })
+                        .eq('id', session.user.id);
+
+                    if (error) throw error;
+
+                    cfgToast('✅ Handle actualizado', 'success');
+                    close();
+
+                    // Actualizar datos
+                    usuarioActual.handle = nuevoHandle;
+                    $('#handleCuenta').textContent = '@' + nuevoHandle;
+                    renderSecciones();
+
+                } catch (e) {
+                    console.error('Error guardando handle:', e);
+                    errorEl.textContent = '❌ Error: ' + e.message;
+                    errorEl.classList.add('show');
+                }
+            };
         };
 
+        // ============================================================
+        // MODAL: EDITAR BIO
+        // ============================================================
+        window.onEditarBio = () => {
+            const valorActual = usuarioActual?.bio || '';
+
+            const overlay = document.createElement('div');
+            overlay.className = 'cfg-modal-overlay';
+
+            overlay.innerHTML = `
+                <div class="cfg-modal" style="max-width: 440px;">
+                    <h3 class="cfg-modal-title">✏️ Editar biografía</h3>
+                    <p class="cfg-modal-text" style="text-align:left;margin-bottom:16px;">
+                        Cuéntale a los demás un poco sobre ti.
+                    </p>
+                    <div class="form-group" style="margin-bottom:14px;">
+                        <label class="cfg-edit-label">Biografía</label>
+                        <textarea id="inputEditarBio" class="cfg-edit-textarea" maxlength="160" placeholder="Explorando el ecosistema Sariel's · WEB3 · Comunidad">${escapeHtml(valorActual)}</textarea>
+                        <div class="cfg-edit-counter" id="counterBio">${valorActual.length} / 160</div>
+                    </div>
+                    <div class="cfg-modal-actions">
+                        <button class="cfg-btn cfg-btn-outline" data-action="cancel">Cancelar</button>
+                        <button class="cfg-btn cfg-btn-primary" data-action="save">Guardar</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+            requestAnimationFrame(() => overlay.classList.add('show'));
+
+            const input = overlay.querySelector('#inputEditarBio');
+            const counter = overlay.querySelector('#counterBio');
+            setTimeout(() => input.focus(), 300);
+
+            input.addEventListener('input', () => {
+                counter.textContent = input.value.length + ' / 160';
+            });
+
+            const close = () => {
+                overlay.classList.remove('show');
+                setTimeout(() => overlay.remove(), 200);
+            };
+
+            overlay.querySelector('[data-action="cancel"]').onclick = close;
+            overlay.onclick = (e) => { if (e.target === overlay) close(); };
+
+            overlay.querySelector('[data-action="save"]').onclick = async () => {
+                const nuevaBio = input.value.trim();
+
+                try {
+                    const client = sb();
+                    if (!client) throw new Error('Supabase no disponible');
+
+                    const { data: sessionData } = await client.auth.getSession();
+                    const session = sessionData.session;
+                    if (!session) throw new Error('Sin sesión');
+
+                    const { error } = await client
+                        .from('usuarios')
+                        .update({ bio: nuevaBio || null })
+                        .eq('id', session.user.id);
+
+                    if (error) throw error;
+
+                    cfgToast('✅ Biografía actualizada', 'success');
+                    close();
+
+                    // Actualizar datos
+                    usuarioActual.bio = nuevaBio;
+                    $('#bioCuenta').textContent = nuevaBio || 'Explorando el ecosistema Sariel\'s · WEB3 · Comunidad';
+                    renderSecciones();
+
+                } catch (e) {
+                    console.error('Error guardando bio:', e);
+                    cfgToast('❌ Error: ' + e.message, 'error');
+                }
+            };
+        };
+
+        // ============================================================
+        // OTROS CALLBACKS
+        // ============================================================
         window.onEditarEmail = async () => {
             const nuevoEmail = prompt('Escribe tu nuevo correo electrónico:');
             if (!nuevoEmail) return;
@@ -469,7 +775,6 @@
 
                 cfgToast('✅ Revisa tu correo para confirmar el cambio', 'success', 5000);
 
-                // Registrar el evento
                 await client.rpc('registrar_acceso', {
                     p_evento: 'cambio_email',
                     p_metadata: { email_nuevo: nuevoEmail }
