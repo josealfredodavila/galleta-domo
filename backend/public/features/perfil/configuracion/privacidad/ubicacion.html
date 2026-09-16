@@ -9,6 +9,50 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
     
     <link rel="stylesheet" href="../../../shared/config-layout.css" />
+    
+    <style>
+        .cfg-ubicacion-card {
+            margin: 0 16px 16px 16px;
+            padding: 20px;
+            background: linear-gradient(135deg, rgba(0, 229, 255, 0.06), rgba(15, 45, 26, 0.3));
+            border: 1px solid rgba(0, 229, 255, 0.2);
+            border-radius: 16px;
+            text-align: center;
+        }
+        .cfg-ubicacion-card .icon-grande {
+            font-size: 2.5rem;
+            display: block;
+            margin-bottom: 10px;
+            filter: drop-shadow(0 0 15px rgba(0, 229, 255, 0.3));
+        }
+        .cfg-ubicacion-card .ciudad {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--cfg-text);
+            margin-bottom: 4px;
+        }
+        .cfg-ubicacion-card .coords {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
+            color: var(--cfg-text-muted);
+            margin-bottom: 8px;
+        }
+        .cfg-ubicacion-card .fecha {
+            font-size: 0.68rem;
+            color: var(--cfg-text-dim);
+        }
+        .cfg-ubicacion-card .sin-ubicacion {
+            color: var(--cfg-text-muted);
+            font-size: 0.8rem;
+        }
+        .cfg-loading-mini {
+            padding: 20px;
+            text-align: center;
+            color: var(--cfg-text-muted);
+            font-size: 0.75rem;
+        }
+    </style>
 </head>
 <body class="cfg-page">
 
@@ -16,8 +60,10 @@
 
     <main class="cfg-content">
 
-        <h2 class="cfg-section-title">Ubicación</h2>
-        <div class="cfg-list" id="seccionUbicacion"></div>
+        <h2 class="cfg-section-title">Ubicación actual</h2>
+        <div id="ubicacionContainer">
+            <div class="cfg-loading-mini">⏳ Cargando ubicación...</div>
+        </div>
 
         <h2 class="cfg-section-title">Ubicación de publicaciones</h2>
         <div class="cfg-list" id="seccionPublicaciones"></div>
@@ -44,6 +90,14 @@
 
         const $ = (sel) => document.querySelector(sel);
 
+        function sb() {
+            return window.supabaseClient || 
+                (window.supabase && window.supabase.createClient(
+                    'https://zultnlogdoajehbswlih.supabase.co',
+                    'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
+                ));
+        }
+
         cfgInitPage({
             title: 'Acerca de tu cuenta',
             subtitle: '@tu_usuario',
@@ -57,19 +111,87 @@
             ubicacion_historial: 'ubicacion_guardar_historial',
         };
 
-        function renderSecciones() {
-            // ============================================================
-            // UBICACIÓN PRINCIPAL
-            // ============================================================
-            $('#seccionUbicacion').innerHTML = [
-                cfgRenderItem({
-                    icon: 'mapPin',
-                    title: 'Ubicación actual',
-                    desc: 'Ubicación: Puebla, México · Actualizada hace 2 días',
-                    onclick: 'window.onVerUbicacionActual()',
-                }),
-            ].join('');
+        let ultimaUbicacion = null;
+        let historialUbicaciones = [];
 
+        // ============================================================
+        // CARGAR UBICACIÓN ACTUAL
+        // ============================================================
+        async function cargarUltimaUbicacion() {
+            try {
+                const client = sb();
+                if (!client) {
+                    renderUbicacionVacia();
+                    return;
+                }
+
+                const { data, error } = await client.rpc('obtener_ultima_ubicacion');
+
+                if (error) {
+                    console.warn('Error RPC obtener_ultima_ubicacion:', error.message);
+                    renderUbicacionVacia();
+                    return;
+                }
+
+                // La RPC devuelve un array o un objeto dependiendo de cómo esté definida
+                const ubicacion = Array.isArray(data) ? (data[0] || null) : data;
+
+                if (ubicacion) {
+                    ultimaUbicacion = ubicacion;
+                    renderUbicacionReal(ubicacion);
+                } else {
+                    renderUbicacionVacia();
+                }
+
+            } catch (e) {
+                console.warn('Error cargando ubicación:', e);
+                renderUbicacionVacia();
+            }
+        }
+
+        function renderUbicacionReal(u) {
+            const container = $('#ubicacionContainer');
+            if (!container) return;
+
+            const ciudad = u.ciudad || u.municipio || 'Ubicación desconocida';
+            const estado = u.estado_region || u.pais || '';
+            const coords = (u.latitud && u.longitud) 
+                ? `${parseFloat(u.latitud).toFixed(4)}, ${parseFloat(u.longitud).toFixed(4)}` 
+                : 'Sin coordenadas';
+            const fecha = u.created_at 
+                ? new Date(u.created_at).toLocaleString('es-MX', {
+                    day: '2-digit', month: 'short', year: 'numeric',
+                    hour: '2-digit', minute: '2-digit'
+                })
+                : '';
+
+            container.innerHTML = `
+                <div class="cfg-ubicacion-card">
+                    <span class="icon-grande">📍</span>
+                    <div class="ciudad">${escapeHtml(ciudad)}${estado ? ', ' + escapeHtml(estado) : ''}</div>
+                    <div class="coords">${escapeHtml(coords)}</div>
+                    <div class="fecha">Última actualización: ${escapeHtml(fecha)}</div>
+                </div>
+            `;
+        }
+
+        function renderUbicacionVacia() {
+            const container = $('#ubicacionContainer');
+            if (!container) return;
+
+            container.innerHTML = `
+                <div class="cfg-ubicacion-card">
+                    <span class="icon-grande">📍</span>
+                    <div class="sin-ubicacion">Sin ubicación guardada</div>
+                    <div class="coords" style="margin-top:8px;">Activa "Ubicación en publicaciones" para empezar</div>
+                </div>
+            `;
+        }
+
+        // ============================================================
+        // RENDERIZAR SECCIONES
+        // ============================================================
+        function renderSecciones() {
             // ============================================================
             // PUBLICACIONES
             // ============================================================
@@ -102,6 +224,12 @@
                     onChange: `window.onToggleHistorial(this.checked)`,
                 }),
                 cfgRenderItem({
+                    icon: 'search',
+                    title: 'Actualizar mi ubicación ahora',
+                    desc: 'Obtén y guarda tu ubicación GPS actual',
+                    onclick: 'window.onActualizarUbicacion()',
+                }),
+                cfgRenderItem({
                     icon: 'ban',
                     title: 'Eliminar historial de ubicaciones',
                     desc: 'Borra todas las ubicaciones guardadas de tu cuenta',
@@ -110,6 +238,16 @@
                     style: 'color: var(--cfg-danger, #ff3366);',
                 }),
             ].join('');
+        }
+
+        // ============================================================
+        // HELPERS
+        // ============================================================
+        function escapeHtml(texto) {
+            if (!texto) return '';
+            const div = document.createElement('div');
+            div.textContent = texto;
+            return div.innerHTML;
         }
 
         // ============================================================
@@ -123,6 +261,10 @@
                         async (position) => {
                             await cfgSetPref(PREF_KEYS.ubicacion_activada, true);
                             await cfgSetPref(PREF_KEYS.ubicacion_posts, true);
+
+                            // Guardar ubicación en Supabase
+                            await guardarUbicacionEnNube(position.coords.latitude, position.coords.longitude, 'aproximada');
+
                             cfgToast('📍 Ubicación activada en publicaciones', 'success');
                         },
                         (error) => {
@@ -159,23 +301,48 @@
             );
         };
 
-        window.onVerUbicacionActual = () => {
-            if (navigator.geolocation) {
-                cfgToast('📍 Obteniendo ubicación...', '', 2000);
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        const lat = position.coords.latitude.toFixed(4);
-                        const lng = position.coords.longitude.toFixed(4);
-                        cfgToast(`📍 Ubicación: ${lat}, ${lng}`, 'success', 4000);
-                    },
-                    () => {
-                        cfgToast('⚠️ No se pudo obtener tu ubicación', 'warning');
-                    }
-                );
-            } else {
+        window.onActualizarUbicacion = () => {
+            if (!navigator.geolocation) {
                 cfgToast('❌ Geolocalización no disponible', 'error');
+                return;
             }
+
+            cfgToast('📍 Obteniendo tu ubicación...', '', 2000);
+
+            navigator.geolocation.getCurrentPosition(
+                async (position) => {
+                    const precision = cfgGetPref(PREF_KEYS.ubicacion_precisa, false) ? 'exacta' : 'aproximada';
+                    await guardarUbicacionEnNube(position.coords.latitude, position.coords.longitude, precision);
+                    await cargarUltimaUbicacion();
+                },
+                () => {
+                    cfgToast('⚠️ No se pudo obtener tu ubicación', 'warning');
+                }
+            );
         };
+
+        async function guardarUbicacionEnNube(lat, lng, precision) {
+            try {
+                const client = sb();
+                if (!client) return;
+
+                const { error } = await client.rpc('guardar_ubicacion', {
+                    p_lat: lat,
+                    p_lng: lng,
+                    p_precision: precision
+                });
+
+                if (error) {
+                    console.warn('Error guardando ubicación:', error.message);
+                    cfgToast('📍 Ubicación obtenida pero no guardada en la nube', 'warning');
+                } else {
+                    cfgToast('✅ Ubicación guardada', 'success');
+                }
+
+            } catch (e) {
+                console.warn('Error guardando ubicación:', e);
+            }
+        }
 
         window.onEliminarHistorial = async () => {
             const ok = await cfgConfirm({
@@ -188,14 +355,26 @@
 
             if (!ok) return;
 
-            cfgToast('⏳ Eliminando historial...', 'warning');
+            try {
+                const client = sb();
+                if (!client) throw new Error('Supabase no disponible');
 
-            setTimeout(() => {
+                const { error } = await client.rpc('eliminar_historial_ubicaciones');
+
+                if (error) throw error;
+
                 cfgSetPref(PREF_KEYS.ubicacion_historial, false);
                 const toggle = document.getElementById('toggleUbicacionHistorial');
                 if (toggle) toggle.checked = false;
+
                 cfgToast('✅ Historial de ubicaciones eliminado', 'success');
-            }, 1200);
+
+                await cargarUltimaUbicacion();
+
+            } catch (e) {
+                console.error('Error eliminando historial:', e);
+                cfgToast('❌ Error: ' + e.message, 'error');
+            }
         };
 
         // ============================================================
@@ -204,6 +383,7 @@
         window.addEventListener('DOMContentLoaded', async () => {
             await new Promise(resolve => setTimeout(resolve, 400));
             renderSecciones();
+            await cargarUltimaUbicacion();
         });
 
         // ============================================================
@@ -211,11 +391,7 @@
         // ============================================================
         (async function cargarUsuario() {
             try {
-                const client = window.supabaseClient || 
-                    (window.supabase && window.supabase.createClient(
-                        'https://zultnlogdoajehbswlih.supabase.co',
-                        'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
-                    ));
+                const client = sb();
                 if (!client) return;
                 const { data } = await client.auth.getSession();
                 const session = data && data.session;
