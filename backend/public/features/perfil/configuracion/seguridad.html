@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#000000" />
+    <title>Seguridad y acceso · Sariel's</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="../../shared/config-layout.css" />
+    
+    <style>
+        .cfg-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.62rem;
+            font-weight: 700;
+            font-family: 'Orbitron', monospace;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            flex-shrink: 0;
+        }
+
+        .cfg-badge-success {
+            background: rgba(0, 214, 143, 0.12);
+            color: var(--cfg-success);
+            border: 1px solid rgba(0, 214, 143, 0.3);
+        }
+
+        .cfg-badge-warning {
+            background: rgba(247, 212, 74, 0.12);
+            color: var(--cfg-warning);
+            border: 1px solid rgba(247, 212, 74, 0.3);
+        }
+
+        .cfg-badge-danger {
+            background: rgba(255, 51, 102, 0.12);
+            color: var(--cfg-danger);
+            border: 1px solid rgba(255, 51, 102, 0.3);
+        }
+
+        .cfg-session-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--cfg-border);
+            cursor: pointer;
+            transition: var(--cfg-transition);
+        }
+
+        .cfg-session-item:last-child {
+            border-bottom: none;
+        }
+
+        .cfg-session-item:hover {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .cfg-session-icon {
+            font-size: 1.6rem;
+            flex-shrink: 0;
+        }
+
+        .cfg-session-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .cfg-session-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--cfg-text);
+            margin-bottom: 2px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .cfg-session-subtitle {
+            font-size: 0.72rem;
+            color: var(--cfg-text-muted);
+        }
+
+        .cfg-session-meta {
+            font-size: 0.65rem;
+            color: var(--cfg-text-dim);
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body class="cfg-page">
+
+    <div id="cfgHeaderSlot"></div>
+
+    <main class="cfg-content">
+
+        <h2 class="cfg-section-title">Autenticación</h2>
+        <div class="cfg-list" id="seccionAuth"></div>
+
+        <h2 class="cfg-section-title">Contraseña</h2>
+        <div class="cfg-list" id="seccionPassword"></div>
+
+        <h2 class="cfg-section-title">Sesiones activas</h2>
+        <div class="cfg-list" id="seccionSesiones"></div>
+
+        <h2 class="cfg-section-title">Apps conectadas</h2>
+        <div class="cfg-list" id="seccionApps"></div>
+
+        <div class="cfg-aviso cfg-aviso-info">
+            ℹ️ Mantén tu cuenta segura. Si ves algo sospechoso, ciérralo inmediatamente.
+        </div>
+
+        <div class="cfg-footer">
+            <strong>◈ Sariel's</strong> · Configuración · Seguridad
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="../../shared/config-icons.js"></script>
+    <script src="../../shared/config-layout.js"></script>
+
+    <script>
+    (function () {
+        'use strict';
+
+        const $ = (sel) => document.querySelector(sel);
+
+        cfgInitPage({
+            title: 'Seguridad y acceso a la cuenta',
+            subtitle: 'Protege tu cuenta',
+            backUrl: '/features/perfil/configuracion/index.html',
+        });
+
+        // ============================================================
+        // SECCIÓN AUTENTICACIÓN
+        // ============================================================
+        function renderAuth() {
+            const dobleFactor = cfgGetPref('seguridad_2fa', false);
+            const badge2FA = dobleFactor 
+                ? '<span class="cfg-badge cfg-badge-success">✓ Activo</span>' 
+                : '<span class="cfg-badge cfg-badge-warning">⚠ Inactivo</span>';
+
+            $('#seccionAuth').innerHTML = [
+                cfgRenderItem({
+                    icon: 'shield',
+                    title: 'Verificación en 2 pasos',
+                    desc: 'Añade una capa extra de seguridad a tu cuenta. ' + (dobleFactor ? 'Está activada.' : 'Recomendamos activarla.'),
+                    onclick: 'window.onConfig2FA()',
+                    noChevron: false,
+                }),
+            ].join('') + `<div style="padding: 0 16px 16px 16px;">${badge2FA}</div>`;
+
+            // Actualizar el ícono/badge dinámicamente
+            const authItem = $('#seccionAuth').querySelector('.cfg-item-title');
+            if (authItem && dobleFactor) {
+                const badge = document.createElement('span');
+                badge.className = 'cfg-badge cfg-badge-success';
+                badge.textContent = '✓';
+                badge.style.marginLeft = '8px';
+                authItem.appendChild(badge);
+            }
+        }
+
+        // ============================================================
+        // SECCIÓN CONTRASEÑA
+        // ============================================================
+        function renderPassword() {
+            $('#seccionPassword').innerHTML = [
+                cfgRenderItem({
+                    icon: 'lock',
+                    title: 'Cambiar contraseña',
+                    desc: 'Actualiza tu contraseña regularmente para mantener tu cuenta segura',
+                    href: '/actualizar-contraseña.html',
+                }),
+                cfgRenderItem({
+                    icon: 'info',
+                    title: 'Última actualización de contraseña',
+                    desc: 'Hace 30 días',
+                    noChevron: true,
+                }),
+            ].join('');
+        }
+
+        // ============================================================
+        // SECCIÓN SESIONES ACTIVAS
+        // ============================================================
+        function renderSesiones() {
+            // Sesión actual (detectada del navegador)
+            const ua = navigator.userAgent;
+            let dispositivoActual = 'Navegador web';
+            let iconoActual = '💻';
+            
+            if (/Android/i.test(ua)) {
+                dispositivoActual = 'Android';
+                iconoActual = '📱';
+            } else if (/iPhone|iPad|iPod/i.test(ua)) {
+                dispositivoActual = 'iPhone';
+                iconoActual = '📱';
+            } else if (/Windows/i.test(ua)) {
+                dispositivoActual = 'Windows';
+                iconoActual = '💻';
+            } else if (/Mac/i.test(ua)) {
+                dispositivoActual = 'Mac';
+                iconoActual = '💻';
+            } else if (/Linux/i.test(ua)) {
+                dispositivoActual = 'Linux';
+                iconoActual = '💻';
+            }
+
+            $('#seccionSesiones').innerHTML = `
+                <div class="cfg-session-item">
+                    <span class="cfg-session-icon">${iconoActual}</span>
+                    <div class="cfg-session-info">
+                        <div class="cfg-session-title">
+                            ${dispositivoActual}
+                            <span class="cfg-badge cfg-badge-success">Este dispositivo</span>
+                        </div>
+                        <div class="cfg-session-subtitle">Sesión actual activa</div>
+                        <div class="cfg-session-meta">Ahora mismo</div>
+                    </div>
+                </div>
+            ` + [
+                cfgRenderItem({
+                    icon: 'smartphone',
+                    title: 'Ver todas las sesiones activas',
+                    desc: 'Consulta y cierra sesiones en otros dispositivos',
+                    onclick: 'window.onVerSesiones()',
+                }),
+                cfgRenderItem({
+                    icon: 'logout',
+                    title: 'Cerrar sesión en todos los demás dispositivos',
+                    desc: 'Se cerrará la sesión en todos los dispositivos excepto este',
+                    onclick: 'window.onCerrarOtrasSesiones()',
+                    class: 'cfg-item-plain',
+                    style: 'color: var(--cfg-warning, #f7d44a);',
+                }),
+            ].join('');
+        }
+
+        // ============================================================
+        // SECCIÓN APPS CONECTADAS
+        // ============================================================
+        function renderApps() {
+            $('#seccionApps').innerHTML = [
+                cfgRenderItem({
+                    icon: 'link',
+                    title: 'Apps y servicios conectados',
+                    desc: 'Administra las apps de terceros que tienen acceso a tu cuenta',
+                    onclick: 'window.onVerApps()',
+                }),
+                cfgRenderItem({
+                    icon: 'wallet',
+                    title: 'Wallet conectada',
+                    desc: 'Consulta qué wallet tienes vinculada',
+                    onclick: 'window.onVerWallet()',
+                }),
+            ].join('');
+        }
+
+        // ============================================================
+        // CALLBACKS
+        // ============================================================
+        window.onConfig2FA = () => {
+            cfgToast('⏳ Configuración 2FA próximamente', 'warning');
+        };
+
+        window.onVerSesiones = () => {
+            cfgToast('⏳ Lista completa de sesiones próximamente', 'warning');
+        };
+
+        window.onCerrarOtrasSesiones = async () => {
+            const ok = await cfgConfirm({
+                title: '¿Cerrar otras sesiones?',
+                text: 'Se cerrará la sesión en todos los dispositivos excepto en este. Tendrás que volver a iniciar sesión en ellos.',
+                confirmText: 'Cerrar otras sesiones',
+                cancelText: 'Cancelar',
+                danger: true,
+            });
+
+            if (!ok) return;
+
+            cfgToast('⏳ Cerrando otras sesiones...', 'warning');
+            
+            setTimeout(() => {
+                cfgToast('✅ Otras sesiones cerradas', 'success');
+            }, 1500);
+        };
+
+        window.onVerApps = () => {
+            cfgToast('⏳ Lista de apps conectadas próximamente', 'warning');
+        };
+
+        window.onVerWallet = () => {
+            window.location.href = '/features/perfil/configuracion/sariels/wallet.html';
+        };
+
+        // ============================================================
+        // INICIALIZAR
+        // ============================================================
+        window.addEventListener('DOMContentLoaded', async () => {
+            await new Promise(resolve => setTimeout(resolve, 400));
+            renderAuth();
+            renderPassword();
+            renderSesiones();
+            renderApps();
+        });
+
+    })();
+    </script>
+</body>
+</html>
