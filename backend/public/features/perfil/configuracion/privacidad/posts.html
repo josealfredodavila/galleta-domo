@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#000000" />
+    <title>Mis publicaciones · Sariel's</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="../../../shared/config-layout.css" />
+</head>
+<body class="cfg-page">
+
+    <div id="cfgHeaderSlot"></div>
+
+    <main class="cfg-content">
+
+        <h2 class="cfg-section-title">Visibilidad de publicaciones</h2>
+        <div class="cfg-list" id="seccionVisibilidad"></div>
+
+        <h2 class="cfg-section-title">Comentarios</h2>
+        <div class="cfg-list" id="seccionComentarios"></div>
+
+        <h2 class="cfg-section-title">Menciones</h2>
+        <div class="cfg-list" id="seccionMenciones"></div>
+
+        <h2 class="cfg-section-title">Zona de peligro</h2>
+        <div class="cfg-list" id="seccionPeligro"></div>
+
+        <div class="cfg-aviso">
+            ℹ️ Los cambios se sincronizan en todos tus dispositivos.
+        </div>
+
+        <div class="cfg-footer">
+            <strong>◈ Sariel's</strong> · Privacidad · Mis publicaciones
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="../../../shared/config-icons.js"></script>
+    <script src="../../../shared/config-layout.js"></script>
+
+    <script>
+    (function () {
+        'use strict';
+
+        const $ = (sel) => document.querySelector(sel);
+
+        cfgInitPage({
+            title: 'Mis publicaciones',
+            subtitle: '@tu_usuario',
+            backUrl: '/features/perfil/configuracion/index.html',
+        });
+
+        const PREF_KEYS = {
+            permitir_comentarios: 'posts_permitir_comentarios',
+            solo_contactos_comentarios: 'posts_solo_contactos_comentarios',
+            permitir_menciones: 'posts_permitir_menciones',
+            menciones_solo_contactos: 'posts_menciones_solo_contactos',
+        };
+
+        function renderSecciones() {
+            // ============================================================
+            // VISIBILIDAD
+            // ============================================================
+            $('#seccionVisibilidad').innerHTML = [
+                cfgRenderToggle({
+                    id: 'toggleVisibilidad',
+                    title: 'Publicaciones visibles en el Muro',
+                    desc: 'Tus publicaciones aparecen en el Muro público de Sariel\'s.',
+                    checked: cfgGetPref('posts_visibles_muro', true),
+                    onChange: `window.onToggleVisibilidad(this.checked)`,
+                }),
+            ].join('');
+
+            // ============================================================
+            // COMENTARIOS
+            // ============================================================
+            $('#seccionComentarios').innerHTML = [
+                cfgRenderToggle({
+                    id: 'toggleComentarios',
+                    title: 'Permitir comentarios en mis publicaciones',
+                    desc: 'Cualquier persona puede comentar en tus publicaciones.',
+                    checked: cfgGetPref(PREF_KEYS.permitir_comentarios, true),
+                    onChange: `window.onToggleComentarios(this.checked)`,
+                }),
+                cfgRenderToggle({
+                    id: 'toggleComentariosContactos',
+                    title: 'Solo permitir comentarios de mis contactos',
+                    desc: 'Solo las personas que sigues podrán comentar.',
+                    checked: cfgGetPref(PREF_KEYS.solo_contactos_comentarios, false),
+                    onChange: `window.onToggleComentariosContactos(this.checked)`,
+                }),
+            ].join('');
+
+            // ============================================================
+            // MENCIONES
+            // ============================================================
+            $('#seccionMenciones').innerHTML = [
+                cfgRenderToggle({
+                    id: 'toggleMenciones',
+                    title: 'Permitir que me mencionen',
+                    desc: 'Cualquier persona puede mencionarte con @ en sus publicaciones.',
+                    checked: cfgGetPref(PREF_KEYS.permitir_menciones, true),
+                    onChange: `window.onToggleMenciones(this.checked)`,
+                }),
+                cfgRenderToggle({
+                    id: 'toggleMencionesContactos',
+                    title: 'Solo permitir menciones de mis contactos',
+                    desc: 'Solo las personas que sigues podrán mencionarte.',
+                    checked: cfgGetPref(PREF_KEYS.menciones_solo_contactos, false),
+                    onChange: `window.onToggleMencionesContactos(this.checked)`,
+                }),
+            ].join('');
+
+            // ============================================================
+            // ZONA DE PELIGRO
+            // ============================================================
+            $('#seccionPeligro').innerHTML = [
+                cfgRenderItem({
+                    icon: 'ban',
+                    title: 'Ocultar todas mis publicaciones',
+                    desc: 'Solo tú podrás verlas. Se pueden hacer visibles de nuevo.',
+                    onclick: 'window.onOcultarTodo()',
+                    class: 'cfg-item-plain',
+                    style: 'color: var(--cfg-warning, #f7d44a);',
+                }),
+                cfgRenderItem({
+                    icon: 'logout',
+                    title: 'Eliminar todas mis publicaciones',
+                    desc: 'Elimina permanentemente TODAS tus publicaciones del Muro.',
+                    onclick: 'window.onEliminarTodo()',
+                    class: 'cfg-item-plain',
+                    style: 'color: var(--cfg-danger, #ff3366);',
+                }),
+            ].join('');
+        }
+
+        // ============================================================
+        // CALLBACKS
+        // ============================================================
+        window.onToggleVisibilidad = async (value) => {
+            await cfgSetPref('posts_visibles_muro', value);
+            cfgToast(
+                value ? '🌐 Publicaciones visibles en el Muro' : '🔒 Publicaciones ocultas',
+                value ? 'success' : 'warning'
+            );
+        };
+
+        window.onToggleComentarios = async (value) => {
+            await cfgSetPref(PREF_KEYS.permitir_comentarios, value);
+            cfgToast(
+                value ? '💬 Comentarios permitidos' : '🚫 Comentarios bloqueados',
+                value ? 'success' : 'warning'
+            );
+        };
+
+        window.onToggleComentariosContactos = async (value) => {
+            await cfgSetPref(PREF_KEYS.solo_contactos_comentarios, value);
+            cfgToast(
+                value ? '👥 Solo contactos pueden comentar' : '🌐 Cualquiera puede comentar',
+                value ? 'success' : 'warning'
+            );
+        };
+
+        window.onToggleMenciones = async (value) => {
+            await cfgSetPref(PREF_KEYS.permitir_menciones, value);
+            cfgToast(
+                value ? '📣 Menciones permitidas' : '🚫 Menciones bloqueadas',
+                value ? 'success' : 'warning'
+            );
+        };
+
+        window.onToggleMencionesContactos = async (value) => {
+            await cfgSetPref(PREF_KEYS.menciones_solo_contactos, value);
+            cfgToast(
+                value ? '👥 Solo contactos pueden mencionarte' : '🌐 Cualquiera puede mencionarte',
+                value ? 'success' : 'warning'
+            );
+        };
+
+        window.onOcultarTodo = async () => {
+            const ok = await cfgConfirm({
+                title: '¿Ocultar todas tus publicaciones?',
+                text: 'Solo tú podrás verlas. Puedes hacerlas visibles de nuevo cuando quieras.',
+                confirmText: 'Ocultar todo',
+                cancelText: 'Cancelar',
+                danger: false,
+            });
+
+            if (!ok) return;
+
+            cfgToast('⏳ Ocultando publicaciones...', 'warning');
+            await cfgSetPref('posts_todos_ocultos', true);
+
+            setTimeout(() => {
+                cfgToast('✅ Todas tus publicaciones están ocultas', 'success');
+            }, 1200);
+        };
+
+        window.onEliminarTodo = async () => {
+            const ok = await cfgConfirm({
+                title: '⚠️ ¿Eliminar TODAS tus publicaciones?',
+                text: 'Esta acción es PERMANENTE. Se eliminarán todas tus publicaciones del Muro sin posibilidad de recuperarlas.',
+                confirmText: 'Eliminar todo',
+                cancelText: 'Cancelar',
+                danger: true,
+            });
+
+            if (!ok) return;
+
+            cfgToast('⏳ Eliminando publicaciones...', 'error');
+            await cfgSetPref('posts_todos_eliminados', true);
+
+            setTimeout(() => {
+                cfgToast('✅ Todas tus publicaciones han sido eliminadas', 'success');
+            }, 1500);
+        };
+
+        // ============================================================
+        // INICIALIZAR
+        // ============================================================
+        window.addEventListener('DOMContentLoaded', async () => {
+            await new Promise(resolve => setTimeout(resolve, 400));
+            renderSecciones();
+        });
+
+        // ============================================================
+        // CARGAR HANDLE EN SUBTITLE
+        // ============================================================
+        (async function cargarUsuario() {
+            try {
+                const client = window.supabaseClient || 
+                    (window.supabase && window.supabase.createClient(
+                        'https://zultnlogdoajehbswlih.supabase.co',
+                        'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
+                    ));
+                if (!client) return;
+                const { data } = await client.auth.getSession();
+                const session = data && data.session;
+                if (!session) return;
+                const handle = session.user.email ? session.user.email.split('@')[0] : 'usuario';
+                const subEl = document.querySelector('.cfg-header-subtitle');
+                if (subEl) subEl.textContent = '@' + handle;
+            } catch (e) { /* silencioso */ }
+        })();
+
+    })();
+    </script>
+</body>
+</html>
