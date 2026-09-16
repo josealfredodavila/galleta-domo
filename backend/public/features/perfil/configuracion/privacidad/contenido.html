@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#000000" />
+    <title>Contenido que ves · Sariel's</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="../../../shared/config-layout.css" />
+</head>
+<body class="cfg-page">
+
+    <div id="cfgHeaderSlot"></div>
+
+    <main class="cfg-content">
+
+        <h2 class="cfg-section-title">Intereses</h2>
+        <div class="cfg-list" id="seccionIntereses"></div>
+
+        <h2 class="cfg-section-title">Idioma del contenido</h2>
+        <div class="cfg-list" id="seccionIdiomaContenido"></div>
+
+        <h2 class="cfg-section-title">Filtros de contenido</h2>
+        <div class="cfg-list" id="seccionFiltros"></div>
+
+        <h2 class="cfg-section-title">Calidad de imágenes y videos</h2>
+        <div class="cfg-list" id="seccionCalidad"></div>
+
+        <div class="cfg-aviso">
+            ℹ️ Los cambios se sincronizan en todos tus dispositivos.
+        </div>
+
+        <div class="cfg-footer">
+            <strong>◈ Sariel's</strong> · Privacidad · Contenido que ves
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="../../../shared/config-icons.js"></script>
+    <script src="../../../shared/config-layout.js"></script>
+
+    <script>
+    (function () {
+        'use strict';
+
+        const $ = (sel) => document.querySelector(sel);
+
+        cfgInitPage({
+            title: 'Contenido que ves',
+            subtitle: '@tu_usuario',
+            backUrl: '/features/perfil/configuracion/index.html',
+        });
+
+        const PREF_KEYS = {
+            contenido_sensible: 'contenido_mostrar_sensible',
+            contenido_auto_reproducir: 'contenido_auto_reproducir',
+            contenido_imagenes_alta: 'contenido_imagenes_alta_calidad',
+            contenido_videos_alta: 'contenido_videos_alta_calidad',
+            contenido_ahorrador: 'contenido_ahorrador_datos',
+        };
+
+        function renderSecciones() {
+            // ============================================================
+            // INTERESES
+            // ============================================================
+            $('#seccionIntereses').innerHTML = [
+                cfgRenderItem({
+                    icon: 'search',
+                    title: 'Temas que me interesan',
+                    desc: 'Personaliza el contenido que ves según tus intereses',
+                    onclick: 'window.onConfigurarIntereses()',
+                }),
+                cfgRenderItem({
+                    icon: 'ban',
+                    title: 'Temas que no me interesan',
+                    desc: 'Oculta contenido relacionado con ciertos temas',
+                    onclick: 'window.onConfigurarNoIntereses()',
+                }),
+            ].join('');
+
+            // ============================================================
+            // IDIOMA DEL CONTENIDO
+            // ============================================================
+            $('#seccionIdiomaContenido').innerHTML = [
+                cfgRenderItem({
+                    icon: 'globe',
+                    title: 'Idiomas del contenido',
+                    desc: 'Elige en qué idiomas quieres ver el contenido',
+                    onclick: 'window.onConfigurarIdiomasContenido()',
+                }),
+            ].join('');
+
+            // ============================================================
+            // FILTROS
+            // ============================================================
+            $('#seccionFiltros').innerHTML = [
+                cfgRenderToggle({
+                    id: 'toggleSensible',
+                    title: 'Mostrar contenido sensible',
+                    desc: 'Incluye contenido marcado como sensible en tu feed',
+                    checked: cfgGetPref(PREF_KEYS.contenido_sensible, false),
+                    onChange: `window.onToggleSensible(this.checked)`,
+                }),
+                cfgRenderToggle({
+                    id: 'toggleAhorrador',
+                    title: 'Ahorrador de datos',
+                    desc: 'No reproduce videos automáticamente y carga imágenes en calidad reducida',
+                    checked: cfgGetPref(PREF_KEYS.contenido_ahorrador, false),
+                    onChange: `window.onToggleAhorrador(this.checked)`,
+                }),
+            ].join('');
+
+            // ============================================================
+            // CALIDAD
+            // ============================================================
+            $('#seccionCalidad').innerHTML = [
+                cfgRenderToggle({
+                    id: 'toggleImgAlta',
+                    title: 'Imágenes en alta calidad',
+                    desc: 'Carga automáticamente las imágenes en alta calidad (hasta 4K)',
+                    checked: cfgGetPref(PREF_KEYS.contenido_imagenes_alta, true),
+                    onChange: `window.onToggleImgAlta(this.checked)`,
+                }),
+                cfgRenderToggle({
+                    id: 'toggleVidAlta',
+                    title: 'Video en alta calidad',
+                    desc: 'Usa la mejor calidad disponible para reproducción de video',
+                    checked: cfgGetPref(PREF_KEYS.contenido_videos_alta, true),
+                    onChange: `window.onToggleVidAlta(this.checked)`,
+                }),
+                cfgRenderToggle({
+                    id: 'toggleAutoPlay',
+                    title: 'Reproducción automática de video',
+                    desc: 'Los videos se reproducen automáticamente al aparecer en pantalla',
+                    checked: cfgGetPref(PREF_KEYS.contenido_auto_reproducir, true),
+                    onChange: `window.onToggleAutoPlay(this.checked)`,
+                }),
+            ].join('');
+        }
+
+        // ============================================================
+        // CALLBACKS
+        // ============================================================
+        window.onToggleSensible = async (value) => {
+            await cfgSetPref(PREF_KEYS.contenido_sensible, value);
+            cfgToast(
+                value ? '👁️ Contenido sensible visible' : '🚫 Contenido sensible oculto',
+                value ? 'warning' : 'success'
+            );
+        };
+
+        window.onToggleAhorrador = async (value) => {
+            await cfgSetPref(PREF_KEYS.contenido_ahorrador, value);
+            cfgToast(
+                value ? '📉 Ahorrador de datos activado' : '📈 Ahorrador de datos desactivado',
+                value ? 'success' : ''
+            );
+        };
+
+        window.onToggleImgAlta = async (value) => {
+            await cfgSetPref(PREF_KEYS.contenido_imagenes_alta, value);
+            cfgToast(
+                value ? '🖼️ Imágenes en alta calidad' : '📉 Imágenes en calidad reducida',
+                value ? 'success' : ''
+            );
+        };
+
+        window.onToggleVidAlta = async (value) => {
+            await cfgSetPref(PREF_KEYS.contenido_videos_alta, value);
+            cfgToast(
+                value ? '🎬 Video en alta calidad' : '📉 Video en calidad reducida',
+                value ? 'success' : ''
+            );
+        };
+
+        window.onToggleAutoPlay = async (value) => {
+            await cfgSetPref(PREF_KEYS.contenido_auto_reproducir, value);
+            cfgToast(
+                value ? '▶️ Reproducción automática activada' : '⏸️ Reproducción automática desactivada',
+                value ? 'success' : ''
+            );
+        };
+
+        window.onConfigurarIntereses = () => {
+            cfgToast('⏳ Configuración de intereses próximamente', 'warning');
+        };
+
+        window.onConfigurarNoIntereses = () => {
+            cfgToast('⏳ Filtros de temas próximamente', 'warning');
+        };
+
+        window.onConfigurarIdiomasContenido = () => {
+            cfgToast('⏳ Selección de idiomas próximamente', 'warning');
+        };
+
+        // ============================================================
+        // INICIALIZAR
+        // ============================================================
+        window.addEventListener('DOMContentLoaded', async () => {
+            await new Promise(resolve => setTimeout(resolve, 400));
+            renderSecciones();
+        });
+
+        // ============================================================
+        // CARGAR HANDLE EN SUBTITLE
+        // ============================================================
+        (async function cargarUsuario() {
+            try {
+                const client = window.supabaseClient || 
+                    (window.supabase && window.supabase.createClient(
+                        'https://zultnlogdoajehbswlih.supabase.co',
+                        'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
+                    ));
+                if (!client) return;
+                const { data } = await client.auth.getSession();
+                const session = data && data.session;
+                if (!session) return;
+                const handle = session.user.email ? session.user.email.split('@')[0] : 'usuario';
+                const subEl = document.querySelector('.cfg-header-subtitle');
+                if (subEl) subEl.textContent = '@' + handle;
+            } catch (e) { /* silencioso */ }
+        })();
+
+    })();
+    </script>
+</body>
+</html>
