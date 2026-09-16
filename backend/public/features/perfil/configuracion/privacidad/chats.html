@@ -95,20 +95,6 @@
         .cfg-solicitud-card .btn-rechazar:hover {
             background: rgba(255, 51, 102, 0.2);
         }
-        .cfg-badge-contador {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            min-width: 22px;
-            height: 22px;
-            padding: 0 6px;
-            background: var(--cfg-danger);
-            color: #fff;
-            border-radius: 11px;
-            font-size: 0.65rem;
-            font-weight: 700;
-            margin-left: 8px;
-        }
         .cfg-empty-solicitudes {
             padding: 40px 20px;
             text-align: center;
@@ -127,6 +113,148 @@
             color: var(--cfg-text-muted);
             font-size: 0.75rem;
         }
+        
+        /* Input búsqueda usuarios */
+        .cfg-search-input {
+            width: 100%;
+            padding: 12px 14px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--cfg-border);
+            border-radius: 10px;
+            color: var(--cfg-text);
+            font-size: 0.85rem;
+            outline: none;
+            font-family: 'Inter', sans-serif;
+            transition: var(--cfg-transition);
+        }
+        .cfg-search-input:focus {
+            border-color: var(--cfg-gold);
+            background: rgba(0,0,0,0.4);
+        }
+        .cfg-search-input::placeholder {
+            color: var(--cfg-text-dim);
+        }
+        
+        /* Resultados búsqueda */
+        .cfg-resultado-usuario {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            cursor: pointer;
+            transition: var(--cfg-transition);
+            border-radius: 10px;
+        }
+        .cfg-resultado-usuario:hover {
+            background: rgba(255,255,255,0.04);
+        }
+        .cfg-resultado-usuario .avatar-mini {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #0F2D1A, #D4AF37);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-weight: 700;
+            font-size: 0.75rem;
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+        .cfg-resultado-usuario .avatar-mini img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .cfg-resultado-usuario .info {
+            flex: 1;
+            min-width: 0;
+        }
+        .cfg-resultado-usuario .info .nombre {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--cfg-text);
+        }
+        .cfg-resultado-usuario .info .handle {
+            font-size: 0.7rem;
+            color: var(--cfg-text-muted);
+        }
+        .cfg-resultado-usuario .btn-agregar {
+            background: rgba(212, 175, 55, 0.15);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            color: var(--cfg-gold);
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .cfg-resultado-usuario .btn-agregar:hover {
+            background: rgba(212, 175, 55, 0.25);
+        }
+        .cfg-resultado-usuario .btn-agregar.agregado {
+            background: rgba(0, 214, 143, 0.15);
+            border-color: rgba(0, 214, 143, 0.3);
+            color: var(--cfg-success);
+        }
+        
+        /* Lista contactos de confianza */
+        .cfg-contacto-confianza {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--cfg-border);
+        }
+        .cfg-contacto-confianza:last-child {
+            border-bottom: none;
+        }
+        .cfg-contacto-confianza .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #0F2D1A, #D4AF37);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-weight: 700;
+            font-size: 0.9rem;
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+        .cfg-contacto-confianza .avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .cfg-contacto-confianza .info {
+            flex: 1;
+            min-width: 0;
+        }
+        .cfg-contacto-confianza .info .nombre {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--cfg-text);
+        }
+        .cfg-contacto-confianza .info .handle {
+            font-size: 0.68rem;
+            color: var(--cfg-text-muted);
+        }
+        .cfg-contacto-confianza .btn-quitar {
+            background: rgba(255, 51, 102, 0.1);
+            border: 1px solid rgba(255, 51, 102, 0.3);
+            color: var(--cfg-danger);
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .cfg-contacto-confianza .btn-quitar:hover {
+            background: rgba(255, 51, 102, 0.2);
+        }
     </style>
 </head>
 <body class="cfg-page">
@@ -137,6 +265,21 @@
 
         <h2 class="cfg-section-title">Quién puede enviarme mensajes</h2>
         <div class="cfg-list" id="seccionQuienPuede"></div>
+
+        <h2 class="cfg-section-title">Contactos de confianza</h2>
+        <div class="cfg-list">
+            <div id="contactosConfianzaLista">
+                <div class="cfg-loading-mini">⏳ Cargando contactos...</div>
+            </div>
+            <button class="cfg-item" onclick="window.onAgregarContacto()" style="border-top:1px solid var(--cfg-border);">
+                <div class="cfg-item-icon">➕</div>
+                <div class="cfg-item-content">
+                    <div class="cfg-item-title">Añadir contacto de confianza</div>
+                    <div class="cfg-item-desc">Busca usuarios para agregar a tu lista</div>
+                </div>
+                <div class="cfg-item-chevron">›</div>
+            </button>
+        </div>
 
         <h2 class="cfg-section-title">Solicitudes de mensajes</h2>
         <div class="cfg-list">
@@ -167,7 +310,6 @@
 
         const $ = (sel) => document.querySelector(sel);
 
-        // Cliente Supabase
         function sb() {
             return window.supabaseClient || 
                 (window.supabase && window.supabase.createClient(
@@ -190,10 +332,10 @@
         };
 
         let solicitudes = [];
-        let contadorPendientes = 0;
+        let contactosConfianza = [];
 
         // ============================================================
-        // CARGAR SOLICITUDES DESDE SUPABASE
+        // CARGAR SOLICITUDES
         // ============================================================
         async function cargarSolicitudes() {
             try {
@@ -210,22 +352,9 @@
                     return;
                 }
 
-                // Cargar contador de pendientes
-                const { data: contador, error: errContador } = await client.rpc('contar_solicitudes_pendientes');
-                if (!errContador && typeof contador === 'number') {
-                    contadorPendientes = contador;
-                }
-
-                // Cargar solicitudes (RPC que no existe como tal, usamos query directa)
                 const { data, error } = await client
                     .from('mensajes_solicitudes')
-                    .select(`
-                        id,
-                        remitente_id,
-                        mensaje_inicial,
-                        estado,
-                        created_at
-                    `)
+                    .select('id, remitente_id, mensaje_inicial, estado, created_at')
                     .eq('destinatario_id', session.user.id)
                     .eq('estado', 'pendiente')
                     .order('created_at', { ascending: false })
@@ -245,9 +374,8 @@
                     return;
                 }
 
-                // Cargar info de los remitentes
+                // Cargar info de remitentes
                 const idsRemitentes = [...new Set(solicitudes.map(s => s.remitente_id))];
-                
                 const { data: perfiles } = await client
                     .from('perfiles_publicos')
                     .select('id, nombre, handle, avatar_url')
@@ -256,7 +384,6 @@
                 const perfilesMap = {};
                 (perfiles || []).forEach(p => { perfilesMap[p.id] = p; });
 
-                // Enriquecer solicitudes
                 solicitudes = solicitudes.map(s => ({
                     ...s,
                     remitente: perfilesMap[s.remitente_id] || null,
@@ -270,9 +397,6 @@
             }
         }
 
-        // ============================================================
-        // RENDERIZAR SOLICITUDES
-        // ============================================================
         function renderSolicitudes() {
             const container = $('#solicitudesContainer');
             if (!container) return;
@@ -320,30 +444,101 @@
         }
 
         // ============================================================
+        // CARGAR CONTACTOS DE CONFIANZA
+        // ============================================================
+        async function cargarContactosConfianza() {
+            try {
+                const client = sb();
+                if (!client) {
+                    mostrarSinContactos();
+                    return;
+                }
+
+                const { data, error } = await client.rpc('listar_contactos_confianza');
+
+                if (error) {
+                    console.warn('Error RPC listar_contactos_confianza:', error.message);
+                    contactosConfianza = [];
+                    mostrarSinContactos();
+                    return;
+                }
+
+                contactosConfianza = data || [];
+
+                if (contactosConfianza.length === 0) {
+                    mostrarSinContactos();
+                    return;
+                }
+
+                renderContactosConfianza();
+
+            } catch (e) {
+                console.warn('Error contactos:', e.message);
+                contactosConfianza = [];
+                mostrarSinContactos();
+            }
+        }
+
+        function renderContactosConfianza() {
+            const container = $('#contactosConfianzaLista');
+            if (!container) return;
+
+            if (contactosConfianza.length === 0) {
+                mostrarSinContactos();
+                return;
+            }
+
+            container.innerHTML = contactosConfianza.map(c => {
+                const nombre = escapeHtml(c.nombre || 'Usuario');
+                const handle = escapeHtml(c.handle || 'usuario');
+                const avatar = c.avatar_url 
+                    ? `<img src="${escapeHtml(c.avatar_url)}" alt="${nombre}">` 
+                    : nombre.charAt(0).toUpperCase();
+
+                return `
+                    <div class="cfg-contacto-confianza">
+                        <div class="avatar">${avatar}</div>
+                        <div class="info">
+                            <div class="nombre">${nombre}</div>
+                            <div class="handle">@${handle}</div>
+                        </div>
+                        <button class="btn-quitar" onclick="window.onQuitarContacto('${c.contacto_id}')">✕ Quitar</button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function mostrarSinContactos() {
+            const container = $('#contactosConfianzaLista');
+            if (!container) return;
+            container.innerHTML = `
+                <div class="cfg-empty-solicitudes" style="padding:30px 20px;">
+                    <span class="icon">👥</span>
+                    Sin contactos de confianza
+                </div>
+            `;
+        }
+
+        // ============================================================
         // RENDERIZAR SECCIONES
         // ============================================================
         function renderSecciones() {
-            // ============================================================
-            // QUIÉN PUEDE ENVIARME MENSAJES
-            // ============================================================
+            const quienPuede = cfgGetPref(PREF_KEYS.quien_puede, 'todos');
+            const textos = {
+                todos: 'Todos pueden enviarme mensajes',
+                contactos: 'Solo mis contactos pueden enviarme mensajes',
+                nadie: 'Nadie puede enviarme mensajes'
+            };
+
             $('#seccionQuienPuede').innerHTML = [
                 cfgRenderItem({
                     icon: 'users',
                     title: 'Configurar quién puede enviarme mensajes',
-                    desc: 'Elige entre: todos, solo contactos, o nadie',
+                    desc: textos[quienPuede] || 'Todos',
                     onclick: 'window.onConfigurarQuienPuede()',
-                }),
-                cfgRenderItem({
-                    icon: 'messageCircle',
-                    title: 'Contactos de confianza',
-                    desc: 'Añade personas con permisos especiales para escribirte',
-                    onclick: 'window.onContactosConfianza()',
                 }),
             ].join('');
 
-            // ============================================================
-            // PRIVACIDAD DE CHATS
-            // ============================================================
             $('#seccionPrivacidad').innerHTML = [
                 cfgRenderToggle({
                     id: 'toggleFiltroSolicitudes',
@@ -394,7 +589,6 @@
                 if (error) throw error;
 
                 cfgToast('✅ Solicitud aceptada', 'success');
-
                 await cargarSolicitudes();
 
             } catch (e) {
@@ -425,11 +619,241 @@
                 if (error) throw error;
 
                 cfgToast('🚫 Solicitud rechazada', 'warning');
-
                 await cargarSolicitudes();
 
             } catch (e) {
                 console.error('Error rechazando:', e);
+                cfgToast('❌ Error: ' + e.message, 'error');
+            }
+        };
+
+        // ============================================================
+        // QUIÉN PUEDE ENVIARME MENSAJES — Modal
+        // ============================================================
+        window.onConfigurarQuienPuede = async () => {
+            const actual = cfgGetPref(PREF_KEYS.quien_puede, 'todos');
+
+            const overlay = document.createElement('div');
+            overlay.className = 'cfg-modal-overlay';
+
+            const opciones = [
+                { id: 'todos', icon: '🌐', title: 'Todos', desc: 'Cualquier usuario puede enviarme mensajes' },
+                { id: 'contactos', icon: '👥', title: 'Solo contactos', desc: 'Solo las personas que sigo pueden escribirme' },
+                { id: 'nadie', icon: '🚫', title: 'Nadie', desc: 'Nadie puede enviarme mensajes directos' },
+            ];
+
+            const opcionesHtml = opciones.map(opt => `
+                <div class="cfg-radio-item ${opt.id === actual ? 'active' : ''}" data-value="${opt.id}">
+                    <div class="cfg-radio-circle"></div>
+                    <div class="cfg-radio-content">
+                        <div class="cfg-radio-title">${opt.icon} ${opt.title}</div>
+                        <div class="cfg-radio-desc">${opt.desc}</div>
+                    </div>
+                </div>
+            `).join('');
+
+            overlay.innerHTML = `
+                <div class="cfg-modal" style="max-width: 420px;">
+                    <h3 class="cfg-modal-title">Quién puede enviarme mensajes</h3>
+                    <div class="cfg-radio-group" style="padding: 0 0 16px 0;">
+                        ${opcionesHtml}
+                    </div>
+                    <div class="cfg-modal-actions">
+                        <button class="cfg-btn cfg-btn-outline" data-action="cancel">Cancelar</button>
+                        <button class="cfg-btn cfg-btn-primary" data-action="save">Guardar</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+            requestAnimationFrame(() => overlay.classList.add('show'));
+
+            let seleccion = actual;
+
+            overlay.querySelectorAll('.cfg-radio-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    overlay.querySelectorAll('.cfg-radio-item').forEach(i => i.classList.remove('active'));
+                    item.classList.add('active');
+                    seleccion = item.getAttribute('data-value');
+                });
+            });
+
+            const close = () => {
+                overlay.classList.remove('show');
+                setTimeout(() => overlay.remove(), 200);
+            };
+
+            overlay.querySelector('[data-action="cancel"]').onclick = close;
+            overlay.onclick = (e) => { if (e.target === overlay) close(); };
+
+            overlay.querySelector('[data-action="save"]').onclick = async () => {
+                await cfgSetPref(PREF_KEYS.quien_puede, seleccion);
+                cfgToast('✅ Preferencia guardada', 'success');
+                close();
+                renderSecciones();
+            };
+        };
+
+        // ============================================================
+        // AGREGAR CONTACTO DE CONFIANZA — Modal
+        // ============================================================
+        window.onAgregarContacto = () => {
+            const overlay = document.createElement('div');
+            overlay.className = 'cfg-modal-overlay';
+
+            overlay.innerHTML = `
+                <div class="cfg-modal" style="max-width: 440px;">
+                    <h3 class="cfg-modal-title">Añadir contacto de confianza</h3>
+                    <p class="cfg-modal-text" style="text-align:left;margin-bottom:12px;">
+                        Busca usuarios por nombre o @handle para agregarlos.
+                    </p>
+                    <div class="form-group" style="margin-bottom:12px;">
+                        <input type="text" id="buscarUsuarioInput" class="cfg-search-input" placeholder="Buscar por nombre o @handle..." autocomplete="off" />
+                    </div>
+                    <div id="resultadosBusqueda" style="max-height:300px;overflow-y:auto;margin-bottom:16px;"></div>
+                    <div class="cfg-modal-actions">
+                        <button class="cfg-btn cfg-btn-outline cfg-btn-block" data-action="close">Cerrar</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+            requestAnimationFrame(() => overlay.classList.add('show'));
+
+            const input = overlay.querySelector('#buscarUsuarioInput');
+            const resultadosDiv = overlay.querySelector('#resultadosBusqueda');
+            setTimeout(() => input.focus(), 300);
+
+            const close = () => {
+                overlay.classList.remove('show');
+                setTimeout(() => overlay.remove(), 200);
+            };
+
+            overlay.querySelector('[data-action="close"]').onclick = close;
+            overlay.onclick = (e) => { if (e.target === overlay) close(); };
+
+            let timeoutId = null;
+            input.addEventListener('input', () => {
+                clearTimeout(timeoutId);
+                const q = input.value.trim();
+                if (q.length < 2) {
+                    resultadosDiv.innerHTML = '';
+                    return;
+                }
+                timeoutId = setTimeout(() => buscarUsuarios(q, resultadosDiv), 400);
+            });
+        };
+
+        async function buscarUsuarios(q, container) {
+            container.innerHTML = '<div class="cfg-loading-mini">🔍 Buscando...</div>';
+
+            try {
+                const client = sb();
+                if (!client) throw new Error('Supabase no disponible');
+
+                const { data: sessionData } = await client.auth.getSession();
+                const session = sessionData.session;
+                if (!session) return;
+
+                const { data, error } = await client
+                    .from('perfiles_publicos')
+                    .select('id, nombre, handle, avatar_url')
+                    .or(`nombre.ilike.%${q}%,handle.ilike.%${q}%`)
+                    .neq('id', session.user.id)
+                    .limit(15);
+
+                if (error) throw error;
+
+                if (!data || data.length === 0) {
+                    container.innerHTML = '<div class="cfg-empty-solicitudes" style="padding:20px;"><span class="icon">🔍</span>Sin resultados</div>';
+                    return;
+                }
+
+                const idsActuales = contactosConfianza.map(c => c.contacto_id);
+
+                container.innerHTML = data.map(u => {
+                    const yaAgregado = idsActuales.includes(u.id);
+                    const nombre = escapeHtml(u.nombre || 'Usuario');
+                    const handle = escapeHtml(u.handle || 'usuario');
+                    const avatar = u.avatar_url 
+                        ? `<img src="${escapeHtml(u.avatar_url)}" alt="${nombre}">` 
+                        : nombre.charAt(0).toUpperCase();
+
+                    return `
+                        <div class="cfg-resultado-usuario">
+                            <div class="avatar-mini">${avatar}</div>
+                            <div class="info">
+                                <div class="nombre">${nombre}</div>
+                                <div class="handle">@${handle}</div>
+                            </div>
+                            <button class="btn-agregar ${yaAgregado ? 'agregado' : ''}"
+                                    ${yaAgregado ? 'disabled' : ''}
+                                    onclick="window.onConfirmarAgregarContacto('${u.id}', this)">
+                                ${yaAgregado ? '✓ Agregado' : '+ Agregar'}
+                            </button>
+                        </div>
+                    `;
+                }).join('');
+
+            } catch (e) {
+                console.error('Error buscando:', e);
+                container.innerHTML = '<div class="cfg-empty-solicitudes" style="padding:20px;"><span class="icon">❌</span>Error al buscar</div>';
+            }
+        }
+
+        window.onConfirmarAgregarContacto = async (contactoId, btn) => {
+            try {
+                const client = sb();
+                if (!client) throw new Error('Supabase no disponible');
+
+                btn.disabled = true;
+                btn.textContent = '⏳';
+
+                const { error } = await client.rpc('agregar_contacto_confianza', {
+                    p_contacto_id: contactoId
+                });
+
+                if (error) throw error;
+
+                btn.textContent = '✓ Agregado';
+                btn.classList.add('agregado');
+
+                cfgToast('✅ Contacto agregado', 'success');
+
+                await cargarContactosConfianza();
+
+            } catch (e) {
+                console.error('Error agregando contacto:', e);
+                btn.disabled = false;
+                btn.textContent = '+ Agregar';
+                cfgToast('❌ Error: ' + e.message, 'error');
+            }
+        };
+
+        window.onQuitarContacto = async (contactoId) => {
+            const ok = await cfgConfirm({
+                title: '¿Quitar de contactos de confianza?',
+                text: 'Esta persona ya no tendrá permisos especiales para escribirte.',
+                confirmText: 'Quitar',
+                cancelText: 'Cancelar',
+                danger: true,
+            });
+
+            if (!ok) return;
+
+            try {
+                const client = sb();
+                if (!client) throw new Error('Supabase no disponible');
+
+                const { error } = await client.rpc('quitar_contacto_confianza', {
+                    p_contacto_id: contactoId
+                });
+
+                if (error) throw error;
+
+                cfgToast('✅ Contacto removido', 'success');
+                await cargarContactosConfianza();
+
+            } catch (e) {
+                console.error('Error quitando contacto:', e);
                 cfgToast('❌ Error: ' + e.message, 'error');
             }
         };
@@ -461,21 +885,16 @@
             );
         };
 
-        window.onConfigurarQuienPuede = () => {
-            cfgToast('⏳ Configuración de permisos próximamente', 'warning');
-        };
-
-        window.onContactosConfianza = () => {
-            cfgToast('⏳ Lista de contactos de confianza próximamente', 'warning');
-        };
-
         // ============================================================
         // INICIALIZAR
         // ============================================================
         window.addEventListener('DOMContentLoaded', async () => {
             await new Promise(resolve => setTimeout(resolve, 400));
             renderSecciones();
-            await cargarSolicitudes();
+            await Promise.all([
+                cargarSolicitudes(),
+                cargarContactosConfianza(),
+            ]);
         });
 
         // ============================================================
