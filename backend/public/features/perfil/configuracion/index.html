@@ -206,6 +206,7 @@
 
         // ============================================================
         // SARIEL'S
+        // ❌ "Generador QR" eliminado - es herramienta administrativa
         // ============================================================
         $('#seccionSariels').innerHTML = [
             cfgRenderItem({
@@ -225,12 +226,6 @@
                 title: 'Membresía Pro',
                 desc: 'Administra tu suscripción Sariel\'s Pro',
                 href: baseConfig + '/sariels/membresia.html',
-            }),
-            cfgRenderItem({
-                icon: 'qrCode',
-                title: 'Generador QR',
-                desc: 'Genera QRs para tus productos',
-                href: '/qr-generator.html',
             }),
         ].join('');
 
