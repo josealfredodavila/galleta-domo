@@ -104,6 +104,7 @@
         .grupo-card .estado-badge.privado { background: rgba(255,51,102,0.1); color: var(--danger); }
         .grupo-card .live-badge { font-size: 0.5rem; padding: 2px 10px; border-radius: 12px; background: var(--live-red); color: #fff; animation: pulse-live 2s infinite; }
         .grupo-card .precio-badge { font-size: 0.6rem; padding: 2px 8px; border-radius: 12px; background: rgba(0, 214, 143, 0.15); color: var(--success); font-weight: 700; font-family: 'Orbitron', monospace; }
+        .grupo-card .mk-badge { font-size: 0.55rem; padding: 2px 8px; border-radius: 12px; background: rgba(0, 229, 255, 0.15); color: var(--cyan); font-weight: 700; font-family: 'Orbitron', monospace; }
 
         /* ✅ FILTROS DEL FEED */
         .feed-filtros { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; background: rgba(15,45,26,0.3); padding: 8px; border-radius: 14px; border: 1px solid var(--glass-border); }
@@ -122,7 +123,7 @@
             right: 0;
             margin-top: 4px;
             background: linear-gradient(160deg, rgba(15, 45, 26, 0.98), rgba(5, 8, 15, 0.99));
-            border: 1px solid var(--glass-border-strong, rgba(212,175,55,0.3));
+            border: 1px solid rgba(212,175,55,0.3);
             border-radius: 14px;
             padding: 6px;
             min-width: 240px;
@@ -155,15 +156,7 @@
         .post-menu-item.danger { color: var(--danger); }
         .post-menu-item.danger:hover { background: rgba(255,51,102,0.1); color: var(--danger); }
 
-        /* ✅ BADGES DE INTERACCIÓN EN POSTS */
-        .post-badges { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; }
-        .post-badge { font-size: 0.55rem; padding: 2px 8px; border-radius: 10px; background: rgba(212,175,55,0.12); color: var(--gold); font-weight: 600; }
-        .post-badge.marketplace { background: rgba(0, 214, 143, 0.12); color: var(--success); }
-        .post-badge.marketplace.rento { background: rgba(0, 229, 255, 0.12); color: var(--cyan); }
-        .post-badge.marketplace.busco { background: rgba(168, 85, 247, 0.12); color: var(--purple); }
-        .post-badge.marketplace.regalo { background: rgba(236, 72, 153, 0.12); color: var(--pink); }
-        .post-badge.marketplace.servicio { background: rgba(247, 212, 74, 0.12); color: var(--warning); }
-
+        /* ✅ PUBLICACIÓN */
         .grupo-interno { display: none; }
         .grupo-interno.show { display: block; }
         .grupo-header-interno { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-xl); padding: 20px; margin-bottom: 20px; position: relative; }
@@ -180,7 +173,28 @@
         .grupo-header-interno .info-text .nombre { font-family: 'Orbitron', monospace; color: var(--gold); font-size: 1.2rem; font-weight: 700; }
         .grupo-header-interno .info-text .descripcion { color: var(--text-secondary); font-size: 0.85rem; margin-top: 4px; }
         .grupo-header-interno .info-text .meta { display: flex; gap: 12px; font-size: 0.65rem; color: var(--text-muted); margin-top: 6px; flex-wrap: wrap; align-items: center; }
-        .grupo-header-interno .búho-firma { margin-top: 8px; font-size: 0.65rem; color: var(--gold); background: rgba(212,175,55,0.1); padding: 4px 10px; border-radius: 10px; display: inline-block; border: 1px dashed var(--gold); }
+        
+        /* ✅ BÚHO FIRMA COMO ENLACE */
+        .buho-enlace {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: rgba(212,175,55,0.1);
+            border: 1px dashed var(--gold);
+            font-size: 1.4rem;
+            text-decoration: none;
+            margin-top: 10px;
+            transition: var(--transition);
+            cursor: pointer;
+        }
+        .buho-enlace:hover {
+            background: rgba(212,175,55,0.2);
+            transform: scale(1.1);
+            box-shadow: 0 0 30px rgba(212,175,55,0.3);
+        }
         
         .grupo-header-interno .acciones { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; align-items: center; }
         .btn-donar { background: linear-gradient(135deg, #00d68f, #00b377); color: #fff; border: none; padding: 8px 20px; border-radius: 30px; font-weight: 700; font-size: 0.7rem; cursor: pointer; display: flex; align-items: center; gap: 6px; }
@@ -191,6 +205,9 @@
         .ajustes-menu { display: flex; flex-direction: column; gap: 8px; }
         .ajustes-menu button { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.2); color: var(--text-primary); cursor: pointer; text-align: left; font-size: 0.8rem; transition: var(--transition); }
         .ajustes-menu button:hover { border-color: var(--gold); background: rgba(212,175,55,0.1); color: var(--gold); }
+        .ajustes-menu .toggle-row { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-radius: 12px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.2); }
+        .ajustes-menu .toggle-row span { font-size: 0.8rem; color: var(--text-primary); }
+        .ajustes-menu .toggle-row input[type="checkbox"] { width: auto; transform: scale(1.3); cursor: pointer; accent-color: var(--gold); }
 
         .grupo-live-container { display: none; margin-bottom: 20px; background: var(--glass-bg); border: 1px solid var(--live-red); border-radius: var(--radius-xl); overflow: hidden; box-shadow: 0 10px 40px rgba(255, 0, 68, 0.2); animation: adFadeIn 0.5s ease; }
         .grupo-live-container.visible { display: block; }
@@ -245,7 +262,6 @@
         .publicacion-card .contenido img { max-width: 100%; border-radius: 8px; margin-top: 8px; }
         .publicacion-card .contenido video { max-width: 100%; border-radius: 8px; margin-top: 8px; }
 
-        /* ✅ MARKETPLACE INFO */
         .marketplace-info { background: rgba(0,214,143,0.06); border: 1px solid rgba(0,214,143,0.15); border-radius: 12px; padding: 10px 14px; margin-top: 10px; }
         .marketplace-info .titulo-mk { font-family: 'Orbitron', monospace; color: var(--success); font-size: 0.75rem; font-weight: 700; margin-bottom: 6px; }
         .marketplace-info .precio { font-family: 'Orbitron', monospace; color: var(--gold); font-size: 1.1rem; font-weight: 700; }
@@ -271,6 +287,7 @@
         .form-publicacion .acciones .btn-publicar { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); border: none; padding: 6px 20px; border-radius: 20px; font-weight: 700; font-size: 0.7rem; cursor: pointer; }
         .form-publicacion .acciones .btn-mk { color: var(--success); border: 1px solid rgba(0,214,143,0.3); }
         .form-publicacion .acciones .btn-mk:hover { background: rgba(0,214,143,0.1); color: var(--success); }
+        .form-publicacion .acciones .btn-mk:disabled { opacity: 0.3; cursor: not-allowed; }
 
         .emoji-picker { display: none; position: absolute; bottom: 100%; left: 0; background: rgba(15, 25, 20, 0.95); border: 1px solid var(--glass-border); border-radius: var(--radius); padding: 12px; width: 280px; max-width: 90vw; z-index: 1000; box-shadow: var(--shadow-gold-strong); backdrop-filter: blur(12px); margin-bottom: 8px; }
         .emoji-picker.show { display: block; }
@@ -289,9 +306,12 @@
         .modal .form-group label { display: block; font-size: 0.7rem; color: var(--text-muted); margin-bottom: 4px; }
         .modal .form-group input, .modal .form-group textarea, .modal .form-group select { width: 100%; padding: 8px 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 10px; color: var(--text-primary); font-size: 0.85rem; outline: none; }
         .modal .form-group input:focus, .modal .form-group textarea:focus, .modal .form-group select:focus { border-color: var(--gold); }
+        .modal .checkbox-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: rgba(0,0,0,0.2); border-radius: 10px; margin-bottom: 12px; }
+        .modal .checkbox-row input[type="checkbox"] { width: auto; transform: scale(1.3); cursor: pointer; accent-color: var(--gold); }
+        .modal .checkbox-row label { margin: 0; cursor: pointer; font-size: 0.75rem; color: var(--text-primary); }
+        .modal .checkbox-row .hint { font-size: 0.6rem; color: var(--text-muted); margin-left: auto; }
         .modal .btn-guardar { width: 100%; padding: 10px; border-radius: 30px; border: none; background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); font-weight: 700; font-size: 0.85rem; cursor: pointer; }
         .modal .btn-guardar:hover { transform: scale(1.02); }
-        .modal .btn-eliminar-grupo { width: 100%; padding: 10px; border-radius: 30px; background: rgba(255, 51, 102, 0.1); color: var(--danger); border: 1px solid rgba(255, 51, 102, 0.2); font-weight: 700; font-size: 0.85rem; cursor: pointer; margin-top: 8px; }
         .modal .btn-confirmar-eliminar { width: 100%; padding: 10px; border-radius: 30px; border: none; background: var(--danger); color: #fff; font-weight: 700; font-size: 0.85rem; cursor: pointer; }
 
         .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); }
@@ -430,8 +450,10 @@
                             <span id="grupoMiembros">◈ 0 seguidores</span>
                             <span id="grupoEstadoBadge">◈ Público</span>
                             <span id="grupoLiveBadge" style="display:none;" class="live-badge">🔴 EN VIVO</span>
+                            <span id="grupoMkBadge" style="display:none;" class="mk-badge">🛒 Marketplace</span>
                         </div>
-                        <div class="búho-firma" id="grupoFirmaLigera">🦉 "Yo me hago cargo de lo que digo aquí"</div>
+                        <!-- ✅ BÚHO COMO ENLACE A TÉRMINOS -->
+                        <a href="/features/terminos/derechos-sariels.html" target="_blank" class="buho-enlace" title="Ver Derechos y Usos">🦉</a>
                     </div>
                 </div>
                 <div class="acciones" id="grupoAcciones">
@@ -492,7 +514,9 @@
                 <div class="acciones">
                     <button onclick="toggleEmojiPickerGrupo()" id="btnEmojiGrupo">◈ Emoji</button>
                     <button onclick="insertarHashtagGrupo()"># Hashtag</button>
-                    <button class="btn-mk" onclick="abrirModalMarketplace()">🛒 Marketplace</button>
+                    <button onclick="subirFotoGrupo()">📷 Foto</button>
+                    <button onclick="subirVideoGrupo()">🎬 Video</button>
+                    <button class="btn-mk" onclick="abrirModalMarketplace()" id="btnMarketplace">🛒 Marketplace</button>
                     <button class="btn-publicar" onclick="publicarEnGrupo()">◈ Subir al Canal</button>
                     <div class="emoji-picker" id="emojiPickerGrupo">
                         <div class="titulo">✦ Elige tu emoji</div>
@@ -501,7 +525,6 @@
                 </div>
             </div>
             
-            <!-- ✅ FILTROS DEL FEED -->
             <div class="feed-filtros" id="feedFiltros">
                 <button class="feed-filtro-btn active" data-filtro="todo" onclick="filtrarFeed('todo')">◈ Todo</button>
                 <button class="feed-filtro-btn" data-filtro="marketplace" onclick="filtrarFeed('marketplace')">🛒 Solo Marketplace</button>
@@ -513,7 +536,7 @@
                 <div class="empty-state"><span class="icon">◈</span><h3 data-clave="grupos_sin_publicaciones">Sin publicaciones aún</h3><p data-clave="grupos_sin_publicaciones_desc">Sé el primero en publicar</p></div>
             </div>
         </div>
-    <!-- MODAL CREAR CANAL (con Municipio) -->
+    <!-- MODAL CREAR CANAL -->
     <div class="modal-overlay" id="modalCrearGrupo">
         <div class="modal">
             <div class="modal-header">
@@ -532,21 +555,29 @@
                     </select>
                 </div>
                 <div class="form-group"><label>Estado / Región</label><input type="text" id="inputEstadoGrupo" placeholder="Ej: Puebla" /></div>
-                <div class="form-group"><label>Municipio *</label><input type="text" id="inputMunicipioGrupo" placeholder="Ej: Nueva San Salvador" required /></div>
-                <div class="form-group"><label data-clave="grupos_ciudad">Ciudad / Localidad</label><input type="text" id="inputCiudadGrupo" placeholder="Ej: Puebla Centro" /></div>
-                <div class="form-group"><label data-clave="grupos_pais">País</label><input type="text" id="inputPaisGrupo" placeholder="Ej: México" value="México" /></div>
+                <div class="form-group"><label>Municipio *</label><input type="text" id="inputMunicipioGrupo" required /></div>
+                <div class="form-group"><label data-clave="grupos_ciudad">Ciudad / Localidad</label><input type="text" id="inputCiudadGrupo" /></div>
+                <div class="form-group"><label data-clave="grupos_pais">País</label><input type="text" id="inputPaisGrupo" value="México" /></div>
                 <div class="form-group"><label>Precio del Búho (USDT/Mes)</label>
                     <select id="inputPrecioUsdt">
-                        <option value="0">Gratis (Sin Búho)</option>
+                        <option value="0">Gratis</option>
                         <option value="2">$2 USDT</option>
                         <option value="5">$5 USDT</option>
                         <option value="10">$10 USDT</option>
                         <option value="20">$20 USDT</option>
                     </select>
                 </div>
-                <div class="form-group"><label>Firma Ligera (Legal)</label>
-                    <input type="text" id="inputFirmaLigera" value="Yo me hago cargo de lo que digo aquí" readonly style="opacity:0.7; cursor:not-allowed;" />
+                
+                <!-- ✅ CHECKBOX MARKETPLACE -->
+                <div class="checkbox-row">
+                    <input type="checkbox" id="inputMarketplaceActivo" />
+                    <label for="inputMarketplaceActivo">🛒 Activar Marketplace del grupo</label>
+                    <span class="hint">Opcional</span>
                 </div>
+                <div style="font-size:0.65rem;color:var(--text-muted);margin:-6px 0 12px 0;line-height:1.5;">
+                    Si activas el Marketplace, los <strong>miembros</strong> del grupo podrán publicar productos/servicios. Si NO lo activas, nadie puede vender.
+                </div>
+                
                 <div class="form-group"><label data-clave="grupos_visibilidad">Visibilidad</label>
                     <select id="inputVisibilidadGrupo"><option value="publico">Público</option><option value="privado">Privado</option></select>
                 </div>
@@ -558,14 +589,24 @@
         </div>
     </div>
 
-    <!-- MODAL AJUSTES DEL CANAL (ENGRANE) -->
+    <!-- MODAL AJUSTES DEL CANAL -->
     <div class="modal-overlay" id="modalAjustesCanal">
         <div class="modal">
             <div class="modal-header"><h2>⚙️ Ajustes del Canal</h2><button class="btn-cerrar" onclick="cerrarAjustesCanal()">×</button></div>
             <div class="ajustes-menu">
+                <div class="toggle-row">
+                    <span>🛒 Marketplace activo</span>
+                    <input type="checkbox" id="toggleMarketplace" onchange="toggleMarketplace()" />
+                </div>
+                <div style="font-size:0.6rem;color:var(--text-muted);margin-top:-4px;margin-bottom:8px;padding:0 12px;">
+                    Solo miembros del grupo podrán publicar productos/servicios.
+                </div>
                 <button onclick="abrirAdminGrupo()">◈ Administrar Miembros y Publicaciones</button>
                 <button onclick="cambiarAvatarGrupo()">◈ Cambiar Foto de Perfil</button>
                 <button onclick="cambiarPortadaGrupo()">◈ Cambiar Portada (Video/Imagen)</button>
+                <a href="/features/terminos/derechos-sariels.html" target="_blank" style="text-decoration:none;">
+                    <button style="width:100%;">🦉 Ver Derechos y Usos</button>
+                </a>
                 <button onclick="mostrarConfirmacionEliminarGrupo()" style="color:var(--danger); border-color:rgba(255,51,102,0.3);">◈ Eliminar Canal</button>
             </div>
         </div>
@@ -635,6 +676,7 @@
                     <option value="estafa">Estafa o fraude</option>
                     <option value="violencia">Violencia o peligro</option>
                     <option value="derechos_autor">Violación de derechos de autor</option>
+                    <option value="cripto">Venta de cripto/tokens (prohibido)</option>
                     <option value="otro">Otro</option>
                 </select>
             </div>
@@ -736,7 +778,7 @@
             </div>
             <div class="form-group">
                 <label>Municipio *</label>
-                <input type="text" id="inputMunicipioMarketplace" placeholder="Ej: Nueva San Salvador" required />
+                <input type="text" id="inputMunicipioMarketplace" required />
             </div>
             <div class="form-group">
                 <label>WhatsApp (opcional)</label>
@@ -747,8 +789,15 @@
                 <input type="tel" id="inputTelefonoMarketplace" placeholder="Ej: 2221234567" maxlength="20" />
             </div>
             <div class="form-group">
-                <label>Imagen del producto (opcional)</label>
+                <label>Foto del producto (opcional)</label>
                 <input type="file" id="inputImagenMarketplace" accept="image/*" />
+            </div>
+            <div class="form-group">
+                <label>Video del producto (opcional, máx 40 seg)</label>
+                <input type="file" id="inputVideoMarketplace" accept="video/*" />
+                <div style="font-size:0.6rem;color:var(--text-muted);margin-top:4px;">
+                    🎬 Duración máxima: 40 segundos · Peso máximo: 50 MB
+                </div>
             </div>
             <button class="btn-guardar" onclick="publicarMarketplace()" id="btnPublicarMarketplace">🛒 Publicar en Marketplace</button>
             <div id="marketplaceStatus" style="margin-top:12px;font-size:0.7rem;color:var(--text-muted);text-align:center;"></div>
@@ -765,6 +814,7 @@
             <a href="/terminos" data-clave="grupos_footer_terminos">◈ Términos</a>
             <a href="/privacidad" data-clave="grupos_footer_privacidad">◈ Privacidad</a>
             <a href="/cookies" data-clave="grupos_footer_cookies">◈ Cookies</a>
+            <a href="/features/terminos/derechos-sariels.html">🦉 Derechos y Usos</a>
             <span style="opacity:0.3;">⚡ Polygon</span>
         </div>
     </footer>
@@ -786,7 +836,6 @@
         var eliminandoGrupo = false;
         var misCanalesCache = [];
 
-        // Interacciones del usuario actual
         var misInteracciones = {};
         var misNotificaciones = {};
         var filtroFeedActual = 'todo';
@@ -810,6 +859,35 @@
         var espectadoresGrupo = 0;
         var currentStreamGrupoId = null;
         var esStreamerDelLiveGrupo = false;
+
+        // ================================================================
+        // 🚫 PALABRAS BLOQUEADAS EN MARKETPLACE (cripto/tokens/NFT)
+        // ================================================================
+        const PALABRAS_CRIPTO_BLOQUEADAS = [
+            'token', 'tokens', 'cripto', 'criptos', 'crypto', 'cryptos', 'criptomoneda', 'criptomonedas',
+            'bitcoin', 'btc', 'ethereum', 'eth', 'usdt', 'usdc', 'usd tether', 'tether', 'dai', 'busd',
+            'nft', 'nfts', 'blockchain', 'cadena de bloques', 'coin', 'coins', 'altcoin', 'altcoins',
+            'defi', 'web3', 'wallet', 'wallets', 'metamask', 'binance', 'coinbase', 'kraken', 'kucoin',
+            'dogecoin', 'doge', 'shiba', 'shib', 'solana', 'sol', 'bnb', 'binance coin',
+            'polygon', 'matic', 'cardano', 'ada', 'ripple', 'xrp', 'litecoin', 'ltc', 'tron', 'trx',
+            'es.stok', 'es.stoks', 'estok', 'estoks', 'es stok', 'es stoks',
+            'staking', 'mining', 'mineria', 'minar', 'p2p cripto', 'exchange cripto',
+            'monedero digital', 'monedero cripto', 'activo digital', 'activos digitales'
+        ];
+
+        function contienePalabrasCripto(texto) {
+            if (!texto) return false;
+            const textoLower = texto.toLowerCase()
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                .replace(/[.,;:!?¿¡\-_]/g, ' ')
+                .replace(/\s+/g, ' ').trim();
+            
+            return PALABRAS_CRIPTO_BLOQUEADAS.some(function(palabra) {
+                const palabraNorm = palabra.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+                const regex = new RegExp('\\b' + palabraNorm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i');
+                return regex.test(textoLower);
+            });
+        }
 
         function showToast(msg, type) {
             var t = document.getElementById('toast');
@@ -960,46 +1038,11 @@
         }
 
         // ================================================================
-        // MARCA DE AGUA
+        // ✅ SIN MARCA DE AGUA - Ya no aplicamos marca de agua
         // ================================================================
         async function procesarConMarcaDeAgua(file, tipo) {
-            return new Promise((resolve) => {
-                try {
-                    if (tipo === 'imagen') {
-                        const reader = new FileReader();
-                        reader.onload = function(e) {
-                            const img = new Image();
-                            img.onload = function() {
-                                const canvas = document.createElement('canvas');
-                                canvas.width = img.width; canvas.height = img.height;
-                                const ctx = canvas.getContext('2d');
-                                ctx.drawImage(img, 0, 0);
-                                const marca = "◈ Cablera Sariel's";
-                                const fontSize = Math.max(20, Math.min(img.width / 20, 60));
-                                ctx.font = `bold ${fontSize}px 'Inter', sans-serif`;
-                                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                                const x = img.width - 40; const y = img.height - 40;
-                                const metrics = ctx.measureText(marca);
-                                const padding = 20;
-                                const rectWidth = metrics.width + padding * 2;
-                                const rectHeight = fontSize * 1.8 + padding;
-                                ctx.fillStyle = 'rgba(15, 45, 26, 0.7)';
-                                const rectX = x - rectWidth / 2; const rectY = y - rectHeight / 2;
-                                ctx.beginPath(); ctx.roundRect(rectX, rectY, rectWidth, rectHeight, 12); ctx.fill();
-                                ctx.strokeStyle = 'rgba(212, 175, 55, 0.6)'; ctx.lineWidth = 2;
-                                ctx.beginPath(); ctx.roundRect(rectX, rectY, rectWidth, rectHeight, 12); ctx.stroke();
-                                ctx.fillStyle = '#D4AF37';
-                                ctx.fillText(marca, x, y);
-                                canvas.toBlob(function(blob) {
-                                    resolve(new File([blob], file.name, { type: file.type, lastModified: Date.now() }));
-                                }, file.type, 0.95);
-                            };
-                            img.src = e.target.result;
-                        };
-                        reader.readAsDataURL(file);
-                    } else { resolve(file); }
-                } catch (error) { console.error('Error marca de agua:', error); resolve(file); }
-            });
+            // ✅ Marca de agua REMOVIDA - retorna el archivo tal cual
+            return file;
         }
 
         // ================================================================
@@ -1065,7 +1108,7 @@
         }
 
         // ================================================================
-        // CARGAR DASHBOARD
+        // DASHBOARD
         // ================================================================
         async function cargarDashboard() {
             var misCanalesDiv = document.getElementById('misCanalesLista');
@@ -1080,7 +1123,7 @@
                     var ids = (misGruposResult.data || []).map(function(m) { return m.grupo_id; });
                     
                     if (ids.length > 0) {
-                        var misCanalesData = await window.supabase.from('grupos_video').select('id, nombre, avatar_url, precio_usdt').in('id', ids);
+                        var misCanalesData = await window.supabase.from('grupos_video').select('id, nombre, avatar_url, precio_usdt, marketplace_activo').in('id', ids);
                         misCanalesCache = misCanalesData.data || [];
                         
                         var liveStatus = {};
@@ -1093,10 +1136,12 @@
                         misCanalesDiv.innerHTML = misCanalesCache.map(function(g) {
                             var isLive = liveStatus[g.id] ? '<span class="live-dot"></span>' : '';
                             var avatar = g.avatar_url ? '<img src="' + escapeHTML(g.avatar_url) + '">' : '◈';
+                            var precio = g.precio_usdt > 0 ? '$' + g.precio_usdt + ' USDT' : 'Gratis';
+                            var mkIcon = g.marketplace_activo ? ' 🛒' : '';
                             return '<div class="canal-item" onclick="abrirGrupo(\'' + g.id + '\')">' +
                                 '<div class="avatar-mini">' + avatar + '</div>' +
-                                '<div class="info"><div class="nombre">' + escapeHTML(g.nombre) + '</div>' +
-                                '<div class="stats">' + (g.precio_usdt > 0 ? '$' + g.precio_usdt + ' USDT' : 'Gratis') + '</div></div>' +
+                                '<div class="info"><div class="nombre">' + escapeHTML(g.nombre) + mkIcon + '</div>' +
+                                '<div class="stats">' + precio + '</div></div>' +
                                 isLive + '</div>';
                         }).join('');
                     } else {
@@ -1156,7 +1201,7 @@
         }
 
         // ================================================================
-        // CARGAR GRUPOS (con filtro Municipio)
+        // CARGAR GRUPOS
         // ================================================================
         async function cargarGrupos() {
             var grid = document.getElementById('gruposGrid');
@@ -1203,9 +1248,9 @@
                 for (var i = 0; i < grupos.length; i++) {
                     try {
                         var g = grupos[i];
-                        var liveResult = await window.supabase.from('transmisiones').select('id, titulo, streamer_id').eq('grupo_id', g.id).eq('estado', 'en_vivo').eq('is_live', true).maybeSingle();
-                        if (liveResult.data) liveMap[g.id] = liveResult.data;
-                    } catch (e) { console.warn('Error verificando live para grupo:', grupos[i].id, e); }
+                        var liveResult = await window.supabase.from('transmisiones').select('id').eq('grupo_id', g.id).eq('estado', 'en_vivo').eq('is_live', true).maybeSingle();
+                        if (liveResult.data) liveMap[g.id] = true;
+                    } catch (e) {}
                 }
 
                 grid.innerHTML = grupos.map(function(g) {
@@ -1214,6 +1259,7 @@
                     var visibilidad = g.visibilidad || 'publico';
                     var visBadge = visibilidad === 'publico' ? '<span class="estado-badge">◈ Público</span>' : '<span class="estado-badge privado">◈ Privado</span>';
                     var precio = g.precio_usdt > 0 ? `<span class="precio-badge">◈ $${g.precio_usdt} USDT</span>` : '';
+                    var mkBadge = g.marketplace_activo ? '<span class="mk-badge">🛒 Marketplace</span>' : '';
                     var liveClass = tieneLive ? 'en-vivo' : '';
                     var ubicacion = [];
                     if (g.municipio) ubicacion.push(g.municipio);
@@ -1224,7 +1270,7 @@
                         '<div class="nombre">' + escapeHTML(g.nombre) + '</div>' +
                         '<div class="descripcion">' + escapeHTML((g.descripcion || '').substring(0, 80)) + '</div>' +
                         '<div class="meta"><span class="ciudad">◈ ' + escapeHTML(ubicacionTexto) + '</span>' +
-                        '<span>◈ ' + miembros + '</span>' + visBadge + precio +
+                        '<span>◈ ' + miembros + '</span>' + visBadge + precio + mkBadge +
                         (tieneLive ? ' <span class="live-badge">🔴 EN VIVO</span>' : '') +
                         '</div></div>';
                 }).join('');
@@ -1279,10 +1325,30 @@
                 var vis = grupoActual.visibilidad || 'publico';
                 document.getElementById('grupoEstadoBadge').textContent = vis === 'publico' ? '◈ Público' : '◈ Privado';
                 
-                var firmaEl = document.getElementById('grupoFirmaLigera');
-                if (firmaEl) {
-                    firmaEl.textContent = '🦉 "' + (grupoActual.firma_ligera || 'Yo me hago cargo de lo que digo aquí') + '"';
+                // Mostrar badge marketplace si está activo
+                var mkBadgeEl = document.getElementById('grupoMkBadge');
+                if (mkBadgeEl) {
+                    mkBadgeEl.style.display = grupoActual.marketplace_activo ? 'inline-block' : 'none';
                 }
+                
+                // Mostrar/ocultar botón Marketplace en form
+                var btnMk = document.getElementById('btnMarketplace');
+                if (btnMk) {
+                    if (!grupoActual.marketplace_activo) {
+                        btnMk.style.display = 'none';
+                    } else if (esMiembro()) {
+                        btnMk.style.display = 'inline-flex';
+                    } else {
+                        btnMk.style.display = 'none';
+                    }
+                }
+                
+                // Sincronizar el toggle del panel de ajustes
+                var toggleMk = document.getElementById('toggleMarketplace');
+                if (toggleMk) {
+                    toggleMk.checked = !!grupoActual.marketplace_activo;
+                }
+                
                 var btnDonar = document.getElementById('btnDonar');
                 if (btnDonar) {
                     if (grupoActual.precio_usdt > 0) {
@@ -1346,7 +1412,7 @@
                 esAdmin = rolEnGrupo === 'administrador';
                 esModerador = rolEnGrupo === 'moderador' || esAdmin;
                 if (esCreador) esAdmin = true;
-            } catch (e) { console.error('Error verificando membresía:', e); esAdmin = false; esModerador = false; esCreador = false; rolEnGrupo = null; }
+            } catch (e) { esAdmin = false; esModerador = false; esCreador = false; rolEnGrupo = null; }
         }
 
         function esMiembro() { return rolEnGrupo !== null || esCreador; }
@@ -1358,14 +1424,13 @@
                 if (liveActivoEnGrupo) currentStreamGrupoId = liveActivoEnGrupo.id;
                 return liveActivoEnGrupo;
             } catch (e) {
-                console.error('Error verificando live:', e);
                 liveActivoEnGrupo = null;
                 return null;
             }
         }
 
         // ================================================================
-        // INTERACCIONES Y NOTIFICACIONES DEL USUARIO
+        // INTERACCIONES
         // ================================================================
         async function cargarMisInteracciones() {
             misInteracciones = {};
@@ -1392,9 +1457,6 @@
             } catch (e) { console.warn('Error cargando notificaciones:', e); }
         }
 
-        // ================================================================
-        // FILTROS DEL FEED
-        // ================================================================
         function filtrarFeed(filtro) {
             filtroFeedActual = filtro;
             document.querySelectorAll('.feed-filtro-btn').forEach(function(btn) {
@@ -1433,9 +1495,6 @@
             container.innerHTML = filtradas.map(function(p) { return renderizarPublicacionHTML(p); }).join('');
         }
 
-        // ================================================================
-        // RENDERIZAR PUBLICACIÓN
-        // ================================================================
         function renderizarPublicacionHTML(p) {
             var u = p.usuarios || {};
             var avatar = u.avatar_url ? '<img src="' + escapeHTML(u.avatar_url) + '">' : '◈';
@@ -1446,12 +1505,9 @@
             var likesCount = p.likes_count || 0;
             var comentariosCount = p.comentarios_count || 0;
 
-            // Estado de interacciones del usuario actual
             var mias = misInteracciones[p.id] || {};
             var tengoMeInteresa = mias.me_interesa ? ' interesado' : '';
-            var tengoNoMeInteresa = mias.no_me_interesa ? ' no-interesado' : '';
 
-            // Sección de marketplace
             var mkHTML = '';
             if (p.tipo_marketplace) {
                 var tipoLabels = { vendo: '🛒 VENDO', rento: '🔑 RENTO', busco: '🔍 BUSCO', regalo: '🎁 REGALO', servicio: '🔧 SERVICIO' };
@@ -1535,7 +1591,6 @@
             var menuActual = document.getElementById('postMenu-' + publicacionId);
             var menuAbierto = menuActual && menuActual.classList.contains('show');
             
-            // Cerrar todos los menús abiertos
             document.querySelectorAll('.post-menu-dropdown.show').forEach(function(m) { m.classList.remove('show'); });
             
             if (!menuAbierto && menuActual) {
@@ -1543,7 +1598,6 @@
             }
         }
 
-        // Cerrar menús al hacer clic fuera
         document.addEventListener('click', function(e) {
             if (!e.target.closest('.post-menu-wrapper')) {
                 document.querySelectorAll('.post-menu-dropdown.show').forEach(function(m) { m.classList.remove('show'); });
@@ -1551,7 +1605,7 @@
         });
 
         // ================================================================
-        // INTERACCIONES: ME INTERESA / NO ME INTERESA / OCULTAR
+        // INTERACCIONES
         // ================================================================
         async function toggleInteraccion(publicacionId, tipo) {
             if (!sessionUser) { showToast('Inicia sesión para interactuar', 'error'); return; }
@@ -1559,7 +1613,6 @@
                 var tieneActual = misInteracciones[publicacionId] && misInteracciones[publicacionId][tipo];
                 
                 if (tieneActual) {
-                    // Quitar
                     await window.supabase.from('grupos_video_interacciones')
                         .delete()
                         .eq('publicacion_id', publicacionId)
@@ -1568,7 +1621,6 @@
                     if (!misInteracciones[publicacionId]) misInteracciones[publicacionId] = {};
                     delete misInteracciones[publicacionId][tipo];
                 } else {
-                    // Si es "me_interesa" o "no_me_interesa", quitar el opuesto
                     if (tipo === 'me_interesa' || tipo === 'no_me_interesa') {
                         var opuesto = tipo === 'me_interesa' ? 'no_me_interesa' : 'me_interesa';
                         if (misInteracciones[publicacionId] && misInteracciones[publicacionId][opuesto]) {
@@ -1619,15 +1671,11 @@
             var ok = await toggleInteraccion(publicacionId, 'no_quiero_ver');
             if (ok) {
                 showToast('🚫 Publicación oculta', 'success');
-                // Quitar visualmente
                 var card = document.querySelector('.publicacion-card[data-pub-id="' + publicacionId + '"]');
                 if (card) card.style.display = 'none';
             }
         }
 
-        // ================================================================
-        // NOTIFICACIONES
-        // ================================================================
         async function toggleNotificacion(publicacionId) {
             document.querySelectorAll('.post-menu-dropdown.show').forEach(function(m) { m.classList.remove('show'); });
             if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
@@ -1648,14 +1696,10 @@
                 }
                 renderizarPublicacionesCache();
             } catch (e) {
-                console.error('Error notificación:', e);
                 showToast('Error al procesar', 'error');
             }
         }
 
-        // ================================================================
-        // COPIAR ENLACE
-        // ================================================================
         function copiarEnlacePost(publicacionId) {
             document.querySelectorAll('.post-menu-dropdown.show').forEach(function(m) { m.classList.remove('show'); });
             var url = window.location.origin + '/features/grupos/grupos.html?grupo=' + grupoActualId + '&publicacion=' + publicacionId;
@@ -1716,7 +1760,6 @@
                 showToast('🚨 Reporte enviado', 'success');
                 setTimeout(cerrarModalReportar, 1500);
             } catch (e) {
-                console.error('Error enviando reporte:', e);
                 statusEl.textContent = '❌ Error: ' + e.message;
                 statusEl.style.color = 'var(--danger)';
             }
@@ -1767,14 +1810,13 @@
                 showToast('⚠️ Reporte al admin enviado', 'success');
                 setTimeout(cerrarModalReportarAdmin, 1500);
             } catch (e) {
-                console.error('Error enviando reporte:', e);
                 statusEl.textContent = '❌ Error: ' + e.message;
                 statusEl.style.color = 'var(--danger)';
             }
         }
 
         // ================================================================
-        // ETIQUETAR FOTO
+        // ETIQUETAR
         // ================================================================
         function abrirModalEtiquetar(publicacionId) {
             document.querySelectorAll('.post-menu-dropdown.show').forEach(function(m) { m.classList.remove('show'); });
@@ -1813,7 +1855,7 @@
                 container.innerHTML = result.data.map(function(u) {
                     var yaSel = etiquetadosSeleccionados.find(function(e) { return e.id === u.id; });
                     var avatar = u.avatar_url ? '<img src="' + escapeHTML(u.avatar_url) + '" style="width:100%;height:100%;object-fit:cover;">' : '◈';
-                    return '<div class="result" onclick="agregarEtiqueta(\'' + u.id + '\', \'' + escapeHTML(u.nombre || '').replace(/'/g, "\\'") + '\', \'' + escapeHTML(u.handle || '') + '\', \'' + escapeHTML(u.avatar_url || '') + '\')" style="display:flex;align-items:center;gap:10px;padding:8px;border-bottom:1px solid rgba(212,175,55,0.05);cursor:pointer;' + (yaSel ? 'opacity:0.4;pointer-events:none;' : '') + '">' +
+                    return '<div onclick="agregarEtiqueta(\'' + u.id + '\', \'' + escapeHTML(u.nombre || '').replace(/'/g, "\\'") + '\', \'' + escapeHTML(u.handle || '') + '\', \'' + escapeHTML(u.avatar_url || '') + '\')" style="display:flex;align-items:center;gap:10px;padding:8px;border-bottom:1px solid rgba(212,175,55,0.05);cursor:pointer;' + (yaSel ? 'opacity:0.4;pointer-events:none;' : '') + '">' +
                         '<div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--green-deep),var(--gold));display:flex;align-items:center;justify-content:center;overflow:hidden;font-weight:700;">' + avatar + '</div>' +
                         '<div><div style="font-size:0.75rem;font-weight:600;">' + escapeHTML(u.nombre || 'Usuario') + '</div>' +
                         '<div style="font-size:0.6rem;color:var(--text-muted);">@' + escapeHTML(u.handle || 'usuario') + '</div></div>' +
@@ -1857,7 +1899,6 @@
                 showToast('🏷️ Personas etiquetadas', 'success');
                 cerrarModalEtiquetar();
             } catch (e) {
-                console.error('Error guardando etiquetas:', e);
                 showToast('Error: ' + e.message, 'error');
             }
         }
@@ -1871,17 +1912,15 @@
                 if (result.error) throw result.error;
                 publicacionesCache = result.data || [];
                 
-                // Cargar interacciones y notificaciones
                 await cargarMisInteracciones();
                 await cargarMisNotificaciones();
                 
-                // Aplicar filtro actual
                 filtrarFeed(filtroFeedActual);
-            } catch (e) { console.error('Error cargando publicaciones:', e); showToast('Error cargando publicaciones', 'error'); }
+            } catch (e) { showToast('Error cargando publicaciones', 'error'); }
         }
 
         // ================================================================
-        // PUBLICAR EN GRUPO
+        // PUBLICAR NORMAL
         // ================================================================
         async function publicarEnGrupo() {
             if (publicando) { showToast('Ya estás publicando...', 'warning'); return; }
@@ -1898,8 +1937,66 @@
                 input.value = '';
                 showToast('Publicación creada', 'success');
                 await cargarPublicacionesGrupo(grupoActualId);
-            } catch (e) { console.error('Error publicando:', e); showToast('Error: ' + e.message, 'error'); }
+            } catch (e) { showToast('Error: ' + e.message, 'error'); }
             finally { publicando = false; }
+        }
+
+        // ================================================================
+        // SUBIR FOTO NORMAL (SIN MARCA DE AGUA)
+        // ================================================================
+        async function subirFotoGrupo() {
+            if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
+            if (!grupoActualId) { showToast('No hay canal', 'error'); return; }
+            if (!esMiembro()) { showToast('Debes ser miembro', 'error'); return; }
+            var input = document.createElement('input');
+            input.type = 'file'; input.accept = 'image/*';
+            input.onchange = async function(e) {
+                var file = e.target.files[0]; if (!file) return;
+                if (file.size > 10 * 1024 * 1024) { showToast('Imagen > 10MB', 'error'); return; }
+                showToast('Subiendo imagen...', '');
+                try {
+                    // ✅ SIN MARCA DE AGUA
+                    var fileExt = file.name.split('.').pop();
+                    var filePath = grupoActualId + '/' + sessionUser.id + '/' + Date.now() + '.' + fileExt;
+                    var uploadResult = await window.supabase.storage.from('grupos-publicaciones').upload(filePath, file, { cacheControl: '3600', upsert: true });
+                    if (uploadResult.error) throw uploadResult.error;
+                    var urlData = window.supabase.storage.from('grupos-publicaciones').getPublicUrl(filePath);
+                    var result = await window.supabase.from('grupos_video_publicaciones').insert({ grupo_id: grupoActualId, usuario_id: sessionUser.id, imagen_url: urlData.data.publicUrl, tipo: 'imagen', estado: 'publicado' }).select().single();
+                    if (result.error) throw result.error;
+                    showToast('📷 Foto publicada', 'success');
+                    await cargarPublicacionesGrupo(grupoActualId);
+                } catch (error) { showToast('Error: ' + error.message, 'error'); }
+            };
+            input.click();
+        }
+
+        // ================================================================
+        // SUBIR VIDEO NORMAL (SIN MARCA DE AGUA)
+        // ================================================================
+        async function subirVideoGrupo() {
+            if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
+            if (!grupoActualId) { showToast('No hay canal', 'error'); return; }
+            if (!esMiembro()) { showToast('Debes ser miembro', 'error'); return; }
+            var input = document.createElement('input');
+            input.type = 'file'; input.accept = 'video/*';
+            input.onchange = async function(e) {
+                var file = e.target.files[0]; if (!file) return;
+                if (file.size > 100 * 1024 * 1024) { showToast('Video > 100MB', 'error'); return; }
+                showToast('Subiendo video...', '');
+                try {
+                    // ✅ SIN MARCA DE AGUA
+                    var fileExt = file.name.split('.').pop();
+                    var filePath = grupoActualId + '/' + sessionUser.id + '/' + Date.now() + '.' + fileExt;
+                    var uploadResult = await window.supabase.storage.from('grupos-publicaciones').upload(filePath, file, { cacheControl: '3600', upsert: true });
+                    if (uploadResult.error) throw uploadResult.error;
+                    var urlData = window.supabase.storage.from('grupos-publicaciones').getPublicUrl(filePath);
+                    var result = await window.supabase.from('grupos_video_publicaciones').insert({ grupo_id: grupoActualId, usuario_id: sessionUser.id, video_url: urlData.data.publicUrl, tipo: 'video', estado: 'publicado' }).select().single();
+                    if (result.error) throw result.error;
+                    showToast('🎬 Video publicado', 'success');
+                    await cargarPublicacionesGrupo(grupoActualId);
+                } catch (error) { showToast('Error: ' + error.message, 'error'); }
+            };
+            input.click();
         }
 
         // ================================================================
@@ -1908,9 +2005,9 @@
         function abrirModalMarketplace() {
             if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
             if (!grupoActualId) { showToast('No hay canal', 'error'); return; }
-            if (!esMiembro()) { showToast('Debes ser miembro', 'error'); return; }
+            if (!esMiembro()) { showToast('Debes ser miembro del grupo para vender', 'error'); return; }
+            if (!grupoActual.marketplace_activo) { showToast('El Marketplace no está activo en este grupo', 'warning'); return; }
             
-            // Limpiar campos
             document.getElementById('inputTipoMarketplace').value = '';
             document.getElementById('inputTituloMarketplace').value = '';
             document.getElementById('inputDescripcionMarketplace').value = '';
@@ -1921,6 +2018,7 @@
             document.getElementById('inputWhatsappMarketplace').value = '';
             document.getElementById('inputTelefonoMarketplace').value = '';
             document.getElementById('inputImagenMarketplace').value = '';
+            document.getElementById('inputVideoMarketplace').value = '';
             document.getElementById('marketplaceStatus').textContent = '';
             
             document.getElementById('modalMarketplace').classList.add('show');
@@ -1930,8 +2028,27 @@
             document.getElementById('modalMarketplace').classList.remove('show');
         }
 
+        // ✅ VALIDAR DURACIÓN DE VIDEO (MÁX 40 SEGUNDOS)
+        function validarDuracionVideo(file) {
+            return new Promise(function(resolve) {
+                var video = document.createElement('video');
+                video.preload = 'metadata';
+                video.onloadedmetadata = function() {
+                    window.URL.revokeObjectURL(video.src);
+                    resolve({ duracion: video.duration, valido: video.duration <= 40 });
+                };
+                video.onerror = function() {
+                    window.URL.revokeObjectURL(video.src);
+                    resolve({ duracion: 0, valido: false });
+                };
+                video.src = URL.createObjectURL(file);
+            });
+        }
+
         async function publicarMarketplace() {
             if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
+            if (!esMiembro()) { showToast('Debes ser miembro del grupo', 'error'); return; }
+            if (!grupoActual.marketplace_activo) { showToast('El Marketplace no está activo', 'error'); return; }
             
             var tipo = document.getElementById('inputTipoMarketplace').value;
             var titulo = document.getElementById('inputTituloMarketplace').value.trim();
@@ -1943,6 +2060,7 @@
             var whatsapp = document.getElementById('inputWhatsappMarketplace').value.trim();
             var telefono = document.getElementById('inputTelefonoMarketplace').value.trim();
             var imagenInput = document.getElementById('inputImagenMarketplace');
+            var videoInput = document.getElementById('inputVideoMarketplace');
             var statusEl = document.getElementById('marketplaceStatus');
             var btn = document.getElementById('btnPublicarMarketplace');
             
@@ -1951,6 +2069,20 @@
             if (!descripcion) { statusEl.textContent = '⚠️ Escribe una descripción'; statusEl.style.color = 'var(--warning)'; return; }
             if (!municipio) { statusEl.textContent = '⚠️ Escribe el municipio'; statusEl.style.color = 'var(--warning)'; return; }
             
+            // 🚫 VALIDAR PALABRAS CRIPTO EN TÍTULO Y DESCRIPCIÓN
+            if (contienePalabrasCripto(titulo)) {
+                statusEl.innerHTML = '❌ No se permite vender criptomonedas, tokens, NFTs u otros activos digitales en el Marketplace.<br>Si quieres vender Es.stoks, usa el Muro.';
+                statusEl.style.color = 'var(--danger)';
+                showToast('🚫 Contenido bloqueado: tokens/cripto', 'error', 5000);
+                return;
+            }
+            if (contienePalabrasCripto(descripcion)) {
+                statusEl.innerHTML = '❌ No se permite vender criptomonedas, tokens, NFTs u otros activos digitales en el Marketplace.<br>Si quieres vender Es.stoks, usa el Muro.';
+                statusEl.style.color = 'var(--danger)';
+                showToast('🚫 Contenido bloqueado: tokens/cripto', 'error', 5000);
+                return;
+            }
+            
             btn.disabled = true;
             btn.textContent = '⏳ Publicando...';
             statusEl.textContent = 'Subiendo...';
@@ -1958,18 +2090,36 @@
             
             try {
                 var imagenUrl = null;
+                var videoUrl = null;
                 
-                // Subir imagen si hay
+                // Subir imagen (sin marca de agua)
                 if (imagenInput.files && imagenInput.files[0]) {
                     var file = imagenInput.files[0];
                     if (file.size > 10 * 1024 * 1024) throw new Error('Imagen demasiado grande (máx 10MB)');
-                    var processedFile = await procesarConMarcaDeAgua(file, 'imagen');
-                    var fileExt = processedFile.name.split('.').pop();
+                    var fileExt = file.name.split('.').pop();
                     var filePath = grupoActualId + '/marketplace/' + sessionUser.id + '/' + Date.now() + '.' + fileExt;
-                    var uploadResult = await window.supabase.storage.from('grupos-publicaciones').upload(filePath, processedFile, { cacheControl: '3600', upsert: true });
+                    var uploadResult = await window.supabase.storage.from('grupos-publicaciones').upload(filePath, file, { cacheControl: '3600', upsert: true });
                     if (uploadResult.error) throw uploadResult.error;
                     var urlData = window.supabase.storage.from('grupos-publicaciones').getPublicUrl(filePath);
                     imagenUrl = urlData.data.publicUrl;
+                }
+                
+                // Subir video (sin marca de agua, máx 40 seg)
+                if (videoInput.files && videoInput.files[0]) {
+                    var vfile = videoInput.files[0];
+                    if (vfile.size > 50 * 1024 * 1024) throw new Error('Video demasiado grande (máx 50MB)');
+                    
+                    // Validar duración
+                    statusEl.textContent = 'Validando video...';
+                    var validacion = await validarDuracionVideo(vfile);
+                    if (!validacion.valido) throw new Error('El video excede los 40 segundos permitidos (duración: ' + Math.round(validacion.duracion) + 's)');
+                    
+                    var vext = vfile.name.split('.').pop();
+                    var vfilePath = grupoActualId + '/marketplace/' + sessionUser.id + '/video_' + Date.now() + '.' + vext;
+                    var vuploadResult = await window.supabase.storage.from('grupos-publicaciones').upload(vfilePath, vfile, { cacheControl: '3600', upsert: true });
+                    if (vuploadResult.error) throw vuploadResult.error;
+                    var vurlData = window.supabase.storage.from('grupos-publicaciones').getPublicUrl(vfilePath);
+                    videoUrl = vurlData.data.publicUrl;
                 }
                 
                 var insertData = {
@@ -1985,7 +2135,8 @@
                     estado_region: estado || null,
                     telefono_contacto: telefono || null,
                     whatsapp: whatsapp || null,
-                    imagen_url: imagenUrl
+                    imagen_url: imagenUrl,
+                    video_url: videoUrl
                 };
                 
                 var result = await window.supabase.from('grupos_video_publicaciones').insert(insertData).select().single();
@@ -1999,7 +2150,6 @@
                     cargarPublicacionesGrupo(grupoActualId);
                 }, 800);
             } catch (e) {
-                console.error('Error publicando marketplace:', e);
                 statusEl.textContent = '❌ Error: ' + e.message;
                 statusEl.style.color = 'var(--danger)';
             } finally {
@@ -2009,7 +2159,47 @@
         }
 
         // ================================================================
-        // RESTO DE FUNCIONES (LIVE, ADMIN, COMENTARIOS, ETC.)
+        // TOGGLE MARKETPLACE (desde panel de ajustes)
+        // ================================================================
+        async function toggleMarketplace() {
+            if (!grupoActualId) return;
+            if (!esAdmin && !esCreador) { showToast('Solo administradores', 'error'); return; }
+            
+            var toggle = document.getElementById('toggleMarketplace');
+            var nuevoValor = toggle.checked;
+            
+            try {
+                var result = await window.supabase.from('grupos_video').update({ marketplace_activo: nuevoValor }).eq('id', grupoActualId);
+                if (result.error) throw result.error;
+                
+                grupoActual.marketplace_activo = nuevoValor;
+                
+                // Actualizar badge
+                var mkBadgeEl = document.getElementById('grupoMkBadge');
+                if (mkBadgeEl) {
+                    mkBadgeEl.style.display = nuevoValor ? 'inline-block' : 'none';
+                }
+                
+                // Actualizar botón marketplace del form
+                var btnMk = document.getElementById('btnMarketplace');
+                if (btnMk) {
+                    if (!nuevoValor) {
+                        btnMk.style.display = 'none';
+                    } else if (esMiembro()) {
+                        btnMk.style.display = 'inline-flex';
+                    }
+                }
+                
+                showToast(nuevoValor ? '🛒 Marketplace activado' : '🚫 Marketplace desactivado', 'success');
+            } catch (e) {
+                console.error('Error toggle marketplace:', e);
+                toggle.checked = !nuevoValor;
+                showToast('Error: ' + e.message, 'error');
+            }
+        }
+
+        // ================================================================
+        // FUNCIONES RESTANTES (admin, live, etc.)
         // ================================================================
         async function reaccionarPublicacion(publicacionId) {
             if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
@@ -2051,7 +2241,7 @@
                         '<div style="flex:1;font-size:0.65rem;"><strong style="color:var(--gold);">' + escapeHTML(u.nombre || 'Usuario') + '</strong> ' + escapeHTML(c.contenido || '') +
                         '<div style="font-size:0.5rem;color:var(--text-muted);">' + new Date(c.created_at).toLocaleString() + '</div></div></div>';
                 }).join('');
-            } catch (e) { console.error(e); lista.innerHTML = '<div style="color:var(--danger);font-size:0.65rem;">Error</div>'; }
+            } catch (e) { lista.innerHTML = '<div style="color:var(--danger);font-size:0.65rem;">Error</div>'; }
         }
 
         async function enviarComentarioPublicacion(publicacionId) {
@@ -2065,7 +2255,7 @@
                 var countSpan = document.getElementById('comentarios-' + publicacionId);
                 if (countSpan) countSpan.textContent = (parseInt(countSpan.textContent) || 0) + 1;
                 cargarComentariosPublicacion(publicacionId);
-            } catch (e) { console.error(e); showToast('Error', 'error'); }
+            } catch (e) { showToast('Error', 'error'); }
         }
 
         function compartirPublicacion(publicacionId) {
@@ -2075,10 +2265,12 @@
             else { navigator.clipboard.writeText(url).then(function() { showToast('Enlace copiado', 'success'); }); }
         }
 
-        // ================================================================
-        // AJUSTES DEL CANAL
-        // ================================================================
         function abrirAjustesCanal() {
+            // Sincronizar el toggle al abrir
+            var toggleMk = document.getElementById('toggleMarketplace');
+            if (toggleMk && grupoActual) {
+                toggleMk.checked = !!grupoActual.marketplace_activo;
+            }
             document.getElementById('modalAjustesCanal').classList.add('show');
         }
         function cerrarAjustesCanal() {
@@ -2105,7 +2297,7 @@
                     if (updateResult.error) throw updateResult.error;
                     document.getElementById('grupoAvatar').innerHTML = '<img src="' + urlData.data.publicUrl + '">';
                     showToast('Foto actualizada', 'success');
-                } catch (error) { console.error(error); showToast('Error: ' + error.message, 'error'); }
+                } catch (error) { showToast('Error: ' + error.message, 'error'); }
             };
             input.click();
         }
@@ -2135,14 +2327,11 @@
                         portadaEl.innerHTML = `<img src="${urlData.data.publicUrl}" style="width:100%; height:100%; object-fit:cover;">`;
                     }
                     showToast('Portada actualizada', 'success');
-                } catch (error) { console.error(error); showToast('Error: ' + error.message, 'error'); }
+                } catch (error) { showToast('Error: ' + error.message, 'error'); }
             };
             input.click();
         }
 
-        // ================================================================
-        // ADMIN: MIEMBROS / PUBLICACIONES / SOLICITUDES / REPORTES / EDITAR
-        // ================================================================
         async function abrirAdminGrupo() {
             cerrarAjustesCanal();
             if (!esAdmin && !esModerador) { showToast('Sin permisos', 'error'); return; }
@@ -2182,7 +2371,7 @@
                             '</div>' : '') + '</div>';
                 });
                 container.innerHTML = html;
-            } catch (e) { console.error(e); container.innerHTML = '<div class="empty-state">Error</div>'; }
+            } catch (e) { container.innerHTML = '<div class="empty-state">Error</div>'; }
         }
 
         async function cargarAdminPublicaciones() {
@@ -2199,8 +2388,9 @@
                     var estado = p.estado || 'publicado';
                     var estadoColor = estado === 'publicado' ? 'var(--success)' : estado === 'oculto' ? 'var(--warning)' : 'var(--danger)';
                     var contenido = escapeHTML((p.contenido || '').substring(0, 60));
+                    var tipoBadge = p.tipo_marketplace ? '<span style="color:var(--success);font-size:0.55rem;">🛒 ' + p.tipo_marketplace + '</span>' : '';
                     html += '<div style="padding:8px 0;border-bottom:1px solid var(--glass-border);">' +
-                        '<div style="font-weight:600;font-size:0.75rem;">' + escapeHTML(u.nombre || 'Usuario') + ' <span style="color:' + estadoColor + ';font-size:0.5rem;">● ' + estado + '</span></div>' +
+                        '<div style="font-weight:600;font-size:0.75rem;">' + escapeHTML(u.nombre || 'Usuario') + ' ' + tipoBadge + ' <span style="color:' + estadoColor + ';font-size:0.5rem;">● ' + estado + '</span></div>' +
                         '<div style="font-size:0.7rem;color:var(--text-secondary);">' + contenido + '</div>' +
                         '<div style="display:flex;gap:4px;margin-top:4px;flex-wrap:wrap;">' +
                         (estado === 'publicado' && (esAdmin || esModerador) ? '<button class="btn-outline btn-sm" onclick="ocultarPublicacion(\'' + p.id + '\')">◈ Ocultar</button>' : '') +
@@ -2209,7 +2399,7 @@
                         '</div></div>';
                 });
                 container.innerHTML = html;
-            } catch (e) { console.error(e); container.innerHTML = '<div class="empty-state">Error</div>'; }
+            } catch (e) { container.innerHTML = '<div class="empty-state">Error</div>'; }
         }
 
         async function cargarAdminSolicitudes() {
@@ -2231,7 +2421,7 @@
                         '</div></div>';
                 });
                 container.innerHTML = html;
-            } catch (e) { console.error(e); container.innerHTML = '<div class="empty-state">Error</div>'; }
+            } catch (e) { container.innerHTML = '<div class="empty-state">Error</div>'; }
         }
 
         async function cargarAdminReportes() {
@@ -2249,14 +2439,13 @@
                         '<div style="font-size:0.7rem;"><strong style="color:var(--gold);">Tipo:</strong> ' + escapeHTML(r.tipo) + ' · <strong style="color:var(--gold);">Motivo:</strong> ' + escapeHTML(r.motivo) + '</div>' +
                         '<div style="font-size:0.65rem;color:var(--text-secondary);margin-top:4px;">Por: ' + escapeHTML(u.nombre || 'Usuario') + '</div>' +
                         (r.descripcion ? '<div style="font-size:0.65rem;color:var(--text-muted);margin-top:4px;font-style:italic;">"' + escapeHTML(r.descripcion) + '"</div>' : '') +
-                        '<div style="font-size:0.55rem;color:var(--text-muted);margin-top:4px;">' + new Date(r.created_at).toLocaleString() + '</div>' +
                         '<div style="display:flex;gap:4px;margin-top:6px;">' +
                         '<button class="btn-outline btn-sm" onclick="marcarReporte(\'' + r.id + '\', \'resuelto\')">◈ Resuelto</button>' +
                         '<button class="btn-outline btn-sm" onclick="marcarReporte(\'' + r.id + '\', \'descartado\')">◈ Descartar</button>' +
                         '</div></div>';
                 });
                 container.innerHTML = html;
-            } catch (e) { console.error(e); container.innerHTML = '<div class="empty-state">Error</div>'; }
+            } catch (e) { container.innerHTML = '<div class="empty-state">Error</div>'; }
         }
 
         async function marcarReporte(reporteId, estado) {
@@ -2264,7 +2453,7 @@
                 await window.supabase.from('grupos_video_reportes').update({ estado: estado, revisado_por: sessionUser.id, revisado_at: new Date().toISOString() }).eq('id', reporteId);
                 showToast('Reporte ' + estado, 'success');
                 cargarAdminReportes();
-            } catch (e) { console.error(e); showToast('Error', 'error'); }
+            } catch (e) { showToast('Error', 'error'); }
         }
 
         async function cargarAdminEditar() {
@@ -2288,9 +2477,10 @@
                     '<option value="abierto"' + (g.modo_ingreso === 'abierto' ? ' selected' : '') + '>Abierto</option>' +
                     '<option value="solicitud"' + (g.modo_ingreso === 'solicitud' ? ' selected' : '') + '>Solicitud</option>' +
                     '<option value="invitacion"' + (g.modo_ingreso === 'invitacion' ? ' selected' : '') + '>Invitación</option></select></div>' +
+                    '<div class="checkbox-row"><input type="checkbox" id="editGrupoMarketplace" ' + (g.marketplace_activo ? 'checked' : '') + ' /><label for="editGrupoMarketplace">🛒 Marketplace activo</label></div>' +
                     '<button class="btn-gold" style="width:100%;justify-content:center;padding:10px;" onclick="guardarEdicionGrupo()">◈ Guardar cambios</button>';
                 container.innerHTML = html;
-            } catch (e) { console.error(e); container.innerHTML = '<div class="empty-state">Error</div>'; }
+            } catch (e) { container.innerHTML = '<div class="empty-state">Error</div>'; }
         }
 
         async function guardarEdicionGrupo() {
@@ -2302,65 +2492,76 @@
             var precio = document.getElementById('editGrupoPrecio')?.value;
             var visibilidad = document.getElementById('editGrupoVisibilidad')?.value;
             var modoIngreso = document.getElementById('editGrupoModoIngreso')?.value;
+            var marketplaceActivo = document.getElementById('editGrupoMarketplace')?.checked || false;
             if (!nombre) { showToast('El nombre es requerido', 'warning'); return; }
             try {
-                var result = await window.supabase.from('grupos_video').update({ nombre: nombre, descripcion: descripcion || null, estado_region: estado || null, municipio: municipio || null, ciudad: ciudad || null, precio_usdt: parseFloat(precio) || 0, visibilidad: visibilidad, modo_ingreso: modoIngreso }).eq('id', grupoActualId).select().single();
+                var result = await window.supabase.from('grupos_video').update({ 
+                    nombre: nombre, 
+                    descripcion: descripcion || null, 
+                    estado_region: estado || null, 
+                    municipio: municipio || null, 
+                    ciudad: ciudad || null, 
+                    precio_usdt: parseFloat(precio) || 0, 
+                    visibilidad: visibilidad, 
+                    modo_ingreso: modoIngreso,
+                    marketplace_activo: marketplaceActivo
+                }).eq('id', grupoActualId).select().single();
                 if (result.error) throw result.error;
                 showToast('Canal actualizado', 'success');
                 cerrarModalAdmin();
                 await abrirGrupo(grupoActualId);
                 await cargarGrupos();
-            } catch (e) { console.error(e); showToast('Error: ' + e.message, 'error'); }
+            } catch (e) { showToast('Error: ' + e.message, 'error'); }
         }
 
         async function aceptarSolicitud(solicitudId) {
             try { await window.supabase.rpc('aceptar_solicitud_grupo', { p_solicitud_id: solicitudId }); showToast('Solicitud aceptada', 'success'); await cargarAdminSolicitudes(); }
-            catch (e) { console.error(e); showToast('Error', 'error'); }
+            catch (e) { showToast('Error', 'error'); }
         }
         async function rechazarSolicitud(solicitudId) {
             try { var motivo = prompt('Motivo:', ''); await window.supabase.rpc('rechazar_solicitud_grupo', { p_solicitud_id: solicitudId, p_motivo: motivo || 'Rechazado' }); showToast('Rechazada', 'success'); await cargarAdminSolicitudes(); }
-            catch (e) { console.error(e); showToast('Error', 'error'); }
+            catch (e) { showToast('Error', 'error'); }
         }
         async function asignarModerador(usuarioId) {
             if (!confirm('¿Asignar moderador?')) return;
             try { await window.supabase.rpc('asignar_moderador_grupo', { p_grupo_id: grupoActualId, p_usuario_id: usuarioId }); showToast('Moderador asignado', 'success'); await cargarAdminMiembros(); }
-            catch (e) { console.error(e); showToast('Error', 'error'); }
+            catch (e) { showToast('Error', 'error'); }
         }
         async function quitarModerador(usuarioId) {
             if (!confirm('¿Quitar moderador?')) return;
             try { await window.supabase.rpc('quitar_moderador_grupo', { p_grupo_id: grupoActualId, p_usuario_id: usuarioId }); showToast('Quitado', 'success'); await cargarAdminMiembros(); }
-            catch (e) { console.error(e); showToast('Error', 'error'); }
+            catch (e) { showToast('Error', 'error'); }
         }
         async function expulsarMiembro(usuarioId) {
             if (!confirm('¿Expulsar?')) return;
             var motivo = prompt('Motivo:', ''); if (motivo === null) return;
             try { await window.supabase.rpc('expulsar_miembro_grupo', { p_grupo_id: grupoActualId, p_usuario_id: usuarioId, p_motivo: motivo || 'Expulsado' }); showToast('Expulsado', 'success'); await cargarAdminMiembros(); }
-            catch (e) { console.error(e); showToast('Error', 'error'); }
+            catch (e) { showToast('Error', 'error'); }
         }
         async function bloquearMiembro(usuarioId) {
             if (!confirm('¿Bloquear?')) return;
             var motivo = prompt('Motivo:', ''); if (motivo === null) return;
             try { await window.supabase.rpc('bloquear_miembro_grupo', { p_grupo_id: grupoActualId, p_usuario_id: usuarioId, p_motivo: motivo || 'Bloqueado' }); showToast('Bloqueado', 'success'); await cargarAdminMiembros(); }
-            catch (e) { console.error(e); showToast('Error', 'error'); }
+            catch (e) { showToast('Error', 'error'); }
         }
         async function ocultarPublicacion(publicacionId) {
             var motivo = prompt('Motivo:', 'Inapropiado'); if (motivo === null) return;
             try { await window.supabase.rpc('ocultar_publicacion_grupo', { p_publicacion_id: publicacionId, p_motivo: motivo }); showToast('Ocultada', 'success'); await cargarAdminPublicaciones(); }
-            catch (e) { console.error(e); showToast('Error', 'error'); }
+            catch (e) { showToast('Error', 'error'); }
         }
         async function mostrarPublicacion(publicacionId) {
             try { await window.supabase.rpc('mostrar_publicacion_grupo', { p_publicacion_id: publicacionId }); showToast('Visible', 'success'); await cargarAdminPublicaciones(); }
-            catch (e) { console.error(e); showToast('Error', 'error'); }
+            catch (e) { showToast('Error', 'error'); }
         }
         async function eliminarPublicacion(publicacionId) {
             if (!confirm('¿Eliminar?')) return;
             var motivo = prompt('Motivo:', 'Inapropiado'); if (motivo === null) return;
             try { await window.supabase.rpc('eliminar_publicacion_grupo', { p_publicacion_id: publicacionId, p_motivo: motivo }); showToast('Eliminada', 'success'); await cargarAdminPublicaciones(); }
-            catch (e) { console.error(e); showToast('Error', 'error'); }
+            catch (e) { showToast('Error', 'error'); }
         }
 
         // ================================================================
-        // REGALOS / DONACIONES
+        // REGALOS
         // ================================================================
         function abrirModalRegalos(streamerId, streamerNombre) {
             document.getElementById('giftStreamerName').textContent = streamerNombre || 'el creador';
@@ -2385,7 +2586,7 @@
                 statusEl.innerHTML = 'Pago iniciado<br>Monto: ' + data.monto + ' USDC<br>ID: ' + data.payment_id +
                     '<button onclick="verificarRegalo(\'' + data.payment_id + '\')" style="margin-top:8px;padding:6px 20px;border-radius:20px;border:none;background:linear-gradient(135deg,var(--gold),var(--gold-dark));color:var(--space);font-weight:700;font-size:0.7rem;cursor:pointer;">Verificar</button>';
                 statusEl.style.color = 'var(--success)';
-            } catch (e) { console.error(e); statusEl.textContent = 'Error: ' + e.message; statusEl.style.color = 'var(--danger)'; }
+            } catch (e) { statusEl.textContent = 'Error: ' + e.message; statusEl.style.color = 'var(--danger)'; }
         }
         async function verificarRegalo(paymentId) {
             var statusEl = document.getElementById('giftStatus');
@@ -2400,7 +2601,7 @@
         }
 
         // ================================================================
-        // CREAR GRUPO (con municipio)
+        // CREAR GRUPO
         // ================================================================
         function abrirModalCrearGrupo() { document.getElementById('modalCrearGrupo').classList.add('show'); document.getElementById('inputNombreGrupo').focus(); }
         function cerrarModalCrearGrupo() { document.getElementById('modalCrearGrupo').classList.remove('show'); }
@@ -2415,7 +2616,7 @@
             var ciudad = document.getElementById('inputCiudadGrupo').value.trim();
             var pais = document.getElementById('inputPaisGrupo').value.trim() || 'México';
             var precioUsdt = document.getElementById('inputPrecioUsdt').value;
-            var firmaLigera = document.getElementById('inputFirmaLigera').value;
+            var marketplaceActivo = document.getElementById('inputMarketplaceActivo').checked;
             var visibilidad = document.getElementById('inputVisibilidadGrupo').value;
             var modoIngreso = document.getElementById('inputModoIngresoGrupo').value;
             
@@ -2437,7 +2638,8 @@
                     ciudad: ciudad || null, 
                     pais: pais, 
                     precio_usdt: parseFloat(precioUsdt) || 0,
-                    firma_ligera: firmaLigera,
+                    firma_ligera: 'Yo me hago cargo de lo que digo aquí',
+                    marketplace_activo: marketplaceActivo,
                     visibilidad: visibilidad, 
                     modo_ingreso: modoIngreso, 
                     creador_id: sessionUser.id, 
@@ -2452,13 +2654,14 @@
                 document.getElementById('inputEstadoGrupo').value = '';
                 document.getElementById('inputMunicipioGrupo').value = '';
                 document.getElementById('inputCiudadGrupo').value = '';
+                document.getElementById('inputMarketplaceActivo').checked = false;
                 
                 if (groupResult.data?.id) {
                     await abrirGrupo(groupResult.data.id);
                 } else {
                     cargarGrupos();
                 }
-            } catch (e) { console.error(e); showToast('Error: ' + e.message, 'error'); }
+            } catch (e) { showToast('Error: ' + e.message, 'error'); }
             finally { btn.disabled = false; btn.textContent = '◈ Crear Comunidad'; }
         }
 
@@ -2524,7 +2727,6 @@
         }
         function cerrarConfirmacionEliminarGrupo() {
             document.getElementById('modalConfirmarEliminarGrupo').classList.remove('show');
-            document.getElementById('eliminarGrupoStatus').textContent = '';
         }
 
         async function ejecutarEliminarGrupo() {
@@ -2549,14 +2751,13 @@
                 var url = new URL(window.location); url.searchParams.delete('grupo'); window.history.replaceState({}, '', url);
                 await cargarGrupos();
             } catch (e) {
-                console.error(e);
                 statusEl.textContent = 'Error: ' + e.message;
                 statusEl.style.color = 'var(--danger)';
             } finally { eliminandoGrupo = false; }
         }
 
         // ================================================================
-        // LIVE (mismas funciones que ya tenías)
+        // LIVE (mismas funciones)
         // ================================================================
         async function iniciarLiveEnGrupo() {
             if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
@@ -2612,13 +2813,11 @@
                     document.getElementById('grupoLiveEstado').textContent = '● En vivo';
                     showToast('✅ Transmitiendo en el canal', 'success');
                 } catch (e) {
-                    console.error('❌ Error LiveKit:', e);
                     showToast('⚠️ Error LiveKit: ' + e.message, 'warning', 5000);
                     document.getElementById('grupoLiveEstado').textContent = '⚠️ Sin conexión LiveKit';
                 }
                 suscribirseAlChatGrupo();
             } catch (e) {
-                console.error('❌ Error iniciando live:', e);
                 showToast('Error: ' + e.message, 'error');
                 isLiveGrupoActivo = false;
             }
@@ -2657,7 +2856,6 @@
             document.getElementById('grupoLiveEndBtn').style.display = esStreamerDelLiveGrupo ? 'inline-flex' : 'none';
 
             try {
-                showToast('Conectando al LIVE...', '', 2000);
                 const { Room } = await cargarLiveKit();
                 liveKitRoomGrupo = new Room();
                 const token = await obtenerTokenLiveKitGrupo(liveActivoEnGrupo.room_name, sessionUser.id, 'subscriber');
@@ -2666,14 +2864,13 @@
                 liveKitRoomGrupo.on('trackSubscribed', (track) => {
                     if (track.kind === 'video') {
                         const video = document.getElementById('grupoLiveVideo');
-                        if (video) { track.attach(video); video.play().catch(e => console.warn('Autoplay bloqueado:', e)); }
+                        if (video) { track.attach(video); video.play().catch(e => {}); }
                     }
                 });
                 document.getElementById('grupoLiveEstado').textContent = '● En vivo';
                 showToast('Conectado al LIVE', 'success');
                 suscribirseAlChatGrupo();
             } catch (e) {
-                console.error('Error al ver live:', e);
                 showToast('⚠️ Error al conectar: ' + e.message, 'warning');
             }
         }
@@ -2694,13 +2891,12 @@
             if (!sessionUser) { showToast('Inicia sesión para chatear', 'error'); return; }
             if (!currentStreamGrupoId) { showToast('No hay LIVE activo', 'error'); return; }
             try {
-                const { error } = await window.supabase.from('mensajes_live').insert({
+                await window.supabase.from('mensajes_live').insert({
                     transmision_id: currentStreamGrupoId, usuario_id: sessionUser.id, mensaje: mensaje,
                     nombre_usuario: sessionUser.user_metadata?.nombre || 'Usuario', creado_en: new Date().toISOString()
                 });
-                if (error) throw error;
                 input.value = '';
-            } catch (e) { console.error('Error enviando mensaje:', e); showToast('Error al enviar mensaje', 'error'); }
+            } catch (e) { showToast('Error al enviar mensaje', 'error'); }
         }
 
         function agregarMensajeChatGrupo(mensaje) {
@@ -2714,21 +2910,20 @@
         }
 
         async function toggleMuteGrupoLive() {
-            if (!liveKitRoomGrupo || !esStreamerDelLiveGrupo) { showToast('Solo el streamer puede silenciar', 'warning'); return; }
+            if (!liveKitRoomGrupo || !esStreamerDelLiveGrupo) { showToast('Solo el streamer', 'warning'); return; }
             try {
                 const enabled = liveKitRoomGrupo.localParticipant.isMicrophoneEnabled;
                 await liveKitRoomGrupo.localParticipant.setMicrophoneEnabled(!enabled);
                 showToast(enabled ? '🎤 Micrófono silenciado' : '🎤 Micrófono activado', 'success', 2000);
-            } catch (e) { console.error('Error cambiando micrófono:', e); }
+            } catch (e) { console.error('Error micrófono:', e); }
         }
 
         async function finalizarLiveGrupo() {
             if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
-            if (!grupoActualId) { showToast('No hay canal seleccionado', 'error'); return; }
-            const { data: transmisionActiva, error: buscarError } = await window.supabase.from('transmisiones').select('*').eq('grupo_id', grupoActualId).eq('estado', 'en_vivo').eq('is_live', true).maybeSingle();
-            if (buscarError) { console.error(buscarError); return; }
+            if (!grupoActualId) { showToast('No hay canal', 'error'); return; }
+            const { data: transmisionActiva } = await window.supabase.from('transmisiones').select('*').eq('grupo_id', grupoActualId).eq('estado', 'en_vivo').eq('is_live', true).maybeSingle();
             if (!transmisionActiva) { showToast('No hay LIVE activo', 'warning'); return; }
-            if (transmisionActiva.streamer_id !== sessionUser.id) { showToast('Solo el streamer puede finalizar', 'error'); return; }
+            if (transmisionActiva.streamer_id !== sessionUser.id) { showToast('Solo el streamer', 'error'); return; }
             if (!confirm('¿Finalizar el LIVE del canal?')) return;
             showToast('Finalizando...', '');
             try {
@@ -2748,12 +2943,9 @@
                 await cargarPublicacionesGrupo(grupoActualId);
                 await cargarDashboard();
                 await cargarGrupos();
-            } catch (e) { console.error('Error finalizando live:', e); showToast('Error: ' + e.message, 'error'); }
+            } catch (e) { showToast('Error: ' + e.message, 'error'); }
         }
 
-        // ================================================================
-        // VOLVER A LISTA
-        // ================================================================
         function volverALista() {
             document.getElementById('vistaLista').style.display = 'block';
             document.getElementById('vistaGrupo').classList.remove('show');
@@ -2787,7 +2979,6 @@
             var grupoIdDesdeUrl = params.get('grupo');
 
             if (grupoIdDesdeUrl) {
-                console.log('📡 Restaurando canal desde URL:', grupoIdDesdeUrl);
                 await abrirGrupo(grupoIdDesdeUrl);
             } else {
                 await cargarGrupos();
@@ -2821,16 +3012,7 @@
                 if (grupoId) {
                     if (grupoId !== grupoActualId) await abrirGrupo(grupoId);
                 } else {
-                    document.getElementById('vistaLista').style.display = 'block';
-                    document.getElementById('vistaGrupo').classList.remove('show');
-                    grupoActual = null; grupoActualId = null; liveActivoEnGrupo = null;
-                    isLiveGrupoActivo = false; currentStreamGrupoId = null;
-                    if (liveKitRoomGrupo) { try { liveKitRoomGrupo.disconnect(); } catch(err) {} liveKitRoomGrupo = null; }
-                    if (channelChatGrupo) { try { window.supabase.removeChannel(channelChatGrupo); } catch(err) {} channelChatGrupo = null; }
-                    cerrarLiveGrupoInline();
-                    detenerRefrescoAnuncios();
-                    cerrarAnuncio();
-                    await cargarGrupos();
+                    volverALista();
                 }
             });
         });
@@ -2842,6 +3024,8 @@
         window.abrirGrupo = abrirGrupo;
         window.volverALista = volverALista;
         window.publicarEnGrupo = publicarEnGrupo;
+        window.subirFotoGrupo = subirFotoGrupo;
+        window.subirVideoGrupo = subirVideoGrupo;
         window.reaccionarPublicacion = reaccionarPublicacion;
         window.toggleComentariosPublicacion = toggleComentariosPublicacion;
         window.enviarComentarioPublicacion = enviarComentarioPublicacion;
@@ -2892,8 +3076,7 @@
         window.cambiarPortadaGrupo = cambiarPortadaGrupo;
         window.abrirAjustesCanal = abrirAjustesCanal;
         window.cerrarAjustesCanal = cerrarAjustesCanal;
-        
-        // ✅ NUEVAS FUNCIONES DEL MENÚ "..."
+        window.toggleMarketplace = toggleMarketplace;
         window.togglePostMenu = togglePostMenu;
         window.toggleMeInteresa = toggleMeInteresa;
         window.toggleNoMeInteresa = toggleNoMeInteresa;
@@ -2917,6 +3100,7 @@
         window.cerrarModalMarketplace = cerrarModalMarketplace;
         window.publicarMarketplace = publicarMarketplace;
         window.marcarReporte = marcarReporte;
+        window.contienePalabrasCripto = contienePalabrasCripto;
     </script>
 </body>
 </html>
