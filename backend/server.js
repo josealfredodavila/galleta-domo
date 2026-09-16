@@ -6,7 +6,7 @@
    ✅ Express
    ✅ Supabase Auth
    ✅ Supabase Admin
-   ✅ LiveKit
+   ✅ LiveKit (CON FIX await toJwt())
    ✅ Payments
    ✅ Webhooks
    ✅ Membresía
@@ -1231,7 +1231,6 @@ app.patch(
         }
     }
 );
-
 /* ================================================================
    LIVEKIT
 ================================================================ */
@@ -1634,8 +1633,11 @@ app.post(
                 canUpdateOwnMetadata: true
             });
 
+            // ✅ FIX CRÍTICO: LiveKit SDK v2 requiere await en toJwt()
+            // Sin await, se devolvía una Promise en lugar del JWT real,
+            // causando "invalid authorization token" en LiveKit Cloud.
             const jwt =
-                token.toJwt();
+                await token.toJwt();
 
             console.log(
                 `✅ LiveKit token generado: ${userId} → ${roomName}`
