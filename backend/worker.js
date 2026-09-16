@@ -1,15 +1,6 @@
 /* ================================================================
    WORKER.JS - SARIEL'S ECOSYSTEM
-   ================================================================
-   Procesa videos en background usando BullMQ + Redis + FFmpeg
-   
-   FUNCIONES:
-   - Escucha la cola "video-processing"
-   - Descarga el video original
-   - Aplica overlay de marca de agua "✦ WEB3" (PNG transparente)
-   - Re-encodea a MP4 720p h264 + AAC
-   - Sube a Supabase Storage
-   - Actualiza la DB
+   VERSIÓN CORREGIDA - Fix "Filter not found"
    ================================================================ */
 
 const { Worker } = require('bullmq');
@@ -51,11 +42,6 @@ const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
 
 console.log('📡 Conectando a Redis...');
 
-// FIX: family: 0 es obligatorio para conectar a Redis dentro de la red
-// privada de Railway, que resuelve por IPv6. Sin esto, ioredis intenta
-// IPv4 por defecto, la conexión nunca se completa, y con
-// maxRetriesPerRequest: null el Worker se queda colgado para siempre
-// sin lanzar ningún error (nunca dispara 'connect' ni 'ready').
 const redisConnection = new IORedis(REDIS_URL, {
     maxRetriesPerRequest: null,
     enableReadyCheck: false,
@@ -76,9 +62,8 @@ redisConnection.on('error', (err) => {
 // ================================================================
 const COLA_NOMBRE = 'video-processing';
 const TEMP_DIR = os.tmpdir();
-const MAX_CONCURRENT = 1; // Solo 1 video a la vez (para no matar CPU)
+const MAX_CONCURRENT = 1;
 
-// Ruta al logo PNG (debe existir en assets/sariels_web3.png)
 const LOGO_PATH = path.join(__dirname, 'assets', 'sariels_web3.png');
 
 // ================================================================
@@ -109,7 +94,7 @@ async function procesarVideo(job) {
         const response = await axios.get(videoUrl, {
             responseType: 'arraybuffer',
             timeout: 120000,
-            maxContentLength: 200 * 1024 * 1024 // 200 MB
+            maxContentLength: 200 * 1024 * 1024
         });
 
         fs.writeFileSync(inputPath, Buffer.from(response.data));
@@ -135,31 +120,25 @@ async function procesarVideo(job) {
         const width = videoStream.width;
         const height = videoStream.height;
         const duration = metadata.format.duration;
+        const tieneAudio = metadata.streams.some(s => s.codec_type === 'audio');
 
-        console.log(`📐 [JOB ${job.id}] Dimensiones: ${width}x${height}, Duración: ${duration}s`);
+        console.log(`📐 [JOB ${job.id}] Dimensiones: ${width}x${height}, Duración: ${duration}s, Audio: ${tieneAudio ? 'sí' : 'no'}`);
 
         await job.updateProgress(20);
 
         // ============================================================
-        // PASO 3: Construir el filtro de FFmpeg (Overlay PNG "✦ WEB3")
+        // PASO 3: Construir el filtro de FFmpeg
         // ============================================================
         const targetHeight = Math.min(720, height);
         const scaleFactor = targetHeight / height;
         const targetWidth = Math.round(width * scaleFactor);
 
-        // Asegurar dimensiones pares (requerido por h264)
         const finalWidth = targetWidth % 2 === 0 ? targetWidth : targetWidth - 1;
         const finalHeight = targetHeight % 2 === 0 ? targetHeight : targetHeight - 1;
 
-        // --- CONFIGURACIÓN DEL LOGO "✦ WEB3" ---
-        // Ancho del logo: 20% del ancho del video (cámbialo si lo quieres más grande)
         const logoW = Math.floor(finalWidth * 0.20);
-
-        // Altura del logo manteniendo proporción de la imagen (1200x250 = 0.2083)
-        // Si tu PNG tiene otras dimensiones, ajusta este multiplicador.
         const logoH = Math.floor(logoW * 0.2083);
 
-        // Márgenes desde la esquina inferior derecha
         const marginX = Math.floor(finalWidth * 0.03);
         const marginY = Math.floor(finalHeight * 0.03);
 
@@ -170,30 +149,25 @@ async function procesarVideo(job) {
         console.log(`   - Escala: ${finalWidth}x${finalHeight}`);
         console.log(`   - Logo: ${logoW}x${logoH} en posición (${xBR}, ${yBR})`);
 
-        // Filtro complejo: 2 entradas (video + logo PNG)
-        // OJO: en complexFilter los filtros se separan con ";" no con ","
         const filterComplex = [
-            // 1. Escalar el video original
             `[0:v]scale=${finalWidth}:${finalHeight}:force_original_aspect_ratio=decrease[scaled]`,
-            // 2. Padded a las dimensiones exactas
             `[scaled]pad=${finalWidth}:${finalHeight}:(ow-iw)/2:(oh-ih)/2:color=black[pad]`,
-            // 3. Escalar el logo
             `[1:v]scale=${logoW}:${logoH}[logo]`,
-            // 4. Superponer el logo en la esquina inferior derecha
             `[pad][logo]overlay=${xBR}:${yBR}[out]`
         ].join(';');
 
         await job.updateProgress(25);
 
         // ============================================================
-        // PASO 4: Procesar con FFmpeg
+        // PASO 4: Procesar con FFmpeg (VERSIÓN CORREGIDA)
         // ============================================================
         console.log(`🎬 [JOB ${job.id}] Iniciando FFmpeg...`);
 
         await new Promise((resolve, reject) => {
-            ffmpeg(inputPath)
-                .input(LOGO_PATH)                 // Segunda entrada: el PNG
-                .complexFilter(filterComplex)     // Filtro complejo de 2 entradas
+            const command = ffmpeg()
+                .input(inputPath)
+                .input(LOGO_PATH)
+                .complexFilter(filterComplex, 'out')   // ✅ Segundo parámetro 'out'
                 .outputOptions([
                     '-c:v libx264',
                     '-preset veryfast',
@@ -201,13 +175,19 @@ async function procesarVideo(job) {
                     '-pix_fmt yuv420p',
                     '-profile:v baseline',
                     '-level 3.1',
-                    '-c:a aac',
-                    '-b:a 128k',
                     '-movflags +faststart',
-                    '-max_muxing_queue_size 1024',
-                    '-map', '[out]',              // Mapear la salida del complexFilter
-                    '-map', '0:a?'                // Mapear el audio original si existe
-                ])
+                    '-max_muxing_queue_size 1024'
+                ]);
+
+            // Audio: si el video tiene audio, mapear; si no, sin audio
+            if (tieneAudio) {
+                command.outputOptions(['-c:a aac', '-b:a 128k']);
+            } else {
+                command.outputOptions(['-an']);  // Sin audio
+            }
+
+            command
+                .output(outputPath)     // ✅ Output explícito
                 .on('start', (cmd) => {
                     console.log(`▶️ [JOB ${job.id}] FFmpeg iniciado`);
                     console.log(`   CMD: ${cmd}`);
@@ -224,11 +204,10 @@ async function procesarVideo(job) {
                 })
                 .on('error', (err, stdout, stderr) => {
                     console.error(`❌ [JOB ${job.id}] FFmpeg error:`, err.message);
-                    // ESTO ES CLAVE PARA DEPURAR:
                     console.error(`❌ [JOB ${job.id}] STDERR:`, stderr);
                     reject(err);
                 })
-                .save(outputPath);
+                .run();   // ✅ .run() en lugar de .save()
         });
 
         await job.updateProgress(80);
@@ -322,7 +301,6 @@ async function procesarVideo(job) {
     } catch (error) {
         console.error(`❌ [JOB ${job.id}] Error:`, error.message);
 
-        // Limpiar archivos temporales
         try {
             if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
             if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
@@ -330,7 +308,6 @@ async function procesarVideo(job) {
             console.warn(`⚠️ No se pudo limpiar temp:`, cleanupError.message);
         }
 
-        // Marcar el video con error
         try {
             await supabaseAdmin
                 .from('videos')
@@ -355,7 +332,7 @@ const worker = new Worker(COLA_NOMBRE, procesarVideo, {
     concurrency: MAX_CONCURRENT,
     limiter: {
         max: 1,
-        duration: 60000 // Máximo 1 video por minuto
+        duration: 60000
     }
 });
 
@@ -377,7 +354,7 @@ worker.on('ready', () => {
 });
 
 // ================================================================
-// HEALTH CHECK SIMPLE (para que Railway no lo mate)
+// HEALTH CHECK SIMPLE
 // ================================================================
 const http = require('http');
 const PORT = process.env.PORT || 3001;
