@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#000000" />
+    <title>Acerca de tu cuenta · Sariel's</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="../../../shared/config-layout.css" />
+</head>
+<body class="cfg-page">
+
+    <div id="cfgHeaderSlot"></div>
+
+    <main class="cfg-content">
+
+        <h2 class="cfg-section-title">Ubicación</h2>
+        <div class="cfg-list" id="seccionUbicacion"></div>
+
+        <h2 class="cfg-section-title">Ubicación de publicaciones</h2>
+        <div class="cfg-list" id="seccionPublicaciones"></div>
+
+        <h2 class="cfg-section-title">Datos de ubicación</h2>
+        <div class="cfg-list" id="seccionDatos"></div>
+
+        <div class="cfg-aviso">
+            ℹ️ Sariel's nunca comparte tu ubicación con terceros sin tu permiso.
+        </div>
+
+        <div class="cfg-footer">
+            <strong>◈ Sariel's</strong> · Privacidad · Acerca de tu cuenta
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="../../../shared/config-icons.js"></script>
+    <script src="../../../shared/config-layout.js"></script>
+
+    <script>
+    (function () {
+        'use strict';
+
+        const $ = (sel) => document.querySelector(sel);
+
+        cfgInitPage({
+            title: 'Acerca de tu cuenta',
+            subtitle: '@tu_usuario',
+            backUrl: '/features/perfil/configuracion/index.html',
+        });
+
+        const PREF_KEYS = {
+            ubicacion_activada: 'ubicacion_activada',
+            ubicacion_posts: 'ubicacion_en_publicaciones',
+            ubicacion_precisa: 'ubicacion_precisa',
+            ubicacion_historial: 'ubicacion_guardar_historial',
+        };
+
+        function renderSecciones() {
+            // ============================================================
+            // UBICACIÓN PRINCIPAL
+            // ============================================================
+            $('#seccionUbicacion').innerHTML = [
+                cfgRenderItem({
+                    icon: 'mapPin',
+                    title: 'Ubicación actual',
+                    desc: 'Ubicación: Puebla, México · Actualizada hace 2 días',
+                    onclick: 'window.onVerUbicacionActual()',
+                }),
+            ].join('');
+
+            // ============================================================
+            // PUBLICACIONES
+            // ============================================================
+            $('#seccionPublicaciones').innerHTML = [
+                cfgRenderToggle({
+                    id: 'toggleUbicacionPosts',
+                    title: 'Mostrar ubicación en mis publicaciones',
+                    desc: 'Añade automáticamente tu ubicación a las publicaciones que crees',
+                    checked: cfgGetPref(PREF_KEYS.ubicacion_posts, false),
+                    onChange: `window.onToggleUbicacionPosts(this.checked)`,
+                }),
+                cfgRenderToggle({
+                    id: 'toggleUbicacionPrecisa',
+                    title: 'Usar ubicación precisa',
+                    desc: 'Usa GPS en lugar de solo ciudad/municipio',
+                    checked: cfgGetPref(PREF_KEYS.ubicacion_precisa, false),
+                    onChange: `window.onToggleUbicacionPrecisa(this.checked)`,
+                }),
+            ].join('');
+
+            // ============================================================
+            // DATOS
+            // ============================================================
+            $('#seccionDatos').innerHTML = [
+                cfgRenderToggle({
+                    id: 'toggleUbicacionHistorial',
+                    title: 'Guardar historial de ubicaciones',
+                    desc: 'Permite a Sariel\'s guardar tus ubicaciones recientes para mejorar la experiencia',
+                    checked: cfgGetPref(PREF_KEYS.ubicacion_historial, true),
+                    onChange: `window.onToggleHistorial(this.checked)`,
+                }),
+                cfgRenderItem({
+                    icon: 'ban',
+                    title: 'Eliminar historial de ubicaciones',
+                    desc: 'Borra todas las ubicaciones guardadas de tu cuenta',
+                    onclick: 'window.onEliminarHistorial()',
+                    class: 'cfg-item-plain',
+                    style: 'color: var(--cfg-danger, #ff3366);',
+                }),
+            ].join('');
+        }
+
+        // ============================================================
+        // CALLBACKS
+        // ============================================================
+        window.onToggleUbicacionPosts = async (value) => {
+            if (value) {
+                // Pedir permiso de geolocalización
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                        async (position) => {
+                            await cfgSetPref(PREF_KEYS.ubicacion_activada, true);
+                            await cfgSetPref(PREF_KEYS.ubicacion_posts, true);
+                            cfgToast('📍 Ubicación activada en publicaciones', 'success');
+                        },
+                        (error) => {
+                            cfgToast('⚠️ Permiso de ubicación denegado', 'warning');
+                            const toggle = document.getElementById('toggleUbicacionPosts');
+                            if (toggle) toggle.checked = false;
+                        }
+                    );
+                } else {
+                    cfgToast('❌ Tu dispositivo no soporta geolocalización', 'error');
+                    const toggle = document.getElementById('toggleUbicacionPosts');
+                    if (toggle) toggle.checked = false;
+                    return;
+                }
+            } else {
+                await cfgSetPref(PREF_KEYS.ubicacion_posts, false);
+                cfgToast('🚫 Ubicación removida de tus publicaciones', 'warning');
+            }
+        };
+
+        window.onToggleUbicacionPrecisa = async (value) => {
+            await cfgSetPref(PREF_KEYS.ubicacion_precisa, value);
+            cfgToast(
+                value ? '🎯 Ubicación precisa activada' : '📍 Usando solo ciudad/municipio',
+                value ? 'success' : 'warning'
+            );
+        };
+
+        window.onToggleHistorial = async (value) => {
+            await cfgSetPref(PREF_KEYS.ubicacion_historial, value);
+            cfgToast(
+                value ? '📚 Historial de ubicaciones activado' : '🚫 Historial de ubicaciones desactivado',
+                value ? 'success' : 'warning'
+            );
+        };
+
+        window.onVerUbicacionActual = () => {
+            if (navigator.geolocation) {
+                cfgToast('📍 Obteniendo ubicación...', '', 2000);
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const lat = position.coords.latitude.toFixed(4);
+                        const lng = position.coords.longitude.toFixed(4);
+                        cfgToast(`📍 Ubicación: ${lat}, ${lng}`, 'success', 4000);
+                    },
+                    () => {
+                        cfgToast('⚠️ No se pudo obtener tu ubicación', 'warning');
+                    }
+                );
+            } else {
+                cfgToast('❌ Geolocalización no disponible', 'error');
+            }
+        };
+
+        window.onEliminarHistorial = async () => {
+            const ok = await cfgConfirm({
+                title: '¿Eliminar historial de ubicaciones?',
+                text: 'Esta acción borrará todas las ubicaciones guardadas de tu cuenta. No se puede deshacer.',
+                confirmText: 'Eliminar todo',
+                cancelText: 'Cancelar',
+                danger: true,
+            });
+
+            if (!ok) return;
+
+            cfgToast('⏳ Eliminando historial...', 'warning');
+
+            setTimeout(() => {
+                cfgSetPref(PREF_KEYS.ubicacion_historial, false);
+                const toggle = document.getElementById('toggleUbicacionHistorial');
+                if (toggle) toggle.checked = false;
+                cfgToast('✅ Historial de ubicaciones eliminado', 'success');
+            }, 1200);
+        };
+
+        // ============================================================
+        // INICIALIZAR
+        // ============================================================
+        window.addEventListener('DOMContentLoaded', async () => {
+            await new Promise(resolve => setTimeout(resolve, 400));
+            renderSecciones();
+        });
+
+        // ============================================================
+        // CARGAR HANDLE EN SUBTITLE
+        // ============================================================
+        (async function cargarUsuario() {
+            try {
+                const client = window.supabaseClient || 
+                    (window.supabase && window.supabase.createClient(
+                        'https://zultnlogdoajehbswlih.supabase.co',
+                        'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
+                    ));
+                if (!client) return;
+                const { data } = await client.auth.getSession();
+                const session = data && data.session;
+                if (!session) return;
+                const handle = session.user.email ? session.user.email.split('@')[0] : 'usuario';
+                const subEl = document.querySelector('.cfg-header-subtitle');
+                if (subEl) subEl.textContent = '@' + handle;
+            } catch (e) { /* silencioso */ }
+        })();
+
+    })();
+    </script>
+</body>
+</html>
