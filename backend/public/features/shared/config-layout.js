@@ -1,10 +1,26 @@
 /* ================================================================
    SARIEL'S · CONFIGURACIÓN - LAYOUT Y NAVEGACIÓN
-   Componentes reutilizables para todas las pantallas de config
+   AHORA CON SINCRONIZACIÓN SUPABASE + localStorage FALLBACK
    ================================================================ */
 
 (function () {
     'use strict';
+
+    // ================================================================
+    // CLIENTE SUPABASE (lazy)
+    // ================================================================
+    function getSupabase() {
+        if (window.supabaseClient) return window.supabaseClient;
+        if (window.supabase && window.supabase.createClient) {
+            // Fallback: crear cliente si no existe
+            window.supabaseClient = window.supabase.createClient(
+                'https://zultnlogdoajehbswlih.supabase.co',
+                'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
+            );
+            return window.supabaseClient;
+        }
+        return null;
+    }
 
     // ================================================================
     // TOAST
@@ -62,7 +78,7 @@
     }
 
     // ================================================================
-    // ITEM de lista (link o botón)
+    // ITEM de lista
     // ================================================================
     function cfgRenderItem(opts) {
         opts = opts || {};
@@ -203,6 +219,9 @@
                 });
             }
 
+            // 🔄 Cargar preferencias desde Supabase al iniciar
+            await cfgCargarPreferencias();
+
             if (typeof opts.onReady === 'function') {
                 await opts.onReady();
             }
@@ -218,11 +237,15 @@
     }
 
     // ================================================================
-    // HELPERS de localStorage (preferencias locales)
+    // SISTEMA DE PREFERENCIAS (Supabase + localStorage fallback)
     // ================================================================
     const CFG_STORAGE_KEY = 'sariels_prefs_v1';
 
-    function cfgGetPrefs() {
+    let prefsCache = null;
+    let supabaseReady = false;
+
+    // Cargar de localStorage (rápido, síncrono)
+    function cfgGetPrefsLocal() {
         try {
             return JSON.parse(localStorage.getItem(CFG_STORAGE_KEY) || '{}');
         } catch (e) {
@@ -230,19 +253,111 @@
         }
     }
 
-    function cfgSetPref(key, value) {
-        const prefs = cfgGetPrefs();
-        prefs[key] = value;
+    // Guardar en localStorage (rápido, síncrono)
+    function cfgSavePrefsLocal(prefs) {
         try {
             localStorage.setItem(CFG_STORAGE_KEY, JSON.stringify(prefs));
         } catch (e) {
-            console.warn('No se pudo guardar preferencia:', e);
+            console.warn('No se pudo guardar preferencia local:', e);
         }
     }
 
+    // Cargar desde Supabase (async) + fallback a localStorage
+    async function cfgCargarPreferencias() {
+        // 1. Cargar rápido desde localStorage
+        prefsCache = cfgGetPrefsLocal();
+
+        // 2. Intentar sincronizar con Supabase
+        const client = getSupabase();
+        if (!client) {
+            console.warn('⚠️ Supabase no disponible. Usando solo localStorage.');
+            return prefsCache;
+        }
+
+        try {
+            const { data, error } = await client.rpc('obtener_mis_preferencias');
+
+            if (error) {
+                // Si el usuario no está autenticado, no es error crítico
+                if (error.message && error.message.includes('Usuario no autenticado')) {
+                    console.log('ℹ️ Usuario no autenticado. Usando localStorage.');
+                    return prefsCache;
+                }
+                throw error;
+            }
+
+            // Supabase es la fuente de verdad
+            if (data && typeof data === 'object') {
+                prefsCache = data;
+                cfgSavePrefsLocal(data);
+                supabaseReady = true;
+                console.log('✅ Preferencias cargadas desde Supabase:', data);
+            }
+
+            return prefsCache;
+
+        } catch (error) {
+            console.warn('⚠️ No se pudieron cargar preferencias desde Supabase. Usando localStorage.', error);
+            return prefsCache;
+        }
+    }
+
+    // Guardar TODAS las preferencias
+    async function cfgSetPrefs(prefs) {
+        prefsCache = prefs;
+        cfgSavePrefsLocal(prefs);
+
+        const client = getSupabase();
+        if (!client) return;
+
+        try {
+            const { error } = await client.rpc('actualizar_mis_preferencias', {
+                p_prefs: prefs
+            });
+            if (error) throw error;
+            console.log('✅ Preferencias guardadas en Supabase');
+        } catch (error) {
+            console.warn('⚠️ Guardado local; pendiente sync Supabase:', error);
+        }
+    }
+
+    // Obtener UNA preferencia
     function cfgGetPref(key, defaultVal) {
-        const prefs = cfgGetPrefs();
-        return prefs[key] !== undefined ? prefs[key] : defaultVal;
+        if (!prefsCache) prefsCache = cfgGetPrefsLocal();
+        return prefsCache[key] !== undefined ? prefsCache[key] : defaultVal;
+    }
+
+    // Guardar UNA preferencia (la más usada por los toggles)
+    async function cfgSetPref(key, value) {
+        if (!prefsCache) prefsCache = cfgGetPrefsLocal();
+        prefsCache[key] = value;
+        cfgSavePrefsLocal(prefsCache);
+
+        const client = getSupabase();
+        if (!client) return;
+
+        try {
+            const { error } = await client.rpc('actualizar_preferencia', {
+                p_key: key,
+                p_value: value
+            });
+            if (error) {
+                if (error.message && error.message.includes('Usuario no autenticado')) {
+                    console.log('ℹ️ Sin sesión. Guardado solo local.');
+                    return;
+                }
+                throw error;
+            }
+            console.log('✅ Preferencia sincronizada:', key, '=', value);
+        } catch (error) {
+            console.warn('⚠️ Guardado local; pendiente sync Supabase:', error);
+        }
+    }
+
+    // Sincronizar manualmente (útil cuando el usuario vuelve online)
+    async function cfgSincronizar() {
+        await cfgCargarPreferencias();
+        return prefsCache;
     }
 
     // ================================================================
@@ -255,8 +370,11 @@
     window.cfgRenderRadioGroup = cfgRenderRadioGroup;
     window.cfgConfirm = cfgConfirm;
     window.cfgInitPage = cfgInitPage;
-    window.cfgGetPrefs = cfgGetPrefs;
-    window.cfgSetPref = cfgSetPref;
+    window.cfgGetPrefs = cfgGetPrefsLocal;
+    window.cfgSetPrefs = cfgSetPrefs;
     window.cfgGetPref = cfgGetPref;
+    window.cfgSetPref = cfgSetPref;
+    window.cfgCargarPreferencias = cfgCargarPreferencias;
+    window.cfgSincronizar = cfgSincronizar;
 
 })();
