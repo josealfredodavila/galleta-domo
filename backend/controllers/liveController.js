@@ -30,7 +30,7 @@ class LiveController {
                 canPublishData: true
             });
 
-            const token = at.toJwt();
+            const token = await at.toJwt();
 
             logger.info(`Token LiveKit generado para: ${userId}`);
             res.json({
