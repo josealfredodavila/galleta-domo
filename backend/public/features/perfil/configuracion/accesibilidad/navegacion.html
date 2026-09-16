@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#000000" />
+    <title>Navegación · Sariel's</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="../../../shared/config-layout.css" />
+    
+    <style>
+        .cfg-radio-item {
+            padding: 14px 16px;
+        }
+
+        .cfg-radio-desc {
+            font-size: 0.72rem;
+            color: var(--cfg-text-muted);
+            line-height: 1.5;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body class="cfg-page">
+
+    <div id="cfgHeaderSlot"></div>
+
+    <main class="cfg-content">
+
+        <h2 class="cfg-section-title">Abrir enlaces externos</h2>
+        <div style="padding: 0 16px 12px 16px; font-size: 0.78rem; color: var(--cfg-text-muted); line-height: 1.5;">
+            Elige cómo se abren los enlaces cuando los pulsas.
+        </div>
+        <div class="cfg-radio-group" id="seccionEnlaces"></div>
+
+        <h2 class="cfg-section-title">Navegación interna</h2>
+        <div class="cfg-list" id="seccionInterna"></div>
+
+        <div class="cfg-aviso cfg-aviso-info">
+            ℹ️ Esta configuración afecta a todas las cuentas de Sariel's en este dispositivo.
+        </div>
+
+        <div class="cfg-footer">
+            <strong>◈ Sariel's</strong> · Accesibilidad · Navegación
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="../../../shared/config-icons.js"></script>
+    <script src="../../../shared/config-layout.js"></script>
+
+    <script>
+    (function () {
+        'use strict';
+
+        const $ = (sel) => document.querySelector(sel);
+
+        cfgInitPage({
+            title: 'Navegación',
+            subtitle: 'Cómo se abren los enlaces',
+            backUrl: '/features/perfil/configuracion/index.html',
+        });
+
+        const PREF_KEYS = {
+            abrir_enlaces: 'navegacion_abrir_enlaces',
+            mostrar_contexto: 'navegacion_mostrar_contexto',
+        };
+
+        // ============================================================
+        // OPCIONES DE NAVEGACIÓN (radio group)
+        // ============================================================
+        const OPCIONES = [
+            {
+                id: 'interno',
+                title: 'Con navegador web integrado',
+                desc: 'Los enlaces se abren dentro de Sariel\'s sin salir de la app.',
+                icon: '🌐',
+            },
+            {
+                id: 'externo',
+                title: 'Con navegador externo',
+                desc: 'Los enlaces se abren en tu app de navegador predeterminada.',
+                icon: '📱',
+            },
+        ];
+
+        function renderOpciones() {
+            const actual = cfgGetPref(PREF_KEYS.abrir_enlaces, 'interno');
+
+            $('#seccionEnlaces').innerHTML = OPCIONES.map(opt => `
+                <div class="cfg-radio-item ${opt.id === actual ? 'active' : ''}" onclick="window.onSeleccionarApertura('${opt.id}')">
+                    <div class="cfg-radio-circle"></div>
+                    <div class="cfg-radio-content">
+                        <div class="cfg-radio-title">
+                            <span style="margin-right:6px;">${opt.icon}</span>${opt.title}
+                        </div>
+                        <div class="cfg-radio-desc">${opt.desc}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        window.onSeleccionarApertura = async (valor) => {
+            await cfgSetPref(PREF_KEYS.abrir_enlaces, valor);
+            renderOpciones();
+            cfgToast(
+                valor === 'interno' 
+                    ? '🌐 Los enlaces se abrirán dentro de Sariel\'s' 
+                    : '📱 Los enlaces se abrirán en tu navegador externo',
+                'success'
+            );
+        };
+
+        // ============================================================
+        // NAVEGACIÓN INTERNA
+        // ============================================================
+        function renderInterna() {
+            const mostrarContexto = cfgGetPref(PREF_KEYS.mostrar_contexto, true);
+
+            $('#seccionInterna').innerHTML = [
+                cfgRenderToggle({
+                    id: 'toggleContexto',
+                    title: 'Mostrar contexto del enlace',
+                    desc: 'Muestra un fragmento de la página enlazada junto al post. Solo aplica si usas navegador web integrado.',
+                    checked: mostrarContexto,
+                    onChange: `window.onToggleContexto(this.checked)`,
+                }),
+            ].join('');
+        }
+
+        window.onToggleContexto = async (value) => {
+            await cfgSetPref(PREF_KEYS.mostrar_contexto, value);
+            cfgToast(
+                value ? '👁️ Mostrando contexto de enlaces' : '🚫 Contexto oculto',
+                value ? 'success' : 'warning'
+            );
+        };
+
+        // ============================================================
+        // INICIALIZAR
+        // ============================================================
+        window.addEventListener('DOMContentLoaded', async () => {
+            await new Promise(resolve => setTimeout(resolve, 400));
+            renderOpciones();
+            renderInterna();
+        });
+
+    })();
+    </script>
+</body>
+</html>
