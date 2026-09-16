@@ -94,6 +94,39 @@
         .perfil-header .stats .stat .number { font-family: 'Orbitron', monospace; font-size: 1.2rem; font-weight: 700; color: var(--gold); text-shadow: 0 0 20px rgba(212, 175, 55, 0.05); }
         .perfil-header .stats .stat .label { font-size: 0.55rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-family: 'Orbitron', monospace; }
         .perfil-header .acciones { display: flex; gap: 8px; flex-wrap: wrap; margin-left: 10px; }
+        
+        /* ============================================================ */
+        /* ⚙️ BOTÓN DE CONFIGURACIÓN - NUEVO                            */
+        /* ============================================================ */
+        .config-btn {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            z-index: 20;
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: rgba(5, 8, 15, 0.85);
+            border: 1px solid var(--glass-border);
+            color: var(--gold);
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            cursor: pointer;
+            transition: var(--transition);
+            backdrop-filter: blur(8px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+        }
+        .config-btn:hover,
+        .config-btn:active {
+            background: var(--gold);
+            color: var(--space);
+            transform: rotate(90deg) scale(1.05);
+            box-shadow: 0 0 30px rgba(212, 175, 55, 0.4);
+        }
+        
         .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 20px; border-radius: 30px; font-size: 0.7rem; font-weight: 600; border: none; cursor: pointer; transition: var(--transition); font-family: 'Inter', sans-serif; }
         .btn-gold { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); box-shadow: 0 4px 20px rgba(212, 175, 55, 0.2); }
         .btn-gold:hover { transform: translateY(-2px); box-shadow: var(--shadow-gold); }
@@ -306,7 +339,7 @@
 
         @media (max-width: 768px) {
             .app { padding: 12px 14px; }
-            .perfil-header { flex-direction: column; text-align: center; padding: 20px; }
+            .perfil-header { flex-direction: column; text-align: center; padding: 60px 20px 20px; }
             .perfil-header .stats { margin-left: 0; justify-content: center; width: 100%; }
             .perfil-header .acciones { margin-left: 0; justify-content: center; width: 100%; }
             .perfil-tabs .tab-btn { font-size: 0.6rem; padding: 8px 14px; }
@@ -320,6 +353,7 @@
             .emoji-picker { width: 240px; left: 50%; transform: translateX(-50%); }
             .emoji-picker .grid { grid-template-columns: repeat(6, 1fr); }
             .form-publicacion .acciones .btn-publicar { margin-left: 0; width: 100%; justify-content: center; }
+            .config-btn { top: 12px; right: 12px; width: 38px; height: 38px; font-size: 1.1rem; }
         }
         @media (max-width: 480px) {
             .perfil-header .avatar { width: 70px; height: 70px; font-size: 1.8rem; }
@@ -365,6 +399,9 @@
         <div class="perfil-container">
 
             <div class="perfil-header" id="perfilHeader">
+                <!-- ⚙️ BOTÓN DE CONFIGURACIÓN -->
+                <a href="/features/perfil/configuracion/index.html" class="config-btn" title="Configuración">⚙️</a>
+                
                 <div class="avatar-container">
                     <div class="avatar" id="perfilAvatar" onclick="expandirAvatar()">
                         ◈
