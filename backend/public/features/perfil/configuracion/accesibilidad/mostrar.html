@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#000000" />
+    <title>Mostrar · Sariel's</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="../../../shared/config-layout.css" />
+    
+    <style>
+        .cfg-preview-box {
+            margin: 0 16px 24px 16px;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            border: 1px solid var(--cfg-border);
+        }
+
+        .cfg-tema-selector {
+            display: flex;
+            gap: 12px;
+            padding: 0 16px 20px 16px;
+        }
+
+        .cfg-tema-card {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            padding: 16px 8px;
+            border-radius: 12px;
+            border: 2px solid var(--cfg-border);
+            background: rgba(255, 255, 255, 0.02);
+            cursor: pointer;
+            transition: var(--cfg-transition);
+        }
+
+        .cfg-tema-card:hover {
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .cfg-tema-card.active {
+            border-color: var(--cfg-gold);
+            background: rgba(212, 175, 55, 0.08);
+        }
+
+        .cfg-tema-card .preview {
+            width: 60px;
+            height: 40px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .cfg-tema-card .preview.sistema { background: linear-gradient(135deg, #000 50%, #fff 50%); }
+        .cfg-tema-card .preview.dia     { background: #f5f5f5; }
+        .cfg-tema-card .preview.noche   { background: #0a0a0a; }
+
+        .cfg-tema-card .label {
+            font-size: 0.72rem;
+            color: var(--cfg-text);
+            font-weight: 500;
+        }
+
+        .cfg-tema-card.active .label {
+            color: var(--cfg-gold);
+        }
+
+        .cfg-fuente-slider {
+            padding: 0 16px 20px 16px;
+        }
+
+        .cfg-fuente-slider .slider-labels {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            font-size: 0.75rem;
+            color: var(--cfg-text-muted);
+        }
+
+        .cfg-fuente-slider .slider-value {
+            font-family: 'Orbitron', monospace;
+            color: var(--cfg-gold);
+            font-weight: 700;
+        }
+
+        .cfg-fuente-slider input[type="range"] {
+            width: 100%;
+            height: 6px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .cfg-fuente-slider input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--cfg-gold);
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .cfg-fuente-slider input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--cfg-gold);
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .cfg-color-selector {
+            display: flex;
+            gap: 12px;
+            padding: 0 16px 20px 16px;
+            justify-content: space-around;
+            flex-wrap: wrap;
+        }
+
+        .cfg-color-dot {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: var(--cfg-transition);
+            border: 3px solid transparent;
+            position: relative;
+        }
+
+        .cfg-color-dot:hover {
+            transform: scale(1.1);
+        }
+
+        .cfg-color-dot.active {
+            border-color: #fff;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+        }
+
+        .cfg-color-dot.active::after {
+            content: '✓';
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 1.2rem;
+            font-weight: 700;
+            text-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
+        }
+
+        /* Preview del texto */
+        .cfg-text-preview {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 10px;
+            border: 1px solid var(--cfg-border);
+        }
+
+        .cfg-text-preview .avatar-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .cfg-text-preview .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #0F2D1A, #D4AF37);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-weight: 700;
+            font-family: 'Orbitron', monospace;
+        }
+
+        .cfg-text-preview .username {
+            font-weight: 700;
+            color: var(--cfg-text);
+            font-size: var(--preview-size, 15px);
+        }
+
+        .cfg-text-preview .handle {
+            color: var(--cfg-text-muted);
+            font-size: calc(var(--preview-size, 15px) * 0.8);
+        }
+
+        .cfg-text-preview .body {
+            color: var(--cfg-text);
+            font-size: var(--preview-size, 15px);
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body class="cfg-page">
+
+    <div id="cfgHeaderSlot"></div>
+
+    <main class="cfg-content">
+
+        <h2 class="cfg-section-title">Tema</h2>
+        <div class="cfg-tema-selector" id="seccionTema"></div>
+
+        <h2 class="cfg-section-title">Color de acento</h2>
+        <div class="cfg-color-selector" id="seccionAcento"></div>
+
+        <h2 class="cfg-section-title">Tamaño de fuente</h2>
+        <div class="cfg-fuente-slider">
+            <div class="slider-labels">
+                <span>Aa</span>
+                <span class="slider-value" id="fuenteValor">100%</span>
+                <span style="font-size:1.4rem;">Aa</span>
+            </div>
+            <input type="range" id="fuenteSlider" min="80" max="140" step="10" value="100" />
+        </div>
+
+        <h2 class="cfg-section-title">Vista previa</h2>
+        <div class="cfg-preview-box">
+            <div class="cfg-text-preview">
+                <div class="avatar-row">
+                    <div class="avatar">◈</div>
+                    <div>
+                        <div class="username">Explorador</div>
+                        <div class="handle">@explorador · ahora</div>
+                    </div>
+                </div>
+                <div class="body">
+                    Así se ve el texto con tus preferencias actuales. Ajusta el tamaño de fuente y el color para personalizar tu experiencia. ✨
+                </div>
+            </div>
+        </div>
+
+        <div class="cfg-footer">
+            <strong>◈ Sariel's</strong> · Accesibilidad · Mostrar
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="../../../shared/config-icons.js"></script>
+    <script src="../../../shared/config-layout.js"></script>
+
+    <script>
+    (function () {
+        'use strict';
+
+        const $ = (sel) => document.querySelector(sel);
+
+        cfgInitPage({
+            title: 'Mostrar',
+            subtitle: 'Tema · Fuente · Color',
+            backUrl: '/features/perfil/configuracion/index.html',
+        });
+
+        const PREF_KEYS = {
+            tema: 'mostrar_tema',
+            tamano_fuente: 'mostrar_tamano_fuente',
+            color_acento: 'mostrar_color_acento',
+        };
+
+        const COLORES_ACENTO = [
+            { valor: '#D4AF37', label: 'Dorado Sariel\'s' },
+            { valor: '#1d9bf0', label: 'Azul' },
+            { valor: '#f7d44a', label: 'Amarillo' },
+            { valor: '#00d68f', label: 'Verde' },
+            { valor: '#a855f7', label: 'Morado' },
+            { valor: '#ff3366', label: 'Rojo' },
+            { valor: '#ec4899', label: 'Rosa' },
+            { valor: '#00e5ff', label: 'Cian' },
+        ];
+
+        // ============================================================
+        // TEMA (sistema / día / noche)
+        // ============================================================
+        function renderTemas() {
+            const temaActual = cfgGetPref(PREF_KEYS.tema, 'sistema');
+
+            const temas = [
+                { id: 'sistema', label: 'Sistema', icon: '📱' },
+                { id: 'dia',     label: 'Día',     icon: '☀️' },
+                { id: 'noche',   label: 'Noche',   icon: '🌙' },
+            ];
+
+            $('#seccionTema').innerHTML = temas.map(t => `
+                <div class="cfg-tema-card ${t.id === temaActual ? 'active' : ''}" onclick="window.onCambiarTema('${t.id}')">
+                    <div class="preview ${t.id}">${t.icon}</div>
+                    <div class="label">${t.label}</div>
+                </div>
+            `).join('');
+        }
+
+        window.onCambiarTema = async (tema) => {
+            await cfgSetPref(PREF_KEYS.tema, tema);
+            document.documentElement.setAttribute('data-tema', tema);
+            renderTemas();
+            cfgToast(
+                tema === 'dia' ? '☀️ Tema día activado' :
+                tema === 'noche' ? '🌙 Tema noche activado' :
+                '📱 Siguiendo tema del sistema',
+                'success'
+            );
+        };
+
+        // ============================================================
+        // COLOR DE ACENTO
+        // ============================================================
+        function renderColores() {
+            const colorActual = cfgGetPref(PREF_KEYS.color_acento, '#D4AF37');
+
+            $('#seccionAcento').innerHTML = COLORES_ACENTO.map(c => `
+                <div class="cfg-color-dot ${c.valor === colorActual ? 'active' : ''}" 
+                     style="background:${c.valor};"
+                     title="${c.label}"
+                     onclick="window.onCambiarColor('${c.valor}')">
+                </div>
+            `).join('');
+        }
+
+        window.onCambiarColor = async (color) => {
+            await cfgSetPref(PREF_KEYS.color_acento, color);
+            document.documentElement.style.setProperty('--cfg-gold', color);
+            renderColores();
+            cfgToast(`🎨 Color de acento actualizado`, 'success');
+        };
+
+        // ============================================================
+        // TAMAÑO DE FUENTE
+        // ============================================================
+        function renderFuente() {
+            const size = cfgGetPref(PREF_KEYS.tamano_fuente, 100);
+            const slider = $('#fuenteSlider');
+            const valor = $('#fuenteValor');
+
+            if (slider) slider.value = size;
+            if (valor) valor.textContent = size + '%';
+
+            aplicarTamanoFuente(size);
+        }
+
+        function aplicarTamanoFuente(size) {
+            // Cambiar CSS variable que escala el texto de vista previa
+            document.documentElement.style.setProperty('--preview-size', (15 * size / 100) + 'px');
+            // También aplicar al body
+            document.documentElement.style.fontSize = (16 * size / 100) + 'px';
+        }
+
+        window.onCambiarFuente = async (size) => {
+            const sizeNum = parseInt(size);
+            await cfgSetPref(PREF_KEYS.tamano_fuente, sizeNum);
+            const valor = $('#fuenteValor');
+            if (valor) valor.textContent = sizeNum + '%';
+            aplicarTamanoFuente(sizeNum);
+        };
+
+        // ============================================================
+        // INICIALIZAR
+        // ============================================================
+        window.addEventListener('DOMContentLoaded', async () => {
+            await new Promise(resolve => setTimeout(resolve, 400));
+
+            // Aplicar preferencias guardadas
+            const temaGuardado = cfgGetPref(PREF_KEYS.tema, 'sistema');
+            document.documentElement.setAttribute('data-tema', temaGuardado);
+
+            const colorGuardado = cfgGetPref(PREF_KEYS.color_acento, '#D4AF37');
+            document.documentElement.style.setProperty('--cfg-gold', colorGuardado);
+
+            renderTemas();
+            renderColores();
+            renderFuente();
+
+            // Listener para el slider de fuente
+            const slider = $('#fuenteSlider');
+            if (slider) {
+                slider.addEventListener('input', (e) => {
+                    const valor = $('#fuenteValor');
+                    if (valor) valor.textContent = e.target.value + '%';
+                    aplicarTamanoFuente(e.target.value);
+                });
+                slider.addEventListener('change', (e) => {
+                    window.onCambiarFuente(e.target.value);
+                });
+            }
+        });
+
+    })();
+    </script>
+
+    <style>
+    /* Tema día (más claro) */
+    [data-tema="dia"] {
+        --cfg-bg: #f5f5f5;
+        --cfg-bg-2: #ffffff;
+        --cfg-bg-3: #f0f0f0;
+        --cfg-text: #0a0a0a;
+        --cfg-text-muted: #5a6870;
+        --cfg-text-dim: #8a8a8a;
+        --cfg-border: rgba(0, 0, 0, 0.1);
+    }
+
+    [data-tema="dia"] .cfg-header {
+        background: rgba(255, 255, 255, 0.85);
+    }
+
+    [data-tema="dia"] .cfg-page {
+        background: var(--cfg-bg);
+    }
+
+    [data-tema="dia"] .cfg-tema-card .preview.dia {
+        border-color: var(--cfg-gold);
+    }
+
+    /* Tema noche (más oscuro) */
+    [data-tema="noche"] {
+        --cfg-bg: #000000;
+        --cfg-bg-2: #0a0a0a;
+        --cfg-bg-3: #16181c;
+        --cfg-text: #f0f4f8;
+        --cfg-text-muted: #8aa8b8;
+        --cfg-text-dim: #5a6870;
+        --cfg-border: rgba(255, 255, 255, 0.08);
+    }
+    </style>
+</body>
+</html>
