@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#000000" />
+    <title>Notificaciones · Sariel's</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="../../shared/config-layout.css" />
+    
+    <style>
+        .cfg-notif-preview {
+            margin: 16px;
+            padding: 16px;
+            background: rgba(212, 175, 55, 0.05);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            border-radius: 12px;
+        }
+
+        .cfg-notif-preview-title {
+            font-size: 0.72rem;
+            color: var(--cfg-gold);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-family: 'Orbitron', monospace;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .cfg-notif-card {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--cfg-border);
+            border-radius: 10px;
+            padding: 12px 14px;
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+        }
+
+        .cfg-notif-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #0F2D1A, #D4AF37);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            flex-shrink: 0;
+            color: #fff;
+        }
+
+        .cfg-notif-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .cfg-notif-title {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--cfg-text);
+            margin-bottom: 2px;
+        }
+
+        .cfg-notif-text {
+            font-size: 0.72rem;
+            color: var(--cfg-text-muted);
+            line-height: 1.4;
+        }
+
+        .cfg-notif-time {
+            font-size: 0.6rem;
+            color: var(--cfg-text-dim);
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body class="cfg-page">
+
+    <div id="cfgHeaderSlot"></div>
+
+    <main class="cfg-content">
+
+        <h2 class="cfg-section-title">Tipos de notificaciones</h2>
+        <div class="cfg-list" id="seccionTipos"></div>
+
+        <h2 class="cfg-section-title">Preferencias por canal</h2>
+        <div class="cfg-list" id="seccionCanales"></div>
+
+        <h2 class="cfg-section-title">Filtros</h2>
+        <div class="cfg-list" id="seccionFiltros"></div>
+
+        <!-- Vista previa -->
+        <div class="cfg-notif-preview">
+            <div class="cfg-notif-preview-title">✨ Vista previa</div>
+            <div class="cfg-notif-card">
+                <div class="cfg-notif-icon">🔔</div>
+                <div class="cfg-notif-content">
+                    <div class="cfg-notif-title">Nueva interacción</div>
+                    <div class="cfg-notif-text">A @explorador le gustó tu publicación del Muro</div>
+                    <div class="cfg-notif-time">Hace unos segundos</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="cfg-aviso cfg-aviso-info">
+            ℹ️ Puedes desactivar las notificaciones en cualquier momento.
+        </div>
+
+        <div class="cfg-footer">
+            <strong>◈ Sariel's</strong> · Configuración · Notificaciones
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="../../shared/config-icons.js"></script>
+    <script src="../../shared/config-layout.js"></script>
+
+    <script>
+    (function () {
+        'use strict';
+
+        const $ = (sel) => document.querySelector(sel);
+
+        cfgInitPage({
+            title: 'Notificaciones',
+            subtitle: 'Elige qué notificaciones recibir',
+            backUrl: '/features/perfil/configuracion/index.html',
+        });
+
+        const PREF_KEYS = {
+            push_habilitado: 'notif_push_habilitado',
+            sonido: 'notif_sonido',
+            vibracion: 'notif_vibracion',
+            filtro_menciones: 'notif_filtro_menciones',
+            filtro_seguidores: 'notif_filtro_seguidores',
+            filtro_likes: 'notif_filtro_likes',
+            filtro_mensajes: 'notif_filtro_mensajes',
+            filtro_comentarios: 'notif_filtro_comentarios',
+        };
+
+        function renderSecciones() {
+            // ============================================================
+            // TIPOS DE NOTIFICACIONES
+            // ============================================================
+            $('#seccionTipos').innerHTML = [
+                cfgRenderToggle({
+                    id: 'togglePush',
+                    title: 'Notificaciones push',
+                    desc: 'Recibe notificaciones en tiempo real en este dispositivo',
+                    checked: cfgGetPref(PREF_KEYS.push_habilitado, true),
+                    onChange: `window.onTogglePush(this.checked)`,
+                }),
+            ].join('');
+
+            // ============================================================
+            // CANALES (sonido, vibración)
+            // ============================================================
+            $('#seccionCanales').innerHTML = [
+                cfgRenderToggle({
+                    id: 'toggleSonido',
+                    title: 'Sonido',
+                    desc: 'Reproduce un sonido al recibir notificaciones',
+                    checked: cfgGetPref(PREF_KEYS.sonido, true),
+                    onChange: `window.onToggleSonido(this.checked)`,
+                }),
+                cfgRenderToggle({
+                    id: 'toggleVibracion',
+                    title: 'Vibración',
+                    desc: 'Vibra al recibir notificaciones (si tu dispositivo lo soporta)',
+                    checked: cfgGetPref(PREF_KEYS.vibracion, true),
+                    onChange: `window.onToggleVibracion(this.checked)`,
+                }),
+            ].join('');
+
+            // ============================================================
+            // FILTROS POR TIPO
+            // ============================================================
+            $('#seccionFiltros').innerHTML = [
+                cfgRenderToggle({
+                    id: 'toggleMenciones',
+                    title: 'Menciones',
+                    desc: 'Cuando alguien te menciona con @ en una publicación',
+                    checked: cfgGetPref(PREF_KEYS.filtro_menciones, true),
+                    onChange: `window.onToggleFiltro('${PREF_KEYS.filtro_menciones}', this.checked, 'Menciones')`,
+                }),
+                cfgRenderToggle({
+                    id: 'toggleSeguidores',
+                    title: 'Nuevos seguidores',
+                    desc: 'Cuando alguien comienza a seguirte',
+                    checked: cfgGetPref(PREF_KEYS.filtro_seguidores, true),
+                    onChange: `window.onToggleFiltro('${PREF_KEYS.filtro_seguidores}', this.checked, 'Nuevos seguidores')`,
+                }),
+                cfgRenderToggle({
+                    id: 'toggleLikes',
+                    title: 'Me gusta y reacciones',
+                    desc: 'Cuando alguien reacciona a tus publicaciones',
+                    checked: cfgGetPref(PREF_KEYS.filtro_likes, true),
+                    onChange: `window.onToggleFiltro('${PREF_KEYS.filtro_likes}', this.checked, 'Me gusta')`,
+                }),
+                cfgRenderToggle({
+                    id: 'toggleComentarios',
+                    title: 'Comentarios',
+                    desc: 'Cuando alguien comenta en tus publicaciones',
+                    checked: cfgGetPref(PREF_KEYS.filtro_comentarios, true),
+                    onChange: `window.onToggleFiltro('${PREF_KEYS.filtro_comentarios}', this.checked, 'Comentarios')`,
+                }),
+                cfgRenderToggle({
+                    id: 'toggleMensajes',
+                    title: 'Mensajes directos',
+                    desc: 'Cuando recibes un mensaje directo',
+                    checked: cfgGetPref(PREF_KEYS.filtro_mensajes, true),
+                    onChange: `window.onToggleFiltro('${PREF_KEYS.filtro_mensajes}', this.checked, 'Mensajes')`,
+                }),
+            ].join('');
+        }
+
+        // ============================================================
+        // CALLBACKS
+        // ============================================================
+        window.onTogglePush = async (value) => {
+            await cfgSetPref(PREF_KEYS.push_habilitado, value);
+            
+            if (value && 'Notification' in window) {
+                try {
+                    const permiso = await Notification.requestPermission();
+                    if (permiso !== 'granted') {
+                        cfgToast('⚠️ Permiso de notificaciones denegado', 'warning');
+                        document.getElementById('togglePush').checked = false;
+                        await cfgSetPref(PREF_KEYS.push_habilitado, false);
+                        return;
+                    }
+                } catch (e) {
+                    console.warn('Error solicitando permiso:', e);
+                }
+            }
+
+            cfgToast(
+                value ? '🔔 Notificaciones activadas' : '🔕 Notificaciones desactivadas',
+                value ? 'success' : 'warning'
+            );
+        };
+
+        window.onToggleSonido = async (value) => {
+            await cfgSetPref(PREF_KEYS.sonido, value);
+            cfgToast(
+                value ? '🔊 Sonido activado' : '🔇 Sonido desactivado',
+                value ? 'success' : ''
+            );
+        };
+
+        window.onToggleVibracion = async (value) => {
+            await cfgSetPref(PREF_KEYS.vibracion, value);
+            
+            if (value && 'vibrate' in navigator) {
+                try {
+                    navigator.vibrate(200);
+                } catch (e) {}
+            }
+
+            cfgToast(
+                value ? '📳 Vibración activada' : '📴 Vibración desactivada',
+                value ? 'success' : ''
+            );
+        };
+
+        window.onToggleFiltro = async (clave, value, nombre) => {
+            await cfgSetPref(clave, value);
+            cfgToast(
+                value ? `✅ ${nombre} activado` : `🚫 ${nombre} silenciado`,
+                value ? 'success' : 'warning'
+            );
+        };
+
+        // ============================================================
+        // INICIALIZAR
+        // ============================================================
+        window.addEventListener('DOMContentLoaded', async () => {
+            await new Promise(resolve => setTimeout(resolve, 400));
+            renderSecciones();
+        });
+
+    })();
+    </script>
+</body>
+</html>
