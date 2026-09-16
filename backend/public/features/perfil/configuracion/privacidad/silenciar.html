@@ -9,6 +9,103 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
     
     <link rel="stylesheet" href="../../../shared/config-layout.css" />
+    
+    <style>
+        .cfg-lista-vacia {
+            padding: 24px 16px;
+            text-align: center;
+            color: var(--cfg-text-muted);
+            font-size: 0.78rem;
+        }
+        .cfg-lista-vacia .icon {
+            font-size: 1.8rem;
+            display: block;
+            margin-bottom: 8px;
+            opacity: 0.4;
+        }
+        .cfg-item-lista {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--cfg-border);
+        }
+        .cfg-item-lista:last-child {
+            border-bottom: none;
+        }
+        .cfg-item-lista .icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(212, 175, 55, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+        .cfg-item-lista .info {
+            flex: 1;
+            min-width: 0;
+        }
+        .cfg-item-lista .info .nombre {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--cfg-text);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .cfg-item-lista .info .handle {
+            font-size: 0.68rem;
+            color: var(--cfg-text-muted);
+        }
+        .cfg-item-lista .btn-eliminar {
+            background: rgba(255, 51, 102, 0.1);
+            border: 1px solid rgba(255, 51, 102, 0.3);
+            color: var(--cfg-danger);
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--cfg-transition);
+        }
+        .cfg-item-lista .btn-eliminar:hover {
+            background: rgba(255, 51, 102, 0.2);
+        }
+        .cfg-tag-palabra {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: rgba(212, 175, 55, 0.1);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            border-radius: 20px;
+            font-size: 0.72rem;
+            color: var(--cfg-gold);
+            margin: 4px;
+        }
+        .cfg-tag-palabra .btn-x {
+            background: none;
+            border: none;
+            color: var(--cfg-gold);
+            cursor: pointer;
+            font-size: 0.9rem;
+            padding: 0;
+            margin-left: 4px;
+            line-height: 1;
+        }
+        .cfg-tag-palabra .btn-x:hover {
+            color: var(--cfg-danger);
+        }
+        .cfg-palabras-container {
+            padding: 12px 16px;
+            display: flex;
+            flex-wrap: wrap;
+            min-height: 50px;
+        }
+    </style>
 </head>
 <body class="cfg-page">
 
@@ -20,7 +117,22 @@
         <div class="cfg-list" id="seccionCuentas"></div>
 
         <h2 class="cfg-section-title">Palabras silenciadas</h2>
-        <div class="cfg-list" id="seccionPalabras"></div>
+        <div class="cfg-list">
+            <div class="cfg-palabras-container" id="palabrasContainer">
+                <div class="cfg-lista-vacia">
+                    <span class="icon">📝</span>
+                    Cargando palabras silenciadas...
+                </div>
+            </div>
+            <button class="cfg-item" onclick="window.onAgregarPalabra()" style="border-top:1px solid var(--cfg-border);">
+                <div class="cfg-item-icon">➕</div>
+                <div class="cfg-item-content">
+                    <div class="cfg-item-title">Agregar palabra o hashtag</div>
+                    <div class="cfg-item-desc">Las publicaciones con esta palabra se ocultarán</div>
+                </div>
+                <div class="cfg-item-chevron">›</div>
+            </button>
+        </div>
 
         <h2 class="cfg-section-title">Notificaciones</h2>
         <div class="cfg-list" id="seccionNotificaciones"></div>
@@ -44,27 +156,125 @@
 
         const $ = (sel) => document.querySelector(sel);
 
+        // Cliente Supabase
+        function sb() {
+            return window.supabaseClient || 
+                (window.supabase && window.supabase.createClient(
+                    'https://zultnlogdoajehbswlih.supabase.co',
+                    'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
+                ));
+        }
+
         cfgInitPage({
             title: 'Silenciar y bloquear',
             subtitle: '@tu_usuario',
             backUrl: '/features/perfil/configuracion/index.html',
         });
 
+        let cuentasSilenciadas = [];
+        let cuentasBloqueadas = [];
+        let palabrasSilenciadas = [];
+
+        // ============================================================
+        // CARGAR DATOS DESDE SUPABASE
+        // ============================================================
+        async function cargarTodo() {
+            await Promise.all([
+                cargarCuentasSilenciadas(),
+                cargarCuentasBloqueadas(),
+                cargarPalabrasSilenciadas(),
+            ]);
+        }
+
+        async function cargarCuentasSilenciadas() {
+            try {
+                const client = sb();
+                if (!client) return;
+
+                const { data, error } = await client.rpc('listar_cuentas_gestionadas', {
+                    p_tipo: 'silenciada'
+                });
+
+                if (error) {
+                    console.warn('Error RPC listar_cuentas_gestionadas:', error.message);
+                    cuentasSilenciadas = [];
+                    return;
+                }
+
+                cuentasSilenciadas = data || [];
+            } catch (e) {
+                console.warn('Error cargando silenciadas:', e.message);
+                cuentasSilenciadas = [];
+            }
+        }
+
+        async function cargarCuentasBloqueadas() {
+            try {
+                const client = sb();
+                if (!client) return;
+
+                const { data, error } = await client.rpc('listar_cuentas_gestionadas', {
+                    p_tipo: 'bloqueada'
+                });
+
+                if (error) {
+                    console.warn('Error RPC listar_cuentas_gestionadas:', error.message);
+                    cuentasBloqueadas = [];
+                    return;
+                }
+
+                cuentasBloqueadas = data || [];
+            } catch (e) {
+                console.warn('Error cargando bloqueadas:', e.message);
+                cuentasBloqueadas = [];
+            }
+        }
+
+        async function cargarPalabrasSilenciadas() {
+            try {
+                const client = sb();
+                if (!client) return;
+
+                const { data, error } = await client.rpc('listar_palabras_silenciadas');
+
+                if (error) {
+                    console.warn('Error RPC listar_palabras_silenciadas:', error.message);
+                    palabrasSilenciadas = [];
+                    return;
+                }
+
+                palabrasSilenciadas = data || [];
+            } catch (e) {
+                console.warn('Error cargando palabras:', e.message);
+                palabrasSilenciadas = [];
+            }
+        }
+
+        // ============================================================
+        // RENDERIZAR SECCIONES
+        // ============================================================
         function renderSecciones() {
             // ============================================================
             // CUENTAS
             // ============================================================
+            const totalSilenciadas = cuentasSilenciadas.length;
+            const totalBloqueadas = cuentasBloqueadas.length;
+
             $('#seccionCuentas').innerHTML = [
                 cfgRenderItem({
                     icon: 'ban',
-                    title: 'Cuentas silenciadas',
-                    desc: 'Las cuentas que silencies no aparecerán en tu feed sin que se enteren',
+                    title: `Cuentas silenciadas (${totalSilenciadas})`,
+                    desc: totalSilenciadas === 0 
+                        ? 'No has silenciado ninguna cuenta' 
+                        : 'Toca para ver y administrar',
                     onclick: 'window.onVerSilenciadas()',
                 }),
                 cfgRenderItem({
                     icon: 'ban',
-                    title: 'Cuentas bloqueadas',
-                    desc: 'Las cuentas bloqueadas no podrán ver tus publicaciones ni contactarte',
+                    title: `Cuentas bloqueadas (${totalBloqueadas})`,
+                    desc: totalBloqueadas === 0 
+                        ? 'No has bloqueado ninguna cuenta' 
+                        : 'Toca para ver y administrar',
                     onclick: 'window.onVerBloqueadas()',
                 }),
             ].join('');
@@ -72,20 +282,22 @@
             // ============================================================
             // PALABRAS SILENCIADAS
             // ============================================================
-            $('#seccionPalabras').innerHTML = [
-                cfgRenderItem({
-                    icon: 'messageCircle',
-                    title: 'Palabras silenciadas',
-                    desc: 'Oculta publicaciones que contengan estas palabras',
-                    onclick: 'window.onVerPalabras()',
-                }),
-                cfgRenderItem({
-                    icon: 'messageCircle',
-                    title: 'Hashtags silenciados',
-                    desc: 'Oculta publicaciones con estos hashtags',
-                    onclick: 'window.onVerHashtags()',
-                }),
-            ].join('');
+            const container = $('#palabrasContainer');
+            if (palabrasSilenciadas.length === 0) {
+                container.innerHTML = `
+                    <div class="cfg-lista-vacia">
+                        <span class="icon">📝</span>
+                        Sin palabras silenciadas
+                    </div>
+                `;
+            } else {
+                container.innerHTML = palabrasSilenciadas.map(p => `
+                    <div class="cfg-tag-palabra">
+                        ${p.tipo === 'hashtag' ? '#' : ''}${escapeHtml(p.palabra)}
+                        <button class="btn-x" onclick="window.onEliminarPalabra('${p.id}')" title="Eliminar">×</button>
+                    </div>
+                `).join('');
+            }
 
             // ============================================================
             // NOTIFICACIONES
@@ -109,6 +321,16 @@
         }
 
         // ============================================================
+        // HELPERS
+        // ============================================================
+        function escapeHtml(texto) {
+            if (!texto) return '';
+            const div = document.createElement('div');
+            div.textContent = texto;
+            return div.innerHTML;
+        }
+
+        // ============================================================
         // CALLBACKS
         // ============================================================
         window.onToggleNotifSilenciadas = async (value) => {
@@ -128,19 +350,211 @@
         };
 
         window.onVerSilenciadas = () => {
-            cfgToast('⏳ Pantalla de cuentas silenciadas próximamente', 'warning');
+            if (cuentasSilenciadas.length === 0) {
+                cfgToast('📭 No tienes cuentas silenciadas', 'warning');
+                return;
+            }
+            mostrarModalCuentas('silenciadas', cuentasSilenciadas);
         };
 
         window.onVerBloqueadas = () => {
-            cfgToast('⏳ Pantalla de cuentas bloqueadas próximamente', 'warning');
+            if (cuentasBloqueadas.length === 0) {
+                cfgToast('📭 No tienes cuentas bloqueadas', 'warning');
+                return;
+            }
+            mostrarModalCuentas('bloqueadas', cuentasBloqueadas);
         };
 
-        window.onVerPalabras = () => {
-            cfgToast('⏳ Editor de palabras silenciadas próximamente', 'warning');
+        function mostrarModalCuentas(tipo, lista) {
+            const overlay = document.createElement('div');
+            overlay.className = 'cfg-modal-overlay';
+
+            const titulo = tipo === 'silenciadas' ? '🔇 Cuentas silenciadas' : '🚫 Cuentas bloqueadas';
+
+            const itemsHtml = lista.map(c => `
+                <div class="cfg-item-lista">
+                    <div class="icon">${c.avatar_url ? `<img src="${escapeHtml(c.avatar_url)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">` : '◈'}</div>
+                    <div class="info">
+                        <div class="nombre">${escapeHtml(c.nombre || 'Usuario')}</div>
+                        <div class="handle">@${escapeHtml(c.handle || 'usuario')}</div>
+                    </div>
+                    <button class="btn-eliminar" onclick="window.onDesbloquearCuenta('${c.cuenta_id}', '${tipo}')">Quitar</button>
+                </div>
+            `).join('');
+
+            overlay.innerHTML = `
+                <div class="cfg-modal" style="max-width: 420px; max-height: 80vh; overflow-y: auto;">
+                    <h3 class="cfg-modal-title">${titulo}</h3>
+                    <div style="margin: 0 -24px 16px -24px; max-height: 50vh; overflow-y: auto;">
+                        ${itemsHtml}
+                    </div>
+                    <div class="cfg-modal-actions">
+                        <button class="cfg-btn cfg-btn-outline cfg-btn-block" data-action="close">Cerrar</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+            requestAnimationFrame(() => overlay.classList.add('show'));
+
+            overlay.querySelector('[data-action="close"]').onclick = () => {
+                overlay.classList.remove('show');
+                setTimeout(() => overlay.remove(), 200);
+            };
+            overlay.onclick = (e) => {
+                if (e.target === overlay) {
+                    overlay.classList.remove('show');
+                    setTimeout(() => overlay.remove(), 200);
+                }
+            };
+        }
+
+        window.onDesbloquearCuenta = async (cuentaId, tipo) => {
+            const ok = await cfgConfirm({
+                title: tipo === 'silenciadas' ? '¿Dejar de silenciar?' : '¿Desbloquear cuenta?',
+                text: 'La cuenta podrá volver a interactuar contigo.',
+                confirmText: 'Sí, quitar',
+                cancelText: 'Cancelar',
+                danger: false,
+            });
+
+            if (!ok) return;
+
+            try {
+                const client = sb();
+                if (!client) throw new Error('Supabase no disponible');
+
+                const { error } = await client.rpc('desbloquear_cuenta', {
+                    p_cuenta_id: cuentaId
+                });
+
+                if (error) throw error;
+
+                cfgToast('✅ Cuenta removida', 'success');
+
+                // Cerrar modal
+                document.querySelectorAll('.cfg-modal-overlay').forEach(m => {
+                    m.classList.remove('show');
+                    setTimeout(() => m.remove(), 200);
+                });
+
+                // Recargar
+                await cargarTodo();
+                renderSecciones();
+
+            } catch (e) {
+                console.error('Error desbloqueando:', e);
+                cfgToast('❌ Error: ' + e.message, 'error');
+            }
         };
 
-        window.onVerHashtags = () => {
-            cfgToast('⏳ Editor de hashtags silenciados próximamente', 'warning');
+        // ============================================================
+        // AGREGAR PALABRA
+        // ============================================================
+        window.onAgregarPalabra = () => {
+            const overlay = document.createElement('div');
+            overlay.className = 'cfg-modal-overlay';
+
+            overlay.innerHTML = `
+                <div class="cfg-modal" style="max-width: 380px;">
+                    <h3 class="cfg-modal-title">📝 Agregar palabra</h3>
+                    <p class="cfg-modal-text" style="text-align:left;margin-bottom:12px;">
+                        Las publicaciones que contengan esta palabra se ocultarán de tu feed.
+                    </p>
+                    <div class="form-group" style="margin-bottom:14px;">
+                        <label style="display:block;font-size:0.72rem;color:var(--cfg-text-muted);margin-bottom:6px;">Tipo</label>
+                        <select id="tipoPalabra" style="width:100%;padding:10px 14px;background:rgba(0,0,0,0.3);border:1px solid var(--cfg-border);border-radius:10px;color:var(--cfg-text);font-size:0.85rem;outline:none;">
+                            <option value="palabra">Palabra</option>
+                            <option value="hashtag">Hashtag</option>
+                            <option value="frase">Frase</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom:16px;">
+                        <label style="display:block;font-size:0.72rem;color:var(--cfg-text-muted);margin-bottom:6px;">Texto</label>
+                        <input type="text" id="textoPalabra" placeholder="Ej: spam" maxlength="50" style="width:100%;padding:10px 14px;background:rgba(0,0,0,0.3);border:1px solid var(--cfg-border);border-radius:10px;color:var(--cfg-text);font-size:0.85rem;outline:none;" />
+                    </div>
+                    <div class="cfg-modal-actions">
+                        <button class="cfg-btn cfg-btn-outline" data-action="cancel">Cancelar</button>
+                        <button class="cfg-btn cfg-btn-primary" data-action="save">Agregar</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+            requestAnimationFrame(() => overlay.classList.add('show'));
+
+            const input = overlay.querySelector('#textoPalabra');
+            setTimeout(() => input.focus(), 300);
+
+            const close = () => {
+                overlay.classList.remove('show');
+                setTimeout(() => overlay.remove(), 200);
+            };
+
+            overlay.querySelector('[data-action="cancel"]').onclick = close;
+            overlay.onclick = (e) => { if (e.target === overlay) close(); };
+
+            overlay.querySelector('[data-action="save"]').onclick = async () => {
+                const tipo = overlay.querySelector('#tipoPalabra').value;
+                const palabra = input.value.trim();
+
+                if (!palabra) {
+                    cfgToast('⚠️ Escribe una palabra', 'warning');
+                    return;
+                }
+
+                try {
+                    const client = sb();
+                    if (!client) throw new Error('Supabase no disponible');
+
+                    const { error } = await client.rpc('agregar_palabra_silenciada', {
+                        p_palabra: palabra,
+                        p_tipo: tipo
+                    });
+
+                    if (error) throw error;
+
+                    cfgToast(`✅ "${palabra}" silenciada`, 'success');
+                    close();
+
+                    await cargarPalabrasSilenciadas();
+                    renderSecciones();
+
+                } catch (e) {
+                    console.error('Error agregando palabra:', e);
+                    cfgToast('❌ Error: ' + e.message, 'error');
+                }
+            };
+        };
+
+        window.onEliminarPalabra = async (id) => {
+            const ok = await cfgConfirm({
+                title: '¿Eliminar palabra silenciada?',
+                text: 'Dejarás de ocultar publicaciones con esta palabra.',
+                confirmText: 'Eliminar',
+                cancelText: 'Cancelar',
+                danger: true,
+            });
+
+            if (!ok) return;
+
+            try {
+                const client = sb();
+                if (!client) throw new Error('Supabase no disponible');
+
+                const { error } = await client.rpc('eliminar_palabra_silenciada', {
+                    p_id: id
+                });
+
+                if (error) throw error;
+
+                cfgToast('✅ Palabra eliminada', 'success');
+
+                await cargarPalabrasSilenciadas();
+                renderSecciones();
+
+            } catch (e) {
+                console.error('Error eliminando palabra:', e);
+                cfgToast('❌ Error: ' + e.message, 'error');
+            }
         };
 
         // ============================================================
@@ -148,6 +562,14 @@
         // ============================================================
         window.addEventListener('DOMContentLoaded', async () => {
             await new Promise(resolve => setTimeout(resolve, 400));
+            
+            // Renderizar primero con placeholders
+            renderSecciones();
+
+            // Cargar datos desde Supabase
+            await cargarTodo();
+
+            // Re-renderizar con datos reales
             renderSecciones();
         });
 
@@ -156,11 +578,7 @@
         // ============================================================
         (async function cargarUsuario() {
             try {
-                const client = window.supabaseClient || 
-                    (window.supabase && window.supabase.createClient(
-                        'https://zultnlogdoajehbswlih.supabase.co',
-                        'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
-                    ));
+                const client = sb();
                 if (!client) return;
                 const { data } = await client.auth.getSession();
                 const session = data && data.session;
