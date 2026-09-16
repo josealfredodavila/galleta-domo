@@ -30,7 +30,10 @@ class LiveController {
                 canPublishData: true
             });
 
-            const token = at.toJwt();
+            // ✅ FIX CRÍTICO: LiveKit SDK v2 requiere await en toJwt()
+            // Sin await, se devolvía una Promise en lugar del JWT real,
+            // causando "invalid authorization token" en LiveKit Cloud.
+            const token = await at.toJwt();
 
             logger.info(`Token LiveKit generado para: ${userId}`);
             res.json({
