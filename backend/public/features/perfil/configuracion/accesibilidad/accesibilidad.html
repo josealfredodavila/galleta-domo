@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#000000" />
+    <title>Accesibilidad · Sariel's</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="../../../shared/config-layout.css" />
+</head>
+<body class="cfg-page">
+
+    <div id="cfgHeaderSlot"></div>
+
+    <main class="cfg-content">
+
+        <h2 class="cfg-section-title">Movimiento</h2>
+        <div class="cfg-list" id="seccionMovimiento"></div>
+
+        <h2 class="cfg-section-title">Contraste y colores</h2>
+        <div class="cfg-list" id="seccionContraste"></div>
+
+        <h2 class="cfg-section-title">Texto</h2>
+        <div class="cfg-list" id="seccionTexto"></div>
+
+        <h2 class="cfg-section-title">Audio</h2>
+        <div class="cfg-list" id="seccionAudio"></div>
+
+        <div class="cfg-aviso cfg-aviso-info">
+            ℹ️ Estas opciones afectan a todas las cuentas de Sariel's en este dispositivo.
+        </div>
+
+        <div class="cfg-footer">
+            <strong>◈ Sariel's</strong> · Accesibilidad · Opciones generales
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="../../../shared/config-icons.js"></script>
+    <script src="../../../shared/config-layout.js"></script>
+
+    <script>
+    (function () {
+        'use strict';
+
+        const $ = (sel) => document.querySelector(sel);
+
+        cfgInitPage({
+            title: 'Accesibilidad',
+            subtitle: 'Ajustes del dispositivo',
+            backUrl: '/features/perfil/configuracion/index.html',
+        });
+
+        const PREF_KEYS = {
+            reducir_movimiento: 'accesibilidad_reducir_movimiento',
+            alto_contraste: 'accesibilidad_alto_contraste',
+            texto_grande: 'accesibilidad_texto_grande',
+            subtitulos: 'accesibilidad_subtitulos',
+        };
+
+        function renderSecciones() {
+            // ============================================================
+            // MOVIMIENTO
+            // ============================================================
+            $('#seccionMovimiento').innerHTML = [
+                cfgRenderToggle({
+                    id: 'toggleReducirMovimiento',
+                    title: 'Reducir el movimiento',
+                    desc: 'Limita la cantidad de animaciones en la aplicación, incluidos los conteos de interacciones en directo.',
+                    checked: cfgGetPref(PREF_KEYS.reducir_movimiento, false),
+                    onChange: `window.onToggleReducirMovimiento(this.checked)`,
+                }),
+            ].join('');
+
+            // ============================================================
+            // CONTRASTE
+            // ============================================================
+            $('#seccionContraste').innerHTML = [
+                cfgRenderToggle({
+                    id: 'toggleAltoContraste',
+                    title: 'Aumentar el contraste',
+                    desc: 'Aumenta el contraste de los colores para hacer el texto más legible.',
+                    checked: cfgGetPref(PREF_KEYS.alto_contraste, false),
+                    onChange: `window.onToggleAltoContraste(this.checked)`,
+                }),
+            ].join('');
+
+            // ============================================================
+            // TEXTO
+            // ============================================================
+            $('#seccionTexto').innerHTML = [
+                cfgRenderToggle({
+                    id: 'toggleTextoGrande',
+                    title: 'Texto más grande',
+                    desc: 'Aumenta el tamaño del texto en toda la aplicación.',
+                    checked: cfgGetPref(PREF_KEYS.texto_grande, false),
+                    onChange: `window.onToggleTextoGrande(this.checked)`,
+                }),
+                cfgRenderItem({
+                    icon: 'type',
+                    title: 'Tamaño de fuente',
+                    desc: 'Elige el tamaño exacto: 80%, 100%, 120%, 140%',
+                    onclick: 'window.onTamañoFuente()',
+                }),
+            ].join('');
+
+            // ============================================================
+            // AUDIO
+            // ============================================================
+            $('#seccionAudio').innerHTML = [
+                cfgRenderToggle({
+                    id: 'toggleSubtitulos',
+                    title: 'Subtítulos automáticos en videos',
+                    desc: 'Muestra subtítulos automáticos en los videos que se reproduzcan.',
+                    checked: cfgGetPref(PREF_KEYS.subtitulos, false),
+                    onChange: `window.onToggleSubtitulos(this.checked)`,
+                }),
+            ].join('');
+        }
+
+        // ============================================================
+        // CALLBACKS
+        // ============================================================
+        window.onToggleReducirMovimiento = async (value) => {
+            await cfgSetPref(PREF_KEYS.reducir_movimiento, value);
+            document.body.classList.toggle('reduce-motion', value);
+            cfgToast(
+                value ? '🎬 Movimiento reducido' : '✨ Animaciones completas activadas',
+                value ? 'success' : ''
+            );
+        };
+
+        window.onToggleAltoContraste = async (value) => {
+            await cfgSetPref(PREF_KEYS.alto_contraste, value);
+            document.body.classList.toggle('high-contrast', value);
+            cfgToast(
+                value ? '🎨 Contraste aumentado' : '🎨 Contraste normal',
+                value ? 'success' : ''
+            );
+        };
+
+        window.onToggleTextoGrande = async (value) => {
+            await cfgSetPref(PREF_KEYS.texto_grande, value);
+            document.body.classList.toggle('text-large', value);
+            cfgToast(
+                value ? '📝 Texto más grande activado' : '📝 Texto normal',
+                value ? 'success' : ''
+            );
+        };
+
+        window.onToggleSubtitulos = async (value) => {
+            await cfgSetPref(PREF_KEYS.subtitulos, value);
+            cfgToast(
+                value ? '💬 Subtítulos automáticos activados' : '💬 Subtítulos desactivados',
+                value ? 'success' : 'warning'
+            );
+        };
+
+        window.onTamañoFuente = () => {
+            cfgToast('⏳ Selector de tamaño próximamente', 'warning');
+        };
+
+        // ============================================================
+        // INICIALIZAR
+        // ============================================================
+        window.addEventListener('DOMContentLoaded', async () => {
+            await new Promise(resolve => setTimeout(resolve, 400));
+
+            // Aplicar preferencias guardadas al cargar
+            if (cfgGetPref(PREF_KEYS.reducir_movimiento, false)) {
+                document.body.classList.add('reduce-motion');
+            }
+            if (cfgGetPref(PREF_KEYS.alto_contraste, false)) {
+                document.body.classList.add('high-contrast');
+            }
+            if (cfgGetPref(PREF_KEYS.texto_grande, false)) {
+                document.body.classList.add('text-large');
+            }
+
+            renderSecciones();
+        });
+
+    })();
+    </script>
+
+    <style>
+    /* Estilos que se aplican al activar los toggles */
+    body.reduce-motion * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+
+    body.high-contrast {
+        --cfg-text-muted: #c0d8e8;
+        --cfg-border: rgba(255, 255, 255, 0.2);
+    }
+
+    body.text-large {
+        font-size: 118%;
+    }
+    </style>
+</body>
+</html>
