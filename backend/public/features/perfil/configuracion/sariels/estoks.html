@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#000000" />
+    <title>Es.stoks · Sariel's</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="../../../shared/config-layout.css" />
+    
+    <style>
+        .cfg-tokens-hero {
+            margin: 16px;
+            padding: 28px 20px;
+            background: linear-gradient(135deg, rgba(212, 175, 55, 0.1), rgba(15, 45, 26, 0.4));
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            border-radius: 20px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cfg-tokens-hero::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(212, 175, 55, 0.08) 0%, transparent 70%);
+            animation: rotate 20s linear infinite;
+            pointer-events: none;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .cfg-tokens-icon {
+            font-size: 3rem;
+            margin-bottom: 8px;
+            display: block;
+            position: relative;
+            z-index: 1;
+            filter: drop-shadow(0 0 20px rgba(212, 175, 55, 0.4));
+        }
+
+        .cfg-tokens-label {
+            font-size: 0.7rem;
+            color: var(--cfg-gold);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-family: 'Orbitron', monospace;
+            margin-bottom: 8px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .cfg-tokens-balance {
+            font-family: 'Orbitron', monospace;
+            font-size: 3rem;
+            font-weight: 900;
+            color: var(--cfg-text);
+            margin-bottom: 4px;
+            position: relative;
+            z-index: 1;
+            text-shadow: 0 0 30px rgba(212, 175, 55, 0.3);
+        }
+
+        .cfg-tokens-balance .symbol {
+            color: var(--cfg-gold);
+            font-size: 0.6em;
+            margin-left: 6px;
+        }
+
+        .cfg-tokens-subtitle {
+            font-size: 0.72rem;
+            color: var(--cfg-text-muted);
+            position: relative;
+            z-index: 1;
+        }
+
+        .cfg-tokens-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin: 16px;
+        }
+
+        .cfg-token-stat {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--cfg-border);
+            border-radius: 12px;
+            padding: 14px 8px;
+            text-align: center;
+        }
+
+        .cfg-token-stat .value {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--cfg-gold);
+        }
+
+        .cfg-token-stat .label {
+            font-size: 0.6rem;
+            color: var(--cfg-text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 4px;
+        }
+
+        .cfg-progress-box {
+            margin: 16px;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--cfg-border);
+            border-radius: 12px;
+        }
+
+        .cfg-progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            font-size: 0.75rem;
+            color: var(--cfg-text-muted);
+        }
+
+        .cfg-progress-header strong {
+            color: var(--cfg-text);
+            font-family: 'Orbitron', monospace;
+            font-size: 0.8rem;
+        }
+
+        .cfg-progress-bar {
+            width: 100%;
+            height: 10px;
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .cfg-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--cfg-gold), var(--cfg-gold-light));
+            border-radius: 10px;
+            transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 0 12px rgba(212, 175, 55, 0.4);
+        }
+    </style>
+</head>
+<body class="cfg-page">
+
+    <div id="cfgHeaderSlot"></div>
+
+    <main class="cfg-content">
+
+        <!-- ============================================================ -->
+        <!-- HERO - BALANCE DE ES.STOKS                                   -->
+        <!-- ============================================================ -->
+        <div class="cfg-tokens-hero">
+            <span class="cfg-tokens-icon">⟡</span>
+            <div class="cfg-tokens-label">Balance de Es.stoks</div>
+            <div class="cfg-tokens-balance" id="balanceTotal">
+                0<span class="symbol">⟡</span>
+            </div>
+            <div class="cfg-tokens-subtitle" id="balanceSubtitulo">
+                Cargando tu balance...
+            </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- ESTADÍSTICAS                                                 -->
+        <!-- ============================================================ -->
+        <div class="cfg-tokens-stats">
+            <div class="cfg-token-stat">
+                <div class="value" id="statTotal">0</div>
+                <div class="label">Total</div>
+            </div>
+            <div class="cfg-token-stat">
+                <div class="value" id="statDisponibles">0</div>
+                <div class="label">Disponibles</div>
+            </div>
+            <div class="cfg-token-stat">
+                <div class="value" id="statNFTs">0</div>
+                <div class="label">NFTs</div>
+            </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- PROGRESO HACIA NFT                                           -->
+        <!-- ============================================================ -->
+        <div class="cfg-progress-box">
+            <div class="cfg-progress-header">
+                <span>🎁 Progreso hacia el NFT</span>
+                <strong id="progresoTexto">0 / 12</strong>
+            </div>
+            <div class="cfg-progress-bar">
+                <div class="cfg-progress-fill" id="progresoFill" style="width: 0%;"></div>
+            </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- INFORMACIÓN                                                 -->
+        <!-- ============================================================ -->
+        <h2 class="cfg-section-title">Información</h2>
+        <div class="cfg-list" id="seccionInfo"></div>
+
+        <!-- ============================================================ -->
+        <!-- ACCIONES                                                    -->
+        <!-- ============================================================ -->
+        <h2 class="cfg-section-title">Acciones</h2>
+        <div class="cfg-list" id="seccionAcciones"></div>
+
+        <!-- ============================================================ -->
+        <!-- HISTORIAL                                                   -->
+        <!-- ============================================================ -->
+        <h2 class="cfg-section-title">Historial reciente</h2>
+        <div class="cfg-list" id="seccionHistorial">
+            <div class="cfg-loading" style="padding: 20px; text-align: center; color: var(--cfg-text-muted); font-size: 0.8rem;">
+                Cargando historial...
+            </div>
+        </div>
+
+        <div class="cfg-aviso cfg-aviso-info">
+            ℹ️ Los Es.stoks son tokens de utilidad en la red Polygon.
+        </div>
+
+        <div class="cfg-footer">
+            <strong>◈ Sariel's</strong> · Sariel's · Es.stoks
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="../../../shared/config-icons.js"></script>
+    <script src="../../../shared/config-layout.js"></script>
+
+    <script>
+    (function () {
+        'use strict';
+
+        const $ = (sel) => document.querySelector(sel);
+
+        cfgInitPage({
+            title: 'Es.stoks',
+            subtitle: 'Tus tokens de utilidad',
+            backUrl: '/features/perfil/configuracion/index.html',
+        });
+
+        // ============================================================
+        // CARGAR BALANCE DESDE SUPABASE
+        // ============================================================
+        async function cargarBalance() {
+            try {
+                const client = window.supabaseClient || 
+                    (window.supabase && window.supabase.createClient(
+                        'https://zultnlogdoajehbswlih.supabase.co',
+                        'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
+                    ));
+                if (!client) return;
+
+                const { data: sessionData } = await client.auth.getSession();
+                const session = sessionData.session;
+                if (!session) return;
+
+                const { data: usuario } = await client
+                    .from('usuarios')
+                    .select('tokens, progreso_canje, puede_canjear')
+                    .eq('id', session.user.id)
+                    .maybeSingle();
+
+                if (!usuario) return;
+
+                const tokens = usuario.tokens || 0;
+                const progreso = Math.min(tokens, 12);
+                const nfts = usuario.progreso_canje || 0;
+
+                // Actualizar hero
+                $('#balanceTotal').innerHTML = tokens + '<span class="symbol">⟡</span>';
+                $('#balanceSubtitulo').textContent = tokens === 1 
+                    ? 'Tienes 1 Es.stok disponible' 
+                    : `Tienes ${tokens} Es.stoks disponibles`;
+
+                // Actualizar stats
+                $('#statTotal').textContent = tokens;
+                $('#statDisponibles').textContent = tokens;
+                $('#statNFTs').textContent = nfts;
+
+                // Actualizar progreso
+                const porcentaje = (progreso / 12) * 100;
+                $('#progresoFill').style.width = porcentaje + '%';
+                $('#progresoTexto').textContent = `${progreso} / 12`;
+
+                if (progreso >= 12) {
+                    $('#progresoTexto').innerHTML = '🎯 ¡Listo para canjear!';
+                    $('#progresoTexto').style.color = 'var(--cfg-gold)';
+                }
+
+            } catch (error) {
+                console.error('Error cargando balance:', error);
+            }
+        }
+
+        // ============================================================
+        // SECCIÓN INFORMACIÓN
+        // ============================================================
+        function renderInfo() {
+            $('#seccionInfo').innerHTML = [
+                cfgRenderItem({
+                    icon: 'info',
+                    title: '¿Qué son los Es.stoks?',
+                    desc: 'Tokens de utilidad de Sariel\'s en Polygon',
+                    onclick: 'window.onQueSonEstoks()',
+                }),
+                cfgRenderItem({
+                    icon: 'crown',
+                    title: '¿Cómo conseguir Es.stoks?',
+                    desc: 'Compra domos físicos y escanea sus QRs',
+                    onclick: 'window.onComoConseguir()',
+                }),
+                cfgRenderItem({
+                    icon: 'check',
+                    title: 'Canjear 12 Es.stoks por un NFT',
+                    desc: 'Canjea tus tokens por un NFT exclusivo de Sariel\'s',
+                    onclick: 'window.onInfoCanje()',
+                }),
+            ].join('');
+        }
+
+        // ============================================================
+        // SECCIÓN ACCIONES
+        // ============================================================
+        function renderAcciones() {
+            $('#seccionAcciones').innerHTML = [
+                cfgRenderItem({
+                    icon: 'coin',
+                    title: 'Comprar domos',
+                    desc: 'Compra domos físicos y recibe Es.stoks',
+                    href: '/features/internet/internet.html',
+                }),
+                cfgRenderItem({
+                    icon: 'camera',
+                    title: 'Escanear QR de domo',
+                    desc: 'Escanea el QR de un domo físico para recibir Es.stoks',
+                    href: '/features/perfil/perfil.html',
+                }),
+                cfgRenderItem({
+                    icon: 'wallet',
+                    title: 'Conectar wallet',
+                    desc: 'Vincula tu wallet de Polygon para gestionar tus tokens',
+                    onclick: 'window.onConectarWallet()',
+                }),
+                cfgRenderItem({
+                    icon: 'messageCircle',
+                    title: 'Ver en el Muro',
+                    desc: 'Compra y vende Es.stoks en el Muro P2P',
+                    href: '/features/muro/muro.html',
+                }),
+            ].join('');
+        }
+
+        // ============================================================
+        // SECCIÓN HISTORIAL
+        // ============================================================
+        async function renderHistorial() {
+            try {
+                const client = window.supabaseClient || 
+                    (window.supabase && window.supabase.createClient(
+                        'https://zultnlogdoajehbswlih.supabase.co',
+                        'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
+                    ));
+                if (!client) return;
+
+                const { data: sessionData } = await client.auth.getSession();
+                const session = sessionData.session;
+                if (!session) return;
+
+                // Intentar cargar historial de transacciones de tokens
+                const { data: transacciones, error } = await client
+                    .from('tokens_transacciones')
+                    .select('*')
+                    .eq('usuario_id', session.user.id)
+                    .order('created_at', { ascending: false })
+                    .limit(10);
+
+                if (error && error.code === '42P01') {
+                    // Tabla no existe, mostrar empty
+                    mostrarEmptyHistorial();
+                    return;
+                }
+
+                if (!transacciones || transacciones.length === 0) {
+                    mostrarEmptyHistorial();
+                    return;
+                }
+
+                // Renderizar historial
+                $('#seccionHistorial').innerHTML = transacciones.map(tx => {
+                    const esPositivo = tx.cantidad > 0;
+                    const color = esPositivo ? 'var(--cfg-success)' : 'var(--cfg-danger)';
+                    const signo = esPositivo ? '+' : '';
+                    const icono = esPositivo ? '📥' : '📤';
+
+                    return `
+                        <div class="cfg-session-item" style="cursor:default;">
+                            <span class="cfg-session-icon">${icono}</span>
+                            <div class="cfg-session-info">
+                                <div class="cfg-session-title">
+                                    ${tx.descripcion || tx.tipo || 'Transacción'}
+                                    <span style="color:${color};font-family:'Orbitron',monospace;font-weight:700;margin-left:auto;">
+                                        ${signo}${tx.cantidad} ⟡
+                                    </span>
+                                </div>
+                                <div class="cfg-session-meta">
+                                    ${new Date(tx.created_at).toLocaleString('es-MX', {
+                                        day: '2-digit', month: 'short', year: 'numeric',
+                                        hour: '2-digit', minute: '2-digit'
+                                    })}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+            } catch (error) {
+                console.error('Error cargando historial:', error);
+                mostrarEmptyHistorial();
+            }
+        }
+
+        function mostrarEmptyHistorial() {
+            $('#seccionHistorial').innerHTML = `
+                <div class="cfg-empty" style="padding: 30px 20px;">
+                    <span class="cfg-empty-icon">📜</span>
+                    <div class="cfg-empty-text">Aún no tienes transacciones</div>
+                </div>
+            `;
+        }
+
+        // ============================================================
+        // CALLBACKS
+        // ============================================================
+        window.onQueSonEstoks = () => {
+            cfgToast('ℹ️ Los Es.stoks son tokens de utilidad en Polygon', 'success', 4000);
+        };
+
+        window.onComoConseguir = () => {
+            cfgToast('🛒 Compra domos en la sección Internet', 'success', 4000);
+        };
+
+        window.onInfoCanje = () => {
+            cfgToast('🎁 Junta 12 Es.stoks para canjear tu NFT', 'success', 4000);
+        };
+
+        window.onConectarWallet = () => {
+            window.location.href = '/features/perfil/configuracion/sariels/wallet.html';
+        };
+
+        // ============================================================
+        // INICIALIZAR
+        // ============================================================
+        window.addEventListener('DOMContentLoaded', async () => {
+            await new Promise(resolve => setTimeout(resolve, 400));
+            renderInfo();
+            renderAcciones();
+            await cargarBalance();
+            await renderHistorial();
+        });
+
+    })();
+    </script>
+</body>
+</html>
