@@ -964,14 +964,13 @@
         <span id="errorBannerText"></span>
         <button onclick="document.getElementById('errorBanner').style.display='none'" style="float:right;background:none;border:1px solid #fff;color:#fff;border-radius:6px;padding:2px 10px;cursor:pointer;">Cerrar</button>
     </div>
-
     <!-- ===== SCRIPTS ===== -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="/app.js"></script>
 
     <script>
         // ================================================================
-        // VIDEOS - TODAS LAS FUNCIONES
+        // VIDEOS - VERSIÓN AUDITADA CON MEJORAS DE SEGURIDAD
         // ================================================================
 
         var sessionUser = null;
@@ -1022,6 +1021,15 @@
             var div = document.createElement('div');
             div.textContent = texto;
             return div.innerHTML;
+        }
+
+        // ===== VALIDACIÓN DE URL (NUEVA - SEGURIDAD) =====
+        function esURLValida(url) {
+            if (!url || typeof url !== 'string') return false;
+            try {
+                var u = new URL(url);
+                return u.protocol === 'http:' || u.protocol === 'https:';
+            } catch (e) { return false; }
         }
 
         // ===== CARGAR USUARIO ACTUAL =====
@@ -1102,6 +1110,9 @@
             }
         }
 
+        // ================================================================
+        // MOSTRAR ANUNCIO - VERSIÓN SEGURA (SIN innerHTML para URLs)
+        // ================================================================
         function mostrarAnuncioVideo(ad) {
             var container = document.getElementById('marketingAdContainer');
             var media = document.getElementById('marketingAdMediaVideo');
@@ -1111,14 +1122,40 @@
 
             if (!container || !media || !title || !desc || !cta) return;
 
-            if (ad.imagen_url) {
-                media.innerHTML = '<img src="' + escapeHTML(ad.imagen_url) + '" alt="' + escapeHTML(ad.titulo) + '" loading="lazy" onerror="this.parentElement.innerHTML=\'<span>◈</span>\'">';
-            } else if (ad.video_url) {
-                media.innerHTML = '<video src="' + escapeHTML(ad.video_url) + '" muted autoplay loop playsinline></video>';
+            // Validar URLs ANTES de insertar nada
+            var imgUrlValida = esURLValida(ad.imagen_url);
+            var videoUrlValida = esURLValida(ad.video_url);
+
+            // Limpiar el contenedor de forma segura
+            while (media.firstChild) media.removeChild(media.firstChild);
+
+            if (imgUrlValida) {
+                var img = document.createElement('img');
+                img.src = ad.imagen_url;
+                img.alt = ad.titulo || 'Anuncio';
+                img.loading = 'lazy';
+                img.onerror = function() {
+                    while (media.firstChild) media.removeChild(media.firstChild);
+                    var span = document.createElement('span');
+                    span.textContent = '◈';
+                    media.appendChild(span);
+                };
+                media.appendChild(img);
+            } else if (videoUrlValida) {
+                var vid = document.createElement('video');
+                vid.src = ad.video_url;
+                vid.muted = true;
+                vid.autoplay = true;
+                vid.loop = true;
+                vid.playsInline = true;
+                media.appendChild(vid);
             } else {
-                media.innerHTML = '<span>◈</span>';
+                var span2 = document.createElement('span');
+                span2.textContent = '◈';
+                media.appendChild(span2);
             }
 
+            // textContent es XSS-safe por diseño
             title.textContent = ad.titulo || 'Patrocinado';
             desc.textContent = ad.descripcion || '';
             cta.textContent = ad.cta_texto || 'Ver más';
@@ -1178,10 +1215,11 @@
                     })
                 });
 
-                if (anuncioActualVideo.video_url) {
-                    window.open(anuncioActualVideo.video_url, '_blank', 'noopener');
-                } else if (anuncioActualVideo.imagen_url) {
-                    window.open(anuncioActualVideo.imagen_url, '_blank', 'noopener');
+                // Abrir solo URLs válidas
+                if (esURLValida(anuncioActualVideo.video_url)) {
+                    window.open(anuncioActualVideo.video_url, '_blank', 'noopener,noreferrer');
+                } else if (esURLValida(anuncioActualVideo.imagen_url)) {
+                    window.open(anuncioActualVideo.imagen_url, '_blank', 'noopener,noreferrer');
                 }
             } catch (error) {
                 console.warn('Error registrando clic:', error);
@@ -1244,7 +1282,7 @@
         }
 
         // ================================================================
-        // AUTOPLAY AL SCROLL (TIKTOK)
+        // AUTOPLAY AL SCROLL (TIKTOK) - CON FIX DE RESET
         // ================================================================
         function activarAutoplayScroll() {
             if (observerVideos) { observerVideos.disconnect(); observerVideos = null; }
@@ -1280,6 +1318,11 @@
                         card.classList.remove('visible');
                         video.pause();
                         card.classList.remove('playing');
+
+                        // FIX: si el video pausado manualmente ya no está visible, resetear
+                        if (videoPausadoManualmente === card.dataset.videoId) {
+                            videoPausadoManualmente = null;
+                        }
                     }
                 });
             }, {
@@ -1324,11 +1367,22 @@
             if (!fileInput.files || fileInput.files.length === 0) { showToast('Selecciona un video', 'warning'); return; }
 
             var file = fileInput.files[0];
-            var maxSize = 150 * 1024 * 1024; // 150 MB
+            var maxSize = 150 * 1024 * 1024;
             if (file.size > maxSize) { showToast('El video es demasiado grande (máx 150MB)', 'error'); return; }
 
             var allowedTypes = ['video/mp4', 'video/webm', 'video/quicktime', 'video/x-msvideo'];
             if (!allowedTypes.includes(file.type)) { showToast('Formato no soportado. Usa MP4, WebM o MOV', 'error'); return; }
+
+            // Validación adicional por extensión (defensa en profundidad)
+            var extensionesPermitidas = ['.mp4', '.webm', '.mov', '.avi'];
+            var nombreArchivo = file.name.toLowerCase();
+            var extensionValida = extensionesPermitidas.some(function(ext) {
+                return nombreArchivo.endsWith(ext);
+            });
+            if (!extensionValida) {
+                showToast('Solo se permiten archivos MP4, WebM, MOV o AVI', 'error');
+                return;
+            }
 
             var session = await getSession();
             if (!session) { showToast('Inicia sesión para subir videos', 'error'); return; }
@@ -1345,9 +1399,6 @@
                 var fileExt = file.name.split('.').pop();
                 var filePath = session.user.id + '/' + Date.now() + '.' + fileExt;
 
-                // ============================================================
-                // PASO 1: Subir video original a Supabase Storage
-                // ============================================================
                 var uploadResult = await window.supabase.storage
                     .from('videos')
                     .upload(filePath, file, {
@@ -1365,9 +1416,6 @@
                 var urlData = window.supabase.storage.from('videos').getPublicUrl(filePath);
                 var videoUrl = urlData.data.publicUrl;
 
-                // ============================================================
-                // PASO 2: Insertar registro en la tabla videos
-                // ============================================================
                 progressText.textContent = 'Creando registro...';
 
                 var insertResult = await window.supabase
@@ -1389,9 +1437,6 @@
                 var videoId = insertResult.data.id;
                 videoEnProcesamiento = videoId;
 
-                // ============================================================
-                // PASO 3: Enviar a la cola de procesamiento
-                // ============================================================
                 progressText.textContent = 'Enviando a procesar...';
 
                 var queueResponse = await fetch('/api/video/queue', {
@@ -1414,15 +1459,11 @@
                     throw new Error(queueData.error || 'Error enviando a procesar');
                 }
 
-                // ============================================================
-                // PASO 4: Mostrar estado "procesando" y hacer polling
-                // ============================================================
                 document.getElementById('uploadSection').style.display = 'none';
                 document.getElementById('processingState').classList.add('visible');
 
                 showToast('◈ Video subido, procesando...', 'success', 3000);
 
-                // Limpiar formulario
                 document.getElementById('inputTituloVideo').value = '';
                 document.getElementById('inputDescripcionVideo').value = '';
                 fileInput.value = '';
@@ -1430,7 +1471,6 @@
                 progressFill.style.width = '0%';
                 progressText.textContent = '0%';
 
-                // Iniciar polling
                 iniciarPollingProcesamiento(queueData.jobId, videoId);
 
             } catch (e) {
@@ -1453,7 +1493,7 @@
             var message = document.getElementById('processingMessage');
 
             var intentos = 0;
-            var maxIntentos = 120; // 120 * 3s = 6 minutos máximo
+            var maxIntentos = 120;
 
             pollingVideoInterval = setInterval(async function() {
                 intentos++;
@@ -1482,12 +1522,10 @@
                         return;
                     }
 
-                    // Actualizar progreso
                     var progreso = data.progreso || 0;
                     progressFill.style.width = progreso + '%';
                     progressText.textContent = progreso + '%';
 
-                    // Actualizar mensaje según el progreso
                     if (progreso < 15) {
                         message.textContent = 'Descargando video original...';
                     } else if (progreso < 25) {
@@ -1500,7 +1538,6 @@
                         message.textContent = 'Finalizando...';
                     }
 
-                    // Si terminó
                     if (data.estado === 'completado') {
                         clearInterval(pollingVideoInterval);
                         pollingVideoInterval = null;
@@ -1523,7 +1560,6 @@
                         }, 1500);
                     }
 
-                    // Si falló
                     if (data.estado === 'fallido') {
                         clearInterval(pollingVideoInterval);
                         pollingVideoInterval = null;
@@ -1545,6 +1581,64 @@
             document.getElementById('processingProgressText').textContent = '0%';
             videoEnProcesamiento = null;
             showToast('Error procesando video: ' + msg, 'error', 6000);
+        }
+
+        // ================================================================
+        // REANUDAR PROCESAMIENTO PENDIENTE (NUEVA FUNCIÓN)
+        // ================================================================
+        async function reanudarProcesamientoPendiente() {
+            if (!sessionUser) return;
+
+            try {
+                var result = await window.supabase
+                    .from('videos')
+                    .select('id, titulo, job_id')
+                    .eq('usuario_id', sessionUser.id)
+                    .eq('estado', 'procesando')
+                    .order('created_at', { ascending: false })
+                    .limit(1);
+
+                if (result.error || !result.data || result.data.length === 0) return;
+
+                var video = result.data[0];
+                console.log('◈ Reanudando procesamiento de:', video.id);
+
+                document.getElementById('uploadSection').style.display = 'none';
+                document.getElementById('processingState').classList.add('visible');
+                document.getElementById('processingMessage').textContent = 'Reanudando procesamiento: ' + video.titulo;
+
+                var jobId = video.job_id;
+
+                // Si no hay job_id guardado, intentar obtenerlo del backend
+                if (!jobId) {
+                    try {
+                        var session = await getSession();
+                        var resp = await fetch('/api/video/status-by-video/' + video.id, {
+                            headers: { 'Authorization': 'Bearer ' + session.access_token }
+                        });
+                        if (resp.ok) {
+                            var data = await resp.json();
+                            if (data.success && data.jobId) {
+                                jobId = data.jobId;
+                            }
+                        }
+                    } catch (e) {
+                        console.warn('No se pudo obtener jobId:', e.message);
+                    }
+                }
+
+                if (jobId) {
+                    iniciarPollingProcesamiento(jobId, video.id);
+                } else {
+                    // Si no hay jobId, mostrar estado pero no iniciar polling
+                    document.getElementById('processingMessage').textContent = 'Video en procesamiento (actualiza la página en unos minutos)';
+                    document.getElementById('processingState').classList.remove('visible');
+                    document.getElementById('uploadSection').style.display = 'block';
+                }
+
+            } catch (e) {
+                console.warn('Error reanudando procesamiento:', e.message);
+            }
         }
 
         // ================================================================
@@ -1636,23 +1730,32 @@
         }
 
         // ================================================================
-        // REGISTRAR VISTA
+        // REGISTRAR VISTA - USA RPC SEGURA (CRÍTICO)
         // ================================================================
         async function registrarVista(videoId) {
             try {
                 var session = await getSession();
-                var userId = session?.user?.id || null;
+                if (!session) return;
 
-                await window.supabase
-                    .from('vistas_videos')
-                    .insert({
-                        video_id: videoId,
-                        usuario_id: userId,
-                        ip: '0.0.0.0',
-                        user_agent: navigator.userAgent
-                    });
+                // Usar la RPC registrar_vista_video (idempotente, 1 vista por usuario por video)
+                var result = await window.supabase.rpc('registrar_vista_video', {
+                    p_video_id: videoId
+                });
 
-            } catch (e) { console.error('Error registrando vista:', e); }
+                if (result.error) {
+                    console.warn('Error registrando vista:', result.error.message);
+                    return;
+                }
+
+                if (result.data && result.data.contada) {
+                    console.log('✅ Vista contada para video', videoId);
+                } else if (result.data && result.data.motivo === 'ya_vio_antes') {
+                    console.log('ℹ️ Usuario ya vio este video antes');
+                }
+
+            } catch (e) {
+                console.warn('Error registrando vista:', e.message);
+            }
         }
 
         // ================================================================
@@ -1824,6 +1927,17 @@
         });
 
         // ================================================================
+        // LIMPIEZA COMPLETA DE RECURSOS EN beforeunload
+        // ================================================================
+        window.addEventListener('beforeunload', function() {
+            if (pollingVideoInterval) { clearInterval(pollingVideoInterval); pollingVideoInterval = null; }
+            if (adRefreshIntervalVideo) { clearInterval(adRefreshIntervalVideo); adRefreshIntervalVideo = null; }
+            if (adVistaTimerVideo) { clearTimeout(adVistaTimerVideo); adVistaTimerVideo = null; }
+            if (observerVideos) { observerVideos.disconnect(); observerVideos = null; }
+            if (likeCache) { likeCache.clear(); }
+        });
+
+        // ================================================================
         // CERRAR MODAL CON ESC O CLICK FUERA
         // ================================================================
         document.addEventListener('keydown', function(e) {
@@ -1856,10 +1970,12 @@
         // INICIALIZACIÓN
         // ================================================================
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('◈ Sariel\'s - Videos con Worker de procesamiento');
+            console.log('◈ Sariel\'s - Videos (versión auditada)');
             console.log('✅ Inicializando...');
             cargarUsuarioActual().then(function() {
                 cargarVideos();
+                // Reanudar procesamiento si había un video pendiente
+                reanudarProcesamientoPendiente();
             });
         });
 
@@ -1881,6 +1997,8 @@
         window.togglePlayCard = togglePlayCard;
         window.activarAutoplayScroll = activarAutoplayScroll;
         window.iniciarPollingProcesamiento = iniciarPollingProcesamiento;
+        window.reanudarProcesamientoPendiente = reanudarProcesamientoPendiente;
+        window.esURLValida = esURLValida;
     </script>
 
 </body>
