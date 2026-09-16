@@ -81,6 +81,95 @@
         .hero p { color: var(--text-muted); font-size: 0.85rem; }
         .hero .fecha { color: var(--gold); font-size: 0.65rem; margin-top: 12px; letter-spacing: 1px; font-family: 'Orbitron', monospace; }
         
+        /* ✅ RESUMEN EJECUTIVO */
+        .resumen-ejecutivo {
+            background: linear-gradient(155deg, rgba(212, 175, 55, 0.08), rgba(15, 45, 26, 0.5));
+            border: 2px solid rgba(212, 175, 55, 0.3);
+            border-radius: var(--radius-xl);
+            padding: 24px 22px;
+            margin-bottom: 24px;
+            position: relative;
+        }
+        .resumen-ejecutivo::before {
+            content: '📋';
+            position: absolute;
+            top: -14px;
+            left: 24px;
+            background: var(--space);
+            padding: 0 10px;
+            font-size: 1.2rem;
+        }
+        .resumen-titulo {
+            font-family: 'Orbitron', monospace;
+            color: var(--gold);
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            letter-spacing: 0.5px;
+        }
+        .resumen-lead {
+            color: var(--text-primary);
+            font-size: 0.88rem;
+            margin-bottom: 14px;
+            line-height: 1.6;
+        }
+        .resumen-lista {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .resumen-lista li {
+            color: var(--text-secondary);
+            font-size: 0.82rem;
+            padding: 6px 0 6px 26px;
+            position: relative;
+            line-height: 1.5;
+        }
+        .resumen-lista li::before {
+            content: '◈';
+            color: var(--gold);
+            position: absolute;
+            left: 0;
+            top: 6px;
+            font-size: 0.75rem;
+        }
+        .resumen-lista li strong { color: var(--gold); }
+        .resumen-footer {
+            margin-top: 16px;
+            padding-top: 14px;
+            border-top: 1px dashed rgba(212, 175, 55, 0.25);
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            text-align: center;
+            font-style: italic;
+        }
+        
+        /* CLÁUSULA ARTÍCULO 89 */
+        .clausula-legal {
+            background: rgba(0, 214, 143, 0.06);
+            border-left: 4px solid var(--success);
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-bottom: 24px;
+        }
+        .clausula-legal .titulo {
+            color: var(--success);
+            font-weight: 700;
+            font-size: 0.8rem;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-family: 'Orbitron', monospace;
+            letter-spacing: 0.5px;
+        }
+        .clausula-legal p {
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            margin: 0;
+            line-height: 1.6;
+        }
+        
         /* TABS */
         .tabs-container {
             display: flex;
@@ -301,6 +390,8 @@
             .card-titulo { font-size: 0.9rem; }
             .tab-btn { font-size: 0.65rem; padding: 10px 12px; min-width: 110px; }
             .main-nav .nav-link { font-size: 0.6rem; padding: 6px 10px; }
+            .resumen-ejecutivo { padding: 20px 16px; }
+            .resumen-lista li { font-size: 0.78rem; }
         }
     </style>
 </head>
@@ -326,7 +417,34 @@
             <div class="icon-grande">🦉</div>
             <h1>Derechos y Usos</h1>
             <p>Reglas de convivencia, propiedad intelectual y uso del ecosistema Sariel's</p>
-            <div class="fecha">VERSIÓN 1.0 · VIGENTE DESDE 2026</div>
+            <div class="fecha">VERSIÓN 1.1 · VIGENTE DESDE SEPTIEMBRE 2026</div>
+        </div>
+        
+        <!-- ✅ RESUMEN EJECUTIVO -->
+        <div class="resumen-ejecutivo">
+            <div class="resumen-titulo">📋 Resumen Ejecutivo</div>
+            <p class="resumen-lead">Antes de usar Sariel's, esto es lo que aplica para todos. Sin letras chiquitas:</p>
+            <ul class="resumen-lista">
+                <li><strong>Sariel's es una plataforma tecnológica, no una tienda.</strong> Solo facilitamos que la comunidad interactúe. No vendemos, no poseemos, no garantizamos nada.</li>
+                <li><strong>Debes tener 18 años cumplidos.</strong> Sin excepciones. Al registrarte declaras bajo protesta decir verdad que cumples con este requisito.</li>
+                <li><strong>Eres 100% responsable de lo que publicas.</strong> Tú, no Sariel's, no el creador del grupo.</li>
+                <li><strong>Prohibido:</strong> cripto/tokens, piratería, armas, drogas, animales vivos, alcohol, tabaco, acoso, doxxing, contenido íntimo sin consentimiento, contenido de menores, bots y spam.</li>
+                <li><strong>Si vendes, TÚ pagas impuestos.</strong> El SAT te busca a ti, no a nosotros.</li>
+                <li><strong>Si infringes copyright:</strong> 3 avisos y se cierra tu cuenta sin reembolso de Es.stoks.</li>
+                <li><strong>El creador del grupo NO es responsable</strong> de fraudes entre usuarios. Cada quien responde por sus transacciones.</li>
+                <li><strong>Reportamos y actuamos en máximo 72 horas.</strong> Bajo sistema de aviso y retirada.</li>
+                <li><strong>Cooperamos con las autoridades</strong> entregando IPs y logs en caso de delito.</li>
+                <li><strong>Si no estás de acuerdo, no uses la plataforma.</strong> Simple.</li>
+            </ul>
+            <div class="resumen-footer">
+                Esta es la versión corta. El detalle completo está abajo en 3 secciones.
+            </div>
+        </div>
+        
+        <!-- ✅ CLÁUSULA ARTÍCULO 89 -->
+        <div class="clausula-legal">
+            <div class="titulo">⚖️ Naturaleza Legal de Sariel's</div>
+            <p>Sariel's actúa exclusivamente como <strong style="color:var(--gold);">intermediario tecnológico</strong> conforme al artículo 89 de la Ley Federal de Protección al Consumidor de los Estados Unidos Mexicanos. No resguarda, posee ni garantiza los productos o servicios publicados por los usuarios. La responsabilidad fiscal, legal y de entrega es exclusiva del vendedor.</p>
         </div>
         
         <!-- TABS -->
@@ -358,24 +476,27 @@
                     <li><span class="check">✓</span> Contenido original creado por ti</li>
                     <li><span class="check">✓</span> Contenido con licencia libre (Creative Commons, dominio público)</li>
                     <li><span class="check">✓</span> Contenido propio con música/efectos libres de derechos</li>
-                    <li><span class="check">✓</span> Capturas de pantalla de tu propio perfil o contenido</li>
-                    <li><span class="check">✓</span> Fotos/videos de productos propios para venta</li>
+                    <li><span class="check">✓</span> Fotos o videos de <strong>tus productos propios</strong>, siempre que <strong>no infrinjan marcas registradas</strong> ni derechos de terceros</li>
                     <li><span class="check">✓</span> Contenido educativo, informativo o de entretenimiento propio</li>
-                    <li><span class="check">✓</span> Memes y contenido viral sin fines de lucro (crédito al autor original)</li>
+                    <li><span class="check">✓</span> <strong>Memes solo con contenido original o de dominio público.</strong> Si usas imágenes de terceros (personajes, marcas, celebridades), es tu responsabilidad y puede ser retirado por denuncia</li>
                 </ul>
                 
                 <h3>Contenido PROHIBIDO</h3>
                 <ul>
-                    <li><span class="cross">✕</span> <strong>Contenido con copyright de terceros</strong> sin autorización</li>
+                    <li><span class="cross">✕</span> <strong>Contenido con copyright de terceros</strong> sin autorización expresa</li>
                     <li><span class="cross">✕</span> Películas, series, música o videos completos de otros</li>
                     <li><span class="cross">✕</span> Contenido descargado de otras plataformas sin permiso</li>
+                    <li><span class="cross">✕</span> <strong>Memes con imágenes de terceros</strong> (Televisa, Disney, Marvel, celebridades, etc.)</li>
                     <li><span class="cross">✕</span> Contenido sexual explícito, pornografía o nudismo</li>
+                    <li><span class="cross">✕</span> <strong>Contenido íntimo sin consentimiento</strong> (Ley Olimpia en México)</li>
+                    <li><span class="cross">✕</span> <strong>Contenido de menores de edad</strong> (delito penal en México)</li>
                     <li><span class="cross">✕</span> Contenido violento, gore o que promueva el odio</li>
                     <li><span class="cross">✕</span> Contenido que promueva actividades ilegales</li>
-                    <li><span class="cross">✕</span> Contenido con datos personales de terceros sin consentimiento</li>
+                    <li><span class="cross">✕</span> <strong>Doxxing:</strong> publicar datos personales de terceros sin consentimiento (dirección, teléfono, escuela, trabajo)</li>
+                    <li><span class="cross">✕</span> <strong>Discursos de odio</strong> por género, raza, religión, orientación sexual, discapacidad o nacionalidad</li>
                     <li><span class="cross">✕</span> Acoso, bullying, amenazas o discriminación</li>
                     <li><span class="cross">✕</span> Spam, phishing, malware o estafas</li>
-                    <li><span class="cross">✕</span> Criptomonedas, tokens, NFTs u otros activos digitales sin autorización</li>
+                    <li><span class="cross">✕</span> Criptomonedas, tokens, NFTs u otros activos digitales sin autorización expresa</li>
                 </ul>
             </div>
             
@@ -396,35 +517,55 @@
             </div>
             
             <div class="card">
+                <div class="card-titulo">Sistema de Aviso y Retirada (Notice and Takedown)</div>
+                <p>Sariel's es un <strong style="color:var(--gold);">Proveedor de Servicios en Línea</strong> conforme a la Ley Federal del Derecho de Autor de México. <strong>No monitoreamos previamente el contenido</strong> publicado por los usuarios. Actuamos bajo el sistema de aviso y retirada.</p>
+                
+                <h3>¿Cómo funciona?</h3>
+                <ul>
+                    <li><span class="check">1.</span> Recibimos una denuncia válida (con pruebas de titularidad)</li>
+                    <li><span class="check">2.</span> Retiramos el contenido en un plazo máximo de <strong>72 horas</strong></li>
+                    <li><span class="check">3.</span> Notificamos al usuario que publicó el contenido</li>
+                    <li><span class="check">4.</span> El usuario puede presentar contra-notificación con pruebas</li>
+                    <li><span class="check">5.</span> Sariel's actúa de buena fe y no es responsable del contenido eliminado</li>
+                </ul>
+                
+                <div class="alerta">
+                    <div class="titulo">⚠️ Denuncia de infracción (DMCA / LFDA)</div>
+                    <p>Si eres titular de derechos de autor y consideras que tu obra fue publicada en Sariel's sin autorización, puedes contactarnos vía correo con: 1) Descripción de la obra, 2) URL del contenido infractor, 3) Prueba de titularidad, 4) Declaración de buena fe. Actuaremos en un plazo máximo de 72 horas.</p>
+                </div>
+            </div>
+            
+            <div class="card">
                 <div class="card-titulo">Consecuencias por infracción</div>
                 <p>Si publicas contenido que infringe derechos de autor de terceros:</p>
                 <ul>
                     <li><span class="cross">1.</span> El contenido será eliminado sin previo aviso</li>
-                    <li><span class="cross">2.</span> Recibirás una advertencia en tu cuenta</li>
-                    <li><span class="cross">3.</span> Reincidencias: suspensión temporal de la cuenta</li>
-                    <li><span class="cross">4.</span> Múltiples reincidencias: eliminación permanente de la cuenta</li>
+                    <li><span class="cross">2.</span> Recibirás una advertencia (strike) en tu cuenta</li>
+                    <li><span class="cross">3.</span> <strong>3 strikes = cuenta eliminada permanentemente</strong></li>
+                    <li><span class="cross">4.</span> Sin reembolso de Es.stoks acumulados</li>
                     <li><span class="cross">5.</span> En casos graves: reporte a las autoridades correspondientes</li>
                 </ul>
                 
                 <div class="alerta">
-                    <div class="titulo">⚠️ Denuncia de infracción (DMCA)</div>
-                    <p>Si eres titular de derechos de autor y consideras que tu obra fue publicada en Sariel's sin autorización, puedes contactarnos vía correo con: 1) Descripción de la obra, 2) URL del contenido infractor, 3) Prueba de titularidad. Actuaremos en un plazo máximo de 72 horas.</p>
+                    <div class="titulo">⚠️ Contenido penal</div>
+                    <p>Si detectamos contenido que constituye <strong>delito penal en México</strong> (pornografía infantil, contenido íntimo sin consentimiento, amenazas graves), eliminaremos el contenido inmediatamente, bloquearemos la cuenta y <strong>entregaremos IP, logs y metadatos a las autoridades</strong> sin previo aviso.</p>
                 </div>
             </div>
             
             <div class="card">
                 <div class="card-titulo">Responsabilidad del usuario</div>
-                <p>Al publicar contenido en Sariel's, declaras que:</p>
+                <p>Al publicar contenido en Sariel's, declaras bajo protesta decir verdad que:</p>
                 <ul>
                     <li><span class="check">✓</span> Tienes los derechos para publicar ese contenido</li>
                     <li><span class="check">✓</span> El contenido no infringe derechos de terceros</li>
-                    <li><span class="check">✓</span> Eres mayor de edad o cuentas con autorización legal</li>
+                    <li><span class="check">✓</span> <strong>Tienes al menos 18 años cumplidos</strong></li>
                     <li><span class="check">✓</span> Asumes toda responsabilidad legal derivada del contenido</li>
                 </ul>
                 <p style="margin-top:12px;">Sariel's actúa como <strong style="color:var(--gold);">plataforma técnica</strong> y no se hace responsable del contenido publicado por los usuarios. Cada usuario es 100% responsable de lo que comparte.</p>
             </div>
         </div>
         
+        <!-- ⚠️ FIN DE LA PARTE 1 -->
         <!-- ============================================
              SECCIÓN 2: DERECHOS DE USO
              ============================================ -->
@@ -452,24 +593,36 @@
                     <li><span class="cross">✕</span> Usar la plataforma para actividades ilegales</li>
                     <li><span class="cross">✕</span> Crear múltiples cuentas para evadir sanciones</li>
                     <li><span class="cross">✕</span> Manipular vistas, likes, comentarios o donaciones</li>
-                    <li><span class="cross">✕</span> Usar bots, scrapers o automatizaciones no autorizadas</li>
+                    <li><span class="cross">✕</span> <strong>Usar bots, scrapers o automatizaciones no autorizadas</strong></li>
                     <li><span class="cross">✕</span> Intentar hackear, sobrecargar o vulnerar la plataforma</li>
                     <li><span class="cross">✕</span> Vender criptomonedas, tokens o NFTs no autorizados</li>
                     <li><span class="cross">✕</span> Suplantar identidad de otros usuarios</li>
-                    <li><span class="cross">✕</span> Acosar, amenazar o discriminar a otros</li>
+                    <li><span class="cross">✕</span> <strong>Acosar, amenazar o discriminar</strong> a otros</li>
+                    <li><span class="cross">✕</span> <strong>Doxxing</strong> (publicar datos personales de terceros)</li>
+                    <li><span class="cross">✕</span> <strong>Difundir contenido íntimo sin consentimiento (Ley Olimpia)</strong></li>
                     <li><span class="cross">✕</span> Publicar contenido sexual, violento o ilegal</li>
                 </ul>
+                
+                <div class="alerta">
+                    <div class="titulo">⚠️ Consecuencias por uso indebido</div>
+                    <p>El uso de <strong>bots, scrapers o automatizaciones no autorizadas</strong> resultará en <strong>bloqueo permanente de la cuenta</strong> y <strong>eliminación del saldo de Es.stoks</strong> sin derecho a reembolso. Lo mismo aplica para manipulación de métricas o intentos de hackeo.</p>
+                </div>
             </div>
             
             <div class="card">
                 <div class="card-titulo">Cuenta de usuario</div>
                 <ul>
+                    <li><span class="check">✓</span> <strong>Debes tener 18 años cumplidos. Sin excepciones.</strong> Al registrarte declaras bajo protesta decir verdad que cumples con este requisito</li>
                     <li><span class="check">✓</span> Una cuenta por persona (verificada por email)</li>
                     <li><span class="check">✓</span> Eres responsable de mantener tu contraseña segura</li>
                     <li><span class="check">✓</span> No puedes compartir tu cuenta con terceros</li>
-                    <li><span class="check">✓</span> Debes tener al menos 18 años (o autorización legal)</li>
                     <li><span class="check">✓</span> Puedes eliminar tu cuenta en cualquier momento</li>
                 </ul>
+                
+                <div class="aviso-box">
+                    <div class="titulo">⚠️ Solo para mayores de edad</div>
+                    <p>Sariel's opera con activos digitales (USDT, USDC, Es.stoks) y por lo tanto <strong>requiere que todos los usuarios sean mayores de 18 años</strong>. No aceptamos autorizaciones de padres o tutores. Si detectamos una cuenta de menor de edad, será eliminada inmediatamente.</p>
+                </div>
             </div>
             
             <div class="card">
@@ -490,15 +643,38 @@
             </div>
             
             <div class="card">
-                <div class="card-titulo">Regalos y donaciones</div>
+                <div class="card-titulo">Regalos y donaciones en USDT/USDC</div>
                 <ul>
                     <li><span class="check">✓</span> Puedes enviar regalos en USDT/USDC durante transmisiones</li>
-                    <li><span class="check">✓</span> Los regalos son voluntarios y no reembolsables</li>
-                    <li><span class="check">✓</span> Sariel's cobra una pequeña comisión por procesamiento</li>
+                    <li><span class="check">✓</span> Los regalos son <strong>propinas voluntarias</strong> y no reembolsables</li>
+                    <li><span class="check">✓</span> Sariel's cobra una pequeña comisión por procesamiento tecnológico</li>
                     <li><span class="check">✓</span> El creador recibe el monto menos la comisión</li>
                     <li><span class="cross">✕</span> No puedes usar los regalos para lavar dinero</li>
                     <li><span class="cross">✕</span> No puedes solicitar reembolsos por regalos enviados</li>
                 </ul>
+                
+                <div class="aviso-box">
+                    <div class="titulo">📋 Obligaciones fiscales por regalos</div>
+                    <p>Los regalos en USDT/USDC son <strong>propinas voluntarias</strong>. El creador que las recibe es responsable de declararlas ante el SAT de México. Sariel's actúa como <strong>procesador tecnológico</strong> y retendrá impuestos conforme a la ley mexicana cuando aplique.</p>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-titulo">Contenido prohibido por ley en México</div>
+                <p>Las siguientes conductas constituyen <strong>delito penal</strong> en México y serán atendidas de inmediato:</p>
+                <ul>
+                    <li><span class="cross">✕</span> <strong>Difundir contenido íntimo sin consentimiento</strong> (Ley Olimpia) — hasta 6 años de prisión</li>
+                    <li><span class="cross">✕</span> <strong>Doxxing</strong> — exponer datos personales con intención de dañar</li>
+                    <li><span class="cross">✕</span> <strong>Discursos de odio</strong> por género, raza, religión, orientación sexual o discapacidad</li>
+                    <li><span class="cross">✕</span> <strong>Pornografía infantil</strong> — 12 a 18 años de prisión</li>
+                    <li><span class="cross">✕</span> <strong>Amenazas graves</strong> o extorsión</li>
+                    <li><span class="cross">✕</span> <strong>Trata de personas</strong> o explotación</li>
+                </ul>
+                
+                <div class="alerta">
+                    <div class="titulo">⚠️ Cooperación con autoridades</div>
+                    <p>Sariel's colaborará con las autoridades mexicanas entregando <strong>IPs, logs, metadatos y cualquier información requerida</strong> en caso de investigación por delito. No avisaremos al usuario antes de hacerlo.</p>
+                </div>
             </div>
             
             <div class="card">
@@ -542,11 +718,11 @@
             <div class="card">
                 <h3>Productos/servicios permitidos</h3>
                 <ul>
-                    <li><span class="check">✓</span> Productos físicos (ropa, electrónicos, muebles, etc.)</li>
+                    <li><span class="check">✓</span> Productos físicos originales (ropa, electrónicos, muebles, etc.) que <strong>no infrinjan marcas registradas</strong></li>
                     <li><span class="check">✓</span> Servicios personales (plomería, clases, diseño, etc.)</li>
                     <li><span class="check">✓</span> Servicios profesionales (consultoría, contabilidad, etc.)</li>
                     <li><span class="check">✓</span> Renta de espacios, autos, herramientas, etc.</li>
-                    <li><span class="check">✓</span> Cosas que quieras regalar</li>
+                    <li><span class="check">✓</span> <strong>Objetos personales en buen estado sin costo</strong> (NO animales vivos)</li>
                     <li><span class="check">✓</span> Productos de tu negocio propio</li>
                 </ul>
                 
@@ -557,18 +733,36 @@
                     <li><span class="cross">✕</span> Armas, municiones, explosivos</li>
                     <li><span class="cross">✕</span> Drogas, medicamentos controlados</li>
                     <li><span class="cross">✕</span> Productos robados o de origen ilícito</li>
-                    <li><span class="cross">✕</span> Animales vivos (excepto con permiso)</li>
+                    <li><span class="cross">✕</span> <strong>Productos que infrinjan propiedad intelectual</strong> (marcas, patentes, derechos de autor) — el sistema puede bajar la publicación <strong>sin aviso y sin derecho a reembolso</strong></li>
+                    <li><span class="cross">✕</span> Animales vivos (sin excepción)</li>
                     <li><span class="cross">✕</span> Órganos, sangre, tejidos humanos</li>
                     <li><span class="cross">✕</span> Documentos falsos, identidades</li>
                     <li><span class="cross">✕</span> Contenido sexual, pornografía</li>
                     <li><span class="cross">✕</span> Medicamentos sin receta</li>
-                    <li><span class="cross">✕</span> Tabaco, alcohol (sin licencia)</li>
+                    <li><span class="cross">✕</span> <strong>Alcohol y tabaco — prohibidos en su totalidad, sin excepción</strong></li>
                     <li><span class="cross">✕</span> Productos pirateados o falsificados</li>
                 </ul>
                 
                 <div class="alerta">
                     <div class="titulo">⚠️ Bloqueo automático de cripto</div>
                     <p>El sistema bloquea automáticamente cualquier publicación de Marketplace que mencione criptomonedas, tokens, NFTs, wallets o activos digitales. Si quieres vender tokens del ecosistema (Es.stoks), usa el <strong>Muro</strong>.</p>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-titulo">Obligaciones fiscales del vendedor</div>
+                <p>Si publicas en el Marketplace, tú eres <strong>100% responsable</strong> de cumplir con tus obligaciones fiscales ante el <strong>Servicio de Administración Tributaria (SAT)</strong>:</p>
+                <ul>
+                    <li><span class="check">✓</span> Declarar los ingresos obtenidos por tus ventas</li>
+                    <li><span class="check">✓</span> Emitir facturas cuando el comprador lo solicite</li>
+                    <li><span class="check">✓</span> Pagar el IVA correspondiente si aplica</li>
+                    <li><span class="check">✓</span> Pagar el ISR correspondiente a tu actividad</li>
+                    <li><span class="check">✓</span> Estar dado de alta en el RFC si es actividad comercial continua</li>
+                </ul>
+                
+                <div class="aviso-box">
+                    <div class="titulo">📋 Importante</div>
+                    <p>Sariel's <strong>NO actúa como intermediario fiscal</strong>. No retiene impuestos por las ventas del Marketplace, no emite facturas y no se responsabiliza por incumplimientos fiscales de los vendedores. La responsabilidad es exclusiva del vendedor.</p>
                 </div>
             </div>
             
@@ -600,11 +794,12 @@
                     <li><span class="cross">✕</span> La veracidad de las fotos publicadas</li>
                     <li><span class="cross">✕</span> El cumplimiento del precio publicado</li>
                     <li><span class="cross">✕</span> Cualquier problema con el comprador</li>
+                    <li><span class="cross">✕</span> El pago de impuestos correspondientes</li>
                 </ul>
                 
                 <div class="alerta">
                     <div class="titulo">⚠️ Estafas y fraudes</div>
-                    <p>Si realizas una estafa, fraude o engaño en el Marketplace, tu cuenta será eliminada permanentemente y reportada a las autoridades. Los afectados podrán iniciar acciones legales directas contra ti.</p>
+                    <p>Si realizas una estafa, fraude o engaño en el Marketplace, tu cuenta será eliminada permanentemente, se eliminarán tus Es.stoks sin reembolso, y serás reportado a las autoridades. Los afectados podrán iniciar acciones legales directas contra ti.</p>
                 </div>
             </div>
             
@@ -634,31 +829,50 @@
                 </ul>
                 <p style="margin-top:12px;">Los reportes son revisados por:</p>
                 <ul>
-                    <li><strong style="color:var(--gold);">1ro:</strong> El creador del grupo</li>
+                    <li><strong style="color:var(--gold);">1ro:</strong> El creador del grupo (máximo 72 horas)</li>
                     <li><strong style="color:var(--gold);">2do:</strong> El equipo de Sariel's si es necesario</li>
                 </ul>
             </div>
+        </div>
+        
+        <!-- ============================================
+             CLÁUSULAS FINALES
+             ============================================ -->
+        <div class="card" style="margin-top: 24px; background: linear-gradient(155deg, rgba(212, 175, 55, 0.05), rgba(15, 45, 26, 0.5)); border-color: rgba(212, 175, 55, 0.3);">
+            <div class="card-titulo">Cláusulas Finales</div>
             
-            <div class="card">
-                <div class="card-titulo">Aceptación de términos</div>
-                <p>Al usar el Marketplace aceptas que:</p>
-                <ul>
-                    <li><span class="check">✓</span> Has leído y comprendido estos términos</li>
-                    <li><span class="check">✓</span> Asumes toda responsabilidad sobre tus publicaciones</li>
-                    <li><span class="check">✓</span> Eximes a Sariel's y al creador del grupo de cualquier responsabilidad</li>
-                    <li><span class="check">✓</span> Cumplirás con las leyes de tu país</li>
-                    <li><span class="check">✓</span> No usarás el Marketplace para actividades ilegales</li>
-                </ul>
-                
-                <div class="alerta">
-                    <div class="titulo">⚠️ Última advertencia</div>
-                    <p>Sariel's es una plataforma técnica. NO participa en las transacciones. Cualquier disputa legal debe resolverse directamente entre las partes involucradas. Sariel's cooperará con las autoridades en caso de investigaciones legales.</p>
-                </div>
-            </div>
+            <h3>Naturaleza legal de Sariel's</h3>
+            <p>Sariel's actúa exclusivamente como <strong style="color:var(--gold);">intermediario tecnológico</strong> conforme al artículo 89 de la Ley Federal de Protección al Consumidor de los Estados Unidos Mexicanos. No resguarda, posee ni garantiza los productos o servicios publicados por los usuarios. La responsabilidad fiscal, legal y de entrega es exclusiva del vendedor.</p>
+            
+            <h3>Responsabilidad por servicios de terceros</h3>
+            <p>Sariel's no se responsabiliza por:</p>
+            <ul>
+                <li><span class="cross">✕</span> Enlaces externos a otros sitios web</li>
+                <li><span class="cross">✕</span> Contenido embebido de plataformas externas</li>
+                <li><span class="cross">✕</span> Transacciones realizadas fuera de la plataforma</li>
+                <li><span class="cross">✕</span> Servicios de terceros (NOWPayments, LiveKit, Supabase, Telnyx)</li>
+                <li><span class="cross">✕</span> Cambios en las condiciones de proveedores externos</li>
+            </ul>
+            
+            <h3>Modificaciones a los términos</h3>
+            <p>Sariel's se reserva el derecho de <strong>modificar estos términos sin previo aviso</strong>. Los cambios entran en vigor al momento de su publicación en esta página. El uso continuado de la plataforma constituye <strong>aceptación tácita</strong> de los nuevos términos. Recomendamos revisar esta página periódicamente.</p>
+            
+            <h3>Ley aplicable y jurisdicción</h3>
+            <p>Estos términos se rigen por las leyes de los <strong>Estados Unidos Mexicanos</strong>. Cualquier controversia derivada del uso de la plataforma se resolverá en los <strong>tribunales competentes de Puebla, México</strong>, renunciando las partes a cualquier otro fuero que pudiera corresponderles por razón de su domicilio presente o futuro.</p>
+            
+            <h3>Aceptación de términos</h3>
+            <p>Al registrarte y usar Sariel's, declaras bajo protesta decir verdad que:</p>
+            <ul>
+                <li><span class="check">✓</span> Has leído y comprendido estos términos</li>
+                <li><span class="check">✓</span> <strong>Tienes al menos 18 años cumplidos</strong></li>
+                <li><span class="check">✓</span> Aceptas todas las condiciones aquí descritas</li>
+                <li><span class="check">✓</span> Asumes toda responsabilidad sobre tus publicaciones y transacciones</li>
+                <li><span class="check">✓</span> Eximes a Sariel's de cualquier responsabilidad derivada de tu actividad</li>
+            </ul>
         </div>
         
         <div class="fecha-version">
-            📅 Última actualización: Septiembre 2026 · Versión 1.0
+            📅 Última actualización: Septiembre 2026 · Versión 1.1
         </div>
         
         <div style="text-align: center;">
