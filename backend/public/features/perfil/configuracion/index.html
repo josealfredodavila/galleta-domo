@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#000000" />
+    <title>Configuración · Sariel's</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="../../shared/config-layout.css" />
+</head>
+<body class="cfg-page">
+
+    <div id="cfgHeaderSlot"></div>
+
+    <main class="cfg-content">
+
+        <h2 class="cfg-section-title">Tu cuenta</h2>
+        <div class="cfg-list" id="seccionCuenta"></div>
+
+        <h2 class="cfg-section-title">Seguridad</h2>
+        <div class="cfg-list" id="seccionSeguridad"></div>
+
+        <h2 class="cfg-section-title">Privacidad y seguridad</h2>
+        <div class="cfg-list" id="seccionPrivacidad"></div>
+
+        <h2 class="cfg-section-title">Notificaciones</h2>
+        <div class="cfg-list" id="seccionNotificaciones"></div>
+
+        <h2 class="cfg-section-title">Accesibilidad, pantalla e idiomas</h2>
+        <div class="cfg-list" id="seccionAccesibilidad"></div>
+
+        <h2 class="cfg-section-title">Sariel's</h2>
+        <div class="cfg-list" id="seccionSariels"></div>
+
+        <h2 class="cfg-section-title">Recursos adicionales</h2>
+        <div class="cfg-list" id="seccionRecursos"></div>
+
+        <h2 class="cfg-section-title">Sesión</h2>
+        <div class="cfg-list" id="seccionSesion"></div>
+
+        <div class="cfg-footer">
+            <strong>◈ Sariel's</strong> · Csariels.s ecosystem · WEB3<br>
+            Versión de configuración 1.0
+        </div>
+    </main>
+
+    <script src="../../shared/config-icons.js"></script>
+    <script src="../../shared/config-layout.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
+    <script>
+    (function () {
+        'use strict';
+
+        cfgInitPage({
+            title: 'Configuración',
+            subtitle: '@tu_usuario',
+            backUrl: '/features/perfil/perfil.html',
+        });
+
+        const $ = (sel) => document.querySelector(sel);
+        const baseConfig = '/features/perfil/configuracion';
+
+        // ============================================================
+        // TU CUENTA
+        // ============================================================
+        $('#seccionCuenta').innerHTML = [
+            cfgRenderItem({
+                icon: 'user',
+                title: 'Tu cuenta',
+                desc: 'Consulta tu información de cuenta y descarga tus datos',
+                href: baseConfig + '/cuenta.html',
+            }),
+            cfgRenderItem({
+                icon: 'lock',
+                title: 'Cambiar contraseña',
+                desc: 'Actualiza tu contraseña para mantener tu cuenta segura',
+                href: '/actualizar-contraseña.html',
+            }),
+            cfgRenderItem({
+                icon: 'logout',
+                title: 'Eliminar cuenta',
+                desc: 'Solicita eliminar tu cuenta permanentemente',
+                href: '/eliminar-cuenta.html',
+            }),
+        ].join('');
+
+        // ============================================================
+        // SEGURIDAD
+        // ============================================================
+        $('#seccionSeguridad').innerHTML = [
+            cfgRenderItem({
+                icon: 'shield',
+                title: 'Seguridad y acceso a la cuenta',
+                desc: 'Administra la seguridad de tu cuenta y apps conectadas',
+                href: baseConfig + '/seguridad.html',
+            }),
+            cfgRenderItem({
+                icon: 'wallet',
+                title: 'Wallet y Polygon',
+                desc: 'Administra tu wallet conectada',
+                href: baseConfig + '/sariels/wallet.html',
+            }),
+        ].join('');
+
+        // ============================================================
+        // PRIVACIDAD Y SEGURIDAD
+        // ============================================================
+        $('#seccionPrivacidad').innerHTML = [
+            cfgRenderItem({
+                icon: 'users',
+                title: 'Audiencia y etiquetas',
+                desc: 'Administra qué información permites que vean otras personas',
+                href: baseConfig + '/privacidad/audiencia.html',
+            }),
+            cfgRenderItem({
+                icon: 'fileText',
+                title: 'Tus publicaciones',
+                desc: 'Administra la información asociada a tus publicaciones',
+                href: baseConfig + '/privacidad/posts.html',
+            }),
+            cfgRenderItem({
+                icon: 'eye',
+                title: 'Contenido que ves',
+                desc: 'Decide qué ver en Sariel\'s en función de tus preferencias',
+                href: baseConfig + '/privacidad/contenido.html',
+            }),
+            cfgRenderItem({
+                icon: 'ban',
+                title: 'Silenciar y bloquear',
+                desc: 'Administra las cuentas, palabras y notificaciones bloqueadas',
+                href: baseConfig + '/privacidad/silenciar.html',
+            }),
+            cfgRenderItem({
+                icon: 'messageCircle',
+                title: 'Chats',
+                desc: 'Administra quiénes pueden enviarte mensajes directos',
+                href: baseConfig + '/privacidad/chats.html',
+            }),
+            cfgRenderItem({
+                icon: 'mapPin',
+                title: 'Visibilidad y contactos',
+                desc: 'Controla tu configuración de visibilidad y contactos importados',
+                href: baseConfig + '/privacidad/visibilidad.html',
+            }),
+            cfgRenderItem({
+                icon: 'globe',
+                title: 'Acerca de tu cuenta',
+                desc: 'Administra la ubicación asociada a tu cuenta',
+                href: baseConfig + '/privacidad/ubicacion.html',
+            }),
+        ].join('');
+
+        // ============================================================
+        // NOTIFICACIONES
+        // ============================================================
+        $('#seccionNotificaciones').innerHTML = [
+            cfgRenderItem({
+                icon: 'bell',
+                title: 'Preferencias de notificaciones',
+                desc: 'Elige cómo quieres recibir notificaciones',
+                href: baseConfig + '/notificaciones.html',
+            }),
+        ].join('');
+
+        // ============================================================
+        // ACCESIBILIDAD
+        // ============================================================
+        $('#seccionAccesibilidad').innerHTML = [
+            cfgRenderItem({
+                icon: 'accessibility',
+                title: 'Accesibilidad',
+                desc: 'Administra contraste, movimiento y otras opciones',
+                href: baseConfig + '/accesibilidad/accesibilidad.html',
+            }),
+            cfgRenderItem({
+                icon: 'brush',
+                title: 'Mostrar',
+                desc: 'Administra fondo, color y tamaño de fuente',
+                href: baseConfig + '/accesibilidad/mostrar.html',
+            }),
+            cfgRenderItem({
+                icon: 'globe',
+                title: 'Idiomas',
+                desc: 'Administra qué idiomas se usan para personalizar tu experiencia',
+                href: baseConfig + '/accesibilidad/idiomas.html',
+            }),
+            cfgRenderItem({
+                icon: 'database',
+                title: 'Uso de datos',
+                desc: 'Establece límites para el uso de datos de tu red',
+                href: baseConfig + '/accesibilidad/datos.html',
+            }),
+            cfgRenderItem({
+                icon: 'navigation',
+                title: 'Navegación',
+                desc: 'Administra cómo se abren los enlaces',
+                href: baseConfig + '/accesibilidad/navegacion.html',
+            }),
+        ].join('');
+
+        // ============================================================
+        // SARIEL'S
+        // ============================================================
+        $('#seccionSariels').innerHTML = [
+            cfgRenderItem({
+                icon: 'owl',
+                title: 'Derechos y Usos',
+                desc: 'Reglas de convivencia y propiedad intelectual',
+                href: '/features/terminos/derechos-sariels.html',
+            }),
+            cfgRenderItem({
+                icon: 'coin',
+                title: 'Es.stoks',
+                desc: 'Administra tus tokens Es.stoks',
+                href: baseConfig + '/sariels/estoks.html',
+            }),
+            cfgRenderItem({
+                icon: 'crown',
+                title: 'Membresía Pro',
+                desc: 'Administra tu suscripción Sariel\'s Pro',
+                href: baseConfig + '/sariels/membresia.html',
+            }),
+            cfgRenderItem({
+                icon: 'qrCode',
+                title: 'Generador QR',
+                desc: 'Genera QRs para tus productos',
+                href: '/qr-generator.html',
+            }),
+        ].join('');
+
+        // ============================================================
+        // RECURSOS
+        // ============================================================
+        $('#seccionRecursos').innerHTML = [
+            cfgRenderItem({
+                icon: 'info',
+                title: 'Términos y condiciones',
+                desc: 'Consulta los términos de uso de Sariel\'s',
+                href: '/terminos',
+            }),
+            cfgRenderItem({
+                icon: 'shield',
+                title: 'Política de privacidad',
+                desc: 'Consulta cómo protegemos tus datos',
+                href: '/privacidad.html',
+            }),
+            cfgRenderItem({
+                icon: 'fileText',
+                title: 'Cookies',
+                desc: 'Consulta la política de cookies',
+                href: '/cookies.html',
+            }),
+            cfgRenderItem({
+                icon: 'info',
+                title: 'Términos del Live',
+                desc: 'Consulta los términos de transmisiones en vivo',
+                href: '/live-terminos.html',
+            }),
+        ].join('');
+
+        // ============================================================
+        // CERRAR SESIÓN
+        // ============================================================
+        const btnCerrarSesion = document.createElement('button');
+        btnCerrarSesion.type = 'button';
+        btnCerrarSesion.className = 'cfg-item';
+        btnCerrarSesion.style.color = 'var(--cfg-danger, #ff3366)';
+        btnCerrarSesion.innerHTML = `
+            <div class="cfg-item-icon" style="color:var(--cfg-danger, #ff3366);">${window.cfgIcon('logout')}</div>
+            <div class="cfg-item-content">
+                <div class="cfg-item-title" style="color:var(--cfg-danger, #ff3366);">Cerrar sesión</div>
+                <p class="cfg-item-desc">Salir de tu cuenta en este dispositivo</p>
+            </div>
+        `;
+        btnCerrarSesion.onclick = async () => {
+            const ok = await cfgConfirm({
+                title: '¿Cerrar sesión?',
+                text: 'Tendrás que volver a iniciar sesión para acceder a tu cuenta.',
+                confirmText: 'Cerrar sesión',
+                cancelText: 'Cancelar',
+                danger: true,
+            });
+            if (!ok) return;
+
+            try {
+                if (window.supabase && window.supabase.auth) {
+                    await window.supabase.auth.signOut();
+                }
+                cfgToast('Sesión cerrada', 'success');
+                setTimeout(() => { window.location.href = '/'; }, 800);
+            } catch (e) {
+                console.error('Error cerrando sesión:', e);
+                cfgToast('Error al cerrar sesión', 'error');
+            }
+        };
+
+        $('#seccionSesion').appendChild(btnCerrarSesion);
+
+        // ============================================================
+        // CARGAR HANDLE EN SUBTITLE
+        // ============================================================
+        (async function cargarUsuario() {
+            try {
+                if (!window.supabase || !window.supabase.auth) return;
+                const { data } = await window.supabase.auth.getSession();
+                const session = data && data.session;
+                if (!session) return;
+                const handle = session.user.email ? session.user.email.split('@')[0] : 'usuario';
+                const subEl = document.querySelector('.cfg-header-subtitle');
+                if (subEl) subEl.textContent = '@' + handle;
+            } catch (e) { /* silencioso */ }
+        })();
+
+    })();
+    </script>
+</body>
+</html>
