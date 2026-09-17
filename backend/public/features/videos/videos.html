@@ -7,8 +7,12 @@
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
 
+    <!-- ✅ APARIENCIA GLOBAL - Se carga PRIMERO para evitar flash -->
+    <script src="/features/shared/js/apariencia-global.js"></script>
+
     <style>
         :root {
+            /* Paleta base (misma que Perfil) */
             --gold: #D4AF37;
             --gold-dark: #b8923a;
             --gold-light: #e8c84a;
@@ -33,6 +37,14 @@
             --cyan: #00e5ff;
             --purple: #a855f7;
             --pink: #ec4899;
+            /* Variables que faltaban para el tema día */
+            --bg-card: rgba(15, 45, 26, 0.4);
+            --bg-dark: rgba(5, 8, 15, 0.8);
+            --border-color: rgba(212, 175, 55, 0.08);
+            --line-black: #000000;
+            --line-black-soft: rgba(0, 0, 0, 0.85);
+            --line-black-mid: rgba(0, 0, 0, 0.65);
+            --line-black-light: rgba(0, 0, 0, 0.45);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -765,6 +777,69 @@
         .footer-links a { color: var(--text-muted); text-decoration: none; }
         .footer-links a:hover { color: var(--gold); }
 
+        /* ================================================================
+           TEMA DÍA - Fondo claro cuando el usuario elige "Día"
+           ================================================================ */
+        html.tema-dia,
+        html[data-tema="dia"] {
+            --space: #f5f7fa;
+            --bg-card: rgba(255, 255, 255, 0.95);
+            --bg-dark: rgba(240, 244, 248, 0.9);
+            --glass-bg: rgba(255, 255, 255, 0.85);
+            --glass-border: rgba(0, 0, 0, 0.1);
+            --text-primary: #1a2332;
+            --text-secondary: #4a5568;
+            --text-muted: #718096;
+            --line-black: rgba(0, 0, 0, 0.15);
+            --line-black-soft: rgba(0, 0, 0, 0.12);
+            --line-black-mid: rgba(0, 0, 0, 0.18);
+            --line-black-light: rgba(0, 0, 0, 0.1);
+        }
+        html.tema-dia body,
+        html[data-tema="dia"] body {
+            background: #f5f7fa !important;
+            background-image: 
+                radial-gradient(ellipse at 20% 50%, rgba(212, 175, 55, 0.05) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 50%, rgba(42, 106, 58, 0.05) 0%, transparent 60%) !important;
+            color: var(--text-primary) !important;
+        }
+        html.tema-dia .header,
+        html[data-tema="dia"] .header {
+            background: rgba(255, 255, 255, 0.95) !important;
+            border-bottom-color: rgba(0, 0, 0, 0.15) !important;
+        }
+        html.tema-dia .main-nav,
+        html[data-tema="dia"] .main-nav {
+            background: rgba(255, 255, 255, 0.7) !important;
+        }
+        html.tema-dia .upload-section,
+        html.tema-dia .video-card,
+        html.tema-dia .modal-video .info-video,
+        html[data-tema="dia"] .upload-section,
+        html[data-tema="dia"] .video-card,
+        html[data-tema="dia"] .modal-video .info-video {
+            background: rgba(255, 255, 255, 0.9) !important;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08) !important;
+        }
+        html.tema-dia #stars-canvas,
+        html.tema-dia .nebula,
+        html[data-tema="dia"] #stars-canvas,
+        html[data-tema="dia"] .nebula {
+            display: none !important;
+        }
+        html.tema-dia .upload-section .form-group input,
+        html.tema-dia .upload-section .form-group textarea,
+        html[data-tema="dia"] .upload-section .form-group input,
+        html[data-tema="dia"] .upload-section .form-group textarea {
+            background: rgba(255, 255, 255, 0.9) !important;
+            color: var(--text-primary) !important;
+            border-color: rgba(0, 0, 0, 0.15) !important;
+        }
+        html.tema-dia .toast,
+        html[data-tema="dia"] .toast {
+            background: rgba(255, 255, 255, 0.98) !important;
+        }
+
         @media (max-width: 768px) {
             .app { padding: 12px 14px; }
             .video-card { min-height: 60vh; max-height: 60vh; }
@@ -810,6 +885,7 @@
             </div>
         </header>
 
+        <!-- NAV: sin data-clave -->
         <nav class="main-nav">
             <a href="/" class="nav-link">⌂ Inicio</a>
             <a href="/features/muro/muro.html" class="nav-link">◇ Muro</a>
@@ -824,15 +900,15 @@
 
         <!-- SUBIR VIDEO -->
         <div class="upload-section" id="uploadSection">
-            <h3 data-clave="videos_titulo">◈ Subir nuevo video</h3>
+            <h3 data-clave="videos_subir_nuevo">◈ Subir nuevo video</h3>
             <form id="formSubirVideo" onsubmit="event.preventDefault(); subirVideo();">
                 <div class="form-group">
                     <label data-clave="videos_titulo_video">Título del video</label>
-                    <input type="text" id="inputTituloVideo" placeholder="Ej: Mi primer video en Sariel's" required />
+                    <input type="text" id="inputTituloVideo" data-placeholder="videos_ejemplo_titulo" placeholder="Ej: Mi primer video en Sariel's" required />
                 </div>
                 <div class="form-group">
                     <label data-clave="videos_descripcion">Descripción</label>
-                    <textarea id="inputDescripcionVideo" placeholder="Describe tu video..."></textarea>
+                    <textarea id="inputDescripcionVideo" data-placeholder="videos_ejemplo_descripcion" placeholder="Describe tu video..."></textarea>
                 </div>
                 <div class="form-group">
                     <label data-clave="videos_seleccionar_archivo">Selecciona el archivo de video</label>
@@ -853,26 +929,22 @@
             </form>
         </div>
 
-        <!-- ============================================================
-             ESTADO DE PROCESAMIENTO (mientras el worker trabaja)
-             ============================================================ -->
+        <!-- ESTADO DE PROCESAMIENTO -->
         <div class="processing-state" id="processingState">
             <div class="spinner"></div>
-            <h3>◈ Procesando video</h3>
-            <p id="processingMessage">Eliminando marca de agua externa y aplicando marca de Sariel's...</p>
+            <h3 data-clave="videos_procesando_titulo">◈ Procesando video</h3>
+            <p id="processingMessage" data-clave="videos_procesando_msg">Eliminando marca de agua externa y aplicando marca de Sariel's...</p>
             <div class="progress-bar-big">
                 <div class="fill" id="processingProgressFill"></div>
             </div>
             <div class="progress-text" id="processingProgressText">0%</div>
-            <p style="font-size:0.6rem;color:var(--text-muted);">Este proceso puede tardar entre 30 y 90 segundos</p>
+            <p style="font-size:0.6rem;color:var(--text-muted);" data-clave="videos_procesando_ayuda">Este proceso puede tardar entre 30 y 90 segundos</p>
         </div>
 
-        <!-- ============================================================
-             ANUNCIO DE MARKETING PARA VIDEOS
-             ============================================================ -->
+        <!-- ANUNCIO DE MARKETING -->
         <div class="marketing-ad-container" id="marketingAdContainer">
             <div class="marketing-ad-header">
-                <span class="marketing-ad-label">Patrocinado</span>
+                <span class="marketing-ad-label" data-clave="videos_patrocinado">Patrocinado</span>
                 <button class="marketing-ad-close" onclick="cerrarAnuncioVideo()" aria-label="Cerrar anuncio">&times;</button>
             </div>
             <div class="marketing-ad-body">
@@ -882,7 +954,7 @@
                 <div class="marketing-ad-content">
                     <div class="marketing-ad-title" id="marketingAdTitleVideo">Cargando anuncio...</div>
                     <div class="marketing-ad-desc" id="marketingAdDescVideo"></div>
-                    <button class="marketing-ad-cta" id="marketingAdCtaVideo" onclick="registrarClicAnuncioVideo()">Ver más</button>
+                    <button class="marketing-ad-cta" id="marketingAdCtaVideo" onclick="registrarClicAnuncioVideo()" data-clave="videos_ver_mas">Ver más</button>
                 </div>
             </div>
         </div>
@@ -908,19 +980,17 @@
 
     </div>
 
-    <!-- ===== MODAL REPRODUCTOR FLOTANTE (FULL SCREEN) ===== -->
+    <!-- MODAL REPRODUCTOR FLOTANTE (FULL SCREEN) -->
     <div class="modal-overlay" id="videoModal">
         <div class="modal-video">
             <button class="btn-cerrar" onclick="cerrarModalVideo()">×</button>
 
             <div class="video-wrapper">
                 <video id="modalVideoPlayer" controls autoplay playsinline></video>
-                <!-- MARCA DE AGUA SUPERIOR DERECHA -->
                 <div class="watermark-top-right">
                     <span class="icon">◈</span>
                     <span class="text">Sariel<span>'s</span></span>
                 </div>
-                <!-- MARCA DE AGUA INFERIOR DERECHA -->
                 <div class="watermark" id="watermark">
                     <div class="brand-row">
                         <span class="icon">◈</span>
@@ -936,11 +1006,11 @@
                 <div class="autor" id="modalAutor">@usuario</div>
                 <div class="descripcion" id="modalDescripcion">Descripción del video</div>
                 <div class="stats">
-                    <span>◈ <span id="modalVistas">0</span> vistas</span>
+                    <span>◈ <span id="modalVistas">0</span> <span data-clave="videos_vistas">vistas</span></span>
                     <span class="btn-video-like" id="btnLikeVideo" onclick="toggleLikeVideo()">
                         ◈ <span id="modalLikes">0</span>
                     </span>
-                    <span>◈ <span id="modalComentariosCount">0</span></span>
+                    <span>◈ <span id="modalComentariosCount">0</span> <span data-clave="videos_comentarios_count">comentarios</span></span>
                 </div>
             </div>
 
@@ -964,36 +1034,66 @@
         <span id="errorBannerText"></span>
         <button onclick="document.getElementById('errorBanner').style.display='none'" style="float:right;background:none;border:1px solid #fff;color:#fff;border-radius:6px;padding:2px 10px;cursor:pointer;">Cerrar</button>
     </div>
+
     <!-- ===== SCRIPTS ===== -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="/features/shared/js/idiomas.js"></script>
     <script src="/app.js"></script>
 
     <script>
         // ================================================================
-        // VIDEOS - VERSIÓN AUDITADA CON MEJORAS DE SEGURIDAD
+        // VIDEOS - VERSIÓN I18N + TEMA DÍA/NOCHE
         // ================================================================
 
+        // Guard: si Supabase no cargó, avisar y detener.
+        if (typeof window.supabase === 'undefined') {
+            console.error('❌ Supabase no está disponible. Verifica el CDN.');
+            document.addEventListener('DOMContentLoaded', function() {
+                var banner = document.getElementById('errorBanner');
+                var texto = document.getElementById('errorBannerText');
+                if (banner && texto) {
+                    texto.textContent = 'No se pudo cargar la conexión a la base de datos (Supabase). Revisa tu internet.';
+                    banner.style.display = 'block';
+                }
+            });
+        }
+
+        // ===== HELPER I18N =====
+        function tr(clave, fallback) {
+            if (typeof window.tConFallback === 'function') {
+                return window.tConFallback(clave, fallback);
+            }
+            return fallback !== undefined ? fallback : clave;
+        }
+
+        function aplicarI18N(raiz) {
+            try {
+                if (typeof window.aplicarTraducciones === 'function') {
+                    window.aplicarTraducciones(raiz || document);
+                }
+            } catch (e) { /* silencioso */ }
+        }
+
+        // ===== ESTADO GLOBAL =====
         var sessionUser = null;
         var videoActual = null;
         var likeCache = new Map();
+        var likeCacheOrden = [];
 
-        // ===== ESTADO ANUNCIO =====
         var anuncioActualVideo = null;
         var adRefreshIntervalVideo = null;
         var adSessionIdVideo = null;
         var adVistaTimerVideo = null;
         var adCerradoVideo = false;
 
-        // ===== ESTADO AUTOPLAY SCROLL =====
         var observerVideos = null;
         var videoPausadoManualmente = null;
 
-        // ===== ESTADO PROCESAMIENTO DE VIDEO =====
         var pollingVideoInterval = null;
         var videoEnProcesamiento = null;
 
-        // ===== TOAST =====
-        function showToast(msg, type) {
+        // ===== TOAST (con duración real) =====
+        function showToast(msg, type, duration) {
             var t = document.getElementById('toast');
             if (!t) { t = document.createElement('div'); t.id = 'toast'; t.className = 'toast'; document.body.appendChild(t); }
             t.textContent = msg;
@@ -1002,8 +1102,9 @@
             else if (type === 'warning') t.classList.add('warning');
             else if (type === 'success') t.classList.add('success');
             else t.classList.remove('error', 'warning', 'success');
+            var dur = (typeof duration === 'number' && duration > 0) ? duration : 3500;
             clearTimeout(t._timeout);
-            t._timeout = setTimeout(function() { t.classList.remove('show'); }, 3500);
+            t._timeout = setTimeout(function() { t.classList.remove('show'); }, dur);
         }
 
         // ===== OBTENER SESIÓN =====
@@ -1015,7 +1116,7 @@
             } catch (e) { console.error('Error sesión:', e); return null; }
         }
 
-        // ===== ESCAPE HTML =====
+        // ===== ESCAPE HTML (para contenido de texto) =====
         function escapeHTML(texto) {
             if (!texto) return '';
             var div = document.createElement('div');
@@ -1023,13 +1124,20 @@
             return div.innerHTML;
         }
 
-        // ===== VALIDACIÓN DE URL (NUEVA - SEGURIDAD) =====
+        // ===== VALIDAR URL =====
         function esURLValida(url) {
             if (!url || typeof url !== 'string') return false;
             try {
                 var u = new URL(url);
                 return u.protocol === 'http:' || u.protocol === 'https:';
             } catch (e) { return false; }
+        }
+
+        // ===== SAFE ATTR (para src/href) =====
+        // Devuelve el string tal cual si es URL válida, si no devuelve '#'
+        function safeAttr(url) {
+            if (esURLValida(url)) return url;
+            return '#';
         }
 
         // ===== CARGAR USUARIO ACTUAL =====
@@ -1040,19 +1148,19 @@
                 sessionUser = session.user;
                 var result = await window.supabase.from('usuarios').select('nombre, handle, tokens').eq('id', session.user.id).single();
                 if (!result.error && result.data) {
-                    document.getElementById('tokenBadgeCantidad').textContent = result.data.tokens || 0;
+                    var badgeCant = document.getElementById('tokenBadgeCantidad');
+                    if (badgeCant) badgeCant.textContent = result.data.tokens || 0;
                 }
                 return result.data || null;
             } catch (e) { console.error('Error cargando usuario:', e); return null; }
         }
 
         // ================================================================
-        // ANUNCIOS DE MARKETING PARA VIDEOS
+        // ANUNCIOS DE MARKETING
         // ================================================================
-
         function getOrCreateAdSessionIdVideo() {
             if (adSessionIdVideo) return adSessionIdVideo;
-            adSessionIdVideo = `ads_video_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
+            adSessionIdVideo = 'ads_video_' + Date.now() + '_' + Math.random().toString(36).substring(2, 10);
             return adSessionIdVideo;
         }
 
@@ -1110,9 +1218,6 @@
             }
         }
 
-        // ================================================================
-        // MOSTRAR ANUNCIO - VERSIÓN SEGURA (SIN innerHTML para URLs)
-        // ================================================================
         function mostrarAnuncioVideo(ad) {
             var container = document.getElementById('marketingAdContainer');
             var media = document.getElementById('marketingAdMediaVideo');
@@ -1122,11 +1227,9 @@
 
             if (!container || !media || !title || !desc || !cta) return;
 
-            // Validar URLs ANTES de insertar nada
             var imgUrlValida = esURLValida(ad.imagen_url);
             var videoUrlValida = esURLValida(ad.video_url);
 
-            // Limpiar el contenedor de forma segura
             while (media.firstChild) media.removeChild(media.firstChild);
 
             if (imgUrlValida) {
@@ -1155,10 +1258,9 @@
                 media.appendChild(span2);
             }
 
-            // textContent es XSS-safe por diseño
-            title.textContent = ad.titulo || 'Patrocinado';
+            title.textContent = ad.titulo || tr('videos_patrocinado', 'Patrocinado');
             desc.textContent = ad.descripcion || '';
-            cta.textContent = ad.cta_texto || 'Ver más';
+            cta.textContent = ad.cta_texto || tr('videos_ver_mas', 'Ver más');
 
             desc.style.display = ad.descripcion ? 'block' : 'none';
 
@@ -1215,7 +1317,6 @@
                     })
                 });
 
-                // Abrir solo URLs válidas
                 if (esURLValida(anuncioActualVideo.video_url)) {
                     window.open(anuncioActualVideo.video_url, '_blank', 'noopener,noreferrer');
                 } else if (esURLValida(anuncioActualVideo.imagen_url)) {
@@ -1244,30 +1345,38 @@
 
                 if (data.length === 0) {
                     container.className = '';
-                    container.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3 data-clave="videos_empty">No hay videos aún</h3><p data-clave="videos_empty_desc">Sé el primero en compartir un video en Sariel\'s.</p></div>';
+                    container.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3 data-clave="videos_empty">' + escapeHTML(tr('videos_empty', 'No hay videos aún')) + '</h3><p data-clave="videos_empty_desc">' + escapeHTML(tr('videos_empty_desc', "Sé el primero en compartir un video en Sariel's.")) + '</p></div>';
                     return;
                 }
+
+                var vistasT = escapeHTML(tr('videos_vistas', 'vistas'));
+                var likesT = escapeHTML(tr('videos_likes', 'likes'));
+                var comentariosT = escapeHTML(tr('videos_comentarios_count', 'comentarios'));
+                var verCompletoT = escapeHTML(tr('videos_ver_completo', '⛶ Ver completo'));
+                var usuarioT = escapeHTML(tr('videos_autor_desconocido', 'Usuario'));
 
                 container.className = 'videos-grid';
                 container.innerHTML = data.map(function(v) {
                     var autor = v.usuarios || {};
                     var vistas = v.reproducciones || 0;
                     var likes = v.likes || 0;
+                    var videoUrl = safeAttr(v.url_video);
+                    var posterUrl = v.url_miniatura ? safeAttr(v.url_miniatura) : '';
 
                     return '<div class="video-card" data-video-id="' + v.id + '">' +
                         '<div class="thumbnail">' +
-                        '<video preload="metadata" muted loop playsinline src="' + escapeHTML(v.url_video) + '" poster="' + escapeHTML(v.url_miniatura || '') + '"></video>' +
+                        '<video preload="metadata" muted loop playsinline src="' + videoUrl + '" poster="' + posterUrl + '"></video>' +
                         '<div class="play-btn" onclick="togglePlayCard(event, \'' + v.id + '\')">▶</div>' +
                         '</div>' +
                         '<div class="info">' +
                         '<div class="titulo">' + escapeHTML(v.titulo) + '</div>' +
-                        '<div class="autor">' + escapeHTML(autor.nombre || 'Usuario') + ' · ' + new Date(v.created_at).toLocaleDateString() + '</div>' +
+                        '<div class="autor">' + escapeHTML(autor.nombre || usuarioT) + ' · ' + new Date(v.created_at).toLocaleDateString() + '</div>' +
                         '<div class="descripcion">' + escapeHTML((v.descripcion || '').substring(0, 100)) + '</div>' +
                         '<div class="stats">' +
-                        '<span onclick="event.stopPropagation(); abrirVideo(\'' + v.id + '\')" style="cursor:pointer;">◈ ' + vistas + ' vistas</span>' +
-                        '<span onclick="event.stopPropagation(); abrirVideo(\'' + v.id + '\')" style="cursor:pointer;">◈ ' + likes + ' likes</span>' +
-                        '<span onclick="event.stopPropagation(); abrirVideo(\'' + v.id + '\')" style="cursor:pointer;">◈ ' + (v.comentarios || 0) + ' comentarios</span>' +
-                        '<span onclick="event.stopPropagation(); abrirVideo(\'' + v.id + '\')" style="cursor:pointer;margin-left:auto;color:var(--gold);">⛶ Ver completo</span>' +
+                        '<span onclick="event.stopPropagation(); abrirVideo(\'' + v.id + '\')" style="cursor:pointer;">◈ ' + vistas + ' ' + vistasT + '</span>' +
+                        '<span onclick="event.stopPropagation(); abrirVideo(\'' + v.id + '\')" style="cursor:pointer;">◈ ' + likes + ' ' + likesT + '</span>' +
+                        '<span onclick="event.stopPropagation(); abrirVideo(\'' + v.id + '\')" style="cursor:pointer;">◈ ' + (v.comentarios || 0) + ' ' + comentariosT + '</span>' +
+                        '<span onclick="event.stopPropagation(); abrirVideo(\'' + v.id + '\')" style="cursor:pointer;margin-left:auto;color:var(--gold);">' + verCompletoT + '</span>' +
                         '</div>' +
                         '</div>' +
                         '</div>';
@@ -1277,18 +1386,18 @@
 
             } catch (e) {
                 console.error('Error cargando videos:', e);
-                showToast('Error al cargar videos', 'error');
+                showToast(tr('videos_error_cargar', 'Error al cargar videos'), 'error');
             }
         }
 
         // ================================================================
-        // AUTOPLAY AL SCROLL (TIKTOK) - CON FIX DE RESET
+        // AUTOPLAY AL SCROLL (TIKTOK)
         // ================================================================
         function activarAutoplayScroll() {
             if (observerVideos) { observerVideos.disconnect(); observerVideos = null; }
 
             var cards = document.querySelectorAll('.video-card');
-            
+
             if (cards.length > 0) {
                 setTimeout(function() {
                     var primerVideo = cards[0].querySelector('video');
@@ -1319,7 +1428,6 @@
                         video.pause();
                         card.classList.remove('playing');
 
-                        // FIX: si el video pausado manualmente ya no está visible, resetear
                         if (videoPausadoManualmente === card.dataset.videoId) {
                             videoPausadoManualmente = null;
                         }
@@ -1363,32 +1471,31 @@
             var fileInput = document.getElementById('inputArchivoVideo');
             var btn = document.getElementById('btnSubirVideo');
 
-            if (!titulo) { showToast('Escribe un título', 'warning'); return; }
-            if (!fileInput.files || fileInput.files.length === 0) { showToast('Selecciona un video', 'warning'); return; }
+            if (!titulo) { showToast(tr('videos_titulo_requerido', 'Escribe un título'), 'warning'); return; }
+            if (!fileInput.files || fileInput.files.length === 0) { showToast(tr('videos_video_requerido', 'Selecciona un video'), 'warning'); return; }
 
             var file = fileInput.files[0];
             var maxSize = 150 * 1024 * 1024;
-            if (file.size > maxSize) { showToast('El video es demasiado grande (máx 150MB)', 'error'); return; }
+            if (file.size > maxSize) { showToast(tr('videos_video_grande', 'El video es demasiado grande (máx 150MB)'), 'error'); return; }
 
             var allowedTypes = ['video/mp4', 'video/webm', 'video/quicktime', 'video/x-msvideo'];
-            if (!allowedTypes.includes(file.type)) { showToast('Formato no soportado. Usa MP4, WebM o MOV', 'error'); return; }
+            if (!allowedTypes.includes(file.type)) { showToast(tr('videos_video_formato', 'Formato no soportado. Usa MP4, WebM o MOV'), 'error'); return; }
 
-            // Validación adicional por extensión (defensa en profundidad)
             var extensionesPermitidas = ['.mp4', '.webm', '.mov', '.avi'];
             var nombreArchivo = file.name.toLowerCase();
             var extensionValida = extensionesPermitidas.some(function(ext) {
                 return nombreArchivo.endsWith(ext);
             });
             if (!extensionValida) {
-                showToast('Solo se permiten archivos MP4, WebM, MOV o AVI', 'error');
+                showToast(tr('videos_video_formato', 'Formato no soportado. Usa MP4, WebM o MOV'), 'error');
                 return;
             }
 
             var session = await getSession();
-            if (!session) { showToast('Inicia sesión para subir videos', 'error'); return; }
+            if (!session) { showToast(tr('videos_sesion_requerida', 'Inicia sesión'), 'error'); return; }
 
             btn.disabled = true;
-            btn.textContent = 'Subiendo...';
+            btn.textContent = tr('videos_subiendo', 'Subiendo...');
 
             var progressEl = document.getElementById('uploadProgress');
             var progressFill = document.getElementById('progressFill');
@@ -1407,7 +1514,7 @@
                         onProgress: function(progress) {
                             var pct = Math.round((progress.loaded / progress.total) * 100);
                             progressFill.style.width = pct + '%';
-                            progressText.textContent = 'Subiendo: ' + pct + '%';
+                            progressText.textContent = pct + '%';
                         }
                     });
 
@@ -1416,7 +1523,7 @@
                 var urlData = window.supabase.storage.from('videos').getPublicUrl(filePath);
                 var videoUrl = urlData.data.publicUrl;
 
-                progressText.textContent = 'Creando registro...';
+                progressText.textContent = tr('videos_creando_registro', 'Creando registro...');
 
                 var insertResult = await window.supabase
                     .from('videos')
@@ -1437,7 +1544,7 @@
                 var videoId = insertResult.data.id;
                 videoEnProcesamiento = videoId;
 
-                progressText.textContent = 'Enviando a procesar...';
+                progressText.textContent = tr('videos_enviando_procesar', 'Enviando a procesar...');
 
                 var queueResponse = await fetch('/api/video/queue', {
                     method: 'POST',
@@ -1462,7 +1569,7 @@
                 document.getElementById('uploadSection').style.display = 'none';
                 document.getElementById('processingState').classList.add('visible');
 
-                showToast('◈ Video subido, procesando...', 'success', 3000);
+                showToast('◈ ' + tr('videos_procesando_titulo', 'Procesando video'), 'success', 3000);
 
                 document.getElementById('inputTituloVideo').value = '';
                 document.getElementById('inputDescripcionVideo').value = '';
@@ -1475,9 +1582,9 @@
 
             } catch (e) {
                 console.error('Error subiendo video:', e);
-                showToast('Error al subir video: ' + e.message, 'error');
+                showToast('❌ ' + e.message, 'error');
                 btn.disabled = false;
-                btn.textContent = '◈ Subir video';
+                btn.textContent = tr('videos_subir', '◈ Subir video');
                 progressEl.style.display = 'none';
             }
         }
@@ -1501,7 +1608,7 @@
                 if (intentos > maxIntentos) {
                     clearInterval(pollingVideoInterval);
                     pollingVideoInterval = null;
-                    mostrarErrorProcesamiento('El procesamiento está tardando demasiado. Verifica más tarde.');
+                    mostrarErrorProcesamiento(tr('videos_procesando_tardando', 'El procesamiento está tardando demasiado. Verifica más tarde.'));
                     return;
                 }
 
@@ -1527,15 +1634,15 @@
                     progressText.textContent = progreso + '%';
 
                     if (progreso < 15) {
-                        message.textContent = 'Descargando video original...';
+                        message.textContent = tr('videos_procesando_descargando', 'Descargando video original...');
                     } else if (progreso < 25) {
-                        message.textContent = 'Analizando video...';
+                        message.textContent = tr('videos_procesando_analizando', 'Analizando video...');
                     } else if (progreso < 80) {
-                        message.textContent = 'Eliminando marca de agua externa y aplicando marca de Sariel\'s...';
+                        message.textContent = tr('videos_procesando_eliminando', "Eliminando marca de agua externa y aplicando marca de Sariel's...");
                     } else if (progreso < 95) {
-                        message.textContent = 'Subiendo video procesado...';
+                        message.textContent = tr('videos_procesando_subiendo', 'Subiendo video procesado...');
                     } else {
-                        message.textContent = 'Finalizando...';
+                        message.textContent = tr('videos_procesando_finalizando', 'Finalizando...');
                     }
 
                     if (data.estado === 'completado') {
@@ -1544,15 +1651,15 @@
 
                         progressFill.style.width = '100%';
                         progressText.textContent = '100%';
-                        message.textContent = '¡Video procesado con éxito!';
+                        message.textContent = tr('videos_procesando_exito', '◈ ¡Video procesado con éxito!');
 
-                        showToast('◈ ¡Video procesado con éxito!', 'success', 4000);
+                        showToast(tr('videos_procesando_exito', '◈ ¡Video procesado con éxito!'), 'success', 4000);
 
                         setTimeout(function() {
                             document.getElementById('processingState').classList.remove('visible');
                             document.getElementById('uploadSection').style.display = 'block';
                             document.getElementById('btnSubirVideo').disabled = false;
-                            document.getElementById('btnSubirVideo').textContent = '◈ Subir video';
+                            document.getElementById('btnSubirVideo').textContent = tr('videos_subir', '◈ Subir video');
                             progressFill.style.width = '0%';
                             progressText.textContent = '0%';
                             videoEnProcesamiento = null;
@@ -1563,7 +1670,7 @@
                     if (data.estado === 'fallido') {
                         clearInterval(pollingVideoInterval);
                         pollingVideoInterval = null;
-                        mostrarErrorProcesamiento(data.error || 'Error procesando el video');
+                        mostrarErrorProcesamiento(data.error || tr('videos_procesando_error', 'Error procesando el video'));
                     }
 
                 } catch (error) {
@@ -1576,15 +1683,15 @@
             document.getElementById('processingState').classList.remove('visible');
             document.getElementById('uploadSection').style.display = 'block';
             document.getElementById('btnSubirVideo').disabled = false;
-            document.getElementById('btnSubirVideo').textContent = '◈ Subir video';
+            document.getElementById('btnSubirVideo').textContent = tr('videos_subir', '◈ Subir video');
             document.getElementById('processingProgressFill').style.width = '0%';
             document.getElementById('processingProgressText').textContent = '0%';
             videoEnProcesamiento = null;
-            showToast('Error procesando video: ' + msg, 'error', 6000);
+            showToast('❌ ' + msg, 'error', 6000);
         }
 
         // ================================================================
-        // REANUDAR PROCESAMIENTO PENDIENTE (NUEVA FUNCIÓN)
+        // REANUDAR PROCESAMIENTO PENDIENTE
         // ================================================================
         async function reanudarProcesamientoPendiente() {
             if (!sessionUser) return;
@@ -1601,15 +1708,13 @@
                 if (result.error || !result.data || result.data.length === 0) return;
 
                 var video = result.data[0];
-                console.log('◈ Reanudando procesamiento de:', video.id);
 
                 document.getElementById('uploadSection').style.display = 'none';
                 document.getElementById('processingState').classList.add('visible');
-                document.getElementById('processingMessage').textContent = 'Reanudando procesamiento: ' + video.titulo;
+                document.getElementById('processingMessage').textContent = tr('videos_procesando_msg', 'Reanudando procesamiento') + ': ' + video.titulo;
 
                 var jobId = video.job_id;
 
-                // Si no hay job_id guardado, intentar obtenerlo del backend
                 if (!jobId) {
                     try {
                         var session = await getSession();
@@ -1630,8 +1735,6 @@
                 if (jobId) {
                     iniciarPollingProcesamiento(jobId, video.id);
                 } else {
-                    // Si no hay jobId, mostrar estado pero no iniciar polling
-                    document.getElementById('processingMessage').textContent = 'Video en procesamiento (actualiza la página en unos minutos)';
                     document.getElementById('processingState').classList.remove('visible');
                     document.getElementById('uploadSection').style.display = 'block';
                 }
@@ -1662,9 +1765,9 @@
 
                 await registrarVista(videoId);
 
-                document.getElementById('modalTitulo').textContent = video.titulo || 'Sin título';
+                document.getElementById('modalTitulo').textContent = video.titulo || tr('videos_sin_titulo', 'Sin título');
                 document.getElementById('modalAutor').textContent = '@' + (video.usuarios?.handle || 'usuario');
-                document.getElementById('modalDescripcion').textContent = video.descripcion || 'Sin descripción';
+                document.getElementById('modalDescripcion').textContent = video.descripcion || tr('videos_sin_descripcion', 'Sin descripción');
                 document.getElementById('modalVistas').textContent = (video.reproducciones || 0) + 1;
 
                 var liked = await verificarLikeVideo(videoId);
@@ -1672,15 +1775,15 @@
                 var likesCount = video.likes || 0;
                 if (liked) {
                     likeBtn.classList.add('liked');
-                    likeBtn.innerHTML = '◈ <span id="modalLikes">' + likesCount + '</span>';
                 } else {
                     likeBtn.classList.remove('liked');
-                    likeBtn.innerHTML = '◈ <span id="modalLikes">' + likesCount + '</span>';
                 }
+                var likesSpan = document.getElementById('modalLikes');
+                if (likesSpan) likesSpan.textContent = likesCount;
 
                 document.getElementById('modalComentariosCount').textContent = video.comentarios || 0;
 
-                videoPlayer.src = video.url_video;
+                videoPlayer.src = safeAttr(video.url_video);
                 videoPlayer.load();
 
                 cargarComentariosVideo(videoId);
@@ -1700,7 +1803,10 @@
 
             } catch (e) {
                 console.error('Error abriendo video:', e);
-                showToast('Error al cargar video', 'error');
+                showToast(tr('videos_error_video', 'Error al cargar video'), 'error');
+                // Cerrar modal si quedó abierto
+                if (modal) modal.classList.remove('show');
+                videoActual = null;
             }
         }
 
@@ -1710,9 +1816,11 @@
         function cerrarModalVideo() {
             var modal = document.getElementById('videoModal');
             var videoPlayer = document.getElementById('modalVideoPlayer');
-            videoPlayer.pause();
-            videoPlayer.src = '';
-            modal.classList.remove('show');
+            if (videoPlayer) {
+                videoPlayer.pause();
+                videoPlayer.src = '';
+            }
+            if (modal) modal.classList.remove('show');
             videoActual = null;
 
             setTimeout(function() {
@@ -1730,14 +1838,13 @@
         }
 
         // ================================================================
-        // REGISTRAR VISTA - USA RPC SEGURA (CRÍTICO)
+        // REGISTRAR VISTA
         // ================================================================
         async function registrarVista(videoId) {
             try {
                 var session = await getSession();
                 if (!session) return;
 
-                // Usar la RPC registrar_vista_video (idempotente, 1 vista por usuario por video)
                 var result = await window.supabase.rpc('registrar_vista_video', {
                     p_video_id: videoId
                 });
@@ -1773,7 +1880,13 @@
                     .eq('usuario_id', sessionUser.id)
                     .maybeSingle();
                 var liked = !!result.data;
+                // LRU simple: limitar a 50
                 likeCache.set(key, liked);
+                likeCacheOrden.push(key);
+                if (likeCacheOrden.length > 50) {
+                    var viejo = likeCacheOrden.shift();
+                    likeCache.delete(viejo);
+                }
                 return liked;
             } catch (e) { console.error('Error verificando like:', e); return false; }
         }
@@ -1782,8 +1895,8 @@
         // TOGGLE LIKE VIDEO
         // ================================================================
         async function toggleLikeVideo() {
-            if (!videoActual) { showToast('No hay video seleccionado', 'warning'); return; }
-            if (!sessionUser) { showToast('Inicia sesión para dar like', 'error'); return; }
+            if (!videoActual) { showToast(tr('videos_error_video', 'No hay video seleccionado'), 'warning'); return; }
+            if (!sessionUser) { showToast(tr('videos_sesion_requerida', 'Inicia sesión'), 'error'); return; }
 
             var videoId = videoActual.id;
             var likeBtn = document.getElementById('btnLikeVideo');
@@ -1810,7 +1923,7 @@
                         .from('videos_likes')
                         .insert({ video_id: videoId, usuario_id: sessionUser.id });
                     if (result2.error) {
-                        if (result2.error.code === '23505') { showToast('Ya diste like', 'warning'); return; }
+                        if (result2.error.code === '23505') { showToast(tr('videos_like_ya', 'Ya diste like'), 'warning'); return; }
                         throw result2.error;
                     }
 
@@ -1821,7 +1934,7 @@
                 }
             } catch (e) {
                 console.error('Error toggling like:', e);
-                showToast('Error al procesar like', 'error');
+                showToast(tr('videos_like_error', 'Error al procesar like'), 'error');
             }
         }
 
@@ -1842,14 +1955,14 @@
                 var data = result.data || [];
 
                 if (data.length === 0) {
-                    lista.innerHTML = '<div style="color:var(--text-muted);font-size:0.7rem;padding:8px 0;" data-clave="videos_sin_comentarios">Sin comentarios. Sé el primero.</div>';
+                    lista.innerHTML = '<div style="color:var(--text-muted);font-size:0.7rem;padding:8px 0;" data-clave="videos_sin_comentarios">' + escapeHTML(tr('videos_sin_comentarios', 'Sin comentarios. Sé el primero.')) + '</div>';
                     return;
                 }
 
                 lista.innerHTML = data.map(function(c) {
                     var u = c.usuarios || {};
-                    var avatar = u.avatar_url ? '<img src="' + escapeHTML(u.avatar_url) + '">' : '◈';
-                    var nombre = escapeHTML(u.nombre || 'Usuario');
+                    var avatar = u.avatar_url ? '<img src="' + safeAttr(u.avatar_url) + '">' : '◈';
+                    var nombre = escapeHTML(u.nombre || tr('videos_autor_desconocido', 'Usuario'));
                     return '<div class="comentario">' +
                         '<div class="avatar">' + avatar + '</div>' +
                         '<div class="texto">' +
@@ -1861,7 +1974,8 @@
 
             } catch (e) {
                 console.error('Error cargando comentarios:', e);
-                document.getElementById('modalComentariosLista').innerHTML = '<div style="color:var(--danger);font-size:0.7rem;">Error al cargar comentarios</div>';
+                var lista2 = document.getElementById('modalComentariosLista');
+                if (lista2) lista2.innerHTML = '<div style="color:var(--danger);font-size:0.7rem;">' + escapeHTML(tr('videos_comentario_error', 'Error al cargar comentarios')) + '</div>';
             }
         }
 
@@ -1869,13 +1983,13 @@
         // ENVIAR COMENTARIO VIDEO
         // ================================================================
         async function enviarComentarioVideo() {
-            if (!videoActual) { showToast('No hay video seleccionado', 'warning'); return; }
-            if (!sessionUser) { showToast('Inicia sesión para comentar', 'error'); return; }
+            if (!videoActual) { showToast(tr('videos_error_video', 'No hay video seleccionado'), 'warning'); return; }
+            if (!sessionUser) { showToast(tr('videos_sesion_requerida', 'Inicia sesión'), 'error'); return; }
 
             var input = document.getElementById('inputComentarioVideo');
             var texto = input.value.trim();
-            if (!texto) { showToast('Escribe un comentario', 'warning'); return; }
-            if (texto.length > 2000) { showToast('El comentario es demasiado largo', 'error'); return; }
+            if (!texto) { showToast(tr('videos_comentario_vacio', 'Escribe un comentario'), 'warning'); return; }
+            if (texto.length > 2000) { showToast(tr('videos_comentario_largo', 'El comentario es demasiado largo'), 'error'); return; }
 
             try {
                 var result = await window.supabase
@@ -1889,7 +2003,7 @@
                 if (result.error) throw result.error;
 
                 input.value = '';
-                showToast('Comentario agregado', 'success');
+                showToast(tr('videos_comentario_agregado', 'Comentario agregado'), 'success');
                 cargarComentariosVideo(videoActual.id);
 
                 var countSpan = document.getElementById('modalComentariosCount');
@@ -1900,7 +2014,7 @@
 
             } catch (e) {
                 console.error('Error enviando comentario:', e);
-                showToast('Error al comentar', 'error');
+                showToast(tr('videos_comentario_error', 'Error al comentar'), 'error');
             }
         }
 
@@ -1927,14 +2041,14 @@
         });
 
         // ================================================================
-        // LIMPIEZA COMPLETA DE RECURSOS EN beforeunload
+        // LIMPIEZA
         // ================================================================
         window.addEventListener('beforeunload', function() {
             if (pollingVideoInterval) { clearInterval(pollingVideoInterval); pollingVideoInterval = null; }
             if (adRefreshIntervalVideo) { clearInterval(adRefreshIntervalVideo); adRefreshIntervalVideo = null; }
             if (adVistaTimerVideo) { clearTimeout(adVistaTimerVideo); adVistaTimerVideo = null; }
             if (observerVideos) { observerVideos.disconnect(); observerVideos = null; }
-            if (likeCache) { likeCache.clear(); }
+            if (likeCache) { likeCache.clear(); likeCacheOrden = []; }
         });
 
         // ================================================================
@@ -1944,16 +2058,22 @@
             if (e.key === 'Escape') { cerrarModalVideo(); }
         });
 
-        document.getElementById('videoModal').addEventListener('click', function(e) {
-            if (e.target === this) { cerrarModalVideo(); }
-        });
+        var modalOverlay = document.getElementById('videoModal');
+        if (modalOverlay) {
+            modalOverlay.addEventListener('click', function(e) {
+                if (e.target === this) { cerrarModalVideo(); }
+            });
+        }
 
         // ================================================================
         // ENTER PARA COMENTAR
         // ================================================================
-        document.getElementById('inputComentarioVideo').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') { e.preventDefault(); enviarComentarioVideo(); }
-        });
+        var inputComentario = document.getElementById('inputComentarioVideo');
+        if (inputComentario) {
+            inputComentario.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') { e.preventDefault(); enviarComentarioVideo(); }
+            });
+        }
 
         // ================================================================
         // CLICK EN CARD PARA ABRIR MODAL
@@ -1970,13 +2090,32 @@
         // INICIALIZACIÓN
         // ================================================================
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('◈ Sariel\'s - Videos (versión auditada)');
-            console.log('✅ Inicializando...');
+            console.log("◈ Sariel's - Videos (i18n + tema)");
+
+            // Aplicar traducciones iniciales (por si idiomas.js terminó antes)
+            aplicarI18N();
+
             cargarUsuarioActual().then(function() {
                 cargarVideos();
-                // Reanudar procesamiento si había un video pendiente
                 reanudarProcesamientoPendiente();
             });
+
+            // Re-aplicar traducciones después de cargar por completo
+            setTimeout(function() {
+                if (typeof window.inicializarIdiomas === 'function') {
+                    window.inicializarIdiomas().then(function() {
+                        aplicarI18N();
+                        // Re-renderizar videos después de cargar traducciones para que se vean traducidos
+                        if (typeof cargarVideos === 'function') {
+                            cargarVideos();
+                        }
+                    }).catch(function(err) {
+                        console.warn('Error inicializando idiomas:', err);
+                    });
+                } else {
+                    console.warn('idiomas.js no está disponible');
+                }
+            }, 300);
         });
 
         // ================================================================
