@@ -1,16 +1,39 @@
 // ================================================================
-// IDIOMAS - VERSIÓN COMPLETA
-// Funciones globales: cargar, cambiar, aplicar, llenar selector
+// IDIOMAS - VERSIÓN COMPLETA Y CORREGIDA
+// Compatible con window.supabaseClient y window.supabase
 // ================================================================
 
-// ===== OBTENER SESIÓN - FUNCIÓN INDEPENDIENTE =====
+// ===== OBTENER CLIENTE SUPABASE (con fallback) =====
+function getSupabaseClient() {
+    // 1. Intentar usar el cliente global existente
+    if (window.supabaseClient) return window.supabaseClient;
+    
+    // 2. Crear uno nuevo si existe la librería
+    if (window.supabase && typeof window.supabase.createClient === 'function') {
+        try {
+            const client = window.supabase.createClient(
+                'https://zultnlogdoajehbswlih.supabase.co',
+                'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
+            );
+            window.supabaseClient = client;
+            return client;
+        } catch (e) {
+            console.warn('⚠️ No se pudo crear cliente Supabase:', e);
+        }
+    }
+    
+    return null;
+}
+
+// ===== OBTENER SESIÓN =====
 async function getSession() {
     try {
-        if (typeof window.supabase === 'undefined') {
+        const client = getSupabaseClient();
+        if (!client) {
             console.warn('⚠️ Supabase no disponible');
             return null;
         }
-        const { data: { session } } = await window.supabase.auth.getSession();
+        const { data: { session } } = await client.auth.getSession();
         return session;
     } catch (e) {
         console.error('❌ Error obteniendo sesión:', e);
@@ -21,29 +44,37 @@ async function getSession() {
 let idiomaActual = null;
 let traducciones = {};
 
+// ===== IDIOMA POR DEFECTO =====
+const IDIOMA_DEFAULT = {
+    codigo: 'es-MX',
+    nombre: 'Español',
+    nombre_nativo: 'Español',
+    bandera: '🌐'
+};
+
 /**
- * Obtener el idioma del usuario (de perfil o por defecto)
+ * Obtener el idioma del usuario
  */
 async function obtenerIdiomaUsuario() {
     try {
-        if (typeof window.supabase === 'undefined') {
-            return { codigo: 'es-MX', nombre: 'Español', nombre_nativo: 'Español', bandera: '🌐' };
-        }
+        const client = getSupabaseClient();
+        if (!client) return IDIOMA_DEFAULT;
 
         const session = await getSession();
-        if (session) {
-            const { data, error } = await window.supabase
+        if (session && session.user) {
+            // 1. Intentar desde el perfil del usuario
+            const { data: usuario, error: errUsuario } = await client
                 .from('usuarios')
                 .select('idioma_preferido_id')
                 .eq('id', session.user.id)
-                .single();
+                .maybeSingle();
             
-            if (!error && data?.idioma_preferido_id) {
-                const { data: idioma } = await window.supabase
+            if (!errUsuario && usuario?.idioma_preferido_id) {
+                const { data: idioma } = await client
                     .from('idiomas_sistema')
                     .select('*')
-                    .eq('id', data.idioma_preferido_id)
-                    .single();
+                    .eq('id', usuario.idioma_preferido_id)
+                    .maybeSingle();
                 
                 if (idioma) {
                     idiomaActual = idioma;
@@ -52,13 +83,14 @@ async function obtenerIdiomaUsuario() {
             }
         }
         
+        // 2. Intentar desde localStorage
         const localId = localStorage.getItem('idioma_preferido');
         if (localId) {
-            const { data: idioma } = await window.supabase
+            const { data: idioma } = await client
                 .from('idiomas_sistema')
                 .select('*')
                 .eq('id', localId)
-                .single();
+                .maybeSingle();
             
             if (idioma) {
                 idiomaActual = idioma;
@@ -66,19 +98,20 @@ async function obtenerIdiomaUsuario() {
             }
         }
         
-        const { data: idiomaDefault } = await window.supabase
+        // 3. Idioma por defecto
+        const { data: idiomaDefault } = await client
             .from('idiomas_sistema')
             .select('*')
             .eq('codigo', 'es-MX')
             .eq('activo', true)
-            .single();
+            .maybeSingle();
         
-        idiomaActual = idiomaDefault;
-        return idiomaDefault;
+        idiomaActual = idiomaDefault || IDIOMA_DEFAULT;
+        return idiomaActual;
         
     } catch (error) {
         console.error('Error obteniendo idioma:', error);
-        return { codigo: 'es-MX', nombre: 'Español', nombre_nativo: 'Español', bandera: '🌐' };
+        return IDIOMA_DEFAULT;
     }
 }
 
@@ -87,11 +120,10 @@ async function obtenerIdiomaUsuario() {
  */
 async function cargarTraducciones(idiomaId) {
     try {
-        if (typeof window.supabase === 'undefined') {
-            return {};
-        }
+        const client = getSupabaseClient();
+        if (!client || !idiomaId) return {};
 
-        const { data, error } = await window.supabase
+        const { data, error } = await client
             .from('traducciones')
             .select('clave, valor, modulo')
             .eq('idioma_id', idiomaId);
@@ -142,11 +174,14 @@ async function cambiarIdioma(idiomaId) {
         localStorage.setItem('idioma_preferido', idiomaId);
         
         const session = await getSession();
-        if (session) {
-            await window.supabase
-                .from('usuarios')
-                .update({ idioma_preferido_id: idiomaId })
-                .eq('id', session.user.id);
+        if (session && session.user) {
+            const client = getSupabaseClient();
+            if (client) {
+                await client
+                    .from('usuarios')
+                    .update({ idioma_preferido_id: idiomaId })
+                    .eq('id', session.user.id);
+            }
         }
         
         window.location.reload();
@@ -183,29 +218,24 @@ function aplicarTraducciones() {
 }
 
 /**
- * ✅ NUEVA FUNCIÓN: Cargar el selector de idiomas
- * Esta función llena el <select id="selectorIdioma"> con los idiomas
- * activos de Supabase. Sin duplicados.
+ * Cargar el selector de idiomas
  */
 async function cargarSelectorIdiomas() {
     try {
         const select = document.getElementById('selectorIdioma');
         if (!select) {
-            console.warn('⚠️ No se encontró #selectorIdioma');
-            return;
+            return; // Silencioso: no todas las páginas tienen selector
         }
 
-        if (typeof window.supabase === 'undefined') {
-            console.warn('⚠️ Supabase no disponible para cargar idiomas');
+        const client = getSupabaseClient();
+        if (!client) {
             select.innerHTML = '<option value="es-MX" selected>🌐 Español</option>';
             return;
         }
 
-        // Limpiar el select completamente
         select.innerHTML = '';
 
-        // Traer idiomas activos
-        const { data, error } = await window.supabase
+        const { data, error } = await client
             .from('idiomas_sistema')
             .select('id, codigo, nombre, nombre_nativo, bandera')
             .eq('activo', true)
@@ -214,22 +244,16 @@ async function cargarSelectorIdiomas() {
         if (error) throw error;
 
         if (!data || data.length === 0) {
-            // Fallback: solo español si no hay idiomas
             select.innerHTML = '<option value="es-MX" selected>🌐 Español</option>';
             return;
         }
 
-        // Obtener idioma actual del usuario
         const idiomaUsuario = await obtenerIdiomaUsuario();
         const idiomaIdActual = idiomaUsuario?.id;
 
-        // Llenar el select con los idiomas (sin duplicados)
         const codigosVistos = new Set();
         data.forEach(idioma => {
-            // Evitar duplicados por código
-            if (codigosVistos.has(idioma.codigo)) {
-                return;
-            }
+            if (codigosVistos.has(idioma.codigo)) return;
             codigosVistos.add(idioma.codigo);
 
             const option = document.createElement('option');
@@ -249,7 +273,6 @@ async function cargarSelectorIdiomas() {
 
     } catch (error) {
         console.error('Error cargando selector de idiomas:', error);
-        // Fallback: al menos mostrar español
         const select = document.getElementById('selectorIdioma');
         if (select) {
             select.innerHTML = '<option value="es-MX" selected>🌐 Español</option>';
@@ -258,11 +281,17 @@ async function cargarSelectorIdiomas() {
 }
 
 /**
- * ✅ NUEVA FUNCIÓN: Inicializar el sistema completo
- * Carga traducciones + llena el selector
+ * Inicializar el sistema completo
  */
 async function inicializarIdiomas() {
     try {
+        // Esperar a que supabaseClient esté disponible (máx 3 segundos)
+        let intentos = 0;
+        while (!getSupabaseClient() && intentos < 30) {
+            await new Promise(r => setTimeout(r, 100));
+            intentos++;
+        }
+
         const idioma = await obtenerIdiomaUsuario();
         if (idioma && idioma.id) {
             await cargarTraducciones(idioma.id);
@@ -271,7 +300,6 @@ async function inicializarIdiomas() {
         await cargarSelectorIdiomas();
     } catch (error) {
         console.error('Error inicializando idiomas:', error);
-        // Aún así intentar llenar el selector
         await cargarSelectorIdiomas();
     }
 }
@@ -281,6 +309,7 @@ async function inicializarIdiomas() {
 // ================================================================
 
 window.getSession = getSession;
+window.getSupabaseClient = getSupabaseClient;
 window.obtenerIdiomaUsuario = obtenerIdiomaUsuario;
 window.cargarTraducciones = cargarTraducciones;
 window.t = t;
