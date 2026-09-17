@@ -935,7 +935,7 @@
                 <a href="/terminos" data-clave="perfil_footer_terminos">◈ Términos</a>
                 <a href="/privacidad" data-clave="perfil_footer_privacidad">◈ Privacidad</a>
                 <a href="/cookies" data-clave="perfil_footer_cookies">◈ Cookies</a>
-                <a href="/live-terminos" data-clave="perfil_footer_termos_live">◈ Términos Live</a>
+                <a href="/live-terminos" data-clave="perfil_footer_terminos_live">◈ Términos Live</a>
                 <span style="opacity:0.3;">⚡ Polygon</span>
             </div>
         </footer>
@@ -1187,7 +1187,6 @@
             if (window.perfilCache && window.perfilCache.avatar_url) {
                 return '<img src="' + window.perfilCache.avatar_url + '" alt="Avatar" style="width:100%;height:100%;object-fit:cover;">';
             }
-            // Fallback 2: leer la imagen del DOM del header de perfil
             var imgHeader = document.querySelector('#perfilAvatar img');
             if (imgHeader && imgHeader.src) {
                 return '<img src="' + imgHeader.src + '" alt="Avatar" style="width:100%;height:100%;object-fit:cover;">';
@@ -1242,8 +1241,14 @@
                     card.className = 'publicacion-card';
                     var contenidoHtml = escapeHtmlPerfil(p.contenido || '');
                     if (p.media_url) {
-                        if (p.media_type === 'video') contenidoHtml += '<video src="' + p.media_url + '" controls preload="metadata"></video>';
-                        else if (p.media_type === 'imagen') contenidoHtml += '<img src="' + p.media_url + '" alt="Imagen" loading="lazy" />';
+                        if (p.media_type === 'video') {
+                            contenidoHtml += '<video src="' + p.media_url + '" controls preload="metadata"></video>';
+                        } else if (p.media_type === 'imagen') {
+                            // Cambio: cursor pointer + onclick para agrandar la foto
+                            contenidoHtml += '<img src="' + p.media_url + '" alt="Imagen" loading="lazy" ' +
+                                'style="cursor:pointer;" ' +
+                                'onclick="expandirFotoPublicacion(this.src)" />';
+                        }
                     }
                     var fecha = p.created_at ? new Date(p.created_at).toLocaleString() : '';
                     var reaccionUsuario = reaccionesUsuario[p.id] || null;
