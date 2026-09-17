@@ -1649,5 +1649,222 @@
 
     })();
     </script>
+
+    <!-- ================================================================ -->
+    <!-- SINCRONIZACIÓN EN VIVO DEL PERFIL                                -->
+    <!-- Recarga al volver a la pestaña, al recuperar el foco, y          -->
+    <!-- actualiza automáticamente vía Supabase Realtime.                 -->
+    <!-- ================================================================ -->
+    <script>
+    (() => {
+        'use strict';
+
+        let usuarioId = null;
+        let realtimeChannel = null;
+        let ultimaRecarga = 0;
+
+        function actualizarDOM(usuario) {
+            try {
+                if (!usuario) return;
+
+                const nombreContainer = document.querySelector('#perfilNombre');
+                if (nombreContainer) {
+                    const nombreSpan = nombreContainer.querySelector('[data-clave="perfil_nombre_usuario"]');
+                    if (nombreSpan) {
+                        nombreSpan.textContent = usuario.nombre || '';
+                    } else {
+                        nombreContainer.textContent = usuario.nombre || '';
+                    }
+                }
+
+                const handleElement = document.querySelector('#perfilHandle');
+                if (handleElement) {
+                    handleElement.textContent = usuario.handle ? `@${usuario.handle}` : '';
+                }
+
+                const bioElement = document.querySelector('#perfilBio');
+                if (bioElement) {
+                    bioElement.textContent = usuario.bio || '';
+                }
+
+                const avatarElement = document.querySelector('#perfilAvatar');
+                if (avatarElement) {
+                    if (usuario.avatar_url) {
+                        avatarElement.innerHTML = '';
+                        const img = document.createElement('img');
+                        img.src = usuario.avatar_url;
+                        img.alt = usuario.nombre || 'Avatar';
+                        img.loading = 'lazy';
+                        avatarElement.appendChild(img);
+                    } else {
+                        avatarElement.innerHTML = '◈';
+                    }
+                }
+            } catch (error) {
+                console.warn('[Perfil] Error actualizando el DOM:', error);
+            }
+        }
+
+        async function recargarPerfil() {
+            try {
+                if (!window.supabaseClient) {
+                    console.warn('[Perfil] window.supabaseClient no está disponible.');
+                    return;
+                }
+
+                const { data: sessionData, error: sessionError } = await window.supabaseClient.auth.getSession();
+                if (sessionError) {
+                    console.warn('[Perfil] Error obteniendo sesión:', sessionError);
+                    return;
+                }
+
+                const session = sessionData?.session;
+                if (!session?.user?.id) return;
+
+                usuarioId = session.user.id;
+
+                const { data: usuario, error } = await window.supabaseClient
+                    .from('usuarios')
+                    .select('id, nombre, handle, bio, avatar_url')
+                    .eq('id', usuarioId)
+                    .maybeSingle();
+
+                if (error) {
+                    console.warn('[Perfil] Error cargando datos del usuario:', error);
+                    return;
+                }
+
+                if (usuario) {
+                    actualizarDOM(usuario);
+                }
+            } catch (error) {
+                console.warn('[Perfil] Error en recargarPerfil():', error);
+            }
+        }
+
+        function solicitarRecarga() {
+            try {
+                const ahora = Date.now();
+                if (ahora - ultimaRecarga < 1000) return;
+                ultimaRecarga = ahora;
+                recargarPerfil();
+            } catch (error) {
+                console.warn('[Perfil] Error solicitando recarga:', error);
+            }
+        }
+
+        document.addEventListener('visibilitychange', () => {
+            try {
+                if (document.visibilityState === 'visible') {
+                    solicitarRecarga();
+                }
+            } catch (error) {
+                console.warn('[Perfil] Error en visibilitychange:', error);
+            }
+        });
+
+        window.addEventListener('focus', () => {
+            try {
+                solicitarRecarga();
+            } catch (error) {
+                console.warn('[Perfil] Error en focus:', error);
+            }
+        });
+
+        async function iniciarRealtime() {
+            try {
+                if (!window.supabaseClient) {
+                    console.warn('[Perfil] window.supabaseClient no está disponible para Realtime.');
+                    return;
+                }
+
+                const { data: sessionData, error: sessionError } = await window.supabaseClient.auth.getSession();
+                if (sessionError) {
+                    console.warn('[Perfil] Error obteniendo sesión para Realtime:', sessionError);
+                    return;
+                }
+
+                const session = sessionData?.session;
+                if (!session?.user?.id) return;
+
+                usuarioId = session.user.id;
+
+                if (realtimeChannel) {
+                    try {
+                        await window.supabaseClient.removeChannel(realtimeChannel);
+                    } catch (error) {
+                        console.warn('[Perfil] No se pudo eliminar el canal anterior:', error);
+                    }
+                    realtimeChannel = null;
+                }
+
+                realtimeChannel = window.supabaseClient
+                    .channel(`perfil-usuario-${usuarioId}`)
+                    .on(
+                        'postgres_changes',
+                        {
+                            event: 'UPDATE',
+                            schema: 'public',
+                            table: 'usuarios',
+                            filter: `id=eq.${usuarioId}`
+                        },
+                        (payload) => {
+                            try {
+                                if (!payload?.new) return;
+                                actualizarDOM(payload.new);
+                            } catch (error) {
+                                console.warn('[Perfil] Error procesando UPDATE Realtime:', error);
+                            }
+                        }
+                    )
+                    .subscribe((status, error) => {
+                        try {
+                            if (status === 'SUBSCRIBED') {
+                                console.log('[Perfil] Realtime conectado correctamente.');
+                            }
+                            if (status === 'CHANNEL_ERROR') {
+                                console.warn('[Perfil] Error en el canal Realtime:', error);
+                            }
+                            if (status === 'TIMED_OUT') {
+                                console.warn('[Perfil] Realtime agotó el tiempo de conexión.');
+                            }
+                        } catch (callbackError) {
+                            console.warn('[Perfil] Error en callback de Realtime:', callbackError);
+                        }
+                    });
+
+            } catch (error) {
+                console.warn('[Perfil] Error iniciando Realtime:', error);
+            }
+        }
+
+        function inicializarSincronizacion() {
+            try {
+                recargarPerfil();
+                iniciarRealtime();
+            } catch (error) {
+                console.warn('[Perfil] Error inicializando sincronización:', error);
+            }
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', inicializarSincronizacion, { once: true });
+        } else {
+            inicializarSincronizacion();
+        }
+
+        window.addEventListener('pagehide', () => {
+            try {
+                if (realtimeChannel && window.supabaseClient) {
+                    window.supabaseClient.removeChannel(realtimeChannel);
+                    realtimeChannel = null;
+                }
+            } catch (error) {
+                console.warn('[Perfil] Error cerrando Realtime:', error);
+            }
+        });
+
+    })();
+    </script>
 </body>
 </html>
