@@ -7,6 +7,9 @@
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet" />
 
+    <!-- ✅ APARIENCIA GLOBAL v2.0 - Se carga PRIMERO -->
+    <script src="/features/shared/js/apariencia-global.js"></script>
+
     <style>
         :root {
             --space-deep: #05080f;
@@ -506,9 +509,6 @@
         .cobertura-box .cobertura-items .check { color: var(--success); }
         .cobertura-box .cobertura-items .quantum { color: var(--quantum); }
 
-        /* ============================================================
-           NUEVA SECCIÓN: COMPATIBLE CON TODO
-           ============================================================ */
         .features-box {
             margin-top: 14px;
             border-top: 1px solid var(--glass-border);
@@ -578,6 +578,114 @@
         .footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
         .footer-links a { color: var(--text-muted); text-decoration: none; transition: var(--transition); }
         .footer-links a:hover { color: var(--gold-cosmic); }
+
+        /* ============================================================ */
+        /* TEMA DÍA - COMPLETO para internet                            */
+        /* ============================================================ */
+        html.tema-dia,
+        html[data-tema="dia"] {
+            --space-deep: #f5f7fa;
+            --space-mid: #e8ecf0;
+            --text-primary: #1a2332;
+            --text-secondary: #4a5568;
+            --text-muted: #718096;
+            --glass-bg: rgba(255, 255, 255, 0.9);
+            --glass-border: rgba(0, 0, 0, 0.1);
+            --border: rgba(0, 0, 0, 0.08);
+            --border-glow: rgba(212, 175, 55, 0.3);
+            --shadow-gold: 0 8px 32px rgba(0, 0, 0, 0.08);
+            --shadow-gold-strong: 0 0 60px rgba(0, 0, 0, 0.05);
+        }
+        html.tema-dia body,
+        html[data-tema="dia"] body {
+            background: #f5f7fa !important;
+            color: var(--text-primary) !important;
+        }
+        html.tema-dia #stars-canvas,
+        html.tema-dia .nebula,
+        html[data-tema="dia"] #stars-canvas,
+        html[data-tema="dia"] .nebula {
+            display: none !important;
+        }
+        html.tema-dia .header,
+        html[data-tema="dia"] .header {
+            background: rgba(255, 255, 255, 0.95) !important;
+            border-bottom-color: rgba(0, 0, 0, 0.1) !important;
+        }
+        html.tema-dia .logo-text,
+        html[data-tema="dia"] .logo-text {
+            color: var(--text-primary) !important;
+        }
+        html.tema-dia .main-nav,
+        html[data-tema="dia"] .main-nav {
+            background: rgba(255, 255, 255, 0.7) !important;
+            border-color: rgba(0, 0, 0, 0.1) !important;
+        }
+        html.tema-dia .main-nav .nav-link,
+        html[data-tema="dia"] .main-nav .nav-link {
+            color: #718096 !important;
+        }
+        html.tema-dia .main-nav .nav-link.active,
+        html[data-tema="dia"] .main-nav .nav-link.active {
+            background: rgba(212, 175, 55, 0.15) !important;
+            color: var(--gold-cosmic) !important;
+        }
+        html.tema-dia .internet-container,
+        html.tema-dia .pack-card,
+        html.tema-dia .checkout-card,
+        html[data-tema="dia"] .internet-container,
+        html[data-tema="dia"] .pack-card,
+        html[data-tema="dia"] .checkout-card {
+            background: rgba(255, 255, 255, 0.9) !important;
+            border-color: rgba(0, 0, 0, 0.1) !important;
+        }
+        html.tema-dia .pack-card .pack-data .size,
+        html[data-tema="dia"] .pack-card .pack-data .size {
+            color: var(--text-primary) !important;
+        }
+        html.tema-dia .checkout-card .checkout-resumen,
+        html[data-tema="dia"] .checkout-card .checkout-resumen {
+            background: rgba(0, 0, 0, 0.03) !important;
+            color: var(--text-secondary) !important;
+        }
+        html.tema-dia .checkout-card .checkout-resumen strong,
+        html[data-tema="dia"] .checkout-card .checkout-resumen strong {
+            color: var(--text-primary) !important;
+        }
+        html.tema-dia #netPhone,
+        html[data-tema="dia"] #netPhone {
+            background: rgba(0, 0, 0, 0.03) !important;
+            color: var(--text-primary) !important;
+            border-color: rgba(0, 0, 0, 0.15) !important;
+        }
+        html.tema-dia #netPhone::placeholder,
+        html[data-tema="dia"] #netPhone::placeholder {
+            color: #a0aec0 !important;
+        }
+        html.tema-dia .red-selector select,
+        html[data-tema="dia"] .red-selector select {
+            background: rgba(0, 0, 0, 0.03) !important;
+            color: var(--text-primary) !important;
+            border-color: rgba(0, 0, 0, 0.15) !important;
+        }
+        html.tema-dia .red-selector select option,
+        html[data-tema="dia"] .red-selector select option {
+            background: white !important;
+            color: var(--text-primary) !important;
+        }
+        html.tema-dia .footer,
+        html[data-tema="dia"] .footer {
+            color: #718096 !important;
+            border-top-color: rgba(0, 0, 0, 0.1) !important;
+        }
+        html.tema-dia .footer-links a,
+        html[data-tema="dia"] .footer-links a {
+            color: #718096 !important;
+        }
+        html.tema-dia .footer-links a:hover,
+        html[data-tema="dia"] .footer-links a:hover {
+            color: var(--gold-cosmic) !important;
+        }
 
         @media (max-width: 900px) {
             .internet-grid { grid-template-columns: 1fr; }
@@ -680,7 +788,6 @@
                         </div>
                     </div>
 
-                    <!-- ✅ NUEVA SECCIÓN: COMPATIBLE CON TODO -->
                     <div class="features-box">
                         <div class="features-title">◈ Compatible con todo</div>
                         <div class="features-items">
@@ -692,7 +799,6 @@
                             <div>✓ Comparte con laptop/tablet (tethering)</div>
                         </div>
                     </div>
-                    <!-- ✅ FIN SECCIÓN -->
 
                 </div>
             </div>
@@ -716,7 +822,10 @@
 
     <div class="toast" id="toast"></div>
 
+    <!-- ✅ SUPABASE + IDIOMAS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/features/shared/js/idiomas.js"></script>
+
     <script>
     // ================================================================
     // CONFIGURACIÓN
@@ -726,6 +835,7 @@
     const BACKEND_URL = 'https://galleta-domo-production.up.railway.app';
 
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    window.supabaseClient = supabase;
 
     const MXN_A_USD_APROX = 0.055;
 
@@ -1057,6 +1167,18 @@
                 if (e.key === 'Enter') comprarInternet();
             });
         }
+
+        // ✅ Inicializar idiomas
+        setTimeout(async function() {
+            try {
+                if (typeof window.inicializarIdiomas === 'function') {
+                    await window.inicializarIdiomas();
+                    console.log('✅ Idiomas aplicados a internet');
+                }
+            } catch (e) {
+                console.warn('⚠️ Error aplicando idiomas:', e);
+            }
+        }, 500);
 
         console.log('◈ Sariel\'s - Internet corregido ·', planes.length, 'paquetes');
     });
