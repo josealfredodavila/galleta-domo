@@ -7,7 +7,6 @@
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
 
-    <!-- ✅ APARIENCIA GLOBAL - Se carga PRIMERO para evitar flash y aplicar tema -->
     <script src="/features/shared/js/apariencia-global.js"></script>
 
     <style>
@@ -190,7 +189,6 @@
         .publicacion-card .stats span { cursor: pointer; padding: 3px 8px; border-radius: 14px; transition: var(--transition); display: inline-flex; align-items: center; gap: 4px; font-size: 0.6rem; }
         .publicacion-card .stats span:hover { color: var(--gold); background: rgba(212,175,55,0.05); }
 
-        /* ✦ REACCIONES ESTILO FACEBOOK - CÍRCULOS SIN FONDO ✦ */
         .reacciones-bar { display: flex; gap: 4px; margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--line-black-soft); flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none; align-items: center; }
         .reacciones-bar::-webkit-scrollbar { display: none; }
         .reacciones-bar .reaccion-btn { background: transparent; border: none; padding: 0; font-size: 1.15rem; line-height: 1; cursor: pointer; transition: var(--transition); display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 32px; height: 32px; border-radius: 50%; position: relative; }
@@ -338,9 +336,6 @@
         #qrReaderContainer { display: none; margin-top: 10px; text-align: center; }
         #qrReaderContainer video { width: 100%; max-width: 300px; border-radius: 10px; background: black; border: 2px solid var(--line-black); }
 
-        /* ============================================================ */
-        /* TEMA DÍA - Fondo claro cuando el usuario elige "Día"        */
-        /* ============================================================ */
         html.tema-dia,
         html[data-tema="dia"] {
             --space: #f5f7fa;
@@ -477,12 +472,12 @@
         </header>
 
         <nav class="main-nav">
-            <a href="/" class="nav-link">⌂ Inicio</a>
-            <a href="/features/muro/muro.html" class="nav-link">◇ Muro</a>
-            <a href="/features/perfil/perfil.html" class="nav-link active">◆ Perfil</a>
-            <a href="/features/mensajes/contactos.html" class="nav-link">◈ Contactos</a>
-            <a href="/features/live/live.html" class="nav-link live">◉ Live</a>
-            <a href="/features/internet/internet.html" class="nav-link">◈ Internet</a>
+            <a href="/" class="nav-link" data-clave="nav_inicio">⌂ Inicio</a>
+            <a href="/features/muro/muro.html" class="nav-link" data-clave="nav_muro">◇ Muro</a>
+            <a href="/features/perfil/perfil.html" class="nav-link active" data-clave="nav_perfil">◆ Perfil</a>
+            <a href="/features/mensajes/contactos.html" class="nav-link" data-clave="nav_contactos">◈ Contactos</a>
+            <a href="/features/live/live.html" class="nav-link live" data-clave="nav_live">◉ Live</a>
+            <a href="/features/internet/internet.html" class="nav-link" data-clave="nav_internet">◈ Internet</a>
         </nav>
 
         <div class="perfil-container">
@@ -503,7 +498,7 @@
                         <span class="verified" data-clave="perfil_badge_verificado">✦ VERIFICADO</span>
                     </div>
                     <div class="handle" id="perfilHandle">@explorador</div>
-                    <div class="bio" id="perfilBio" data-clave="perfil_biografia">Explorando el ecosistema Sariel's · WEB3 · Comunidad</div>
+                    <div class="bio" id="perfilBio" data-clave="perfil_biografia_default">Explorando el ecosistema Sariel's · WEB3 · Comunidad</div>
                     <div class="badges">
                         <span class="badge gold" data-clave="perfil_badge_miembro">✦ MIEMBRO</span>
                         <span class="badge success" data-clave="perfil_badge_activo">● ACTIVO</span>
@@ -531,7 +526,7 @@
                 </div>
                 <div class="acciones">
                     <button class="btn btn-outline btn-sm" onclick="compartirPerfil()" data-clave="perfil_btn_compartir">◈ Compartir</button>
-                    <button class="btn btn-outline btn-sm" onclick="generarQRPerfil()" data-clave="perfil_btn_qr">📱 QR</button>
+                    <button class="btn btn-outline btn-sm" onclick="generarQRPerfil()" data-clave="perfil_share_qr">📱 Share QR</button>
                 </div>
             </div>
 
@@ -584,7 +579,7 @@
                         </div>
                         <div class="pro-upgrade-price">
                             <span id="proPrecio">$60 MXN</span>
-                            <span class="pro-upgrade-period">/ 30 días</span>
+                            <span class="pro-upgrade-period" data-clave="perfil_pro_periodo">/ 30 días</span>
                         </div>
                         <div class="pro-upgrade-features" id="proFeatures" data-clave="perfil_pro_features">
                             Conservación ampliada · 5 GB
@@ -617,7 +612,7 @@
                 </div>
                 <div style="font-size:0.6rem;color:var(--text-muted);margin-top:6px;">
                     <span data-clave="perfil_conexion">Conexión:</span> <span id="conexionTipo">🛜 WiFi</span>
-                    · <span>Operador:</span> <span id="conexionOperador">Sariel's Net</span>
+                    · <span data-clave="perfil_operador">Operador:</span> <span id="conexionOperador">Sariel's Net</span>
                 </div>
             </div>
 
@@ -633,7 +628,7 @@
                 <div class="panel">
                     <div class="panel-header">
                         <h3 data-clave="perfil_crear_publicacion">✦ Crear publicación</h3>
-                        <span class="panel-badge">Nuevo</span>
+                        <span class="panel-badge" data-clave="perfil_badge_nuevo">Nuevo</span>
                     </div>
                     <div class="panel-body">
                         <div class="form-publicacion">
@@ -661,7 +656,7 @@
                                 </button>
 
                                 <div class="emoji-picker" id="emojiPickerPerfil">
-                                    <div class="titulo">✦ Elige tu emoji</div>
+                                    <div class="titulo" data-clave="perfil_elige_emoji">✦ Elige tu emoji</div>
                                     <div class="grid" id="emojiGridPerfil"></div>
                                 </div>
                             </div>
@@ -692,13 +687,13 @@
                 <div class="panel">
                     <div class="panel-header">
                         <h3 data-clave="perfil_seccion_ultima_actividad">◈ Última actividad</h3>
-                        <span class="panel-badge">En tiempo real</span>
+                        <span class="panel-badge" data-clave="perfil_tiempo_real">En tiempo real</span>
                     </div>
                     <div class="panel-body" id="actividadList">
                         <div class="empty-state">
                             <span class="icon">◈</span>
-                            <h4>Sin actividad reciente</h4>
-                            <p>Comienza a interactuar en el Muro</p>
+                            <h4 data-clave="perfil_sin_actividad">Sin actividad reciente</h4>
+                            <p data-clave="perfil_comienza_muro">Comienza a interactuar en el Muro</p>
                         </div>
                     </div>
                 </div>
@@ -710,8 +705,8 @@
                     <div class="panel-body" id="historialList">
                         <div class="empty-state">
                             <span class="icon">◈</span>
-                            <h4>Sin transacciones</h4>
-                            <p>Compra domos para acumular tokens</p>
+                            <h4 data-clave="perfil_sin_transacciones">Sin transacciones</h4>
+                            <p data-clave="perfil_compra_domos_tokens">Compra domos para acumular tokens</p>
                         </div>
                     </div>
                 </div>
@@ -721,7 +716,7 @@
                 <div class="panel">
                     <div class="panel-header">
                         <h3 data-clave="perfil_seccion_estado_tokens">⟡ Estado de tokens</h3>
-                        <span class="panel-badge">Actualizado</span>
+                        <span class="panel-badge" data-clave="perfil_actualizado">Actualizado</span>
                     </div>
                     <div class="panel-body">
                         <div class="token-status">
@@ -735,7 +730,7 @@
                             </div>
                             <div class="item">
                                 <div class="value" id="tokenVendidos">0</div>
-                                <div class="label">◈ Vendidos</div>
+                                <div class="label" data-clave="perfil_vendidos">◈ Vendidos</div>
                             </div>
                             <div class="item">
                                 <div class="value" id="tokenNFTs">0</div>
@@ -754,7 +749,7 @@
                         </div>
 
                         <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
-                            <button class="btn btn-gold" style="flex:1;justify-content:center;" onclick="comprarDomo(1)">
+                            <button class="btn btn-gold" style="flex:1;justify-content:center;" onclick="comprarDomo(1)" data-clave="perfil_comprar_domo">
                                 ⟡ Comprar Domo (MXN)
                             </button>
                             <button class="btn btn-gold" style="flex:1;justify-content:center;" id="canjearNft" onclick="canjearNFT()" disabled data-clave="perfil_canjear_nft">
@@ -785,7 +780,7 @@
                             </div>
                         </div>
 
-                        <button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:8px;" onclick="irAMuro()">
+                        <button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:8px;" onclick="irAMuro()" data-clave="perfil_ir_muro">
                             ◇ Ir al Muro
                         </button>
                     </div>
@@ -818,7 +813,7 @@
                             </div>
                             <div style="background:rgba(0,0,0,0.4);padding:10px;border-radius:10px;border:2px solid var(--line-black);grid-column:span 2;">
                                 <span style="color:var(--text-muted);font-size:0.6rem;" data-clave="perfil_iccid">ICCID</span>
-                                <div id="esimIccid" style="font-weight:600;font-size:0.8rem;font-family:monospace;">No asignado</div>
+                                <div id="esimIccid" style="font-weight:600;font-size:0.8rem;font-family:monospace;" data-clave="perfil_no_asignado">No asignado</div>
                             </div>
                         </div>
 
@@ -860,13 +855,13 @@
                 <div class="panel">
                     <div class="panel-header">
                         <h3 data-clave="perfil_escanear_qr">📱 Escanear QR</h3>
-                        <span class="panel-badge" data-clave="perfil_registrar_domo">Recibe Es.stoks</span>
+                        <span class="panel-badge" data-clave="perfil_recibe_estoks">Recibe Es.stoks</span>
                     </div>
                     <div class="panel-body">
                         <div class="config-group">
                             <label data-clave="perfil_codigo_qr">Código del QR (escanea o escribe)</label>
                             <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                                <input type="text" id="qrInput" placeholder="Ej: DOMO-2025-ABC123" 
+                                <input type="text" id="qrInput" data-placeholder="perfil_ejemplo_codigo_qr" placeholder="Ej: DOMO-2025-ABC123" 
                                        style="flex:1;padding:10px 14px;background:rgba(0,0,0,0.5);border:2px solid var(--line-black);border-radius:10px;color:var(--text-primary);font-size:0.85rem;outline:none;">
                                 <button class="btn btn-gold" onclick="escanearQR()" id="btnEscanearQR" data-clave="perfil_validar_codigo">
                                     🔍 Escanear QR
@@ -898,7 +893,7 @@
                             <div id="qrHistorialList" style="margin-top:8px;">
                                 <div class="empty-state" style="padding:10px;">
                                     <span class="icon" style="font-size:1.5rem;">◈</span>
-                                    <p style="font-size:0.7rem;" data-clave="perfil_sin_registros">Sin escaneos recientes</p>
+                                    <p style="font-size:0.7rem;" data-clave="perfil_sin_escaneos">Sin escaneos recientes</p>
                                 </div>
                             </div>
                         </div>
@@ -909,22 +904,22 @@
             <div id="tab-internet" class="tab-content">
                 <div class="panel">
                     <div class="panel-header">
-                        <h3>📶 Mis compras de Internet</h3>
+                        <h3 data-clave="perfil_mis_compras_internet">📶 Mis compras de Internet</h3>
                         <span class="panel-badge" id="internetOrdenesCount">0</span>
                     </div>
                     <div class="panel-body">
                         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">
-                            <button class="btn btn-outline btn-sm internet-filter active" data-filter="all" onclick="filtrarOrdenesInternet('all')">Todas</button>
-                            <button class="btn btn-outline btn-sm internet-filter" data-filter="activa" onclick="filtrarOrdenesInternet('activa')">✅ Activas</button>
-                            <button class="btn btn-outline btn-sm internet-filter" data-filter="pagando" onclick="filtrarOrdenesInternet('pagando')">⏳ Pendientes</button>
-                            <button class="btn btn-outline btn-sm internet-filter" data-filter="cancelada" onclick="filtrarOrdenesInternet('cancelada')">❌ Canceladas</button>
-                            <button class="btn btn-outline btn-sm" onclick="cargarOrdenesInternet()" style="margin-left:auto;">🔄 Refrescar</button>
+                            <button class="btn btn-outline btn-sm internet-filter active" data-filter="all" onclick="filtrarOrdenesInternet('all')" data-clave="perfil_filtro_todas">Todas</button>
+                            <button class="btn btn-outline btn-sm internet-filter" data-filter="activa" onclick="filtrarOrdenesInternet('activa')" data-clave="perfil_filtro_activas">✅ Activas</button>
+                            <button class="btn btn-outline btn-sm internet-filter" data-filter="pagando" onclick="filtrarOrdenesInternet('pagando')" data-clave="perfil_filtro_pendientes">⏳ Pendientes</button>
+                            <button class="btn btn-outline btn-sm internet-filter" data-filter="cancelada" onclick="filtrarOrdenesInternet('cancelada')" data-clave="perfil_filtro_canceladas">❌ Canceladas</button>
+                            <button class="btn btn-outline btn-sm" onclick="cargarOrdenesInternet()" style="margin-left:auto;" data-clave="perfil_refrescar">🔄 Refrescar</button>
                         </div>
 
                         <div id="ordenesInternetList">
                             <div class="empty-state">
                                 <span class="icon">📶</span>
-                                <h4>Cargando órdenes...</h4>
+                                <h4 data-clave="perfil_cargando_ordenes">Cargando órdenes...</h4>
                             </div>
                         </div>
                     </div>
@@ -939,7 +934,7 @@
                 <a href="/terminos" data-clave="perfil_footer_terminos">◈ Términos</a>
                 <a href="/privacidad" data-clave="perfil_footer_privacidad">◈ Privacidad</a>
                 <a href="/cookies" data-clave="perfil_footer_cookies">◈ Cookies</a>
-                <a href="/live-terminos">◈ Términos Live</a>
+                <a href="/live-terminos" data-clave="perfil_footer_terminos_live">◈ Términos Live</a>
                 <span style="opacity:0.3;">⚡ Polygon</span>
             </div>
         </footer>
@@ -958,15 +953,15 @@
             </div>
             <div class="address-box">
                 <div class="label" data-clave="perfil_codigo_qr">📤 Dirección de pago</div>
-                <div class="address" id="cryptoAddress">Cargando dirección...</div>
+                <div class="address" id="cryptoAddress" data-clave="perfil_cargando_direccion">Cargando dirección...</div>
             </div>
             <div class="amount">
                 <span id="cryptoMonto">0.00</span> <span id="cryptoMoneda">USDT</span>
             </div>
             <div class="actions">
-                <button class="btn btn-outline btn-sm" onclick="copiarDireccion()">📋 Copiar dirección</button>
+                <button class="btn btn-outline btn-sm" onclick="copiarDireccion()" data-clave="perfil_copiar_direccion">📋 Copiar dirección</button>
                 <button class="btn btn-gold btn-sm" onclick="verificarPagoCrypto()" data-clave="perfil_validacion_real">✅ Verificar pago</button>
-                <button class="btn btn-outline btn-sm" onclick="cerrarModalPago()">Cerrar</button>
+                <button class="btn btn-outline btn-sm" onclick="cerrarModalPago()" data-clave="perfil_cerrar">Cerrar</button>
             </div>
             <div class="status" id="cryptoStatus" data-clave="perfil_cargando_membresia">⏳ Esperando confirmación de pago...</div>
         </div>
@@ -1195,7 +1190,8 @@
                 var sessionResult = await client.auth.getSession();
                 var session = sessionResult.data.session;
                 if (!session) {
-                    container.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h4>Inicia sesión</h4><p>Para ver tus publicaciones</p></div>';
+                    container.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h4 data-clave="perfil_inicia_sesion_publicaciones">Inicia sesión</h4><p data-clave="perfil_para_ver_publicaciones">Para ver tus publicaciones</p></div>';
+                    aplicarI18NPerfil(container);
                     return;
                 }
                 var result = await client.from('publicaciones').select('*').eq('usuario_id', session.user.id).order('created_at', { ascending: false }).limit(50);
@@ -1204,6 +1200,7 @@
                 if (contador) contador.textContent = publicaciones.length;
                 if (publicaciones.length === 0) {
                     container.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h4 data-clave="perfil_sin_publicaciones">Sin publicaciones aún</h4><p data-clave="perfil_crea_primera">Publica algo para verlo aquí</p></div>';
+                    aplicarI18NPerfil(container);
                     return;
                 }
                 container.innerHTML = '';
@@ -1243,24 +1240,26 @@
                     });
                     reaccionesHtml += '</div>';
                     card.innerHTML =
-                        '<div class="header"><div class="avatar">◈</div><div><div class="nombre" data-clave="perfil_mis_publicaciones">Mi publicación</div><div class="fecha">' + fecha + '</div></div></div>' +
+                        '<div class="header"><div class="avatar">◈</div><div><div class="nombre" data-clave="perfil_mi_publicacion">Mi publicación</div><div class="fecha">' + fecha + '</div></div></div>' +
                         '<div class="contenido">' + contenidoHtml + '</div>' + reaccionesHtml +
                         '<div class="stats">' +
-                            '<span onclick="toggleComentariosPerfil(\'' + p.id + '\')">💬 Comentarios</span>' +
-                            '<span onclick="eliminarMiPublicacion(\'' + p.id + '\')">🗑️ Eliminar</span>' +
+                            '<span onclick="toggleComentariosPerfil(\'' + p.id + '\')" data-clave="perfil_comentarios">💬 Comentarios</span>' +
+                            '<span onclick="eliminarMiPublicacion(\'' + p.id + '\')" data-clave="perfil_eliminar">🗑️ Eliminar</span>' +
                         '</div>' +
                         '<div class="comentarios-container" id="comentarios-container-' + p.id + '">' +
                             '<div class="comentarios-lista" id="comentarios-lista-' + p.id + '"></div>' +
                             '<div class="comentario-input-row">' +
-                                '<input type="text" id="comentario-input-' + p.id + '" placeholder="Escribe un comentario..." />' +
-                                '<button onclick="enviarComentarioPerfil(\'' + p.id + '\')">Enviar</button>' +
+                                '<input type="text" id="comentario-input-' + p.id + '" data-placeholder="perfil_placeholder_comentario" placeholder="Escribe un comentario..." />' +
+                                '<button onclick="enviarComentarioPerfil(\'' + p.id + '\')" data-clave="perfil_enviar">Enviar</button>' +
                             '</div>' +
                         '</div>';
                     container.appendChild(card);
                 });
+                aplicarI18NPerfil(container);
             } catch (error) {
                 console.error('Error cargando mis publicaciones:', error);
-                container.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h4>Error al cargar</h4><p>' + error.message + '</p></div>';
+                container.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h4 data-clave="perfil_error_cargar">Error al cargar</h4><p>' + error.message + '</p></div>';
+                aplicarI18NPerfil(container);
             }
         };
 
@@ -1329,7 +1328,8 @@
         async function cargarComentariosPerfil(publicacionId) {
             var lista = document.getElementById('comentarios-lista-' + publicacionId);
             if (!lista) return;
-            lista.innerHTML = '<div style="font-size:0.7rem;color:var(--text-muted);padding:4px;">Cargando...</div>';
+            lista.innerHTML = '<div style="font-size:0.7rem;color:var(--text-muted);padding:4px;" data-clave="perfil_cargando_comentarios">Cargando...</div>';
+            aplicarI18NPerfil(lista);
             try {
                 var client = sb();
                 if (!client) return;
@@ -1340,7 +1340,8 @@
                 if (result.error && result.error.code !== '42P01') throw result.error;
                 var comentarios = result.data || [];
                 if (comentarios.length === 0) {
-                    lista.innerHTML = '<div style="font-size:0.7rem;color:var(--text-muted);padding:4px;">Sin comentarios. ¡Sé el primero!</div>';
+                    lista.innerHTML = '<div style="font-size:0.7rem;color:var(--text-muted);padding:4px;" data-clave="perfil_sin_comentarios">Sin comentarios. ¡Sé el primero!</div>';
+                    aplicarI18NPerfil(lista);
                     return;
                 }
                 lista.innerHTML = '';
@@ -1355,7 +1356,8 @@
                 });
             } catch (error) {
                 console.error('Error cargando comentarios:', error);
-                lista.innerHTML = '<div style="font-size:0.7rem;color:var(--danger);padding:4px;">Error al cargar comentarios</div>';
+                lista.innerHTML = '<div style="font-size:0.7rem;color:var(--danger);padding:4px;" data-clave="perfil_error_cargar_comentarios">Error al cargar comentarios</div>';
+                aplicarI18NPerfil(lista);
             }
         }
 
@@ -1384,7 +1386,7 @@
         };
 
         window.eliminarMiPublicacion = async function(publicacionId) {
-            if (!confirm('¿Seguro que quieres eliminar esta publicación?')) return;
+            if (!confirm(tPerfil('perfil_confirma_eliminar', '¿Seguro que quieres eliminar esta publicación?'))) return;
             try {
                 var client = sb();
                 if (!client) return;
@@ -1456,17 +1458,17 @@
 
         function estadoInfo(estado) {
             const map = {
-                'pendiente': { color: '#f59e0b', icon: '⏳', texto: 'Pendiente de pago', bg: 'rgba(245, 158, 11, 0.12)' },
-                'pagando': { color: '#f59e0b', icon: '⏳', texto: 'Procesando pago', bg: 'rgba(245, 158, 11, 0.12)' },
-                'confirmando': { color: '#22d3ee', icon: '⏱️', texto: 'Confirmando', bg: 'rgba(34, 211, 238, 0.12)' },
-                'pagada': { color: '#00d68f', icon: '💚', texto: 'Pagada', bg: 'rgba(0, 214, 143, 0.12)' },
-                'activa': { color: '#00d68f', icon: '✅', texto: 'Activa', bg: 'rgba(0, 214, 143, 0.12)' },
-                'activada': { color: '#00d68f', icon: '✅', texto: 'Activa', bg: 'rgba(0, 214, 143, 0.12)' },
-                'completado': { color: '#00d68f', icon: '✅', texto: 'Completado', bg: 'rgba(0, 214, 143, 0.12)' },
-                'cancelada': { color: '#ff3366', icon: '❌', texto: 'Cancelada', bg: 'rgba(255, 51, 102, 0.12)' },
-                'cancelado': { color: '#ff3366', icon: '❌', texto: 'Cancelada', bg: 'rgba(255, 51, 102, 0.12)' },
+                'pendiente':   { color: '#f59e0b', icon: '⏳', texto: tPerfil('perfil_pendiente_pago', 'Pendiente de pago'), bg: 'rgba(245, 158, 11, 0.12)' },
+                'pagando':     { color: '#f59e0b', icon: '⏳', texto: tPerfil('perfil_procesando_pago', 'Procesando pago'),  bg: 'rgba(245, 158, 11, 0.12)' },
+                'confirmando': { color: '#22d3ee', icon: '⏱️', texto: tPerfil('perfil_confirmando', 'Confirmando'),         bg: 'rgba(34, 211, 238, 0.12)' },
+                'pagada':      { color: '#00d68f', icon: '💚', texto: tPerfil('perfil_pagada', 'Pagada'),                    bg: 'rgba(0, 214, 143, 0.12)' },
+                'activa':      { color: '#00d68f', icon: '✅', texto: tPerfil('perfil_activa', 'Activa'),                    bg: 'rgba(0, 214, 143, 0.12)' },
+                'activada':    { color: '#00d68f', icon: '✅', texto: tPerfil('perfil_activa', 'Activa'),                    bg: 'rgba(0, 214, 143, 0.12)' },
+                'completado':  { color: '#00d68f', icon: '✅', texto: tPerfil('perfil_completado', 'Completado'),            bg: 'rgba(0, 214, 143, 0.12)' },
+                'cancelada':   { color: '#ff3366', icon: '❌', texto: tPerfil('perfil_cancelada', 'Cancelada'),              bg: 'rgba(255, 51, 102, 0.12)' },
+                'cancelado':   { color: '#ff3366', icon: '❌', texto: tPerfil('perfil_cancelada', 'Cancelada'),              bg: 'rgba(255, 51, 102, 0.12)' },
             };
-            return map[estado] || { color: '#8aa8b8', icon: '◈', texto: estado || 'Desconocido', bg: 'rgba(138, 168, 184, 0.12)' };
+            return map[estado] || { color: '#8aa8b8', icon: '◈', texto: estado || tPerfil('perfil_desconocido', 'Desconocido'), bg: 'rgba(138, 168, 184, 0.12)' };
         }
 
         function redLabel(payCurrency) {
@@ -1490,7 +1492,8 @@
             const contador = document.getElementById('internetOrdenesCount');
             if (!list) return;
 
-            list.innerHTML = '<div class="empty-state"><span class="icon">📶</span><h4>Cargando órdenes...</h4></div>';
+            list.innerHTML = '<div class="empty-state"><span class="icon">📶</span><h4 data-clave="perfil_cargando_ordenes">Cargando órdenes...</h4></div>';
+            aplicarI18NPerfil(list);
 
             try {
                 const client = sb();
@@ -1499,7 +1502,8 @@
                 const sessionResult = await client.auth.getSession();
                 const session = sessionResult.data.session;
                 if (!session) {
-                    list.innerHTML = '<div class="empty-state"><span class="icon">📶</span><h4>Inicia sesión</h4><p>Para ver tu historial de compras</p></div>';
+                    list.innerHTML = '<div class="empty-state"><span class="icon">📶</span><h4 data-clave="perfil_inicia_sesion">Inicia sesión</h4><p data-clave="perfil_inicia_sesion_historial">Para ver tu historial de compras</p></div>';
+                    aplicarI18NPerfil(list);
                     return;
                 }
 
@@ -1516,14 +1520,16 @@
                 if (contador) contador.textContent = ordenesInternet.length;
 
                 if (ordenesInternet.length === 0) {
-                    list.innerHTML = '<div class="empty-state"><span class="icon">📶</span><h4>Sin compras de Internet</h4><p>Cuando compres un paquete aparecerá aquí</p><a href="/features/internet/internet.html" class="btn btn-gold btn-sm" style="margin-top:12px;text-decoration:none;">Ver paquetes disponibles</a></div>';
+                    list.innerHTML = '<div class="empty-state"><span class="icon">📶</span><h4 data-clave="perfil_sin_compras_internet">Sin compras de Internet</h4><p data-clave="perfil_compra_paquete_aqui">Cuando compres un paquete aparecerá aquí</p><a href="/features/internet/internet.html" class="btn btn-gold btn-sm" style="margin-top:12px;text-decoration:none;" data-clave="perfil_ver_paquetes">Ver paquetes disponibles</a></div>';
+                    aplicarI18NPerfil(list);
                     return;
                 }
 
                 renderOrdenesInternet();
             } catch (error) {
                 console.error('Error cargando órdenes Internet:', error);
-                list.innerHTML = '<div class="empty-state"><span class="icon">❌</span><h4>Error al cargar</h4><p style="font-size:0.75rem;">' + escapeHTML(error.message) + '</p></div>';
+                list.innerHTML = '<div class="empty-state"><span class="icon">❌</span><h4 data-clave="perfil_error_cargar">Error al cargar</h4><p style="font-size:0.75rem;">' + escapeHTML(error.message) + '</p></div>';
+                aplicarI18NPerfil(list);
             }
         };
 
@@ -1536,9 +1542,13 @@
                 : ordenesInternet.filter(o => o.estado === filtroInternet);
 
             if (filtered.length === 0) {
-                list.innerHTML = '<div class="empty-state"><span class="icon">📶</span><h4>Sin órdenes en este filtro</h4></div>';
+                list.innerHTML = '<div class="empty-state"><span class="icon">📶</span><h4 data-clave="perfil_sin_ordenes_filtro">Sin órdenes en este filtro</h4></div>';
+                aplicarI18NPerfil(list);
                 return;
             }
+
+            const diasT = tPerfil('perfil_dias', 'días');
+            const activaAlT = tPerfil('perfil_activa_al', 'Activa al:');
 
             list.innerHTML = filtered.map(o => {
                 const info = estadoInfo(o.estado);
@@ -1548,10 +1558,10 @@
                         '<div style="flex:1;min-width:180px;">' +
                             '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">' +
                                 '<span style="font-size:1.3rem;">📦</span>' +
-                                '<strong style="color:var(--gold);font-size:0.9rem;font-family:\'Orbitron\',monospace;">' + escapeHTML(o.plan_nombre || 'Paquete') + '</strong>' +
+                                '<strong style="color:var(--gold);font-size:0.9rem;font-family:\'Orbitron\',monospace;">' + escapeHTML(o.plan_nombre || tPerfil('perfil_paquete', 'Paquete')) + '</strong>' +
                             '</div>' +
-                            '<div style="color:var(--text-secondary);font-size:0.8rem;line-height:1.6;">📊 <strong>' + o.datos_gb + ' GB</strong> · 📅 ' + o.duracion_dias + ' días</div>' +
-                            '<div style="color:var(--text-muted);font-size:0.7rem;margin-top:4px;">📱 Activa al: <span style="font-family:monospace;color:var(--text-secondary);">' + escapeHTML(o.telefono_activacion || '—') + '</span></div>' +
+                            '<div style="color:var(--text-secondary);font-size:0.8rem;line-height:1.6;">📊 <strong>' + o.datos_gb + ' GB</strong> · 📅 ' + o.duracion_dias + ' ' + diasT + '</div>' +
+                            '<div style="color:var(--text-muted);font-size:0.7rem;margin-top:4px;">📱 ' + activaAlT + ' <span style="font-family:monospace;color:var(--text-secondary);">' + escapeHTML(o.telefono_activacion || '—') + '</span></div>' +
                         '</div>' +
                         '<div style="text-align:right;min-width:140px;">' +
                             '<div style="background:' + info.bg + ';color:' + info.color + ';padding:4px 12px;border-radius:20px;font-size:0.65rem;font-weight:700;display:inline-block;margin-bottom:6px;border:1px solid rgba(0,0,0,0.4);">' + info.icon + ' ' + escapeHTML(info.texto) + '</div>' +
@@ -1562,7 +1572,7 @@
                     '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:10px;border-top:1px solid rgba(0,0,0,0.5);font-size:0.65rem;color:var(--text-muted);flex-wrap:wrap;gap:6px;">' +
                         '<span>🕐 ' + formatearFecha(o.created_at) + '</span>' +
                         '<span>' + (o.pay_currency ? '⚡ ' + redLabel(o.pay_currency) : '') + '</span>' +
-                        (esActiva && o.activado_en ? '<span style="color:var(--success);">✓ Activada ' + formatearFecha(o.activado_en) + '</span>' : '') +
+                        (esActiva && o.activado_en ? '<span style="color:var(--success);">✓ ' + formatearFecha(o.activado_en) + '</span>' : '') +
                     '</div>' +
                 '</div>';
             }).join('');
@@ -1580,21 +1590,22 @@
             const orden = ordenesInternet.find(o => o.id === ordenId);
             if (!orden) return;
             const info = estadoInfo(orden.estado);
+            const diasT = tPerfil('perfil_dias', 'días');
 
             const html = '<div style="text-align:left;max-width:500px;margin:0 auto;">' +
                 '<div style="text-align:center;margin-bottom:20px;">' +
                     '<div style="font-size:3rem;">📦</div>' +
-                    '<h2 style="color:var(--gold);font-family:\'Orbitron\',monospace;font-size:1.1rem;margin:10px 0 4px;">' + escapeHTML(orden.plan_nombre || 'Paquete') + '</h2>' +
+                    '<h2 style="color:var(--gold);font-family:\'Orbitron\',monospace;font-size:1.1rem;margin:10px 0 4px;">' + escapeHTML(orden.plan_nombre || tPerfil('perfil_paquete', 'Paquete')) + '</h2>' +
                     '<div style="background:' + info.bg + ';color:' + info.color + ';padding:4px 14px;border-radius:20px;font-size:0.7rem;font-weight:700;display:inline-block;border:1px solid rgba(0,0,0,0.4);">' + info.icon + ' ' + escapeHTML(info.texto) + '</div>' +
                 '</div>' +
                 '<div style="background:rgba(0,0,0,0.5);border:2px solid #000;border-radius:12px;padding:14px;margin-bottom:12px;">' +
-                    '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(0,0,0,0.5);font-size:0.75rem;"><span style="color:var(--text-muted);">📊 Datos</span><span style="color:var(--text-primary);font-weight:600;">' + orden.datos_gb + ' GB</span></div>' +
-                    '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(0,0,0,0.5);font-size:0.75rem;"><span style="color:var(--text-muted);">📅 Duración</span><span style="color:var(--text-primary);font-weight:600;">' + orden.duracion_dias + ' días</span></div>' +
-                    '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(0,0,0,0.5);font-size:0.75rem;"><span style="color:var(--text-muted);">📱 Teléfono</span><span style="color:var(--text-primary);font-weight:600;font-family:monospace;">' + escapeHTML(orden.telefono_activacion || '—') + '</span></div>' +
-                    '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(0,0,0,0.5);font-size:0.75rem;"><span style="color:var(--text-muted);">💰 Total MXN</span><span style="color:var(--gold);font-weight:700;font-family:\'Orbitron\',monospace;">$' + parseFloat(orden.monto_mxn || 0).toFixed(2) + '</span></div>' +
-                    '<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:0.75rem;"><span style="color:var(--text-muted);">🕐 Creada</span><span style="color:var(--text-primary);font-weight:600;">' + formatearFecha(orden.created_at) + '</span></div>' +
+                    '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(0,0,0,0.5);font-size:0.75rem;"><span style="color:var(--text-muted);">📊 ' + tPerfil('perfil_datos', 'Datos') + '</span><span style="color:var(--text-primary);font-weight:600;">' + orden.datos_gb + ' GB</span></div>' +
+                    '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(0,0,0,0.5);font-size:0.75rem;"><span style="color:var(--text-muted);">📅 ' + tPerfil('perfil_duracion', 'Duración') + '</span><span style="color:var(--text-primary);font-weight:600;">' + orden.duracion_dias + ' ' + diasT + '</span></div>' +
+                    '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(0,0,0,0.5);font-size:0.75rem;"><span style="color:var(--text-muted);">📱 ' + tPerfil('perfil_telefono', 'Teléfono') + '</span><span style="color:var(--text-primary);font-weight:600;font-family:monospace;">' + escapeHTML(orden.telefono_activacion || '—') + '</span></div>' +
+                    '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(0,0,0,0.5);font-size:0.75rem;"><span style="color:var(--text-muted);">💰 ' + tPerfil('perfil_total_mxn', 'Total MXN') + '</span><span style="color:var(--gold);font-weight:700;font-family:\'Orbitron\',monospace;">$' + parseFloat(orden.monto_mxn || 0).toFixed(2) + '</span></div>' +
+                    '<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:0.75rem;"><span style="color:var(--text-muted);">🕐 ' + tPerfil('perfil_creada', 'Creada') + '</span><span style="color:var(--text-primary);font-weight:600;">' + formatearFecha(orden.created_at) + '</span></div>' +
                 '</div>' +
-                '<div style="text-align:center;"><button class="btn btn-outline btn-sm" onclick="cerrarModalDetalleOrden()">Cerrar</button></div>' +
+                '<div style="text-align:center;"><button class="btn btn-outline btn-sm" onclick="cerrarModalDetalleOrden()" data-clave="perfil_cerrar">Cerrar</button></div>' +
             '</div>';
 
             const modal = document.createElement('div');
@@ -1604,6 +1615,7 @@
                 '<button onclick="cerrarModalDetalleOrden()" style="position:absolute;top:10px;right:15px;background:transparent;border:none;color:var(--text-muted);font-size:1.5rem;cursor:pointer;">×</button>' + html + '</div>';
             modal.addEventListener('click', (e) => { if (e.target === modal) cerrarModalDetalleOrden(); });
             document.body.appendChild(modal);
+            aplicarI18NPerfil(modal);
         };
 
         window.cerrarModalDetalleOrden = function() {
@@ -1629,9 +1641,6 @@
     })();
     </script>
 
-    <!-- ================================================================ -->
-    <!-- SINCRONIZACIÓN EN VIVO DEL PERFIL - LEE DIRECTO DE 'usuarios'   -->
-    <!-- ================================================================ -->
     <script>
     (function() {
         'use strict';
@@ -1659,7 +1668,16 @@
 
                 var bioElement = document.querySelector('#perfilBio');
                 if (bioElement) {
-                    bioElement.textContent = usuario.bio || "Explorando el ecosistema Sariel's · WEB3 · Comunidad";
+                    var tieneClave = bioElement.hasAttribute('data-clave');
+                    var bioPersonalizada = usuario.bio && String(usuario.bio).trim() !== '';
+                    var bioDefault = "Explorando el ecosistema Sariel's · WEB3 · Comunidad";
+                    if (bioPersonalizada && usuario.bio !== bioDefault) {
+                        if (tieneClave) bioElement.removeAttribute('data-clave');
+                        bioElement.textContent = usuario.bio;
+                    } else {
+                        if (!tieneClave) bioElement.setAttribute('data-clave', 'perfil_biografia_default');
+                        aplicarI18NPerfil(bioElement);
+                    }
                 }
 
                 var avatarElement = document.querySelector('#perfilAvatar');
