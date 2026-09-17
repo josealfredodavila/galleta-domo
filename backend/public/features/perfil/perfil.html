@@ -338,6 +338,94 @@
         #qrReaderContainer { display: none; margin-top: 10px; text-align: center; }
         #qrReaderContainer video { width: 100%; max-width: 300px; border-radius: 10px; background: black; border: 2px solid var(--line-black); }
 
+        /* ============================================================ */
+        /* TEMA DÍA - Fondo claro cuando el usuario elige "Día"        */
+        /* ============================================================ */
+        html.tema-dia,
+        html[data-tema="dia"] {
+            --space: #f5f7fa;
+            --bg-card: rgba(255, 255, 255, 0.95);
+            --bg-dark: rgba(240, 244, 248, 0.9);
+            --glass-bg: rgba(255, 255, 255, 0.85);
+            --glass-border: rgba(0, 0, 0, 0.1);
+            --text-primary: #1a2332;
+            --text-secondary: #4a5568;
+            --text-muted: #718096;
+            --line-black: rgba(0, 0, 0, 0.15);
+            --line-black-soft: rgba(0, 0, 0, 0.12);
+            --line-black-mid: rgba(0, 0, 0, 0.18);
+            --line-black-light: rgba(0, 0, 0, 0.1);
+        }
+        html.tema-dia body,
+        html[data-tema="dia"] body {
+            background: #f5f7fa !important;
+            background-image: 
+                radial-gradient(ellipse at 20% 50%, rgba(212, 175, 55, 0.05) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 50%, rgba(42, 106, 58, 0.05) 0%, transparent 60%) !important;
+            color: var(--text-primary) !important;
+        }
+        html.tema-dia .header,
+        html[data-tema="dia"] .header {
+            background: rgba(255, 255, 255, 0.95) !important;
+            border-bottom-color: rgba(0, 0, 0, 0.15) !important;
+        }
+        html.tema-dia .main-nav,
+        html[data-tema="dia"] .main-nav {
+            background: rgba(255, 255, 255, 0.7) !important;
+        }
+        html.tema-dia .panel,
+        html.tema-dia .publicacion-card,
+        html.tema-dia .estado-section,
+        html.tema-dia .conexion-section,
+        html.tema-dia .pro-section,
+        html.tema-dia .perfil-header,
+        html.tema-dia .perfil-tabs,
+        html[data-tema="dia"] .panel,
+        html[data-tema="dia"] .publicacion-card,
+        html[data-tema="dia"] .estado-section,
+        html[data-tema="dia"] .conexion-section,
+        html[data-tema="dia"] .pro-section,
+        html[data-tema="dia"] .perfil-header,
+        html[data-tema="dia"] .perfil-tabs {
+            background: rgba(255, 255, 255, 0.9) !important;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08) !important;
+        }
+        html.tema-dia #stars-canvas,
+        html.tema-dia .nebula,
+        html[data-tema="dia"] #stars-canvas,
+        html[data-tema="dia"] .nebula {
+            display: none !important;
+        }
+        html.tema-dia .panel-header h3,
+        html[data-tema="dia"] .panel-header h3 {
+            color: var(--gold) !important;
+        }
+        html.tema-dia .stats .stat,
+        html[data-tema="dia"] .stats .stat {
+            background: rgba(0, 0, 0, 0.05) !important;
+            border-color: rgba(0, 0, 0, 0.15) !important;
+        }
+        html.tema-dia .form-publicacion,
+        html[data-tema="dia"] .form-publicacion {
+            background: rgba(0, 0, 0, 0.03) !important;
+        }
+        html.tema-dia .form-publicacion textarea,
+        html.tema-dia .comentario-input-row input,
+        html[data-tema="dia"] .form-publicacion textarea,
+        html[data-tema="dia"] .comentario-input-row input {
+            background: rgba(255, 255, 255, 0.9) !important;
+            color: var(--text-primary) !important;
+            border-color: rgba(0, 0, 0, 0.15) !important;
+        }
+        html.tema-dia .token-status .item,
+        html[data-tema="dia"] .token-status .item {
+            background: rgba(0, 0, 0, 0.04) !important;
+        }
+        html.tema-dia .toast,
+        html[data-tema="dia"] .toast {
+            background: rgba(255, 255, 255, 0.98) !important;
+        }
+
         @media (max-width: 768px) {
             .app { padding: 12px 14px; }
             .perfil-header { flex-direction: column; text-align: center; padding: 60px 20px 20px; }
