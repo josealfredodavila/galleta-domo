@@ -8,7 +8,7 @@
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
     
-    <!-- ✅ APARIENCIA GLOBAL - Se carga PRIMERO para evitar flash -->
+    <!-- ✅ APARIENCIA GLOBAL v2.0 - Se carga PRIMERO para evitar flash -->
     <script src="/features/shared/js/apariencia-global.js"></script>
     
     <link rel="stylesheet" href="../../../shared/config-layout.css" />
@@ -225,6 +225,9 @@
         [data-tema="dia"] .cfg-header { background: rgba(255, 255, 255, 0.85); }
         [data-tema="dia"] .cfg-page { background: var(--cfg-bg); }
         [data-tema="dia"] .cfg-text-preview { background: rgba(0, 0, 0, 0.05); }
+        [data-tema="dia"] .cfg-tema-card { background: rgba(0, 0, 0, 0.03); }
+        [data-tema="dia"] .cfg-preview-box { background: rgba(0, 0, 0, 0.03); }
+        [data-tema="dia"] .cfg-fuente-slider input[type="range"] { background: rgba(0, 0, 0, 0.15); }
 
         /* Tema noche */
         [data-tema="noche"] {
@@ -315,12 +318,21 @@
             { valor: '#00e5ff', label: 'Cian' },
         ];
 
-        // Helper: guardar preferencia
-        function setPref(key, value) {
-            try { localStorage.setItem(key, value); } catch(e) {}
+        // ✅ NUEVO: usar la API global para guardar en localStorage + Supabase
+        function guardarPreferencia(key, valor) {
+            const api = window.SarielApariencia;
+            if (!api) {
+                // Fallback si el módulo global no cargó
+                try { localStorage.setItem(key, valor); } catch(e) {}
+                return;
+            }
+
+            if (key === PREF_KEYS.tema) api.setTema(valor);
+            else if (key === PREF_KEYS.color_acento) api.setColor(valor);
+            else if (key === PREF_KEYS.tamano_fuente) api.setFuente(valor);
         }
 
-        // Helper: leer preferencia
+        // Leer preferencia local
         function getPref(key, fallback) {
             try {
                 const v = localStorage.getItem(key);
@@ -347,14 +359,8 @@
             `).join('');
         }
 
-        window.onCambiarTema = (tema) => {
-            setPref(PREF_KEYS.tema, tema);
-            // ✅ Aplicar usando el módulo global
-            if (window.SarielApariencia) {
-                window.SarielApariencia.aplicarTema(tema);
-            } else {
-                document.documentElement.setAttribute('data-tema', tema);
-            }
+        window.onCambiarTema = function(tema) {
+            guardarPreferencia(PREF_KEYS.tema, tema);
             renderTemas();
             cfgToast(
                 tema === 'dia' ? '☀️ Tema día activado' :
@@ -378,17 +384,10 @@
             `).join('');
         }
 
-        window.onCambiarColor = (color) => {
-            setPref(PREF_KEYS.color_acento, color);
-            // ✅ Aplicar usando el módulo global
-            if (window.SarielApariencia) {
-                window.SarielApariencia.aplicarColorAcento(color);
-            } else {
-                document.documentElement.style.setProperty('--cfg-gold', color);
-                document.documentElement.style.setProperty('--gold', color);
-            }
+        window.onCambiarColor = function(color) {
+            guardarPreferencia(PREF_KEYS.color_acento, color);
             renderColores();
-            cfgToast(`🎨 Color de acento actualizado`, 'success');
+            cfgToast('🎨 Color de acento actualizado', 'success');
         };
 
         // ============================================================
@@ -405,30 +404,28 @@
 
         function aplicarTamanoFuente(size) {
             const valor = Math.max(80, Math.min(140, parseInt(size)));
-            // Aplicar al documento
-            document.documentElement.style.fontSize = (16 * valor / 100) + 'px';
-            // Variable de preview
-            document.documentElement.style.setProperty('--preview-size', (15 * valor / 100) + 'px');
+            if (window.SarielApariencia) {
+                window.SarielApariencia.aplicarTamanoFuente(valor);
+            } else {
+                document.documentElement.style.fontSize = (16 * valor / 100) + 'px';
+                document.documentElement.style.setProperty('--preview-size', (15 * valor / 100) + 'px');
+            }
         }
 
-        window.onCambiarFuente = (size) => {
+        window.onCambiarFuente = function(size) {
             const sizeNum = parseInt(size);
-            setPref(PREF_KEYS.tamano_fuente, sizeNum);
+            guardarPreferencia(PREF_KEYS.tamano_fuente, sizeNum);
             const valor = $('#fuenteValor');
             if (valor) valor.textContent = sizeNum + '%';
-            // ✅ Aplicar usando el módulo global
-            if (window.SarielApariencia) {
-                window.SarielApariencia.aplicarTamanoFuente(sizeNum);
-            } else {
-                aplicarTamanoFuente(sizeNum);
-            }
         };
 
         // ============================================================
         // INICIALIZAR
         // ============================================================
         window.addEventListener('DOMContentLoaded', async () => {
-            await new Promise(resolve => setTimeout(resolve, 400));
+            // Esperar a que apariencia-global.js esté listo
+            await new Promise(resolve => setTimeout(resolve, 500));
+
             renderTemas();
             renderColores();
             renderFuente();
@@ -444,6 +441,8 @@
                     window.onCambiarFuente(e.target.value);
                 });
             }
+
+            console.log('[Mostrar] ✅ Página inicializada');
         });
 
     })();
