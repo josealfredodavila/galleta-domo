@@ -6,6 +6,10 @@
     <title>◉ Live · Sariel's</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <!-- ✅ APARIENCIA GLOBAL v2.0 - Se carga PRIMERO -->
+    <script src="/features/shared/js/apariencia-global.js"></script>
+
     <style>
         :root {
             --gold: #D4AF37; --gold-dark: #b8923a; --gold-light: #e8c84a; --gold-glow: rgba(212, 175, 55, 0.4);
@@ -163,7 +167,7 @@
         .toast { position: fixed; bottom: 30px; right: 30px; padding: 14px 28px; border-radius: 16px; background: var(--glass-bg); border: 1px solid var(--gold); color: var(--gold); font-size: 0.8rem; font-weight: 500; box-shadow: var(--shadow-gold-strong); transform: translateY(100px); opacity: 0; transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94); z-index: 99999; max-width: 420px; backdrop-filter: blur(16px); }
         .toast.show { transform: translateY(0); opacity: 1; }
         .toast.error { border-color: var(--danger); color: var(--danger); }
-        .toast.warning { border-color: var(--warning); color: var(--warning); }
+        .toast.warning { border-color: var(--warning, #f7d44a); color: var(--warning, #f7d44a); }
         .toast.success { border-color: var(--success); color: var(--success); }
         .footer { margin-top: 30px; padding-top: 16px; border-top: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center; font-size: 0.7rem; color: var(--text-muted); flex-wrap: wrap; gap: 10px; }
         .footer .brand { color: var(--gold); font-weight: 600; }
@@ -186,6 +190,152 @@
         .otro-juego-row { display: flex; gap: 8px; }
         .otro-juego-row input { flex: 1; min-width: 0; padding: 10px 13px; border-radius: 20px; border: 1px solid var(--glass-border); background: rgba(255,255,255,.05); color: var(--text-primary); outline: none; }
         .otro-juego-row input:focus { border-color: var(--gold); }
+
+        /* ============================================================ */
+        /* TEMA DÍA - COMPLETO para el live                             */
+        /* ============================================================ */
+        html.tema-dia,
+        html[data-tema="dia"] {
+            --space: #f5f7fa;
+            --text-primary: #1a2332;
+            --text-secondary: #4a5568;
+            --text-muted: #718096;
+            --glass-bg: rgba(255, 255, 255, 0.9);
+            --glass-border: rgba(0, 0, 0, 0.1);
+        }
+        html.tema-dia body,
+        html[data-tema="dia"] body {
+            background: #f5f7fa !important;
+            background-image: 
+                radial-gradient(ellipse at 20% 50%, rgba(212, 175, 55, 0.05) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 50%, rgba(42, 106, 58, 0.05) 0%, transparent 60%) !important;
+            color: var(--text-primary) !important;
+        }
+        html.tema-dia .bg-glow,
+        html[data-tema="dia"] .bg-glow {
+            display: none !important;
+        }
+        html.tema-dia .header,
+        html[data-tema="dia"] .header {
+            background: rgba(255, 255, 255, 0.95) !important;
+            border-bottom-color: rgba(0, 0, 0, 0.1) !important;
+        }
+        html.tema-dia .logo-text,
+        html[data-tema="dia"] .logo-text {
+            color: var(--text-primary) !important;
+        }
+        html.tema-dia .main-nav,
+        html[data-tema="dia"] .main-nav {
+            background: rgba(255, 255, 255, 0.7) !important;
+            border-color: rgba(0, 0, 0, 0.1) !important;
+        }
+        html.tema-dia .main-nav .nav-link,
+        html[data-tema="dia"] .main-nav .nav-link {
+            color: #718096 !important;
+        }
+        html.tema-dia .main-nav .nav-link.active,
+        html[data-tema="dia"] .main-nav .nav-link.active {
+            background: rgba(212, 175, 55, 0.15) !important;
+            color: var(--gold) !important;
+        }
+        html.tema-dia .live-header,
+        html.tema-dia .live-chat-container,
+        html.tema-dia .stream-card,
+        html.tema-dia .marketing-ad-container,
+        html[data-tema="dia"] .live-header,
+        html[data-tema="dia"] .live-chat-container,
+        html[data-tema="dia"] .stream-card,
+        html[data-tema="dia"] .marketing-ad-container {
+            background: rgba(255, 255, 255, 0.9) !important;
+            border-color: rgba(0, 0, 0, 0.1) !important;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08) !important;
+        }
+        html.tema-dia .live-header h1,
+        html[data-tema="dia"] .live-header h1 {
+            color: var(--gold) !important;
+        }
+        html.tema-dia .live-chat-container .chat-header h3,
+        html[data-tema="dia"] .live-chat-container .chat-header h3 {
+            color: var(--gold) !important;
+        }
+        html.tema-dia .live-chat-container .chat-messages .chat-msg .msg .name,
+        html[data-tema="dia"] .live-chat-container .chat-messages .chat-msg .msg .name {
+            color: var(--gold) !important;
+        }
+        html.tema-dia .live-chat-container .chat-messages .chat-msg .msg .text,
+        html[data-tema="dia"] .live-chat-container .chat-messages .chat-msg .msg .text {
+            color: var(--text-secondary) !important;
+        }
+        html.tema-dia .live-chat-container .chat-input input,
+        html[data-tema="dia"] .live-chat-container .chat-input input {
+            background: rgba(0, 0, 0, 0.03) !important;
+            color: var(--text-primary) !important;
+            border-color: rgba(0, 0, 0, 0.15) !important;
+        }
+        html.tema-dia .stream-card .stream-name,
+        html[data-tema="dia"] .stream-card .stream-name {
+            color: var(--text-primary) !important;
+        }
+        html.tema-dia .stream-card .stream-host,
+        html[data-tema="dia"] .stream-card .stream-host {
+            color: #718096 !important;
+        }
+        html.tema-dia .streams-section-title,
+        html[data-tema="dia"] .streams-section-title {
+            color: var(--gold) !important;
+        }
+        html.tema-dia .empty-state,
+        html[data-tema="dia"] .empty-state {
+            color: #718096 !important;
+        }
+        html.tema-dia .footer,
+        html[data-tema="dia"] .footer {
+            color: #718096 !important;
+            border-top-color: rgba(0, 0, 0, 0.1) !important;
+        }
+        html.tema-dia .footer-links a,
+        html[data-tema="dia"] .footer-links a {
+            color: #718096 !important;
+        }
+        html.tema-dia .footer-links a:hover,
+        html[data-tema="dia"] .footer-links a:hover {
+            color: var(--gold) !important;
+        }
+        html.tema-dia .marketing-ad-title,
+        html[data-tema="dia"] .marketing-ad-title {
+            color: var(--text-primary) !important;
+        }
+        html.tema-dia .marketing-ad-desc,
+        html[data-tema="dia"] .marketing-ad-desc {
+            color: var(--text-secondary) !important;
+        }
+        html.tema-dia .donaciones-rapidas .btn-donacion,
+        html[data-tema="dia"] .donaciones-rapidas .btn-donacion {
+            background: rgba(0, 0, 0, 0.03) !important;
+            border-color: rgba(0, 0, 0, 0.1) !important;
+            color: var(--text-primary) !important;
+        }
+        html.tema-dia .game-modal,
+        html[data-tema="dia"] .game-modal {
+            background: linear-gradient(160deg, rgba(255,255,255,.98), rgba(245,247,250,.98)) !important;
+            border-color: var(--gold) !important;
+        }
+        html.tema-dia .game-modal h2,
+        html[data-tema="dia"] .game-modal h2 {
+            color: var(--text-primary) !important;
+        }
+        html.tema-dia .game-option,
+        html[data-tema="dia"] .game-option {
+            background: rgba(0, 0, 0, 0.03) !important;
+            color: var(--text-primary) !important;
+        }
+        html.tema-dia .otro-juego-row input,
+        html[data-tema="dia"] .otro-juego-row input {
+            background: rgba(0, 0, 0, 0.03) !important;
+            color: var(--text-primary) !important;
+            border-color: rgba(0, 0, 0, 0.15) !important;
+        }
+
         @media (max-width: 768px) {
             .live-video-container { height: 55vh; min-height: 350px; }
             .live-header { flex-direction: column; text-align: center; }
@@ -299,7 +449,7 @@
             </div>
             <div class="marketing-ad-container" id="marketingAdContainer">
                 <div class="marketing-ad-header">
-                    <span class="marketing-ad-label">Patrocinado</span>
+                    <span class="marketing-ad-label" data-clave="live_patrocinado">Patrocinado</span>
                     <button class="marketing-ad-close" onclick="cerrarAnuncio()" aria-label="Cerrar anuncio">&times;</button>
                 </div>
                 <div class="marketing-ad-body">
@@ -307,16 +457,16 @@
                     <div class="marketing-ad-content">
                         <div class="marketing-ad-title" id="marketingAdTitle">Cargando anuncio...</div>
                         <div class="marketing-ad-desc" id="marketingAdDesc"></div>
-                        <button class="marketing-ad-cta" id="marketingAdCta" onclick="registrarClicAnuncio()">Ver más</button>
+                        <button class="marketing-ad-cta" id="marketingAdCta" onclick="registrarClicAnuncio()" data-clave="live_ver_mas">Ver más</button>
                     </div>
                 </div>
             </div>
             <div class="donaciones-rapidas">
-                <button class="btn-donacion" onclick="enviarDonacion(5)"><span class="monto">$5</span><span class="label">🥈 Plata</span></button>
-                <button class="btn-donacion" onclick="enviarDonacion(10)"><span class="monto">$10</span><span class="label">🥉 Bronce</span></button>
-                <button class="btn-donacion" onclick="enviarDonacion(20)"><span class="monto">$20</span><span class="label">🥇 Oro</span></button>
-                <button class="btn-donacion cohete" onclick="enviarDonacion(50)"><span class="monto">$50</span><span class="label">🚀 Cohete</span></button>
-                <button class="btn-donacion esmeralda" onclick="enviarDonacion(100)"><span class="monto">$100</span><span class="label">💚 Esmeralda</span></button>
+                <button class="btn-donacion" onclick="enviarDonacion(5)"><span class="monto">$5</span><span class="label" data-clave="live_plata">🥈 Plata</span></button>
+                <button class="btn-donacion" onclick="enviarDonacion(10)"><span class="monto">$10</span><span class="label" data-clave="live_bronce">🥉 Bronce</span></button>
+                <button class="btn-donacion" onclick="enviarDonacion(20)"><span class="monto">$20</span><span class="label" data-clave="live_oro">🥇 Oro</span></button>
+                <button class="btn-donacion cohete" onclick="enviarDonacion(50)"><span class="monto">$50</span><span class="label" data-clave="live_cohete">🚀 Cohete</span></button>
+                <button class="btn-donacion esmeralda" onclick="enviarDonacion(100)"><span class="monto">$100</span><span class="label" data-clave="live_esmeralda">💚 Esmeralda</span></button>
             </div>
             <div class="live-chat-container">
                 <div class="chat-header">
@@ -351,21 +501,26 @@
             </div>
         </div>
         <footer class="footer">
-            <span><span class="brand">◈ Sariel's</span> · Sabor al Paladar · WEB3</span>
+            <span><span class="brand">◈ Sariel's</span> · <span data-clave="live_footer">Sabor al Paladar · WEB3</span></span>
             <div class="footer-links">
-                <a href="/terminos" data-clave="live_footer_terminos">◈ Términos</a>
-                <a href="/privacidad" data-clave="live_footer_privacidad">◈ Privacidad</a>
-                <a href="/cookies" data-clave="live_footer_cookies">◈ Cookies</a>
+                <a href="/terminos" data-clave="footer_terminos">◈ Términos</a>
+                <a href="/privacidad" data-clave="footer_privacidad">◈ Privacidad</a>
+                <a href="/cookies" data-clave="footer_cookies">◈ Cookies</a>
                 <a href="/live-terminos" data-clave="live_footer_live">◉ Live Términos</a>
                 <span style="opacity:0.3;">⚡ Polygon</span>
             </div>
         </footer>
     </div>
     <div class="toast" id="toast"></div>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="/features/shared/js/idiomas.js"></script>
+
     <script>
 // ✅ FIX CRÍTICO: Renombrado a supabaseClient para evitar colisión con window.supabase y app.js
 const supabaseClient = window.supabase.createClient('https://zultnlogdoajehbswlih.supabase.co','sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu');
+window.supabaseClient = supabaseClient;
+
 const LIVEKIT_CONFIG = { url: 'wss://csariels-domo-57ujk04t.livekit.cloud' };
 const DONACIONES = {
     5: { nombre: 'Cubo Plata', emoji: '🥈', color: '#C0C0C0', duracion: 3000, efecto: 'cubo_plata' },
@@ -391,8 +546,6 @@ function showToast(msg, type = '', duration = 3500) {
 }
 function escapeHTML(texto) { if (!texto) return ''; const div = document.createElement('div'); div.textContent = texto; return div.innerHTML; }
 
-// ✅ FIX NUEVO: traduce los errores típicos de getUserMedia/LiveKit a un mensaje
-// entendible, en vez de mostrar "NotAllowedError" pelón al streamer.
 function mensajeErrorCamara(e) {
     const name = e?.name || '';
     if (name === 'NotAllowedError' || name === 'PermissionDeniedError') return 'Permiso de cámara/micrófono denegado. Revisa los permisos del sitio en tu navegador (icono de candado en la barra de direcciones) y actívalos.';
@@ -464,7 +617,7 @@ function iniciarRefrescoAnuncios() { if (adRefreshInterval) clearInterval(adRefr
 function detenerRefrescoAnuncios() { if (adRefreshInterval) { clearInterval(adRefreshInterval); adRefreshInterval = null; } if (adVistaTimer) { clearTimeout(adVistaTimer); adVistaTimer = null; } }
 
 // ================================================================
-// 🎥 INICIAR LIVE PROFESIONAL (grupo_id IS NULL + room_name automático)
+// 🎥 INICIAR LIVE PROFESIONAL
 // ================================================================
 async function iniciarTransmisionGeneral() {
     try {
@@ -508,14 +661,6 @@ async function iniciarTransmisionGeneral() {
         document.getElementById('liveTitle').textContent = titulo;
         console.log('🎬 [6] RoomName generado:', transmision.room_name);
 
-        // ✅ FIX QUIRÚRGICO (1/2): este bloque ya NO se traga el error.
-        // Antes: si LiveKit/cámara fallaban, se atrapaba el error aquí, se mostraba
-        // un toast de advertencia y el código SEGUÍA como si la transmisión hubiera
-        // arrancado bien (isLive = true + toast verde "¡Transmisión iniciada!"),
-        // aunque nunca hubiera cámara ni conexión real. Ahora, si algo de esto
-        // falla, se relanza el error para que el catch exterior limpie todo de
-        // verdad y muestre el motivo real (permiso de cámara denegado, cámara
-        // ocupada, etc.) usando mensajeErrorCamara().
         try {
             showToast('🔗 Conectando a LiveKit...', '', 2000);
             console.log('🎬 [7] Cargando LiveKit v2...');
@@ -546,7 +691,7 @@ async function iniciarTransmisionGeneral() {
             liveKitRoom.on('participantDisconnected', () => { espectadores = Math.max(0, espectadores - 1); document.getElementById('viewersCount').textContent = `● ${espectadores}`; });
         } catch (e) {
             console.error('❌ Error LiveKit/Cámara:', e);
-            throw new Error(mensajeErrorCamara(e)); // ← ya no se traga: sube al catch exterior
+            throw new Error(mensajeErrorCamara(e));
         }
 
         isLive = true;
@@ -561,11 +706,6 @@ async function iniciarTransmisionGeneral() {
         console.error('❌ Error:', error);
         showToast('❌ Error: ' + error.message, 'error', 6000);
         if (liveKitRoom) { try { await liveKitRoom.disconnect(); } catch (e) {} liveKitRoom = null; }
-        // ✅ FIX QUIRÚRGICO (2/2): si la transmisión ya se había creado en Supabase
-        // (currentStreamId ya asignado) antes de que fallara LiveKit/cámara, hay
-        // que cerrarla también ahí. Si no, queda "en_vivo" fantasma en la base y
-        // el siguiente intento choca con "Ya tienes una transmisión activa" sin
-        // que exista ninguna transmisión real funcionando.
         if (currentStreamId) {
             try { await supabaseClient.rpc('finalizar_transmision', { p_transmision_id: currentStreamId }); }
             catch (cleanupErr) { console.error('No se pudo limpiar la transmisión fallida en Supabase:', cleanupErr); }
@@ -898,9 +1038,6 @@ async function iniciarTransmisionJuego(juego) {
         if (gameScreenStream) { gameScreenStream.getTracks().forEach(t => t.stop()); gameScreenStream = null; }
         gameScreenTrack = null;
         if (liveKitRoom) { try { await liveKitRoom.disconnect(); } catch (_) {} liveKitRoom = null; }
-        // ✅ FIX QUIRÚRGICO: mismo problema que en iniciarTransmisionGeneral — si el
-        // registro de la transmisión ya se creó en Supabase antes del error, hay
-        // que cerrarlo para no dejar filas "en_vivo" fantasma.
         if (currentStreamId) {
             try { await supabaseClient.rpc('finalizar_transmision', { p_transmision_id: currentStreamId }); }
             catch (cleanupErr) { console.error('No se pudo limpiar la transmisión de juego fallida:', cleanupErr); }
@@ -939,6 +1076,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     setInterval(cargarTransmisionesActivas, 30000);
     const ci = document.getElementById('chatInput');
     if (ci) ci.addEventListener('keydown', e => { if (e.key === 'Enter') enviarMensaje(); });
+
+    // ✅ Inicializar idiomas
+    setTimeout(async () => {
+        try {
+            if (typeof window.inicializarIdiomas === 'function') {
+                await window.inicializarIdiomas();
+                console.log('✅ Idiomas aplicados al live');
+            }
+        } catch (e) {
+            console.warn('⚠️ Error aplicando idiomas:', e);
+        }
+    }, 500);
+
     console.log('◈ Live PROFESIONAL listo');
 });
 
