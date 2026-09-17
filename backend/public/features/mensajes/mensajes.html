@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#05080f">
 <title>◈ Mensajes · Sariel's</title>
+
+<!-- ✅ APARIENCIA GLOBAL v2.0 - Se carga PRIMERO -->
+<script src="/features/shared/js/apariencia-global.js"></script>
+
 <style>
 :root{--gold:#d4af37;--gold2:#e8c84a;--green:#0f2d1a;--green2:#1a4a2a;--space:#05080f;--text:#f0f4f8;--muted:#8aa8b8;--border:rgba(212,175,55,.16);--success:#00d68f;--danger:#ff3366;--glass:rgba(15,45,26,.55);--r:16px;--xl:24px}
 *{box-sizing:border-box}
@@ -184,6 +188,130 @@ button,input{font:inherit}
 .hidden{display:none!important}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes scaleIn{from{transform:scale(.9);opacity:0}to{transform:scale(1);opacity:1}}
+
+/* ============================================================ */
+/* TEMA DÍA - COMPLETO para mensajes                            */
+/* ============================================================ */
+html.tema-dia,
+html[data-tema="dia"] {
+    --space: #f5f7fa;
+    --text: #1a2332;
+    --muted: #718096;
+    --border: rgba(0, 0, 0, 0.1);
+    --glass: rgba(255, 255, 255, 0.9);
+}
+html.tema-dia body,
+html[data-tema="dia"] body {
+    background: #f5f7fa !important;
+    background-image:
+        radial-gradient(ellipse at 15% 30%, rgba(212, 175, 55, 0.05), transparent 55%),
+        radial-gradient(ellipse at 85% 70%, rgba(42, 106, 58, 0.05), transparent 55%) !important;
+    color: var(--text) !important;
+}
+html.tema-dia .header,
+html[data-tema="dia"] .header {
+    background: rgba(255, 255, 255, 0.95) !important;
+    border-bottom-color: rgba(0, 0, 0, 0.1) !important;
+}
+html.tema-dia .nav,
+html[data-tema="dia"] .nav {
+    background: rgba(255, 255, 255, 0.7) !important;
+    border-color: rgba(0, 0, 0, 0.1) !important;
+}
+html.tema-dia .nav a,
+html[data-tema="dia"] .nav a {
+    color: #718096 !important;
+}
+html.tema-dia .nav a.active,
+html[data-tema="dia"] .nav a.active {
+    background: rgba(212, 175, 55, 0.15) !important;
+    color: var(--gold) !important;
+}
+html.tema-dia .panel,
+html[data-tema="dia"] .panel {
+    background: rgba(255, 255, 255, 0.9) !important;
+    border-color: rgba(0, 0, 0, 0.1) !important;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08) !important;
+}
+html.tema-dia .sidebar,
+html[data-tema="dia"] .sidebar {
+    background: rgba(0, 0, 0, 0.02) !important;
+    border-right-color: rgba(0, 0, 0, 0.1) !important;
+}
+html.tema-dia .searchbox input,
+html.tema-dia .composer input,
+html.tema-dia .search,
+html[data-tema="dia"] .searchbox input,
+html[data-tema="dia"] .composer input,
+html[data-tema="dia"] .search {
+    background: rgba(0, 0, 0, 0.03) !important;
+    color: var(--text) !important;
+    border-color: rgba(0, 0, 0, 0.15) !important;
+}
+html.tema-dia .conv,
+html[data-tema="dia"] .conv {
+    border-bottom-color: rgba(0, 0, 0, 0.05) !important;
+}
+html.tema-dia .conv:hover,
+html[data-tema="dia"] .conv:hover {
+    background: rgba(212, 175, 55, 0.08) !important;
+}
+html.tema-dia .convname,
+html[data-tema="dia"] .convname {
+    color: var(--text) !important;
+}
+html.tema-dia .chathead,
+html[data-tema="dia"] .chathead {
+    background: rgba(0, 0, 0, 0.02) !important;
+    border-bottom-color: rgba(0, 0, 0, 0.1) !important;
+}
+html.tema-dia .chatname,
+html[data-tema="dia"] .chatname {
+    color: var(--text) !important;
+}
+html.tema-dia .received .bubble,
+html[data-tema="dia"] .received .bubble {
+    background: rgba(0, 0, 0, 0.05) !important;
+    border-color: rgba(0, 0, 0, 0.1) !important;
+    color: var(--text) !important;
+}
+html.tema-dia .composer,
+html[data-tema="dia"] .composer {
+    background: rgba(0, 0, 0, 0.02) !important;
+    border-top-color: rgba(0, 0, 0, 0.1) !important;
+}
+html.tema-dia .modalbox,
+html[data-tema="dia"] .modalbox {
+    background: #fff !important;
+    color: var(--text) !important;
+}
+html.tema-dia .modalbox h2,
+html[data-tema="dia"] .modalbox h2 {
+    color: var(--gold) !important;
+}
+html.tema-dia .result,
+html[data-tema="dia"] .result {
+    border-bottom-color: rgba(0, 0, 0, 0.08) !important;
+    color: var(--text) !important;
+}
+html.tema-dia .result:hover,
+html[data-tema="dia"] .result:hover {
+    background: rgba(212, 175, 55, 0.08) !important;
+}
+html.tema-dia .estados-bar,
+html[data-tema="dia"] .estados-bar {
+    background: rgba(0, 0, 0, 0.02) !important;
+    border-color: rgba(0, 0, 0, 0.08) !important;
+}
+html.tema-dia .empty p,
+html[data-tema="dia"] .empty p {
+    color: var(--text) !important;
+}
+html.tema-dia .footer,
+html[data-tema="dia"] .footer {
+    color: #718096 !important;
+}
+
 @media(max-width:760px){
     .panel{grid-template-columns:1fr}
     .panel.chat-open .sidebar{display:none}
@@ -381,6 +509,9 @@ button,input{font:inherit}
 </div>
 <div class="toast" id="toast"></div>
 
+<!-- ✅ IDIOMAS -->
+<script src="/features/shared/js/idiomas.js"></script>
+
 <script>
 'use strict';
 const SUPABASE_URL='https://zultnlogdoajehbswlih.supabase.co';
@@ -388,6 +519,11 @@ const SUPABASE_ANON_KEY='sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
 const BOT_ID='bot-marquinhos';
 const BOT_UUID='0a000000-0000-4000-8000-000000000001';
 const ESTADOS_BUCKET='sariels-estados';
+
+// ✅ Exponer supabaseClient globalmente
+if (typeof window.supabase !== 'undefined' && !window.supabaseClient) {
+    window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+}
 
 let db=null,user=null,current=null,msgChannel=null,callChannel=null,incomingId=null;
 let recorder=null,audioChunks=[],recordingMode=null,recordingStartedAt=0;
@@ -977,7 +1113,6 @@ async function loadConversations(){
             if(preview) preview.textContent = lastBot.tipo==='texto' ? (lastBot.contenido||'').slice(0, 60) : ('📎 '+(lastBot.contenido||lastBot.tipo));
         }
 
-        // 🔔 Contar mensajes NO LEÍDOS del bot
         const { count: noLeidos } = await db.from('mensajes_chat')
             .select('id', { count: 'exact', head: true })
             .eq('remitente_id', BOT_UUID)
@@ -1060,13 +1195,11 @@ async function openConversation(id){
     actualizarFlecha();
 
     if(esBot){
-        // 🔔 Marcar todos los mensajes del bot como leídos
         await db.from('mensajes_chat')
             .update({ leido: true })
             .eq('remitente_id', BOT_UUID)
             .eq('destinatario_id', user.id)
             .eq('leido', false);
-        // Refrescar el badge
         const badge = $('botBadge');
         if(badge){ badge.textContent = 'IA'; badge.style.color = 'var(--success)'; }
         await abrirConversacionBot();
@@ -1645,6 +1778,7 @@ async function init(){
         auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true},
         realtime:{params:{eventsPerSecond:10}}
     });
+    window.supabaseClient = db;
 
     try {
         const s = await session();
@@ -1763,6 +1897,18 @@ async function init(){
     }).subscribe();
 
     setInterval(() => { limpiarVistosAntiguos(); cargarEstados(); }, 5 * 60 * 1000);
+
+    // ✅ Inicializar idiomas
+    setTimeout(async function() {
+        try {
+            if (typeof window.inicializarIdiomas === 'function') {
+                await window.inicializarIdiomas();
+                console.log('✅ Idiomas aplicados a mensajes');
+            }
+        } catch (e) {
+            console.warn('⚠️ Error aplicando idiomas:', e);
+        }
+    }, 500);
 }
 
 function getSupportedAudioMime(){
