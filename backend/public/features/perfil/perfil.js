@@ -4,6 +4,7 @@
 /* ================================================================
    PERFIL.JS - SARIEL'S ECOSYSTEM
    VERSIÓN FUNCIONAL - INTEGRACIÓN COMPLETA CON SERVER.JS + SUPABASE + TELNYX
+   I18N integrado con sistema global (idiomas.js) vía data-clave / data-placeholder
    ================================================================ */
 
 // ================================================================
@@ -16,6 +17,48 @@ const supabaseClient = window.supabase.createClient(
 
 window.supabaseClient = supabaseClient;
 const supabase = supabaseClient;
+
+// ================================================================
+// ✦ I18N HELPERS (reutiliza sistema global de idiomas.js)
+// ================================================================
+function tPerfil(clave, fallback) {
+    try {
+        if (window.traducciones && typeof window.traducciones === 'object'
+            && typeof window.traducciones[clave] === 'string'
+            && window.traducciones[clave].trim() !== '') {
+            return window.traducciones[clave];
+        }
+        if (typeof window.t === 'function') {
+            const v = window.t(clave);
+            if (v && v !== clave) return v;
+        }
+        if (typeof window.traducir === 'function') {
+            const v = window.traducir(clave);
+            if (v && v !== clave) return v;
+        }
+    } catch (e) { /* silencioso */ }
+    return fallback !== undefined ? fallback : clave;
+}
+
+async function aplicarI18NPerfil(raiz) {
+    try {
+        if (typeof window.aplicarTraducciones === 'function') {
+            await window.aplicarTraducciones(raiz || document.body);
+            return;
+        }
+        if (typeof window.inicializarIdiomas === 'function') {
+            await window.inicializarIdiomas();
+        }
+    } catch (e) {
+        console.warn('[Perfil] I18N re-aplicar:', e);
+    }
+}
+
+function traducirPlanMeta(meta) {
+    if (!meta || typeof meta !== 'string') return meta;
+    const diasT = tPerfil('perfil_dias', 'días');
+    return meta.replace(/\bd[ií]as?\b/gi, diasT);
+}
 
 // ================================================================
 // ✦ PRO: CONSTANTES DE MEMBRESÍA
@@ -138,7 +181,8 @@ function aplicarEstadoProUI(usuario) {
     const esPro = planActual.toLowerCase().includes('pro');
 
     if (planActualEl) planActualEl.textContent = planActual;
-    if (planMetaEl) planMetaEl.textContent = planMeta;
+    // I18N: traducir solo la unidad "días" sin alterar el dato persistido
+    if (planMetaEl) planMetaEl.textContent = traducirPlanMeta(planMeta);
 
     if (esPro) {
         if (proUpgradeCard) proUpgradeCard.style.display = 'none';
@@ -148,14 +192,15 @@ function aplicarEstadoProUI(usuario) {
             const dias = usuario.dias_restantes || 0;
             proExpiraEl.textContent = fecha.toLocaleDateString('es-MX', {
                 day: 'numeric', month: 'long', year: 'numeric'
-            }) + (dias > 0 ? ` (${dias} días)` : ' (expira hoy)');
+            }) + (dias > 0 ? ` (${dias} ${tPerfil('perfil_dias', 'días')})` : '');
         }
-        if (btnContratarPro) btnContratarPro.textContent = '✅ Ya eres Pro';
+        if (btnContratarPro) btnContratarPro.textContent = '✅ ' + tPerfil('perfil_pro_ya_eres', 'Ya eres Pro');
     } else {
         if (proUpgradeCard) proUpgradeCard.style.display = 'block';
         if (proActiveInfo) proActiveInfo.style.display = 'none';
-        if (btnContratarPro) btnContratarPro.textContent = `🚀 Contratar Pro por $${PRO_PRECIO_MXN} MXN`;
+        if (btnContratarPro) btnContratarPro.textContent = `🚀 ${tPerfil('perfil_pro_contratar', 'Contratar Pro por $60 MXN')}`;
     }
+    aplicarI18NPerfil();
 }
 
 // ================================================================
@@ -165,7 +210,7 @@ async function contratarPro() {
     try {
         const session = await getSession();
         if (!session) {
-            showToast('⚠️ Inicia sesión para contratar Pro', 'error');
+            showToast('⚠️ ' + tPerfil('perfil_inicia_sesion', 'Inicia sesión') + ' Pro', 'error');
             return;
         }
 
@@ -177,15 +222,16 @@ async function contratarPro() {
 
         if (usuario && usuario.plan && usuario.plan.toLowerCase().includes('pro')) {
             const expira = usuario.plan_expira_at ? new Date(usuario.plan_expira_at).toLocaleDateString('es-MX') : '';
-            showToast(`✅ Ya eres Pro. Expira: ${expira}`, 'success', 4000);
+            showToast('✅ ' + tPerfil('perfil_pro_ya_eres', 'Ya eres Pro') + '. ' + expira, 'success', 4000);
             return;
         }
 
-        if (!confirm(`¿Contratar Sariel's Pro por $${PRO_PRECIO_MXN} MXN / ${PRO_DURACION_DIAS} días?\n\nIncluye: ${PRO_GB} GB · Conservación ampliada`)) {
+        const confirmMsg = tPerfil('perfil_confirmar_pro', `¿Contratar Sariel's Pro por $${PRO_PRECIO_MXN} MXN / ${PRO_DURACION_DIAS} días?`);
+        if (!confirm(confirmMsg)) {
             return;
         }
 
-        showToast('⏳ Iniciando contratación...', '', 4000);
+        showToast('⏳ ' + tPerfil('perfil_pro_activando', 'Iniciando contratación...'), '', 4000);
 
         const { data: pago, error: pagoError } = await supabase
             .from('pagos_pro')
@@ -225,7 +271,7 @@ async function contratarPro() {
             if (result.success && result.data) {
                 if (result.data.payment_url) {
                     window.open(result.data.payment_url, '_blank');
-                    showToast('💳 Completa el pago en la ventana que se abrió', 'success', 5000);
+                    showToast('💳 ' + tPerfil('perfil_pro_activando', 'Completa el pago en la ventana que se abrió'), 'success', 5000);
                     iniciarPollingPagoPro(pago?.id);
                     return;
                 }
@@ -252,7 +298,7 @@ async function contratarPro() {
 
 async function activarProDirecto(usuarioId, pagoProId) {
     try {
-        showToast('⏳ Activando Sariel\'s Pro...', '', 4000);
+        showToast('⏳ ' + tPerfil('perfil_pro_activando', 'Activando Sariel\'s Pro...'), '', 4000);
 
         const { data, error } = await supabase.rpc('activar_pro', {
             p_usuario_id: usuarioId,
@@ -272,7 +318,7 @@ async function activarProDirecto(usuarioId, pagoProId) {
                 .eq('id', pagoProId);
         }
 
-        showToast('🎉 ¡Sariel\'s Pro activado!', 'success', 5000);
+        showToast('🎉 ' + tPerfil('perfil_pro_activado', "¡Sariel's Pro activado!"), 'success', 5000);
         crearConfeti();
 
         await cargarEstadoPro();
@@ -305,7 +351,7 @@ function iniciarPollingPagoPro(pagoProId) {
             if (pago && pago.estado === 'completado') {
                 clearInterval(pollingPagoProInterval);
                 pollingPagoProInterval = null;
-                showToast('🎉 ¡Pago confirmado! Pro activado', 'success', 5000);
+                showToast('🎉 ' + tPerfil('perfil_pro_activado', "¡Pago confirmado! Pro activado"), 'success', 5000);
                 crearConfeti();
                 await cargarEstadoPro();
                 await cargarPerfil(true);
@@ -318,7 +364,7 @@ function iniciarPollingPagoPro(pagoProId) {
         if (intentos >= maxIntentos) {
             clearInterval(pollingPagoProInterval);
             pollingPagoProInterval = null;
-            showToast('⏳ El pago aún no se confirma. Revísalo más tarde.', 'warning', 5000);
+            showToast('⏳ ' + tPerfil('perfil_procesando_pago', 'El pago aún no se confirma. Revísalo más tarde.'), 'warning', 5000);
         }
     }, 5000);
 }
@@ -400,9 +446,9 @@ async function cargarPerfil(forzarActualizacion = false) {
             await cargarEstadoPro();
         } else {
             const defaultData = {
-                nombre: session.user.user_metadata?.nombre || 'Explorador',
+                nombre: session.user.user_metadata?.nombre || tPerfil('perfil_nombre_usuario', 'Explorador'),
                 handle: session.user.email?.split('@')[0] || 'explorador',
-                bio: 'Explorando el ecosistema Sariel\'s · WEB3 · Comunidad',
+                bio: tPerfil('perfil_biografia_default', "Explorando el ecosistema Sariel's · WEB3 · Comunidad"),
                 avatar_url: null,
                 tokens: 0,
                 progreso_canje: 0,
@@ -422,6 +468,8 @@ async function cargarPerfil(forzarActualizacion = false) {
             actualizarUI(defaultData);
             await cargarEstadoPro();
         }
+        // I18N: aplicar traducciones después de cargar datos
+        await aplicarI18NPerfil();
     } catch (error) {
         console.error('Error cargando perfil:', error);
         showToast('❌ Error al cargar perfil', 'error');
@@ -471,7 +519,11 @@ function actualizarUIEstado(online) {
     }
     
     if (estadoTexto) {
-        estadoTexto.textContent = online ? 'Activo ahora' : 'Inactivo';
+        // I18N: usar claves. Se quita data-clave previo para que mostrar dinámico no se sobreescriba.
+        estadoTexto.removeAttribute('data-clave');
+        estadoTexto.textContent = online
+            ? tPerfil('perfil_activo_ahora', 'Activo ahora')
+            : tPerfil('perfil_inactivo', 'Inactivo');
         estadoTexto.style.color = online ? 'var(--success)' : 'var(--text-muted)';
     }
 }
@@ -497,7 +549,7 @@ function iniciarDetectorInactividad() {
         
         if (tiempoInactividad >= maxInactividad && perfilCache && perfilCache.online) {
             await actualizarEstadoEnLinea(false);
-            showToast('⭕ Marcado como inactivo por inactividad', 'warning');
+            showToast('⭕ ' + tPerfil('perfil_inactivo', 'Inactivo'), 'warning');
         }
     }, 30000);
 }
@@ -506,16 +558,16 @@ async function cambiarEstado(online) {
     try {
         const session = await getSession();
         if (!session) {
-            showToast('⚠️ Inicia sesión', 'error');
+            showToast('⚠️ ' + tPerfil('perfil_inicia_sesion', 'Inicia sesión'), 'error');
             return;
         }
 
         await actualizarEstadoEnLinea(online);
         
         if (online) {
-            showToast('🟢 Te has marcado como activo', 'success');
+            showToast('🟢 ' + tPerfil('perfil_activo_ahora', 'Activo ahora'), 'success');
         } else {
-            showToast('⭕ Te has marcado como inactivo', 'warning');
+            showToast('⭕ ' + tPerfil('perfil_inactivo', 'Inactivo'), 'warning');
         }
         
         await notificarCambioEstado(online);
@@ -631,13 +683,13 @@ function actualizarUIAmigos(todosAmigos = [], enLinea = []) {
     if (!container) return;
 
     if (!todosAmigos || todosAmigos.length === 0) {
-        container.innerHTML = `
-            <div style="text-align:center; padding:20px; color:var(--text-muted); font-size:0.8rem;">
-                <span style="font-size:2rem;">👥</span>
-                <p style="margin-top:8px;">Aún no tienes amigos agregados</p>
-                <p style="font-size:0.6rem;">Explora el muro para conectar con otros</p>
-            </div>
-        `;
+        container.innerHTML =
+            '<div style="text-align:center; padding:20px; color:var(--text-muted); font-size:0.8rem;">'
+                + '<span style="font-size:2rem;">👥</span>'
+                + '<p style="margin-top:8px;" data-clave="perfil_sin_amigos">Aún no tienes amigos agregados</p>'
+                + '<p style="font-size:0.6rem;" data-clave="perfil_explora_muro_conectar">Explora el muro para conectar con otros</p>'
+            + '</div>';
+        aplicarI18NPerfil(container);
         return;
     }
 
@@ -647,25 +699,25 @@ function actualizarUIAmigos(todosAmigos = [], enLinea = []) {
         ...todosAmigos.filter(a => !enLineaIds.includes(a.id))
     ];
 
+    const activoAhoraT = tPerfil('perfil_activo_ahora', 'Activo ahora');
+    const desconectadoT = tPerfil('perfil_desconectado', 'Desconectado');
+    const enLineaT = tPerfil('perfil_en_linea', 'EN LÍNEA');
+
     container.innerHTML = ordenados.map(amigo => {
         const estaEnLinea = enLineaIds.includes(amigo.id);
-        return `
-            <div class="amigo-item ${estaEnLinea ? 'online' : ''}" onclick="window.location.href='/perfil/${amigo.handle}'">
-                <div class="avatar-mini">
-                    ${amigo.avatar_url ? `<img src="${amigo.avatar_url}">` : '◈'}
-                </div>
-                <div class="info">
-                    <div class="nombre" style="color:${estaEnLinea ? 'var(--text-primary)' : 'var(--text-muted)'}">
-                        ${amigo.nombre || amigo.handle}
-                    </div>
-                    <div class="estado" style="color:${estaEnLinea ? 'var(--success)' : 'var(--text-muted)'}">
-                        ${estaEnLinea ? '🟢 Activo ahora' : '⭕ Desconectado'}
-                        ${!estaEnLinea && amigo.ultima_conexion ? ` · ${haceTiempo(amigo.ultima_conexion)}` : ''}
-                    </div>
-                </div>
-                ${estaEnLinea ? '<div class="badge-online">EN LÍNEA</div>' : ''}
-            </div>
-        `;
+        const estadoTxt = estaEnLinea ? '🟢 ' + activoAhoraT : '⭕ ' + desconectadoT;
+        return ''
+            + '<div class="amigo-item ' + (estaEnLinea ? 'online' : '') + '" onclick="window.location.href=\'/perfil/' + amigo.handle + '\'">'
+                + '<div class="avatar-mini">' + (amigo.avatar_url ? '<img src="' + amigo.avatar_url + '">' : '◈') + '</div>'
+                + '<div class="info">'
+                    + '<div class="nombre" style="color:' + (estaEnLinea ? 'var(--text-primary)' : 'var(--text-muted)') + '">' + (amigo.nombre || amigo.handle) + '</div>'
+                    + '<div class="estado" style="color:' + (estaEnLinea ? 'var(--success)' : 'var(--text-muted)') + '">'
+                        + estadoTxt
+                        + (!estaEnLinea && amigo.ultima_conexion ? ' · ' + haceTiempo(amigo.ultima_conexion) : '')
+                    + '</div>'
+                + '</div>'
+                + (estaEnLinea ? '<div class="badge-online">' + enLineaT + '</div>' : '')
+            + '</div>';
     }).join('');
 }
 
@@ -686,10 +738,13 @@ async function notificarCambioEstado(online) {
 
         if (error || !contactos || contactos.length === 0) return;
 
+        const nombre = perfilCache?.nombre || 'Un usuario';
+        const estado = online ? '🟢 ' + tPerfil('perfil_activo_ahora', 'activo') : '⭕ ' + tPerfil('perfil_desconectado', 'inactivo');
+
         const notifs = contactos.map(c => ({
             user_id: c.contacto_id,
             tipo: 'estado',
-            mensaje: `${perfilCache?.nombre || 'Un usuario'} está ${online ? '🟢 activo' : '⭕ inactivo'}`,
+            mensaje: `${nombre} ${estado}`,
             emisor_id: session.user.id,
             leida: false,
             fecha: new Date().toISOString()
@@ -705,7 +760,7 @@ async function notificarCambioEstado(online) {
 }
 
 function haceTiempo(fecha) {
-    if (!fecha) return 'hace tiempo';
+    if (!fecha) return '';
     const ahora = new Date();
     const entonces = new Date(fecha);
     const diffMs = ahora - entonces;
@@ -794,7 +849,7 @@ async function cambiarConexion(tipo) {
 
         const session = await getSession();
         if (!session) {
-            showToast('⚠️ Inicia sesión para cambiar conexión', 'error');
+            showToast('⚠️ ' + tPerfil('perfil_inicia_sesion', 'Inicia sesión'), 'error');
             return;
         }
 
@@ -827,9 +882,9 @@ async function cambiarConexion(tipo) {
         actualizarUIConexion(estadoConexion);
         
         if (tipo === 'wifi') {
-            showToast('🛜 Cambiado a WiFi', 'success');
+            showToast('🛜 ' + tPerfil('perfil_conexion_wifi', 'WiFi'), 'success');
         } else {
-            showToast('📶 Cambiado a Datos Móviles', 'success');
+            showToast('📶 ' + tPerfil('perfil_conexion_datos', 'Datos'), 'success');
         }
         
         await cargarPerfil(true);
@@ -878,21 +933,25 @@ function actualizarUIConexion(estado) {
     const wifiBtn = document.getElementById('btnWifi');
     const datosBtn = document.getElementById('btnDatos');
 
+    const wifiT = tPerfil('perfil_conexion_wifi', 'WiFi');
+    const datosT = tPerfil('perfil_conexion_datos', 'Datos');
+
     if (conexionStatus) {
+        conexionStatus.removeAttribute('data-clave');
         if (!estado.activa) {
             conexionStatus.innerHTML = '⛔ Sin conexión';
             conexionStatus.style.color = 'var(--danger)';
         } else if (estado.tipo === 'wifi') {
-            conexionStatus.innerHTML = '🛜 WiFi';
+            conexionStatus.innerHTML = '🛜 ' + wifiT;
             conexionStatus.style.color = 'var(--success)';
         } else {
-            conexionStatus.innerHTML = '📶 Datos Móviles';
+            conexionStatus.innerHTML = '📶 ' + datosT;
             conexionStatus.style.color = 'var(--cyan)';
         }
     }
 
     if (conexionTipo) {
-        conexionTipo.textContent = estado.tipo === 'wifi' ? '🛜 WiFi' : '📶 Datos Móviles';
+        conexionTipo.textContent = estado.tipo === 'wifi' ? '🛜 ' + wifiT : '📶 ' + datosT;
     }
 
     if (conexionVelocidad) {
@@ -920,7 +979,7 @@ function iniciarEscuchaConexion() {
         estadoConexion.activa = true;
         actualizarUIConexion(estadoConexion);
         guardarEstadoConexion(estadoConexion);
-        showToast('🛜 Conexión restablecida', 'success');
+        showToast('🛜 ' + tPerfil('perfil_conexion', 'Conexión'), 'success');
     });
 
     window.addEventListener('offline', () => {
@@ -998,7 +1057,7 @@ function actualizarUIESIM(data) {
     }
 
     if (esimIccid) {
-        const iccid = data.esim_iccid || 'No asignado';
+        const iccid = data.esim_iccid || tPerfil('perfil_no_asignado', 'No asignado');
         esimIccid.textContent = iccid.length > 10 ? iccid.slice(0, 10) + '...' + iccid.slice(-4) : iccid;
     }
 
@@ -1113,7 +1172,7 @@ async function sincronizarESIM() {
     try {
         const session = await getSession();
         if (!session) {
-            showToast('⚠️ Inicia sesión para sincronizar', 'error');
+            showToast('⚠️ ' + tPerfil('perfil_inicia_sesion', 'Inicia sesión'), 'error');
             return;
         }
 
@@ -1133,7 +1192,7 @@ async function sincronizarESIM() {
             throw new Error(result.error || 'Error al sincronizar');
         }
 
-        showToast('✅ Datos sincronizados correctamente', 'success');
+        showToast('✅ ' + tPerfil('perfil_sincronizar', 'Datos sincronizados correctamente'), 'success');
         await cargarPerfil(true);
 
     } catch (error) {
@@ -1146,7 +1205,7 @@ async function comprarESIM(planId) {
     try {
         const session = await getSession();
         if (!session) {
-            showToast('⚠️ Inicia sesión para comprar eSIM', 'error');
+            showToast('⚠️ ' + tPerfil('perfil_inicia_sesion', 'Inicia sesión'), 'error');
             return;
         }
 
@@ -1197,7 +1256,7 @@ async function activarESIM(iccid) {
     try {
         const session = await getSession();
         if (!session) {
-            showToast('⚠️ Inicia sesión', 'error');
+            showToast('⚠️ ' + tPerfil('perfil_inicia_sesion', 'Inicia sesión'), 'error');
             return;
         }
 
@@ -1237,7 +1296,7 @@ async function desactivarESIM(iccid) {
     try {
         const session = await getSession();
         if (!session) {
-            showToast('⚠️ Inicia sesión', 'error');
+            showToast('⚠️ ' + tPerfil('perfil_inicia_sesion', 'Inicia sesión'), 'error');
             return;
         }
 
@@ -1247,7 +1306,8 @@ async function desactivarESIM(iccid) {
             return;
         }
 
-        if (!confirm('¿Seguro que quieres desactivar tu eSIM?')) return;
+        const confirmMsg = tPerfil('perfil_confirmar_desactivar_esim', '¿Seguro que quieres desactivar tu eSIM?');
+        if (!confirm(confirmMsg)) return;
 
         showToast('⏳ Desactivando eSIM...', '', 5000);
 
@@ -1357,7 +1417,7 @@ function mostrarModalPagoReal(paymentUrl, ordenId, plan) {
         ">
             <h2 style="color: var(--gold); margin-bottom: 10px;">📱 Compra eSIM</h2>
             <p style="color: var(--text-secondary); margin-bottom: 20px;">
-                ${plan.nombre} - ${plan.datos_gb} GB por ${plan.duracion_dias} días
+                ${plan.nombre} - ${plan.datos_gb} GB ${tPerfil('perfil_duracion', 'por')} ${plan.duracion_dias} ${tPerfil('perfil_dias', 'días')}
             </p>
             <p style="color: var(--gold); font-size: 1.2rem; font-weight: bold;">
                 $${plan.precio_usdt} USDT
@@ -1376,7 +1436,7 @@ function mostrarModalPagoReal(paymentUrl, ordenId, plan) {
                 </button>
                 <button onclick="this.parentElement.parentElement.parentElement.remove()"
                         style="background: transparent; border: 1px solid var(--text-muted); color: var(--text-muted); padding: 12px 30px; border-radius: 10px; cursor: pointer;">
-                    Cerrar
+                    ${tPerfil('perfil_cerrar', 'Cerrar')}
                 </button>
             </div>
             <div id="pagoStatus" style="margin-top: 10px; font-size: 0.8rem; color: var(--text-secondary);"></div>
@@ -1415,7 +1475,7 @@ function mostrarModalPagoSimulado(qrData, ordenId, plan) {
         ">
             <h2 style="color: var(--gold); margin-bottom: 10px;">📱 Compra eSIM</h2>
             <p style="color: var(--text-secondary); margin-bottom: 20px;">
-                ${plan.nombre} - ${plan.datos_gb} GB por ${plan.duracion_dias} días
+                ${plan.nombre} - ${plan.datos_gb} GB ${tPerfil('perfil_duracion', 'por')} ${plan.duracion_dias} ${tPerfil('perfil_dias', 'días')}
             </p>
             <div style="background: white; border-radius: 10px; padding: 15px; margin: 10px 0;">
                 <img src="${qrData}" alt="QR de pago" style="max-width: 200px; width: 100%;">
@@ -1433,7 +1493,7 @@ function mostrarModalPagoSimulado(qrData, ordenId, plan) {
                 </button>
                 <button onclick="this.parentElement.parentElement.parentElement.remove()"
                         style="background: transparent; border: 1px solid var(--text-muted); color: var(--text-muted); padding: 10px 30px; border-radius: 10px; cursor: pointer;">
-                    Cerrar
+                    ${tPerfil('perfil_cerrar', 'Cerrar')}
                 </button>
             </div>
             <div id="pagoStatus" style="margin-top: 10px; font-size: 0.8rem; color: var(--text-secondary);"></div>
@@ -1465,7 +1525,7 @@ function mostrarModalQR(qrData) {
             <p style="color: var(--text-muted); font-size: 0.7rem;">📲 Ve a Ajustes > Datos Móviles > Añadir eSIM</p>
             <button onclick="this.parentElement.parentElement.remove()"
                     style="margin-top: 15px; background: var(--gold); border: none; color: #fff; padding: 10px 30px; border-radius: 10px; cursor: pointer;">
-                Listo
+                ${tPerfil('perfil_cerrar', 'Cerrar')}
             </button>
         </div>
     `;
@@ -1481,7 +1541,7 @@ async function verificarPago(ordenId) {
     try {
         const session = await getSession();
         if (!session) {
-            statusEl.textContent = '❌ Inicia sesión nuevamente';
+            statusEl.textContent = '❌ ' + tPerfil('perfil_inicia_sesion', 'Inicia sesión nuevamente');
             return;
         }
 
@@ -1639,7 +1699,7 @@ async function procesarQR(codigo) {
     try {
         const session = await getSession();
         if (!session) {
-            showToast('⚠️ Inicia sesión para escanear QR', 'error');
+            showToast('⚠️ ' + tPerfil('perfil_inicia_sesion', 'Inicia sesión'), 'error');
             qrScanningLock = false;
             return;
         }
@@ -1741,18 +1801,18 @@ function actualizarUIHistorialQR(historial = []) {
     const contador = document.getElementById('qrHistorialCount');
 
     if (contador) {
-        contador.textContent = `${historial.length} escaneos`;
+        contador.textContent = historial.length + ' ' + tPerfil('perfil_escaneos', 'escaneos');
     }
 
     if (!container) return;
 
     if (!historial || historial.length === 0) {
-        container.innerHTML = `
-            <div class="empty-state" style="padding:10px;">
-                <span class="icon" style="font-size:1.5rem;">◈</span>
-                <p style="font-size:0.7rem;">Sin escaneos recientes</p>
-            </div>
-        `;
+        container.innerHTML =
+            '<div class="empty-state" style="padding:10px;">'
+                + '<span class="icon" style="font-size:1.5rem;">◈</span>'
+                + '<p style="font-size:0.7rem;" data-clave="perfil_sin_escaneos">Sin escaneos recientes</p>'
+            + '</div>';
+        aplicarI18NPerfil(container);
         return;
     }
 
@@ -1783,16 +1843,25 @@ function actualizarUI(data) {
     const walletDisplay = document.getElementById('walletDisplay');
 
     if (nombreEl) {
-        const verificado = data.verificado ? '<span class="verified">✦ VERIFICADO</span>' : '';
-        nombreEl.innerHTML = `${data.nombre || 'Explorador'} ${verificado}`;
+        const verificado = data.verificado ? '<span class="verified" data-clave="perfil_badge_verificado">✦ VERIFICADO</span>' : '';
+        nombreEl.innerHTML = `<span data-clave="perfil_nombre_usuario">${data.nombre || tPerfil('perfil_nombre_usuario', 'Explorador')}</span> ${verificado}`;
     }
     
     if (handleEl) handleEl.textContent = '@' + (data.handle || 'explorador');
-    if (bioEl) bioEl.innerHTML = formatearTexto(data.bio || 'Explorando el ecosistema Sariel\'s · WEB3 · Comunidad');
+    if (bioEl) {
+        const bioDefault = "Explorando el ecosistema Sariel's · WEB3 · Comunidad";
+        const bioT = tPerfil('perfil_biografia_default', bioDefault);
+        if (!data.bio || data.bio === bioDefault) {
+            bioEl.setAttribute('data-clave', 'perfil_biografia_default');
+            bioEl.innerHTML = bioT;
+        } else {
+            bioEl.removeAttribute('data-clave');
+            bioEl.innerHTML = formatearTexto(data.bio);
+        }
+    }
 
     if (avatarEl) {
         if (data.avatar_url) {
-            // ✅ NOTA: El onclick ahora está en el div padre, así que aquí solo renderizamos la imagen
             avatarEl.innerHTML = `
                 <img src="${data.avatar_url}" alt="Avatar" style="animation: fadeIn 0.5s ease-out;" 
                      onerror="this.style.display='none';this.parentElement.innerHTML='◈<span class=\\'edit-badge\\' onclick=\\'event.stopPropagation(); abrirSelectorArchivo()\\' title=\\'Cambiar avatar\\'>✎</span>'"/>
@@ -1809,7 +1878,7 @@ function actualizarUI(data) {
         document.getElementById('btnConectarWallet').style.display = 'none';
         document.getElementById('btnDesconectarWallet').style.display = 'inline-flex';
     } else if (walletDisplay) {
-        walletDisplay.textContent = '⚠️ No conectada';
+        walletDisplay.textContent = '⚠️ ' + tPerfil('perfil_no_asignado', 'No conectada');
         walletDisplay.style.color = 'var(--text-muted)';
         document.getElementById('btnConectarWallet').style.display = 'inline-flex';
         document.getElementById('btnDesconectarWallet').style.display = 'none';
@@ -1861,9 +1930,9 @@ function actualizarUI(data) {
     const editHandle = document.getElementById('editHandle');
     const editBio = document.getElementById('editBio');
 
-    if (editNombre) editNombre.value = data.nombre || 'Explorador';
+    if (editNombre) editNombre.value = data.nombre || tPerfil('perfil_nombre_usuario', 'Explorador');
     if (editHandle) editHandle.value = (data.handle || 'explorador');
-    if (editBio) editBio.value = data.bio || 'Explorando el ecosistema Sariel\'s · WEB3 · Comunidad';
+    if (editBio) editBio.value = data.bio || tPerfil('perfil_biografia_default', "Explorando el ecosistema Sariel's · WEB3 · Comunidad");
 
     const btnCanjear = document.getElementById('canjearNft');
     if (btnCanjear) {
@@ -1906,10 +1975,8 @@ function animarContador(elemento, inicio, fin) {
 // WALLET - CONEXIÓN CON METAMASK
 // ================================================================
 async function conectarWallet() {
-    // 1. Detectar si MetaMask está instalado
     if (typeof window.ethereum === 'undefined') {
         showToast('⚠️ Instala MetaMask para conectar tu wallet', 'error', 5000);
-        // Abrir la página de descarga de MetaMask
         setTimeout(() => {
             window.open('https://metamask.io/es/download', '_blank', 'noopener,noreferrer');
         }, 800);
@@ -1919,11 +1986,10 @@ async function conectarWallet() {
     try {
         const session = await getSession();
         if (!session) {
-            showToast('⚠️ Inicia sesión para vincular wallet', 'error');
+            showToast('⚠️ ' + tPerfil('perfil_inicia_sesion', 'Inicia sesión'), 'error');
             return;
         }
 
-        // 2. Pedir cuentas a MetaMask
         let accounts;
         try {
             accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
@@ -1943,7 +2009,6 @@ async function conectarWallet() {
 
         const cuenta = accounts[0];
 
-        // 3. Verificar/cambiar a la red correcta
         const chainId = await window.ethereum.request({ method: 'eth_chainId' });
         
         if (chainId !== ENV.networkChainId) {
@@ -1953,7 +2018,6 @@ async function conectarWallet() {
                     params: [{ chainId: ENV.networkChainId }]
                 });
             } catch (switchError) {
-                // Si la red no existe, agregarla
                 if (switchError.code === 4902) {
                     try {
                         await window.ethereum.request({
@@ -1979,10 +2043,8 @@ async function conectarWallet() {
             }
         }
 
-        // 4. Vincular wallet en Supabase
         const { error } = await supabase.rpc('vincular_wallet', { p_wallet_address: cuenta });
         if (error) {
-            // Si la RPC no existe, intentar update directo
             console.warn('RPC vincular_wallet falló, intentando update directo:', error.message);
             const { error: updateError } = await supabase
                 .from('usuarios')
@@ -1991,7 +2053,6 @@ async function conectarWallet() {
             if (updateError) throw updateError;
         }
 
-        // 5. Actualizar UI
         const walletDisplay = document.getElementById('walletDisplay');
         const btnConectar = document.getElementById('btnConectarWallet');
         const btnDesconectar = document.getElementById('btnDesconectarWallet');
@@ -2020,11 +2081,10 @@ async function desconectarWallet() {
     try {
         const session = await getSession();
         if (!session) {
-            showToast('⚠️ Inicia sesión', 'error');
+            showToast('⚠️ ' + tPerfil('perfil_inicia_sesion', 'Inicia sesión'), 'error');
             return;
         }
 
-        // Intentar RPC primero
         const { error: rpcError } = await supabase.rpc('desvincular_wallet');
         if (rpcError) {
             console.warn('RPC desvincular_wallet no encontrada, usando update directo:', rpcError.message);
@@ -2040,7 +2100,7 @@ async function desconectarWallet() {
         const btnDesconectar = document.getElementById('btnDesconectarWallet');
 
         if (walletDisplay) {
-            walletDisplay.textContent = '⚠️ No conectada';
+            walletDisplay.textContent = '⚠️ ' + tPerfil('perfil_no_asignado', 'No conectada');
             walletDisplay.style.color = 'var(--text-muted)';
         }
         if (btnConectar) btnConectar.style.display = 'inline-flex';
@@ -2062,7 +2122,7 @@ async function comprarDomo(cantidad = 1) {
     try {
         const session = await getSession();
         if (!session) {
-            showToast('⚠️ Inicia sesión para comprar domos', 'error');
+            showToast('⚠️ ' + tPerfil('perfil_inicia_sesion', 'Inicia sesión'), 'error');
             return;
         }
 
@@ -2101,7 +2161,7 @@ async function comprarDomo(cantidad = 1) {
 async function comprarConCripto() {
     const session = await getSession();
     if (!session) {
-        showToast('⚠️ Inicia sesión para comprar', 'error');
+        showToast('⚠️ ' + tPerfil('perfil_inicia_sesion', 'Inicia sesión'), 'error');
         return;
     }
 
@@ -2178,7 +2238,7 @@ async function verificarPagoCrypto() {
     try {
         const session = await getSession();
         if (!session) {
-            statusEl.textContent = '❌ Inicia sesión nuevamente';
+            statusEl.textContent = '❌ ' + tPerfil('perfil_inicia_sesion', 'Inicia sesión nuevamente');
             return;
         }
 
@@ -2247,7 +2307,7 @@ async function canjearNFT() {
     try {
         const session = await getSession();
         if (!session) {
-            showToast('⚠️ Inicia sesión para canjear tu NFT', 'error');
+            showToast('⚠️ ' + tPerfil('perfil_inicia_sesion', 'Inicia sesión'), 'error');
             return;
         }
 
@@ -2309,9 +2369,9 @@ function mostrarCelebracion() {
 }
 
 function compartirLogro() {
-    const texto = '🎁 ¡Acabo de canjear mi NFT en Sariel\'s! Únete al ecosistema. #Sariels #WEB3 #NFT';
+    const texto = "🎁 ¡Acabo de canjear mi NFT en Sariel's! Únete al ecosistema. #Sariels #WEB3 #NFT";
     if (navigator.share) {
-        navigator.share({ title: 'Mi logro en Sariel\'s', text: texto });
+        navigator.share({ title: "Mi logro en Sariel's", text: texto });
     } else {
         navigator.clipboard.writeText(texto).then(() => {
             showToast('📋 Copiado al portapapeles', 'success');
@@ -2377,14 +2437,14 @@ function editarPerfil() {
 async function guardarPerfil() {
     const session = await getSession();
     if (!session) {
-        showToast('⚠️ Inicia sesión para guardar', 'error');
+        showToast('⚠️ ' + tPerfil('perfil_inicia_sesion', 'Inicia sesión'), 'error');
         return;
     }
 
     const perfil = {
-        nombre: document.getElementById('editNombre').value.trim() || 'Explorador',
+        nombre: document.getElementById('editNombre').value.trim() || tPerfil('perfil_nombre_usuario', 'Explorador'),
         handle: document.getElementById('editHandle').value.trim().replace('@', '') || 'explorador',
-        bio: document.getElementById('editBio').value.trim() || 'Explorando el ecosistema Sariel\'s · WEB3 · Comunidad'
+        bio: document.getElementById('editBio').value.trim() || tPerfil('perfil_biografia_default', "Explorando el ecosistema Sariel's · WEB3 · Comunidad")
     };
 
     if (!/^[a-zA-Z0-9_]+$/.test(perfil.handle)) {
@@ -2443,15 +2503,12 @@ function abrirSelectorArchivo() {
     if (input) input.click();
 }
 
-// ✅ NUEVA FUNCIÓN PARA EXPANDIR LA FOTO
 function expandirAvatar() {
     const avatarEl = document.getElementById('perfilAvatar');
     const img = avatarEl ? avatarEl.querySelector('img') : null;
     
-    // Si no hay imagen (es el texto ◈ por defecto), no hacer nada
     if (!img || !img.src) return;
 
-    // Crear el modal de pantalla completa
     const modal = document.createElement('div');
     modal.style.cssText = `
         position: fixed;
@@ -2480,7 +2537,6 @@ function expandirAvatar() {
     modal.appendChild(imgFull);
     document.body.appendChild(modal);
 
-    // Cerrar al hacer clic en cualquier parte del modal
     modal.onclick = () => {
         modal.style.animation = 'fadeOut 0.2s ease-in';
         setTimeout(() => modal.remove(), 200);
@@ -2493,7 +2549,7 @@ async function subirFoto(event) {
 
     const session = await getSession();
     if (!session) {
-        showToast('⚠️ Inicia sesión para subir foto', 'error');
+        showToast('⚠️ ' + tPerfil('perfil_inicia_sesion', 'Inicia sesión'), 'error');
         return;
     }
 
@@ -2591,7 +2647,7 @@ async function comentarPublicacion(postId, contenido) {
     try {
         const session = await getSession();
         if (!session) {
-            showToast('⚠️ Inicia sesión para comentar', 'error');
+            showToast('⚠️ ' + tPerfil('perfil_inicia_sesion', 'Inicia sesión'), 'error');
             return;
         }
         if (!contenido.trim()) {
@@ -2631,7 +2687,7 @@ async function agregarAmigo(amigoId) {
     try {
         const session = await getSession();
         if (!session) {
-            showToast('⚠️ Inicia sesión para agregar amigos', 'error');
+            showToast('⚠️ ' + tPerfil('perfil_inicia_sesion', 'Inicia sesión'), 'error');
             return;
         }
 
@@ -2684,16 +2740,17 @@ async function generarQRPerfil() {
         `;
         modal.innerHTML = `
             <div style="background: var(--bg-card); border-radius: 20px; padding: 30px; text-align: center; animation: scaleIn 0.3s ease-out;">
-                <h3 style="color: var(--gold); margin-bottom: 20px;">📱 Escanea mi perfil</h3>
+                <h3 style="color: var(--gold); margin-bottom: 20px;" data-clave="perfil_share_qr">📱 Share QR</h3>
                 <img src="${qrUrl}" alt="QR Code" style="border-radius: 10px; max-width: 200px;">
                 <p style="color: var(--text-muted); margin-top: 15px; font-size: 12px;">${url}</p>
                 <button onclick="this.parentElement.parentElement.remove()"
-                        style="margin-top: 20px; background: var(--gold); border: none; color: #fff; padding: 10px 30px; border-radius: 10px; cursor: pointer;">
+                        style="margin-top: 20px; background: var(--gold); border: none; color: #fff; padding: 10px 30px; border-radius: 10px; cursor: pointer;" data-clave="perfil_cerrar">
                     Cerrar
                 </button>
             </div>
         `;
         document.body.appendChild(modal);
+        aplicarI18NPerfil(modal);
         
     } catch (error) {
         console.error('Error generando QR:', error);
@@ -2746,7 +2803,7 @@ async function subirVideo(event) {
 
     const session = await getSession();
     if (!session) {
-        showToast('⚠️ Inicia sesión para subir videos', 'error');
+        showToast('⚠️ ' + tPerfil('perfil_inicia_sesion', 'Inicia sesión'), 'error');
         return;
     }
 
@@ -2803,13 +2860,13 @@ async function subirVideo(event) {
 // CERRAR SESIÓN
 // ================================================================
 async function cerrarSesion() {
-    if (!confirm('¿Seguro que quieres cerrar sesión?')) return;
+    const confirmMsg = tPerfil('perfil_cerrar_sesion', '¿Seguro que quieres cerrar sesión?');
+    if (!confirm(confirmMsg)) return;
     
     try {
         await actualizarEstadoEnLinea(false);
         await supabase.auth.signOut();
         window.location.href = '/';
-        showToast('🔌 Sesión cerrada', 'success');
     } catch (error) {
         console.error('Error cerrando sesión:', error);
         showToast('❌ Error al cerrar sesión', 'error');
@@ -2987,7 +3044,7 @@ window.cambiarTab = cambiarTab;
 window.cargarPerfil = cargarPerfil;
 window.guardarPerfil = guardarPerfil;
 window.abrirSelectorArchivo = abrirSelectorArchivo;
-window.expandirAvatar = expandirAvatar; // <-- Exportada
+window.expandirAvatar = expandirAvatar;
 window.subirFoto = subirFoto;
 window.subirVideo = subirVideo;
 window.editarPerfil = editarPerfil;
@@ -3040,5 +3097,10 @@ window.procesarQR = procesarQR;
 window.cargarEstadoPro = cargarEstadoPro;
 window.contratarPro = contratarPro;
 window.activarProDirecto = activarProDirecto;
+
+// I18N: exponer helpers por si algún módulo externo los necesita
+window.tPerfil = tPerfil;
+window.aplicarI18NPerfil = aplicarI18NPerfil;
+window.traducirPlanMeta = traducirPlanMeta;
 
 })();
