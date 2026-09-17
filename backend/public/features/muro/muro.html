@@ -1,7 +1,7 @@
 <!-- ================================================================
      MURO - SARIEL'S ECOSYSTEM
      VERSIÓN FINAL - UN SOLO ARCHIVO (HTML + JS)
-     Con apariencia global + idiomas + tema día/noche
+     Con apariencia global + idiomas + tema día/noche COMPLETO
      ================================================================ -->
 <!DOCTYPE html>
 <html lang="es">
@@ -12,7 +12,7 @@
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
 
-    <!-- ✅ APARIENCIA GLOBAL v2.0 - Se carga PRIMERO para evitar flash -->
+    <!-- ✅ APARIENCIA GLOBAL v2.0 - Se carga PRIMERO -->
     <script src="/features/shared/js/apariencia-global.js"></script>
 
     <style>
@@ -262,7 +262,7 @@
         #cryptoPaymentModal .status { margin-top: 10px; font-size: 0.8rem; color: var(--text-muted); }
 
         /* ============================================================ */
-        /* TEMA DÍA - Ajustes específicos para el muro                 */
+        /* TEMA DÍA - COMPLETO para el muro                             */
         /* ============================================================ */
         html.tema-dia,
         html[data-tema="dia"] {
@@ -273,20 +273,49 @@
             --glass-bg: rgba(255, 255, 255, 0.9);
             --glass-border: rgba(0, 0, 0, 0.1);
         }
+
         html.tema-dia body,
         html[data-tema="dia"] body {
             background: #f5f7fa !important;
+            background-image: 
+                radial-gradient(ellipse at 20% 50%, rgba(212, 175, 55, 0.05) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 50%, rgba(42, 106, 58, 0.05) 0%, transparent 60%) !important;
             color: var(--text-primary) !important;
         }
-        html.tema-dia #stars-canvas,
+
         html.tema-dia .nebula,
         html[data-tema="dia"] .nebula {
             display: none !important;
         }
+
         html.tema-dia .header,
         html[data-tema="dia"] .header {
             background: rgba(255, 255, 255, 0.95) !important;
+            border-bottom-color: rgba(0, 0, 0, 0.1) !important;
         }
+
+        html.tema-dia .logo-text,
+        html[data-tema="dia"] .logo-text {
+            color: var(--text-primary) !important;
+        }
+
+        html.tema-dia .main-nav,
+        html[data-tema="dia"] .main-nav {
+            background: rgba(255, 255, 255, 0.7) !important;
+            border-color: rgba(0, 0, 0, 0.1) !important;
+        }
+
+        html.tema-dia .main-nav .nav-link,
+        html[data-tema="dia"] .main-nav .nav-link {
+            color: #718096 !important;
+        }
+
+        html.tema-dia .main-nav .nav-link.active,
+        html[data-tema="dia"] .main-nav .nav-link.active {
+            background: rgba(212, 175, 55, 0.15) !important;
+            color: var(--gold) !important;
+        }
+
         html.tema-dia .valor-mercado,
         html.tema-dia .trending-section,
         html.tema-dia .post-card,
@@ -295,25 +324,151 @@
         html[data-tema="dia"] .post-card {
             background: rgba(255, 255, 255, 0.9) !important;
             border-color: rgba(0, 0, 0, 0.1) !important;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08) !important;
         }
+
         html.tema-dia .post-form,
         html[data-tema="dia"] .post-form {
             background: rgba(255, 255, 255, 0.95) !important;
             border-color: rgba(0, 0, 0, 0.15) !important;
         }
+
         html.tema-dia .post-form .form-header .nombre,
         html[data-tema="dia"] .post-form .form-header .nombre {
             color: var(--text-primary) !important;
         }
+
+        html.tema-dia .post-form .form-header .handle,
+        html[data-tema="dia"] .post-form .form-header .handle {
+            color: var(--text-muted) !important;
+        }
+
         html.tema-dia .post-form textarea,
         html[data-tema="dia"] .post-form textarea {
             background: rgba(0, 0, 0, 0.03) !important;
             color: var(--text-primary) !important;
             border-color: rgba(0, 0, 0, 0.15) !important;
         }
-        html.tema-dia .main-nav,
-        html[data-tema="dia"] .main-nav {
-            background: rgba(255, 255, 255, 0.7) !important;
+
+        html.tema-dia .post-form textarea::placeholder,
+        html[data-tema="dia"] .post-form textarea::placeholder {
+            color: #a0aec0 !important;
+        }
+
+        html.tema-dia .post-form .form-actions .tools button,
+        html[data-tema="dia"] .post-form .form-actions .tools button {
+            color: #4a5568 !important;
+            border-color: rgba(0, 0, 0, 0.1) !important;
+        }
+
+        html.tema-dia .post-form .form-actions .tools button:hover,
+        html[data-tema="dia"] .post-form .form-actions .tools button:hover {
+            color: var(--gold) !important;
+            background: rgba(212, 175, 55, 0.08) !important;
+        }
+
+        html.tema-dia .valor-mercado .info .precio,
+        html[data-tema="dia"] .valor-mercado .info .precio {
+            color: var(--gold) !important;
+        }
+
+        html.tema-dia .valor-mercado .info .detalles,
+        html[data-tema="dia"] .valor-mercado .info .detalles {
+            color: #718096 !important;
+        }
+
+        html.tema-dia .trending-section .header h3,
+        html[data-tema="dia"] .trending-section .header h3 {
+            color: var(--gold) !important;
+        }
+
+        html.tema-dia .trending-section .actualizado,
+        html[data-tema="dia"] .trending-section .actualizado {
+            color: #718096 !important;
+        }
+
+        html.tema-dia .trending-tags .tag,
+        html[data-tema="dia"] .trending-tags .tag {
+            background: rgba(212, 175, 55, 0.08) !important;
+            color: #4a5568 !important;
+        }
+
+        html.tema-dia .trending-tags .tag:hover,
+        html[data-tema="dia"] .trending-tags .tag:hover {
+            background: rgba(212, 175, 55, 0.15) !important;
+            color: var(--gold) !important;
+        }
+
+        html.tema-dia .post-card .post-author,
+        html[data-tema="dia"] .post-card .post-author {
+            color: var(--gold) !important;
+        }
+
+        html.tema-dia .post-card .post-date,
+        html[data-tema="dia"] .post-card .post-date {
+            color: #718096 !important;
+        }
+
+        html.tema-dia .post-card .post-content,
+        html[data-tema="dia"] .post-card .post-content {
+            color: var(--text-secondary) !important;
+        }
+
+        html.tema-dia .post-card .post-stats,
+        html[data-tema="dia"] .post-card .post-stats {
+            color: #718096 !important;
+            border-top-color: rgba(0, 0, 0, 0.1) !important;
+        }
+
+        html.tema-dia .post-card .post-actions-header button,
+        html[data-tema="dia"] .post-card .post-actions-header button {
+            color: #718096 !important;
+        }
+
+        html.tema-dia .empty-state,
+        html[data-tema="dia"] .empty-state {
+            color: #718096 !important;
+        }
+
+        html.tema-dia .footer,
+        html[data-tema="dia"] .footer {
+            color: #718096 !important;
+            border-top-color: rgba(0, 0, 0, 0.1) !important;
+        }
+
+        html.tema-dia .footer-links a,
+        html[data-tema="dia"] .footer-links a {
+            color: #718096 !important;
+        }
+
+        html.tema-dia .footer-links a:hover,
+        html[data-tema="dia"] .footer-links a:hover {
+            color: var(--gold) !important;
+        }
+
+        html.tema-dia .modal,
+        html[data-tema="dia"] .modal {
+            background: rgba(255, 255, 255, 0.98) !important;
+            border-color: rgba(0, 0, 0, 0.1) !important;
+        }
+
+        html.tema-dia .modal .form-group input,
+        html[data-tema="dia"] .modal .form-group input {
+            background: rgba(0, 0, 0, 0.03) !important;
+            color: var(--text-primary) !important;
+            border-color: rgba(0, 0, 0, 0.15) !important;
+        }
+
+        html.tema-dia .token-badge,
+        html[data-tema="dia"] .token-badge {
+            background: rgba(212, 175, 55, 0.1) !important;
+            color: var(--gold) !important;
+        }
+
+        html.tema-dia .network-badge,
+        html[data-tema="dia"] .network-badge {
+            background: rgba(212, 175, 55, 0.1) !important;
+            color: var(--gold) !important;
         }
 
         @media (max-width: 768px) {
@@ -555,11 +710,9 @@
     </div>
 
 <!-- ============================================================ -->
-<!-- SUPABASE CLIENT -->
+<!-- SUPABASE + IDIOMAS -->
 <!-- ============================================================ -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-
-<!-- ✅ IDIOMAS -->
 <script src="/features/shared/js/idiomas.js"></script>
 
 <script>
@@ -1580,7 +1733,6 @@ document.addEventListener('DOMContentLoaded', function() {
         suscribirseARealtime();
     });
 
-    // ✅ Inicializar idiomas
     setTimeout(async function() {
         try {
             if (typeof window.inicializarIdiomas === 'function') {
