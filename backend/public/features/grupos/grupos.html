@@ -6,6 +6,10 @@
     <title>◈ Canales · Sariel's</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+
+    <!-- ✅ APARIENCIA GLOBAL v2.0 - Se carga PRIMERO -->
+    <script src="/features/shared/js/apariencia-global.js"></script>
+
     <style>
         :root {
             --gold: #D4AF37; --gold-dark: #b8923a; --gold-light: #e8c84a; --gold-bright: #f0d060;
@@ -162,6 +166,7 @@
         .marketing-ad-title { font-family: 'Orbitron', monospace; font-size: 0.85rem; font-weight: 700; color: var(--text-primary); margin-bottom: 6px; line-height: 1.3; }
         .marketing-ad-desc { font-size: 0.7rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 12px; word-wrap: break-word; }
         .marketing-ad-cta { display: inline-flex; align-items: center; gap: 6px; padding: 8px 20px; border-radius: 30px; background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); font-size: 0.7rem; font-weight: 700; text-decoration: none; border: none; cursor: pointer; transition: var(--transition); font-family: 'Inter', sans-serif; text-transform: uppercase; letter-spacing: 0.5px; }
+        .marketing-ad-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(212, 175, 55, 0.4); }
         .publicaciones-container { margin-top: 16px; }
         .publicacion-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 12px; position: relative; }
         .publicacion-card.marketplace { border-left: 4px solid var(--success); }
@@ -236,6 +241,147 @@
         .footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
         .footer-links a { color: var(--text-muted); text-decoration: none; }
         .footer-links a:hover { color: var(--gold); }
+
+        /* ============================================================ */
+        /* TEMA DÍA - COMPLETO para grupos/canales                      */
+        /* ============================================================ */
+        html.tema-dia,
+        html[data-tema="dia"] {
+            --space: #f5f7fa;
+            --text-primary: #1a2332;
+            --text-secondary: #4a5568;
+            --text-muted: #718096;
+            --glass-bg: rgba(255, 255, 255, 0.9);
+            --glass-border: rgba(0, 0, 0, 0.1);
+        }
+        html.tema-dia body,
+        html[data-tema="dia"] body {
+            background: #f5f7fa !important;
+            background-image: 
+                radial-gradient(ellipse at 20% 50%, rgba(212, 175, 55, 0.05) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 50%, rgba(42, 106, 58, 0.05) 0%, transparent 60%) !important;
+            color: var(--text-primary) !important;
+        }
+        html.tema-dia .header,
+        html[data-tema="dia"] .header {
+            background: rgba(255, 255, 255, 0.95) !important;
+            border-bottom-color: rgba(0, 0, 0, 0.1) !important;
+        }
+        html.tema-dia .logo-text,
+        html[data-tema="dia"] .logo-text {
+            color: var(--text-primary) !important;
+        }
+        html.tema-dia .main-nav,
+        html[data-tema="dia"] .main-nav {
+            background: rgba(255, 255, 255, 0.7) !important;
+            border-color: rgba(0, 0, 0, 0.1) !important;
+        }
+        html.tema-dia .main-nav .nav-link,
+        html[data-tema="dia"] .main-nav .nav-link {
+            color: #718096 !important;
+        }
+        html.tema-dia .main-nav .nav-link.active,
+        html[data-tema="dia"] .main-nav .nav-link.active {
+            background: rgba(212, 175, 55, 0.15) !important;
+            color: var(--gold) !important;
+        }
+        html.tema-dia .canal-item,
+        html.tema-dia .en-vivo-card,
+        html.tema-dia .grupo-card,
+        html.tema-dia .grupo-header-interno,
+        html.tema-dia .publicacion-card,
+        html.tema-dia .form-publicacion,
+        html.tema-dia .marketing-ad-container,
+        html.tema-dia .modal,
+        html[data-tema="dia"] .canal-item,
+        html[data-tema="dia"] .en-vivo-card,
+        html[data-tema="dia"] .grupo-card,
+        html[data-tema="dia"] .grupo-header-interno,
+        html[data-tema="dia"] .publicacion-card,
+        html[data-tema="dia"] .form-publicacion,
+        html[data-tema="dia"] .marketing-ad-container,
+        html[data-tema="dia"] .modal {
+            background: rgba(255, 255, 255, 0.9) !important;
+            border-color: rgba(0, 0, 0, 0.1) !important;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08) !important;
+        }
+        html.tema-dia .canal-item .info .nombre,
+        html.tema-dia .grupo-card .nombre,
+        html.tema-dia .publicacion-card .contenido,
+        html.tema-dia .modal .form-group input,
+        html.tema-dia .modal .form-group textarea,
+        html.tema-dia .modal .form-group select,
+        html[data-tema="dia"] .canal-item .info .nombre,
+        html[data-tema="dia"] .grupo-card .nombre,
+        html[data-tema="dia"] .publicacion-card .contenido,
+        html[data-tema="dia"] .modal .form-group input,
+        html[data-tema="dia"] .modal .form-group textarea,
+        html[data-tema="dia"] .modal .form-group select {
+            color: var(--text-primary) !important;
+        }
+        html.tema-dia .grupo-card .descripcion,
+        html.tema-dia .publicacion-card .contenido,
+        html.tema-dia .marketing-ad-desc,
+        html[data-tema="dia"] .grupo-card .descripcion,
+        html[data-tema="dia"] .publicacion-card .contenido,
+        html[data-tema="dia"] .marketing-ad-desc {
+            color: var(--text-secondary) !important;
+        }
+        html.tema-dia .form-publicacion textarea,
+        html.tema-dia .form-group input,
+        html.tema-dia .form-group textarea,
+        html.tema-dia .form-group select,
+        html[data-tema="dia"] .form-publicacion textarea,
+        html[data-tema="dia"] .form-group input,
+        html[data-tema="dia"] .form-group textarea,
+        html[data-tema="dia"] .form-group select {
+            background: rgba(0, 0, 0, 0.03) !important;
+            color: var(--text-primary) !important;
+            border-color: rgba(0, 0, 0, 0.15) !important;
+        }
+        html.tema-dia input::placeholder,
+        html.tema-dia textarea::placeholder,
+        html[data-tema="dia"] input::placeholder,
+        html[data-tema="dia"] textarea::placeholder {
+            color: #a0aec0 !important;
+        }
+        html.tema-dia .post-menu-dropdown,
+        html[data-tema="dia"] .post-menu-dropdown {
+            background: rgba(255, 255, 255, 0.98) !important;
+            border-color: rgba(0, 0, 0, 0.15) !important;
+        }
+        html.tema-dia .post-menu-item,
+        html[data-tema="dia"] .post-menu-item {
+            color: var(--text-primary) !important;
+        }
+        html.tema-dia .feed-filtros,
+        html[data-tema="dia"] .feed-filtros {
+            background: rgba(255, 255, 255, 0.7) !important;
+        }
+        html.tema-dia .mobile-tabs,
+        html[data-tema="dia"] .mobile-tabs {
+            background: rgba(255, 255, 255, 0.7) !important;
+        }
+        html.tema-dia .footer,
+        html[data-tema="dia"] .footer {
+            color: #718096 !important;
+            border-top-color: rgba(0, 0, 0, 0.1) !important;
+        }
+        html.tema-dia .footer-links a,
+        html[data-tema="dia"] .footer-links a {
+            color: #718096 !important;
+        }
+        html.tema-dia .footer-links a:hover,
+        html[data-tema="dia"] .footer-links a:hover {
+            color: var(--gold) !important;
+        }
+        html.tema-dia .btn-outline,
+        html[data-tema="dia"] .btn-outline {
+            background: rgba(0, 0, 0, 0.03) !important;
+            color: var(--text-primary) !important;
+            border-color: rgba(0, 0, 0, 0.15) !important;
+        }
+
         @media (max-width: 768px) {
             .app { padding: 12px 14px; }
             .grupos-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -265,8 +411,7 @@
         .btn-danger { background: rgba(255, 51, 102, 0.1) !important; color: var(--danger) !important; border: 1px solid rgba(255, 51, 102, 0.3) !important; padding: 6px 14px; border-radius: 20px; font-size: 0.7rem; font-weight: 600; cursor: pointer; }
         .btn-sm { padding: 4px 12px !important; font-size: 0.65rem !important; }
     </style>
-</head>
-<body>
+</head><body>
     <div class="app">
         <header class="header">
             <a href="/" class="logo">
@@ -686,10 +831,53 @@
             <span style="opacity:0.3;">⚡ Polygon</span>
         </div>
     </footer>
-</div>
+</div>    <!-- ✅ SUPABASE + IDIOMAS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="/features/shared/js/idiomas.js"></script>
     <script src="/app.js"></script>
-    <script>        var sessionUser = null;
+
+    <script>
+        // ================================================================
+        // ✅ FORZAR APARIENCIA (por si el módulo global tarda)
+        // ================================================================
+        (function forzarApariencia() {
+            try {
+                const tema = localStorage.getItem('mostrar_tema') || 'sistema';
+                const html = document.documentElement;
+                html.classList.remove('tema-dia', 'tema-noche');
+                html.removeAttribute('data-tema');
+                
+                if (tema === 'dia') {
+                    html.classList.add('tema-dia');
+                    html.setAttribute('data-tema', 'dia');
+                } else if (tema === 'noche') {
+                    html.classList.add('tema-noche');
+                    html.setAttribute('data-tema', 'noche');
+                } else {
+                    const prefiereOscuro = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+                    html.setAttribute('data-tema', prefiereOscuro ? 'noche' : 'dia');
+                    html.classList.add(prefiereOscuro ? 'tema-noche' : 'tema-dia');
+                }
+                
+                const color = localStorage.getItem('mostrar_color_acento') || '#D4AF37';
+                html.style.setProperty('--gold', color);
+                
+                const fuente = parseInt(localStorage.getItem('mostrar_tamano_fuente') || 100);
+                html.style.fontSize = (16 * fuente / 100) + 'px';
+            } catch (e) {
+                console.warn('[Grupos] No se pudo forzar apariencia:', e);
+            }
+        })();
+
+        // ✅ Exponer supabaseClient globalmente
+        if (typeof window.supabase !== 'undefined' && !window.supabaseClient) {
+            window.supabaseClient = window.supabase.createClient(
+                'https://zultnlogdoajehbswlih.supabase.co',
+                'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
+            );
+        }
+
+        var sessionUser = null;
         var grupoActual = null;
         var grupoActualId = null;
         var rolEnGrupo = null;
@@ -728,159 +916,23 @@
         var esStreamerDelLiveGrupo = false;
 
         // ================================================================
-        // 🚫 ALGORITMO COMPLETO DE MODERACIÓN - Sariel's
-        // Cumple con TODAS las categorías de derechos-sariels.html
+        // 🚫 ALGORITMO COMPLETO DE MODERACIÓN
         // ================================================================
-        
         const CATEGORIAS_BLOQUEADAS = {
-            activos_digitales: [
-                'token', 'tokens', 'cripto', 'criptos', 'crypto', 'cryptos', 'criptomoneda', 'criptomonedas',
-                'bitcoin', 'btc', 'ethereum', 'eth', 'usdt', 'usdc', 'tether', 'dai', 'busd',
-                'nft', 'nfts', 'blockchain', 'cadena de bloques', 'coin', 'coins', 'altcoin', 'altcoins',
-                'defi', 'web3', 'wallet', 'wallets', 'metamask', 'binance', 'coinbase', 'kraken', 'kucoin',
-                'dogecoin', 'doge', 'shiba', 'shib', 'solana', 'bnb', 'binance coin',
-                'polygon', 'matic', 'cardano', 'ripple', 'xrp', 'litecoin', 'ltc', 'tron', 'trx',
-                'es.stok', 'es.stoks', 'estok', 'estoks', 'es stok', 'es stoks',
-                'staking', 'mining', 'mineria', 'minar', 'p2p cripto', 'exchange cripto',
-                'monedero digital', 'monedero cripto', 'activo digital', 'activos digitales',
-                'polkadot', 'chainlink', 'uniswap', 'aave', 'lend', 'memecoin', 'shitcoin',
-                'airdrop', 'whitelist cripto', 'presale cripto', 'ico', 'ido', 'ieo',
-                'mineria bitcoin', 'rig de mineria', 'hardware wallet', 'ledger nano', 'trezor'
-            ],
-            articulos_regulados: [
-                'arma', 'armas', 'pistola', 'pistolas', 'rifle', 'rifles', 'escopeta', 'escopetas',
-                'municion', 'municiones', 'balas', 'cartuchos', 'explosivo', 'explosivos',
-                'granada', 'granadas', 'dinamita', 'tnt', 'c4', 'polvora', 'mecha',
-                'silenciador', 'supresor', 'cargador extendido', 'arma larga', 'arma corta',
-                'arma de fuego', 'arma blanca', 'cuchillo tactico', 'navaja automatica',
-                'taser', 'paralizante', 'gas pimienta restringido', 'chaleco antibalas',
-                'placa balistica', 'dron armado', 'mira telescopica', 'scope militar'
-            ],
-            sustancias_controladas: [
-                'droga', 'drogas', 'cocaina', 'heroina', 'metanfetamina', 'cristal', 'meth',
-                'marihuana', 'mariguana', 'cannabis', 'weed', 'motita', 'porro',
-                'lsd', 'acido lisergico', 'extasis', 'mdma', 'fentanilo', 'opio', 'opiaceos',
-                'morfina', 'tramadol', 'oxycodone', 'xanax', 'valium', 'clonazepam',
-                'medicamento controlado', 'medicamento sin receta', 'medicamento fraude',
-                'antibiotico sin receta', 'viagra generico', 'esteroides', 'anabolicos',
-                'tramadol sin receta', 'psicotropico', 'estupefaciente'
-            ],
-            contenido_adulto: [
-                'pornografia', 'porno', 'xxx', 'contenido para adultos', 'contenido sexual',
-                'sexo explicito', 'nudismo', 'desnudo', 'desnudos', 'onlyfans',
-                'pack de fotos', 'pack de videos', 'pack intimo', 'fotos intimas',
-                'videos intimas', 'contenido nsfw', 'nsfw', 'hentai', 'ecchi',
-                'juguete sexual', 'juguetes sexuales', 'consolador', 'vibrador',
-                'lenceria erotica', 'traje de latex', 'servicio sexual', 'masaje erotico',
-                'masaje tantrico', 'masaje sensual', 'acompañante', 'escort', 'prepago',
-                'servicios de acompañamiento', 'chica prepago', 'chico prepago'
-            ],
-            documentos_oficiales: [
-                'ine falsa', 'ine falso', 'credencial falsa', 'credencial falsificada',
-                'pasaporte falso', 'pasaporte falsificado', 'licencia de conducir falsa',
-                'licencia falsificada', 'acta de nacimiento falsa', 'acta falsificada',
-                'titulo profesional falso', 'titulo falsificado', 'cedula falsa',
-                'cedula falsificada', 'diploma falso', 'certificado falso',
-                'documento oficial falso', 'documento falsificado', 'tarjeta de circulacion falsa',
-                'placas falsas', 'comprobante de domicilio falso', 'recibo falso',
-                'factura falsa', 'factura falsificada', 'cfdi falso', 'constancia falsa',
-                'curp falsa', 'rfc falso', 'numero de seguro social falso', 'nss falso'
-            ],
-            productos_falsificados: [
-                'replica', 'replicas', 'imitacion', 'imitaciones', 'copia', 'copias',
-                'clon', 'clones', 'falsificacion', 'falsificaciones', 'pirata', 'piratas',
-                'pirateria', 'producto pirata', 'producto replicado', 'producto clon',
-                'primera copia', 'triple a', 'aaa replica', 'espejo original',
-                'outlet replica', 'marca replica', 'bolso replica', 'tenis replica',
-                'reloj replica', 'perfume replica', 'ropa replica', 'software pirata',
-                'windows pirata', 'office pirata', 'adobe pirata', 'photoshop pirata',
-                'juego pirata', 'pelicula pirata', 'serie pirata'
-            ],
-            practicas_fraudulentas: [
-                'estafa', 'estafas', 'fraude', 'fraudes', 'timo', 'timos', 'engano', 'enganos',
-                'piramide', 'esquema piramidal', 'esquema ponzi', 'ponzi', 'multinivel falso',
-                'inversion garantizada', 'inversion segura sin riesgo', 'rendimiento garantizado',
-                'dinero facil', 'gana dinero rapido', 'ganancias garantizadas',
-                'prestamo sin aval', 'prestamo express', 'prestamo gota a gota',
-                'montadeudas', 'cobro por adelantado', 'anticipo por adelantado',
-                'deposito por adelantado', 'transferencia por adelantado',
-                'phishing', 'malware', 'virus informatico', 'spyware', 'ransomware',
-                'tarjeta clonada', 'tarjeta de credito clonada', 'clonar tarjeta',
-                'clonar whatsapp', 'hackear whatsapp', 'hackear facebook', 'hackear instagram',
-                'recuperar cuenta hackeada', 'espiar whatsapp', 'espiar celular',
-                'rastreador de pareja', 'app espia', 'software espia'
-            ],
-            datos_personales: [
-                'venta de datos', 'vendo datos personales', 'base de datos privada',
-                'padron electoral', 'padron de clientes', 'lista de correos', 'lista de telefonos',
-                'lista de whatsapp', 'contactos de famosos', 'datos de usuarios',
-                'informacion confidencial', 'informacion privada', 'datos filtrados',
-                'datos de clientes', 'datos bancarios de terceros',
-                'numero de tarjeta de credito ajeno', 'cvv ajeno', 'nip ajeno',
-                'curp ajena', 'rfc ajeno', 'ine ajena', 'direccion de terceros',
-                'ubicacion de terceros', 'geolocalizacion ajena', 'espiar ubicacion'
-            ],
-            seres_vivos: [
-                'vendo perro', 'vendo gato', 'vendo cachorro', 'vendo gatito',
-                'venta de perros', 'venta de gatos', 'venta de aves', 'venta de reptiles',
-                'venta de peces', 'venta de conejos', 'venta de hamsters',
-                'cachorros en venta', 'gatitos en venta', 'aves exoticas',
-                'animal exotico', 'animal protegido', 'especie protegida',
-                'venta de tortugas', 'venta de iguanas', 'venta de serpientes',
-                'venta de loros', 'venta de guacamayas', 'venta de tucanes',
-                'trafico de animales', 'trafico de especies', 'fauna silvestre',
-                'planta protegida', 'cactacea protegida', 'orquidea silvestre',
-                'madera preciosa', 'palo de rosa', 'caoba', 'cedro rojo'
-            ],
-            alcohol_tabaco: [
-                'vendo alcohol', 'vendo cerveza', 'vendo tequila', 'vendo whisky',
-                'venta de alcohol', 'venta de cerveza', 'venta de tequila',
-                'cerveza artesanal', 'vino artesanal', 'mezcal artesanal',
-                'licor casero', 'destilado casero', 'alcohol casero',
-                'vape', 'vapes', 'vapeador', 'vapeadores', 'cigarro electronico',
-                'cigarrillos electronicos', 'pod', 'pods', 'desechable vape',
-                'cigarros', 'cigarrillos', 'tabaco', 'puros', 'habanos',
-                'picadura de tabaco', 'snus', 'nicotina liquida', 'sales de nicotina'
-            ],
-            discurso_odio: [
-                'muerte a los', 'maten a los', 'odio a los', 'fuera los',
-                'no queremos', 'los malditos', 'raza inferior', 'raza superior',
-                'cancer de la sociedad', 'basura humana', 'escoria humana',
-                'exterminar a', 'eliminar a todos los', 'deberian morir',
-                'deberian desaparecer', 'infieles', 'putos', 'maricones',
-                'sudacas', 'indios de mierda', 'prietos', 'narizones',
-                'nacos', 'pinches indios', 'malinchistas', 'gachupines',
-                'sionistas', 'nazis', 'hitler', 'supremacia blanca',
-                'supremacia aria', 'razas inferiores', 'limpieza etnica'
-            ],
-            contenido_menores: [
-                'menor de edad', 'menores de edad', 'contenido con menores',
-                'fotos de menores', 'videos de menores', 'nino desnudo', 'nina desnuda',
-                'child porn', 'pedofilia', 'pedofilo', 'pederasta',
-                'chico joven sexual', 'chica joven sexual',
-                'adolescente desnuda', 'adolescente desnudo',
-                'preteen', 'lolita', 'lolicon', 'shotacon'
-            ],
-            amenazas_extorsion: [
-                'te voy a matar', 'te voy a encontrar', 'se donde vives',
-                'tengo tu direccion', 'tengo tu familia', 'secuestro', 'secuestrar',
-                'levanton', 'levantar a alguien', 'extorsion', 'extorsionar',
-                'cobro de piso', 'derecho de piso', 'cobro forzoso',
-                'amenaza de muerte', 'amenazas graves', 'te voy a golpear',
-                'te voy a hacer dano', 'vas a pagar', 'vas a ver',
-                'sicario', 'sicarios', 'maton', 'matones', 'por encargo',
-                'ajuste de cuentas', 'cobrar por la fuerza'
-            ],
-            contenido_intimo_sin_consentimiento: [
-                'pack filtrado', 'pack filtrados', 'pack sin permiso',
-                'pack de ex', 'pack de la ex', 'pack de mi ex', 'pack de novia',
-                'fotos filtradas', 'videos filtrados', 'intimo filtrado',
-                'intimo sin permiso', 'sin consentimiento', 'pack de la companera',
-                'pack de la vecina', 'pack de la maestra', 'pack de la alumna',
-                'venganza intima', 'revenge porn', 'porno venganza',
-                'fotos privadas filtradas', 'venganza con fotos',
-                'exponer intimidades', 'venganza con videos'
-            ]
+            activos_digitales: ['token','tokens','cripto','criptos','crypto','cryptos','criptomoneda','criptomonedas','bitcoin','btc','ethereum','eth','usdt','usdc','tether','dai','busd','nft','nfts','blockchain','cadena de bloques','coin','coins','altcoin','altcoins','defi','web3','wallet','wallets','metamask','binance','coinbase','kraken','kucoin','dogecoin','doge','shiba','shib','solana','bnb','binance coin','polygon','matic','cardano','ripple','xrp','litecoin','ltc','tron','trx','es.stok','es.stoks','estok','estoks','es stok','es stoks','staking','mining','mineria','minar','p2p cripto','exchange cripto','monedero digital','monedero cripto','activo digital','activos digitales','polkadot','chainlink','uniswap','aave','lend','memecoin','shitcoin','airdrop','whitelist cripto','presale cripto','ico','ido','ieo','mineria bitcoin','rig de mineria','hardware wallet','ledger nano','trezor'],
+            articulos_regulados: ['arma','armas','pistola','pistolas','rifle','rifles','escopeta','escopetas','municion','municiones','balas','cartuchos','explosivo','explosivos','granada','granadas','dinamita','tnt','c4','polvora','mecha','silenciador','supresor','cargador extendido','arma larga','arma corta','arma de fuego','arma blanca','cuchillo tactico','navaja automatica','taser','paralizante','gas pimienta restringido','chaleco antibalas','placa balistica','dron armado','mira telescopica','scope militar'],
+            sustancias_controladas: ['droga','drogas','cocaina','heroina','metanfetamina','cristal','meth','marihuana','mariguana','cannabis','weed','motita','porro','lsd','acido lisergico','extasis','mdma','fentanilo','opio','opiaceos','morfina','tramadol','oxycodone','xanax','valium','clonazepam','medicamento controlado','medicamento sin receta','medicamento fraude','antibiotico sin receta','viagra generico','esteroides','anabolicos','tramadol sin receta','psicotropico','estupefaciente'],
+            contenido_adulto: ['pornografia','porno','xxx','contenido para adultos','contenido sexual','sexo explicito','nudismo','desnudo','desnudos','onlyfans','pack de fotos','pack de videos','pack intimo','fotos intimas','videos intimas','contenido nsfw','nsfw','hentai','ecchi','juguete sexual','juguetes sexuales','consolador','vibrador','lenceria erotica','traje de latex','servicio sexual','masaje erotico','masaje tantrico','masaje sensual','acompañante','escort','prepago','servicios de acompañamiento','chica prepago','chico prepago'],
+            documentos_oficiales: ['ine falsa','ine falso','credencial falsa','credencial falsificada','pasaporte falso','pasaporte falsificado','licencia de conducir falsa','licencia falsificada','acta de nacimiento falsa','acta falsificada','titulo profesional falso','titulo falsificado','cedula falsa','cedula falsificada','diploma falso','certificado falso','documento oficial falso','documento falsificado','tarjeta de circulacion falsa','placas falsas','comprobante de domicilio falso','recibo falso','factura falsa','factura falsificada','cfdi falso','constancia falsa','curp falsa','rfc falso','numero de seguro social falso','nss falso'],
+            productos_falsificados: ['replica','replicas','imitacion','imitaciones','copia','copias','clon','clones','falsificacion','falsificaciones','pirata','piratas','pirateria','producto pirata','producto replicado','producto clon','primera copia','triple a','aaa replica','espejo original','outlet replica','marca replica','bolso replica','tenis replica','reloj replica','perfume replica','ropa replica','software pirata','windows pirata','office pirata','adobe pirata','photoshop pirata','juego pirata','pelicula pirata','serie pirata'],
+            practicas_fraudulentas: ['estafa','estafas','fraude','fraudes','timo','timos','engano','enganos','piramide','esquema piramidal','esquema ponzi','ponzi','multinivel falso','inversion garantizada','inversion segura sin riesgo','rendimiento garantizado','dinero facil','gana dinero rapido','ganancias garantizadas','prestamo sin aval','prestamo express','prestamo gota a gota','montadeudas','cobro por adelantado','anticipo por adelantado','deposito por adelantado','transferencia por adelantado','phishing','malware','virus informatico','spyware','ransomware','tarjeta clonada','tarjeta de credito clonada','clonar tarjeta','clonar whatsapp','hackear whatsapp','hackear facebook','hackear instagram','recuperar cuenta hackeada','espiar whatsapp','espiar celular','rastreador de pareja','app espia','software espia'],
+            datos_personales: ['venta de datos','vendo datos personales','base de datos privada','padron electoral','padron de clientes','lista de correos','lista de telefonos','lista de whatsapp','contactos de famosos','datos de usuarios','informacion confidencial','informacion privada','datos filtrados','datos de clientes','datos bancarios de terceros','numero de tarjeta de credito ajeno','cvv ajeno','nip ajeno','curp ajena','rfc ajeno','ine ajena','direccion de terceros','ubicacion de terceros','geolocalizacion ajena','espiar ubicacion'],
+            seres_vivos: ['vendo perro','vendo gato','vendo cachorro','vendo gatito','venta de perros','venta de gatos','venta de aves','venta de reptiles','venta de peces','venta de conejos','venta de hamsters','cachorros en venta','gatitos en venta','aves exoticas','animal exotico','animal protegido','especie protegida','venta de tortugas','venta de iguanas','venta de serpientes','venta de loros','venta de guacamayas','venta de tucanes','trafico de animales','trafico de especies','fauna silvestre','planta protegida','cactacea protegida','orquidea silvestre','madera preciosa','palo de rosa','caoba','cedro rojo'],
+            alcohol_tabaco: ['vendo alcohol','vendo cerveza','vendo tequila','vendo whisky','venta de alcohol','venta de cerveza','venta de tequila','cerveza artesanal','vino artesanal','mezcal artesanal','licor casero','destilado casero','alcohol casero','vape','vapes','vapeador','vapeadores','cigarro electronico','cigarrillos electronicos','pod','pods','desechable vape','cigarros','cigarrillos','tabaco','puros','habanos','picadura de tabaco','snus','nicotina liquida','sales de nicotina'],
+            discurso_odio: ['muerte a los','maten a los','odio a los','fuera los','no queremos','los malditos','raza inferior','raza superior','cancer de la sociedad','basura humana','escoria humana','exterminar a','eliminar a todos los','deberian morir','deberian desaparecer','infieles','putos','maricones','sudacas','indios de mierda','prietos','narizones','nacos','pinches indios','malinchistas','gachupines','sionistas','nazis','hitler','supremacia blanca','supremacia aria','razas inferiores','limpieza etnica'],
+            contenido_menores: ['menor de edad','menores de edad','contenido con menores','fotos de menores','videos de menores','nino desnudo','nina desnuda','child porn','pedofilia','pedofilo','pederasta','chico joven sexual','chica joven sexual','adolescente desnuda','adolescente desnudo','preteen','lolita','lolicon','shotacon'],
+            amenazas_extorsion: ['te voy a matar','te voy a encontrar','se donde vives','tengo tu direccion','tengo tu familia','secuestro','secuestrar','levanton','levantar a alguien','extorsion','extorsionar','cobro de piso','derecho de piso','cobro forzoso','amenaza de muerte','amenazas graves','te voy a golpear','te voy a hacer dano','vas a pagar','vas a ver','sicario','sicarios','maton','matones','por encargo','ajuste de cuentas','cobrar por la fuerza'],
+            contenido_intimo_sin_consentimiento: ['pack filtrado','pack filtrados','pack sin permiso','pack de ex','pack de la ex','pack de mi ex','pack de novia','fotos filtradas','videos filtrados','intimo filtrado','intimo sin permiso','sin consentimiento','pack de la companera','pack de la vecina','pack de la maestra','pack de la alumna','venganza intima','revenge porn','porno venganza','fotos privadas filtradas','venganza con fotos','exponer intimidades','venganza con videos']
         };
         
         const NOMBRES_CATEGORIAS = {
@@ -902,13 +954,7 @@
         
         function normalizarTexto(texto) {
             if (!texto) return '';
-            return texto
-                .toLowerCase()
-                .normalize('NFD')
-                .replace(/[\u0300-\u036f]/g, '')
-                .replace(/[.,;:!?¿¡\-_\(\)\[\]\{\}\/\\|@#$%^&*+=~`"']/g, ' ')
-                .replace(/\s+/g, ' ')
-                .trim();
+            return texto.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[.,;:!?¿¡\-_\(\)\[\]\{\}\/\\|@#$%^&*+=~`"']/g, ' ').replace(/\s+/g, ' ').trim();
         }
         
         function contienePalabrasDeCategoria(texto, categoria) {
@@ -917,9 +963,7 @@
             return CATEGORIAS_BLOQUEADAS[categoria].some(function(palabra) {
                 const palabraNorm = normalizarTexto(palabra);
                 if (!palabraNorm) return false;
-                if (palabraNorm.includes(' ')) {
-                    return textoNorm.includes(palabraNorm);
-                }
+                if (palabraNorm.includes(' ')) return textoNorm.includes(palabraNorm);
                 const regex = new RegExp('\\b' + palabraNorm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i');
                 return regex.test(textoNorm);
             });
@@ -937,12 +981,8 @@
             return resultado;
         }
         
-        function contienePalabrasCripto(texto) {
-            return contienePalabrasDeCategoria(texto, 'activos_digitales');
-        }
+        function contienePalabrasCripto(texto) { return contienePalabrasDeCategoria(texto, 'activos_digitales'); }
         
-        // 🔧 HELPER: valida un texto y muestra mensaje de error
-        // Retorna true si está OK, false si bloqueado
         function validarTextoPermitido(texto, nombreCampo) {
             if (!texto) return true;
             var inf = detectarInfraccion(texto);
@@ -1102,12 +1142,7 @@
             if (adVistaTimer) { clearTimeout(adVistaTimer); adVistaTimer = null; }
         }
 
-        // ================================================================
-        // ✅ SIN MARCA DE AGUA - Ya no aplicamos marca de agua
-        // ================================================================
-        async function procesarConMarcaDeAgua(file, tipo) {
-            return file;
-        }
+        async function procesarConMarcaDeAgua(file, tipo) { return file; }
 
         // ================================================================
         // CARGAR CATEGORÍAS / ESTADOS / MUNICIPIOS
@@ -1648,9 +1683,6 @@
                 '</div></div></div>';
         }
 
-        // ================================================================
-        // MENÚ "..." VERTICAL
-        // ================================================================
         function togglePostMenu(event, publicacionId) {
             event.stopPropagation();
             var menuActual = document.getElementById('postMenu-' + publicacionId);
@@ -1669,9 +1701,6 @@
             }
         });
 
-        // ================================================================
-        // INTERACCIONES
-        // ================================================================
         async function toggleInteraccion(publicacionId, tipo) {
             if (!sessionUser) { showToast('Inicia sesión para interactuar', 'error'); return; }
             try {
@@ -1779,9 +1808,6 @@
             }
         }
 
-        // ================================================================
-        // REPORTES
-        // ================================================================
         function abrirModalReportar(publicacionId) {
             document.querySelectorAll('.post-menu-dropdown.show').forEach(function(m) { m.classList.remove('show'); });
             if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
@@ -1880,9 +1906,6 @@
             }
         }
 
-        // ================================================================
-        // ETIQUETAR
-        // ================================================================
         function abrirModalEtiquetar(publicacionId) {
             document.querySelectorAll('.post-menu-dropdown.show').forEach(function(m) { m.classList.remove('show'); });
             if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
@@ -1968,9 +1991,6 @@
             }
         }
 
-        // ================================================================
-        // CARGAR PUBLICACIONES
-        // ================================================================
         async function cargarPublicacionesGrupo(grupoId) {
             try {
                 var result = await window.supabase.from('grupos_video_publicaciones').select(`*, usuarios:usuario_id (id, nombre, handle, avatar_url)`).eq('grupo_id', grupoId).eq('estado', 'publicado').order('created_at', { ascending: false });
@@ -1984,9 +2004,6 @@
             } catch (e) { showToast('Error cargando publicaciones', 'error'); }
         }
 
-        // ================================================================
-        // PUBLICAR NORMAL (con validación de algoritmo)
-        // ================================================================
         async function publicarEnGrupo() {
             if (publicando) { showToast('Ya estás publicando...', 'warning'); return; }
             if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
@@ -1996,7 +2013,6 @@
             var contenido = input.value.trim();
             if (!contenido) { showToast('Escribe algo', 'warning'); return; }
             
-            // 🚫 VALIDACIÓN COMPLETA - TODAS LAS CATEGORÍAS
             if (!validarTextoPermitido(contenido, 'Publicación')) return;
             
             publicando = true;
@@ -2010,9 +2026,6 @@
             finally { publicando = false; }
         }
 
-        // ================================================================
-        // SUBIR FOTO NORMAL (SIN MARCA DE AGUA)
-        // ================================================================
         async function subirFotoGrupo() {
             if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
             if (!grupoActualId) { showToast('No hay canal', 'error'); return; }
@@ -2038,9 +2051,6 @@
             input.click();
         }
 
-        // ================================================================
-        // SUBIR VIDEO NORMAL (SIN MARCA DE AGUA)
-        // ================================================================
         async function subirVideoGrupo() {
             if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
             if (!grupoActualId) { showToast('No hay canal', 'error'); return; }
@@ -2066,9 +2076,6 @@
             input.click();
         }
 
-        // ================================================================
-        // MARKETPLACE
-        // ================================================================
         function abrirModalMarketplace() {
             if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
             if (!grupoActualId) { showToast('No hay canal', 'error'); return; }
@@ -2135,7 +2142,6 @@
             if (!descripcion) { statusEl.textContent = '⚠️ Escribe una descripción'; statusEl.style.color = 'var(--warning)'; return; }
             if (!municipio) { statusEl.textContent = '⚠️ Escribe el municipio'; statusEl.style.color = 'var(--warning)'; return; }
             
-            // 🚫 VALIDACIÓN COMPLETA CON TODAS LAS 14 CATEGORÍAS PROHIBIDAS
             var infTitulo = detectarInfraccion(titulo);
             if (infTitulo.bloqueado) {
                 var ct = infTitulo.categorias.join(', ');
@@ -2226,9 +2232,6 @@
             }
         }
 
-        // ================================================================
-        // FUNCIONES RESTANTES (admin, live, etc.)
-        // ================================================================
         async function reaccionarPublicacion(publicacionId) {
             if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
             try {
@@ -2272,14 +2275,12 @@
             } catch (e) { lista.innerHTML = '<div style="color:var(--danger);font-size:0.65rem;">Error</div>'; }
         }
 
-        // ✅ VALIDACIÓN EN COMENTARIOS
         async function enviarComentarioPublicacion(publicacionId) {
             if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
             var input = document.getElementById('inputComentario-' + publicacionId);
             var texto = input.value.trim();
             if (!texto) return;
             
-            // 🚫 VALIDACIÓN COMPLETA
             if (!validarTextoPermitido(texto, 'Comentario')) return;
             
             try {
@@ -2518,7 +2519,6 @@
             } catch (e) { container.innerHTML = '<div class="empty-state">Error</div>'; }
         }
 
-        // ✅ VALIDACIÓN AL EDITAR CANAL
         async function guardarEdicionGrupo() {
             var nombre = document.getElementById('editGrupoNombre')?.value?.trim();
             var descripcion = document.getElementById('editGrupoDescripcion')?.value?.trim();
@@ -2530,7 +2530,6 @@
             var modoIngreso = document.getElementById('editGrupoModoIngreso')?.value;
             if (!nombre) { showToast('El nombre es requerido', 'warning'); return; }
             
-            // 🚫 VALIDACIÓN COMPLETA
             if (!validarTextoPermitido(nombre, 'Nombre del canal')) return;
             if (!validarTextoPermitido(descripcion, 'Descripción del canal')) return;
             
@@ -2599,9 +2598,6 @@
             catch (e) { showToast('Error', 'error'); }
         }
 
-        // ================================================================
-        // REGALOS
-        // ================================================================
         function abrirModalRegalos(streamerId, streamerNombre) {
             document.getElementById('giftStreamerName').textContent = streamerNombre || 'el creador';
             document.getElementById('giftStatus').textContent = 'Selecciona un monto';
@@ -2639,9 +2635,6 @@
             } catch (e) { console.error(e); }
         }
 
-        // ================================================================
-        // CREAR GRUPO (con validación de algoritmo)
-        // ================================================================
         function abrirModalCrearGrupo() { document.getElementById('modalCrearGrupo').classList.add('show'); document.getElementById('inputNombreGrupo').focus(); }
         function cerrarModalCrearGrupo() { document.getElementById('modalCrearGrupo').classList.remove('show'); }
 
@@ -2662,7 +2655,6 @@
             if (!nombre) { showToast('Nombre requerido', 'warning'); return; }
             if (!municipio) { showToast('Municipio requerido', 'warning'); return; }
             
-            // 🚫 VALIDACIÓN COMPLETA
             if (!validarTextoPermitido(nombre, 'Nombre del canal')) return;
             if (!validarTextoPermitido(descripcion, 'Descripción del canal')) return;
             
@@ -2708,9 +2700,6 @@
             finally { btn.disabled = false; btn.textContent = '◈ Crear Comunidad'; }
         }
 
-        // ================================================================
-        // FORM PUBLICACIÓN
-        // ================================================================
         function abrirFormPublicacion() {
             var form = document.getElementById('formPublicacion');
             form.style.display = form.style.display === 'none' ? 'block' : 'none';
@@ -2757,9 +2746,6 @@
             input.selectionStart = input.selectionEnd = start + 1;
         }
 
-        // ================================================================
-        // CONFIRMAR ELIMINAR
-        // ================================================================
         function mostrarConfirmacionEliminarGrupo() {
             cerrarAjustesCanal();
             if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
@@ -2799,9 +2785,6 @@
             } finally { eliminandoGrupo = false; }
         }
 
-        // ================================================================
-        // LIVE (con validación de título)
-        // ================================================================
         async function iniciarLiveEnGrupo() {
             if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
             if (!grupoActualId) { showToast('No hay canal seleccionado', 'error'); return; }
@@ -2814,7 +2797,6 @@
             try {
                 var titulo = prompt('Título del LIVE:', 'Saliendo al aire en ' + (grupoActual.nombre || 'canal')) || 'Live en canal';
                 
-                // 🚫 VALIDACIÓN COMPLETA DEL TÍTULO DEL LIVE
                 if (!validarTextoPermitido(titulo, 'Título del Live')) {
                     return;
                 }
@@ -2933,7 +2915,6 @@
                 .subscribe();
         }
 
-        // ✅ VALIDACIÓN EN CHAT DEL LIVE
         async function enviarMensajeLiveGrupo() {
             const input = document.getElementById('grupoLiveChatInput');
             const mensaje = (input?.value || '').trim();
@@ -2941,7 +2922,6 @@
             if (!sessionUser) { showToast('Inicia sesión para chatear', 'error'); return; }
             if (!currentStreamGrupoId) { showToast('No hay LIVE activo', 'error'); return; }
             
-            // 🚫 VALIDACIÓN COMPLETA
             if (!validarTextoPermitido(mensaje, 'Mensaje del Live')) return;
             
             try {
@@ -3069,6 +3049,18 @@
                     volverALista();
                 }
             });
+
+            // ✅ Inicializar idiomas
+            setTimeout(async function() {
+                try {
+                    if (typeof window.inicializarIdiomas === 'function') {
+                        await window.inicializarIdiomas();
+                        console.log('✅ Idiomas aplicados a grupos');
+                    }
+                } catch (e) {
+                    console.warn('⚠️ Error aplicando idiomas:', e);
+                }
+            }, 500);
         });
 
         // ================================================================
