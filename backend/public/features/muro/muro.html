@@ -2,6 +2,7 @@
      MURO - SARIEL'S ECOSYSTEM
      VERSIÓN FINAL - UN SOLO ARCHIVO (HTML + JS)
      Con apariencia global + idiomas + tema día/noche COMPLETO
+     + Compra parcial con enteros + Contador 30 min + Comisión 2%
      ================================================================ -->
 <!DOCTYPE html>
 <html lang="es">
@@ -12,7 +13,6 @@
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
 
-    <!-- ✅ APARIENCIA GLOBAL v2.0 - Se carga PRIMERO -->
     <script src="/features/shared/js/apariencia-global.js"></script>
 
     <style>
@@ -238,10 +238,44 @@
         .modal .btn-guardar:hover { transform: scale(1.02); }
         .modal .btn-cancelar { background: transparent; border: 1px solid var(--glass-border); color: var(--text-muted); padding: 10px 20px; border-radius: 30px; font-weight: 600; font-size: 0.8rem; cursor: pointer; flex: 1; }
         .modal .btn-confirmar { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); border: none; padding: 10px 20px; border-radius: 30px; font-weight: 700; font-size: 0.8rem; cursor: pointer; flex: 2; }
+        .modal .btn-confirmar:disabled { opacity: 0.5; cursor: not-allowed; }
         .modal .modal-body .detalle-pago { background: rgba(0,0,0,0.2); border-radius: 10px; padding: 12px; margin: 8px 0; }
         .modal .modal-body .detalle-pago .label { font-size: 0.6rem; color: var(--text-muted); }
         .modal .modal-body .detalle-pago .valor { font-family: 'Orbitron', monospace; color: var(--gold); font-size: 1rem; }
         .modal .modal-body .detalle-pago .valor.comision { color: var(--warning); font-size: 0.8rem; }
+        .modal .modal-body .detalle-pago .valor.vendedor { color: var(--success); font-size: 0.85rem; }
+
+        /* Contador de cuenta regresiva en el modal de pago */
+        .contador-pago {
+            text-align: center;
+            padding: 12px;
+            margin: 10px 0;
+            background: rgba(212, 175, 55, 0.08);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            border-radius: 12px;
+        }
+        .contador-pago .tiempo {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--gold);
+            letter-spacing: 2px;
+        }
+        .contador-pago .label {
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+        }
+        .contador-pago.urgente .tiempo {
+            color: var(--danger);
+            animation: pulseUrgente 1s ease-in-out infinite;
+        }
+        @keyframes pulseUrgente {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
 
         .toast { position: fixed; bottom: 30px; right: 30px; background: var(--green-deep); border: 1px solid var(--gold); color: var(--gold); padding: 14px 28px; border-radius: 14px; font-size: 0.8rem; transform: translateY(100px); opacity: 0; transition: all 0.5s ease; z-index: 9999; max-width: 400px; }
         .toast.show { transform: translateY(0); opacity: 1; }
@@ -261,9 +295,7 @@
         #cryptoPaymentModal .actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
         #cryptoPaymentModal .status { margin-top: 10px; font-size: 0.8rem; color: var(--text-muted); }
 
-        /* ============================================================ */
-        /* TEMA DÍA - COMPLETO para el muro                             */
-        /* ============================================================ */
+        /* TEMA DÍA */
         html.tema-dia,
         html[data-tema="dia"] {
             --space: #f5f7fa;
@@ -273,203 +305,48 @@
             --glass-bg: rgba(255, 255, 255, 0.9);
             --glass-border: rgba(0, 0, 0, 0.1);
         }
-
         html.tema-dia body,
         html[data-tema="dia"] body {
             background: #f5f7fa !important;
-            background-image: 
-                radial-gradient(ellipse at 20% 50%, rgba(212, 175, 55, 0.05) 0%, transparent 60%),
-                radial-gradient(ellipse at 80% 50%, rgba(42, 106, 58, 0.05) 0%, transparent 60%) !important;
+            background-image: radial-gradient(ellipse at 20% 50%, rgba(212, 175, 55, 0.05) 0%, transparent 60%), radial-gradient(ellipse at 80% 50%, rgba(42, 106, 58, 0.05) 0%, transparent 60%) !important;
             color: var(--text-primary) !important;
         }
-
         html.tema-dia .nebula,
-        html[data-tema="dia"] .nebula {
-            display: none !important;
-        }
-
+        html[data-tema="dia"] .nebula { display: none !important; }
         html.tema-dia .header,
-        html[data-tema="dia"] .header {
-            background: rgba(255, 255, 255, 0.95) !important;
-            border-bottom-color: rgba(0, 0, 0, 0.1) !important;
-        }
-
+        html[data-tema="dia"] .header { background: rgba(255, 255, 255, 0.95) !important; border-bottom-color: rgba(0, 0, 0, 0.1) !important; }
         html.tema-dia .logo-text,
-        html[data-tema="dia"] .logo-text {
-            color: var(--text-primary) !important;
-        }
-
+        html[data-tema="dia"] .logo-text { color: var(--text-primary) !important; }
         html.tema-dia .main-nav,
-        html[data-tema="dia"] .main-nav {
-            background: rgba(255, 255, 255, 0.7) !important;
-            border-color: rgba(0, 0, 0, 0.1) !important;
-        }
-
+        html[data-tema="dia"] .main-nav { background: rgba(255, 255, 255, 0.7) !important; border-color: rgba(0, 0, 0, 0.1) !important; }
         html.tema-dia .main-nav .nav-link,
-        html[data-tema="dia"] .main-nav .nav-link {
-            color: #718096 !important;
-        }
-
+        html[data-tema="dia"] .main-nav .nav-link { color: #718096 !important; }
         html.tema-dia .main-nav .nav-link.active,
-        html[data-tema="dia"] .main-nav .nav-link.active {
-            background: rgba(212, 175, 55, 0.15) !important;
-            color: var(--gold) !important;
-        }
-
+        html[data-tema="dia"] .main-nav .nav-link.active { background: rgba(212, 175, 55, 0.15) !important; color: var(--gold) !important; }
         html.tema-dia .valor-mercado,
         html.tema-dia .trending-section,
         html.tema-dia .post-card,
         html[data-tema="dia"] .valor-mercado,
         html[data-tema="dia"] .trending-section,
-        html[data-tema="dia"] .post-card {
-            background: rgba(255, 255, 255, 0.9) !important;
-            border-color: rgba(0, 0, 0, 0.1) !important;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08) !important;
-        }
-
+        html[data-tema="dia"] .post-card { background: rgba(255, 255, 255, 0.9) !important; border-color: rgba(0, 0, 0, 0.1) !important; box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08) !important; }
         html.tema-dia .post-form,
-        html[data-tema="dia"] .post-form {
-            background: rgba(255, 255, 255, 0.95) !important;
-            border-color: rgba(0, 0, 0, 0.15) !important;
-        }
-
+        html[data-tema="dia"] .post-form { background: rgba(255, 255, 255, 0.95) !important; border-color: rgba(0, 0, 0, 0.15) !important; }
         html.tema-dia .post-form .form-header .nombre,
-        html[data-tema="dia"] .post-form .form-header .nombre {
-            color: var(--text-primary) !important;
-        }
-
+        html[data-tema="dia"] .post-form .form-header .nombre { color: var(--text-primary) !important; }
         html.tema-dia .post-form .form-header .handle,
-        html[data-tema="dia"] .post-form .form-header .handle {
-            color: var(--text-muted) !important;
-        }
-
+        html[data-tema="dia"] .post-form .form-header .handle { color: var(--text-muted) !important; }
         html.tema-dia .post-form textarea,
-        html[data-tema="dia"] .post-form textarea {
-            background: rgba(0, 0, 0, 0.03) !important;
-            color: var(--text-primary) !important;
-            border-color: rgba(0, 0, 0, 0.15) !important;
-        }
-
-        html.tema-dia .post-form textarea::placeholder,
-        html[data-tema="dia"] .post-form textarea::placeholder {
-            color: #a0aec0 !important;
-        }
-
+        html[data-tema="dia"] .post-form textarea { background: rgba(0, 0, 0, 0.03) !important; color: var(--text-primary) !important; border-color: rgba(0, 0, 0, 0.15) !important; }
         html.tema-dia .post-form .form-actions .tools button,
-        html[data-tema="dia"] .post-form .form-actions .tools button {
-            color: #4a5568 !important;
-            border-color: rgba(0, 0, 0, 0.1) !important;
-        }
-
-        html.tema-dia .post-form .form-actions .tools button:hover,
-        html[data-tema="dia"] .post-form .form-actions .tools button:hover {
-            color: var(--gold) !important;
-            background: rgba(212, 175, 55, 0.08) !important;
-        }
-
-        html.tema-dia .valor-mercado .info .precio,
-        html[data-tema="dia"] .valor-mercado .info .precio {
-            color: var(--gold) !important;
-        }
-
-        html.tema-dia .valor-mercado .info .detalles,
-        html[data-tema="dia"] .valor-mercado .info .detalles {
-            color: #718096 !important;
-        }
-
-        html.tema-dia .trending-section .header h3,
-        html[data-tema="dia"] .trending-section .header h3 {
-            color: var(--gold) !important;
-        }
-
-        html.tema-dia .trending-section .actualizado,
-        html[data-tema="dia"] .trending-section .actualizado {
-            color: #718096 !important;
-        }
-
-        html.tema-dia .trending-tags .tag,
-        html[data-tema="dia"] .trending-tags .tag {
-            background: rgba(212, 175, 55, 0.08) !important;
-            color: #4a5568 !important;
-        }
-
-        html.tema-dia .trending-tags .tag:hover,
-        html[data-tema="dia"] .trending-tags .tag:hover {
-            background: rgba(212, 175, 55, 0.15) !important;
-            color: var(--gold) !important;
-        }
-
-        html.tema-dia .post-card .post-author,
-        html[data-tema="dia"] .post-card .post-author {
-            color: var(--gold) !important;
-        }
-
-        html.tema-dia .post-card .post-date,
-        html[data-tema="dia"] .post-card .post-date {
-            color: #718096 !important;
-        }
-
-        html.tema-dia .post-card .post-content,
-        html[data-tema="dia"] .post-card .post-content {
-            color: var(--text-secondary) !important;
-        }
-
-        html.tema-dia .post-card .post-stats,
-        html[data-tema="dia"] .post-card .post-stats {
-            color: #718096 !important;
-            border-top-color: rgba(0, 0, 0, 0.1) !important;
-        }
-
-        html.tema-dia .post-card .post-actions-header button,
-        html[data-tema="dia"] .post-card .post-actions-header button {
-            color: #718096 !important;
-        }
-
-        html.tema-dia .empty-state,
-        html[data-tema="dia"] .empty-state {
-            color: #718096 !important;
-        }
-
-        html.tema-dia .footer,
-        html[data-tema="dia"] .footer {
-            color: #718096 !important;
-            border-top-color: rgba(0, 0, 0, 0.1) !important;
-        }
-
-        html.tema-dia .footer-links a,
-        html[data-tema="dia"] .footer-links a {
-            color: #718096 !important;
-        }
-
-        html.tema-dia .footer-links a:hover,
-        html[data-tema="dia"] .footer-links a:hover {
-            color: var(--gold) !important;
-        }
-
+        html[data-tema="dia"] .post-form .form-actions .tools button { color: #4a5568 !important; }
         html.tema-dia .modal,
-        html[data-tema="dia"] .modal {
-            background: rgba(255, 255, 255, 0.98) !important;
-            border-color: rgba(0, 0, 0, 0.1) !important;
-        }
-
+        html[data-tema="dia"] .modal { background: rgba(255, 255, 255, 0.98) !important; border-color: rgba(0, 0, 0, 0.1) !important; }
         html.tema-dia .modal .form-group input,
-        html[data-tema="dia"] .modal .form-group input {
-            background: rgba(0, 0, 0, 0.03) !important;
-            color: var(--text-primary) !important;
-            border-color: rgba(0, 0, 0, 0.15) !important;
-        }
-
-        html.tema-dia .token-badge,
-        html[data-tema="dia"] .token-badge {
-            background: rgba(212, 175, 55, 0.1) !important;
-            color: var(--gold) !important;
-        }
-
-        html.tema-dia .network-badge,
-        html[data-tema="dia"] .network-badge {
-            background: rgba(212, 175, 55, 0.1) !important;
-            color: var(--gold) !important;
-        }
+        html[data-tema="dia"] .modal .form-group input { background: rgba(0, 0, 0, 0.03) !important; color: var(--text-primary) !important; border-color: rgba(0, 0, 0, 0.15) !important; }
+        html.tema-dia .footer,
+        html[data-tema="dia"] .footer { color: #718096 !important; border-top-color: rgba(0, 0, 0, 0.1) !important; }
+        html.tema-dia .footer-links a,
+        html[data-tema="dia"] .footer-links a { color: #718096 !important; }
 
         @media (max-width: 768px) {
             .app { padding: 12px 14px; }
@@ -525,7 +402,6 @@
             <a href="/features/grupos/grupos.html" class="nav-link">👥 Grupos</a>
         </nav>
 
-        <!-- VALOR DE MERCADO -->
         <div class="valor-mercado" id="valorMercado">
             <div class="info">
                 <div class="titulo" data-clave="muro_valor_mercado">◈ Valor de Mercado Sariel's</div>
@@ -539,7 +415,6 @@
             <button class="btn-vender-token" onclick="abrirModalVenta()" data-clave="muro_vender_tokens">◆ Vender Es.stoks</button>
         </div>
 
-        <!-- TENDENCIAS -->
         <div class="trending-section">
             <div class="header">
                 <h3 data-clave="muro_tendencia_ahora">◈ Tendencia ahora</h3>
@@ -554,7 +429,6 @@
             </div>
         </div>
 
-        <!-- FORMULARIO DE PUBLICACIÓN -->
         <div class="post-form">
             <div class="form-header">
                 <div class="avatar" id="userAvatar">◈</div>
@@ -580,7 +454,6 @@
             <input type="file" id="inputImagen" accept="image/*" style="display:none;" onchange="subirImagenMuro(event)" />
         </div>
 
-        <!-- FEED -->
         <div id="feedContainer"></div>
 
         <footer class="footer">
@@ -605,7 +478,7 @@
             </div>
             <div class="form-group">
                 <label data-clave="muro_cantidad">Cantidad de tokens</label>
-                <input type="number" id="inputCantidadTokens" min="1" max="100" value="1" />
+                <input type="number" id="inputCantidadTokens" min="1" max="100" step="1" value="1" />
                 <div style="font-size:0.65rem;color:var(--text-muted);margin-top:4px;">
                     <span data-clave="muro_tokens_disponibles">Tokens disponibles:</span> <strong id="tokensDisponibles">0</strong>
                 </div>
@@ -615,6 +488,22 @@
                 <input type="number" id="inputPrecioToken" min="1" step="0.1" value="4.50" />
                 <div style="font-size:0.55rem;color:var(--text-muted);margin-top:4px;" data-clave="muro_pago_crypto">💳 El comprador pagará con USDT/USDC vía NOWPayments</div>
             </div>
+
+            <!-- Resumen de comisión -->
+            <div class="detalle-pago" style="background:rgba(0,0,0,0.2);border-radius:10px;padding:12px;margin-bottom:14px;">
+                <div style="display:flex;justify-content:space-between;font-size:0.7rem;margin-bottom:6px;">
+                    <span style="color:var(--text-muted);" data-clave="muro_total_venta">Recibirás en total:</span>
+                    <span id="ventaTotalVendedor" style="font-family:'Orbitron',monospace;color:var(--success);font-weight:700;">$4.50 MXN</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:0.6rem;">
+                    <span style="color:var(--text-muted);" data-clave="muro_comision_plataforma">Comisión Sariel's (2%):</span>
+                    <span id="ventaComisionPlataforma" style="color:var(--warning);">$0.09 MXN</span>
+                </div>
+                <div style="font-size:0.55rem;color:var(--text-muted);margin-top:6px;line-height:1.4;">
+                    <span data-clave="muro_venta_explicacion">El comprador pagará el total. Sariel's retiene el 2% de comisión. Tú recibes el 98%.</span>
+                </div>
+            </div>
+
             <button class="btn-guardar" id="btnPublicarVenta" data-clave="muro_publicar_venta">◆ Publicar venta</button>
         </div>
     </div>
@@ -627,40 +516,65 @@
                 <button class="btn-cerrar" onclick="cerrarModalConfirmacion()">✕</button>
             </div>
             <div class="modal-body">
-                <div style="text-align:center;padding:10px 0;">
-                    <div style="font-size:2rem;margin-bottom:8px;font-family:'Orbitron',monospace;color:var(--gold);">◈</div>
-                    <p style="color:var(--text-muted);font-size:0.9rem;">
-                        <span data-clave="muro_confirmas">Confirmas la compra de</span>
-                        <strong style="color:var(--gold);" id="confirmCantidad">1</strong> 
-                        token(s) a 
-                        <strong style="color:var(--gold);" id="confirmPrecio">4.50 MXN</strong>
-                    </p>
-
-                    <div class="detalle-pago">
-                        <div class="label" data-clave="muro_total_mxn">💳 Total en MXN</div>
-                        <div class="valor" id="confirmTotal">4.50 MXN</div>
+                <!-- Cantidad de tokens a comprar -->
+                <div class="form-group" style="text-align:left;">
+                    <label data-clave="muro_cantidad_comprar">¿Cuántos tokens quieres comprar?</label>
+                    <input type="number" id="inputCantidadCompra" min="1" step="1" value="1" />
+                    <div style="display:flex;justify-content:space-between;font-size:0.6rem;color:var(--text-muted);margin-top:4px;">
+                        <span><span data-clave="muro_disponibles">Disponibles:</span> <strong id="confirmDisponibles">0</strong></span>
+                        <button type="button" onclick="seleccionarTodosTokens()" style="background:none;border:none;color:var(--gold);font-size:0.6rem;cursor:pointer;text-decoration:underline;" data-clave="muro_comprar_todos">Comprar todos</button>
                     </div>
+                </div>
 
-                    <div class="form-group" style="text-align:left;margin-top:12px;">
-                        <label data-clave="muro_red_pago">⚡ Red de pago (cripto)</label>
-                        <select id="muro-pay-currency" style="width:100%;padding:10px 14px;background:rgba(0,0,0,0.3);border:1px solid var(--glass-border);border-radius:10px;color:var(--text-primary);font-size:0.85rem;outline:none;">
-                            <option value="usdttrc20">USDT · TRON (TRC20) — recomendado</option>
-                            <option value="usdtbsc">USDT · BSC (BEP20)</option>
-                            <option value="usdtmatic">USDT · Polygon</option>
-                            <option value="usdtsol">USDT · Solana</option>
-                            <option value="usdcsol">USDC · Solana</option>
-                            <option value="usdcmatic">USDC · Polygon</option>
-                            <option value="usdcbsc">USDC · BSC (BEP20)</option>
-                        </select>
-                        <div style="font-size:0.6rem;color:var(--text-muted);margin-top:6px;" data-clave="muro_pago_nowpayments">
-                            ◈ El pago se creará en NOWPayments con la red elegida
+                <!-- Resumen del pago -->
+                <div class="detalle-pago">
+                    <div style="display:flex;justify-content:space-between;font-size:0.7rem;margin-bottom:4px;">
+                        <span style="color:var(--text-muted);" data-clave="muro_precio_unitario">Precio unitario:</span>
+                        <span id="confirmPrecioUnitario" style="color:var(--text-primary);">$0.00 MXN</span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;font-size:0.7rem;margin-bottom:6px;">
+                        <span style="color:var(--text-muted);" data-clave="muro_cantidad_label">Cantidad:</span>
+                        <span id="confirmCantidadLabel" style="color:var(--text-primary);">1 token</span>
+                    </div>
+                    <div style="border-top:1px solid rgba(255,255,255,0.05);padding-top:6px;margin-top:6px;">
+                        <div style="display:flex;justify-content:space-between;font-size:0.75rem;margin-bottom:4px;">
+                            <span style="color:var(--text-muted);" data-clave="muro_total_mxn">💳 Total a pagar:</span>
+                            <span id="confirmTotal" style="font-family:'Orbitron',monospace;color:var(--gold);font-weight:700;">$0.00 MXN</span>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;font-size:0.6rem;margin-bottom:4px;">
+                            <span style="color:var(--text-muted);" data-clave="muro_comision_plataforma">Comisión Sariel's (2%):</span>
+                            <span id="confirmComision" style="color:var(--warning);">$0.00 MXN</span>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;font-size:0.6rem;">
+                            <span style="color:var(--text-muted);" data-clave="muro_vendedor_recibe">Vendedor recibe:</span>
+                            <span id="confirmVendedor" style="color:var(--success);">$0.00 MXN</span>
                         </div>
                     </div>
+                </div>
 
-                    <div style="display:flex;gap:10px;margin-top:12px;">
-                        <button class="btn-cancelar" onclick="cerrarModalConfirmacion()" data-clave="muro_cancelar">Cancelar</button>
-                        <button class="btn-confirmar" onclick="confirmarCompraCrypto()" id="btnConfirmarCompra" data-clave="muro_ir_pagar">💳 Ir a pagar</button>
-                    </div>
+                <!-- Red de pago -->
+                <div class="form-group" style="text-align:left;margin-top:12px;">
+                    <label data-clave="muro_red_pago">⚡ Red de pago (cripto)</label>
+                    <select id="muro-pay-currency" style="width:100%;padding:10px 14px;background:rgba(0,0,0,0.3);border:1px solid var(--glass-border);border-radius:10px;color:var(--text-primary);font-size:0.85rem;outline:none;">
+                        <option value="usdttrc20">USDT · TRON (TRC20) — recomendado</option>
+                        <option value="usdtbsc">USDT · BSC (BEP20)</option>
+                        <option value="usdtmatic">USDT · Polygon</option>
+                        <option value="usdtsol">USDT · Solana</option>
+                        <option value="usdcsol">USDC · Solana</option>
+                        <option value="usdcmatic">USDC · Polygon</option>
+                        <option value="usdcbsc">USDC · BSC (BEP20)</option>
+                    </select>
+                </div>
+
+                <!-- Tiempo límite para pagar -->
+                <div style="background:rgba(212,175,55,0.06);border:1px solid rgba(212,175,55,0.15);border-radius:10px;padding:8px 12px;margin-top:8px;display:flex;align-items:center;gap:8px;">
+                    <span style="font-size:1rem;">⏱️</span>
+                    <span style="font-size:0.65rem;color:var(--text-muted);" data-clave="muro_tiempo_limite">Tendrás <strong style="color:var(--gold);">30 minutos</strong> para completar el pago. Si no, la orden se cancela y los tokens vuelven al vendedor.</span>
+                </div>
+
+                <div style="display:flex;gap:10px;margin-top:16px;">
+                    <button class="btn-cancelar" onclick="cerrarModalConfirmacion()" data-clave="muro_cancelar">Cancelar</button>
+                    <button class="btn-confirmar" onclick="confirmarCompraCrypto()" id="btnConfirmarCompra" data-clave="muro_ir_pagar">💳 Ir a pagar</button>
                 </div>
             </div>
         </div>
@@ -674,17 +588,28 @@
                 <button class="btn-cerrar" onclick="cerrarModalPago()">✕</button>
             </div>
             <div style="text-align:center;">
-                <p style="color:var(--text-secondary);font-size:0.85rem;margin-bottom:10px;" data-clave="muro_escanea_qr">Escanea el QR o copia la dirección</p>
+
+                <!-- Contador de tiempo restante -->
+                <div class="contador-pago" id="contadorPago">
+                    <div class="label" data-clave="muro_tiempo_restante">⏱️ Tiempo restante para pagar</div>
+                    <div class="tiempo" id="tiempoRestante">30:00</div>
+                </div>
+
+                <p style="color:var(--text-secondary);font-size:0.85rem;margin:10px 0;" data-clave="muro_escanea_qr">Escanea el QR o copia la dirección</p>
+
                 <div class="qr-container">
                     <img id="cryptoQR" src="" alt="QR de pago" />
                 </div>
+
                 <div class="address-box">
                     <div class="label" style="font-size:0.6rem;color:var(--text-muted);" data-clave="muro_direccion_pago">📤 Dirección de pago</div>
                     <div class="address" id="cryptoAddress">Cargando...</div>
                 </div>
+
                 <div class="monto-final">
-                    <span id="cryptoMonto">0.00</span> USDT
+                    <span id="cryptoMonto">0.00</span> <span id="cryptoMoneda">USDT</span>
                 </div>
+
                 <div class="actions">
                     <button class="btn-outline-crypto" onclick="copiarDireccionCrypto()" style="background:transparent;color:var(--text-secondary);border:1px solid var(--glass-border);padding:8px 16px;border-radius:30px;font-size:0.65rem;cursor:pointer;" data-clave="muro_copiar_direccion">📋 Copiar dirección</button>
                     <button class="btn-gold" onclick="verificarPagoCrypto()" id="btnVerificarPago" data-clave="muro_verificar_pago">✅ Verificar pago</button>
@@ -709,21 +634,22 @@
         </button>
     </div>
 
-<!-- ============================================================ -->
-<!-- SUPABASE + IDIOMAS -->
-<!-- ============================================================ -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="/features/shared/js/idiomas.js"></script>
 
 <script>
 // ================================================================
-// CLIENTE SUPABASE
+// CONFIGURACIÓN
 // ================================================================
 var supabaseUrl = 'https://zultnlogdoajehbswlih.supabase.co';
 var supabaseKey = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
 var supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 window.supabaseClient = supabaseClient;
 var supabase = supabaseClient;
+
+var BACKEND_URL = 'https://galleta-domo-production.up.railway.app';
+var COMISION_PORCENTAJE = 0.02; // 2%
+var TIMEOUT_MINUTOS = 30;
 
 // ================================================================
 // BANNER DE ERRORES
@@ -753,6 +679,7 @@ var publicando = false;
 var muroChannel = null;
 var isRealtimeProcessing = false;
 var likeCache = new Map();
+var likeCacheOrden = [];
 var observerGlobal = null;
 var emojisDisponibles = [
     '🧌', '🫨', '🪭', '🐋', '🧰', '💥',
@@ -767,6 +694,16 @@ var emojisDisponibles = [
     '📦', '📤', '📥', '🚚', '🚀', '🏍️', '💨',
     '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '💖', '💝', '💘', '💗'
 ];
+
+// Estado del pago P2P actual
+var pagoActual = {
+    ventaId: null,
+    paymentId: null,
+    expiresAt: null,
+    contadorInterval: null,
+    pollingInterval: null,
+    postId: null
+};
 
 // ================================================================
 // TOAST
@@ -795,6 +732,16 @@ function escapeHTML(texto) {
     var div = document.createElement('div');
     div.textContent = texto;
     return div.innerHTML;
+}
+
+// ================================================================
+// FORMATEAR TIEMPO MM:SS
+// ================================================================
+function formatearTiempoRestante(segundos) {
+    if (segundos < 0) segundos = 0;
+    var m = Math.floor(segundos / 60);
+    var s = segundos % 60;
+    return (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
 }
 
 // ================================================================
@@ -913,14 +860,59 @@ function renderizarPost(post) {
     var likesCount = (post.muro_likes && post.muro_likes[0]) ? post.muro_likes[0].count || 0 : 0;
     var comentariosCount = (post.muro_comentarios && post.muro_comentarios[0]) ? post.muro_comentarios[0].count || 0 : 0;
     var contenidoSanitizado = sanitizarHTML(post.contenido || '');
+
     var seccionVenta = '';
     if (post.cantidad_venta && post.cantidad_venta > 0 && post.precio_venta) {
+        // El precio_venta en la DB es el TOTAL que pagó originalmente el vendedor.
+        // El precio por token se calcula dividiendo el total entre la cantidad original.
+        // Para simplificar usamos el precio unitario derivado:
         var precioPorToken = (post.precio_venta / post.cantidad_venta).toFixed(2);
-        seccionVenta = '<div class="post-venta"><div><span style="font-size:0.7rem;color:var(--text-muted);">💎 Venta de tokens</span><div style="font-weight:600;color:var(--gold);">' + post.cantidad_venta + ' tokens · $' + precioPorToken + ' c/u</div><div style="font-size:0.65rem;color:var(--text-muted);">Total: $' + post.precio_venta.toFixed(2) + ' MXN</div></div><button class="btn-comprar" onclick="abrirModalCompra(\'' + post.id + '\')">Comprar</button></div>';
+        // Si el post fue publicado como venta, el precio unitario viene en la práctica
+        // como precio_venta / cantidad_venta del total vendido inicial.
+        // Para el cálculo final usamos lo que muestra el modal.
+
+        seccionVenta = '<div class="post-venta">' +
+            '<div>' +
+                '<span style="font-size:0.7rem;color:var(--text-muted);">💎 Venta de tokens</span>' +
+                '<div style="font-weight:600;color:var(--gold);">' + post.cantidad_venta + ' tokens disponibles</div>' +
+                '<div style="font-size:0.65rem;color:var(--text-muted);">Precio unitario: $' + precioPorToken + ' MXN</div>' +
+            '</div>' +
+            '<button class="btn-comprar" onclick="abrirModalCompra(\'' + post.id + '\')">Comprar</button>' +
+        '</div>';
     }
+
     var fecha = new Date(post.created_at).toLocaleString();
     var imagenHtml = post.imagen_url ? '<img class="post-imagen" src="' + escapeHTML(post.imagen_url) + '" />' : '';
-    div.innerHTML = '<div class="post-header"><div class="post-avatar">' + avatar + '</div><div><div class="post-author">' + nombre + ' <span class="badge-verificado">✦ Verificado</span></div><div class="post-date">' + fecha + '</div></div><div class="post-actions-header">' + (sessionUser && post.usuario_id === sessionUser.id ? '<button class="btn-delete" onclick="eliminarPublicacion(\'' + post.id + '\')" title="Eliminar">🗑️</button>' : '<button class="btn-report" onclick="reportarPublicacion(\'' + post.id + '\')" title="Reportar">🚩</button>') + '<button class="btn-share" onclick="compartirPublicacion(\'' + post.id + '\')" title="Compartir">📤</button></div></div><div class="post-content">' + contenidoSanitizado + '</div>' + imagenHtml + seccionVenta + '<div class="post-stats"><span class="like-btn" onclick="toggleLike(\'' + post.id + '\')" data-liked="false">❤️ <span class="count">' + likesCount + '</span></span><span onclick="toggleComentarios(\'' + post.id + '\')">💬 <span class="count">' + comentariosCount + '</span></span>' + (post.cantidad_venta ? '<span style="color:var(--gold);font-size:0.7rem;">💎 ' + post.cantidad_venta + ' tokens en venta</span>' : '') + '</div><div class="post-comentarios" id="comentarios-' + post.id + '" style="display:none;"><div class="comentarios-lista" id="comentarios-lista-' + post.id + '"></div><div class="input-comentario"><input type="text" id="input-comentario-' + post.id + '" placeholder="Escribe un comentario..." /><button onclick="enviarComentario(\'' + post.id + '\')">Enviar</button></div></div>';
+
+    div.innerHTML = '<div class="post-header">' +
+        '<div class="post-avatar">' + avatar + '</div>' +
+        '<div>' +
+            '<div class="post-author">' + nombre + ' <span class="badge-verificado">✦ Verificado</span></div>' +
+            '<div class="post-date">' + fecha + '</div>' +
+        '</div>' +
+        '<div class="post-actions-header">' +
+            (sessionUser && post.usuario_id === sessionUser.id ?
+                '<button class="btn-delete" onclick="eliminarPublicacion(\'' + post.id + '\')" title="Eliminar">🗑️</button>' :
+                '<button class="btn-report" onclick="reportarPublicacion(\'' + post.id + '\')" title="Reportar">🚩</button>') +
+            '<button class="btn-share" onclick="compartirPublicacion(\'' + post.id + '\')" title="Compartir">📤</button>' +
+        '</div>' +
+        '</div>' +
+        '<div class="post-content">' + contenidoSanitizado + '</div>' +
+        imagenHtml +
+        seccionVenta +
+        '<div class="post-stats">' +
+            '<span class="like-btn" onclick="toggleLike(\'' + post.id + '\')" data-liked="false">❤️ <span class="count">' + likesCount + '</span></span>' +
+            '<span onclick="toggleComentarios(\'' + post.id + '\')">💬 <span class="count">' + comentariosCount + '</span></span>' +
+            (post.cantidad_venta ? '<span style="color:var(--gold);font-size:0.7rem;">💎 ' + post.cantidad_venta + ' tokens en venta</span>' : '') +
+        '</div>' +
+        '<div class="post-comentarios" id="comentarios-' + post.id + '" style="display:none;">' +
+            '<div class="comentarios-lista" id="comentarios-lista-' + post.id + '"></div>' +
+            '<div class="input-comentario">' +
+                '<input type="text" id="input-comentario-' + post.id + '" placeholder="Escribe un comentario..." />' +
+                '<button onclick="enviarComentario(\'' + post.id + '\')">Enviar</button>' +
+            '</div>' +
+        '</div>';
+
     if (sessionUser) {
         verificarLike(post.id).then(function(liked) {
             var likeBtn = div.querySelector('.like-btn');
@@ -949,6 +941,12 @@ async function verificarLike(postId) {
         if (result.error) throw result.error;
         var liked = !!result.data;
         likeCache.set(cacheKey, liked);
+        // LRU: limitar a 100 entradas
+        likeCacheOrden.push(cacheKey);
+        if (likeCacheOrden.length > 100) {
+            var viejo = likeCacheOrden.shift();
+            likeCache.delete(viejo);
+        }
         return liked;
     } catch (e) { console.error('Error verificando like:', e); return false; }
 }
@@ -1019,7 +1017,14 @@ async function cargarComentarios(postId) {
             var avatar = (c.usuarios && c.usuarios.avatar_url) ? '<img src="' + escapeHTML(c.usuarios.avatar_url) + '">' : '◈';
             var nombre = escapeHTML((c.usuarios && c.usuarios.nombre) || 'Usuario');
             var esPropietario = sessionUser && c.usuario_id === sessionUser.id;
-            return '<div class="comentario" data-comentario-id="' + c.id + '"><div class="avatar">' + avatar + '</div><div class="texto"><strong>' + nombre + '</strong> ' + sanitizarHTML(c.contenido || '') + '<div class="fecha">' + new Date(c.created_at).toLocaleString() + '</div>' + (esPropietario ? '<button class="btn-eliminar-comentario" onclick="eliminarComentario(\'' + c.id + '\', \'' + postId + '\')">✕ Eliminar</button>' : '') + '</div></div>';
+            return '<div class="comentario" data-comentario-id="' + c.id + '">' +
+                '<div class="avatar">' + avatar + '</div>' +
+                '<div class="texto">' +
+                    '<strong>' + nombre + '</strong> ' + sanitizarHTML(c.contenido || '') +
+                    '<div class="fecha">' + new Date(c.created_at).toLocaleString() + '</div>' +
+                    (esPropietario ? '<button class="btn-eliminar-comentario" onclick="eliminarComentario(\'' + c.id + '\', \'' + postId + '\')">✕ Eliminar</button>' : '') +
+                '</div>' +
+            '</div>';
         }).join('');
     } catch (e) {
         console.error('Error cargando comentarios:', e);
@@ -1242,7 +1247,23 @@ function abrirModalVenta() {
         if (tokensDisp) tokensDisp.textContent = (sessionUser && sessionUser.tokens) || 0;
         document.getElementById('inputCantidadTokens').value = 1;
         document.getElementById('inputPrecioToken').value = precioActual.toFixed(2);
+        actualizarResumenVenta();
     }
+}
+
+function actualizarResumenVenta() {
+    var cantidadInput = document.getElementById('inputCantidadTokens');
+    var precioInput = document.getElementById('inputPrecioToken');
+    var cantidad = parseInt(cantidadInput ? cantidadInput.value : 0) || 0;
+    var precio = parseFloat(precioInput ? precioInput.value : 0) || 0;
+    var total = cantidad * precio;
+    var comision = total * COMISION_PORCENTAJE;
+    var vendedorRecibe = total - comision;
+
+    var totalEl = document.getElementById('ventaTotalVendedor');
+    var comisionEl = document.getElementById('ventaComisionPlataforma');
+    if (totalEl) totalEl.textContent = '$' + vendedorRecibe.toFixed(2) + ' MXN';
+    if (comisionEl) comisionEl.textContent = '$' + comision.toFixed(2) + ' MXN';
 }
 
 function cerrarModalVenta() {
@@ -1256,7 +1277,7 @@ async function publicarVenta() {
     var btn = document.getElementById('btnPublicarVenta');
     var cantidad = parseInt(cantidadInput ? cantidadInput.value : 0);
     var precio = parseFloat(precioInput ? precioInput.value : 0);
-    if (!cantidad || cantidad <= 0) { showToast('⚠️ Cantidad inválida', 'error'); return; }
+    if (!cantidad || cantidad <= 0 || !Number.isInteger(cantidad)) { showToast('⚠️ Cantidad inválida (solo enteros)', 'error'); return; }
     if (cantidad > 100) { showToast('⚠️ Máximo 100 tokens', 'error'); return; }
     if (!precio || precio <= 0) { showToast('⚠️ Precio inválido', 'error'); return; }
     if (!sessionUser) { showToast('⚠️ Inicia sesión', 'error'); return; }
@@ -1268,7 +1289,12 @@ async function publicarVenta() {
         if (userResult.data.tokens < cantidad) { showToast('⚠️ No tienes suficientes tokens. Tienes: ' + userResult.data.tokens, 'error'); btn.disabled = false; btn.textContent = '◆ Publicar venta'; return; }
         var result = await supabase
             .from('muro_posts')
-            .insert({ usuario_id: sessionUser.id, contenido: '💎 Venta de ' + cantidad + ' tokens a $' + precio.toFixed(2) + ' c/u', cantidad_venta: cantidad, precio_venta: precio * cantidad });
+            .insert({
+                usuario_id: sessionUser.id,
+                contenido: '💎 Venta de ' + cantidad + ' tokens a $' + precio.toFixed(2) + ' c/u',
+                cantidad_venta: cantidad,
+                precio_venta: precio
+            });
         if (result.error) throw result.error;
         showToast('✅ Venta publicada', 'success');
         cerrarModalVenta();
@@ -1282,23 +1308,90 @@ async function publicarVenta() {
     }
 }
 
+// ================================================================
+// ABRIR MODAL DE COMPRA
+// ================================================================
 function abrirModalCompra(postId) {
     var postCard = document.querySelector('[data-post-id="' + postId + '"]');
     if (!postCard) { showToast('❌ Publicación no encontrada', 'error'); return; }
-    var ventaInfo = postCard.querySelector('.post-venta');
-    if (!ventaInfo) { showToast('❌ No tiene tokens en venta', 'error'); return; }
+
     var modal = document.getElementById('modalConfirmarCompra');
     if (!modal) return;
-    var textoVenta = ventaInfo.querySelector('div') ? ventaInfo.querySelector('div').textContent : '';
-    var matches = textoVenta.match(/(\d+)\s*tokens.*\$\s*([\d.]+)/);
-    if (!matches) { showToast('❌ No se pudo leer info', 'error'); return; }
-    var cantidad = parseInt(matches[1]);
-    var precioTotal = parseFloat(matches[2]);
-    document.getElementById('confirmCantidad').textContent = cantidad;
-    document.getElementById('confirmPrecio').textContent = '$' + precioTotal.toFixed(2) + ' MXN';
-    document.getElementById('confirmTotal').textContent = '$' + precioTotal.toFixed(2) + ' MXN';
+
+    // Buscar los datos de la venta desde el post renderizado
+    var seccionVenta = postCard.querySelector('.post-venta');
+    if (!seccionVenta) { showToast('❌ No tiene tokens en venta', 'error'); return; }
+
+    // Leer los tokens disponibles desde el texto renderizado
+    var textoVenta = seccionVenta.querySelector('div').textContent || '';
+    // Formato esperado: "💎 Venta de tokens 30 tokens disponibles Precio unitario: $4.50 MXN"
+    var matchDisp = textoVenta.match(/(\d+)\s*tokens disponibles/);
+    var matchPrecio = textoVenta.match(/\$([\d.]+)\s*MXN/);
+
+    if (!matchDisp || !matchPrecio) {
+        showToast('❌ No se pudo leer la info de venta', 'error');
+        return;
+    }
+
+    var disponibles = parseInt(matchDisp[1]);
+    var precioUnitario = parseFloat(matchPrecio[1]);
+
+    // Guardar en el modal
     modal.dataset.postId = postId;
+    modal.dataset.disponibles = disponibles;
+    modal.dataset.precioUnitario = precioUnitario;
+
+    // Resetear input de cantidad
+    var inputCantidad = document.getElementById('inputCantidadCompra');
+    inputCantidad.value = 1;
+    inputCantidad.max = disponibles;
+    inputCantidad.min = 1;
+    inputCantidad.step = 1;
+
+    document.getElementById('confirmDisponibles').textContent = disponibles + ' tokens';
+
+    // Actualizar resumen
+    actualizarResumenCompra();
+
     modal.classList.add('show');
+}
+
+function seleccionarTodosTokens() {
+    var modal = document.getElementById('modalConfirmarCompra');
+    if (!modal) return;
+    var disponibles = parseInt(modal.dataset.disponibles) || 1;
+    var inputCantidad = document.getElementById('inputCantidadCompra');
+    inputCantidad.value = disponibles;
+    actualizarResumenCompra();
+}
+
+function actualizarResumenCompra() {
+    var modal = document.getElementById('modalConfirmarCompra');
+    if (!modal) return;
+    var precioUnitario = parseFloat(modal.dataset.precioUnitario) || 0;
+    var disponibles = parseInt(modal.dataset.disponibles) || 0;
+    var inputCantidad = document.getElementById('inputCantidadCompra');
+    var cantidad = parseInt(inputCantidad.value) || 0;
+
+    // Validar cantidad
+    if (cantidad < 1) { cantidad = 1; inputCantidad.value = 1; }
+    if (cantidad > disponibles) { cantidad = disponibles; inputCantidad.value = disponibles; }
+
+    var total = cantidad * precioUnitario;
+    var comision = total * COMISION_PORCENTAJE;
+    var vendedorRecibe = total - comision;
+
+    var elPU = document.getElementById('confirmPrecioUnitario');
+    var elCant = document.getElementById('confirmCantidadLabel');
+    var elTotal = document.getElementById('confirmTotal');
+    var elCom = document.getElementById('confirmComision');
+    var elVend = document.getElementById('confirmVendedor');
+
+    if (elPU) elPU.textContent = '$' + precioUnitario.toFixed(2) + ' MXN';
+    if (elCant) elCant.textContent = cantidad + ' token' + (cantidad !== 1 ? 's' : '');
+    if (elTotal) elTotal.textContent = '$' + total.toFixed(2) + ' MXN';
+    if (elCom) elCom.textContent = '$' + comision.toFixed(2) + ' MXN';
+    if (elVend) elVend.textContent = '$' + vendedorRecibe.toFixed(2) + ' MXN';
 }
 
 function cerrarModalConfirmacion() {
@@ -1312,62 +1405,64 @@ function cerrarModalConfirmacion() {
 async function confirmarCompraCrypto() {
     var modal = document.getElementById('modalConfirmarCompra');
     var postId = modal ? modal.dataset.postId : null;
+    var disponibles = modal ? parseInt(modal.dataset.disponibles) : 0;
     var btn = document.getElementById('btnConfirmarCompra');
 
     if (!postId) { showToast('❌ No hay publicación seleccionada', 'error'); return; }
     if (!sessionUser) { showToast('⚠️ Inicia sesión', 'error'); return; }
 
-    var payCurrency = document.getElementById('muro-pay-currency');
-    payCurrency = payCurrency ? payCurrency.value : 'usdttrc20';
+    var inputCantidad = document.getElementById('inputCantidadCompra');
+    var cantidad = parseInt(inputCantidad.value) || 0;
+
+    if (!Number.isInteger(cantidad) || cantidad < 1) {
+        showToast('⚠️ La cantidad debe ser un número entero mayor a 0', 'error');
+        return;
+    }
+    if (cantidad > disponibles) {
+        showToast('⚠️ Solo hay ' + disponibles + ' tokens disponibles', 'error');
+        return;
+    }
+
+    var payCurrencyEl = document.getElementById('muro-pay-currency');
+    var payCurrency = payCurrencyEl ? payCurrencyEl.value : 'usdttrc20';
 
     btn.disabled = true;
     btn.textContent = '⏳ Creando pago...';
 
     try {
-        var postResult = await supabase
-            .from('muro_posts')
-            .select('id, usuario_id, cantidad_venta, precio_venta')
-            .eq('id', postId)
-            .single();
-
-        if (postResult.error) throw postResult.error;
-        var post = postResult.data;
-
-        if (!post) { showToast('❌ Publicación no encontrada', 'error'); return; }
-        if (post.usuario_id === sessionUser.id) { showToast('⚠️ No puedes comprar tus propios tokens', 'error'); return; }
-        if (!post.cantidad_venta || post.cantidad_venta <= 0) { showToast('⚠️ Ya fueron vendidos', 'error'); return; }
-
         var sessionResult = await supabase.auth.getSession();
         var accessToken = sessionResult.data.session.access_token;
 
-        var resp = await fetch('https://galleta-domo-production.up.railway.app/api/payments/muro/create', {
+        var resp = await fetch(BACKEND_URL + '/api/payments/muro/create', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': 'Bearer ' + accessToken
             },
             body: JSON.stringify({
-                postId: post.id,
-                cantidad: post.cantidad_venta,
+                postId: postId,
+                cantidad: cantidad,
                 payCurrency: payCurrency
             })
         });
 
         var pagoData = await resp.json();
 
-        if (!resp.ok || !pagoData.success || !pagoData.data || !pagoData.data.payment_url) {
+        if (!resp.ok || !pagoData.success || !pagoData.data) {
             showToast('❌ ' + (pagoData.error || 'Error al crear el pago'), 'error');
             return;
         }
 
-        window.open(pagoData.data.payment_url, '_blank');
-        showToast('◈ Redirigiendo a pago (' + pagoData.data.pay_currency + ')...', 'success', 4000);
-
-        modal.dataset.ventaId = pagoData.data.venta_id;
-        modal.dataset.pagoId = pagoData.data.payment_id;
+        // Guardar estado del pago
+        pagoActual.ventaId = pagoData.data.venta_id;
+        pagoActual.paymentId = pagoData.data.payment_id;
+        pagoActual.postId = postId;
+        pagoActual.expiresAt = pagoData.data.expires_at
+            ? new Date(pagoData.data.expires_at)
+            : new Date(Date.now() + TIMEOUT_MINUTOS * 60 * 1000);
 
         cerrarModalConfirmacion();
-        mostrarModalPagoReal(pagoData.data, post);
+        mostrarModalPagoReal(pagoData.data);
 
     } catch (e) {
         console.error('Error creando pago:', e);
@@ -1378,7 +1473,10 @@ async function confirmarCompraCrypto() {
     }
 }
 
-function mostrarModalPagoReal(pagoData, post) {
+// ================================================================
+// MOSTRAR MODAL DE PAGO CON CONTADOR
+// ================================================================
+function mostrarModalPagoReal(pagoData) {
     var modal = document.getElementById('cryptoPaymentModal');
     if (!modal) return;
 
@@ -1393,6 +1491,11 @@ function mostrarModalPagoReal(pagoData, post) {
     var montoEl = document.getElementById('cryptoMonto');
     if (montoEl) {
         montoEl.textContent = parseFloat(pagoData.pay_amount || 0).toFixed(8);
+    }
+
+    var monedaEl = document.getElementById('cryptoMoneda');
+    if (monedaEl) {
+        monedaEl.textContent = (pagoData.pay_currency || 'USDT').toUpperCase();
     }
 
     var qrImg = document.getElementById('cryptoQR');
@@ -1410,23 +1513,108 @@ function mostrarModalPagoReal(pagoData, post) {
         statusEl.style.color = 'var(--text-secondary)';
     }
 
+    // Iniciar contador de tiempo
+    iniciarContadorTiempo(pagoActual.expiresAt);
+
+    // Abrir el payment_url de NOWPayments en nueva pestaña
+    if (pagoData.payment_url) {
+        try {
+            window.open(pagoData.payment_url, '_blank');
+            showToast('◈ Se abrió la ventana de pago de NOWPayments', 'success', 4000);
+        } catch (e) {
+            console.warn('No se pudo abrir payment_url:', e);
+        }
+    }
+
     modal.classList.add('show');
+
+    // Iniciar polling
     iniciarPollingMuro(pagoData.venta_id);
 }
 
-var pollingMuroInterval = null;
+// ================================================================
+// CONTADOR DE TIEMPO
+// ================================================================
+function iniciarContadorTiempo(expiresAt) {
+    // Limpiar anterior
+    if (pagoActual.contadorInterval) {
+        clearInterval(pagoActual.contadorInterval);
+        pagoActual.contadorInterval = null;
+    }
 
+    var contadorEl = document.getElementById('contadorPago');
+    var tiempoEl = document.getElementById('tiempoRestante');
+
+    function tick() {
+        var ahora = Date.now();
+        var restante = Math.floor((expiresAt.getTime() - ahora) / 1000);
+
+        if (restante <= 0) {
+            restante = 0;
+            if (tiempoEl) tiempoEl.textContent = '00:00';
+            if (contadorEl) contadorEl.classList.add('urgente');
+
+            clearInterval(pagoActual.contadorInterval);
+            pagoActual.contadorInterval = null;
+
+            // Actualizar status
+            var statusEl = document.getElementById('cryptoStatus');
+            if (statusEl) {
+                statusEl.textContent = '⏱️ La orden expiró. Los tokens volvieron al vendedor.';
+                statusEl.style.color = 'var(--danger)';
+            }
+            showToast('⏱️ Orden expirada. Intenta de nuevo.', 'warning', 5000);
+            return;
+        }
+
+        if (tiempoEl) tiempoEl.textContent = formatearTiempoRestante(restante);
+
+        // Urgente cuando queden menos de 5 minutos
+        if (restante < 300) {
+            if (contadorEl) contadorEl.classList.add('urgente');
+        } else {
+            if (contadorEl) contadorEl.classList.remove('urgente');
+        }
+    }
+
+    tick();
+    pagoActual.contadorInterval = setInterval(tick, 1000);
+}
+
+// ================================================================
+// POLLING DEL PAGO
+// ================================================================
 function iniciarPollingMuro(ventaId) {
-    if (pollingMuroInterval) clearInterval(pollingMuroInterval);
+    if (pagoActual.pollingInterval) {
+        clearInterval(pagoActual.pollingInterval);
+        pagoActual.pollingInterval = null;
+    }
 
     var intentos = 0;
-    var maxIntentos = 60;
+    var maxIntentos = 180; // 180 × 10s = 30 minutos
+    var statusEl = document.getElementById('cryptoStatus');
 
-    pollingMuroInterval = setInterval(async function() {
+    pagoActual.pollingInterval = setInterval(async function() {
         intentos++;
+
         if (intentos >= maxIntentos) {
-            clearInterval(pollingMuroInterval);
-            pollingMuroInterval = null;
+            clearInterval(pagoActual.pollingInterval);
+            pagoActual.pollingInterval = null;
+            if (statusEl) {
+                statusEl.textContent = '⏱️ Tiempo de verificación agotado. Si pagaste, revisa tu historial.';
+                statusEl.style.color = 'var(--warning)';
+            }
+            return;
+        }
+
+        // Si la orden ya expiró, no seguir consultando
+        if (pagoActual.expiresAt && Date.now() > pagoActual.expiresAt.getTime() + 60000) {
+            clearInterval(pagoActual.pollingInterval);
+            pagoActual.pollingInterval = null;
+            if (statusEl) {
+                statusEl.textContent = '⏱️ La orden expiró. Los tokens volvieron al vendedor.';
+                statusEl.style.color = 'var(--danger)';
+            }
             return;
         }
 
@@ -1436,21 +1624,23 @@ function iniciarPollingMuro(ventaId) {
             var accessToken = sessionResult.data.session.access_token;
 
             var resp = await fetch(
-                'https://galleta-domo-production.up.railway.app/api/payments/muro/status/' + ventaId,
-                {
-                    headers: { 'Authorization': 'Bearer ' + accessToken }
-                }
+                BACKEND_URL + '/api/payments/muro/status/' + ventaId,
+                { headers: { 'Authorization': 'Bearer ' + accessToken } }
             );
 
             var statusData = await resp.json();
             if (!statusData.success) return;
 
             var data = statusData.data;
-            var statusEl = document.getElementById('cryptoStatus');
+            var estado = data.estado;
 
-            if (data.estado === 'pagado' || data.estado === 'completado') {
-                clearInterval(pollingMuroInterval);
-                pollingMuroInterval = null;
+            if (estado === 'pagado' || estado === 'completado') {
+                clearInterval(pagoActual.pollingInterval);
+                pagoActual.pollingInterval = null;
+                if (pagoActual.contadorInterval) {
+                    clearInterval(pagoActual.contadorInterval);
+                    pagoActual.contadorInterval = null;
+                }
                 if (statusEl) {
                     statusEl.textContent = '✅ ¡Pago confirmado! Tokens acreditados';
                     statusEl.style.color = 'var(--success)';
@@ -1465,11 +1655,19 @@ function iniciarPollingMuro(ventaId) {
                 return;
             }
 
-            if (data.estado === 'cancelado') {
-                clearInterval(pollingMuroInterval);
-                pollingMuroInterval = null;
+            if (estado === 'cancelado' || estado === 'expirado' || estado === 'expirada') {
+                clearInterval(pagoActual.pollingInterval);
+                pagoActual.pollingInterval = null;
+                if (pagoActual.contadorInterval) {
+                    clearInterval(pagoActual.contadorInterval);
+                    pagoActual.contadorInterval = null;
+                }
                 if (statusEl) {
-                    statusEl.textContent = '❌ Pago cancelado o expirado';
+                    if (estado === 'expirado' || estado === 'expirada') {
+                        statusEl.textContent = '⏱️ La orden expiró. Los tokens volvieron al vendedor.';
+                    } else {
+                        statusEl.textContent = '❌ Pago cancelado o fallido.';
+                    }
                     statusEl.style.color = 'var(--danger)';
                 }
                 return;
@@ -1477,10 +1675,11 @@ function iniciarPollingMuro(ventaId) {
 
             if (statusEl) {
                 var estadoMap = {
+                    'pendiente': '⏳ Esperando confirmación de pago...',
                     'pagando': '⏳ Procesando pago...',
                     'confirmando': '⏱️ Confirmando en la red...'
                 };
-                statusEl.textContent = estadoMap[data.estado] || ('⏳ Estado: ' + data.estado);
+                statusEl.textContent = estadoMap[estado] || ('⏳ Estado: ' + estado);
             }
         } catch (e) {
             console.warn('Polling muro:', e.message);
@@ -1488,6 +1687,9 @@ function iniciarPollingMuro(ventaId) {
     }, 10000);
 }
 
+// ================================================================
+// VERIFICAR PAGO MANUALMENTE
+// ================================================================
 async function verificarPagoCrypto() {
     var modal = document.getElementById('cryptoPaymentModal');
     var ventaId = modal ? modal.dataset.ventaId : null;
@@ -1506,10 +1708,8 @@ async function verificarPagoCrypto() {
         var accessToken = sessionResult.data.session.access_token;
 
         var resp = await fetch(
-            'https://galleta-domo-production.up.railway.app/api/payments/muro/status/' + ventaId,
-            {
-                headers: { 'Authorization': 'Bearer ' + accessToken }
-            }
+            BACKEND_URL + '/api/payments/muro/status/' + ventaId,
+            { headers: { 'Authorization': 'Bearer ' + accessToken } }
         );
 
         var statusData = await resp.json();
@@ -1519,27 +1719,38 @@ async function verificarPagoCrypto() {
         }
 
         var data = statusData.data;
+        var estado = data.estado;
 
-        if (data.estado === 'pagado' || data.estado === 'completado') {
+        if (estado === 'pagado' || estado === 'completado') {
             if (statusEl) {
                 statusEl.textContent = '✅ ¡Pago confirmado!';
                 statusEl.style.color = 'var(--success)';
             }
             showToast('🎉 ¡Tokens acreditados!', 'success');
+            if (pagoActual.contadorInterval) {
+                clearInterval(pagoActual.contadorInterval);
+                pagoActual.contadorInterval = null;
+            }
+            if (pagoActual.pollingInterval) {
+                clearInterval(pagoActual.pollingInterval);
+                pagoActual.pollingInterval = null;
+            }
             setTimeout(function() {
                 cerrarModalPago();
                 cargarPublicaciones();
                 cargarPreciosMercado();
                 cargarUsuarioActual();
             }, 2000);
-        } else if (data.estado === 'cancelado') {
+        } else if (estado === 'cancelado' || estado === 'expirado' || estado === 'expirada') {
             if (statusEl) {
-                statusEl.textContent = '❌ Pago cancelado';
+                statusEl.textContent = estado === 'expirado' || estado === 'expirada'
+                    ? '⏱️ Orden expirada'
+                    : '❌ Pago cancelado';
                 statusEl.style.color = 'var(--danger)';
             }
         } else {
             if (statusEl) {
-                statusEl.textContent = '⏳ Aún sin confirmar. Estado: ' + data.estado;
+                statusEl.textContent = '⏳ Aún sin confirmar. Estado: ' + estado;
                 statusEl.style.color = 'var(--text-secondary)';
             }
             showToast('ℹ️ El pago aún no se confirma. Espera unos minutos.', 'warning');
@@ -1554,15 +1765,23 @@ async function verificarPagoCrypto() {
     }
 }
 
+// ================================================================
+// CERRAR MODAL DE PAGO
+// ================================================================
 function cerrarModalPago() {
     var modal = document.getElementById('cryptoPaymentModal');
     if (modal) modal.classList.remove('show');
-    if (pollingMuroInterval) {
-        clearInterval(pollingMuroInterval);
-        pollingMuroInterval = null;
+    // NO detenemos el polling: sigue en background por si el usuario vuelve.
+    // Solo limpiamos el contador visual.
+    if (pagoActual.contadorInterval) {
+        clearInterval(pagoActual.contadorInterval);
+        pagoActual.contadorInterval = null;
     }
 }
 
+// ================================================================
+// COPIAR DIRECCIÓN
+// ================================================================
 function copiarDireccionCrypto() {
     var addressEl = document.getElementById('cryptoAddress');
     if (!addressEl) return;
@@ -1581,6 +1800,24 @@ function copiarDireccionCrypto() {
         showToast('📋 Dirección copiada', 'success');
     });
 }
+
+// ================================================================
+// REANUDAR POLLING AL VOLVER A LA PESTAÑA
+// ================================================================
+document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'visible') {
+        // Si hay un pago en curso, reanudar
+        if (pagoActual.ventaId && !pagoActual.pollingInterval) {
+            var modal = document.getElementById('cryptoPaymentModal');
+            if (modal && modal.classList.contains('show')) {
+                iniciarPollingMuro(pagoActual.ventaId);
+                if (pagoActual.expiresAt) {
+                    iniciarContadorTiempo(pagoActual.expiresAt);
+                }
+            }
+        }
+    }
+});
 
 // ================================================================
 // UTILIDADES
@@ -1718,8 +1955,10 @@ async function suscribirseARealtime() {
 function limpiarRecursosMuro() {
     if (muroChannel) { try { supabase.removeChannel(muroChannel); } catch(e) {} muroChannel = null; }
     if (observerGlobal) { observerGlobal.disconnect(); observerGlobal = null; }
-    if (pollingMuroInterval) { clearInterval(pollingMuroInterval); pollingMuroInterval = null; }
+    if (pagoActual.pollingInterval) { clearInterval(pagoActual.pollingInterval); pagoActual.pollingInterval = null; }
+    if (pagoActual.contadorInterval) { clearInterval(pagoActual.contadorInterval); pagoActual.contadorInterval = null; }
     likeCache.clear();
+    likeCacheOrden = [];
 }
 window.addEventListener('beforeunload', limpiarRecursosMuro);
 
@@ -1759,6 +1998,16 @@ document.addEventListener('DOMContentLoaded', function() {
             publicarVenta();
         });
     }
+
+    // Actualizar resumen de venta en tiempo real
+    var inputCantidadTokens = document.getElementById('inputCantidadTokens');
+    var inputPrecioToken = document.getElementById('inputPrecioToken');
+    if (inputCantidadTokens) inputCantidadTokens.addEventListener('input', actualizarResumenVenta);
+    if (inputPrecioToken) inputPrecioToken.addEventListener('input', actualizarResumenVenta);
+
+    // Actualizar resumen de compra en tiempo real
+    var inputCantidadCompra = document.getElementById('inputCantidadCompra');
+    if (inputCantidadCompra) inputCantidadCompra.addEventListener('input', actualizarResumenCompra);
 
     document.addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
@@ -1821,6 +2070,9 @@ window.verificarPagoCrypto = verificarPagoCrypto;
 window.cargarUsuarioActual = cargarUsuarioActual;
 window.mostrarModalPagoReal = mostrarModalPagoReal;
 window.iniciarPollingMuro = iniciarPollingMuro;
+window.actualizarResumenCompra = actualizarResumenCompra;
+window.actualizarResumenVenta = actualizarResumenVenta;
+window.seleccionarTodosTokens = seleccionarTodosTokens;
 </script>
 </body>
 </html>
