@@ -1,0 +1,1038 @@
+<!-- ================================================================
+     MERCADO - SARIEL'S ECOSYSTEM
+     Catálogo principal - muestra tiendas activas
+     ================================================================ -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>◈ Mercado · Sariel's</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+
+    <script src="/features/shared/js/apariencia-global.js"></script>
+
+    <style>
+        :root {
+            --gold: #D4AF37;
+            --gold-dark: #b8923a;
+            --gold-light: #e8c84a;
+            --gold-bright: #f0d060;
+            --green-deep: #0F2D1A;
+            --green-mid: #1a4a2a;
+            --green-bright: #2a6a3a;
+            --space: #05080f;
+            --text-primary: #f0f4f8;
+            --text-secondary: #c0d8e8;
+            --text-muted: #8aa8b8;
+            --glass-bg: rgba(15, 45, 26, 0.55);
+            --glass-border: rgba(212, 175, 55, 0.15);
+            --shadow-gold: 0 8px 32px rgba(212, 175, 55, 0.25);
+            --shadow-gold-strong: 0 0 60px rgba(212, 175, 55, 0.15);
+            --radius: 16px;
+            --radius-xl: 24px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --success: #00d68f;
+            --danger: #ff3366;
+            --warning: #f7d44a;
+            --cyan: #00e5ff;
+            --purple: #a855f7;
+            --pink: #ec4899;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: var(--space);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            background-image: radial-gradient(ellipse at 20% 50%, rgba(26, 74, 42, 0.4) 0%, transparent 60%), radial-gradient(ellipse at 80% 50%, rgba(212, 175, 55, 0.08) 0%, transparent 60%);
+        }
+
+        .nebula { position: fixed; border-radius: 50%; filter: blur(120px); opacity: 0.12; pointer-events: none; z-index: 0; animation: nebula-drift 25s ease-in-out infinite alternate; }
+        .nebula-1 { width: 700px; height: 700px; background: var(--green-bright); top: -15%; right: -15%; }
+        .nebula-2 { width: 600px; height: 600px; background: var(--gold-light); bottom: -15%; left: -15%; animation-delay: -8s; opacity: 0.06; }
+        .nebula-3 { width: 500px; height: 500px; background: var(--purple); top: 50%; left: 50%; transform: translate(-50%, -50%); animation-delay: -15s; opacity: 0.04; }
+        @keyframes nebula-drift { 0% { transform: translate(0,0) scale(1); } 100% { transform: translate(40px,-30px) scale(1.15); } }
+
+        .app { position: relative; z-index: 1; max-width: 100%; width: 100%; margin: 0 auto; padding: 12px 16px 30px; }
+
+        .header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 0 14px; border-bottom: 1px solid var(--glass-border);
+            background: rgba(5, 8, 15, 0.92); position: sticky; top: 0; z-index: 100;
+        }
+        .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+        .logo-hex { font-size: 1.8rem; color: var(--gold); font-family: 'Orbitron', monospace; }
+        .logo-text { font-family: 'Orbitron', monospace; font-size: 1.2rem; color: var(--text-primary); letter-spacing: 2px; }
+        .logo-text span { color: var(--gold); }
+        .logo-badge { font-size: 0.45rem; background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: var(--space); padding: 2px 10px; border-radius: 20px; font-weight: 700; }
+        .network-badge { display: flex; align-items: center; gap: 6px; font-size: 0.6rem; color: var(--gold); background: rgba(212,175,55,0.1); padding: 4px 12px; border-radius: 20px; }
+        .token-badge { display: flex; align-items: center; gap: 6px; background: rgba(212,175,55,0.1); border: 1px solid rgba(212,175,55,0.15); padding: 4px 14px; border-radius: 20px; font-size: 0.7rem; color: var(--gold); font-family: 'Orbitron', monospace; cursor: pointer; }
+
+        .main-nav {
+            display: flex; gap: 4px; background: rgba(15,45,26,0.3); border-radius: var(--radius);
+            padding: 4px; border: 1px solid var(--glass-border); margin: 16px 0 20px; overflow-x: auto;
+        }
+        .main-nav .nav-link { padding: 8px 16px; border-radius: 12px; color: var(--text-muted); text-decoration: none; font-size: 0.7rem; white-space: nowrap; transition: var(--transition); }
+        .main-nav .nav-link:hover { color: var(--text-primary); background: rgba(212,175,55,0.05); }
+        .main-nav .nav-link.active { background: rgba(212,175,55,0.12); color: var(--gold); }
+        .main-nav .nav-link.live { color: var(--danger); }
+
+        /* HERO */
+        .mercado-hero {
+            background: linear-gradient(155deg, rgba(15, 45, 26, 0.75), rgba(8, 15, 26, 0.9));
+            border: 1px solid rgba(212, 175, 55, 0.25);
+            border-radius: var(--radius-xl);
+            padding: 28px 24px;
+            margin-bottom: 20px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .mercado-hero::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 20%;
+            width: 60%; height: 1px;
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
+            opacity: 0.5;
+        }
+        .mercado-hero h1 {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--gold);
+            margin-bottom: 8px;
+            letter-spacing: 2px;
+        }
+        .mercado-hero p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        .mercado-hero .stats-row {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            margin-top: 18px;
+            flex-wrap: wrap;
+        }
+        .mercado-hero .stat {
+            text-align: center;
+        }
+        .mercado-hero .stat .num {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--gold);
+        }
+        .mercado-hero .stat .lbl {
+            font-size: 0.55rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* BUSCADOR Y FILTROS */
+        .buscador-box {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-xl);
+            padding: 14px 16px;
+            margin-bottom: 16px;
+        }
+        .buscador-box .input-wrap {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .buscador-box input {
+            flex: 1;
+            padding: 12px 16px 12px 40px;
+            background: rgba(0,0,0,0.35);
+            border: 1px solid var(--glass-border);
+            border-radius: 30px;
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            outline: none;
+            transition: var(--transition);
+        }
+        .buscador-box input:focus {
+            border-color: var(--gold);
+            background: rgba(0,0,0,0.5);
+        }
+        .buscador-box .search-icon {
+            position: absolute;
+            left: 14px;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            pointer-events: none;
+        }
+
+        .categorias-scroll {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding: 4px 0;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+        .categorias-scroll::-webkit-scrollbar { display: none; }
+        .cat-btn {
+            flex-shrink: 0;
+            padding: 8px 16px;
+            background: rgba(0,0,0,0.35);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            color: var(--text-muted);
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+        .cat-btn:hover { border-color: var(--gold); color: var(--gold); }
+        .cat-btn.active {
+            background: rgba(212,175,55,0.15);
+            border-color: var(--gold);
+            color: var(--gold);
+            font-weight: 600;
+        }
+
+        /* GRID DE TIENDAS */
+        .tiendas-titulo {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+            padding: 0 4px;
+        }
+        .tiendas-titulo h2 {
+            font-family: 'Orbitron', monospace;
+            color: var(--gold);
+            font-size: 1rem;
+            font-weight: 600;
+        }
+        .tiendas-titulo .count {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            background: rgba(0,0,0,0.35);
+            padding: 4px 12px;
+            border-radius: 20px;
+            border: 1px solid var(--glass-border);
+        }
+
+        .tiendas-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 14px;
+        }
+        @media (min-width: 600px) {
+            .tiendas-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (min-width: 900px) {
+            .tiendas-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+
+        .tienda-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-xl);
+            overflow: hidden;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+        .tienda-card:hover {
+            border-color: var(--gold);
+            box-shadow: var(--shadow-gold);
+            transform: translateY(-2px);
+        }
+        .tienda-card .portada {
+            width: 100%;
+            height: 110px;
+            background: linear-gradient(135deg, var(--green-deep), var(--green-mid));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--gold);
+            font-size: 2.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+        .tienda-card .portada img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .tienda-card .portada .badge-nivel {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 0.5rem;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            z-index: 2;
+        }
+        .tienda-card .portada .badge-nivel.max {
+            background: linear-gradient(135deg, #a855f7, #7c3aed);
+            color: #fff;
+            box-shadow: 0 0 15px rgba(168, 85, 247, 0.5);
+        }
+        .tienda-card .portada .badge-nivel.pro {
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            color: var(--space);
+        }
+        .tienda-card .portada .logo-overlap {
+            position: absolute;
+            bottom: -20px;
+            left: 14px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--green-deep), var(--gold));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 1.3rem;
+            border: 3px solid var(--space);
+            overflow: hidden;
+            z-index: 3;
+            font-family: 'Orbitron', monospace;
+        }
+        .tienda-card .portada .logo-overlap img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .tienda-card .contenido {
+            padding: 26px 14px 14px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        .tienda-card .contenido .nombre {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--gold);
+            margin-bottom: 4px;
+            display: -webkit-box;
+            -webkit-line-clamp: 1;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .tienda-card .contenido .categoria {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .tienda-card .contenido .descripcion {
+            font-size: 0.72rem;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            flex: 1;
+        }
+        .tienda-card .contenido .meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            padding-top: 10px;
+            border-top: 1px solid var(--glass-border);
+        }
+        .tienda-card .contenido .meta .rating {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            color: var(--warning);
+            font-weight: 600;
+        }
+        .tienda-card .contenido .meta .btn-ver {
+            color: var(--gold);
+            font-size: 0.65rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-xl);
+        }
+        .empty-state .icon {
+            font-size: 3rem;
+            display: block;
+            margin-bottom: 16px;
+            color: var(--gold);
+            opacity: 0.4;
+            font-family: 'Orbitron', monospace;
+        }
+        .empty-state h3 {
+            font-family: 'Orbitron', monospace;
+            color: var(--text-secondary);
+            font-size: 1rem;
+            margin-bottom: 8px;
+        }
+        .empty-state p {
+            font-size: 0.8rem;
+        }
+
+        .loading-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-muted);
+        }
+        .loading-state .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(212, 175, 55, 0.15);
+            border-top-color: var(--gold);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 12px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* CTA PARA VENDEDORES */
+        .cta-vendedor {
+            margin-top: 24px;
+            padding: 22px 20px;
+            background: linear-gradient(155deg, rgba(212, 175, 55, 0.08), rgba(15, 45, 26, 0.5));
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            border-radius: var(--radius-xl);
+            text-align: center;
+        }
+        .cta-vendedor h3 {
+            font-family: 'Orbitron', monospace;
+            color: var(--gold);
+            font-size: 1rem;
+            margin-bottom: 8px;
+        }
+        .cta-vendedor p {
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            margin-bottom: 14px;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .cta-vendedor .btn-vender {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 28px;
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            color: var(--space);
+            border: none;
+            border-radius: 30px;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            font-size: 0.8rem;
+            cursor: pointer;
+            text-decoration: none;
+            transition: var(--transition);
+        }
+        .cta-vendedor .btn-vender:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-gold);
+        }
+
+        .footer {
+            margin-top: 30px;
+            padding-top: 16px;
+            border-top: 1px solid var(--glass-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .footer .brand { color: var(--gold); font-weight: 600; }
+        .footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
+        .footer-links a { color: var(--text-muted); text-decoration: none; }
+        .footer-links a:hover { color: var(--gold); }
+
+        /* TEMA DÍA */
+        html.tema-dia,
+        html[data-tema="dia"] {
+            --space: #f5f7fa;
+            --text-primary: #1a2332;
+            --text-secondary: #4a5568;
+            --text-muted: #718096;
+            --glass-bg: rgba(255, 255, 255, 0.9);
+            --glass-border: rgba(0, 0, 0, 0.1);
+        }
+        html.tema-dia body,
+        html[data-tema="dia"] body {
+            background: #f5f7fa !important;
+            background-image: radial-gradient(ellipse at 20% 50%, rgba(212, 175, 55, 0.05) 0%, transparent 60%), radial-gradient(ellipse at 80% 50%, rgba(42, 106, 58, 0.05) 0%, transparent 60%) !important;
+            color: var(--text-primary) !important;
+        }
+        html.tema-dia .nebula,
+        html[data-tema="dia"] .nebula { display: none !important; }
+        html.tema-dia .header,
+        html[data-tema="dia"] .header { background: rgba(255, 255, 255, 0.95) !important; border-bottom-color: rgba(0, 0, 0, 0.1) !important; }
+        html.tema-dia .logo-text,
+        html[data-tema="dia"] .logo-text { color: var(--text-primary) !important; }
+        html.tema-dia .main-nav,
+        html[data-tema="dia"] .main-nav { background: rgba(255, 255, 255, 0.7) !important; border-color: rgba(0, 0, 0, 0.1) !important; }
+        html.tema-dia .main-nav .nav-link,
+        html[data-tema="dia"] .main-nav .nav-link { color: #718096 !important; }
+        html.tema-dia .main-nav .nav-link.active,
+        html[data-tema="dia"] .main-nav .nav-link.active { background: rgba(212, 175, 55, 0.15) !important; color: var(--gold) !important; }
+        html.tema-dia .footer,
+        html[data-tema="dia"] .footer { color: #718096 !important; border-top-color: rgba(0, 0, 0, 0.1) !important; }
+        html.tema-dia .footer-links a,
+        html[data-tema="dia"] .footer-links a { color: #718096 !important; }
+
+        @media (max-width: 480px) {
+            .mercado-hero { padding: 22px 18px; }
+            .mercado-hero h1 { font-size: 1.3rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="nebula nebula-1" aria-hidden="true"></div>
+    <div class="nebula nebula-2" aria-hidden="true"></div>
+    <div class="nebula nebula-3" aria-hidden="true"></div>
+
+    <div class="app">
+
+        <header class="header">
+            <a href="/" class="logo" aria-label="Ir a la página de inicio">
+                <span class="logo-hex">◈</span>
+                <span class="logo-text">Sariel<span>'s</span></span>
+                <span class="logo-badge">✦ WEB3</span>
+            </a>
+            <div class="header-actions">
+                <span class="network-badge"><span class="dot"></span> Polygon</span>
+                <span class="token-badge" id="tokenBadge" onclick="verTokens()">
+                    ◈ <span id="tokenBadgeCantidad">0</span> Es.stoks
+                </span>
+            </div>
+        </header>
+
+        <nav class="main-nav" aria-label="Navegación principal">
+            <a href="/" class="nav-link">⌂ Inicio</a>
+            <a href="/features/muro/muro.html" class="nav-link">◇ Muro</a>
+            <a href="/features/perfil/perfil.html" class="nav-link">◆ Perfil</a>
+            <a href="/features/mensajes/contactos.html" class="nav-link">◈ Contactos</a>
+            <a href="/features/live/live.html" class="nav-link live">◉ Live</a>
+            <a href="/features/internet/internet.html" class="nav-link">◈ Internet</a>
+            <a href="/features/videos/videos.html" class="nav-link">🎬 Videos</a>
+            <a href="/features/grupos/grupos.html" class="nav-link">👥 Grupos</a>
+            <a href="/features/mercado/index.html" class="nav-link active">🛒 Mercado</a>
+        </nav>
+
+        <!-- HERO -->
+        <div class="mercado-hero">
+            <h1 data-clave="mercado_titulo">◈ Mercado Sariel's</h1>
+            <p data-clave="mercado_subtitulo">Descubre tiendas locales, pide a domicilio o recoge en tienda.</p>
+            <div class="stats-row">
+                <div class="stat">
+                    <div class="num" id="statTiendas">0</div>
+                    <div class="lbl" data-clave="mercado_tiendas">Tiendas</div>
+                </div>
+                <div class="stat">
+                    <div class="num" id="statProductos">0</div>
+                    <div class="lbl" data-clave="mercado_productos">Productos</div>
+                </div>
+                <div class="stat">
+                    <div class="num" id="statCategorias">0</div>
+                    <div class="lbl" data-clave="mercado_categorias">Categorías</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- BUSCADOR -->
+        <div class="buscador-box">
+            <div class="input-wrap">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="inputBuscar" data-placeholder="mercado_buscar" placeholder="Buscar tienda o producto..." />
+            </div>
+        </div>
+
+        <!-- CATEGORÍAS -->
+        <div class="buscador-box">
+            <div class="categorias-scroll" id="categoriasScroll">
+                <button class="cat-btn active" data-categoria="todas" onclick="filtrarPorCategoria('todas', this)">
+                    <span>◈</span> <span data-clave="mercado_todas">Todas</span>
+                </button>
+                <!-- Las demás se cargan por JS -->
+            </div>
+        </div>
+
+        <!-- LISTA DE TIENDAS -->
+        <div class="tiendas-titulo">
+            <h2 data-clave="mercado_tiendas_disponibles">◈ Tiendas disponibles</h2>
+            <span class="count" id="contadorTiendas">0</span>
+        </div>
+
+        <div id="tiendasContainer">
+            <div class="loading-state">
+                <div class="spinner"></div>
+                <p data-clave="mercado_cargando">Cargando tiendas...</p>
+            </div>
+        </div>
+
+        <!-- CTA VENDEDOR -->
+        <div class="cta-vendedor">
+            <h3 data-clave="mercado_vende_titulo">¿Tienes un negocio?</h3>
+            <p data-clave="mercado_vende_desc">Únete al Mercado Sariel's y llega a más clientes. Planes desde $100 MXN al mes.</p>
+            <a href="/features/mercado/vendedor/panel.html" class="btn-vender">
+                <span>◆</span>
+                <span data-clave="mercado_vende_boton">Abrir mi tienda</span>
+            </a>
+        </div>
+
+        <footer class="footer">
+            <span><span class="brand">◈ Sariel's</span> · <span data-clave="mercado_footer">Sabor al Paladar · WEB3</span></span>
+            <div class="footer-links">
+                <a href="/terminos" data-clave="footer_terminos">📜 Términos</a>
+                <a href="/privacidad" data-clave="footer_privacidad">🔒 Privacidad</a>
+                <a href="/cookies" data-clave="footer_cookies">🍪 Cookies</a>
+                <a href="/live-terminos" data-clave="footer_terminos_live">📡 Términos de Live</a>
+                <span style="opacity:0.3;">⚡ Polygon</span>
+            </div>
+        </footer>
+
+    </div>
+
+    <div class="toast" id="toast" role="alert" aria-live="polite"></div>
+
+    <div id="errorBanner" style="
+        display:none; position:fixed; top:0; left:0; right:0; z-index:99999;
+        background:#ff3366; color:#fff; padding:12px 16px; font-family:monospace;
+        font-size:0.75rem; word-break:break-word; box-shadow:0 4px 20px rgba(0,0,0,0.4);
+    ">
+        <strong>⚠️ Error detectado:</strong>
+        <span id="errorBannerText"></span>
+        <button onclick="document.getElementById('errorBanner').style.display='none'"
+            style="float:right; background:none; border:1px solid #fff; color:#fff; border-radius:6px; padding:2px 10px; cursor:pointer;">
+            Cerrar
+        </button>
+    </div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="/features/shared/js/idiomas.js"></script>
+
+<script>
+// ================================================================
+// CONFIGURACIÓN SUPABASE
+// ================================================================
+var supabaseUrl = 'https://zultnlogdoajehbswlih.supabase.co';
+var supabaseKey = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
+var supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+window.supabaseClient = supabaseClient;
+var supabase = supabaseClient;
+
+// ================================================================
+// ESTADO
+// ================================================================
+var sessionUser = null;
+var tiendasCache = [];
+var categoriasCache = [];
+var categoriaActiva = 'todas';
+var textoBusqueda = '';
+
+// ================================================================
+// BANNER DE ERRORES
+// ================================================================
+function mostrarErrorEnPantalla(mensaje) {
+    var banner = document.getElementById('errorBanner');
+    var texto = document.getElementById('errorBannerText');
+    if (banner && texto) { texto.textContent = mensaje; banner.style.display = 'block'; }
+}
+window.addEventListener('error', function (event) {
+    mostrarErrorEnPantalla((event.message || 'Error desconocido') + ' — línea ' + event.lineno);
+});
+window.addEventListener('unhandledrejection', function (event) {
+    mostrarErrorEnPantalla('Promesa rechazada: ' + (event.reason && event.reason.message ? event.reason.message : event.reason));
+});
+
+// ================================================================
+// TOAST
+// ================================================================
+function showToast(mensaje, tipo) {
+    try {
+        var toastEl = document.getElementById('toast');
+        if (!toastEl) { console.warn(mensaje); return; }
+        toastEl.textContent = mensaje;
+        toastEl.className = 'toast show';
+        if (tipo === 'error') toastEl.classList.add('error');
+        else if (tipo === 'warning') toastEl.classList.add('warning');
+        else if (tipo === 'success') toastEl.classList.add('success');
+        clearTimeout(toastEl._timeout);
+        toastEl._timeout = setTimeout(function() {
+            toastEl.classList.remove('show');
+        }, 3500);
+    } catch (e) { console.warn('Toast error:', e); }
+}
+
+// ================================================================
+// ESCAPE HTML
+// ================================================================
+function escapeHTML(texto) {
+    if (!texto) return '';
+    var div = document.createElement('div');
+    div.textContent = texto;
+    return div.innerHTML;
+}
+
+// ================================================================
+// OBTENER SESIÓN
+// ================================================================
+async function getSession() {
+    try {
+        var result = await supabase.auth.getSession();
+        return result.data.session;
+    } catch (e) {
+        console.error('Error obteniendo sesión:', e);
+        return null;
+    }
+}
+
+// ================================================================
+// CARGAR USUARIO ACTUAL
+// ================================================================
+async function cargarUsuarioActual() {
+    try {
+        var session = await getSession();
+        if (!session) { sessionUser = null; return null; }
+        sessionUser = session.user;
+        var result = await supabase
+            .from('usuarios')
+            .select('nombre, handle, tokens')
+            .eq('id', session.user.id)
+            .single();
+        if (result.error) throw result.error;
+        var data = result.data;
+        if (data) {
+            var badge = document.getElementById('tokenBadgeCantidad');
+            if (badge) badge.textContent = data.tokens || 0;
+        }
+        return data;
+    } catch (e) {
+        console.error('Error cargando usuario:', e);
+        return null;
+    }
+}
+
+// ================================================================
+// CARGAR CATEGORÍAS
+// ================================================================
+async function cargarCategorias() {
+    try {
+        var result = await supabase
+            .from('mercado_categorias')
+            .select('id, slug, nombre, icono, orden')
+            .eq('activa', true)
+            .order('orden', { ascending: true });
+
+        if (result.error) throw result.error;
+        categoriasCache = result.data || [];
+
+        var statCat = document.getElementById('statCategorias');
+        if (statCat) statCat.textContent = categoriasCache.length;
+
+        var scroll = document.getElementById('categoriasScroll');
+        if (!scroll) return;
+
+        // Mantener la primera (Todas) y agregar las demás
+        var html = '<button class="cat-btn active" data-categoria="todas" onclick="filtrarPorCategoria(\'todas\', this)">' +
+            '<span>◈</span> <span data-clave="mercado_todas">Todas</span></button>';
+
+        categoriasCache.forEach(function (cat) {
+            html += '<button class="cat-btn" data-categoria="' + escapeHTML(cat.slug) + '" onclick="filtrarPorCategoria(\'' + escapeHTML(cat.slug) + '\', this)">' +
+                '<span>' + escapeHTML(cat.icono || '◈') + '</span> <span>' + escapeHTML(cat.nombre) + '</span>' +
+            '</button>';
+        });
+
+        scroll.innerHTML = html;
+
+        // Reaplicar i18n
+        if (typeof window.aplicarTraducciones === 'function') {
+            window.aplicarTraducciones(scroll);
+        }
+    } catch (e) {
+        console.error('Error cargando categorías:', e);
+    }
+}
+
+// ================================================================
+// CARGAR TIENDAS
+// ================================================================
+async function cargarTiendas() {
+    var container = document.getElementById('tiendasContainer');
+    if (!container) return;
+
+    container.innerHTML = '<div class="loading-state"><div class="spinner"></div><p data-clave="mercado_cargando">Cargando tiendas...</p></div>';
+
+    try {
+        var query = supabase
+            .from('mercado_tiendas')
+            .select('id, slug, nombre_negocio, descripcion, categoria_id, logo_url, portada_url, direccion, nivel, calificacion_promedio, total_resenas, total_pedidos, productos_count, estado, activa_hasta')
+            .eq('estado', 'activa')
+            .order('nivel', { ascending: false })
+            .order('calificacion_promedio', { ascending: false });
+
+        var result = await query;
+        if (result.error) throw result.error;
+
+        tiendasCache = result.data || [];
+
+        // Filtrar las que tengan activa_hasta vencida (por si el cron falló)
+        var ahora = new Date();
+        tiendasCache = tiendasCache.filter(function (t) {
+            if (!t.activa_hasta) return true;
+            return new Date(t.activa_hasta) > ahora;
+        });
+
+        // Contadores
+        var statTiendas = document.getElementById('statTiendas');
+        if (statTiendas) statTiendas.textContent = tiendasCache.length;
+
+        // Contar productos totales
+        if (tiendasCache.length > 0) {
+            var totalProductos = 0;
+            tiendasCache.forEach(function (t) { totalProductos += (t.productos_count || 0); });
+            var statProd = document.getElementById('statProductos');
+            if (statProd) statProd.textContent = totalProductos;
+        }
+
+        aplicarFiltros();
+    } catch (e) {
+        console.error('Error cargando tiendas:', e);
+        container.innerHTML = '<div class="empty-state"><span class="icon">⚠️</span><h3>Error al cargar</h3><p>' + escapeHTML(e.message) + '</p></div>';
+        showToast('❌ Error al cargar el Mercado', 'error');
+    }
+}
+
+// ================================================================
+// APLICAR FILTROS (categoría + búsqueda)
+// ================================================================
+function aplicarFiltros() {
+    var filtradas = tiendasCache.slice();
+
+    // Filtro por categoría
+    if (categoriaActiva !== 'todas') {
+        var cat = categoriasCache.find(function (c) { return c.slug === categoriaActiva; });
+        if (cat) {
+            filtradas = filtradas.filter(function (t) { return t.categoria_id === cat.id; });
+        }
+    }
+
+    // Filtro por búsqueda
+    if (textoBusqueda && textoBusqueda.length > 0) {
+        var q = textoBusqueda.toLowerCase();
+        filtradas = filtradas.filter(function (t) {
+            var n = (t.nombre_negocio || '').toLowerCase();
+            var d = (t.descripcion || '').toLowerCase();
+            return n.indexOf(q) !== -1 || d.indexOf(q) !== -1;
+        });
+    }
+
+    renderizarTiendas(filtradas);
+}
+
+// ================================================================
+// RENDERIZAR TIENDAS
+// ================================================================
+function renderizarTiendas(tiendas) {
+    var container = document.getElementById('tiendasContainer');
+    var contador = document.getElementById('contadorTiendas');
+    if (!container) return;
+
+    if (contador) contador.textContent = tiendas.length;
+
+    if (tiendas.length === 0) {
+        container.innerHTML = '<div class="empty-state">' +
+            '<span class="icon">🛒</span>' +
+            '<h3 data-clave="mercado_sin_tiendas">Aún no hay tiendas aquí</h3>' +
+            '<p data-clave="mercado_sin_tiendas_desc">Sé el primero en abrir tu negocio en el Mercado Sariel\'s.</p>' +
+        '</div>';
+        if (typeof window.aplicarTraducciones === 'function') {
+            window.aplicarTraducciones(container);
+        }
+        return;
+    }
+
+    var html = '<div class="tiendas-grid">';
+
+    tiendas.forEach(function (t) {
+        var categoriaNombre = '';
+        var categoriaIcono = '◈';
+        if (t.categoria_id) {
+            var cat = categoriasCache.find(function (c) { return c.id === t.categoria_id; });
+            if (cat) {
+                categoriaNombre = cat.nombre;
+                categoriaIcono = cat.icono || '◈';
+            }
+        }
+
+        var rating = (t.calificacion_promedio || 0).toFixed(1);
+        var totalResenas = t.total_resenas || 0;
+        var nivel = (t.nivel || 'basico').toLowerCase();
+        var badgeNivel = '';
+
+        if (nivel === 'max') {
+            badgeNivel = '<span class="badge-nivel max" data-clave="mercado_max">✦ Max</span>';
+        } else if (nivel === 'pro') {
+            badgeNivel = '<span class="badge-nivel pro" data-clave="mercado_pro">◆ Pro</span>';
+        }
+
+        // Portada
+        var portadaContent;
+        if (t.portada_url) {
+            portadaContent = '<img src="' + escapeHTML(t.portada_url) + '" alt="' + escapeHTML(t.nombre_negocio) + '" loading="lazy" onerror="this.style.display=\'none\';" />';
+        } else {
+            portadaContent = '<span>🛒</span>';
+        }
+
+        // Logo
+        var logoContent;
+        if (t.logo_url) {
+            logoContent = '<img src="' + escapeHTML(t.logo_url) + '" alt="Logo" loading="lazy" onerror="this.style.display=\'none\';this.parentElement.textContent=\'◈\';" />';
+        } else {
+            logoContent = '◈';
+        }
+
+        html += '<div class="tienda-card" onclick="verTienda(\'' + t.slug + '\')">' +
+            '<div class="portada">' +
+                badgeNivel +
+                portadaContent +
+                '<div class="logo-overlap">' + logoContent + '</div>' +
+            '</div>' +
+            '<div class="contenido">' +
+                '<div class="nombre">' + escapeHTML(t.nombre_negocio) + '</div>' +
+                '<div class="categoria">' +
+                    '<span>' + escapeHTML(categoriaIcono) + '</span>' +
+                    '<span>' + escapeHTML(categoriaNombre || 'Sin categoría') + '</span>' +
+                '</div>' +
+                '<div class="descripcion">' + escapeHTML(t.descripcion || 'Sin descripción') + '</div>' +
+                '<div class="meta">' +
+                    '<span class="rating">⭐ ' + rating + ' <span style="color:var(--text-muted);font-weight:400;">(' + totalResenas + ')</span></span>' +
+                    '<span class="btn-ver">' +
+                        '<span data-clave="mercado_ver_tienda">Ver tienda</span> →' +
+                    '</span>' +
+                '</div>' +
+            '</div>' +
+        '</div>';
+    });
+
+    html += '</div>';
+    container.innerHTML = html;
+
+    if (typeof window.aplicarTraducciones === 'function') {
+        window.aplicarTraducciones(container);
+    }
+}
+
+// ================================================================
+// FILTRAR POR CATEGORÍA
+// ================================================================
+function filtrarPorCategoria(slug, btn) {
+    categoriaActiva = slug;
+    document.querySelectorAll('.cat-btn').forEach(function (b) {
+        b.classList.remove('active');
+    });
+    if (btn) btn.classList.add('active');
+    aplicarFiltros();
+}
+
+// ================================================================
+// BUSCADOR CON DEBOUNCE
+// ================================================================
+var debounceTimer = null;
+function configurarBuscador() {
+    var input = document.getElementById('inputBuscar');
+    if (!input) return;
+    input.addEventListener('input', function () {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(function () {
+            textoBusqueda = input.value.trim();
+            aplicarFiltros();
+        }, 250);
+    });
+}
+
+// ================================================================
+// IR A TIENDA
+// ================================================================
+function verTienda(slug) {
+    if (!slug) return;
+    window.location.href = '/features/mercado/tienda.html?slug=' + encodeURIComponent(slug);
+}
+
+// ================================================================
+// VER TOKENS (perfil)
+// ================================================================
+function verTokens() { window.location.href = '/features/perfil/perfil.html'; }
+
+// ================================================================
+// INICIALIZACIÓN
+// ================================================================
+document.addEventListener('DOMContentLoaded', function () {
+    cargarUsuarioActual().then(function () {
+        cargarCategorias();
+        cargarTiendas();
+        configurarBuscador();
+    });
+
+    setTimeout(async function () {
+        try {
+            if (typeof window.inicializarIdiomas === 'function') {
+                await window.inicializarIdiomas();
+                console.log('✅ Idiomas aplicados al Mercado');
+            }
+        } catch (e) {
+            console.warn('⚠️ Error aplicando idiomas:', e);
+        }
+    }, 500);
+
+    console.log('◈ Sariel\'s - Mercado inicializado');
+});
+
+// ================================================================
+// EXPOSICIÓN GLOBAL
+// ================================================================
+window.filtrarPorCategoria = filtrarPorCategoria;
+window.verTienda = verTienda;
+window.verTokens = verTokens;
+window.showToast = showToast;
+window.cargarTiendas = cargarTiendas;
+window.cargarCategorias = cargarCategorias;
+</script>
+</body>
+</html>
