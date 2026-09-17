@@ -11,37 +11,16 @@
 
     <style>
         :root {
-            --gold: #D4AF37;
-            --gold-dark: #b8923a;
-            --gold-light: #e8c84a;
-            --gold-bright: #f0d060;
-            --green-deep: #0F2D1A;
-            --green-mid: #1a4a2a;
-            --green-bright: #2a6a3a;
-            --space: #05080f;
-            --text-primary: #f0f4f8;
-            --text-secondary: #c0d8e8;
-            --text-muted: #8aa8b8;
-            --glass-bg: rgba(15, 45, 26, 0.55);
-            --glass-border: rgba(212, 175, 55, 0.15);
-            --shadow-gold: 0 8px 32px rgba(212, 175, 55, 0.25);
-            --shadow-gold-strong: 0 0 60px rgba(212, 175, 55, 0.15);
-            --radius: 16px;
-            --radius-xl: 24px;
-            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            --success: #00d68f;
-            --danger: #ff3366;
-            --warning: #f7d44a;
-            --cyan: #00e5ff;
-            --purple: #a855f7;
-            --pink: #ec4899;
-            --bg-card: rgba(15, 45, 26, 0.4);
-            --bg-dark: rgba(5, 8, 15, 0.8);
-            --border-color: rgba(212, 175, 55, 0.08);
-            --line-black: #000000;
-            --line-black-soft: rgba(0, 0, 0, 0.85);
-            --line-black-mid: rgba(0, 0, 0, 0.65);
-            --line-black-light: rgba(0, 0, 0, 0.45);
+            --gold: #D4AF37; --gold-dark: #b8923a; --gold-light: #e8c84a; --gold-bright: #f0d060;
+            --green-deep: #0F2D1A; --green-mid: #1a4a2a; --green-bright: #2a6a3a;
+            --space: #05080f; --text-primary: #f0f4f8; --text-secondary: #c0d8e8; --text-muted: #8aa8b8;
+            --glass-bg: rgba(15, 45, 26, 0.55); --glass-border: rgba(212, 175, 55, 0.15);
+            --shadow-gold: 0 8px 32px rgba(212, 175, 55, 0.25); --shadow-gold-strong: 0 0 60px rgba(212, 175, 55, 0.15);
+            --radius: 16px; --radius-xl: 24px; --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --success: #00d68f; --danger: #ff3366; --warning: #f7d44a; --cyan: #00e5ff;
+            --purple: #a855f7; --pink: #ec4899;
+            --bg-card: rgba(15, 45, 26, 0.4); --bg-dark: rgba(5, 8, 15, 0.8); --border-color: rgba(212, 175, 55, 0.08);
+            --line-black: #000000; --line-black-soft: rgba(0, 0, 0, 0.85); --line-black-mid: rgba(0, 0, 0, 0.65); --line-black-light: rgba(0, 0, 0, 0.45);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -62,11 +41,7 @@
 
         .app { position: relative; z-index: 1; max-width: 100%; width: 100%; margin: 0 auto; padding: 12px 16px 30px; }
 
-        .header {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 10px 0 14px; border-bottom: 1px solid var(--glass-border);
-            background: rgba(5, 8, 15, 0.92); position: sticky; top: 0; z-index: 100;
-        }
+        .header { display: flex; justify-content: space-between; align-items: center; padding: 10px 0 14px; border-bottom: 1px solid var(--glass-border); background: rgba(5, 8, 15, 0.92); position: sticky; top: 0; z-index: 100; }
         .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
         .logo-hex { font-size: 1.8rem; color: var(--gold); font-family: 'Orbitron', monospace; }
         .logo-text { font-family: 'Orbitron', monospace; font-size: 1.2rem; color: var(--text-primary); letter-spacing: 2px; }
@@ -75,10 +50,7 @@
         .network-badge { display: flex; align-items: center; gap: 6px; font-size: 0.6rem; color: var(--gold); background: rgba(212,175,55,0.1); padding: 4px 12px; border-radius: 20px; }
         .token-badge { display: flex; align-items: center; gap: 6px; background: rgba(212,175,55,0.1); border: 1px solid rgba(212,175,55,0.15); padding: 4px 14px; border-radius: 20px; font-size: 0.7rem; color: var(--gold); font-family: 'Orbitron', monospace; cursor: pointer; }
 
-        .main-nav {
-            display: flex; gap: 4px; background: rgba(15,45,26,0.3); border-radius: var(--radius);
-            padding: 4px; border: 1px solid var(--glass-border); margin: 16px 0 20px; overflow-x: auto;
-        }
+        .main-nav { display: flex; gap: 4px; background: rgba(15,45,26,0.3); border-radius: var(--radius); padding: 4px; border: 1px solid var(--glass-border); margin: 16px 0 20px; overflow-x: auto; }
         .main-nav .nav-link { padding: 8px 16px; border-radius: 12px; color: var(--text-muted); text-decoration: none; font-size: 0.7rem; white-space: nowrap; transition: var(--transition); }
         .main-nav .nav-link:hover { color: var(--text-primary); background: rgba(212,175,55,0.05); }
         .main-nav .nav-link.active { background: rgba(212,175,55,0.12); color: var(--gold); }
@@ -96,423 +68,156 @@
             scroll-behavior: smooth;
             -webkit-overflow-scrolling: touch;
         }
-
         .videos-grid::-webkit-scrollbar { width: 4px; }
         .videos-grid::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 4px; }
         .videos-grid::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); }
 
-        .video-card {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius-xl);
-            overflow: hidden;
-            transition: var(--transition);
-            cursor: pointer;
-            scroll-snap-align: center;
-            min-height: 70vh;
-            max-height: 70vh;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-            scroll-snap-stop: always;
-        }
+        .video-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-xl); overflow: hidden; transition: var(--transition); cursor: pointer; scroll-snap-align: center; min-height: 70vh; max-height: 70vh; display: flex; flex-direction: column; position: relative; scroll-snap-stop: always; }
         .video-card:hover { border-color: var(--gold); box-shadow: var(--shadow-gold); }
         .video-card.visible { border-color: var(--gold); box-shadow: var(--shadow-gold); }
 
-        .video-card .thumbnail {
+        .video-card .thumbnail { width: 100%; flex: 1; background: var(--space); display: flex; align-items: center; justify-content: center; font-size: 3rem; color: var(--text-muted); position: relative; overflow: hidden; }
+        .video-card .thumbnail video { width: 100%; height: 100%; object-fit: contain; background: #000; filter: contrast(1.05) brightness(1.02) saturate(1.05); }
+        .video-card .thumbnail .play-btn { position: absolute; width: 60px; height: 60px; background: rgba(212, 175, 55, 0.85); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; color: var(--space); transition: var(--transition); z-index: 3; cursor: pointer; border: 2px solid rgba(212, 175, 55, 0.4); }
+        .video-card .thumbnail .play-btn:hover { transform: scale(1.1); background: var(--gold); }
+        .video-card.playing .thumbnail .play-btn { display: none; }
+        .video-card.playing:hover .thumbnail .play-btn { display: flex; opacity: 0.85; }
+
+        .video-card .btn-eliminar-card { position: absolute; top: 12px; right: 12px; z-index: 5; width: 38px; height: 38px; border-radius: 50%; background: rgba(0, 0, 0, 0.65); backdrop-filter: blur(8px); border: 1px solid rgba(255, 51, 102, 0.5); color: #ff3366; font-size: 1.05rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: var(--transition); line-height: 1; padding: 0; }
+        .video-card .btn-eliminar-card:hover { background: rgba(255, 51, 102, 0.9); color: #fff; transform: scale(1.08); box-shadow: 0 0 25px rgba(255, 51, 102, 0.5); }
+
+        .video-card .info { padding: 14px 16px; background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(15, 45, 26, 0.65) 100%); }
+        .video-card .info .titulo { font-family: 'Orbitron', monospace; font-size: 0.9rem; color: var(--gold); font-weight: 700; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+        .video-card .info .autor { font-size: 0.7rem; color: var(--text-muted); margin-top: 4px; }
+        .video-card .info .stats { display: flex; gap: 12px; font-size: 0.6rem; color: var(--text-muted); margin-top: 8px; flex-wrap: wrap; align-items: center; }
+        .video-card .info .stats span:hover { color: var(--gold); }
+        .video-card .info .descripcion { font-size: 0.7rem; color: var(--text-secondary); margin-top: 6px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+        .marketing-ad-container { display: none; margin-bottom: 20px; background: linear-gradient(155deg, rgba(15, 45, 26, 0.55), rgba(8, 15, 26, 0.75)); border: 1px solid rgba(212, 175, 55, 0.25); border-radius: var(--radius-xl); overflow: hidden; backdrop-filter: blur(14px); position: relative; box-shadow: 0 10px 40px rgba(212, 175, 55, 0.08); animation: adFadeIn 0.5s ease; }
+        .marketing-ad-container.visible { display: block; }
+        @keyframes adFadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .marketing-ad-container::before { content: ''; position: absolute; top: 0; left: 20%; width: 60%; height: 1px; background: linear-gradient(90deg, transparent, var(--gold), transparent); opacity: 0.5; }
+        .marketing-ad-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; border-bottom: 1px solid rgba(212, 175, 55, 0.1); }
+        .marketing-ad-label { font-family: 'Orbitron', monospace; font-size: 0.55rem; color: var(--gold); letter-spacing: 3px; text-transform: uppercase; display: flex; align-items: center; gap: 8px; opacity: 0.85; }
+        .marketing-ad-label::before { content: '◈'; color: var(--gold); font-size: 0.7rem; }
+        .marketing-ad-close { background: transparent; border: none; color: var(--text-muted); font-size: 1.1rem; cursor: pointer; line-height: 1; padding: 4px 8px; transition: var(--transition); }
+        .marketing-ad-close:hover { color: var(--gold); }
+        .marketing-ad-body { display: flex; gap: 14px; padding: 14px 16px 16px; align-items: flex-start; }
+        .marketing-ad-media { width: 96px; height: 96px; border-radius: 12px; overflow: hidden; flex-shrink: 0; background: rgba(0,0,0,0.4); border: 1px solid rgba(212, 175, 55, 0.15); display: flex; align-items: center; justify-content: center; color: var(--gold); font-family: 'Orbitron', monospace; font-size: 1.5rem; position: relative; }
+        .marketing-ad-media img, .marketing-ad-media video { width: 100%; height: 100%; object-fit: cover; }
+        .marketing-ad-content { flex: 1; min-width: 0; }
+        .marketing-ad-title { font-family: 'Orbitron', monospace; font-size: 0.85rem; font-weight: 700; color: var(--text-primary); margin-bottom: 6px; line-height: 1.3; }
+        .marketing-ad-desc { font-size: 0.7rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 12px; word-wrap: break-word; }
+        .marketing-ad-cta { display: inline-flex; align-items: center; gap: 6px; padding: 8px 20px; border-radius: 30px; background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); font-size: 0.7rem; font-weight: 700; text-decoration: none; border: none; cursor: pointer; transition: var(--transition); font-family: 'Inter', sans-serif; text-transform: uppercase; letter-spacing: 0.5px; }
+        .marketing-ad-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(212, 175, 55, 0.4); }
+        @media (max-width: 480px) { .marketing-ad-body { flex-direction: column; } .marketing-ad-media { width: 100%; height: 140px; } }
+
+        .upload-section { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-xl); padding: 20px; margin-bottom: 20px; }
+        .upload-section h3 { font-family: 'Orbitron', monospace; color: var(--gold); font-size: 0.9rem; margin-bottom: 12px; }
+        .upload-section .form-group { margin-bottom: 12px; }
+        .upload-section .form-group label { display: block; font-size: 0.7rem; color: var(--text-muted); margin-bottom: 4px; }
+        .upload-section .form-group input,
+        .upload-section .form-group textarea { width: 100%; padding: 10px 14px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 10px; color: var(--text-primary); font-size: 0.85rem; outline: none; }
+        .upload-section .form-group input:focus,
+        .upload-section .form-group textarea:focus { border-color: var(--gold); }
+        .upload-section .form-group textarea { resize: vertical; min-height: 60px; }
+        .upload-section .form-group .file-input-wrapper { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .upload-section .form-group .file-input-wrapper input[type="file"] { flex: 1; padding: 8px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 10px; color: var(--text-primary); font-size: 0.7rem; }
+        .btn-subir-video { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); border: none; padding: 10px 24px; border-radius: 30px; font-family: 'Orbitron', monospace; font-weight: 700; font-size: 0.8rem; cursor: pointer; transition: var(--transition); }
+        .btn-subir-video:hover { transform: scale(1.02); box-shadow: var(--shadow-gold); }
+        .btn-subir-video:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        .processing-state { display: none; flex-direction: column; align-items: center; gap: 12px; padding: 30px 20px; background: linear-gradient(155deg, rgba(15, 45, 26, 0.55), rgba(8, 15, 26, 0.75)); border: 1px solid var(--gold); border-radius: var(--radius-xl); margin-bottom: 20px; text-align: center; }
+        .processing-state.visible { display: flex; }
+        .processing-state .spinner { width: 60px; height: 60px; border: 4px solid rgba(212, 175, 55, 0.15); border-top-color: var(--gold); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .processing-state h3 { font-family: 'Orbitron', monospace; color: var(--gold); font-size: 1rem; margin-bottom: 4px; }
+        .processing-state p { font-size: 0.75rem; color: var(--text-secondary); }
+        .processing-state .progress-bar-big { width: 100%; max-width: 400px; height: 10px; background: rgba(255,255,255,0.05); border-radius: 10px; overflow: hidden; margin-top: 8px; }
+        .processing-state .progress-bar-big .fill { height: 100%; background: linear-gradient(90deg, var(--gold), var(--gold-light)); border-radius: 10px; transition: width 0.5s ease; width: 0%; }
+        .processing-state .progress-text { font-family: 'Orbitron', monospace; font-size: 1.2rem; color: var(--gold); font-weight: 700; }
+
+        /* ================================================================
+           MODAL DE VIDEO
+           ================================================================ */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); backdrop-filter: blur(12px); display: none; align-items: center; justify-content: center; z-index: 9999; padding: 0; }
+        .modal-overlay.show { display: flex; }
+
+        .modal-video { background: #000; border: none; border-radius: 0; max-width: 100%; width: 100%; max-height: 100vh; height: 100vh; overflow: hidden; padding: 0; position: relative; transition: height 0.2s ease; }
+        .modal-video.teclado-abierto { height: var(--altura-teclado, 100vh); }
+
+        /* Contenedor del video sin controles nativos */
+        .modal-video .video-wrapper {
+            position: relative;
             width: 100%;
-            flex: 1;
-            background: var(--space);
+            height: 100vh;
+            background: #000;
+            transition: height 0.2s ease;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 3rem;
-            color: var(--text-muted);
-            position: relative;
-            overflow: hidden;
         }
-        .video-card .thumbnail img { width: 100%; height: 100%; object-fit: cover; }
-        .video-card .thumbnail video {
+        .modal-video.teclado-abierto .video-wrapper {
+            height: var(--altura-teclado, 100vh);
+        }
+        .modal-video .video-wrapper video {
             width: 100%;
             height: 100%;
             object-fit: contain;
             background: #000;
             filter: contrast(1.05) brightness(1.02) saturate(1.05);
+            display: block;
         }
-        .video-card .thumbnail .play-btn {
+
+        /* Capa de click sobre el video para mostrar/ocultar controles */
+        .modal-video .click-capa {
             position: absolute;
-            width: 60px;
-            height: 60px;
-            background: rgba(212, 175, 55, 0.85);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.8rem;
-            color: var(--space);
-            transition: var(--transition);
+            inset: 0;
             z-index: 3;
             cursor: pointer;
-            border: 2px solid rgba(212, 175, 55, 0.4);
-        }
-        .video-card .thumbnail .play-btn:hover { transform: scale(1.1); background: var(--gold); }
-        .video-card.playing .thumbnail .play-btn { display: none; }
-        .video-card.playing:hover .thumbnail .play-btn { display: flex; opacity: 0.85; }
-
-        .video-card .btn-eliminar-card {
-            position: absolute;
-            top: 12px;
-            right: 12px;
-            z-index: 5;
-            width: 38px;
-            height: 38px;
-            border-radius: 50%;
-            background: rgba(0, 0, 0, 0.65);
-            backdrop-filter: blur(8px);
-            border: 1px solid rgba(255, 51, 102, 0.5);
-            color: #ff3366;
-            font-size: 1.05rem;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: var(--transition);
-            line-height: 1;
-            padding: 0;
-        }
-        .video-card .btn-eliminar-card:hover {
-            background: rgba(255, 51, 102, 0.9);
-            color: #fff;
-            transform: scale(1.08);
-            box-shadow: 0 0 25px rgba(255, 51, 102, 0.5);
-        }
-
-        .video-card .info {
-            padding: 14px 16px;
-            background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(15, 45, 26, 0.65) 100%);
-        }
-        .video-card .info .titulo {
-            font-family: 'Orbitron', monospace;
-            font-size: 0.9rem;
-            color: var(--gold);
-            font-weight: 700;
-            display: -webkit-box;
-            -webkit-line-clamp: 1;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-        .video-card .info .autor { font-size: 0.7rem; color: var(--text-muted); margin-top: 4px; }
-        .video-card .info .stats {
-            display: flex;
-            gap: 12px;
-            font-size: 0.6rem;
-            color: var(--text-muted);
-            margin-top: 8px;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-        .video-card .info .stats span:hover { color: var(--gold); }
-        .video-card .info .descripcion {
-            font-size: 0.7rem;
-            color: var(--text-secondary);
-            margin-top: 6px;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-
-        .marketing-ad-container {
-            display: none;
-            margin-bottom: 20px;
-            background: linear-gradient(155deg, rgba(15, 45, 26, 0.55), rgba(8, 15, 26, 0.75));
-            border: 1px solid rgba(212, 175, 55, 0.25);
-            border-radius: var(--radius-xl);
-            overflow: hidden;
-            backdrop-filter: blur(14px);
-            position: relative;
-            box-shadow: 0 10px 40px rgba(212, 175, 55, 0.08);
-            animation: adFadeIn 0.5s ease;
-        }
-        .marketing-ad-container.visible { display: block; }
-        @keyframes adFadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .marketing-ad-container::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 20%;
-            width: 60%; height: 1px;
-            background: linear-gradient(90deg, transparent, var(--gold), transparent);
-            opacity: 0.5;
-        }
-        .marketing-ad-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 16px;
-            border-bottom: 1px solid rgba(212, 175, 55, 0.1);
-        }
-        .marketing-ad-label {
-            font-family: 'Orbitron', monospace;
-            font-size: 0.55rem;
-            color: var(--gold);
-            letter-spacing: 3px;
-            text-transform: uppercase;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            opacity: 0.85;
-        }
-        .marketing-ad-label::before { content: '◈'; color: var(--gold); font-size: 0.7rem; }
-        .marketing-ad-close {
             background: transparent;
-            border: none;
-            color: var(--text-muted);
-            font-size: 1.1rem;
-            cursor: pointer;
-            line-height: 1;
-            padding: 4px 8px;
-            transition: var(--transition);
-        }
-        .marketing-ad-close:hover { color: var(--gold); }
-        .marketing-ad-body {
-            display: flex;
-            gap: 14px;
-            padding: 14px 16px 16px;
-            align-items: flex-start;
-        }
-        .marketing-ad-media {
-            width: 96px;
-            height: 96px;
-            border-radius: 12px;
-            overflow: hidden;
-            flex-shrink: 0;
-            background: rgba(0,0,0,0.4);
-            border: 1px solid rgba(212, 175, 55, 0.15);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--gold);
-            font-family: 'Orbitron', monospace;
-            font-size: 1.5rem;
-            position: relative;
-        }
-        .marketing-ad-media img, .marketing-ad-media video { width: 100%; height: 100%; object-fit: cover; }
-        .marketing-ad-content { flex: 1; min-width: 0; }
-        .marketing-ad-title {
-            font-family: 'Orbitron', monospace;
-            font-size: 0.85rem;
-            font-weight: 700;
-            color: var(--text-primary);
-            margin-bottom: 6px;
-            line-height: 1.3;
-        }
-        .marketing-ad-desc {
-            font-size: 0.7rem;
-            color: var(--text-secondary);
-            line-height: 1.5;
-            margin-bottom: 12px;
-            word-wrap: break-word;
-        }
-        .marketing-ad-cta {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 8px 20px;
-            border-radius: 30px;
-            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
-            color: var(--space);
-            font-size: 0.7rem;
-            font-weight: 700;
-            text-decoration: none;
-            border: none;
-            cursor: pointer;
-            transition: var(--transition);
-            font-family: 'Inter', sans-serif;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .marketing-ad-cta:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 30px rgba(212, 175, 55, 0.4);
-        }
-        @media (max-width: 480px) {
-            .marketing-ad-body { flex-direction: column; }
-            .marketing-ad-media { width: 100%; height: 140px; }
-        }
-
-        .upload-section {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius-xl);
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-        .upload-section h3 {
-            font-family: 'Orbitron', monospace;
-            color: var(--gold);
-            font-size: 0.9rem;
-            margin-bottom: 12px;
-        }
-        .upload-section .form-group { margin-bottom: 12px; }
-        .upload-section .form-group label {
-            display: block;
-            font-size: 0.7rem;
-            color: var(--text-muted);
-            margin-bottom: 4px;
-        }
-        .upload-section .form-group input,
-        .upload-section .form-group textarea {
-            width: 100%;
-            padding: 10px 14px;
-            background: rgba(0,0,0,0.3);
-            border: 1px solid var(--glass-border);
-            border-radius: 10px;
-            color: var(--text-primary);
-            font-size: 0.85rem;
-            outline: none;
-        }
-        .upload-section .form-group input:focus,
-        .upload-section .form-group textarea:focus { border-color: var(--gold); }
-        .upload-section .form-group textarea { resize: vertical; min-height: 60px; }
-        .upload-section .form-group .file-input-wrapper {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-        .upload-section .form-group .file-input-wrapper input[type="file"] {
-            flex: 1;
-            padding: 8px;
-            background: rgba(0,0,0,0.3);
-            border: 1px solid var(--glass-border);
-            border-radius: 10px;
-            color: var(--text-primary);
-            font-size: 0.7rem;
-        }
-        .btn-subir-video {
-            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
-            color: var(--space);
-            border: none;
-            padding: 10px 24px;
-            border-radius: 30px;
-            font-family: 'Orbitron', monospace;
-            font-weight: 700;
-            font-size: 0.8rem;
-            cursor: pointer;
-            transition: var(--transition);
-        }
-        .btn-subir-video:hover { transform: scale(1.02); box-shadow: var(--shadow-gold); }
-        .btn-subir-video:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-
-        .processing-state {
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            gap: 12px;
-            padding: 30px 20px;
-            background: linear-gradient(155deg, rgba(15, 45, 26, 0.55), rgba(8, 15, 26, 0.75));
-            border: 1px solid var(--gold);
-            border-radius: var(--radius-xl);
-            margin-bottom: 20px;
-            text-align: center;
-        }
-        .processing-state.visible { display: flex; }
-        .processing-state .spinner {
-            width: 60px;
-            height: 60px;
-            border: 4px solid rgba(212, 175, 55, 0.15);
-            border-top-color: var(--gold);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .processing-state h3 {
-            font-family: 'Orbitron', monospace;
-            color: var(--gold);
-            font-size: 1rem;
-            margin-bottom: 4px;
-        }
-        .processing-state p {
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-        }
-        .processing-state .progress-bar-big {
-            width: 100%;
-            max-width: 400px;
-            height: 10px;
-            background: rgba(255,255,255,0.05);
-            border-radius: 10px;
-            overflow: hidden;
-            margin-top: 8px;
-        }
-        .processing-state .progress-bar-big .fill {
-            height: 100%;
-            background: linear-gradient(90deg, var(--gold), var(--gold-light));
-            border-radius: 10px;
-            transition: width 0.5s ease;
-            width: 0%;
-        }
-        .processing-state .progress-text {
-            font-family: 'Orbitron', monospace;
-            font-size: 1.2rem;
-            color: var(--gold);
-            font-weight: 700;
-        }
-
-        .modal-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.95);
-            backdrop-filter: blur(12px);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-            padding: 0;
-        }
-        .modal-overlay.show { display: flex; }
-
-        .modal-video {
-            background: #000;
-            border: none;
-            border-radius: 0;
-            max-width: 100%;
-            width: 100%;
-            max-height: 100vh;
-            height: 100vh;
-            overflow: hidden;
-            padding: 0;
-            position: relative;
-            transition: height 0.2s ease;
-        }
-        .modal-video.teclado-abierto {
-            height: var(--altura-teclado, 100vh);
         }
 
         /* ================================================================
-           BARRA SUPERIOR DE CONTROLES (◈ + símbolo)
+           BARRA DE CONTROLES (aparece al tocar, abajo del video)
            ================================================================ */
         .modal-video .barra-controles {
             position: absolute;
-            top: 12px;
-            left: 12px;
-            z-index: 12;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 8;
+            padding: 12px 14px calc(12px + env(safe-area-inset-bottom, 0));
+            background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.75) 60%, transparent 100%);
             display: flex;
-            gap: 6px;
-            align-items: center;
+            flex-direction: column;
+            gap: 8px;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 0.25s ease, transform 0.25s ease;
+            pointer-events: none;
         }
+        .modal-video.controles-visibles .barra-controles {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+
+        .modal-video .barra-controles .fila-botones {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
         .modal-video .btn-control {
             width: 38px;
             height: 38px;
             border-radius: 50%;
-            background: rgba(0, 0, 0, 0.55);
+            background: rgba(0, 0, 0, 0.6);
             backdrop-filter: blur(8px);
             border: 1px solid rgba(212, 175, 55, 0.4);
             color: var(--gold);
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -522,37 +227,107 @@
             line-height: 1;
             font-family: 'Orbitron', monospace;
             font-weight: 700;
+            flex-shrink: 0;
         }
         .modal-video .btn-control:hover {
             background: var(--gold);
             color: var(--space);
-            transform: scale(1.08);
-            box-shadow: 0 0 25px rgba(212, 175, 55, 0.5);
+            transform: scale(1.06);
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.5);
         }
-        .modal-video .btn-control .diamante {
-            font-size: 0.9rem;
-            margin-right: 1px;
+        .modal-video .btn-control .diamante { font-size: 0.85rem; margin-right: 1px; }
+        .modal-video .btn-control .simbolo { font-size: 0.8rem; }
+
+        .modal-video .tiempo {
+            margin-left: auto;
+            font-family: 'Orbitron', monospace;
+            font-size: 0.7rem;
+            color: var(--gold);
+            letter-spacing: 1px;
+            background: rgba(0,0,0,0.55);
+            backdrop-filter: blur(8px);
+            padding: 6px 12px;
+            border-radius: 20px;
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            white-space: nowrap;
         }
-        .modal-video .btn-control .simbolo {
-            font-size: 0.85rem;
+        .modal-video .tiempo .tiempo-actual { color: var(--text-primary); }
+        .modal-video .tiempo .tiempo-sep { color: var(--text-muted); margin: 0 3px; }
+        .modal-video .tiempo .tiempo-total { color: var(--text-muted); }
+
+        /* ================================================================
+           BARRA DE PROGRESO (SCRUBBER) DESLIZABLE
+           ================================================================ */
+        .modal-video .barra-progreso {
+            position: relative;
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 3px;
+            cursor: pointer;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+            transition: height 0.2s ease;
+        }
+        .modal-video .barra-progreso.arrastrando,
+        .modal-video .barra-progreso:hover {
+            height: 8px;
+        }
+        .modal-video .barra-progreso .progreso-lleno {
+            position: absolute;
+            top: 0; left: 0;
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--gold), var(--gold-light));
+            border-radius: 3px;
+            pointer-events: none;
+            transition: none;
+        }
+        .modal-video .barra-progreso .progreso-buffer {
+            position: absolute;
+            top: 0; left: 0;
+            height: 100%;
+            width: 0%;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 3px;
+            pointer-events: none;
+        }
+        .modal-video .barra-progreso .progreso-thumb {
+            position: absolute;
+            top: 50%;
+            left: 0%;
+            transform: translate(-50%, -50%) scale(0.8);
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--gold);
+            border: 2px solid #fff;
+            box-shadow: 0 0 12px rgba(212, 175, 55, 0.7);
+            pointer-events: none;
+            transition: transform 0.2s ease;
+        }
+        .modal-video .barra-progreso.arrastrando .progreso-thumb,
+        .modal-video .barra-progreso:hover .progreso-thumb {
+            transform: translate(-50%, -50%) scale(1.15);
         }
 
         /* ================================================================
-           BOTÓN ELIMINAR - ESQUINA INFERIOR DERECHA (no tapa el play)
+           BOTÓN ELIMINAR - ESQUINA INFERIOR DERECHA
            ================================================================ */
         .modal-video .btn-eliminar-modal {
             position: absolute;
-            bottom: 90px;
+            bottom: 120px;
             right: 16px;
             z-index: 12;
-            width: 38px;
-            height: 38px;
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
-            background: rgba(0, 0, 0, 0.55);
+            background: rgba(0, 0, 0, 0.6);
             backdrop-filter: blur(8px);
             border: 1px solid rgba(255, 51, 102, 0.5);
             color: #ff3366;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             cursor: pointer;
             display: none;
             align-items: center;
@@ -570,302 +345,67 @@
             transform: scale(1.08);
             box-shadow: 0 0 25px rgba(255, 51, 102, 0.5);
         }
-        .modal-video .btn-eliminar-modal .diamante {
-            font-size: 0.9rem;
-            margin-right: 1px;
-        }
-        .modal-video .btn-eliminar-modal .simbolo {
-            font-size: 0.85rem;
-        }
+        .modal-video .btn-eliminar-modal .diamante { font-size: 0.85rem; margin-right: 1px; }
+        .modal-video .btn-eliminar-modal .simbolo { font-size: 0.8rem; }
 
-        .modal-video .video-wrapper {
-            position: relative;
-            width: 100%;
-            height: 100vh;
-            background: #000;
-            transition: height 0.2s ease;
-        }
-        .modal-video.teclado-abierto .video-wrapper {
-            height: var(--altura-teclado, 100vh);
-        }
-        .modal-video .video-wrapper video {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            background: #000;
-            filter: contrast(1.05) brightness(1.02) saturate(1.05);
-        }
-
-        .watermark {
-            position: absolute;
-            bottom: 80px;
-            right: 16px;
-            z-index: 15;
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            gap: 6px;
-            background: linear-gradient(135deg, rgba(5, 8, 15, 0.95), rgba(15, 45, 26, 0.95));
-            backdrop-filter: blur(12px);
-            padding: 10px 16px 10px 14px;
-            border-radius: 16px;
-            border: 1px solid rgba(212, 175, 55, 0.5);
-            box-shadow: 0 6px 30px rgba(0, 0, 0, 0.7), 0 0 40px rgba(212, 175, 55, 0.15);
-            animation: watermarkPulse 3s ease-in-out infinite;
-            pointer-events: none;
-            user-select: none;
-            min-width: 140px;
-        }
-        .watermark .brand-row {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .watermark .tagline {
-            font-family: 'Orbitron', monospace;
-            font-size: 0.45rem;
-            color: var(--gold-light);
-            letter-spacing: 2px;
-            opacity: 0.85;
-            text-align: right;
-            width: 100%;
-        }
-        .watermark .icon {
-            font-size: 1.4rem;
-            color: var(--gold);
-            font-family: 'Orbitron', monospace;
-            text-shadow: 0 0 20px rgba(212, 175, 55, 0.6);
-        }
-        .watermark .text {
-            font-family: 'Orbitron', monospace;
-            font-size: 0.85rem;
-            font-weight: 800;
-            color: #fff;
-            letter-spacing: 1.5px;
-            text-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
-        }
+        /* Watermarks */
+        .watermark { position: absolute; bottom: 100px; right: 16px; z-index: 5; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; background: linear-gradient(135deg, rgba(5, 8, 15, 0.95), rgba(15, 45, 26, 0.95)); backdrop-filter: blur(12px); padding: 10px 16px 10px 14px; border-radius: 16px; border: 1px solid rgba(212, 175, 55, 0.5); box-shadow: 0 6px 30px rgba(0, 0, 0, 0.7), 0 0 40px rgba(212, 175, 55, 0.15); pointer-events: none; user-select: none; min-width: 140px; }
+        .watermark .brand-row { display: flex; align-items: center; gap: 8px; }
+        .watermark .tagline { font-family: 'Orbitron', monospace; font-size: 0.45rem; color: var(--gold-light); letter-spacing: 2px; opacity: 0.85; text-align: right; width: 100%; }
+        .watermark .icon { font-size: 1.4rem; color: var(--gold); font-family: 'Orbitron', monospace; text-shadow: 0 0 20px rgba(212, 175, 55, 0.6); }
+        .watermark .text { font-family: 'Orbitron', monospace; font-size: 0.85rem; font-weight: 800; color: #fff; letter-spacing: 1.5px; text-shadow: 0 0 15px rgba(212, 175, 55, 0.4); }
         .watermark .text span { color: var(--gold); }
-        .watermark .badge-web3 {
-            font-size: 0.5rem;
-            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
-            color: var(--space);
-            padding: 3px 9px;
-            border-radius: 12px;
-            font-weight: 800;
-            letter-spacing: 1px;
-            margin-left: 4px;
-            box-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
-        }
-        .watermark-top-right {
-            position: absolute;
-            top: 16px;
-            right: 16px;
-            z-index: 15;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            background: linear-gradient(135deg, rgba(5, 8, 15, 0.9), rgba(15, 45, 26, 0.9));
-            backdrop-filter: blur(10px);
-            padding: 6px 12px 6px 10px;
-            border-radius: 20px;
-            border: 1px solid rgba(212, 175, 55, 0.4);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
-            pointer-events: none;
-            user-select: none;
-            opacity: 0.9;
-        }
-        .watermark-top-right .icon {
-            font-size: 0.9rem;
-            color: var(--gold);
-            font-family: 'Orbitron', monospace;
-        }
-        .watermark-top-right .text {
-            font-family: 'Orbitron', monospace;
-            font-size: 0.6rem;
-            font-weight: 700;
-            color: #fff;
-            letter-spacing: 1px;
-        }
+        .watermark .badge-web3 { font-size: 0.5rem; background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); padding: 3px 9px; border-radius: 12px; font-weight: 800; letter-spacing: 1px; margin-left: 4px; box-shadow: 0 0 15px rgba(212, 175, 55, 0.4); }
+        .watermark-top-right { position: absolute; top: 16px; right: 16px; z-index: 5; display: flex; align-items: center; gap: 6px; background: linear-gradient(135deg, rgba(5, 8, 15, 0.9), rgba(15, 45, 26, 0.9)); backdrop-filter: blur(10px); padding: 6px 12px 6px 10px; border-radius: 20px; border: 1px solid rgba(212, 175, 55, 0.4); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6); pointer-events: none; user-select: none; opacity: 0.9; }
+        .watermark-top-right .icon { font-size: 0.9rem; color: var(--gold); font-family: 'Orbitron', monospace; }
+        .watermark-top-right .text { font-family: 'Orbitron', monospace; font-size: 0.6rem; font-weight: 700; color: #fff; letter-spacing: 1px; }
         .watermark-top-right .text span { color: var(--gold); }
 
-        @keyframes watermarkPulse {
-            0%, 100% { opacity: 0.8; transform: scale(1); }
-            50% { opacity: 1; transform: scale(1.02); }
-        }
-
-        .modal-video .info-video {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            padding: 40px 20px 20px;
-            background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 100%);
-            z-index: 5;
-        }
-        .modal-video .info-video .titulo {
-            font-family: 'Orbitron', monospace;
-            font-size: 1rem;
-            color: var(--gold);
-            font-weight: 700;
-        }
+        /* Info y comentarios del modal */
+        .modal-video .info-video { position: absolute; bottom: 90px; left: 0; right: 0; padding: 40px 20px 10px; background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 100%); z-index: 4; pointer-events: none; }
+        .modal-video .info-video .titulo { font-family: 'Orbitron', monospace; font-size: 1rem; color: var(--gold); font-weight: 700; }
         .modal-video .info-video .autor { font-size: 0.7rem; color: var(--text-muted); }
-        .modal-video .info-video .descripcion {
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-            margin-top: 4px;
-            line-height: 1.5;
-        }
-        .modal-video .info-video .stats {
-            display: flex;
-            gap: 16px;
-            font-size: 0.7rem;
-            color: var(--text-muted);
-            margin-top: 8px;
-            flex-wrap: wrap;
-        }
-        .modal-video .info-video .stats span {
-            cursor: pointer;
-            padding: 4px 8px;
-            border-radius: 12px;
-            transition: var(--transition);
-        }
+        .modal-video .info-video .descripcion { font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px; line-height: 1.5; max-height: 40px; overflow: hidden; }
+        .modal-video .info-video .stats { display: flex; gap: 16px; font-size: 0.7rem; color: var(--text-muted); margin-top: 8px; flex-wrap: wrap; pointer-events: auto; }
+        .modal-video .info-video .stats span { cursor: pointer; padding: 4px 8px; border-radius: 12px; transition: var(--transition); }
         .modal-video .info-video .stats span:hover { color: var(--gold); background: rgba(212,175,55,0.05); }
 
-        .btn-video-like {
-            background: none;
-            border: none;
-            color: var(--text-muted);
-            cursor: pointer;
-            font-size: 0.7rem;
-            padding: 4px 8px;
-            border-radius: 12px;
-            transition: var(--transition);
-        }
+        .btn-video-like { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.7rem; padding: 4px 8px; border-radius: 12px; transition: var(--transition); }
         .btn-video-like:hover { color: var(--gold); }
         .btn-video-like.liked { color: var(--danger); }
 
-        .modal-video .comentarios-section {
-            position: absolute;
-            bottom: 80px;
-            left: 0;
-            right: 0;
-            padding: 0 16px 10px;
-            max-height: 30vh;
-            overflow-y: auto;
-            z-index: 5;
-            transition: bottom 0.2s ease;
-        }
-        .modal-video.teclado-abierto .comentarios-section {
-            bottom: 0;
-            max-height: 40vh;
-        }
+        .modal-video .comentarios-section { position: absolute; bottom: 80px; left: 0; right: 0; padding: 0 16px 10px; max-height: 25vh; overflow-y: auto; z-index: 5; pointer-events: auto; transition: bottom 0.2s ease, max-height 0.2s ease; }
+        .modal-video.controles-visibles .comentarios-section { bottom: 120px; max-height: 22vh; }
+        .modal-video.teclado-abierto .comentarios-section { bottom: 0; max-height: 40vh; }
         .modal-video .comentarios-section::-webkit-scrollbar { width: 2px; }
         .modal-video .comentarios-section::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 2px; }
-        .modal-video .comentarios-section h4 {
-            font-family: 'Orbitron', monospace;
-            color: var(--gold);
-            font-size: 0.7rem;
-            margin-bottom: 4px;
-        }
-        .modal-video .comentarios-section .comentario {
-            display: flex;
-            gap: 8px;
-            padding: 4px 0;
-            border-bottom: 1px solid rgba(212,175,55,0.04);
-        }
-        .modal-video .comentarios-section .comentario .avatar {
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--green-deep), var(--gold));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.5rem;
-            color: #fff;
-            overflow: hidden;
-            flex-shrink: 0;
-        }
+        .modal-video .comentarios-section h4 { font-family: 'Orbitron', monospace; color: var(--gold); font-size: 0.7rem; margin-bottom: 4px; }
+        .modal-video .comentarios-section .comentario { display: flex; gap: 8px; padding: 4px 0; border-bottom: 1px solid rgba(212,175,55,0.04); }
+        .modal-video .comentarios-section .comentario .avatar { width: 24px; height: 24px; border-radius: 50%; background: linear-gradient(135deg, var(--green-deep), var(--gold)); display: flex; align-items: center; justify-content: center; font-size: 0.5rem; color: #fff; overflow: hidden; flex-shrink: 0; }
         .modal-video .comentarios-section .comentario .avatar img { width: 100%; height: 100%; object-fit: cover; }
         .modal-video .comentarios-section .comentario .texto { flex: 1; font-size: 0.65rem; }
         .modal-video .comentarios-section .comentario .texto strong { color: var(--gold); }
         .modal-video .comentarios-section .comentario .texto .fecha { font-size: 0.5rem; color: var(--text-muted); }
-        .modal-video .comentarios-section .input-comentario {
-            display: flex;
-            gap: 6px;
-            margin-top: 6px;
-            padding-bottom: env(safe-area-inset-bottom, 0);
-        }
-        .modal-video .comentarios-section .input-comentario input {
-            flex: 1;
-            padding: 6px 12px;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid var(--glass-border);
-            border-radius: 20px;
-            color: var(--text-primary);
-            font-size: 0.7rem;
-            outline: none;
-        }
+        .modal-video .comentarios-section .input-comentario { display: flex; gap: 6px; margin-top: 6px; padding-bottom: env(safe-area-inset-bottom, 0); }
+        .modal-video .comentarios-section .input-comentario input { flex: 1; padding: 6px 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 20px; color: var(--text-primary); font-size: 0.7rem; outline: none; }
         .modal-video .comentarios-section .input-comentario input:focus { border-color: var(--gold); }
-        .modal-video .comentarios-section .input-comentario button {
-            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
-            color: var(--space);
-            border: none;
-            padding: 4px 14px;
-            border-radius: 20px;
-            font-weight: 700;
-            font-size: 0.65rem;
-            cursor: pointer;
-        }
+        .modal-video .comentarios-section .input-comentario button { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); border: none; padding: 4px 14px; border-radius: 20px; font-weight: 700; font-size: 0.65rem; cursor: pointer; }
+
+        /* Indicador de "siguiente" al pasar de video */
+        .toast-siguiente { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.85); color: var(--gold); padding: 14px 28px; border-radius: 30px; font-family: 'Orbitron', monospace; font-size: 0.9rem; z-index: 100000; opacity: 0; transition: opacity 0.3s ease; pointer-events: none; border: 1px solid rgba(212, 175, 55, 0.5); }
+        .toast-siguiente.visible { opacity: 1; }
 
         .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
-        .empty-state .icon {
-            font-size: 3rem;
-            display: block;
-            margin-bottom: 16px;
-            color: var(--gold);
-            opacity: 0.3;
-        }
-        .empty-state h3 {
-            font-family: 'Orbitron', monospace;
-            color: var(--text-secondary);
-            font-size: 1rem;
-            margin-bottom: 8px;
-        }
+        .empty-state .icon { font-size: 3rem; display: block; margin-bottom: 16px; color: var(--gold); opacity: 0.3; }
+        .empty-state h3 { font-family: 'Orbitron', monospace; color: var(--text-secondary); font-size: 1rem; margin-bottom: 8px; }
 
-        .toast {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            background: var(--green-deep);
-            border: 1px solid var(--gold);
-            color: var(--gold);
-            padding: 14px 28px;
-            border-radius: 14px;
-            font-size: 0.8rem;
-            transform: translateY(100px);
-            opacity: 0;
-            transition: all 0.5s ease;
-            z-index: 99999;
-            max-width: 400px;
-        }
+        .toast { position: fixed; bottom: 30px; right: 30px; background: var(--green-deep); border: 1px solid var(--gold); color: var(--gold); padding: 14px 28px; border-radius: 14px; font-size: 0.8rem; transform: translateY(100px); opacity: 0; transition: all 0.5s ease; z-index: 99999; max-width: 400px; }
         .toast.show { transform: translateY(0); opacity: 1; }
         .toast.error { border-color: var(--danger); color: var(--danger); }
         .toast.warning { border-color: var(--warning); color: var(--warning); }
         .toast.success { border-color: var(--success); color: var(--success); }
 
-        .footer {
-            margin-top: 30px;
-            padding-top: 16px;
-            border-top: 1px solid var(--glass-border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 0.7rem;
-            color: var(--text-muted);
-            flex-wrap: wrap;
-            gap: 10px;
-        }
+        .footer { margin-top: 30px; padding-top: 16px; border-top: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center; font-size: 0.7rem; color: var(--text-muted); flex-wrap: wrap; gap: 10px; }
         .footer .brand { color: var(--gold); font-weight: 600; }
         .footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
         .footer-links a { color: var(--text-muted); text-decoration: none; }
@@ -874,93 +414,45 @@
         /* ================================================================
            TEMA DÍA
            ================================================================ */
-        html.tema-dia,
-        html[data-tema="dia"] {
-            --space: #f5f7fa;
-            --bg-card: rgba(255, 255, 255, 0.95);
-            --bg-dark: rgba(240, 244, 248, 0.9);
-            --glass-bg: rgba(255, 255, 255, 0.85);
-            --glass-border: rgba(0, 0, 0, 0.1);
-            --text-primary: #1a2332;
-            --text-secondary: #4a5568;
-            --text-muted: #718096;
-            --line-black: rgba(0, 0, 0, 0.15);
-            --line-black-soft: rgba(0, 0, 0, 0.12);
-            --line-black-mid: rgba(0, 0, 0, 0.18);
-            --line-black-light: rgba(0, 0, 0, 0.1);
+        html.tema-dia, html[data-tema="dia"] {
+            --space: #f5f7fa; --bg-card: rgba(255,255,255,0.95); --bg-dark: rgba(240,244,248,0.9);
+            --glass-bg: rgba(255,255,255,0.85); --glass-border: rgba(0,0,0,0.1);
+            --text-primary: #1a2332; --text-secondary: #4a5568; --text-muted: #718096;
+            --line-black: rgba(0,0,0,0.15); --line-black-soft: rgba(0,0,0,0.12);
+            --line-black-mid: rgba(0,0,0,0.18); --line-black-light: rgba(0,0,0,0.1);
         }
-        html.tema-dia body,
-        html[data-tema="dia"] body {
+        html.tema-dia body, html[data-tema="dia"] body {
             background: #f5f7fa !important;
-            background-image: 
-                radial-gradient(ellipse at 20% 50%, rgba(212, 175, 55, 0.05) 0%, transparent 60%),
-                radial-gradient(ellipse at 80% 50%, rgba(42, 106, 58, 0.05) 0%, transparent 60%) !important;
+            background-image: radial-gradient(ellipse at 20% 50%, rgba(212, 175, 55, 0.05) 0%, transparent 60%), radial-gradient(ellipse at 80% 50%, rgba(42, 106, 58, 0.05) 0%, transparent 60%) !important;
             color: var(--text-primary) !important;
         }
-        html.tema-dia .header,
-        html[data-tema="dia"] .header {
-            background: rgba(255, 255, 255, 0.95) !important;
-            border-bottom-color: rgba(0, 0, 0, 0.15) !important;
-        }
-        html.tema-dia .main-nav,
-        html[data-tema="dia"] .main-nav {
-            background: rgba(255, 255, 255, 0.7) !important;
-        }
-        html.tema-dia .upload-section,
-        html.tema-dia .video-card,
-        html[data-tema="dia"] .upload-section,
-        html[data-tema="dia"] .video-card {
-            background: rgba(255, 255, 255, 0.9) !important;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08) !important;
-        }
-        html.tema-dia #stars-canvas,
-        html.tema-dia .nebula,
-        html[data-tema="dia"] #stars-canvas,
-        html[data-tema="dia"] .nebula {
-            display: none !important;
-        }
-        html.tema-dia .upload-section .form-group input,
-        html.tema-dia .upload-section .form-group textarea,
-        html[data-tema="dia"] .upload-section .form-group input,
-        html[data-tema="dia"] .upload-section .form-group textarea {
-            background: rgba(255, 255, 255, 0.9) !important;
-            color: var(--text-primary) !important;
-            border-color: rgba(0, 0, 0, 0.15) !important;
-        }
-        html.tema-dia .toast,
-        html[data-tema="dia"] .toast {
-            background: rgba(255, 255, 255, 0.98) !important;
-        }
+        html.tema-dia .header, html[data-tema="dia"] .header { background: rgba(255,255,255,0.95) !important; border-bottom-color: rgba(0,0,0,0.15) !important; }
+        html.tema-dia .main-nav, html[data-tema="dia"] .main-nav { background: rgba(255,255,255,0.7) !important; }
+        html.tema-dia .upload-section, html.tema-dia .video-card, html[data-tema="dia"] .upload-section, html[data-tema="dia"] .video-card { background: rgba(255,255,255,0.9) !important; box-shadow: 0 2px 12px rgba(0,0,0,0.08) !important; }
+        html.tema-dia .nebula, html[data-tema="dia"] .nebula { display: none !important; }
+        html.tema-dia .upload-section .form-group input, html.tema-dia .upload-section .form-group textarea, html[data-tema="dia"] .upload-section .form-group input, html[data-tema="dia"] .upload-section .form-group textarea { background: rgba(255,255,255,0.9) !important; color: var(--text-primary) !important; border-color: rgba(0,0,0,0.15) !important; }
+        html.tema-dia .toast, html[data-tema="dia"] .toast { background: rgba(255,255,255,0.98) !important; }
 
         @media (max-width: 768px) {
             .app { padding: 12px 14px; }
             .video-card { min-height: 60vh; max-height: 60vh; }
-            .modal-video { padding: 0; }
-            .modal-video .info-video { padding: 30px 16px 10px; }
-            .modal-video .comentarios-section { bottom: 60px; max-height: 25vh; }
             .upload-section .form-group .file-input-wrapper { flex-direction: column; }
             .upload-section .form-group .file-input-wrapper input[type="file"] { width: 100%; }
-            .watermark { bottom: 70px; right: 10px; padding: 6px 12px 6px 10px; }
+            .watermark { bottom: 100px; right: 10px; padding: 6px 12px 6px 10px; }
             .watermark .icon { font-size: 1rem; }
             .watermark .text { font-size: 0.6rem; }
             .watermark .badge-web3 { font-size: 0.4rem; padding: 1px 6px; }
-            .modal-video .btn-control { width: 34px; height: 34px; }
-            .modal-video .btn-eliminar-modal { width: 34px; height: 34px; bottom: 80px; right: 12px; }
         }
         @media (max-width: 480px) {
             .video-card { min-height: 55vh; max-height: 55vh; }
             .video-card .info .titulo { font-size: 0.75rem; }
             .modal-video .info-video .titulo { font-size: 0.9rem; }
-            .watermark { bottom: 60px; right: 8px; padding: 4px 10px 4px 8px; }
+            .watermark { bottom: 90px; right: 8px; padding: 4px 10px 4px 8px; }
             .watermark .icon { font-size: 0.8rem; }
             .watermark .text { font-size: 0.5rem; }
             .video-card .btn-eliminar-card { width: 34px; height: 34px; font-size: 0.95rem; top: 10px; right: 10px; }
-            .modal-video .btn-control { width: 32px; height: 32px; }
-            .modal-video .btn-control .diamante { font-size: 0.8rem; }
-            .modal-video .btn-control .simbolo { font-size: 0.75rem; }
-            .modal-video .btn-eliminar-modal { width: 32px; height: 32px; bottom: 75px; right: 10px; }
-            .modal-video .btn-eliminar-modal .diamante { font-size: 0.8rem; }
-            .modal-video .btn-eliminar-modal .simbolo { font-size: 0.75rem; }
+            .modal-video .btn-control { width: 34px; height: 34px; }
+            .modal-video .btn-eliminar-modal { width: 34px; height: 34px; bottom: 110px; right: 10px; }
         }
     </style>
 </head>
@@ -1079,29 +571,15 @@
     <div class="modal-overlay" id="videoModal">
         <div class="modal-video" id="modalVideoContainer">
 
-            <div class="barra-controles">
-                <button class="btn-control" id="btnCerrarModal" onclick="cerrarModalVideo()" title="Cerrar" aria-label="Cerrar">
-                    <span class="diamante">◈</span><span class="simbolo">×</span>
-                </button>
-                <button class="btn-control" id="btnMuteModal" onclick="toggleMuteModal()" title="Silenciar" aria-label="Silenciar">
-                    <span class="diamante">◈</span><span class="simbolo" id="iconoMute">🔇</span>
-                </button>
-                <button class="btn-control" id="btnPausaModal" onclick="togglePausaModal()" title="Pausar" aria-label="Pausar">
-                    <span class="diamante">◈</span><span class="simbolo" id="iconoPausa">⏸</span>
-                </button>
-            </div>
-
-            <button class="btn-eliminar-modal" id="btnEliminarModal" onclick="eliminarVideoDesdeModal()" title="Eliminar" aria-label="Eliminar">
-                <span class="diamante">◈</span><span class="simbolo">🗑</span>
-            </button>
-
             <div class="video-wrapper">
-                <video id="modalVideoPlayer" controls autoplay playsinline></video>
+                <video id="modalVideoPlayer" autoplay playsinline></video>
+                <div class="click-capa" id="clickCapa" onclick="toggleControlesVideo()"></div>
+
                 <div class="watermark-top-right">
                     <span class="icon">◈</span>
                     <span class="text">Sariel<span>'s</span></span>
                 </div>
-                <div class="watermark" id="watermark">
+                <div class="watermark">
                     <div class="brand-row">
                         <span class="icon">◈</span>
                         <span class="text">Sariel<span>'s</span></span>
@@ -1110,6 +588,10 @@
                     <div class="tagline">SABOR AL PALADAR · POLYGON</div>
                 </div>
             </div>
+
+            <button class="btn-eliminar-modal" id="btnEliminarModal" onclick="eliminarVideoDesdeModal()" title="Eliminar" aria-label="Eliminar">
+                <span class="diamante">◈</span><span class="simbolo">🗑</span>
+            </button>
 
             <div class="info-video">
                 <div class="titulo" id="modalTitulo">Título del video</div>
@@ -1124,7 +606,7 @@
                 </div>
             </div>
 
-            <div class="comentarios-section">
+            <div class="comentarios-section" id="comentariosSection">
                 <h4 data-clave="videos_comentarios">◈ Comentarios</h4>
                 <div id="modalComentariosLista">
                     <div style="color:var(--text-muted);font-size:0.7rem;padding:8px 0;" data-clave="videos_sin_comentarios">Sin comentarios. Sé el primero.</div>
@@ -1134,10 +616,38 @@
                     <button onclick="enviarComentarioVideo()" data-clave="videos_enviar_comentario">Enviar</button>
                 </div>
             </div>
+
+            <!-- BARRA DE CONTROLES (aparece al tocar el video) -->
+            <div class="barra-controles" id="barraControles">
+                <div class="fila-botones">
+                    <button class="btn-control" id="btnCerrarModal" onclick="cerrarModalVideo()" title="Cerrar" aria-label="Cerrar">
+                        <span class="diamante">◈</span><span class="simbolo">×</span>
+                    </button>
+                    <button class="btn-control" id="btnMuteModal" onclick="toggleMuteModal()" title="Silenciar" aria-label="Silenciar">
+                        <span class="diamante">◈</span><span class="simbolo" id="iconoMute">🔇</span>
+                    </button>
+                    <button class="btn-control" id="btnPausaModal" onclick="togglePausaModal()" title="Pausar" aria-label="Pausar">
+                        <span class="diamante">◈</span><span class="simbolo" id="iconoPausa">⏸</span>
+                    </button>
+                    <div class="tiempo">
+                        <span class="tiempo-actual" id="tiempoActual">0:00</span>
+                        <span class="tiempo-sep">/</span>
+                        <span class="tiempo-total" id="tiempoTotal">0:00</span>
+                    </div>
+                </div>
+
+                <div class="barra-progreso" id="barraProgreso">
+                    <div class="progreso-buffer" id="progresoBuffer"></div>
+                    <div class="progreso-lleno" id="progresoLleno"></div>
+                    <div class="progreso-thumb" id="progresoThumb"></div>
+                </div>
+            </div>
+
         </div>
     </div>
 
     <div class="toast" id="toast"></div>
+    <div class="toast-siguiente" id="toastSiguiente"></div>
 
     <div id="errorBanner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:99999;background:#ff3366;color:#fff;padding:12px 16px;font-family:monospace;font-size:0.75rem;word-break:break-word;">
         <strong>◈ Error detectado:</strong>
@@ -1152,6 +662,7 @@
     <script>
         // ================================================================
         // VIDEOS - i18n + tema + eliminar + autoplay siguiente + mute/pausa
+        //        + controles custom abajo + barra de progreso deslizable
         // ================================================================
 
         if (typeof window.supabase === 'undefined') {
@@ -1167,24 +678,20 @@
         }
 
         function tr(clave, fallback) {
-            if (typeof window.tConFallback === 'function') {
-                return window.tConFallback(clave, fallback);
-            }
+            if (typeof window.tConFallback === 'function') return window.tConFallback(clave, fallback);
             return fallback !== undefined ? fallback : clave;
         }
 
         function aplicarI18N(raiz) {
             try {
-                if (typeof window.aplicarTraducciones === 'function') {
-                    window.aplicarTraducciones(raiz || document);
-                }
-            } catch (e) { /* silencioso */ }
+                if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(raiz || document);
+            } catch (e) {}
         }
 
         // ===== ESTADO =====
         var sessionUser = null;
         var videoActual = null;
-        var videosPublicados = [];        // Lista completa en memoria (para el "siguiente")
+        var videosPublicados = [];
         var likeCache = new Map();
         var likeCacheOrden = [];
 
@@ -1200,16 +707,12 @@
         var pollingVideoInterval = null;
         var videoEnProcesamiento = null;
 
-        // Estado de preferencias del usuario en el modal
-        var estadoMute = false;   // true = silenciado
-        var cambiandoVideo = false; // Evita dobles disparos en el 'ended'
+        var estadoMute = false;
+        var cambiandoVideo = false;
+        var ocultarControlesTimeout = null;
+        var arrastrandoProgreso = false;
 
-        // Cargar preferencia de mute
-        try {
-            estadoMute = localStorage.getItem('videos_muted') === '1';
-        } catch (e) {
-            estadoMute = false;
-        }
+        try { estadoMute = localStorage.getItem('videos_muted') === '1'; } catch (e) { estadoMute = false; }
 
         function showToast(msg, type, duration) {
             var t = document.getElementById('toast');
@@ -1223,6 +726,14 @@
             var dur = (typeof duration === 'number' && duration > 0) ? duration : 3500;
             clearTimeout(t._timeout);
             t._timeout = setTimeout(function() { t.classList.remove('show'); }, dur);
+        }
+
+        function mostrarToastSiguiente(texto) {
+            var el = document.getElementById('toastSiguiente');
+            if (!el) return;
+            el.textContent = texto;
+            el.classList.add('visible');
+            setTimeout(function() { el.classList.remove('visible'); }, 1200);
         }
 
         async function getSession() {
@@ -1242,16 +753,10 @@
 
         function esURLValida(url) {
             if (!url || typeof url !== 'string') return false;
-            try {
-                var u = new URL(url);
-                return u.protocol === 'http:' || u.protocol === 'https:';
-            } catch (e) { return false; }
+            try { var u = new URL(url); return u.protocol === 'http:' || u.protocol === 'https:'; }
+            catch (e) { return false; }
         }
-
-        function safeAttr(url) {
-            if (esURLValida(url)) return url;
-            return '#';
-        }
+        function safeAttr(url) { return esURLValida(url) ? url : '#'; }
 
         function extraerPathStorage(url) {
             if (!url || typeof url !== 'string') return null;
@@ -1264,6 +769,14 @@
                 if (q !== -1) path = path.substring(0, q);
                 return path || null;
             } catch (e) { return null; }
+        }
+
+        function formatearTiempo(seg) {
+            if (!seg || !isFinite(seg)) return '0:00';
+            var m = Math.floor(seg / 60);
+            var s = Math.floor(seg % 60);
+            if (s < 10) s = '0' + s;
+            return m + ':' + s;
         }
 
         async function cargarUsuarioActual() {
@@ -1288,33 +801,23 @@
             adSessionIdVideo = 'ads_video_' + Date.now() + '_' + Math.random().toString(36).substring(2, 10);
             return adSessionIdVideo;
         }
-
         function cerrarAnuncioVideo() {
             adCerradoVideo = true;
             var container = document.getElementById('marketingAdContainer');
             if (container) container.classList.remove('visible');
             anuncioActualVideo = null;
         }
-
         async function cargarAnuncioVideo(videoId) {
-            if (!videoId) return;
-            if (adCerradoVideo) return;
+            if (!videoId || adCerradoVideo) return;
             var session = await getSession();
             if (!session) return;
             try {
                 var response = await fetch('/api/marketing/get-ad', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + session.access_token
-                    },
-                    body: JSON.stringify({
-                        target_tipo: 'video',
-                        target_id: String(videoId),
-                        session_id: getOrCreateAdSessionIdVideo()
-                    })
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+                    body: JSON.stringify({ target_tipo: 'video', target_id: String(videoId), session_id: getOrCreateAdSessionIdVideo() })
                 });
-                if (!response.ok) { console.warn('No ad:', response.status); return; }
+                if (!response.ok) return;
                 var data = await response.json();
                 if (!data.success || !data.ad) {
                     var container = document.getElementById('marketingAdContainer');
@@ -1324,12 +827,9 @@
                 mostrarAnuncioVideo(data.ad);
                 anuncioActualVideo = data.ad;
                 if (adVistaTimerVideo) clearTimeout(adVistaTimerVideo);
-                adVistaTimerVideo = setTimeout(function() {
-                    registrarVistaAnuncioVideo(videoId);
-                }, 3000);
+                adVistaTimerVideo = setTimeout(function() { registrarVistaAnuncioVideo(videoId); }, 3000);
             } catch (error) { console.error('Error cargando anuncio:', error); }
         }
-
         function mostrarAnuncioVideo(ad) {
             var container = document.getElementById('marketingAdContainer');
             var media = document.getElementById('marketingAdMediaVideo');
@@ -1337,42 +837,30 @@
             var desc = document.getElementById('marketingAdDescVideo');
             var cta = document.getElementById('marketingAdCtaVideo');
             if (!container || !media || !title || !desc || !cta) return;
-
             var imgUrlValida = esURLValida(ad.imagen_url);
             var videoUrlValida = esURLValida(ad.video_url);
-
             while (media.firstChild) media.removeChild(media.firstChild);
-
             if (imgUrlValida) {
                 var img = document.createElement('img');
-                img.src = ad.imagen_url;
-                img.alt = ad.titulo || 'Anuncio';
-                img.loading = 'lazy';
+                img.src = ad.imagen_url; img.alt = ad.titulo || 'Anuncio'; img.loading = 'lazy';
                 img.onerror = function() {
                     while (media.firstChild) media.removeChild(media.firstChild);
-                    var span = document.createElement('span');
-                    span.textContent = '◈';
-                    media.appendChild(span);
+                    var span = document.createElement('span'); span.textContent = '◈'; media.appendChild(span);
                 };
                 media.appendChild(img);
             } else if (videoUrlValida) {
                 var vid = document.createElement('video');
-                vid.src = ad.video_url;
-                vid.muted = true; vid.autoplay = true; vid.loop = true; vid.playsInline = true;
+                vid.src = ad.video_url; vid.muted = true; vid.autoplay = true; vid.loop = true; vid.playsInline = true;
                 media.appendChild(vid);
             } else {
-                var span2 = document.createElement('span');
-                span2.textContent = '◈';
-                media.appendChild(span2);
+                var span2 = document.createElement('span'); span2.textContent = '◈'; media.appendChild(span2);
             }
-
             title.textContent = ad.titulo || tr('videos_patrocinado', 'Patrocinado');
             desc.textContent = ad.descripcion || '';
             cta.textContent = ad.cta_texto || tr('videos_ver_mas', 'Ver más');
             desc.style.display = ad.descripcion ? 'block' : 'none';
             container.classList.add('visible');
         }
-
         async function registrarVistaAnuncioVideo(videoId) {
             if (!anuncioActualVideo) return;
             var session = await getSession();
@@ -1382,17 +870,13 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
                     body: JSON.stringify({
-                        ad_id: anuncioActualVideo.id,
-                        campaign_id: anuncioActualVideo.campaign_id,
-                        target_tipo: 'video',
-                        target_id: String(videoId),
-                        evento: 'vista',
-                        session_id: getOrCreateAdSessionIdVideo()
+                        ad_id: anuncioActualVideo.id, campaign_id: anuncioActualVideo.campaign_id,
+                        target_tipo: 'video', target_id: String(videoId),
+                        evento: 'vista', session_id: getOrCreateAdSessionIdVideo()
                     })
                 });
-            } catch (error) { console.warn('Error registrando vista:', error); }
+            } catch (error) {}
         }
-
         async function registrarClicAnuncioVideo() {
             if (!anuncioActualVideo) return;
             var session = await getSession();
@@ -1403,20 +887,14 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
                     body: JSON.stringify({
-                        ad_id: anuncioActualVideo.id,
-                        campaign_id: anuncioActualVideo.campaign_id,
-                        target_tipo: 'video',
-                        target_id: String(videoId),
-                        evento: 'clic',
-                        session_id: getOrCreateAdSessionIdVideo()
+                        ad_id: anuncioActualVideo.id, campaign_id: anuncioActualVideo.campaign_id,
+                        target_tipo: 'video', target_id: String(videoId),
+                        evento: 'clic', session_id: getOrCreateAdSessionIdVideo()
                     })
                 });
-                if (esURLValida(anuncioActualVideo.video_url)) {
-                    window.open(anuncioActualVideo.video_url, '_blank', 'noopener,noreferrer');
-                } else if (esURLValida(anuncioActualVideo.imagen_url)) {
-                    window.open(anuncioActualVideo.imagen_url, '_blank', 'noopener,noreferrer');
-                }
-            } catch (error) { console.warn('Error registrando clic:', error); }
+                if (esURLValida(anuncioActualVideo.video_url)) window.open(anuncioActualVideo.video_url, '_blank', 'noopener,noreferrer');
+                else if (esURLValida(anuncioActualVideo.imagen_url)) window.open(anuncioActualVideo.imagen_url, '_blank', 'noopener,noreferrer');
+            } catch (error) {}
         }
 
         // ================================================================
@@ -1429,12 +907,11 @@
                     .select('*, usuarios:usuario_id (id, nombre, handle, avatar_url)')
                     .eq('estado', 'publicado')
                     .order('created_at', { ascending: false });
-
                 if (result.error) throw result.error;
 
                 var container = document.getElementById('videosContainer');
                 var data = result.data || [];
-                videosPublicados = data.slice(); // Guardar copia en memoria
+                videosPublicados = data.slice();
 
                 if (data.length === 0) {
                     container.className = '';
@@ -1456,12 +933,10 @@
                     var likes = v.likes || 0;
                     var videoUrl = safeAttr(v.url_video);
                     var posterUrl = v.url_miniatura ? safeAttr(v.url_miniatura) : '';
-
                     var esMio = !!(sessionUser && v.usuario_id === sessionUser.id);
                     var botonEliminar = esMio
                         ? '<button class="btn-eliminar-card" onclick="event.stopPropagation(); eliminarMiVideo(\'' + v.id + '\')" title="' + eliminarT + '" aria-label="' + eliminarT + '">🗑️</button>'
                         : '';
-
                     return '<div class="video-card" data-video-id="' + v.id + '">' +
                         botonEliminar +
                         '<div class="thumbnail">' +
@@ -1483,7 +958,6 @@
                 }).join('');
 
                 activarAutoplayScroll();
-
             } catch (e) {
                 console.error('Error cargando videos:', e);
                 showToast(tr('videos_error_cargar', 'Error al cargar videos'), 'error');
@@ -1499,10 +973,7 @@
             if (cards.length > 0) {
                 setTimeout(function() {
                     var primerVideo = cards[0].querySelector('video');
-                    if (primerVideo) {
-                        primerVideo.play().catch(function() {});
-                        cards[0].classList.add('playing');
-                    }
+                    if (primerVideo) { primerVideo.play().catch(function() {}); cards[0].classList.add('playing'); }
                 }, 500);
             }
             observerVideos = new IntersectionObserver(function(entries) {
@@ -1513,17 +984,13 @@
                     if (entry.isIntersecting && entry.intersectionRatio >= 0.6) {
                         card.classList.add('visible');
                         if (videoPausadoManualmente !== card.dataset.videoId) {
-                            video.play().then(function() { card.classList.add('playing'); }).catch(function(err) {
-                                console.warn('Autoplay bloqueado:', err);
-                            });
+                            video.play().then(function() { card.classList.add('playing'); }).catch(function() {});
                         }
                     } else {
                         card.classList.remove('visible');
                         video.pause();
                         card.classList.remove('playing');
-                        if (videoPausadoManualmente === card.dataset.videoId) {
-                            videoPausadoManualmente = null;
-                        }
+                        if (videoPausadoManualmente === card.dataset.videoId) videoPausadoManualmente = null;
                     }
                 });
             }, { threshold: [0.3, 0.6, 0.9], rootMargin: '-10% 0px -10% 0px' });
@@ -1536,15 +1003,8 @@
             if (!card) return;
             var video = card.querySelector('video');
             if (!video) return;
-            if (video.paused) {
-                video.play().catch(function() {});
-                card.classList.add('playing');
-                videoPausadoManualmente = null;
-            } else {
-                video.pause();
-                card.classList.remove('playing');
-                videoPausadoManualmente = videoId;
-            }
+            if (video.paused) { video.play().catch(function() {}); card.classList.add('playing'); videoPausadoManualmente = null; }
+            else { video.pause(); card.classList.remove('playing'); videoPausadoManualmente = videoId; }
         }
 
         // ================================================================
@@ -1555,100 +1015,63 @@
             var descripcion = document.getElementById('inputDescripcionVideo').value.trim();
             var fileInput = document.getElementById('inputArchivoVideo');
             var btn = document.getElementById('btnSubirVideo');
-
             if (!titulo) { showToast(tr('videos_titulo_requerido', 'Escribe un título'), 'warning'); return; }
             if (!fileInput.files || fileInput.files.length === 0) { showToast(tr('videos_video_requerido', 'Selecciona un video'), 'warning'); return; }
-
             var file = fileInput.files[0];
             var maxSize = 150 * 1024 * 1024;
             if (file.size > maxSize) { showToast(tr('videos_video_grande', 'El video es demasiado grande (máx 150MB)'), 'error'); return; }
-
             var allowedTypes = ['video/mp4', 'video/webm', 'video/quicktime', 'video/x-msvideo'];
             if (!allowedTypes.includes(file.type)) { showToast(tr('videos_video_formato', 'Formato no soportado. Usa MP4, WebM o MOV'), 'error'); return; }
-
             var extensionesPermitidas = ['.mp4', '.webm', '.mov', '.avi'];
             var nombreArchivo = file.name.toLowerCase();
             var extensionValida = extensionesPermitidas.some(function(ext) { return nombreArchivo.endsWith(ext); });
             if (!extensionValida) { showToast(tr('videos_video_formato', 'Formato no soportado. Usa MP4, WebM o MOV'), 'error'); return; }
-
             var session = await getSession();
             if (!session) { showToast(tr('videos_sesion_requerida', 'Inicia sesión'), 'error'); return; }
-
             btn.disabled = true;
             btn.textContent = tr('videos_subiendo', 'Subiendo...');
-
             var progressEl = document.getElementById('uploadProgress');
             var progressFill = document.getElementById('progressFill');
             var progressText = document.getElementById('progressText');
             progressEl.style.display = 'block';
-
             try {
                 var fileExt = file.name.split('.').pop();
                 var filePath = session.user.id + '/' + Date.now() + '.' + fileExt;
-
-                var uploadResult = await window.supabase.storage
-                    .from('videos')
-                    .upload(filePath, file, {
-                        cacheControl: '3600',
-                        upsert: false,
-                        onProgress: function(progress) {
-                            var pct = Math.round((progress.loaded / progress.total) * 100);
-                            progressFill.style.width = pct + '%';
-                            progressText.textContent = pct + '%';
-                        }
-                    });
-
+                var uploadResult = await window.supabase.storage.from('videos').upload(filePath, file, {
+                    cacheControl: '3600', upsert: false,
+                    onProgress: function(progress) {
+                        var pct = Math.round((progress.loaded / progress.total) * 100);
+                        progressFill.style.width = pct + '%'; progressText.textContent = pct + '%';
+                    }
+                });
                 if (uploadResult.error) throw uploadResult.error;
-
                 var urlData = window.supabase.storage.from('videos').getPublicUrl(filePath);
                 var videoUrl = urlData.data.publicUrl;
-
                 progressText.textContent = tr('videos_creando_registro', 'Creando registro...');
-
-                var insertResult = await window.supabase
-                    .from('videos')
-                    .insert({
-                        usuario_id: session.user.id,
-                        titulo: titulo,
-                        descripcion: descripcion || null,
-                        url_video: videoUrl,
-                        url_miniatura: null,
-                        estado: 'procesando',
-                        duracion: 0
-                    })
-                    .select()
-                    .single();
-
+                var insertResult = await window.supabase.from('videos').insert({
+                    usuario_id: session.user.id, titulo: titulo, descripcion: descripcion || null,
+                    url_video: videoUrl, url_miniatura: null, estado: 'procesando', duracion: 0
+                }).select().single();
                 if (insertResult.error) throw insertResult.error;
-
                 var videoId = insertResult.data.id;
                 videoEnProcesamiento = videoId;
-
                 progressText.textContent = tr('videos_enviando_procesar', 'Enviando a procesar...');
-
                 var queueResponse = await fetch('/api/video/queue', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
                     body: JSON.stringify({ videoId: videoId, videoUrl: videoUrl, bucket: 'videos', filePath: filePath })
                 });
-
                 var queueData = await queueResponse.json();
                 if (!queueData.success) throw new Error(queueData.error || 'Error enviando a procesar');
-
                 document.getElementById('uploadSection').style.display = 'none';
                 document.getElementById('processingState').classList.add('visible');
-
                 showToast('◈ ' + tr('videos_procesando_titulo', 'Procesando video'), 'success', 3000);
-
                 document.getElementById('inputTituloVideo').value = '';
                 document.getElementById('inputDescripcionVideo').value = '';
                 fileInput.value = '';
                 progressEl.style.display = 'none';
-                progressFill.style.width = '0%';
-                progressText.textContent = '0%';
-
+                progressFill.style.width = '0%'; progressText.textContent = '0%';
                 iniciarPollingProcesamiento(queueData.jobId, videoId);
-
             } catch (e) {
                 console.error('Error subiendo video:', e);
                 showToast('❌ ' + e.message, 'error');
@@ -1668,45 +1091,30 @@
             var message = document.getElementById('processingMessage');
             var intentos = 0;
             var maxIntentos = 120;
-
             pollingVideoInterval = setInterval(async function() {
                 intentos++;
                 if (intentos > maxIntentos) {
-                    clearInterval(pollingVideoInterval);
-                    pollingVideoInterval = null;
+                    clearInterval(pollingVideoInterval); pollingVideoInterval = null;
                     mostrarErrorProcesamiento(tr('videos_procesando_tardando', 'El procesamiento está tardando demasiado.'));
                     return;
                 }
                 try {
                     var session = await getSession();
                     if (!session) return;
-                    var response = await fetch('/api/video/status/' + jobId, {
-                        headers: { 'Authorization': 'Bearer ' + session.access_token }
-                    });
+                    var response = await fetch('/api/video/status/' + jobId, { headers: { 'Authorization': 'Bearer ' + session.access_token } });
                     var data = await response.json();
                     if (!data.success) return;
-
                     var progreso = data.progreso || 0;
-                    progressFill.style.width = progreso + '%';
-                    progressText.textContent = progreso + '%';
-
-                    if (progreso < 15) {
-                        message.textContent = tr('videos_procesando_descargando', 'Descargando video original...');
-                    } else if (progreso < 25) {
-                        message.textContent = tr('videos_procesando_analizando', 'Analizando video...');
-                    } else if (progreso < 80) {
-                        message.textContent = tr('videos_procesando_eliminando', "Eliminando marca de agua externa y aplicando marca de Sariel's...");
-                    } else if (progreso < 95) {
-                        message.textContent = tr('videos_procesando_subiendo', 'Subiendo video procesado...');
-                    } else {
-                        message.textContent = tr('videos_procesando_finalizando', 'Finalizando...');
-                    }
+                    progressFill.style.width = progreso + '%'; progressText.textContent = progreso + '%';
+                    if (progreso < 15) message.textContent = tr('videos_procesando_descargando', 'Descargando video original...');
+                    else if (progreso < 25) message.textContent = tr('videos_procesando_analizando', 'Analizando video...');
+                    else if (progreso < 80) message.textContent = tr('videos_procesando_eliminando', "Eliminando marca de agua externa y aplicando marca de Sariel's...");
+                    else if (progreso < 95) message.textContent = tr('videos_procesando_subiendo', 'Subiendo video procesado...');
+                    else message.textContent = tr('videos_procesando_finalizando', 'Finalizando...');
 
                     if (data.estado === 'completado') {
-                        clearInterval(pollingVideoInterval);
-                        pollingVideoInterval = null;
-                        progressFill.style.width = '100%';
-                        progressText.textContent = '100%';
+                        clearInterval(pollingVideoInterval); pollingVideoInterval = null;
+                        progressFill.style.width = '100%'; progressText.textContent = '100%';
                         message.textContent = tr('videos_procesando_exito', '◈ ¡Video procesado con éxito!');
                         showToast(tr('videos_procesando_exito', '◈ ¡Video procesado con éxito!'), 'success', 4000);
                         setTimeout(function() {
@@ -1714,21 +1122,18 @@
                             document.getElementById('uploadSection').style.display = 'block';
                             document.getElementById('btnSubirVideo').disabled = false;
                             document.getElementById('btnSubirVideo').textContent = tr('videos_subir', '◈ Subir video');
-                            progressFill.style.width = '0%';
-                            progressText.textContent = '0%';
+                            progressFill.style.width = '0%'; progressText.textContent = '0%';
                             videoEnProcesamiento = null;
                             cargarVideos();
                         }, 1500);
                     }
                     if (data.estado === 'fallido') {
-                        clearInterval(pollingVideoInterval);
-                        pollingVideoInterval = null;
+                        clearInterval(pollingVideoInterval); pollingVideoInterval = null;
                         mostrarErrorProcesamiento(data.error || tr('videos_procesando_error', 'Error procesando el video'));
                     }
                 } catch (error) { console.error('Error en polling:', error); }
             }, 3000);
         }
-
         function mostrarErrorProcesamiento(msg) {
             document.getElementById('processingState').classList.remove('visible');
             document.getElementById('uploadSection').style.display = 'block';
@@ -1739,17 +1144,12 @@
             videoEnProcesamiento = null;
             showToast('❌ ' + msg, 'error', 6000);
         }
-
         async function reanudarProcesamientoPendiente() {
             if (!sessionUser) return;
             try {
-                var result = await window.supabase
-                    .from('videos')
-                    .select('id, titulo, job_id')
-                    .eq('usuario_id', sessionUser.id)
-                    .eq('estado', 'procesando')
-                    .order('created_at', { ascending: false })
-                    .limit(1);
+                var result = await window.supabase.from('videos')
+                    .select('id, titulo, job_id').eq('usuario_id', sessionUser.id)
+                    .eq('estado', 'procesando').order('created_at', { ascending: false }).limit(1);
                 if (result.error || !result.data || result.data.length === 0) return;
                 var video = result.data[0];
                 document.getElementById('uploadSection').style.display = 'none';
@@ -1759,22 +1159,13 @@
                 if (!jobId) {
                     try {
                         var session = await getSession();
-                        var resp = await fetch('/api/video/status-by-video/' + video.id, {
-                            headers: { 'Authorization': 'Bearer ' + session.access_token }
-                        });
-                        if (resp.ok) {
-                            var data = await resp.json();
-                            if (data.success && data.jobId) jobId = data.jobId;
-                        }
-                    } catch (e) { console.warn(e.message); }
+                        var resp = await fetch('/api/video/status-by-video/' + video.id, { headers: { 'Authorization': 'Bearer ' + session.access_token } });
+                        if (resp.ok) { var data = await resp.json(); if (data.success && data.jobId) jobId = data.jobId; }
+                    } catch (e) {}
                 }
-                if (jobId) {
-                    iniciarPollingProcesamiento(jobId, video.id);
-                } else {
-                    document.getElementById('processingState').classList.remove('visible');
-                    document.getElementById('uploadSection').style.display = 'block';
-                }
-            } catch (e) { console.warn('Error reanudando:', e.message); }
+                if (jobId) iniciarPollingProcesamiento(jobId, video.id);
+                else { document.getElementById('processingState').classList.remove('visible'); document.getElementById('uploadSection').style.display = 'block'; }
+            } catch (e) {}
         }
 
         // ================================================================
@@ -1784,21 +1175,14 @@
             var modal = document.getElementById('videoModal');
             var videoPlayer = document.getElementById('modalVideoPlayer');
             var btnEliminarModal = document.getElementById('btnEliminarModal');
-
             try {
-                var result = await window.supabase
-                    .from('videos')
+                var result = await window.supabase.from('videos')
                     .select('*, usuarios:usuario_id (id, nombre, handle, avatar_url)')
-                    .eq('id', videoId)
-                    .single();
-
+                    .eq('id', videoId).single();
                 if (result.error) throw result.error;
-
                 var video = result.data;
                 videoActual = video;
-
                 await registrarVista(videoId);
-
                 document.getElementById('modalTitulo').textContent = video.titulo || tr('videos_sin_titulo', 'Sin título');
                 document.getElementById('modalAutor').textContent = '@' + (video.usuarios?.handle || 'usuario');
                 document.getElementById('modalDescripcion').textContent = video.descripcion || tr('videos_sin_descripcion', 'Sin descripción');
@@ -1816,54 +1200,64 @@
                 var liked = await verificarLikeVideo(videoId);
                 var likeBtn = document.getElementById('btnLikeVideo');
                 var likesCount = video.likes || 0;
-                if (liked) likeBtn.classList.add('liked');
-                else likeBtn.classList.remove('liked');
+                if (liked) likeBtn.classList.add('liked'); else likeBtn.classList.remove('liked');
                 var likesSpan = document.getElementById('modalLikes');
                 if (likesSpan) likesSpan.textContent = likesCount;
-
                 document.getElementById('modalComentariosCount').textContent = video.comentarios || 0;
 
                 videoPlayer.src = safeAttr(video.url_video);
                 videoPlayer.load();
 
-                // Aplicar estado de mute
                 videoPlayer.muted = estadoMute;
                 actualizarIconoMute();
-
-                // Reset del botón pausa
                 actualizarIconoPausa(videoPlayer.paused);
 
-                // Listener para el 'ended' (una sola vez por cambio de src)
+                videoPlayer.onloadedmetadata = function() {
+                    document.getElementById('tiempoTotal').textContent = formatearTiempo(videoPlayer.duration);
+                };
+                videoPlayer.ontimeupdate = function() {
+                    if (arrastrandoProgreso) return;
+                    actualizarBarraProgreso();
+                };
+                videoPlayer.onprogress = function() {
+                    try {
+                        if (videoPlayer.buffered.length > 0 && videoPlayer.duration) {
+                            var buffered = videoPlayer.buffered.end(videoPlayer.buffered.length - 1);
+                            var pct = (buffered / videoPlayer.duration) * 100;
+                            document.getElementById('progresoBuffer').style.width = pct + '%';
+                        }
+                    } catch (e) {}
+                };
                 videoPlayer.onended = function() {
+                    if (arrastrandoProgreso) return;
                     if (cambiandoVideo) return;
                     cambiandoVideo = true;
                     setTimeout(function() { cambiandoVideo = false; }, 800);
                     reproducirSiguienteVideo();
                 };
-
-                // Sincronizar icono pausa con el estado real del reproductor nativo
-                videoPlayer.onplay = function() { actualizarIconoPausa(false); };
-                videoPlayer.onpause = function() { actualizarIconoPausa(true); };
+                videoPlayer.onplay = function() { actualizarIconoPausa(false); programarOcultarControles(); };
+                videoPlayer.onpause = function() { actualizarIconoPausa(true); mostrarControles(); };
 
                 cargarComentariosVideo(videoId);
-
                 document.querySelectorAll('.video-card video').forEach(function(v) { v.pause(); });
-
                 adCerradoVideo = false;
                 cargarAnuncioVideo(videoId);
-
                 modal.classList.add('show');
 
-                try { await videoPlayer.play(); } catch (playError) {
-                    // Si el navegador bloqueó autoplay (típicamente con sonido), reintentamos en mute
+                try {
+                    await videoPlayer.play();
+                    programarOcultarControles();
+                } catch (playError) {
                     try {
                         videoPlayer.muted = true;
                         estadoMute = true;
                         actualizarIconoMute();
                         await videoPlayer.play();
-                    } catch (e) { console.log('Autoplay bloqueado completamente.'); }
+                        programarOcultarControles();
+                    } catch (e) {
+                        mostrarControles();
+                    }
                 }
-
             } catch (e) {
                 console.error('Error abriendo video:', e);
                 showToast(tr('videos_error_video', 'Error al cargar video'), 'error');
@@ -1873,44 +1267,31 @@
         }
 
         // ================================================================
-        // REPRODUCIR SIGUIENTE VIDEO (loop infinito)
+        // SIGUIENTE VIDEO (loop infinito)
         // ================================================================
         function reproducirSiguienteVideo() {
             if (!videoActual) return;
             if (videosPublicados.length === 0) return;
-
             var idxActual = -1;
             for (var i = 0; i < videosPublicados.length; i++) {
-                if (videosPublicados[i].id === videoActual.id) {
-                    idxActual = i;
-                    break;
-                }
+                if (videosPublicados[i].id === videoActual.id) { idxActual = i; break; }
             }
-
-            // Si no se encuentra el actual, empezamos por el primero
             var idxSiguiente = 0;
+            var esLoop = false;
             if (idxActual !== -1) {
                 idxSiguiente = idxActual + 1;
-                // Si es el último → volver al primero (loop infinito)
-                if (idxSiguiente >= videosPublicados.length) {
-                    idxSiguiente = 0;
-                    // Opcional: showToast(tr('videos_reiniciando_loop', '🔄 Reproduciendo desde el inicio'), '', 1800);
-                }
+                if (idxSiguiente >= videosPublicados.length) { idxSiguiente = 0; esLoop = true; }
             }
-
             var siguiente = videosPublicados[idxSiguiente];
             if (!siguiente || !siguiente.id) return;
 
-            // Si el siguiente es el mismo (único video), solo lo reiniciamos
             if (siguiente.id === videoActual.id) {
                 var vp = document.getElementById('modalVideoPlayer');
-                if (vp) {
-                    vp.currentTime = 0;
-                    vp.play().catch(function() {});
-                }
+                if (vp) { vp.currentTime = 0; vp.play().catch(function() {}); }
                 return;
             }
 
+            mostrarToastSiguiente(esLoop ? tr('videos_reiniciando_loop', '🔄 Reproduciendo desde el inicio') : tr('videos_siguiente_auto', '▶ Siguiente video'));
             abrirVideo(siguiente.id);
         }
 
@@ -1920,24 +1301,22 @@
             var btnEliminarModal = document.getElementById('btnEliminarModal');
             if (videoPlayer) {
                 videoPlayer.pause();
-                videoPlayer.onended = null;
-                videoPlayer.onplay = null;
-                videoPlayer.onpause = null;
+                videoPlayer.onended = null; videoPlayer.onplay = null; videoPlayer.onpause = null;
+                videoPlayer.ontimeupdate = null; videoPlayer.onloadedmetadata = null; videoPlayer.onprogress = null;
                 videoPlayer.src = '';
             }
             if (modal) modal.classList.remove('show');
             if (btnEliminarModal) btnEliminarModal.classList.remove('show');
-            document.getElementById('modalVideoContainer').classList.remove('teclado-abierto');
+            document.getElementById('modalVideoContainer').classList.remove('teclado-abierto', 'controles-visibles');
+            if (ocultarControlesTimeout) { clearTimeout(ocultarControlesTimeout); ocultarControlesTimeout = null; }
             videoActual = null;
-
             setTimeout(function() {
                 if (observerVideos) {
                     var cards = document.querySelectorAll('.video-card.visible');
                     if (cards.length > 0) {
                         var video = cards[0].querySelector('video');
                         if (video && videoPausadoManualmente !== cards[0].dataset.videoId) {
-                            video.play().catch(function() {});
-                            cards[0].classList.add('playing');
+                            video.play().catch(function() {}); cards[0].classList.add('playing');
                         }
                     }
                 }
@@ -1945,8 +1324,37 @@
         }
 
         // ================================================================
-        // MUTE / PAUSA
+        // CONTROLES: mostrar/ocultar, mute, pausa, barra de progreso
         // ================================================================
+        function mostrarControles() {
+            var modal = document.getElementById('modalVideoContainer');
+            if (!modal) return;
+            modal.classList.add('controles-visibles');
+            programarOcultarControles();
+        }
+        function ocultarControles() {
+            var modal = document.getElementById('modalVideoContainer');
+            if (!modal) return;
+            modal.classList.remove('controles-visibles');
+        }
+        function programarOcultarControles() {
+            if (ocultarControlesTimeout) clearTimeout(ocultarControlesTimeout);
+            ocultarControlesTimeout = setTimeout(function() {
+                var vp = document.getElementById('modalVideoPlayer');
+                if (vp && vp.paused) return;
+                if (arrastrandoProgreso) return;
+                ocultarControles();
+            }, 3000);
+        }
+        function toggleControlesVideo() {
+            var modal = document.getElementById('modalVideoContainer');
+            if (!modal) return;
+            if (modal.classList.contains('controles-visibles')) {
+                ocultarControles();
+            } else {
+                mostrarControles();
+            }
+        }
         function actualizarIconoMute() {
             var icono = document.getElementById('iconoMute');
             var btn = document.getElementById('btnMuteModal');
@@ -1961,7 +1369,6 @@
                 btn.setAttribute('aria-label', tr('videos_silenciar', 'Silenciar'));
             }
         }
-
         function toggleMuteModal() {
             var vp = document.getElementById('modalVideoPlayer');
             if (!vp) return;
@@ -1969,8 +1376,8 @@
             vp.muted = estadoMute;
             try { localStorage.setItem('videos_muted', estadoMute ? '1' : '0'); } catch (e) {}
             actualizarIconoMute();
+            mostrarControles();
         }
-
         function actualizarIconoPausa(pausado) {
             var icono = document.getElementById('iconoPausa');
             var btn = document.getElementById('btnPausaModal');
@@ -1985,15 +1392,77 @@
                 btn.setAttribute('aria-label', tr('videos_pausar', 'Pausar'));
             }
         }
-
         function togglePausaModal() {
             var vp = document.getElementById('modalVideoPlayer');
             if (!vp) return;
-            if (vp.paused) {
-                vp.play().catch(function() {});
-            } else {
-                vp.pause();
+            if (vp.paused) vp.play().catch(function() {});
+            else vp.pause();
+            mostrarControles();
+        }
+
+        function actualizarBarraProgreso() {
+            var vp = document.getElementById('modalVideoPlayer');
+            if (!vp || !vp.duration) return;
+            var pct = (vp.currentTime / vp.duration) * 100;
+            document.getElementById('progresoLleno').style.width = pct + '%';
+            document.getElementById('progresoThumb').style.left = pct + '%';
+            document.getElementById('tiempoActual').textContent = formatearTiempo(vp.currentTime);
+            document.getElementById('tiempoTotal').textContent = formatearTiempo(vp.duration);
+        }
+
+        function configurarBarraProgreso() {
+            var barra = document.getElementById('barraProgreso');
+            if (!barra) return;
+
+            function calcularPct(clientX) {
+                var rect = barra.getBoundingClientRect();
+                var pct = (clientX - rect.left) / rect.width;
+                if (pct < 0) pct = 0;
+                if (pct > 1) pct = 1;
+                return pct;
             }
+
+            function setPosicion(pct) {
+                var vp = document.getElementById('modalVideoPlayer');
+                if (!vp || !vp.duration) return;
+                vp.currentTime = pct * vp.duration;
+                document.getElementById('progresoLleno').style.width = (pct * 100) + '%';
+                document.getElementById('progresoThumb').style.left = (pct * 100) + '%';
+                document.getElementById('tiempoActual').textContent = formatearTiempo(vp.currentTime);
+            }
+
+            function onDown(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                arrastrandoProgreso = true;
+                barra.classList.add('arrastrando');
+                var clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                var pct = calcularPct(clientX);
+                setPosicion(pct);
+                if (ocultarControlesTimeout) { clearTimeout(ocultarControlesTimeout); ocultarControlesTimeout = null; }
+            }
+            function onMove(e) {
+                if (!arrastrandoProgreso) return;
+                e.preventDefault();
+                var clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                var pct = calcularPct(clientX);
+                setPosicion(pct);
+            }
+            function onUp(e) {
+                if (!arrastrandoProgreso) return;
+                arrastrandoProgreso = false;
+                barra.classList.remove('arrastrando');
+                programarOcultarControles();
+            }
+
+            barra.addEventListener('touchstart', onDown, { passive: false });
+            barra.addEventListener('touchmove', onMove, { passive: false });
+            barra.addEventListener('touchend', onUp);
+            barra.addEventListener('touchcancel', onUp);
+
+            barra.addEventListener('mousedown', onDown);
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', onUp);
         }
 
         // ================================================================
@@ -2003,48 +1472,30 @@
             if (!videoId) return;
             var confirmMsg = tr('videos_confirmar_eliminar', '¿Seguro que quieres eliminar este video? Esta acción no se puede deshacer.');
             if (!confirm(confirmMsg)) return;
-
             var session = await getSession();
             if (!session) { showToast(tr('videos_sesion_requerida', 'Inicia sesión'), 'error'); return; }
-
             try {
-                var r = await window.supabase
-                    .from('videos')
-                    .select('id, usuario_id, url_video')
-                    .eq('id', videoId)
-                    .maybeSingle();
-
+                var r = await window.supabase.from('videos').select('id, usuario_id, url_video').eq('id', videoId).maybeSingle();
                 if (r.error) throw r.error;
                 if (!r.data) { showToast(tr('videos_error_eliminar', 'Error al eliminar video'), 'error'); return; }
-
-                if (r.data.usuario_id !== session.user.id) {
-                    console.warn('⚠️ Intento de borrar video ajeno bloqueado en frontend');
-                    return;
-                }
-
+                if (r.data.usuario_id !== session.user.id) return;
                 var path = extraerPathStorage(r.data.url_video);
                 if (path) {
                     try {
                         var removeResult = await window.supabase.storage.from('videos').remove([path]);
                         if (removeResult.error) console.warn('⚠️ Storage:', removeResult.error);
-                        else console.log('✅ Storage borrado:', path);
-                    } catch (storageErr) { console.warn('⚠️ Error Storage:', storageErr); }
+                    } catch (storageErr) {}
                 }
-
                 var delResult = await window.supabase.from('videos').delete().eq('id', videoId);
                 if (delResult.error) throw delResult.error;
-
                 if (videoActual && videoActual.id === videoId) cerrarModalVideo();
-
                 showToast(tr('videos_eliminado', '🗑️ Video eliminado'), 'success');
                 await cargarVideos();
-
             } catch (e) {
                 console.error('Error eliminando video:', e);
                 showToast(tr('videos_error_eliminar', 'Error al eliminar video'), 'error');
             }
         }
-
         function eliminarVideoDesdeModal() {
             if (!videoActual) return;
             eliminarMiVideo(videoActual.id);
@@ -2058,59 +1509,41 @@
                 var session = await getSession();
                 if (!session) return;
                 var result = await window.supabase.rpc('registrar_vista_video', { p_video_id: videoId });
-                if (result.error) { console.warn('Error vista:', result.error.message); return; }
-                if (result.data && result.data.contada) console.log('✅ Vista contada:', videoId);
-            } catch (e) { console.warn('Error vista:', e.message); }
+                if (result.error) return;
+            } catch (e) {}
         }
-
         async function verificarLikeVideo(videoId) {
             if (!sessionUser) return false;
             var key = videoId + '_' + sessionUser.id;
             if (likeCache.has(key)) return likeCache.get(key);
             try {
-                var result = await window.supabase
-                    .from('videos_likes')
-                    .select('id')
-                    .eq('video_id', videoId)
-                    .eq('usuario_id', sessionUser.id)
-                    .maybeSingle();
+                var result = await window.supabase.from('videos_likes')
+                    .select('id').eq('video_id', videoId).eq('usuario_id', sessionUser.id).maybeSingle();
                 var liked = !!result.data;
                 likeCache.set(key, liked);
                 likeCacheOrden.push(key);
-                if (likeCacheOrden.length > 50) {
-                    var viejo = likeCacheOrden.shift();
-                    likeCache.delete(viejo);
-                }
+                if (likeCacheOrden.length > 50) likeCache.delete(likeCacheOrden.shift());
                 return liked;
-            } catch (e) { console.error(e); return false; }
+            } catch (e) { return false; }
         }
-
         async function toggleLikeVideo() {
             if (!videoActual) { showToast(tr('videos_error_video', 'No hay video seleccionado'), 'warning'); return; }
             if (!sessionUser) { showToast(tr('videos_sesion_requerida', 'Inicia sesión'), 'error'); return; }
-
             var videoId = videoActual.id;
             var likeBtn = document.getElementById('btnLikeVideo');
             var likesSpan = document.getElementById('modalLikes');
             var key = videoId + '_' + sessionUser.id;
-
             try {
                 var liked = await verificarLikeVideo(videoId);
                 if (liked) {
-                    var result = await window.supabase
-                        .from('videos_likes')
-                        .delete()
-                        .eq('video_id', videoId)
-                        .eq('usuario_id', sessionUser.id);
+                    var result = await window.supabase.from('videos_likes').delete().eq('video_id', videoId).eq('usuario_id', sessionUser.id);
                     if (result.error) throw result.error;
                     likeCache.set(key, false);
                     var current = parseInt(likesSpan.textContent) || 0;
                     likesSpan.textContent = Math.max(0, current - 1);
                     likeBtn.classList.remove('liked');
                 } else {
-                    var result2 = await window.supabase
-                        .from('videos_likes')
-                        .insert({ video_id: videoId, usuario_id: sessionUser.id });
+                    var result2 = await window.supabase.from('videos_likes').insert({ video_id: videoId, usuario_id: sessionUser.id });
                     if (result2.error) {
                         if (result2.error.code === '23505') { showToast(tr('videos_like_ya', 'Ya diste like'), 'warning'); return; }
                         throw result2.error;
@@ -2121,18 +1554,14 @@
                     likeBtn.classList.add('liked');
                 }
             } catch (e) {
-                console.error('Error like:', e);
                 showToast(tr('videos_like_error', 'Error al procesar like'), 'error');
             }
         }
-
         async function cargarComentariosVideo(videoId) {
             try {
-                var result = await window.supabase
-                    .from('videos_comentarios')
+                var result = await window.supabase.from('videos_comentarios')
                     .select('*, usuarios:usuario_id (id, nombre, handle, avatar_url)')
-                    .eq('video_id', videoId)
-                    .order('created_at', { ascending: true });
+                    .eq('video_id', videoId).order('created_at', { ascending: true });
                 if (result.error) throw result.error;
                 var lista = document.getElementById('modalComentariosLista');
                 var data = result.data || [];
@@ -2144,34 +1573,22 @@
                     var u = c.usuarios || {};
                     var avatar = u.avatar_url ? '<img src="' + safeAttr(u.avatar_url) + '">' : '◈';
                     var nombre = escapeHTML(u.nombre || tr('videos_autor_desconocido', 'Usuario'));
-                    return '<div class="comentario">' +
-                        '<div class="avatar">' + avatar + '</div>' +
-                        '<div class="texto">' +
-                        '<strong>' + nombre + '</strong> ' + escapeHTML(c.contenido || '') +
-                        '<div class="fecha">' + new Date(c.created_at).toLocaleString() + '</div>' +
-                        '</div>' +
-                        '</div>';
+                    return '<div class="comentario"><div class="avatar">' + avatar + '</div><div class="texto"><strong>' + nombre + '</strong> ' + escapeHTML(c.contenido || '') + '<div class="fecha">' + new Date(c.created_at).toLocaleString() + '</div></div></div>';
                 }).join('');
             } catch (e) {
-                console.error(e);
                 var lista2 = document.getElementById('modalComentariosLista');
                 if (lista2) lista2.innerHTML = '<div style="color:var(--danger);font-size:0.7rem;">' + escapeHTML(tr('videos_comentario_error', 'Error al cargar comentarios')) + '</div>';
             }
         }
-
         async function enviarComentarioVideo() {
             if (!videoActual) { showToast(tr('videos_error_video', 'No hay video seleccionado'), 'warning'); return; }
             if (!sessionUser) { showToast(tr('videos_sesion_requerida', 'Inicia sesión'), 'error'); return; }
-
             var input = document.getElementById('inputComentarioVideo');
             var texto = input.value.trim();
             if (!texto) { showToast(tr('videos_comentario_vacio', 'Escribe un comentario'), 'warning'); return; }
             if (texto.length > 2000) { showToast(tr('videos_comentario_largo', 'El comentario es demasiado largo'), 'error'); return; }
-
             try {
-                var result = await window.supabase
-                    .from('videos_comentarios')
-                    .insert({ video_id: videoActual.id, usuario_id: sessionUser.id, contenido: texto });
+                var result = await window.supabase.from('videos_comentarios').insert({ video_id: videoActual.id, usuario_id: sessionUser.id, contenido: texto });
                 if (result.error) throw result.error;
                 input.value = '';
                 showToast(tr('videos_comentario_agregado', 'Comentario agregado'), 'success');
@@ -2180,12 +1597,8 @@
                 var current = parseInt(countSpan.textContent) || 0;
                 countSpan.textContent = current + 1;
                 videoActual.comentarios = (videoActual.comentarios || 0) + 1;
-            } catch (e) {
-                console.error(e);
-                showToast(tr('videos_comentario_error', 'Error al comentar'), 'error');
-            }
+            } catch (e) { showToast(tr('videos_comentario_error', 'Error al comentar'), 'error'); }
         }
-
         function verTokens() { window.location.href = '/features/perfil/perfil.html'; }
 
         function mostrarErrorEnPantalla(msg) {
@@ -2193,53 +1606,46 @@
             var texto = document.getElementById('errorBannerText');
             if (banner && texto) { texto.textContent = msg; banner.style.display = 'block'; }
         }
-
         window.addEventListener('error', function(e) {
             mostrarErrorEnPantalla((e.message || 'Error') + ' en ' + (e.filename || '') + ':' + e.lineno);
         });
-
         window.addEventListener('unhandledrejection', function(e) {
             mostrarErrorEnPantalla('Promesa rechazada: ' + (e.reason?.message || e.reason));
         });
-
         window.addEventListener('beforeunload', function() {
             if (pollingVideoInterval) { clearInterval(pollingVideoInterval); pollingVideoInterval = null; }
             if (adRefreshIntervalVideo) { clearInterval(adRefreshIntervalVideo); adRefreshIntervalVideo = null; }
             if (adVistaTimerVideo) { clearTimeout(adVistaTimerVideo); adVistaTimerVideo = null; }
+            if (ocultarControlesTimeout) { clearTimeout(ocultarControlesTimeout); ocultarControlesTimeout = null; }
             if (observerVideos) { observerVideos.disconnect(); observerVideos = null; }
             if (likeCache) { likeCache.clear(); likeCacheOrden = []; }
         });
 
         document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') { cerrarModalVideo(); }
+            if (e.key === 'Escape') cerrarModalVideo();
+            if (e.key === ' ' && videoActual) { e.preventDefault(); togglePausaModal(); }
         });
 
         var modalOverlay = document.getElementById('videoModal');
         if (modalOverlay) {
             modalOverlay.addEventListener('click', function(e) {
-                if (e.target === this) { cerrarModalVideo(); }
+                if (e.target === this) cerrarModalVideo();
             });
         }
 
-        // ================================================================
-        // FIX DEL TECLADO MÓVIL (Visual Viewport API)
-        // ================================================================
+        // Fix teclado móvil
         function configurarFixTeclado() {
             var input = document.getElementById('inputComentarioVideo');
             var modal = document.getElementById('modalVideoContainer');
             if (!input || !modal) return;
-
             if (window.visualViewport) {
                 var vv = window.visualViewport;
                 var ajustar = function() {
                     var diff = window.innerHeight - vv.height;
                     if (diff > 100) {
-                        // Teclado abierto
                         modal.classList.add('teclado-abierto');
                         modal.style.setProperty('--altura-teclado', vv.height + 'px');
-                        setTimeout(function() {
-                            try { input.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (e) {}
-                        }, 150);
+                        setTimeout(function() { try { input.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (e) {} }, 150);
                     } else {
                         modal.classList.remove('teclado-abierto');
                         modal.style.removeProperty('--altura-teclado');
@@ -2247,28 +1653,14 @@
                 };
                 vv.addEventListener('resize', ajustar);
                 vv.addEventListener('scroll', ajustar);
-
-                input.addEventListener('focus', function() {
-                    setTimeout(ajustar, 200);
-                    setTimeout(ajustar, 400);
-                });
-                input.addEventListener('blur', function() {
-                    setTimeout(function() {
-                        modal.classList.remove('teclado-abierto');
-                        modal.style.removeProperty('--altura-teclado');
-                    }, 200);
-                });
+                input.addEventListener('focus', function() { setTimeout(ajustar, 200); setTimeout(ajustar, 400); });
+                input.addEventListener('blur', function() { setTimeout(function() { modal.classList.remove('teclado-abierto'); modal.style.removeProperty('--altura-teclado'); }, 200); });
             } else {
-                // Fallback para navegadores sin Visual Viewport
                 input.addEventListener('focus', function() {
                     modal.classList.add('teclado-abierto');
-                    setTimeout(function() {
-                        try { input.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (e) {}
-                    }, 300);
+                    setTimeout(function() { try { input.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (e) {} }, 300);
                 });
-                input.addEventListener('blur', function() {
-                    modal.classList.remove('teclado-abierto');
-                });
+                input.addEventListener('blur', function() { modal.classList.remove('teclado-abierto'); });
             }
         }
 
@@ -2283,16 +1675,17 @@
             var card = e.target.closest('.video-card');
             if (card && !e.target.closest('.play-btn') && !e.target.closest('.btn-eliminar-card') && !e.target.closest('span[onclick]')) {
                 var videoId = card.dataset.videoId;
-                if (videoId) { abrirVideo(videoId); }
+                if (videoId) abrirVideo(videoId);
             }
         });
 
         document.addEventListener('DOMContentLoaded', function() {
-            console.log("◈ Sariel's - Videos (i18n + tema + eliminar + autoplay siguiente + mute/pausa + fix teclado)");
+            console.log("◈ Sariel's - Videos v5 (controles custom + scrubber)");
             aplicarI18N();
             actualizarIconoMute();
             actualizarIconoPausa(true);
             configurarFixTeclado();
+            configurarBarraProgreso();
             cargarUsuarioActual().then(function() {
                 cargarVideos();
                 reanudarProcesamientoPendiente();
@@ -2303,11 +1696,7 @@
                         aplicarI18N();
                         actualizarIconoMute();
                         if (typeof cargarVideos === 'function') cargarVideos();
-                    }).catch(function(err) {
-                        console.warn('Error inicializando idiomas:', err);
-                    });
-                } else {
-                    console.warn('idiomas.js no está disponible');
+                    }).catch(function(err) { console.warn('Error inicializando idiomas:', err); });
                 }
             }, 300);
         });
@@ -2335,6 +1724,7 @@
         window.toggleMuteModal = toggleMuteModal;
         window.togglePausaModal = togglePausaModal;
         window.reproducirSiguienteVideo = reproducirSiguienteVideo;
+        window.toggleControlesVideo = toggleControlesVideo;
     </script>
 
 </body>
