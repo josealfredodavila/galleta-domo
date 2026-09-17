@@ -4,7 +4,12 @@
 /* ================================================================
    PERFIL.JS - SARIEL'S ECOSYSTEM
    VERSIÓN FUNCIONAL - INTEGRACIÓN COMPLETA CON SERVER.JS + SUPABASE + TELNYX
-   I18N integrado con sistema global (idiomas.js) vía data-clave / data-placeholder
+
+   I18N: todo pasa por el sistema central definido en
+   /features/shared/js/idiomas.js:
+   - window.t()              → traducción (fallback: clave humanizada)
+   - window.tConFallback()   → traducción con fallback explícito
+   - window.aplicarTraducciones(raiz) → aplica al DOM con data-clave
    ================================================================ */
 
 // ================================================================
@@ -19,24 +24,12 @@ window.supabaseClient = supabaseClient;
 const supabase = supabaseClient;
 
 // ================================================================
-// ✦ I18N HELPERS (reutiliza sistema global de idiomas.js)
+// I18N HELPERS (delegan al sistema central)
 // ================================================================
-function tPerfil(clave, fallback) {
-    try {
-        if (window.traducciones && typeof window.traducciones === 'object'
-            && typeof window.traducciones[clave] === 'string'
-            && window.traducciones[clave].trim() !== '') {
-            return window.traducciones[clave];
-        }
-        if (typeof window.t === 'function') {
-            const v = window.t(clave);
-            if (v && v !== clave) return v;
-        }
-        if (typeof window.traducir === 'function') {
-            const v = window.traducir(clave);
-            if (v && v !== clave) return v;
-        }
-    } catch (e) { /* silencioso */ }
+function t(clave, fallback) {
+    if (typeof window.tConFallback === 'function') {
+        return window.tConFallback(clave, fallback);
+    }
     return fallback !== undefined ? fallback : clave;
 }
 
@@ -44,10 +37,6 @@ async function aplicarI18NPerfil(raiz) {
     try {
         if (typeof window.aplicarTraducciones === 'function') {
             await window.aplicarTraducciones(raiz || document.body);
-            return;
-        }
-        if (typeof window.inicializarIdiomas === 'function') {
-            await window.inicializarIdiomas();
         }
     } catch (e) {
         console.warn('[Perfil] I18N re-aplicar:', e);
@@ -56,7 +45,7 @@ async function aplicarI18NPerfil(raiz) {
 
 function traducirPlanMeta(meta) {
     if (!meta || typeof meta !== 'string') return meta;
-    const diasT = tPerfil('perfil_dias', 'días');
+    var diasT = t('perfil_dias', 'días');
     return meta.replace(/\bd[ií]as?\b/gi, diasT);
 }
 
@@ -192,13 +181,13 @@ function aplicarEstadoProUI(usuario) {
             const dias = usuario.dias_restantes || 0;
             proExpiraEl.textContent = fecha.toLocaleDateString('es-MX', {
                 day: 'numeric', month: 'long', year: 'numeric'
-            }) + (dias > 0 ? ` (${dias} ${tPerfil('perfil_dias', 'días')})` : '');
+            }) + (dias > 0 ? ' (' + dias + ' ' + t('perfil_dias', 'días') + ')' : '');
         }
-        if (btnContratarPro) btnContratarPro.textContent = '✅ ' + tPerfil('perfil_pro_ya_eres', 'Ya eres Pro');
+        if (btnContratarPro) btnContratarPro.textContent = '✅ ' + t('perfil_pro_ya_eres', 'Ya eres Pro');
     } else {
         if (proUpgradeCard) proUpgradeCard.style.display = 'block';
         if (proActiveInfo) proActiveInfo.style.display = 'none';
-        if (btnContratarPro) btnContratarPro.textContent = `🚀 ${tPerfil('perfil_pro_contratar', 'Contratar Pro por $60 MXN')}`;
+        if (btnContratarPro) btnContratarPro.textContent = '🚀 ' + t('perfil_pro_contratar', 'Contratar Pro por $60 MXN');
     }
     aplicarI18NPerfil();
 }
@@ -210,7 +199,7 @@ async function contratarPro() {
     try {
         const session = await getSession();
         if (!session) {
-            showToast('⚠️ ' + tPerfil('perfil_inicia_sesion', 'Inicia sesión') + ' Pro', 'error');
+            showToast('⚠️ ' + t('perfil_inicia_sesion', 'Inicia sesión') + ' Pro', 'error');
             return;
         }
 
@@ -222,16 +211,16 @@ async function contratarPro() {
 
         if (usuario && usuario.plan && usuario.plan.toLowerCase().includes('pro')) {
             const expira = usuario.plan_expira_at ? new Date(usuario.plan_expira_at).toLocaleDateString('es-MX') : '';
-            showToast('✅ ' + tPerfil('perfil_pro_ya_eres', 'Ya eres Pro') + '. ' + expira, 'success', 4000);
+            showToast('✅ ' + t('perfil_pro_ya_eres', 'Ya eres Pro') + '. ' + expira, 'success', 4000);
             return;
         }
 
-        const confirmMsg = tPerfil('perfil_confirmar_pro', `¿Contratar Sariel's Pro por $${PRO_PRECIO_MXN} MXN / ${PRO_DURACION_DIAS} días?`);
+        const confirmMsg = t('perfil_confirmar_pro', '¿Contratar Sariel\'s Pro por $' + PRO_PRECIO_MXN + ' MXN / ' + PRO_DURACION_DIAS + ' días?');
         if (!confirm(confirmMsg)) {
             return;
         }
 
-        showToast('⏳ ' + tPerfil('perfil_pro_activando', 'Iniciando contratación...'), '', 4000);
+        showToast('⏳ ' + t('perfil_pro_activando', 'Iniciando contratación...'), '', 4000);
 
         const { data: pago, error: pagoError } = await supabase
             .from('pagos_pro')
@@ -271,7 +260,7 @@ async function contratarPro() {
             if (result.success && result.data) {
                 if (result.data.payment_url) {
                     window.open(result.data.payment_url, '_blank');
-                    showToast('💳 ' + tPerfil('perfil_pro_activando', 'Completa el pago en la ventana que se abrió'), 'success', 5000);
+                    showToast('💳 ' + t('perfil_pro_activando', 'Completa el pago en la ventana que se abrió'), 'success', 5000);
                     iniciarPollingPagoPro(pago?.id);
                     return;
                 }
@@ -298,7 +287,7 @@ async function contratarPro() {
 
 async function activarProDirecto(usuarioId, pagoProId) {
     try {
-        showToast('⏳ ' + tPerfil('perfil_pro_activando', 'Activando Sariel\'s Pro...'), '', 4000);
+        showToast('⏳ ' + t('perfil_pro_activando', 'Activando Sariel\'s Pro...'), '', 4000);
 
         const { data, error } = await supabase.rpc('activar_pro', {
             p_usuario_id: usuarioId,
@@ -318,7 +307,7 @@ async function activarProDirecto(usuarioId, pagoProId) {
                 .eq('id', pagoProId);
         }
 
-        showToast('🎉 ' + tPerfil('perfil_pro_activado', "¡Sariel's Pro activado!"), 'success', 5000);
+        showToast('🎉 ' + t('perfil_pro_activado', "¡Sariel's Pro activado!"), 'success', 5000);
         crearConfeti();
 
         await cargarEstadoPro();
@@ -351,7 +340,7 @@ function iniciarPollingPagoPro(pagoProId) {
             if (pago && pago.estado === 'completado') {
                 clearInterval(pollingPagoProInterval);
                 pollingPagoProInterval = null;
-                showToast('🎉 ' + tPerfil('perfil_pro_activado', "¡Pago confirmado! Pro activado"), 'success', 5000);
+                showToast('🎉 ' + t('perfil_pro_activado', '¡Pago confirmado! Pro activado'), 'success', 5000);
                 crearConfeti();
                 await cargarEstadoPro();
                 await cargarPerfil(true);
@@ -364,7 +353,7 @@ function iniciarPollingPagoPro(pagoProId) {
         if (intentos >= maxIntentos) {
             clearInterval(pollingPagoProInterval);
             pollingPagoProInterval = null;
-            showToast('⏳ ' + tPerfil('perfil_procesando_pago', 'El pago aún no se confirma. Revísalo más tarde.'), 'warning', 5000);
+            showToast('⏳ ' + t('perfil_procesando_pago', 'El pago aún no se confirma. Revísalo más tarde.'), 'warning', 5000);
         }
     }, 5000);
 }
@@ -410,6 +399,13 @@ let perfilCache = null;
 let ultimaActualizacion = 0;
 const CACHE_DURATION = 30000;
 
+// Exponer perfilCache al window para que el HTML (avatar en publicaciones) lo pueda leer.
+Object.defineProperty(window, 'perfilCache', {
+    get: function () { return perfilCache; },
+    set: function (v) { perfilCache = v; },
+    configurable: true
+});
+
 async function cargarPerfil(forzarActualizacion = false) {
     try {
         const session = await getSession();
@@ -432,6 +428,7 @@ async function cargarPerfil(forzarActualizacion = false) {
 
         if (perfil) {
             perfilCache = perfil;
+            window.perfilCache = perfil;
             ultimaActualizacion = ahora;
             await actualizarEstadoEnLinea(true);
             actualizarUI(perfil);
@@ -446,9 +443,9 @@ async function cargarPerfil(forzarActualizacion = false) {
             await cargarEstadoPro();
         } else {
             const defaultData = {
-                nombre: session.user.user_metadata?.nombre || tPerfil('perfil_nombre_usuario', 'Explorador'),
+                nombre: session.user.user_metadata?.nombre || t('perfil_nombre_usuario', 'Explorador'),
                 handle: session.user.email?.split('@')[0] || 'explorador',
-                bio: tPerfil('perfil_biografia_default', "Explorando el ecosistema Sariel's · WEB3 · Comunidad"),
+                bio: t('perfil_biografia_default', "Explorando el ecosistema Sariel's · WEB3 · Comunidad"),
                 avatar_url: null,
                 tokens: 0,
                 progreso_canje: 0,
@@ -463,6 +460,7 @@ async function cargarPerfil(forzarActualizacion = false) {
                 online: true
             };
             perfilCache = defaultData;
+            window.perfilCache = defaultData;
             ultimaActualizacion = ahora;
             await actualizarEstadoEnLinea(true);
             actualizarUI(defaultData);
@@ -522,8 +520,8 @@ function actualizarUIEstado(online) {
         // I18N: usar claves. Se quita data-clave previo para que mostrar dinámico no se sobreescriba.
         estadoTexto.removeAttribute('data-clave');
         estadoTexto.textContent = online
-            ? tPerfil('perfil_activo_ahora', 'Activo ahora')
-            : tPerfil('perfil_inactivo', 'Inactivo');
+            ? t('perfil_activo_ahora', 'Activo ahora')
+            : t('perfil_inactivo', 'Inactivo');
         estadoTexto.style.color = online ? 'var(--success)' : 'var(--text-muted)';
     }
 }
@@ -549,7 +547,7 @@ function iniciarDetectorInactividad() {
         
         if (tiempoInactividad >= maxInactividad && perfilCache && perfilCache.online) {
             await actualizarEstadoEnLinea(false);
-            showToast('⭕ ' + tPerfil('perfil_inactivo', 'Inactivo'), 'warning');
+            showToast('⭕ ' + t('perfil_inactivo', 'Inactivo'), 'warning');
         }
     }, 30000);
 }
@@ -558,16 +556,16 @@ async function cambiarEstado(online) {
     try {
         const session = await getSession();
         if (!session) {
-            showToast('⚠️ ' + tPerfil('perfil_inicia_sesion', 'Inicia sesión'), 'error');
+            showToast('⚠️ ' + t('perfil_inicia_sesion', 'Inicia sesión'), 'error');
             return;
         }
 
         await actualizarEstadoEnLinea(online);
         
         if (online) {
-            showToast('🟢 ' + tPerfil('perfil_activo_ahora', 'Activo ahora'), 'success');
+            showToast('🟢 ' + t('perfil_activo_ahora', 'Activo ahora'), 'success');
         } else {
-            showToast('⭕ ' + tPerfil('perfil_inactivo', 'Inactivo'), 'warning');
+            showToast('⭕ ' + t('perfil_inactivo', 'Inactivo'), 'warning');
         }
         
         await notificarCambioEstado(online);
@@ -699,9 +697,9 @@ function actualizarUIAmigos(todosAmigos = [], enLinea = []) {
         ...todosAmigos.filter(a => !enLineaIds.includes(a.id))
     ];
 
-    const activoAhoraT = tPerfil('perfil_activo_ahora', 'Activo ahora');
-    const desconectadoT = tPerfil('perfil_desconectado', 'Desconectado');
-    const enLineaT = tPerfil('perfil_en_linea', 'EN LÍNEA');
+    const activoAhoraT = t('perfil_activo_ahora', 'Activo ahora');
+    const desconectadoT = t('perfil_desconectado', 'Desconectado');
+    const enLineaT = t('perfil_en_linea', 'EN LÍNEA');
 
     container.innerHTML = ordenados.map(amigo => {
         const estaEnLinea = enLineaIds.includes(amigo.id);
@@ -739,7 +737,7 @@ async function notificarCambioEstado(online) {
         if (error || !contactos || contactos.length === 0) return;
 
         const nombre = perfilCache?.nombre || 'Un usuario';
-        const estado = online ? '🟢 ' + tPerfil('perfil_activo_ahora', 'activo') : '⭕ ' + tPerfil('perfil_desconectado', 'inactivo');
+        const estado = online ? '🟢 ' + t('perfil_activo_ahora', 'activo') : '⭕ ' + t('perfil_desconectado', 'inactivo');
 
         const notifs = contactos.map(c => ({
             user_id: c.contacto_id,
@@ -849,7 +847,7 @@ async function cambiarConexion(tipo) {
 
         const session = await getSession();
         if (!session) {
-            showToast('⚠️ ' + tPerfil('perfil_inicia_sesion', 'Inicia sesión'), 'error');
+            showToast('⚠️ ' + t('perfil_inicia_sesion', 'Inicia sesión'), 'error');
             return;
         }
 
@@ -882,9 +880,9 @@ async function cambiarConexion(tipo) {
         actualizarUIConexion(estadoConexion);
         
         if (tipo === 'wifi') {
-            showToast('🛜 ' + tPerfil('perfil_conexion_wifi', 'WiFi'), 'success');
+            showToast('🛜 ' + t('perfil_conexion_wifi', 'WiFi'), 'success');
         } else {
-            showToast('📶 ' + tPerfil('perfil_conexion_datos', 'Datos'), 'success');
+            showToast('📶 ' + t('perfil_conexion_datos', 'Datos'), 'success');
         }
         
         await cargarPerfil(true);
@@ -933,8 +931,8 @@ function actualizarUIConexion(estado) {
     const wifiBtn = document.getElementById('btnWifi');
     const datosBtn = document.getElementById('btnDatos');
 
-    const wifiT = tPerfil('perfil_conexion_wifi', 'WiFi');
-    const datosT = tPerfil('perfil_conexion_datos', 'Datos');
+    const wifiT = t('perfil_conexion_wifi', 'WiFi');
+    const datosT = t('perfil_conexion_datos', 'Datos');
 
     if (conexionStatus) {
         conexionStatus.removeAttribute('data-clave');
@@ -979,7 +977,7 @@ function iniciarEscuchaConexion() {
         estadoConexion.activa = true;
         actualizarUIConexion(estadoConexion);
         guardarEstadoConexion(estadoConexion);
-        showToast('🛜 ' + tPerfil('perfil_conexion', 'Conexión'), 'success');
+        showToast('🛜 ' + t('perfil_conexion', 'Conexión'), 'success');
     });
 
     window.addEventListener('offline', () => {
@@ -1057,7 +1055,7 @@ function actualizarUIESIM(data) {
     }
 
     if (esimIccid) {
-        const iccid = data.esim_iccid || tPerfil('perfil_no_asignado', 'No asignado');
+        const iccid = data.esim_iccid || t('perfil_no_asignado', 'No asignado');
         esimIccid.textContent = iccid.length > 10 ? iccid.slice(0, 10) + '...' + iccid.slice(-4) : iccid;
     }
 
@@ -1172,7 +1170,7 @@ async function sincronizarESIM() {
     try {
         const session = await getSession();
         if (!session) {
-            showToast('⚠️ ' + tPerfil('perfil_inicia_sesion', 'Inicia sesión'), 'error');
+            showToast('⚠️ ' + t('perfil_inicia_sesion', 'Inicia sesión'), 'error');
             return;
         }
 
@@ -1192,7 +1190,7 @@ async function sincronizarESIM() {
             throw new Error(result.error || 'Error al sincronizar');
         }
 
-        showToast('✅ ' + tPerfil('perfil_sincronizar', 'Datos sincronizados correctamente'), 'success');
+        showToast('✅ ' + t('perfil_sincronizar', 'Datos sincronizados correctamente'), 'success');
         await cargarPerfil(true);
 
     } catch (error) {
@@ -1205,7 +1203,7 @@ async function comprarESIM(planId) {
     try {
         const session = await getSession();
         if (!session) {
-            showToast('⚠️ ' + tPerfil('perfil_inicia_sesion', 'Inicia sesión'), 'error');
+            showToast('⚠️ ' + t('perfil_inicia_sesion', 'Inicia sesión'), 'error');
             return;
         }
 
@@ -1256,7 +1254,7 @@ async function activarESIM(iccid) {
     try {
         const session = await getSession();
         if (!session) {
-            showToast('⚠️ ' + tPerfil('perfil_inicia_sesion', 'Inicia sesión'), 'error');
+            showToast('⚠️ ' + t('perfil_inicia_sesion', 'Inicia sesión'), 'error');
             return;
         }
 
@@ -1296,7 +1294,7 @@ async function desactivarESIM(iccid) {
     try {
         const session = await getSession();
         if (!session) {
-            showToast('⚠️ ' + tPerfil('perfil_inicia_sesion', 'Inicia sesión'), 'error');
+            showToast('⚠️ ' + t('perfil_inicia_sesion', 'Inicia sesión'), 'error');
             return;
         }
 
@@ -1306,7 +1304,7 @@ async function desactivarESIM(iccid) {
             return;
         }
 
-        const confirmMsg = tPerfil('perfil_confirmar_desactivar_esim', '¿Seguro que quieres desactivar tu eSIM?');
+        const confirmMsg = t('perfil_confirmar_desactivar_esim', '¿Seguro que quieres desactivar tu eSIM?');
         if (!confirm(confirmMsg)) return;
 
         showToast('⏳ Desactivando eSIM...', '', 5000);
@@ -1417,7 +1415,7 @@ function mostrarModalPagoReal(paymentUrl, ordenId, plan) {
         ">
             <h2 style="color: var(--gold); margin-bottom: 10px;">📱 Compra eSIM</h2>
             <p style="color: var(--text-secondary); margin-bottom: 20px;">
-                ${plan.nombre} - ${plan.datos_gb} GB ${tPerfil('perfil_duracion', 'por')} ${plan.duracion_dias} ${tPerfil('perfil_dias', 'días')}
+                ${plan.nombre} - ${plan.datos_gb} GB ${t('perfil_duracion', 'por')} ${plan.duracion_dias} ${t('perfil_dias', 'días')}
             </p>
             <p style="color: var(--gold); font-size: 1.2rem; font-weight: bold;">
                 $${plan.precio_usdt} USDT
@@ -1436,7 +1434,7 @@ function mostrarModalPagoReal(paymentUrl, ordenId, plan) {
                 </button>
                 <button onclick="this.parentElement.parentElement.parentElement.remove()"
                         style="background: transparent; border: 1px solid var(--text-muted); color: var(--text-muted); padding: 12px 30px; border-radius: 10px; cursor: pointer;">
-                    ${tPerfil('perfil_cerrar', 'Cerrar')}
+                    ${t('perfil_cerrar', 'Cerrar')}
                 </button>
             </div>
             <div id="pagoStatus" style="margin-top: 10px; font-size: 0.8rem; color: var(--text-secondary);"></div>
@@ -1475,7 +1473,7 @@ function mostrarModalPagoSimulado(qrData, ordenId, plan) {
         ">
             <h2 style="color: var(--gold); margin-bottom: 10px;">📱 Compra eSIM</h2>
             <p style="color: var(--text-secondary); margin-bottom: 20px;">
-                ${plan.nombre} - ${plan.datos_gb} GB ${tPerfil('perfil_duracion', 'por')} ${plan.duracion_dias} ${tPerfil('perfil_dias', 'días')}
+                ${plan.nombre} - ${plan.datos_gb} GB ${t('perfil_duracion', 'por')} ${plan.duracion_dias} ${t('perfil_dias', 'días')}
             </p>
             <div style="background: white; border-radius: 10px; padding: 15px; margin: 10px 0;">
                 <img src="${qrData}" alt="QR de pago" style="max-width: 200px; width: 100%;">
@@ -1493,7 +1491,7 @@ function mostrarModalPagoSimulado(qrData, ordenId, plan) {
                 </button>
                 <button onclick="this.parentElement.parentElement.parentElement.remove()"
                         style="background: transparent; border: 1px solid var(--text-muted); color: var(--text-muted); padding: 10px 30px; border-radius: 10px; cursor: pointer;">
-                    ${tPerfil('perfil_cerrar', 'Cerrar')}
+                    ${t('perfil_cerrar', 'Cerrar')}
                 </button>
             </div>
             <div id="pagoStatus" style="margin-top: 10px; font-size: 0.8rem; color: var(--text-secondary);"></div>
@@ -1525,7 +1523,7 @@ function mostrarModalQR(qrData) {
             <p style="color: var(--text-muted); font-size: 0.7rem;">📲 Ve a Ajustes > Datos Móviles > Añadir eSIM</p>
             <button onclick="this.parentElement.parentElement.remove()"
                     style="margin-top: 15px; background: var(--gold); border: none; color: #fff; padding: 10px 30px; border-radius: 10px; cursor: pointer;">
-                ${tPerfil('perfil_cerrar', 'Cerrar')}
+                ${t('perfil_cerrar', 'Cerrar')}
             </button>
         </div>
     `;
@@ -1541,7 +1539,7 @@ async function verificarPago(ordenId) {
     try {
         const session = await getSession();
         if (!session) {
-            statusEl.textContent = '❌ ' + tPerfil('perfil_inicia_sesion', 'Inicia sesión nuevamente');
+            statusEl.textContent = '❌ ' + t('perfil_inicia_sesion', 'Inicia sesión nuevamente');
             return;
         }
 
@@ -1699,7 +1697,7 @@ async function procesarQR(codigo) {
     try {
         const session = await getSession();
         if (!session) {
-            showToast('⚠️ ' + tPerfil('perfil_inicia_sesion', 'Inicia sesión'), 'error');
+            showToast('⚠️ ' + t('perfil_inicia_sesion', 'Inicia sesión'), 'error');
             qrScanningLock = false;
             return;
         }
@@ -1801,7 +1799,7 @@ function actualizarUIHistorialQR(historial = []) {
     const contador = document.getElementById('qrHistorialCount');
 
     if (contador) {
-        contador.textContent = historial.length + ' ' + tPerfil('perfil_escaneos', 'escaneos');
+        contador.textContent = historial.length + ' ' + t('perfil_escaneos', 'escaneos');
     }
 
     if (!container) return;
@@ -1844,13 +1842,13 @@ function actualizarUI(data) {
 
     if (nombreEl) {
         const verificado = data.verificado ? '<span class="verified" data-clave="perfil_badge_verificado">✦ VERIFICADO</span>' : '';
-        nombreEl.innerHTML = `<span data-clave="perfil_nombre_usuario">${data.nombre || tPerfil('perfil_nombre_usuario', 'Explorador')}</span> ${verificado}`;
+        nombreEl.innerHTML = `<span data-clave="perfil_nombre_usuario">${data.nombre || t('perfil_nombre_usuario', 'Explorador')}</span> ${verificado}`;
     }
     
     if (handleEl) handleEl.textContent = '@' + (data.handle || 'explorador');
     if (bioEl) {
         const bioDefault = "Explorando el ecosistema Sariel's · WEB3 · Comunidad";
-        const bioT = tPerfil('perfil_biografia_default', bioDefault);
+        const bioT = t('perfil_biografia_default', bioDefault);
         if (!data.bio || data.bio === bioDefault) {
             bioEl.setAttribute('data-clave', 'perfil_biografia_default');
             bioEl.innerHTML = bioT;
@@ -1878,7 +1876,7 @@ function actualizarUI(data) {
         document.getElementById('btnConectarWallet').style.display = 'none';
         document.getElementById('btnDesconectarWallet').style.display = 'inline-flex';
     } else if (walletDisplay) {
-        walletDisplay.textContent = '⚠️ ' + tPerfil('perfil_no_asignado', 'No conectada');
+        walletDisplay.textContent = '⚠️ ' + t('perfil_no_asignado', 'No conectada');
         walletDisplay.style.color = 'var(--text-muted)';
         document.getElementById('btnConectarWallet').style.display = 'inline-flex';
         document.getElementById('btnDesconectarWallet').style.display = 'none';
@@ -1930,9 +1928,9 @@ function actualizarUI(data) {
     const editHandle = document.getElementById('editHandle');
     const editBio = document.getElementById('editBio');
 
-    if (editNombre) editNombre.value = data.nombre || tPerfil('perfil_nombre_usuario', 'Explorador');
+    if (editNombre) editNombre.value = data.nombre || t('perfil_nombre_usuario', 'Explorador');
     if (editHandle) editHandle.value = (data.handle || 'explorador');
-    if (editBio) editBio.value = data.bio || tPerfil('perfil_biografia_default', "Explorando el ecosistema Sariel's · WEB3 · Comunidad");
+    if (editBio) editBio.value = data.bio || t('perfil_biografia_default', "Explorando el ecosistema Sariel's · WEB3 · Comunidad");
 
     const btnCanjear = document.getElementById('canjearNft');
     if (btnCanjear) {
@@ -1986,7 +1984,7 @@ async function conectarWallet() {
     try {
         const session = await getSession();
         if (!session) {
-            showToast('⚠️ ' + tPerfil('perfil_inicia_sesion', 'Inicia sesión'), 'error');
+            showToast('⚠️ ' + t('perfil_inicia_sesion', 'Inicia sesión'), 'error');
             return;
         }
 
@@ -2081,7 +2079,7 @@ async function desconectarWallet() {
     try {
         const session = await getSession();
         if (!session) {
-            showToast('⚠️ ' + tPerfil('perfil_inicia_sesion', 'Inicia sesión'), 'error');
+            showToast('⚠️ ' + t('perfil_inicia_sesion', 'Inicia sesión'), 'error');
             return;
         }
 
@@ -2100,7 +2098,7 @@ async function desconectarWallet() {
         const btnDesconectar = document.getElementById('btnDesconectarWallet');
 
         if (walletDisplay) {
-            walletDisplay.textContent = '⚠️ ' + tPerfil('perfil_no_asignado', 'No conectada');
+            walletDisplay.textContent = '⚠️ ' + t('perfil_no_asignado', 'No conectada');
             walletDisplay.style.color = 'var(--text-muted)';
         }
         if (btnConectar) btnConectar.style.display = 'inline-flex';
@@ -2122,7 +2120,7 @@ async function comprarDomo(cantidad = 1) {
     try {
         const session = await getSession();
         if (!session) {
-            showToast('⚠️ ' + tPerfil('perfil_inicia_sesion', 'Inicia sesión'), 'error');
+            showToast('⚠️ ' + t('perfil_inicia_sesion', 'Inicia sesión'), 'error');
             return;
         }
 
@@ -2161,7 +2159,7 @@ async function comprarDomo(cantidad = 1) {
 async function comprarConCripto() {
     const session = await getSession();
     if (!session) {
-        showToast('⚠️ ' + tPerfil('perfil_inicia_sesion', 'Inicia sesión'), 'error');
+        showToast('⚠️ ' + t('perfil_inicia_sesion', 'Inicia sesión'), 'error');
         return;
     }
 
@@ -2238,7 +2236,7 @@ async function verificarPagoCrypto() {
     try {
         const session = await getSession();
         if (!session) {
-            statusEl.textContent = '❌ ' + tPerfil('perfil_inicia_sesion', 'Inicia sesión nuevamente');
+            statusEl.textContent = '❌ ' + t('perfil_inicia_sesion', 'Inicia sesión nuevamente');
             return;
         }
 
@@ -2307,7 +2305,7 @@ async function canjearNFT() {
     try {
         const session = await getSession();
         if (!session) {
-            showToast('⚠️ ' + tPerfil('perfil_inicia_sesion', 'Inicia sesión'), 'error');
+            showToast('⚠️ ' + t('perfil_inicia_sesion', 'Inicia sesión'), 'error');
             return;
         }
 
@@ -2437,14 +2435,14 @@ function editarPerfil() {
 async function guardarPerfil() {
     const session = await getSession();
     if (!session) {
-        showToast('⚠️ ' + tPerfil('perfil_inicia_sesion', 'Inicia sesión'), 'error');
+        showToast('⚠️ ' + t('perfil_inicia_sesion', 'Inicia sesión'), 'error');
         return;
     }
 
     const perfil = {
-        nombre: document.getElementById('editNombre').value.trim() || tPerfil('perfil_nombre_usuario', 'Explorador'),
+        nombre: document.getElementById('editNombre').value.trim() || t('perfil_nombre_usuario', 'Explorador'),
         handle: document.getElementById('editHandle').value.trim().replace('@', '') || 'explorador',
-        bio: document.getElementById('editBio').value.trim() || tPerfil('perfil_biografia_default', "Explorando el ecosistema Sariel's · WEB3 · Comunidad")
+        bio: document.getElementById('editBio').value.trim() || t('perfil_biografia_default', "Explorando el ecosistema Sariel's · WEB3 · Comunidad")
     };
 
     if (!/^[a-zA-Z0-9_]+$/.test(perfil.handle)) {
@@ -2503,44 +2501,73 @@ function abrirSelectorArchivo() {
     if (input) input.click();
 }
 
+// ================================================================
+// EXPANDIR AVATAR (versión robusta, siempre por encima de todo)
+// ================================================================
 function expandirAvatar() {
     const avatarEl = document.getElementById('perfilAvatar');
-    const img = avatarEl ? avatarEl.querySelector('img') : null;
-    
+    if (!avatarEl) return;
+
+    const img = avatarEl.querySelector('img');
     if (!img || !img.src) return;
 
     const modal = document.createElement('div');
-    modal.style.cssText = `
-        position: fixed;
-        top: 0; left: 0; right: 0; bottom: 0;
-        background: rgba(0,0,0,0.95);
-        backdrop-filter: blur(5px);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        z-index: 99999;
-        cursor: zoom-out;
-        animation: fadeIn 0.2s ease-out;
-    `;
-    
+    modal.id = 'perfilAvatarModal';
+    modal.style.cssText = [
+        'position: fixed',
+        'top: 0',
+        'left: 0',
+        'right: 0',
+        'bottom: 0',
+        'width: 100vw',
+        'height: 100vh',
+        'background: rgba(0,0,0,0.95)',
+        '-webkit-backdrop-filter: blur(8px)',
+        'backdrop-filter: blur(8px)',
+        'display: flex',
+        'justify-content: center',
+        'align-items: center',
+        'z-index: 2147483647',
+        'cursor: zoom-out',
+        'padding: 20px',
+        'box-sizing: border-box'
+    ].join(';');
+
     const imgFull = document.createElement('img');
     imgFull.src = img.src;
-    imgFull.style.cssText = `
-        max-width: 95%;
-        max-height: 95%;
-        object-fit: contain;
-        border-radius: 12px;
-        box-shadow: 0 0 50px rgba(212, 175, 55, 0.3);
-        animation: scaleIn 0.3s ease-out;
-    `;
+    imgFull.alt = 'Avatar';
+    imgFull.style.cssText = [
+        'max-width: 95vw',
+        'max-height: 95vh',
+        'width: auto',
+        'height: auto',
+        'object-fit: contain',
+        'border-radius: 16px',
+        'box-shadow: 0 0 60px rgba(212, 175, 55, 0.5), 0 0 0 3px rgba(212, 175, 55, 0.6)',
+        'display: block'
+    ].join(';');
 
     modal.appendChild(imgFull);
     document.body.appendChild(modal);
 
-    modal.onclick = () => {
-        modal.style.animation = 'fadeOut 0.2s ease-in';
-        setTimeout(() => modal.remove(), 200);
+    const cerrar = function (e) {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        modal.remove();
+        document.removeEventListener('keydown', onKeyDown);
     };
+
+    const onKeyDown = function (e) {
+        if (e.key === 'Escape' || e.key === 'Esc') {
+            cerrar();
+        }
+    };
+
+    modal.addEventListener('click', cerrar);
+    imgFull.addEventListener('click', cerrar);
+    document.addEventListener('keydown', onKeyDown);
 }
 
 async function subirFoto(event) {
@@ -2549,7 +2576,7 @@ async function subirFoto(event) {
 
     const session = await getSession();
     if (!session) {
-        showToast('⚠️ ' + tPerfil('perfil_inicia_sesion', 'Inicia sesión'), 'error');
+        showToast('⚠️ ' + t('perfil_inicia_sesion', 'Inicia sesión'), 'error');
         return;
     }
 
@@ -2647,7 +2674,7 @@ async function comentarPublicacion(postId, contenido) {
     try {
         const session = await getSession();
         if (!session) {
-            showToast('⚠️ ' + tPerfil('perfil_inicia_sesion', 'Inicia sesión'), 'error');
+            showToast('⚠️ ' + t('perfil_inicia_sesion', 'Inicia sesión'), 'error');
             return;
         }
         if (!contenido.trim()) {
@@ -2687,7 +2714,7 @@ async function agregarAmigo(amigoId) {
     try {
         const session = await getSession();
         if (!session) {
-            showToast('⚠️ ' + tPerfil('perfil_inicia_sesion', 'Inicia sesión'), 'error');
+            showToast('⚠️ ' + t('perfil_inicia_sesion', 'Inicia sesión'), 'error');
             return;
         }
 
@@ -2803,7 +2830,7 @@ async function subirVideo(event) {
 
     const session = await getSession();
     if (!session) {
-        showToast('⚠️ ' + tPerfil('perfil_inicia_sesion', 'Inicia sesión'), 'error');
+        showToast('⚠️ ' + t('perfil_inicia_sesion', 'Inicia sesión'), 'error');
         return;
     }
 
@@ -2860,7 +2887,7 @@ async function subirVideo(event) {
 // CERRAR SESIÓN
 // ================================================================
 async function cerrarSesion() {
-    const confirmMsg = tPerfil('perfil_cerrar_sesion', '¿Seguro que quieres cerrar sesión?');
+    const confirmMsg = t('perfil_cerrar_sesion', '¿Seguro que quieres cerrar sesión?');
     if (!confirm(confirmMsg)) return;
     
     try {
@@ -3098,8 +3125,8 @@ window.cargarEstadoPro = cargarEstadoPro;
 window.contratarPro = contratarPro;
 window.activarProDirecto = activarProDirecto;
 
-// I18N: exponer helpers por si algún módulo externo los necesita
-window.tPerfil = tPerfil;
+// Exponer helpers I18N locales por si el HTML los necesita
+window.perfilT = t;
 window.aplicarI18NPerfil = aplicarI18NPerfil;
 window.traducirPlanMeta = traducirPlanMeta;
 
