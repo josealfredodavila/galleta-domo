@@ -18,6 +18,9 @@
         rel="stylesheet"
     >
 
+    <!-- ✅ APARIENCIA GLOBAL v2.0 - Se carga PRIMERO -->
+    <script src="/features/shared/js/apariencia-global.js"></script>
+
     <style>
         :root {
             --gold: #D4AF37;
@@ -55,16 +58,8 @@
             font-family: 'Inter', sans-serif;
             min-height: 100vh;
             background-image:
-                radial-gradient(
-                    ellipse at 20% 50%,
-                    rgba(26, 74, 42, 0.4) 0%,
-                    transparent 60%
-                ),
-                radial-gradient(
-                    ellipse at 80% 50%,
-                    rgba(212, 175, 55, 0.08) 0%,
-                    transparent 60%
-                );
+                radial-gradient(ellipse at 20% 50%, rgba(26, 74, 42, 0.4) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 50%, rgba(212, 175, 55, 0.08) 0%, transparent 60%);
         }
 
         .app {
@@ -111,11 +106,7 @@
 
         .logo-badge {
             font-size: 0.45rem;
-            background: linear-gradient(
-                135deg,
-                var(--gold),
-                var(--gold-light)
-            );
+            background: linear-gradient(135deg, var(--gold), var(--gold-light));
             color: var(--space);
             padding: 2px 10px;
             border-radius: 20px;
@@ -237,11 +228,7 @@
         }
 
         .search-bar .btn-agregar {
-            background: linear-gradient(
-                135deg,
-                var(--gold),
-                var(--gold-dark)
-            );
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
             color: var(--space);
             border: none;
             padding: 12px 24px;
@@ -334,11 +321,7 @@
             width: 48px;
             height: 48px;
             border-radius: 50%;
-            background: linear-gradient(
-                135deg,
-                var(--green-deep),
-                var(--gold)
-            );
+            background: linear-gradient(135deg, var(--green-deep), var(--gold));
             display: flex;
             align-items: center;
             justify-content: center;
@@ -471,11 +454,7 @@
 
         .empty-state .btn-accion {
             margin-top: 12px;
-            background: linear-gradient(
-                135deg,
-                var(--gold),
-                var(--gold-dark)
-            );
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
             color: var(--space);
             border: none;
             padding: 10px 24px;
@@ -671,6 +650,98 @@
         .modal .btn-copiar:hover {
             border-color: var(--gold);
             color: var(--gold);
+        }
+
+        /* ============================================================ */
+        /* TEMA DÍA - COMPLETO para contactos                           */
+        /* ============================================================ */
+        html.tema-dia,
+        html[data-tema="dia"] {
+            --space: #f5f7fa;
+            --text-primary: #1a2332;
+            --text-secondary: #4a5568;
+            --text-muted: #718096;
+            --glass-bg: rgba(255, 255, 255, 0.9);
+            --glass-border: rgba(0, 0, 0, 0.1);
+            --bg-dark: rgba(240, 244, 248, 0.9);
+        }
+        html.tema-dia body,
+        html[data-tema="dia"] body {
+            background: #f5f7fa !important;
+            background-image:
+                radial-gradient(ellipse at 20% 50%, rgba(212, 175, 55, 0.05) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 50%, rgba(42, 106, 58, 0.05) 0%, transparent 60%) !important;
+            color: var(--text-primary) !important;
+        }
+        html.tema-dia .header,
+        html[data-tema="dia"] .header {
+            background: rgba(255, 255, 255, 0.95) !important;
+            border-bottom-color: rgba(0, 0, 0, 0.1) !important;
+        }
+        html.tema-dia .logo-text,
+        html[data-tema="dia"] .logo-text {
+            color: var(--text-primary) !important;
+        }
+        html.tema-dia .main-nav,
+        html[data-tema="dia"] .main-nav {
+            background: rgba(255, 255, 255, 0.7) !important;
+            border-color: rgba(0, 0, 0, 0.1) !important;
+        }
+        html.tema-dia .main-nav .nav-link,
+        html[data-tema="dia"] .main-nav .nav-link {
+            color: #718096 !important;
+        }
+        html.tema-dia .main-nav .nav-link.active,
+        html[data-tema="dia"] .main-nav .nav-link.active {
+            background: rgba(212, 175, 55, 0.15) !important;
+            color: var(--gold) !important;
+        }
+        html.tema-dia .contactos-stats,
+        html.tema-dia .contacto-card,
+        html.tema-dia .modal,
+        html[data-tema="dia"] .contactos-stats,
+        html[data-tema="dia"] .contacto-card,
+        html[data-tema="dia"] .modal {
+            background: rgba(255, 255, 255, 0.9) !important;
+            border-color: rgba(0, 0, 0, 0.1) !important;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08) !important;
+        }
+        html.tema-dia .contacto-card .contacto-info .nombre,
+        html[data-tema="dia"] .contacto-card .contacto-info .nombre {
+            color: var(--text-primary) !important;
+        }
+        html.tema-dia .search-bar input,
+        html.tema-dia .modal .form-group input,
+        html[data-tema="dia"] .search-bar input,
+        html[data-tema="dia"] .modal .form-group input {
+            background: rgba(0, 0, 0, 0.03) !important;
+            color: var(--text-primary) !important;
+            border-color: rgba(0, 0, 0, 0.15) !important;
+        }
+        html.tema-dia input::placeholder,
+        html[data-tema="dia"] input::placeholder {
+            color: #a0aec0 !important;
+        }
+        html.tema-dia .filtros,
+        html[data-tema="dia"] .filtros {
+            background: rgba(255, 255, 255, 0.7) !important;
+        }
+        html.tema-dia .footer,
+        html[data-tema="dia"] .footer {
+            color: #718096 !important;
+            border-top-color: rgba(0, 0, 0, 0.1) !important;
+        }
+        html.tema-dia .footer-links a,
+        html[data-tema="dia"] .footer-links a {
+            color: #718096 !important;
+        }
+        html.tema-dia .footer-links a:hover,
+        html[data-tema="dia"] .footer-links a:hover {
+            color: var(--gold) !important;
+        }
+        html.tema-dia .modal .codigo-box,
+        html[data-tema="dia"] .modal .codigo-box {
+            background: rgba(240, 244, 248, 0.9) !important;
         }
 
         @media (max-width: 768px) {
@@ -1106,10 +1177,10 @@
      
      ORDEN:
      1. Supabase UMD
-     2. app.js
-     3. contactos.js
-     
-     contactos.js es la fuente de lógica de Contactos.
+     2. app.js (crea window.supabaseClient)
+     3. apariencia-global.js (ya cargado en <head>)
+     4. idiomas.js
+     5. contactos.js
      ============================================================ -->
 
 <script
@@ -1123,6 +1194,11 @@
 ></script>
 
 <script
+    src="/features/shared/js/idiomas.js"
+    defer
+></script>
+
+<script
     src="/features/mensajes/contactos.js"
     defer
     onerror="
@@ -1130,6 +1206,22 @@
         window.__contactosJsError = true;
     "
 ></script>
+
+<script>
+    // ✅ Inicializar idiomas cuando el DOM esté listo
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(async function() {
+            try {
+                if (typeof window.inicializarIdiomas === 'function') {
+                    await window.inicializarIdiomas();
+                    console.log('✅ Idiomas aplicados a contactos');
+                }
+            } catch (e) {
+                console.warn('⚠️ Error aplicando idiomas:', e);
+            }
+        }, 800);
+    });
+</script>
 
 </body>
 </html>
