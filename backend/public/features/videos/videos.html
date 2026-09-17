@@ -7,12 +7,10 @@
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
 
-    <!-- ✅ APARIENCIA GLOBAL - Se carga PRIMERO para evitar flash -->
     <script src="/features/shared/js/apariencia-global.js"></script>
 
     <style>
         :root {
-            /* Paleta base (misma que Perfil) */
             --gold: #D4AF37;
             --gold-dark: #b8923a;
             --gold-light: #e8c84a;
@@ -37,7 +35,6 @@
             --cyan: #00e5ff;
             --purple: #a855f7;
             --pink: #ec4899;
-            /* Variables que faltaban para el tema día */
             --bg-card: rgba(15, 45, 26, 0.4);
             --bg-dark: rgba(5, 8, 15, 0.8);
             --border-color: rgba(212, 175, 55, 0.08);
@@ -87,9 +84,6 @@
         .main-nav .nav-link.active { background: rgba(212,175,55,0.12); color: var(--gold); }
         .main-nav .nav-link.live { color: var(--danger); }
 
-        /* ================================================================
-           VIDEOS GRID - ESTILO TIKTOK (SCROLL SNAP)
-           ================================================================ */
         .videos-grid {
             display: flex;
             flex-direction: column;
@@ -165,6 +159,37 @@
         .video-card.playing .thumbnail .play-btn { display: none; }
         .video-card.playing:hover .thumbnail .play-btn { display: flex; opacity: 0.85; }
 
+        /* ================================================================
+           BOTÓN ELIMINAR EN TARJETA
+           ================================================================ */
+        .video-card .btn-eliminar-card {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            z-index: 5;
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.65);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 51, 102, 0.5);
+            color: #ff3366;
+            font-size: 1.05rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+            line-height: 1;
+            padding: 0;
+        }
+        .video-card .btn-eliminar-card:hover {
+            background: rgba(255, 51, 102, 0.9);
+            color: #fff;
+            transform: scale(1.08);
+            box-shadow: 0 0 25px rgba(255, 51, 102, 0.5);
+        }
+
         .video-card .info {
             padding: 14px 16px;
             background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(15, 45, 26, 0.65) 100%);
@@ -200,9 +225,6 @@
             overflow: hidden;
         }
 
-        /* ================================================================
-           ANUNCIO DE MARKETING EN VIDEOS
-           ================================================================ */
         .marketing-ad-container {
             display: none;
             margin-bottom: 20px;
@@ -324,7 +346,6 @@
             .marketing-ad-media { width: 100%; height: 140px; }
         }
 
-        /* ===== FORMULARIO SUBIR VIDEO ===== */
         .upload-section {
             background: var(--glass-bg);
             border: 1px solid var(--glass-border);
@@ -389,7 +410,6 @@
         .btn-subir-video:hover { transform: scale(1.02); box-shadow: var(--shadow-gold); }
         .btn-subir-video:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
-        /* ===== PROCESAMIENTO EN CURSO ===== */
         .processing-state {
             display: none;
             flex-direction: column;
@@ -445,7 +465,6 @@
             font-weight: 700;
         }
 
-        /* ===== MODAL REPRODUCTOR FLOTANTE (FULL SCREEN) ===== */
         .modal-overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -491,6 +510,38 @@
         }
         .modal-video .btn-cerrar:hover { background: rgba(255,255,255,0.1); transform: rotate(90deg); }
 
+        /* ================================================================
+           BOTÓN ELIMINAR EN MODAL
+           ================================================================ */
+        .modal-video .btn-eliminar-modal {
+            position: absolute;
+            top: 12px;
+            right: 64px;
+            z-index: 10;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.55);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 51, 102, 0.5);
+            color: #ff3366;
+            font-size: 1.05rem;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+            padding: 0;
+            line-height: 1;
+        }
+        .modal-video .btn-eliminar-modal.show { display: flex; }
+        .modal-video .btn-eliminar-modal:hover {
+            background: rgba(255, 51, 102, 0.9);
+            color: #fff;
+            transform: scale(1.08);
+            box-shadow: 0 0 25px rgba(255, 51, 102, 0.5);
+        }
+
         .modal-video .video-wrapper {
             position: relative;
             width: 100%;
@@ -505,9 +556,6 @@
             filter: contrast(1.05) brightness(1.02) saturate(1.05);
         }
 
-        /* ================================================================
-           MARCA DE AGUA "◈ Sariel's" (Estilo TikTok)
-           ================================================================ */
         .watermark {
             position: absolute;
             bottom: 80px;
@@ -778,7 +826,7 @@
         .footer-links a:hover { color: var(--gold); }
 
         /* ================================================================
-           TEMA DÍA - Fondo claro cuando el usuario elige "Día"
+           TEMA DÍA
            ================================================================ */
         html.tema-dia,
         html[data-tema="dia"] {
@@ -860,6 +908,8 @@
             .watermark { bottom: 60px; right: 8px; padding: 4px 10px 4px 8px; }
             .watermark .icon { font-size: 0.8rem; }
             .watermark .text { font-size: 0.5rem; }
+            .video-card .btn-eliminar-card { width: 34px; height: 34px; font-size: 0.95rem; top: 10px; right: 10px; }
+            .modal-video .btn-eliminar-modal { right: 58px; width: 36px; height: 36px; font-size: 0.95rem; }
         }
     </style>
 </head>
@@ -885,7 +935,6 @@
             </div>
         </header>
 
-        <!-- NAV: sin data-clave -->
         <nav class="main-nav">
             <a href="/" class="nav-link">⌂ Inicio</a>
             <a href="/features/muro/muro.html" class="nav-link">◇ Muro</a>
@@ -898,7 +947,6 @@
             <a href="/marketing/marketing.html" class="nav-link">◈ Marketing</a>
         </nav>
 
-        <!-- SUBIR VIDEO -->
         <div class="upload-section" id="uploadSection">
             <h3 data-clave="videos_subir_nuevo">◈ Subir nuevo video</h3>
             <form id="formSubirVideo" onsubmit="event.preventDefault(); subirVideo();">
@@ -929,7 +977,6 @@
             </form>
         </div>
 
-        <!-- ESTADO DE PROCESAMIENTO -->
         <div class="processing-state" id="processingState">
             <div class="spinner"></div>
             <h3 data-clave="videos_procesando_titulo">◈ Procesando video</h3>
@@ -941,7 +988,6 @@
             <p style="font-size:0.6rem;color:var(--text-muted);" data-clave="videos_procesando_ayuda">Este proceso puede tardar entre 30 y 90 segundos</p>
         </div>
 
-        <!-- ANUNCIO DE MARKETING -->
         <div class="marketing-ad-container" id="marketingAdContainer">
             <div class="marketing-ad-header">
                 <span class="marketing-ad-label" data-clave="videos_patrocinado">Patrocinado</span>
@@ -959,7 +1005,6 @@
             </div>
         </div>
 
-        <!-- LISTA DE VIDEOS -->
         <div id="videosContainer">
             <div class="empty-state">
                 <span class="icon">◈</span>
@@ -980,10 +1025,10 @@
 
     </div>
 
-    <!-- MODAL REPRODUCTOR FLOTANTE (FULL SCREEN) -->
     <div class="modal-overlay" id="videoModal">
         <div class="modal-video">
             <button class="btn-cerrar" onclick="cerrarModalVideo()">×</button>
+            <button class="btn-eliminar-modal" id="btnEliminarModal" onclick="eliminarVideoDesdeModal()" title="Eliminar video" aria-label="Eliminar video">🗑️</button>
 
             <div class="video-wrapper">
                 <video id="modalVideoPlayer" controls autoplay playsinline></video>
@@ -1035,30 +1080,27 @@
         <button onclick="document.getElementById('errorBanner').style.display='none'" style="float:right;background:none;border:1px solid #fff;color:#fff;border-radius:6px;padding:2px 10px;cursor:pointer;">Cerrar</button>
     </div>
 
-    <!-- ===== SCRIPTS ===== -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="/features/shared/js/idiomas.js"></script>
     <script src="/app.js"></script>
 
     <script>
         // ================================================================
-        // VIDEOS - VERSIÓN I18N + TEMA DÍA/NOCHE
+        // VIDEOS - i18n + tema + eliminar video
         // ================================================================
 
-        // Guard: si Supabase no cargó, avisar y detener.
         if (typeof window.supabase === 'undefined') {
-            console.error('❌ Supabase no está disponible. Verifica el CDN.');
+            console.error('❌ Supabase no está disponible.');
             document.addEventListener('DOMContentLoaded', function() {
                 var banner = document.getElementById('errorBanner');
                 var texto = document.getElementById('errorBannerText');
                 if (banner && texto) {
-                    texto.textContent = 'No se pudo cargar la conexión a la base de datos (Supabase). Revisa tu internet.';
+                    texto.textContent = 'No se pudo cargar la conexión a la base de datos (Supabase).';
                     banner.style.display = 'block';
                 }
             });
         }
 
-        // ===== HELPER I18N =====
         function tr(clave, fallback) {
             if (typeof window.tConFallback === 'function') {
                 return window.tConFallback(clave, fallback);
@@ -1074,7 +1116,6 @@
             } catch (e) { /* silencioso */ }
         }
 
-        // ===== ESTADO GLOBAL =====
         var sessionUser = null;
         var videoActual = null;
         var likeCache = new Map();
@@ -1092,7 +1133,6 @@
         var pollingVideoInterval = null;
         var videoEnProcesamiento = null;
 
-        // ===== TOAST (con duración real) =====
         function showToast(msg, type, duration) {
             var t = document.getElementById('toast');
             if (!t) { t = document.createElement('div'); t.id = 'toast'; t.className = 'toast'; document.body.appendChild(t); }
@@ -1107,16 +1147,14 @@
             t._timeout = setTimeout(function() { t.classList.remove('show'); }, dur);
         }
 
-        // ===== OBTENER SESIÓN =====
         async function getSession() {
             try {
-                if (typeof window.supabase === 'undefined') { console.warn('Supabase no disponible'); return null; }
+                if (typeof window.supabase === 'undefined') return null;
                 var r = await window.supabase.auth.getSession();
                 return r.data.session;
             } catch (e) { console.error('Error sesión:', e); return null; }
         }
 
-        // ===== ESCAPE HTML (para contenido de texto) =====
         function escapeHTML(texto) {
             if (!texto) return '';
             var div = document.createElement('div');
@@ -1124,7 +1162,6 @@
             return div.innerHTML;
         }
 
-        // ===== VALIDAR URL =====
         function esURLValida(url) {
             if (!url || typeof url !== 'string') return false;
             try {
@@ -1133,14 +1170,32 @@
             } catch (e) { return false; }
         }
 
-        // ===== SAFE ATTR (para src/href) =====
-        // Devuelve el string tal cual si es URL válida, si no devuelve '#'
         function safeAttr(url) {
             if (esURLValida(url)) return url;
             return '#';
         }
 
-        // ===== CARGAR USUARIO ACTUAL =====
+        // ================================================================
+        // EXTRAER PATH DE STORAGE DESDE UNA URL PÚBLICA
+        // ================================================================
+        // Ejemplo:
+        //   https://xxx.supabase.co/storage/v1/object/public/videos/USER_ID/123.mp4
+        //   → "USER_ID/123.mp4"
+        // ================================================================
+        function extraerPathStorage(url) {
+            if (!url || typeof url !== 'string') return null;
+            try {
+                var marcador = '/storage/v1/object/public/videos/';
+                var idx = url.indexOf(marcador);
+                if (idx === -1) return null;
+                var path = url.substring(idx + marcador.length);
+                // Quitar query string si la hay
+                var q = path.indexOf('?');
+                if (q !== -1) path = path.substring(0, q);
+                return path || null;
+            } catch (e) { return null; }
+        }
+
         async function cargarUsuarioActual() {
             try {
                 var session = await getSession();
@@ -1156,7 +1211,7 @@
         }
 
         // ================================================================
-        // ANUNCIOS DE MARKETING
+        // ANUNCIOS
         // ================================================================
         function getOrCreateAdSessionIdVideo() {
             if (adSessionIdVideo) return adSessionIdVideo;
@@ -1174,10 +1229,8 @@
         async function cargarAnuncioVideo(videoId) {
             if (!videoId) return;
             if (adCerradoVideo) return;
-
             var session = await getSession();
             if (!session) return;
-
             try {
                 var response = await fetch('/api/marketing/get-ad', {
                     method: 'POST',
@@ -1191,31 +1244,20 @@
                         session_id: getOrCreateAdSessionIdVideo()
                     })
                 });
-
-                if (!response.ok) {
-                    console.warn('No se pudo obtener anuncio:', response.status);
-                    return;
-                }
-
+                if (!response.ok) { console.warn('No ad:', response.status); return; }
                 var data = await response.json();
-
                 if (!data.success || !data.ad) {
                     var container = document.getElementById('marketingAdContainer');
                     if (container) container.classList.remove('visible');
                     return;
                 }
-
                 mostrarAnuncioVideo(data.ad);
                 anuncioActualVideo = data.ad;
-
                 if (adVistaTimerVideo) clearTimeout(adVistaTimerVideo);
                 adVistaTimerVideo = setTimeout(function() {
                     registrarVistaAnuncioVideo(videoId);
                 }, 3000);
-
-            } catch (error) {
-                console.error('Error cargando anuncio de video:', error);
-            }
+            } catch (error) { console.error('Error cargando anuncio:', error); }
         }
 
         function mostrarAnuncioVideo(ad) {
@@ -1224,7 +1266,6 @@
             var title = document.getElementById('marketingAdTitleVideo');
             var desc = document.getElementById('marketingAdDescVideo');
             var cta = document.getElementById('marketingAdCtaVideo');
-
             if (!container || !media || !title || !desc || !cta) return;
 
             var imgUrlValida = esURLValida(ad.imagen_url);
@@ -1247,10 +1288,7 @@
             } else if (videoUrlValida) {
                 var vid = document.createElement('video');
                 vid.src = ad.video_url;
-                vid.muted = true;
-                vid.autoplay = true;
-                vid.loop = true;
-                vid.playsInline = true;
+                vid.muted = true; vid.autoplay = true; vid.loop = true; vid.playsInline = true;
                 media.appendChild(vid);
             } else {
                 var span2 = document.createElement('span');
@@ -1261,9 +1299,7 @@
             title.textContent = ad.titulo || tr('videos_patrocinado', 'Patrocinado');
             desc.textContent = ad.descripcion || '';
             cta.textContent = ad.cta_texto || tr('videos_ver_mas', 'Ver más');
-
             desc.style.display = ad.descripcion ? 'block' : 'none';
-
             container.classList.add('visible');
         }
 
@@ -1271,14 +1307,10 @@
             if (!anuncioActualVideo) return;
             var session = await getSession();
             if (!session) return;
-
             try {
                 await fetch('/api/marketing/register-event', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + session.access_token
-                    },
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
                     body: JSON.stringify({
                         ad_id: anuncioActualVideo.id,
                         campaign_id: anuncioActualVideo.campaign_id,
@@ -1288,25 +1320,18 @@
                         session_id: getOrCreateAdSessionIdVideo()
                     })
                 });
-            } catch (error) {
-                console.warn('Error registrando vista:', error);
-            }
+            } catch (error) { console.warn('Error registrando vista:', error); }
         }
 
         async function registrarClicAnuncioVideo() {
             if (!anuncioActualVideo) return;
             var session = await getSession();
             if (!session) return;
-
             try {
                 var videoId = videoActual ? videoActual.id : null;
-
                 await fetch('/api/marketing/register-event', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + session.access_token
-                    },
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
                     body: JSON.stringify({
                         ad_id: anuncioActualVideo.id,
                         campaign_id: anuncioActualVideo.campaign_id,
@@ -1316,15 +1341,12 @@
                         session_id: getOrCreateAdSessionIdVideo()
                     })
                 });
-
                 if (esURLValida(anuncioActualVideo.video_url)) {
                     window.open(anuncioActualVideo.video_url, '_blank', 'noopener,noreferrer');
                 } else if (esURLValida(anuncioActualVideo.imagen_url)) {
                     window.open(anuncioActualVideo.imagen_url, '_blank', 'noopener,noreferrer');
                 }
-            } catch (error) {
-                console.warn('Error registrando clic:', error);
-            }
+            } catch (error) { console.warn('Error registrando clic:', error); }
         }
 
         // ================================================================
@@ -1354,6 +1376,7 @@
                 var comentariosT = escapeHTML(tr('videos_comentarios_count', 'comentarios'));
                 var verCompletoT = escapeHTML(tr('videos_ver_completo', '⛶ Ver completo'));
                 var usuarioT = escapeHTML(tr('videos_autor_desconocido', 'Usuario'));
+                var eliminarT = escapeHTML(tr('videos_eliminar', 'Eliminar'));
 
                 container.className = 'videos-grid';
                 container.innerHTML = data.map(function(v) {
@@ -1363,7 +1386,14 @@
                     var videoUrl = safeAttr(v.url_video);
                     var posterUrl = v.url_miniatura ? safeAttr(v.url_miniatura) : '';
 
+                    // ¿Es del usuario actual?
+                    var esMio = !!(sessionUser && v.usuario_id === sessionUser.id);
+                    var botonEliminar = esMio
+                        ? '<button class="btn-eliminar-card" onclick="event.stopPropagation(); eliminarMiVideo(\'' + v.id + '\')" title="' + eliminarT + '" aria-label="' + eliminarT + '">🗑️</button>'
+                        : '';
+
                     return '<div class="video-card" data-video-id="' + v.id + '">' +
+                        botonEliminar +
                         '<div class="thumbnail">' +
                         '<video preload="metadata" muted loop playsinline src="' + videoUrl + '" poster="' + posterUrl + '"></video>' +
                         '<div class="play-btn" onclick="togglePlayCard(event, \'' + v.id + '\')">▶</div>' +
@@ -1391,13 +1421,11 @@
         }
 
         // ================================================================
-        // AUTOPLAY AL SCROLL (TIKTOK)
+        // AUTOPLAY AL SCROLL
         // ================================================================
         function activarAutoplayScroll() {
             if (observerVideos) { observerVideos.disconnect(); observerVideos = null; }
-
             var cards = document.querySelectorAll('.video-card');
-
             if (cards.length > 0) {
                 setTimeout(function() {
                     var primerVideo = cards[0].querySelector('video');
@@ -1407,19 +1435,15 @@
                     }
                 }, 500);
             }
-
             observerVideos = new IntersectionObserver(function(entries) {
                 entries.forEach(function(entry) {
                     var card = entry.target;
                     var video = card.querySelector('video');
                     if (!video) return;
-
                     if (entry.isIntersecting && entry.intersectionRatio >= 0.6) {
                         card.classList.add('visible');
                         if (videoPausadoManualmente !== card.dataset.videoId) {
-                            video.play().then(function() {
-                                card.classList.add('playing');
-                            }).catch(function(err) {
+                            video.play().then(function() { card.classList.add('playing'); }).catch(function(err) {
                                 console.warn('Autoplay bloqueado:', err);
                             });
                         }
@@ -1427,30 +1451,21 @@
                         card.classList.remove('visible');
                         video.pause();
                         card.classList.remove('playing');
-
                         if (videoPausadoManualmente === card.dataset.videoId) {
                             videoPausadoManualmente = null;
                         }
                     }
                 });
-            }, {
-                threshold: [0.3, 0.6, 0.9],
-                rootMargin: '-10% 0px -10% 0px'
-            });
-
+            }, { threshold: [0.3, 0.6, 0.9], rootMargin: '-10% 0px -10% 0px' });
             cards.forEach(function(card) { observerVideos.observe(card); });
         }
 
-        // ================================================================
-        // TOGGLE PLAY/PAUSE MANUAL POR CARD
-        // ================================================================
         function togglePlayCard(event, videoId) {
             event.stopPropagation();
             var card = document.querySelector('.video-card[data-video-id="' + videoId + '"]');
             if (!card) return;
             var video = card.querySelector('video');
             if (!video) return;
-
             if (video.paused) {
                 video.play().catch(function() {});
                 card.classList.add('playing');
@@ -1463,7 +1478,7 @@
         }
 
         // ================================================================
-        // SUBIR VIDEO + ENVIAR A WORKER
+        // SUBIR VIDEO
         // ================================================================
         async function subirVideo() {
             var titulo = document.getElementById('inputTituloVideo').value.trim();
@@ -1483,13 +1498,8 @@
 
             var extensionesPermitidas = ['.mp4', '.webm', '.mov', '.avi'];
             var nombreArchivo = file.name.toLowerCase();
-            var extensionValida = extensionesPermitidas.some(function(ext) {
-                return nombreArchivo.endsWith(ext);
-            });
-            if (!extensionValida) {
-                showToast(tr('videos_video_formato', 'Formato no soportado. Usa MP4, WebM o MOV'), 'error');
-                return;
-            }
+            var extensionValida = extensionesPermitidas.some(function(ext) { return nombreArchivo.endsWith(ext); });
+            if (!extensionValida) { showToast(tr('videos_video_formato', 'Formato no soportado. Usa MP4, WebM o MOV'), 'error'); return; }
 
             var session = await getSession();
             if (!session) { showToast(tr('videos_sesion_requerida', 'Inicia sesión'), 'error'); return; }
@@ -1548,23 +1558,12 @@
 
                 var queueResponse = await fetch('/api/video/queue', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + session.access_token
-                    },
-                    body: JSON.stringify({
-                        videoId: videoId,
-                        videoUrl: videoUrl,
-                        bucket: 'videos',
-                        filePath: filePath
-                    })
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+                    body: JSON.stringify({ videoId: videoId, videoUrl: videoUrl, bucket: 'videos', filePath: filePath })
                 });
 
                 var queueData = await queueResponse.json();
-
-                if (!queueData.success) {
-                    throw new Error(queueData.error || 'Error enviando a procesar');
-                }
+                if (!queueData.success) throw new Error(queueData.error || 'Error enviando a procesar');
 
                 document.getElementById('uploadSection').style.display = 'none';
                 document.getElementById('processingState').classList.add('visible');
@@ -1590,44 +1589,32 @@
         }
 
         // ================================================================
-        // POLLING DEL ESTADO DE PROCESAMIENTO
+        // POLLING DE PROCESAMIENTO
         // ================================================================
         function iniciarPollingProcesamiento(jobId, videoId) {
             if (pollingVideoInterval) clearInterval(pollingVideoInterval);
-
             var progressFill = document.getElementById('processingProgressFill');
             var progressText = document.getElementById('processingProgressText');
             var message = document.getElementById('processingMessage');
-
             var intentos = 0;
             var maxIntentos = 120;
 
             pollingVideoInterval = setInterval(async function() {
                 intentos++;
-
                 if (intentos > maxIntentos) {
                     clearInterval(pollingVideoInterval);
                     pollingVideoInterval = null;
-                    mostrarErrorProcesamiento(tr('videos_procesando_tardando', 'El procesamiento está tardando demasiado. Verifica más tarde.'));
+                    mostrarErrorProcesamiento(tr('videos_procesando_tardando', 'El procesamiento está tardando demasiado.'));
                     return;
                 }
-
                 try {
                     var session = await getSession();
                     if (!session) return;
-
                     var response = await fetch('/api/video/status/' + jobId, {
-                        headers: {
-                            'Authorization': 'Bearer ' + session.access_token
-                        }
+                        headers: { 'Authorization': 'Bearer ' + session.access_token }
                     });
-
                     var data = await response.json();
-
-                    if (!data.success) {
-                        console.warn('Error consultando status:', data.error);
-                        return;
-                    }
+                    if (!data.success) return;
 
                     var progreso = data.progreso || 0;
                     progressFill.style.width = progreso + '%';
@@ -1648,13 +1635,10 @@
                     if (data.estado === 'completado') {
                         clearInterval(pollingVideoInterval);
                         pollingVideoInterval = null;
-
                         progressFill.style.width = '100%';
                         progressText.textContent = '100%';
                         message.textContent = tr('videos_procesando_exito', '◈ ¡Video procesado con éxito!');
-
                         showToast(tr('videos_procesando_exito', '◈ ¡Video procesado con éxito!'), 'success', 4000);
-
                         setTimeout(function() {
                             document.getElementById('processingState').classList.remove('visible');
                             document.getElementById('uploadSection').style.display = 'block';
@@ -1666,16 +1650,12 @@
                             cargarVideos();
                         }, 1500);
                     }
-
                     if (data.estado === 'fallido') {
                         clearInterval(pollingVideoInterval);
                         pollingVideoInterval = null;
                         mostrarErrorProcesamiento(data.error || tr('videos_procesando_error', 'Error procesando el video'));
                     }
-
-                } catch (error) {
-                    console.error('Error en polling:', error);
-                }
+                } catch (error) { console.error('Error en polling:', error); }
             }, 3000);
         }
 
@@ -1690,12 +1670,8 @@
             showToast('❌ ' + msg, 'error', 6000);
         }
 
-        // ================================================================
-        // REANUDAR PROCESAMIENTO PENDIENTE
-        // ================================================================
         async function reanudarProcesamientoPendiente() {
             if (!sessionUser) return;
-
             try {
                 var result = await window.supabase
                     .from('videos')
@@ -1704,17 +1680,12 @@
                     .eq('estado', 'procesando')
                     .order('created_at', { ascending: false })
                     .limit(1);
-
                 if (result.error || !result.data || result.data.length === 0) return;
-
                 var video = result.data[0];
-
                 document.getElementById('uploadSection').style.display = 'none';
                 document.getElementById('processingState').classList.add('visible');
                 document.getElementById('processingMessage').textContent = tr('videos_procesando_msg', 'Reanudando procesamiento') + ': ' + video.titulo;
-
                 var jobId = video.job_id;
-
                 if (!jobId) {
                     try {
                         var session = await getSession();
@@ -1723,25 +1694,17 @@
                         });
                         if (resp.ok) {
                             var data = await resp.json();
-                            if (data.success && data.jobId) {
-                                jobId = data.jobId;
-                            }
+                            if (data.success && data.jobId) jobId = data.jobId;
                         }
-                    } catch (e) {
-                        console.warn('No se pudo obtener jobId:', e.message);
-                    }
+                    } catch (e) { console.warn(e.message); }
                 }
-
                 if (jobId) {
                     iniciarPollingProcesamiento(jobId, video.id);
                 } else {
                     document.getElementById('processingState').classList.remove('visible');
                     document.getElementById('uploadSection').style.display = 'block';
                 }
-
-            } catch (e) {
-                console.warn('Error reanudando procesamiento:', e.message);
-            }
+            } catch (e) { console.warn('Error reanudando:', e.message); }
         }
 
         // ================================================================
@@ -1750,6 +1713,7 @@
         async function abrirVideo(videoId) {
             var modal = document.getElementById('videoModal');
             var videoPlayer = document.getElementById('modalVideoPlayer');
+            var btnEliminarModal = document.getElementById('btnEliminarModal');
 
             try {
                 var result = await window.supabase
@@ -1770,14 +1734,21 @@
                 document.getElementById('modalDescripcion').textContent = video.descripcion || tr('videos_sin_descripcion', 'Sin descripción');
                 document.getElementById('modalVistas').textContent = (video.reproducciones || 0) + 1;
 
+                // Mostrar botón eliminar solo si es del usuario
+                var esMio = !!(sessionUser && video.usuario_id === sessionUser.id);
+                if (esMio) {
+                    btnEliminarModal.classList.add('show');
+                    btnEliminarModal.title = tr('videos_eliminar', 'Eliminar');
+                    btnEliminarModal.setAttribute('aria-label', tr('videos_eliminar', 'Eliminar'));
+                } else {
+                    btnEliminarModal.classList.remove('show');
+                }
+
                 var liked = await verificarLikeVideo(videoId);
                 var likeBtn = document.getElementById('btnLikeVideo');
                 var likesCount = video.likes || 0;
-                if (liked) {
-                    likeBtn.classList.add('liked');
-                } else {
-                    likeBtn.classList.remove('liked');
-                }
+                if (liked) likeBtn.classList.add('liked');
+                else likeBtn.classList.remove('liked');
                 var likesSpan = document.getElementById('modalLikes');
                 if (likesSpan) likesSpan.textContent = likesCount;
 
@@ -1795,32 +1766,23 @@
 
                 modal.classList.add('show');
 
-                try {
-                    await videoPlayer.play();
-                } catch (playError) {
-                    console.log('El usuario debe interactuar para reproducir el video.');
-                }
+                try { await videoPlayer.play(); } catch (playError) { console.log('Interacción requerida.'); }
 
             } catch (e) {
                 console.error('Error abriendo video:', e);
                 showToast(tr('videos_error_video', 'Error al cargar video'), 'error');
-                // Cerrar modal si quedó abierto
                 if (modal) modal.classList.remove('show');
                 videoActual = null;
             }
         }
 
-        // ================================================================
-        // CERRAR MODAL VIDEO
-        // ================================================================
         function cerrarModalVideo() {
             var modal = document.getElementById('videoModal');
             var videoPlayer = document.getElementById('modalVideoPlayer');
-            if (videoPlayer) {
-                videoPlayer.pause();
-                videoPlayer.src = '';
-            }
+            var btnEliminarModal = document.getElementById('btnEliminarModal');
+            if (videoPlayer) { videoPlayer.pause(); videoPlayer.src = ''; }
             if (modal) modal.classList.remove('show');
+            if (btnEliminarModal) btnEliminarModal.classList.remove('show');
             videoActual = null;
 
             setTimeout(function() {
@@ -1838,35 +1800,108 @@
         }
 
         // ================================================================
+        // ELIMINAR VIDEO
+        // ================================================================
+        async function eliminarMiVideo(videoId) {
+            if (!videoId) return;
+
+            // Confirmación traducida
+            var confirmMsg = tr('videos_confirmar_eliminar', '¿Seguro que quieres eliminar este video? Esta acción no se puede deshacer.');
+            if (!confirm(confirmMsg)) return;
+
+            var session = await getSession();
+            if (!session) {
+                showToast(tr('videos_sesion_requerida', 'Inicia sesión'), 'error');
+                return;
+            }
+
+            try {
+                // 1. Recuperar datos del video para saber su URL y verificar ownership
+                var r = await window.supabase
+                    .from('videos')
+                    .select('id, usuario_id, url_video')
+                    .eq('id', videoId)
+                    .maybeSingle();
+
+                if (r.error) throw r.error;
+                if (!r.data) {
+                    showToast(tr('videos_error_eliminar', 'Error al eliminar video'), 'error');
+                    return;
+                }
+
+                // Doble check: solo el dueño puede borrar
+                if (r.data.usuario_id !== session.user.id) {
+                    console.warn('⚠️ Intento de borrar video ajeno bloqueado en frontend');
+                    return;
+                }
+
+                // 2. Borrar el archivo de Storage (si podemos extraer el path)
+                var path = extraerPathStorage(r.data.url_video);
+                if (path) {
+                    try {
+                        var removeResult = await window.supabase.storage
+                            .from('videos')
+                            .remove([path]);
+                        if (removeResult.error) {
+                            console.warn('⚠️ No se pudo borrar el archivo de Storage:', removeResult.error);
+                        } else {
+                            console.log('✅ Archivo de Storage borrado:', path);
+                        }
+                    } catch (storageErr) {
+                        console.warn('⚠️ Error borrando Storage:', storageErr);
+                    }
+                } else {
+                    console.warn('ℹ️ No se pudo extraer el path del Storage desde:', r.data.url_video);
+                }
+
+                // 3. Borrar el registro (CASCADE limpia likes, comentarios, vistas, jobs)
+                var delResult = await window.supabase
+                    .from('videos')
+                    .delete()
+                    .eq('id', videoId);
+
+                if (delResult.error) throw delResult.error;
+
+                // 4. Si el video estaba abierto en el modal, cerrar
+                if (videoActual && videoActual.id === videoId) {
+                    cerrarModalVideo();
+                }
+
+                // 5. Toast de éxito
+                showToast(tr('videos_eliminado', '🗑️ Video eliminado'), 'success');
+
+                // 6. Refrescar lista
+                await cargarVideos();
+
+            } catch (e) {
+                console.error('Error eliminando video:', e);
+                showToast(tr('videos_error_eliminar', 'Error al eliminar video'), 'error');
+            }
+        }
+
+        // Wrapper para el botón del modal
+        function eliminarVideoDesdeModal() {
+            if (!videoActual) return;
+            eliminarMiVideo(videoActual.id);
+        }
+
+        // ================================================================
         // REGISTRAR VISTA
         // ================================================================
         async function registrarVista(videoId) {
             try {
                 var session = await getSession();
                 if (!session) return;
-
-                var result = await window.supabase.rpc('registrar_vista_video', {
-                    p_video_id: videoId
-                });
-
-                if (result.error) {
-                    console.warn('Error registrando vista:', result.error.message);
-                    return;
-                }
-
+                var result = await window.supabase.rpc('registrar_vista_video', { p_video_id: videoId });
+                if (result.error) { console.warn('Error vista:', result.error.message); return; }
                 if (result.data && result.data.contada) {
-                    console.log('✅ Vista contada para video', videoId);
-                } else if (result.data && result.data.motivo === 'ya_vio_antes') {
-                    console.log('ℹ️ Usuario ya vio este video antes');
+                    console.log('✅ Vista contada:', videoId);
                 }
-
-            } catch (e) {
-                console.warn('Error registrando vista:', e.message);
-            }
+            } catch (e) { console.warn('Error vista:', e.message); }
         }
 
         // ================================================================
-        // VERIFICAR LIKE VIDEO
+        // LIKE
         // ================================================================
         async function verificarLikeVideo(videoId) {
             if (!sessionUser) return false;
@@ -1880,7 +1915,6 @@
                     .eq('usuario_id', sessionUser.id)
                     .maybeSingle();
                 var liked = !!result.data;
-                // LRU simple: limitar a 50
                 likeCache.set(key, liked);
                 likeCacheOrden.push(key);
                 if (likeCacheOrden.length > 50) {
@@ -1888,12 +1922,9 @@
                     likeCache.delete(viejo);
                 }
                 return liked;
-            } catch (e) { console.error('Error verificando like:', e); return false; }
+            } catch (e) { console.error(e); return false; }
         }
 
-        // ================================================================
-        // TOGGLE LIKE VIDEO
-        // ================================================================
         async function toggleLikeVideo() {
             if (!videoActual) { showToast(tr('videos_error_video', 'No hay video seleccionado'), 'warning'); return; }
             if (!sessionUser) { showToast(tr('videos_sesion_requerida', 'Inicia sesión'), 'error'); return; }
@@ -1905,7 +1936,6 @@
 
             try {
                 var liked = await verificarLikeVideo(videoId);
-
                 if (liked) {
                     var result = await window.supabase
                         .from('videos_likes')
@@ -1913,7 +1943,6 @@
                         .eq('video_id', videoId)
                         .eq('usuario_id', sessionUser.id);
                     if (result.error) throw result.error;
-
                     likeCache.set(key, false);
                     var current = parseInt(likesSpan.textContent) || 0;
                     likesSpan.textContent = Math.max(0, current - 1);
@@ -1926,20 +1955,19 @@
                         if (result2.error.code === '23505') { showToast(tr('videos_like_ya', 'Ya diste like'), 'warning'); return; }
                         throw result2.error;
                     }
-
                     likeCache.set(key, true);
                     var current2 = parseInt(likesSpan.textContent) || 0;
                     likesSpan.textContent = current2 + 1;
                     likeBtn.classList.add('liked');
                 }
             } catch (e) {
-                console.error('Error toggling like:', e);
+                console.error('Error like:', e);
                 showToast(tr('videos_like_error', 'Error al procesar like'), 'error');
             }
         }
 
         // ================================================================
-        // CARGAR COMENTARIOS VIDEO
+        // COMENTARIOS
         // ================================================================
         async function cargarComentariosVideo(videoId) {
             try {
@@ -1948,17 +1976,13 @@
                     .select('*, usuarios:usuario_id (id, nombre, handle, avatar_url)')
                     .eq('video_id', videoId)
                     .order('created_at', { ascending: true });
-
                 if (result.error) throw result.error;
-
                 var lista = document.getElementById('modalComentariosLista');
                 var data = result.data || [];
-
                 if (data.length === 0) {
                     lista.innerHTML = '<div style="color:var(--text-muted);font-size:0.7rem;padding:8px 0;" data-clave="videos_sin_comentarios">' + escapeHTML(tr('videos_sin_comentarios', 'Sin comentarios. Sé el primero.')) + '</div>';
                     return;
                 }
-
                 lista.innerHTML = data.map(function(c) {
                     var u = c.usuarios || {};
                     var avatar = u.avatar_url ? '<img src="' + safeAttr(u.avatar_url) + '">' : '◈';
@@ -1971,17 +1995,13 @@
                         '</div>' +
                         '</div>';
                 }).join('');
-
             } catch (e) {
-                console.error('Error cargando comentarios:', e);
+                console.error(e);
                 var lista2 = document.getElementById('modalComentariosLista');
                 if (lista2) lista2.innerHTML = '<div style="color:var(--danger);font-size:0.7rem;">' + escapeHTML(tr('videos_comentario_error', 'Error al cargar comentarios')) + '</div>';
             }
         }
 
-        // ================================================================
-        // ENVIAR COMENTARIO VIDEO
-        // ================================================================
         async function enviarComentarioVideo() {
             if (!videoActual) { showToast(tr('videos_error_video', 'No hay video seleccionado'), 'warning'); return; }
             if (!sessionUser) { showToast(tr('videos_sesion_requerida', 'Inicia sesión'), 'error'); return; }
@@ -1994,38 +2014,23 @@
             try {
                 var result = await window.supabase
                     .from('videos_comentarios')
-                    .insert({
-                        video_id: videoActual.id,
-                        usuario_id: sessionUser.id,
-                        contenido: texto
-                    });
-
+                    .insert({ video_id: videoActual.id, usuario_id: sessionUser.id, contenido: texto });
                 if (result.error) throw result.error;
-
                 input.value = '';
                 showToast(tr('videos_comentario_agregado', 'Comentario agregado'), 'success');
                 cargarComentariosVideo(videoActual.id);
-
                 var countSpan = document.getElementById('modalComentariosCount');
                 var current = parseInt(countSpan.textContent) || 0;
                 countSpan.textContent = current + 1;
-
                 videoActual.comentarios = (videoActual.comentarios || 0) + 1;
-
             } catch (e) {
-                console.error('Error enviando comentario:', e);
+                console.error(e);
                 showToast(tr('videos_comentario_error', 'Error al comentar'), 'error');
             }
         }
 
-        // ================================================================
-        // VER TOKENS
-        // ================================================================
         function verTokens() { window.location.href = '/features/perfil/perfil.html'; }
 
-        // ================================================================
-        // ERRORES
-        // ================================================================
         function mostrarErrorEnPantalla(msg) {
             var banner = document.getElementById('errorBanner');
             var texto = document.getElementById('errorBannerText');
@@ -2040,9 +2045,6 @@
             mostrarErrorEnPantalla('Promesa rechazada: ' + (e.reason?.message || e.reason));
         });
 
-        // ================================================================
-        // LIMPIEZA
-        // ================================================================
         window.addEventListener('beforeunload', function() {
             if (pollingVideoInterval) { clearInterval(pollingVideoInterval); pollingVideoInterval = null; }
             if (adRefreshIntervalVideo) { clearInterval(adRefreshIntervalVideo); adRefreshIntervalVideo = null; }
@@ -2051,9 +2053,6 @@
             if (likeCache) { likeCache.clear(); likeCacheOrden = []; }
         });
 
-        // ================================================================
-        // CERRAR MODAL CON ESC O CLICK FUERA
-        // ================================================================
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') { cerrarModalVideo(); }
         });
@@ -2065,9 +2064,6 @@
             });
         }
 
-        // ================================================================
-        // ENTER PARA COMENTAR
-        // ================================================================
         var inputComentario = document.getElementById('inputComentarioVideo');
         if (inputComentario) {
             inputComentario.addEventListener('keypress', function(e) {
@@ -2075,40 +2071,26 @@
             });
         }
 
-        // ================================================================
-        // CLICK EN CARD PARA ABRIR MODAL
-        // ================================================================
         document.addEventListener('click', function(e) {
             var card = e.target.closest('.video-card');
-            if (card && !e.target.closest('.play-btn') && !e.target.closest('span[onclick]')) {
+            if (card && !e.target.closest('.play-btn') && !e.target.closest('.btn-eliminar-card') && !e.target.closest('span[onclick]')) {
                 var videoId = card.dataset.videoId;
                 if (videoId) { abrirVideo(videoId); }
             }
         });
 
-        // ================================================================
-        // INICIALIZACIÓN
-        // ================================================================
         document.addEventListener('DOMContentLoaded', function() {
-            console.log("◈ Sariel's - Videos (i18n + tema)");
-
-            // Aplicar traducciones iniciales (por si idiomas.js terminó antes)
+            console.log("◈ Sariel's - Videos (i18n + tema + eliminar)");
             aplicarI18N();
-
             cargarUsuarioActual().then(function() {
                 cargarVideos();
                 reanudarProcesamientoPendiente();
             });
-
-            // Re-aplicar traducciones después de cargar por completo
             setTimeout(function() {
                 if (typeof window.inicializarIdiomas === 'function') {
                     window.inicializarIdiomas().then(function() {
                         aplicarI18N();
-                        // Re-renderizar videos después de cargar traducciones para que se vean traducidos
-                        if (typeof cargarVideos === 'function') {
-                            cargarVideos();
-                        }
+                        if (typeof cargarVideos === 'function') cargarVideos();
                     }).catch(function(err) {
                         console.warn('Error inicializando idiomas:', err);
                     });
@@ -2118,9 +2100,6 @@
             }, 300);
         });
 
-        // ================================================================
-        // EXPOSICIÓN GLOBAL
-        // ================================================================
         window.subirVideo = subirVideo;
         window.cargarVideos = cargarVideos;
         window.abrirVideo = abrirVideo;
@@ -2138,6 +2117,9 @@
         window.iniciarPollingProcesamiento = iniciarPollingProcesamiento;
         window.reanudarProcesamientoPendiente = reanudarProcesamientoPendiente;
         window.esURLValida = esURLValida;
+        window.eliminarMiVideo = eliminarMiVideo;
+        window.eliminarVideoDesdeModal = eliminarVideoDesdeModal;
+        window.extraerPathStorage = extraerPathStorage;
     </script>
 
 </body>
