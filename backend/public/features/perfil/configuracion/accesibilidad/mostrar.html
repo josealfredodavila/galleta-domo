@@ -8,6 +8,9 @@
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
     
+    <!-- ✅ APARIENCIA GLOBAL - Se carga PRIMERO para evitar flash -->
+    <script src="/features/shared/js/apariencia-global.js"></script>
+    
     <link rel="stylesheet" href="../../../shared/config-layout.css" />
     
     <style>
@@ -164,7 +167,6 @@
             text-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
         }
 
-        /* Preview del texto */
         .cfg-text-preview {
             background: rgba(0, 0, 0, 0.3);
             border-radius: 12px;
@@ -184,7 +186,7 @@
             width: 40px;
             height: 40px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #0F2D1A, #D4AF37);
+            background: linear-gradient(135deg, #0F2D1A, var(--cfg-gold));
             display: flex;
             align-items: center;
             justify-content: center;
@@ -208,6 +210,31 @@
             color: var(--cfg-text);
             font-size: var(--preview-size, 15px);
             line-height: 1.5;
+        }
+
+        /* Tema día */
+        [data-tema="dia"] {
+            --cfg-bg: #f5f5f5;
+            --cfg-bg-2: #ffffff;
+            --cfg-bg-3: #f0f0f0;
+            --cfg-text: #0a0a0a;
+            --cfg-text-muted: #5a6870;
+            --cfg-text-dim: #8a8a8a;
+            --cfg-border: rgba(0, 0, 0, 0.1);
+        }
+        [data-tema="dia"] .cfg-header { background: rgba(255, 255, 255, 0.85); }
+        [data-tema="dia"] .cfg-page { background: var(--cfg-bg); }
+        [data-tema="dia"] .cfg-text-preview { background: rgba(0, 0, 0, 0.05); }
+
+        /* Tema noche */
+        [data-tema="noche"] {
+            --cfg-bg: #000000;
+            --cfg-bg-2: #0a0a0a;
+            --cfg-bg-3: #16181c;
+            --cfg-text: #f0f4f8;
+            --cfg-text-muted: #8aa8b8;
+            --cfg-text-dim: #5a6870;
+            --cfg-border: rgba(255, 255, 255, 0.08);
         }
     </style>
 </head>
@@ -270,6 +297,7 @@
             backUrl: '/features/perfil/configuracion/index.html',
         });
 
+        // Mismas claves que usa apariencia-global.js
         const PREF_KEYS = {
             tema: 'mostrar_tema',
             tamano_fuente: 'mostrar_tamano_fuente',
@@ -287,12 +315,24 @@
             { valor: '#00e5ff', label: 'Cian' },
         ];
 
+        // Helper: guardar preferencia
+        function setPref(key, value) {
+            try { localStorage.setItem(key, value); } catch(e) {}
+        }
+
+        // Helper: leer preferencia
+        function getPref(key, fallback) {
+            try {
+                const v = localStorage.getItem(key);
+                return v !== null ? v : fallback;
+            } catch(e) { return fallback; }
+        }
+
         // ============================================================
-        // TEMA (sistema / día / noche)
+        // TEMA
         // ============================================================
         function renderTemas() {
-            const temaActual = cfgGetPref(PREF_KEYS.tema, 'sistema');
-
+            const temaActual = getPref(PREF_KEYS.tema, 'sistema');
             const temas = [
                 { id: 'sistema', label: 'Sistema', icon: '📱' },
                 { id: 'dia',     label: 'Día',     icon: '☀️' },
@@ -307,9 +347,14 @@
             `).join('');
         }
 
-        window.onCambiarTema = async (tema) => {
-            await cfgSetPref(PREF_KEYS.tema, tema);
-            document.documentElement.setAttribute('data-tema', tema);
+        window.onCambiarTema = (tema) => {
+            setPref(PREF_KEYS.tema, tema);
+            // ✅ Aplicar usando el módulo global
+            if (window.SarielApariencia) {
+                window.SarielApariencia.aplicarTema(tema);
+            } else {
+                document.documentElement.setAttribute('data-tema', tema);
+            }
             renderTemas();
             cfgToast(
                 tema === 'dia' ? '☀️ Tema día activado' :
@@ -323,8 +368,7 @@
         // COLOR DE ACENTO
         // ============================================================
         function renderColores() {
-            const colorActual = cfgGetPref(PREF_KEYS.color_acento, '#D4AF37');
-
+            const colorActual = getPref(PREF_KEYS.color_acento, '#D4AF37');
             $('#seccionAcento').innerHTML = COLORES_ACENTO.map(c => `
                 <div class="cfg-color-dot ${c.valor === colorActual ? 'active' : ''}" 
                      style="background:${c.valor};"
@@ -334,9 +378,15 @@
             `).join('');
         }
 
-        window.onCambiarColor = async (color) => {
-            await cfgSetPref(PREF_KEYS.color_acento, color);
-            document.documentElement.style.setProperty('--cfg-gold', color);
+        window.onCambiarColor = (color) => {
+            setPref(PREF_KEYS.color_acento, color);
+            // ✅ Aplicar usando el módulo global
+            if (window.SarielApariencia) {
+                window.SarielApariencia.aplicarColorAcento(color);
+            } else {
+                document.documentElement.style.setProperty('--cfg-gold', color);
+                document.documentElement.style.setProperty('--gold', color);
+            }
             renderColores();
             cfgToast(`🎨 Color de acento actualizado`, 'success');
         };
@@ -345,29 +395,33 @@
         // TAMAÑO DE FUENTE
         // ============================================================
         function renderFuente() {
-            const size = cfgGetPref(PREF_KEYS.tamano_fuente, 100);
+            const size = parseInt(getPref(PREF_KEYS.tamano_fuente, 100)) || 100;
             const slider = $('#fuenteSlider');
             const valor = $('#fuenteValor');
-
             if (slider) slider.value = size;
             if (valor) valor.textContent = size + '%';
-
             aplicarTamanoFuente(size);
         }
 
         function aplicarTamanoFuente(size) {
-            // Cambiar CSS variable que escala el texto de vista previa
-            document.documentElement.style.setProperty('--preview-size', (15 * size / 100) + 'px');
-            // También aplicar al body
-            document.documentElement.style.fontSize = (16 * size / 100) + 'px';
+            const valor = Math.max(80, Math.min(140, parseInt(size)));
+            // Aplicar al documento
+            document.documentElement.style.fontSize = (16 * valor / 100) + 'px';
+            // Variable de preview
+            document.documentElement.style.setProperty('--preview-size', (15 * valor / 100) + 'px');
         }
 
-        window.onCambiarFuente = async (size) => {
+        window.onCambiarFuente = (size) => {
             const sizeNum = parseInt(size);
-            await cfgSetPref(PREF_KEYS.tamano_fuente, sizeNum);
+            setPref(PREF_KEYS.tamano_fuente, sizeNum);
             const valor = $('#fuenteValor');
             if (valor) valor.textContent = sizeNum + '%';
-            aplicarTamanoFuente(sizeNum);
+            // ✅ Aplicar usando el módulo global
+            if (window.SarielApariencia) {
+                window.SarielApariencia.aplicarTamanoFuente(sizeNum);
+            } else {
+                aplicarTamanoFuente(sizeNum);
+            }
         };
 
         // ============================================================
@@ -375,19 +429,10 @@
         // ============================================================
         window.addEventListener('DOMContentLoaded', async () => {
             await new Promise(resolve => setTimeout(resolve, 400));
-
-            // Aplicar preferencias guardadas
-            const temaGuardado = cfgGetPref(PREF_KEYS.tema, 'sistema');
-            document.documentElement.setAttribute('data-tema', temaGuardado);
-
-            const colorGuardado = cfgGetPref(PREF_KEYS.color_acento, '#D4AF37');
-            document.documentElement.style.setProperty('--cfg-gold', colorGuardado);
-
             renderTemas();
             renderColores();
             renderFuente();
 
-            // Listener para el slider de fuente
             const slider = $('#fuenteSlider');
             if (slider) {
                 slider.addEventListener('input', (e) => {
@@ -403,41 +448,5 @@
 
     })();
     </script>
-
-    <style>
-    /* Tema día (más claro) */
-    [data-tema="dia"] {
-        --cfg-bg: #f5f5f5;
-        --cfg-bg-2: #ffffff;
-        --cfg-bg-3: #f0f0f0;
-        --cfg-text: #0a0a0a;
-        --cfg-text-muted: #5a6870;
-        --cfg-text-dim: #8a8a8a;
-        --cfg-border: rgba(0, 0, 0, 0.1);
-    }
-
-    [data-tema="dia"] .cfg-header {
-        background: rgba(255, 255, 255, 0.85);
-    }
-
-    [data-tema="dia"] .cfg-page {
-        background: var(--cfg-bg);
-    }
-
-    [data-tema="dia"] .cfg-tema-card .preview.dia {
-        border-color: var(--cfg-gold);
-    }
-
-    /* Tema noche (más oscuro) */
-    [data-tema="noche"] {
-        --cfg-bg: #000000;
-        --cfg-bg-2: #0a0a0a;
-        --cfg-bg-3: #16181c;
-        --cfg-text: #f0f4f8;
-        --cfg-text-muted: #8aa8b8;
-        --cfg-text-dim: #5a6870;
-        --cfg-border: rgba(255, 255, 255, 0.08);
-    }
-    </style>
 </body>
 </html>
