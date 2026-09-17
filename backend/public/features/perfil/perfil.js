@@ -10,6 +10,9 @@
    - window.t()              → traducción (fallback: clave humanizada)
    - window.tConFallback()   → traducción con fallback explícito
    - window.aplicarTraducciones(raiz) → aplica al DOM con data-clave
+
+   v3: agrega expandirFotoPublicacion() para agrandar imágenes
+   publicadas en el perfil.
    ================================================================ */
 
 // ================================================================
@@ -2570,6 +2573,75 @@ function expandirAvatar() {
     document.addEventListener('keydown', onKeyDown);
 }
 
+// ================================================================
+// EXPANDIR FOTO DE PUBLICACIÓN
+// ================================================================
+// Reutiliza la misma lógica que expandirAvatar() pero acepta
+// cualquier src. Se usa cuando el usuario pica una imagen
+// publicada en su perfil.
+// ================================================================
+function expandirFotoPublicacion(src) {
+    if (!src) return;
+
+    const modal = document.createElement('div');
+    modal.id = 'fotoPublicacionModal';
+    modal.style.cssText = [
+        'position: fixed',
+        'top: 0',
+        'left: 0',
+        'right: 0',
+        'bottom: 0',
+        'width: 100vw',
+        'height: 100vh',
+        'background: rgba(0,0,0,0.95)',
+        '-webkit-backdrop-filter: blur(8px)',
+        'backdrop-filter: blur(8px)',
+        'display: flex',
+        'justify-content: center',
+        'align-items: center',
+        'z-index: 2147483647',
+        'cursor: zoom-out',
+        'padding: 20px',
+        'box-sizing: border-box'
+    ].join(';');
+
+    const imgFull = document.createElement('img');
+    imgFull.src = src;
+    imgFull.alt = 'Imagen publicada';
+    imgFull.style.cssText = [
+        'max-width: 95vw',
+        'max-height: 95vh',
+        'width: auto',
+        'height: auto',
+        'object-fit: contain',
+        'border-radius: 16px',
+        'box-shadow: 0 0 60px rgba(212, 175, 55, 0.5), 0 0 0 3px rgba(212, 175, 55, 0.6)',
+        'display: block'
+    ].join(';');
+
+    modal.appendChild(imgFull);
+    document.body.appendChild(modal);
+
+    const cerrar = function (e) {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        modal.remove();
+        document.removeEventListener('keydown', onKeyDown);
+    };
+
+    const onKeyDown = function (e) {
+        if (e.key === 'Escape' || e.key === 'Esc') {
+            cerrar();
+        }
+    };
+
+    modal.addEventListener('click', cerrar);
+    imgFull.addEventListener('click', cerrar);
+    document.addEventListener('keydown', onKeyDown);
+}
+
 async function subirFoto(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -3072,6 +3144,7 @@ window.cargarPerfil = cargarPerfil;
 window.guardarPerfil = guardarPerfil;
 window.abrirSelectorArchivo = abrirSelectorArchivo;
 window.expandirAvatar = expandirAvatar;
+window.expandirFotoPublicacion = expandirFotoPublicacion;
 window.subirFoto = subirFoto;
 window.subirVideo = subirVideo;
 window.editarPerfil = editarPerfil;
