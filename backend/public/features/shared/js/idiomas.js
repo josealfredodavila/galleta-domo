@@ -9,12 +9,23 @@
 // - data-placeholder
 // - contenido HTML dinámico
 // - window.t()
+// - window.tConFallback()
 // - window.aplicarTraducciones()
+// - window.aplicarTraduccionesDinamicas()
 // - window.inicializarIdiomas()
 //
 // IMPORTANTE:
 // - public.traducciones usa: idioma_id, clave, valor, modulo
 // - No se crea un segundo sistema de traducciones
+//
+// FIX (v2):
+// - aplicarTraducciones() ya NO sobrescribe el texto original del
+//   HTML cuando la clave no existe en el mapa de traducciones.
+//   Antes usaba `t(clave)` que devuelve la clave humanizada como
+//   fallback, y eso causaba que en pantalla aparecieran textos como
+//   "perfil mi publicacion" o "nav inicio" en lugar del texto
+//   original del HTML.
+// - Ahora se verifica estrictamente contra el mapa `traducciones`.
 // ================================================================
 
 
@@ -100,15 +111,7 @@ let traducciones = {};
 
 
 // Exponer el objeto globalmente.
-// Algunos módulos pueden necesitar consultar directamente
-// las traducciones cargadas.
-//
-// IMPORTANTE:
-// Siempre se vuelve a sincronizar después de cargar traducciones.
 window.traducciones = traducciones;
-
-
-// Exponer también el idioma actual.
 window.idiomaActual = idiomaActual;
 
 
@@ -363,6 +366,15 @@ async function cargarTraducciones(idiomaId) {
 // ================================================================
 // OBTENER TEXTO TRADUCIDO
 // ================================================================
+//
+// Comportamiento:
+// - Si la clave existe en el mapa: devuelve el valor.
+// - Si no existe: devuelve la clave humanizada (con espacios).
+//
+// IMPORTANTE: aplicarTraducciones() NO usa el valor humanizado
+// para sobrescribir el DOM. Lo usa solo si tú llamas a t() desde
+// tu código JS explícitamente.
+// ================================================================
 
 function t(clave, modulo = null) {
 
@@ -439,14 +451,66 @@ function t(clave, modulo = null) {
 
 
 // ================================================================
-// OBTENER TRADUCCIÓN CON FALLBACK PERSONALIZADO
+// VERIFICAR SI UNA CLAVE TIENE TRADUCCIÓN REAL
 // ================================================================
 //
-// Útil para módulos dinámicos como Perfil, Live, Mensajes, etc.
-//
-// Ejemplo:
-// tConFallback('perfil_publicando', 'Publicando...')
-//
+// Devuelve la traducción si existe, o null si no.
+// NO usa el fallback humanizado. Útil para aplicarTraducciones().
+// ================================================================
+
+function obtenerTraduccionReal(clave, modulo = null) {
+
+    if (!clave) {
+        return null;
+    }
+
+    if (
+        Object.prototype.hasOwnProperty.call(
+            traducciones,
+            clave
+        )
+    ) {
+
+        const valor = traducciones[clave];
+
+        if (
+            valor !== null &&
+            valor !== undefined &&
+            String(valor).trim() !== ''
+        ) {
+            return String(valor);
+        }
+    }
+
+    if (modulo) {
+
+        const keyModulo = `${modulo}_${clave}`;
+
+        if (
+            Object.prototype.hasOwnProperty.call(
+                traducciones,
+                keyModulo
+            )
+        ) {
+
+            const valor = traducciones[keyModulo];
+
+            if (
+                valor !== null &&
+                valor !== undefined &&
+                String(valor).trim() !== ''
+            ) {
+                return String(valor);
+            }
+        }
+    }
+
+    return null;
+}
+
+
+// ================================================================
+// OBTENER TRADUCCIÓN CON FALLBACK PERSONALIZADO
 // ================================================================
 
 function tConFallback(
@@ -455,27 +519,17 @@ function tConFallback(
     modulo = null
 ) {
 
-    const resultado =
-        t(clave, modulo);
+    const real = obtenerTraduccionReal(clave, modulo);
 
-
-    // Si realmente encontró traducción
-    if (
-        resultado &&
-        resultado !==
-            String(clave).replace(/_/g, ' ')
-    ) {
-        return resultado;
+    if (real !== null) {
+        return real;
     }
 
-
-    // Fallback proporcionado
     if (fallback !== undefined && fallback !== null) {
         return fallback;
     }
 
-
-    return resultado;
+    return String(clave).replace(/_/g, ' ');
 }
 
 
@@ -483,21 +537,17 @@ function tConFallback(
 // APLICAR TRADUCCIONES A HTML
 // ================================================================
 //
-// Ahora acepta una raíz opcional.
+// Acepta una raíz opcional (document, un elemento, etc.).
 //
-// Antes:
-// aplicarTraducciones()
-//
-// También:
-// aplicarTraducciones(document)
-// aplicarTraducciones(contenedor)
-//
-// Esto permite traducir contenido HTML generado dinámicamente.
+// FIX v2:
+// - Ahora usa obtenerTraduccionReal() en lugar de t().
+// - Esto significa que si una clave NO existe en el mapa de
+//   traducciones, se respeta el texto original del HTML.
+//   Antes se sobrescribía con la clave humanizada y se veía
+//   "perfil mi publicacion" o "nav inicio" en pantalla.
 // ================================================================
 
-function aplicarTraducciones(
-    raiz = document
-) {
+function aplicarTraducciones(raiz = document) {
 
     try {
 
@@ -512,18 +562,14 @@ function aplicarTraducciones(
 
         const elementosClave =
             raiz.querySelectorAll
-                ? raiz.querySelectorAll(
-                    '[data-clave]'
-                )
+                ? raiz.querySelectorAll('[data-clave]')
                 : [];
 
 
         elementosClave.forEach(el => {
 
             const clave =
-                el.getAttribute(
-                    'data-clave'
-                );
+                el.getAttribute('data-clave');
 
 
             if (!clave) {
@@ -532,26 +578,18 @@ function aplicarTraducciones(
 
 
             const modulo =
-                el.getAttribute(
-                    'data-modulo'
-                ) || null;
+                el.getAttribute('data-modulo') || null;
 
 
+            // Obtener traducción REAL (null si no existe).
             const traduccion =
-                t(
-                    clave,
-                    modulo
-                );
+                obtenerTraduccionReal(clave, modulo);
 
 
-            if (
-                traduccion &&
-                traduccion !==
-                    String(clave)
-            ) {
-
-                el.textContent =
-                    traduccion;
+            // SOLO sobrescribir si hay traducción real.
+            // Si no existe, se respeta el texto original del HTML.
+            if (traduccion !== null) {
+                el.textContent = traduccion;
             }
 
         });
@@ -563,18 +601,14 @@ function aplicarTraducciones(
 
         const elementosPlaceholder =
             raiz.querySelectorAll
-                ? raiz.querySelectorAll(
-                    '[data-placeholder]'
-                )
+                ? raiz.querySelectorAll('[data-placeholder]')
                 : [];
 
 
         elementosPlaceholder.forEach(el => {
 
             const clave =
-                el.getAttribute(
-                    'data-placeholder'
-                );
+                el.getAttribute('data-placeholder');
 
 
             if (!clave) {
@@ -583,19 +617,12 @@ function aplicarTraducciones(
 
 
             const traduccion =
-                t(clave);
+                obtenerTraduccionReal(clave);
 
 
-            if (
-                traduccion &&
-                traduccion !==
-                    String(clave)
-            ) {
-
-                el.setAttribute(
-                    'placeholder',
-                    traduccion
-                );
+            // SOLO sobrescribir el placeholder si hay traducción real.
+            if (traduccion !== null) {
+                el.setAttribute('placeholder', traduccion);
             }
 
         });
@@ -621,18 +648,12 @@ function aplicarTraducciones(
 // APLICAR TRADUCCIONES A CONTENIDO DINÁMICO
 // ================================================================
 //
-// Alias explícito para módulos que generen innerHTML.
-// No crea un sistema nuevo: simplemente utiliza
-// aplicarTraducciones().
+// Alias explícito. No crea sistema nuevo.
 // ================================================================
 
-function aplicarTraduccionesDinamicas(
-    raiz = document
-) {
+function aplicarTraduccionesDinamicas(raiz = document) {
 
-    return aplicarTraducciones(
-        raiz
-    );
+    return aplicarTraducciones(raiz);
 }
 
 
@@ -667,9 +688,7 @@ function esIdioma(codigo) {
 // CAMBIAR EL IDIOMA DEL USUARIO
 // ================================================================
 
-async function cambiarIdioma(
-    idiomaId
-) {
+async function cambiarIdioma(idiomaId) {
 
     try {
 
@@ -677,10 +696,6 @@ async function cambiarIdioma(
             return;
         }
 
-
-        // ----------------------------------------------------------
-        // Guardar localmente
-        // ----------------------------------------------------------
 
         try {
 
@@ -697,10 +712,6 @@ async function cambiarIdioma(
             );
         }
 
-
-        // ----------------------------------------------------------
-        // Guardar en perfil si existe sesión
-        // ----------------------------------------------------------
 
         const session =
             await getSession();
@@ -742,10 +753,6 @@ async function cambiarIdioma(
         }
 
 
-        // ----------------------------------------------------------
-        // Recargar para inicializar todo el ecosistema
-        // ----------------------------------------------------------
-
         window.location.reload();
 
 
@@ -785,7 +792,6 @@ async function cargarSelectorIdiomas() {
             );
 
 
-        // No todas las páginas tienen selector.
         if (!select) {
             return;
         }
@@ -852,7 +858,6 @@ async function cargarSelectorIdiomas() {
             idiomaUsuario?.id;
 
 
-        // Evitar códigos duplicados
         const codigosVistos =
             new Set();
 
@@ -959,11 +964,6 @@ async function inicializarIdiomas() {
 
     try {
 
-        // ----------------------------------------------------------
-        // Esperar a Supabase
-        // Máximo 3 segundos
-        // ----------------------------------------------------------
-
         let intentos = 0;
 
 
@@ -985,10 +985,6 @@ async function inicializarIdiomas() {
         }
 
 
-        // ----------------------------------------------------------
-        // Obtener idioma
-        // ----------------------------------------------------------
-
         const idioma =
             await obtenerIdiomaUsuario();
 
@@ -998,26 +994,13 @@ async function inicializarIdiomas() {
             idioma.id
         ) {
 
-            // ------------------------------------------------------
-            // Cargar traducciones
-            // ------------------------------------------------------
-
             await cargarTraducciones(
                 idioma.id
             );
 
-
-            // ------------------------------------------------------
-            // Aplicar traducciones
-            // ------------------------------------------------------
-
             aplicarTraducciones();
         }
 
-
-        // ----------------------------------------------------------
-        // Cargar selector
-        // ----------------------------------------------------------
 
         await cargarSelectorIdiomas();
 
@@ -1064,6 +1047,9 @@ window.t =
 window.tConFallback =
     tConFallback;
 
+window.obtenerTraduccionReal =
+    obtenerTraduccionReal;
+
 window.cambiarIdioma =
     cambiarIdioma;
 
@@ -1091,5 +1077,5 @@ window.esIdioma =
 // ================================================================
 
 console.log(
-    '✅ Sistema de idiomas cargado correctamente'
+    '✅ Sistema de idiomas cargado correctamente (v2 - fallback corregido)'
 );
