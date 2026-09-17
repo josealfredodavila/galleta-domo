@@ -95,9 +95,6 @@
         .perfil-header .stats .stat .label { font-size: 0.55rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-family: 'Orbitron', monospace; }
         .perfil-header .acciones { display: flex; gap: 8px; flex-wrap: wrap; margin-left: 10px; }
         
-        /* ============================================================ */
-        /* ⚙️ BOTÓN DE CONFIGURACIÓN                                    */
-        /* ============================================================ */
         .config-btn {
             position: absolute;
             top: 16px;
@@ -392,7 +389,6 @@
         <div class="perfil-container">
 
             <div class="perfil-header" id="perfilHeader">
-                <!-- ⚙️ BOTÓN DE CONFIGURACIÓN -->
                 <a href="/features/perfil/configuracion/index.html" class="config-btn" title="Configuración">⚙️</a>
                 
                 <div class="avatar-container">
@@ -530,7 +526,6 @@
                 <button class="tab-btn active" onclick="cambiarTab('mis-publicaciones')" data-clave="perfil_mis_publicaciones">◈ Mis Publicaciones</button>
                 <button class="tab-btn" onclick="cambiarTab('actividad')" data-clave="perfil_tab_actividad">◆ Actividad</button>
                 <button class="tab-btn" onclick="cambiarTab('tokens')" data-clave="perfil_tab_tokens">⟡ Tokens</button>
-                <!-- ❌ TAB DE CONFIGURACIÓN REMOVIDO - ya existe en el botón ⚙️ del header -->
                 <button class="tab-btn" onclick="cambiarTab('esim')" data-clave="perfil_tab_esim">📱 eSIM</button>
                 <button class="tab-btn" onclick="cambiarTab('qr')" data-clave="perfil_tab_qr">📷 Escanear QR</button>
                 <button class="tab-btn" onclick="cambiarTab('internet')" data-clave="perfil_tab_internet">📶 Internet</button>
@@ -698,8 +693,6 @@
                 </div>
             </div>
 
-            <!-- ❌ TAB CONFIG REMOVIDO COMPLETAMENTE - Ahora vive en /configuracion/ -->
-
             <div id="tab-esim" class="tab-content">
                 <div class="panel">
                     <div class="panel-header">
@@ -814,9 +807,6 @@
                 </div>
             </div>
 
-            <!-- ============================================================ -->
-            <!-- TAB INTERNET - HISTORIAL DE COMPRAS                          -->
-            <!-- ============================================================ -->
             <div id="tab-internet" class="tab-content">
                 <div class="panel">
                     <div class="panel-header">
@@ -824,7 +814,6 @@
                         <span class="panel-badge" id="internetOrdenesCount">0</span>
                     </div>
                     <div class="panel-body">
-                        <!-- Filtros -->
                         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">
                             <button class="btn btn-outline btn-sm internet-filter active" data-filter="all" onclick="filtrarOrdenesInternet('all')">Todas</button>
                             <button class="btn btn-outline btn-sm internet-filter" data-filter="activa" onclick="filtrarOrdenesInternet('activa')">✅ Activas</button>
@@ -833,7 +822,6 @@
                             <button class="btn btn-outline btn-sm" onclick="cargarOrdenesInternet()" style="margin-left:auto;">🔄 Refrescar</button>
                         </div>
 
-                        <!-- Lista -->
                         <div id="ordenesInternetList">
                             <div class="empty-state">
                                 <span class="icon">📶</span>
@@ -932,9 +920,6 @@
         });
     </script>
 
-    <!-- ================================================================ -->
-    <!-- MÓDULO DE PUBLICACIONES EN PERFIL                                -->
-    <!-- ================================================================ -->
     <script>
     (function() {
         'use strict';
@@ -1341,9 +1326,6 @@
     })();
     </script>
 
-    <!-- ================================================================ -->
-    <!-- MÓDULO: HISTORIAL DE COMPRAS DE INTERNET                        -->
-    <!-- ================================================================ -->
     <script>
     (function() {
         'use strict';
@@ -1409,12 +1391,7 @@
             const contador = document.getElementById('internetOrdenesCount');
             if (!list) return;
 
-            list.innerHTML = `
-                <div class="empty-state">
-                    <span class="icon">📶</span>
-                    <h4>Cargando órdenes...</h4>
-                </div>
-            `;
+            list.innerHTML = '<div class="empty-state"><span class="icon">📶</span><h4>Cargando órdenes...</h4></div>';
 
             try {
                 const client = sb();
@@ -1423,13 +1400,7 @@
                 const sessionResult = await client.auth.getSession();
                 const session = sessionResult.data.session;
                 if (!session) {
-                    list.innerHTML = `
-                        <div class="empty-state">
-                            <span class="icon">📶</span>
-                            <h4>Inicia sesión</h4>
-                            <p>Para ver tu historial de compras</p>
-                        </div>
-                    `;
+                    list.innerHTML = '<div class="empty-state"><span class="icon">📶</span><h4>Inicia sesión</h4><p>Para ver tu historial de compras</p></div>';
                     return;
                 }
 
@@ -1443,32 +1414,17 @@
                 if (error) throw error;
 
                 ordenesInternet = data || [];
-
                 if (contador) contador.textContent = ordenesInternet.length;
 
                 if (ordenesInternet.length === 0) {
-                    list.innerHTML = `
-                        <div class="empty-state">
-                            <span class="icon">📶</span>
-                            <h4>Sin compras de Internet</h4>
-                            <p>Cuando compres un paquete aparecerá aquí</p>
-                            <a href="/features/internet/internet.html" class="btn btn-gold btn-sm" style="margin-top:12px;text-decoration:none;">Ver paquetes disponibles</a>
-                        </div>
-                    `;
+                    list.innerHTML = '<div class="empty-state"><span class="icon">📶</span><h4>Sin compras de Internet</h4><p>Cuando compres un paquete aparecerá aquí</p><a href="/features/internet/internet.html" class="btn btn-gold btn-sm" style="margin-top:12px;text-decoration:none;">Ver paquetes disponibles</a></div>';
                     return;
                 }
 
                 renderOrdenesInternet();
-
             } catch (error) {
                 console.error('Error cargando órdenes Internet:', error);
-                list.innerHTML = `
-                    <div class="empty-state">
-                        <span class="icon">❌</span>
-                        <h4>Error al cargar</h4>
-                        <p style="font-size:0.75rem;">${escapeHTML(error.message)}</p>
-                    </div>
-                `;
+                list.innerHTML = '<div class="empty-state"><span class="icon">❌</span><h4>Error al cargar</h4><p style="font-size:0.75rem;">' + escapeHTML(error.message) + '</p></div>';
             }
         };
 
@@ -1481,51 +1437,35 @@
                 : ordenesInternet.filter(o => o.estado === filtroInternet);
 
             if (filtered.length === 0) {
-                list.innerHTML = `
-                    <div class="empty-state">
-                        <span class="icon">📶</span>
-                        <h4>Sin órdenes en este filtro</h4>
-                    </div>
-                `;
+                list.innerHTML = '<div class="empty-state"><span class="icon">📶</span><h4>Sin órdenes en este filtro</h4></div>';
                 return;
             }
 
             list.innerHTML = filtered.map(o => {
                 const info = estadoInfo(o.estado);
                 const esActiva = ['activa', 'activada', 'completado'].includes(o.estado);
-
-                return `
-                    <div class="publicacion-card" style="border-left:3px solid ${info.color};cursor:pointer;" onclick="verDetalleOrdenInternet('${escapeHTML(o.id)}')">
-                        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;">
-                            <div style="flex:1;min-width:180px;">
-                                <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-                                    <span style="font-size:1.3rem;">📦</span>
-                                    <strong style="color:var(--gold);font-size:0.9rem;font-family:'Orbitron',monospace;">${escapeHTML(o.plan_nombre || 'Paquete')}</strong>
-                                </div>
-                                <div style="color:var(--text-secondary);font-size:0.8rem;line-height:1.6;">
-                                    📊 <strong>${o.datos_gb} GB</strong> · 📅 ${o.duracion_dias} días
-                                </div>
-                                <div style="color:var(--text-muted);font-size:0.7rem;margin-top:4px;">
-                                    📱 Activa al: <span style="font-family:monospace;color:var(--text-secondary);">${escapeHTML(o.telefono_activacion || '—')}</span>
-                                </div>
-                            </div>
-                            <div style="text-align:right;min-width:140px;">
-                                <div style="background:${info.bg};color:${info.color};padding:4px 12px;border-radius:20px;font-size:0.65rem;font-weight:700;display:inline-block;margin-bottom:6px;">
-                                    ${info.icon} ${escapeHTML(info.texto)}
-                                </div>
-                                <div style="color:var(--gold);font-family:'Orbitron',monospace;font-size:1rem;font-weight:700;">
-                                    $${parseFloat(o.monto_mxn || 0).toFixed(2)} MXN
-                                </div>
-                                ${o.precio_usdt ? `<div style="color:var(--text-muted);font-size:0.6rem;">≈ $${parseFloat(o.precio_usdt).toFixed(2)} USD</div>` : ''}
-                            </div>
-                        </div>
-                        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:10px;border-top:1px solid rgba(212,175,55,0.06);font-size:0.65rem;color:var(--text-muted);flex-wrap:wrap;gap:6px;">
-                            <span>🕐 ${formatearFecha(o.created_at)}</span>
-                            <span>${o.pay_currency ? `⚡ ${redLabel(o.pay_currency)}` : ''}</span>
-                            ${esActiva && o.activado_en ? `<span style="color:var(--success);">✓ Activada ${formatearFecha(o.activado_en)}</span>` : ''}
-                        </div>
-                    </div>
-                `;
+                return '<div class="publicacion-card" style="border-left:3px solid ' + info.color + ';cursor:pointer;" onclick="verDetalleOrdenInternet(\'' + escapeHTML(o.id) + '\')">' +
+                    '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;">' +
+                        '<div style="flex:1;min-width:180px;">' +
+                            '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">' +
+                                '<span style="font-size:1.3rem;">📦</span>' +
+                                '<strong style="color:var(--gold);font-size:0.9rem;font-family:\'Orbitron\',monospace;">' + escapeHTML(o.plan_nombre || 'Paquete') + '</strong>' +
+                            '</div>' +
+                            '<div style="color:var(--text-secondary);font-size:0.8rem;line-height:1.6;">📊 <strong>' + o.datos_gb + ' GB</strong> · 📅 ' + o.duracion_dias + ' días</div>' +
+                            '<div style="color:var(--text-muted);font-size:0.7rem;margin-top:4px;">📱 Activa al: <span style="font-family:monospace;color:var(--text-secondary);">' + escapeHTML(o.telefono_activacion || '—') + '</span></div>' +
+                        '</div>' +
+                        '<div style="text-align:right;min-width:140px;">' +
+                            '<div style="background:' + info.bg + ';color:' + info.color + ';padding:4px 12px;border-radius:20px;font-size:0.65rem;font-weight:700;display:inline-block;margin-bottom:6px;">' + info.icon + ' ' + escapeHTML(info.texto) + '</div>' +
+                            '<div style="color:var(--gold);font-family:\'Orbitron\',monospace;font-size:1rem;font-weight:700;">$' + parseFloat(o.monto_mxn || 0).toFixed(2) + ' MXN</div>' +
+                            (o.precio_usdt ? '<div style="color:var(--text-muted);font-size:0.6rem;">≈ $' + parseFloat(o.precio_usdt).toFixed(2) + ' USD</div>' : '') +
+                        '</div>' +
+                    '</div>' +
+                    '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:10px;border-top:1px solid rgba(212,175,55,0.06);font-size:0.65rem;color:var(--text-muted);flex-wrap:wrap;gap:6px;">' +
+                        '<span>🕐 ' + formatearFecha(o.created_at) + '</span>' +
+                        '<span>' + (o.pay_currency ? '⚡ ' + redLabel(o.pay_currency) : '') + '</span>' +
+                        (esActiva && o.activado_en ? '<span style="color:var(--success);">✓ Activada ' + formatearFecha(o.activado_en) + '</span>' : '') +
+                    '</div>' +
+                '</div>';
             }).join('');
         }
 
@@ -1542,86 +1482,27 @@
             if (!orden) return;
             const info = estadoInfo(orden.estado);
 
-            const html = `
-                <div style="text-align:left;max-width:500px;margin:0 auto;">
-                    <div style="text-align:center;margin-bottom:20px;">
-                        <div style="font-size:3rem;">📦</div>
-                        <h2 style="color:var(--gold);font-family:'Orbitron',monospace;font-size:1.1rem;margin:10px 0 4px;">
-                            ${escapeHTML(orden.plan_nombre || 'Paquete')}
-                        </h2>
-                        <div style="background:${info.bg};color:${info.color};padding:4px 14px;border-radius:20px;font-size:0.7rem;font-weight:700;display:inline-block;">
-                            ${info.icon} ${escapeHTML(info.texto)}
-                        </div>
-                    </div>
-
-                    <div style="background:rgba(0,0,0,0.3);border-radius:12px;padding:14px;margin-bottom:12px;">
-                        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(212,175,55,0.06);font-size:0.75rem;">
-                            <span style="color:var(--text-muted);">📊 Datos</span>
-                            <span style="color:var(--text-primary);font-weight:600;">${orden.datos_gb} GB</span>
-                        </div>
-                        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(212,175,55,0.06);font-size:0.75rem;">
-                            <span style="color:var(--text-muted);">📅 Duración</span>
-                            <span style="color:var(--text-primary);font-weight:600;">${orden.duracion_dias} días</span>
-                        </div>
-                        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(212,175,55,0.06);font-size:0.75rem;">
-                            <span style="color:var(--text-muted);">📱 Teléfono</span>
-                            <span style="color:var(--text-primary);font-weight:600;font-family:monospace;">${escapeHTML(orden.telefono_activacion || '—')}</span>
-                        </div>
-                        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(212,175,55,0.06);font-size:0.75rem;">
-                            <span style="color:var(--text-muted);">💰 Total MXN</span>
-                            <span style="color:var(--gold);font-weight:700;font-family:'Orbitron',monospace;">$${parseFloat(orden.monto_mxn || 0).toFixed(2)}</span>
-                        </div>
-                        ${orden.precio_usdt ? `
-                        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(212,175,55,0.06);font-size:0.75rem;">
-                            <span style="color:var(--text-muted);">💎 Total USD</span>
-                            <span style="color:var(--gold);font-weight:700;font-family:'Orbitron',monospace;">$${parseFloat(orden.precio_usdt).toFixed(2)}</span>
-                        </div>
-                        ` : ''}
-                        ${orden.pay_currency ? `
-                        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(212,175,55,0.06);font-size:0.75rem;">
-                            <span style="color:var(--text-muted);">⚡ Red</span>
-                            <span style="color:var(--text-primary);font-weight:600;">${redLabel(orden.pay_currency)}</span>
-                        </div>
-                        ` : ''}
-                        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(212,175,55,0.06);font-size:0.75rem;">
-                            <span style="color:var(--text-muted);">🕐 Creada</span>
-                            <span style="color:var(--text-primary);font-weight:600;">${formatearFecha(orden.created_at)}</span>
-                        </div>
-                        ${orden.pagado_en ? `
-                        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(212,175,55,0.06);font-size:0.75rem;">
-                            <span style="color:var(--text-muted);">💚 Pagada</span>
-                            <span style="color:var(--success);font-weight:600;">${formatearFecha(orden.pagado_en)}</span>
-                        </div>
-                        ` : ''}
-                        ${orden.activado_en ? `
-                        <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:0.75rem;">
-                            <span style="color:var(--text-muted);">✅ Activada</span>
-                            <span style="color:var(--success);font-weight:600;">${formatearFecha(orden.activado_en)}</span>
-                        </div>
-                        ` : ''}
-                    </div>
-
-                    ${orden.payment_id ? `
-                    <div style="background:rgba(0,0,0,0.3);border-radius:12px;padding:10px;margin-bottom:12px;font-size:0.65rem;color:var(--text-muted);font-family:monospace;word-break:break-all;">
-                        <strong style="color:var(--gold);">Payment ID:</strong><br>${escapeHTML(orden.payment_id)}
-                    </div>
-                    ` : ''}
-
-                    <div style="text-align:center;">
-                        <button class="btn btn-outline btn-sm" onclick="cerrarModalDetalleOrden()">Cerrar</button>
-                    </div>
-                </div>
-            `;
+            const html = '<div style="text-align:left;max-width:500px;margin:0 auto;">' +
+                '<div style="text-align:center;margin-bottom:20px;">' +
+                    '<div style="font-size:3rem;">📦</div>' +
+                    '<h2 style="color:var(--gold);font-family:\'Orbitron\',monospace;font-size:1.1rem;margin:10px 0 4px;">' + escapeHTML(orden.plan_nombre || 'Paquete') + '</h2>' +
+                    '<div style="background:' + info.bg + ';color:' + info.color + ';padding:4px 14px;border-radius:20px;font-size:0.7rem;font-weight:700;display:inline-block;">' + info.icon + ' ' + escapeHTML(info.texto) + '</div>' +
+                '</div>' +
+                '<div style="background:rgba(0,0,0,0.3);border-radius:12px;padding:14px;margin-bottom:12px;">' +
+                    '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(212,175,55,0.06);font-size:0.75rem;"><span style="color:var(--text-muted);">📊 Datos</span><span style="color:var(--text-primary);font-weight:600;">' + orden.datos_gb + ' GB</span></div>' +
+                    '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(212,175,55,0.06);font-size:0.75rem;"><span style="color:var(--text-muted);">📅 Duración</span><span style="color:var(--text-primary);font-weight:600;">' + orden.duracion_dias + ' días</span></div>' +
+                    '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(212,175,55,0.06);font-size:0.75rem;"><span style="color:var(--text-muted);">📱 Teléfono</span><span style="color:var(--text-primary);font-weight:600;font-family:monospace;">' + escapeHTML(orden.telefono_activacion || '—') + '</span></div>' +
+                    '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(212,175,55,0.06);font-size:0.75rem;"><span style="color:var(--text-muted);">💰 Total MXN</span><span style="color:var(--gold);font-weight:700;font-family:\'Orbitron\',monospace;">$' + parseFloat(orden.monto_mxn || 0).toFixed(2) + '</span></div>' +
+                    '<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:0.75rem;"><span style="color:var(--text-muted);">🕐 Creada</span><span style="color:var(--text-primary);font-weight:600;">' + formatearFecha(orden.created_at) + '</span></div>' +
+                '</div>' +
+                '<div style="text-align:center;"><button class="btn btn-outline btn-sm" onclick="cerrarModalDetalleOrden()">Cerrar</button></div>' +
+            '</div>';
 
             const modal = document.createElement('div');
             modal.id = 'modalDetalleOrden';
-            modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);backdrop-filter:blur(12px);display:flex;justify-content:center;align-items:center;z-index:99999;padding:20px;animation:fadeIn 0.3s ease-out;';
-            modal.innerHTML = `
-                <div style="background:linear-gradient(135deg,rgba(15,45,26,0.95),rgba(5,8,15,0.98));border:2px solid var(--gold);border-radius:20px;padding:24px;max-width:560px;width:100%;max-height:90vh;overflow-y:auto;position:relative;animation:scaleIn 0.3s ease-out;">
-                    <button onclick="cerrarModalDetalleOrden()" style="position:absolute;top:10px;right:15px;background:transparent;border:none;color:var(--text-muted);font-size:1.5rem;cursor:pointer;">×</button>
-                    ${html}
-                </div>
-            `;
+            modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);backdrop-filter:blur(12px);display:flex;justify-content:center;align-items:center;z-index:99999;padding:20px;';
+            modal.innerHTML = '<div style="background:linear-gradient(135deg,rgba(15,45,26,0.95),rgba(5,8,15,0.98));border:2px solid var(--gold);border-radius:20px;padding:24px;max-width:560px;width:100%;max-height:90vh;overflow-y:auto;position:relative;">' +
+                '<button onclick="cerrarModalDetalleOrden()" style="position:absolute;top:10px;right:15px;background:transparent;border:none;color:var(--text-muted);font-size:1.5rem;cursor:pointer;">×</button>' + html + '</div>';
             modal.addEventListener('click', (e) => { if (e.target === modal) cerrarModalDetalleOrden(); });
             document.body.appendChild(modal);
         };
@@ -1646,224 +1527,150 @@
                 cargarOrdenesInternet();
             }
         });
-
     })();
     </script>
 
     <!-- ================================================================ -->
-    <!-- SINCRONIZACIÓN EN VIVO DEL PERFIL                                -->
-    <!-- Recarga al volver a la pestaña, al recuperar el foco, y          -->
-    <!-- actualiza automáticamente vía Supabase Realtime.                 -->
+    <!-- SINCRONIZACIÓN EN VIVO DEL PERFIL - LEE DIRECTO DE 'usuarios'   -->
     <!-- ================================================================ -->
     <script>
-    (() => {
+    (function() {
         'use strict';
 
-        let usuarioId = null;
-        let realtimeChannel = null;
-        let ultimaRecarga = 0;
+        var ultimaRecarga = 0;
 
         function actualizarDOM(usuario) {
             try {
                 if (!usuario) return;
 
-                const nombreContainer = document.querySelector('#perfilNombre');
+                var nombreContainer = document.querySelector('#perfilNombre');
                 if (nombreContainer) {
-                    const nombreSpan = nombreContainer.querySelector('[data-clave="perfil_nombre_usuario"]');
+                    var nombreSpan = nombreContainer.querySelector('[data-clave="perfil_nombre_usuario"]');
                     if (nombreSpan) {
-                        nombreSpan.textContent = usuario.nombre || '';
+                        nombreSpan.textContent = usuario.nombre || 'Explorador';
                     } else {
-                        nombreContainer.textContent = usuario.nombre || '';
+                        nombreContainer.textContent = usuario.nombre || 'Explorador';
                     }
                 }
 
-                const handleElement = document.querySelector('#perfilHandle');
+                var handleElement = document.querySelector('#perfilHandle');
                 if (handleElement) {
-                    handleElement.textContent = usuario.handle ? `@${usuario.handle}` : '';
+                    handleElement.textContent = usuario.handle ? '@' + usuario.handle : '@explorador';
                 }
 
-                const bioElement = document.querySelector('#perfilBio');
+                var bioElement = document.querySelector('#perfilBio');
                 if (bioElement) {
-                    bioElement.textContent = usuario.bio || '';
+                    bioElement.textContent = usuario.bio || "Explorando el ecosistema Sariel's · WEB3 · Comunidad";
                 }
 
-                const avatarElement = document.querySelector('#perfilAvatar');
+                var avatarElement = document.querySelector('#perfilAvatar');
                 if (avatarElement) {
                     if (usuario.avatar_url) {
-                        avatarElement.innerHTML = '';
-                        const img = document.createElement('img');
-                        img.src = usuario.avatar_url;
-                        img.alt = usuario.nombre || 'Avatar';
-                        img.loading = 'lazy';
-                        avatarElement.appendChild(img);
+                        avatarElement.innerHTML =
+                            '<img src="' + usuario.avatar_url + '" alt="Avatar">' +
+                            '<span class="edit-badge" onclick="event.stopPropagation(); abrirSelectorArchivo()" title="Cambiar avatar">✎</span>';
                     } else {
-                        avatarElement.innerHTML = '◈';
+                        avatarElement.innerHTML =
+                            '◈' +
+                            '<span class="edit-badge" onclick="event.stopPropagation(); abrirSelectorArchivo()" title="Cambiar avatar">✎</span>';
                     }
                 }
+
+                console.log('[Perfil] ✅ DOM actualizado con:', usuario.nombre);
             } catch (error) {
                 console.warn('[Perfil] Error actualizando el DOM:', error);
             }
         }
 
-        async function recargarPerfil() {
+        async function recargarPerfil(forzar) {
             try {
+                var ahora = Date.now();
+                if (!forzar && ahora - ultimaRecarga < 500) return;
+                ultimaRecarga = ahora;
+
                 if (!window.supabaseClient) {
-                    console.warn('[Perfil] window.supabaseClient no está disponible.');
+                    console.warn('[Perfil] supabaseClient no disponible aún, reintentando...');
+                    setTimeout(function() { recargarPerfil(true); }, 500);
                     return;
                 }
 
-                const { data: sessionData, error: sessionError } = await window.supabaseClient.auth.getSession();
-                if (sessionError) {
-                    console.warn('[Perfil] Error obteniendo sesión:', sessionError);
+                var sessionResult = await window.supabaseClient.auth.getSession();
+                if (sessionResult.error || !sessionResult.data || !sessionResult.data.session || !sessionResult.data.session.user) {
+                    console.warn('[Perfil] Sin sesión');
                     return;
                 }
 
-                const session = sessionData?.session;
-                if (!session?.user?.id) return;
+                var userId = sessionResult.data.session.user.id;
 
-                usuarioId = session.user.id;
-
-                const { data: usuario, error } = await window.supabaseClient
+                var result = await window.supabaseClient
                     .from('usuarios')
                     .select('id, nombre, handle, bio, avatar_url')
-                    .eq('id', usuarioId)
+                    .eq('id', userId)
                     .maybeSingle();
 
-                if (error) {
-                    console.warn('[Perfil] Error cargando datos del usuario:', error);
+                if (result.error) {
+                    console.warn('[Perfil] Error leyendo usuarios:', result.error);
                     return;
                 }
 
-                if (usuario) {
-                    actualizarDOM(usuario);
+                if (result.data) {
+                    actualizarDOM(result.data);
                 }
             } catch (error) {
                 console.warn('[Perfil] Error en recargarPerfil():', error);
             }
         }
 
-        function solicitarRecarga() {
-            try {
-                const ahora = Date.now();
-                if (ahora - ultimaRecarga < 1000) return;
-                ultimaRecarga = ahora;
-                recargarPerfil();
-            } catch (error) {
-                console.warn('[Perfil] Error solicitando recarga:', error);
-            }
+        recargarPerfil(true);
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() { recargarPerfil(true); }, { once: true });
+        } else {
+            recargarPerfil(true);
         }
 
-        document.addEventListener('visibilitychange', () => {
-            try {
-                if (document.visibilityState === 'visible') {
-                    solicitarRecarga();
-                }
-            } catch (error) {
-                console.warn('[Perfil] Error en visibilitychange:', error);
-            }
+        setTimeout(function() { recargarPerfil(true); }, 800);
+        setTimeout(function() { recargarPerfil(true); }, 1600);
+        setTimeout(function() { recargarPerfil(true); }, 3000);
+
+        document.addEventListener('visibilitychange', function() {
+            if (document.visibilityState === 'visible') recargarPerfil(true);
         });
 
-        window.addEventListener('focus', () => {
-            try {
-                solicitarRecarga();
-            } catch (error) {
-                console.warn('[Perfil] Error en focus:', error);
-            }
-        });
+        window.addEventListener('focus', function() { recargarPerfil(true); });
 
         async function iniciarRealtime() {
             try {
                 if (!window.supabaseClient) {
-                    console.warn('[Perfil] window.supabaseClient no está disponible para Realtime.');
+                    setTimeout(iniciarRealtime, 500);
                     return;
                 }
+                var sessionResult = await window.supabaseClient.auth.getSession();
+                if (!sessionResult.data || !sessionResult.data.session || !sessionResult.data.session.user) return;
+                var userId = sessionResult.data.session.user.id;
 
-                const { data: sessionData, error: sessionError } = await window.supabaseClient.auth.getSession();
-                if (sessionError) {
-                    console.warn('[Perfil] Error obteniendo sesión para Realtime:', sessionError);
-                    return;
-                }
-
-                const session = sessionData?.session;
-                if (!session?.user?.id) return;
-
-                usuarioId = session.user.id;
-
-                if (realtimeChannel) {
-                    try {
-                        await window.supabaseClient.removeChannel(realtimeChannel);
-                    } catch (error) {
-                        console.warn('[Perfil] No se pudo eliminar el canal anterior:', error);
-                    }
-                    realtimeChannel = null;
-                }
-
-                realtimeChannel = window.supabaseClient
-                    .channel(`perfil-usuario-${usuarioId}`)
-                    .on(
-                        'postgres_changes',
-                        {
-                            event: 'UPDATE',
-                            schema: 'public',
-                            table: 'usuarios',
-                            filter: `id=eq.${usuarioId}`
-                        },
-                        (payload) => {
-                            try {
-                                if (!payload?.new) return;
-                                actualizarDOM(payload.new);
-                            } catch (error) {
-                                console.warn('[Perfil] Error procesando UPDATE Realtime:', error);
-                            }
-                        }
-                    )
-                    .subscribe((status, error) => {
-                        try {
-                            if (status === 'SUBSCRIBED') {
-                                console.log('[Perfil] Realtime conectado correctamente.');
-                            }
-                            if (status === 'CHANNEL_ERROR') {
-                                console.warn('[Perfil] Error en el canal Realtime:', error);
-                            }
-                            if (status === 'TIMED_OUT') {
-                                console.warn('[Perfil] Realtime agotó el tiempo de conexión.');
-                            }
-                        } catch (callbackError) {
-                            console.warn('[Perfil] Error en callback de Realtime:', callbackError);
+                window.supabaseClient
+                    .channel('perfil-sync-' + userId)
+                    .on('postgres_changes', {
+                        event: 'UPDATE',
+                        schema: 'public',
+                        table: 'usuarios',
+                        filter: 'id=eq.' + userId
+                    }, function(payload) {
+                        if (payload && payload.new) actualizarDOM(payload.new);
+                    })
+                    .subscribe(function(status) {
+                        if (status === 'SUBSCRIBED') {
+                            console.log('[Perfil] ✅ Realtime conectado');
                         }
                     });
-
-            } catch (error) {
-                console.warn('[Perfil] Error iniciando Realtime:', error);
+            } catch (e) {
+                console.warn('[Perfil] Realtime error:', e);
             }
         }
+        setTimeout(iniciarRealtime, 1000);
 
-        function inicializarSincronizacion() {
-            try {
-                recargarPerfil();
-                iniciarRealtime();
-            } catch (error) {
-                console.warn('[Perfil] Error inicializando sincronización:', error);
-            }
-        }
-
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', inicializarSincronizacion, { once: true });
-        } else {
-            inicializarSincronizacion();
-        }
-
-        window.addEventListener('pagehide', () => {
-            try {
-                if (realtimeChannel && window.supabaseClient) {
-                    window.supabaseClient.removeChannel(realtimeChannel);
-                    realtimeChannel = null;
-                }
-            } catch (error) {
-                console.warn('[Perfil] Error cerrando Realtime:', error);
-            }
-        });
-
+        console.log('[Perfil] ✅ Módulo de sincronización cargado');
     })();
     </script>
 </body>
