@@ -156,7 +156,7 @@
             overflow: hidden;
         }
         .modal-video.teclado-abierto .video-wrapper {
-            flex: 0 0 32vh; /* Video achicado cuando el teclado está abierto */
+            flex: 0 0 32vh;
         }
         .modal-video .video-wrapper video {
             width: 100%; height: 100%;
@@ -169,7 +169,7 @@
             position: absolute; inset: 0; z-index: 3; cursor: pointer; background: transparent;
         }
 
-        /* Contenedor inferior: info + comentarios. Cuando el teclado está abierto, se convierte en el foco */
+        /* Contenedor inferior */
         .modal-video .zona-inferior {
             position: relative;
             flex-shrink: 0;
@@ -227,7 +227,7 @@
         .modal-video .comentarios-section .comentario .texto strong { color: var(--gold); }
         .modal-video .comentarios-section .comentario .texto .fecha { font-size: 0.5rem; color: var(--text-muted); }
 
-        /* Input de comentario - pegado al fondo del contenedor */
+        /* Input de comentario */
         .modal-video .input-comentario-wrap {
             flex-shrink: 0;
             padding: 8px 12px;
@@ -263,7 +263,7 @@
             white-space: nowrap;
         }
 
-        /* Watermark del video */
+        /* Watermarks */
         .watermark-top-right {
             position: absolute; top: 12px; right: 12px; z-index: 5;
             display: flex; align-items: center; gap: 6px;
@@ -277,17 +277,37 @@
         .watermark-top-right .text { font-family: 'Orbitron', monospace; font-size: 0.6rem; font-weight: 700; color: #fff; letter-spacing: 1px; }
         .watermark-top-right .text span { color: var(--gold); }
 
+        /* Watermark grande (abajo a la derecha del video) */
         .watermark {
-            position: absolute; bottom: 12px; right: 12px; z-index: 5;
-            display: flex; flex-direction: column; align-items: flex-end; gap: 5px;
+            position: absolute;
+            bottom: 12px;
+            right: 12px;
+            z-index: 5;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 5px;
             background: linear-gradient(135deg, rgba(5, 8, 15, 0.95), rgba(15, 45, 26, 0.95));
-            backdrop-filter: blur(12px); padding: 8px 14px 8px 12px;
-            border-radius: 14px; border: 1px solid rgba(212, 175, 55, 0.5);
+            backdrop-filter: blur(12px);
+            padding: 8px 14px 8px 12px;
+            border-radius: 14px;
+            border: 1px solid rgba(212, 175, 55, 0.5);
             box-shadow: 0 6px 30px rgba(0, 0, 0, 0.7), 0 0 40px rgba(212, 175, 55, 0.15);
-            pointer-events: none; user-select: none; min-width: 130px;
-            transition: opacity 0.2s ease;
+            pointer-events: none;
+            user-select: none;
+            min-width: 130px;
+            transition: all 0.25s ease;
         }
-        .modal-video.teclado-abierto .watermark { display: none; }
+        /* Cuando el teclado está abierto, el watermark sube arriba del bloque de info */
+        .modal-video.teclado-abierto .watermark {
+            position: fixed;
+            top: 12px;
+            right: 12px;
+            left: auto;
+            bottom: auto;
+            transform: none;
+            z-index: 20;
+        }
         .watermark .brand-row { display: flex; align-items: center; gap: 6px; }
         .watermark .tagline { font-family: 'Orbitron', monospace; font-size: 0.42rem; color: var(--gold-light); letter-spacing: 2px; opacity: 0.85; text-align: right; width: 100%; }
         .watermark .icon { font-size: 1.2rem; color: var(--gold); font-family: 'Orbitron', monospace; text-shadow: 0 0 20px rgba(212, 175, 55, 0.6); }
@@ -296,7 +316,7 @@
         .watermark .badge-web3 { font-size: 0.45rem; background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); padding: 2px 7px; border-radius: 10px; font-weight: 800; letter-spacing: 1px; margin-left: 3px; }
 
         /* ================================================================
-           BARRA DE CONTROLES (aparece al tocar, abajo del video)
+           BARRA DE CONTROLES
            ================================================================ */
         .modal-video .barra-controles {
             position: absolute;
@@ -373,7 +393,6 @@
         .modal-video .tiempo .tiempo-sep { color: var(--text-muted); margin: 0 3px; }
         .modal-video .tiempo .tiempo-total { color: var(--text-muted); }
 
-        /* Barra de progreso deslizable */
         .modal-video .barra-progreso {
             position: relative; width: 100%; height: 6px;
             background: rgba(255, 255, 255, 0.15);
@@ -590,7 +609,7 @@
                     <span class="icon">◈</span>
                     <span class="text">Sariel<span>'s</span></span>
                 </div>
-                <div class="watermark">
+                <div class="watermark" id="watermarkGrande">
                     <div class="brand-row">
                         <span class="icon">◈</span>
                         <span class="text">Sariel<span>'s</span></span>
@@ -599,7 +618,6 @@
                     <div class="tagline">SABOR AL PALADAR · POLYGON</div>
                 </div>
 
-                <!-- Barra de controles DENTRO del video -->
                 <div class="barra-controles" id="barraControles">
                     <div class="fila-botones">
                         <button class="btn-control" id="btnCerrarModal" onclick="cerrarModalVideo()" title="Cerrar" aria-label="Cerrar">
@@ -629,7 +647,6 @@
                 </div>
             </div>
 
-            <!-- Zona inferior: info + comentarios + input -->
             <div class="zona-inferior">
 
                 <div class="info-video">
@@ -679,12 +696,10 @@
 
     <script>
         // ================================================================
-        // VIDEOS - v6
-        // - Controles custom abajo (aparecen al tocar)
-        // - Barra de progreso deslizable
-        // - Autoplay siguiente + loop infinito
-        // - Teclado móvil: video se encoge + pausa + input pegado arriba del teclado
-        // - Botón eliminar dentro de la barra de controles (no flota)
+        // VIDEOS - v7
+        // - El video NO se pausa al abrir el teclado
+        // - El watermark grande sube arriba (fixed top) cuando el teclado está abierto
+        // - Input y comentarios siempre visibles arriba del teclado
         // ================================================================
 
         if (typeof window.supabase === 'undefined') {
@@ -707,7 +722,6 @@
             try { if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(raiz || document); } catch (e) {}
         }
 
-        // ===== ESTADO =====
         var sessionUser = null;
         var videoActual = null;
         var videosPublicados = [];
@@ -730,7 +744,6 @@
         var cambiandoVideo = false;
         var ocultarControlesTimeout = null;
         var arrastrandoProgreso = false;
-        var estabaReproduciendoAntesDeTeclado = false;
 
         try { estadoMute = localStorage.getItem('videos_muted') === '1'; } catch (e) { estadoMute = false; }
 
@@ -1262,7 +1275,7 @@
             }
         }
 
-        // ===== SIGUIENTE (loop infinito) =====
+        // ===== SIGUIENTE =====
         function reproducirSiguienteVideo() {
             if (!videoActual) return;
             if (videosPublicados.length === 0) return;
@@ -1564,7 +1577,7 @@
                 var current = parseInt(countSpan.textContent) || 0;
                 countSpan.textContent = current + 1;
                 videoActual.comentarios = (videoActual.comentarios || 0) + 1;
-                input.blur(); // Cerrar el teclado al enviar
+                input.blur();
             } catch (e) { showToast(tr('videos_comentario_error', 'Error al comentar'), 'error'); }
         }
         function verTokens() { window.location.href = '/features/perfil/perfil.html'; }
@@ -1601,44 +1614,35 @@
         }
 
         // ================================================================
-        // FIX TECLADO MÓVIL
-        // - Al abrir: se pausa el video, se encoge, se limpian controles
-        // - Al cerrar: se limpia el input y se reanuda el video si estaba reproduciendo
+        // FIX TECLADO MÓVIL v7
+        // - NO pausa el video
+        // - El watermark grande sube arriba (fixed top right) cuando el teclado está abierto
+        // - Input y comentarios siempre visibles
         // ================================================================
         function configurarFixTeclado() {
             var input = document.getElementById('inputComentarioVideo');
             var modal = document.getElementById('modalVideoContainer');
-            var videoPlayer = document.getElementById('modalVideoPlayer');
-            if (!input || !modal || !videoPlayer) return;
+            if (!input || !modal) return;
 
             var tecladoAbierto = false;
 
             function abrirModoTeclado() {
                 if (tecladoAbierto) return;
                 tecladoAbierto = true;
-                estabaReproduciendoAntesDeTeclado = !videoPlayer.paused && !videoPlayer.ended;
-                try { videoPlayer.pause(); } catch (e) {}
+                // NO pausamos el video — sigue reproduciéndose
                 modal.classList.add('teclado-abierto');
                 modal.classList.remove('controles-visibles');
-                // Scroll al final de comentarios para que se vea el input
                 setTimeout(function() {
                     var sec = document.getElementById('comentariosSection');
                     if (sec) sec.scrollTop = sec.scrollHeight;
+                    try { input.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (e) {}
                 }, 250);
             }
             function cerrarModoTeclado() {
                 if (!tecladoAbierto) return;
                 tecladoAbierto = false;
                 modal.classList.remove('teclado-abierto');
-                // Limpiar el input (Opción B)
                 try { input.value = ''; } catch (e) {}
-                // Reanudar el video si estaba reproduciéndose
-                if (estabaReproduciendoAntesDeTeclado) {
-                    setTimeout(function() {
-                        try { videoPlayer.play().catch(function() {}); } catch (e) {}
-                    }, 200);
-                }
-                estabaReproduciendoAntesDeTeclado = false;
             }
 
             input.addEventListener('focus', function() {
@@ -1648,7 +1652,6 @@
                 setTimeout(cerrarModoTeclado, 200);
             });
 
-            // Detección adicional con visualViewport para navegadores que no disparan focus/blur correctamente
             if (window.visualViewport) {
                 var vv = window.visualViewport;
                 vv.addEventListener('resize', function() {
@@ -1678,7 +1681,7 @@
         });
 
         document.addEventListener('DOMContentLoaded', function() {
-            console.log("◈ Sariel's - Videos v6");
+            console.log("◈ Sariel's - Videos v7");
             aplicarI18N();
             actualizarIconoMute();
             actualizarIconoPausa(true);
