@@ -159,9 +159,6 @@
         .video-card.playing .thumbnail .play-btn { display: none; }
         .video-card.playing:hover .thumbnail .play-btn { display: flex; opacity: 0.85; }
 
-        /* ================================================================
-           BOTÓN ELIMINAR EN TARJETA
-           ================================================================ */
         .video-card .btn-eliminar-card {
             position: absolute;
             top: 12px;
@@ -489,43 +486,73 @@
             overflow: hidden;
             padding: 0;
             position: relative;
+            transition: height 0.2s ease;
         }
-        .modal-video .btn-cerrar {
+        .modal-video.teclado-abierto {
+            height: var(--altura-teclado, 100vh);
+        }
+
+        /* ================================================================
+           BARRA SUPERIOR DE CONTROLES (◈ + símbolo)
+           ================================================================ */
+        .modal-video .barra-controles {
             position: absolute;
             top: 12px;
-            right: 16px;
-            background: rgba(0,0,0,0.5);
-            border: none;
-            color: #fff;
-            font-size: 1.6rem;
-            cursor: pointer;
-            transition: var(--transition);
-            z-index: 10;
-            width: 40px;
-            height: 40px;
+            left: 12px;
+            z-index: 12;
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+        .modal-video .btn-control {
+            width: 38px;
+            height: 38px;
             border-radius: 50%;
+            background: rgba(0, 0, 0, 0.55);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(212, 175, 55, 0.4);
+            color: var(--gold);
+            font-size: 0.95rem;
+            cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
+            transition: var(--transition);
+            padding: 0;
+            line-height: 1;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
         }
-        .modal-video .btn-cerrar:hover { background: rgba(255,255,255,0.1); transform: rotate(90deg); }
+        .modal-video .btn-control:hover {
+            background: var(--gold);
+            color: var(--space);
+            transform: scale(1.08);
+            box-shadow: 0 0 25px rgba(212, 175, 55, 0.5);
+        }
+        .modal-video .btn-control .diamante {
+            font-size: 0.9rem;
+            margin-right: 1px;
+        }
+        .modal-video .btn-control .simbolo {
+            font-size: 0.85rem;
+        }
 
         /* ================================================================
-           BOTÓN ELIMINAR EN MODAL
+           BOTÓN ELIMINAR - ESQUINA INFERIOR DERECHA (no tapa el play)
            ================================================================ */
         .modal-video .btn-eliminar-modal {
             position: absolute;
-            top: 12px;
-            right: 64px;
-            z-index: 10;
-            width: 40px;
-            height: 40px;
+            bottom: 90px;
+            right: 16px;
+            z-index: 12;
+            width: 38px;
+            height: 38px;
             border-radius: 50%;
             background: rgba(0, 0, 0, 0.55);
             backdrop-filter: blur(8px);
             border: 1px solid rgba(255, 51, 102, 0.5);
             color: #ff3366;
-            font-size: 1.05rem;
+            font-size: 0.95rem;
             cursor: pointer;
             display: none;
             align-items: center;
@@ -533,6 +560,8 @@
             transition: var(--transition);
             padding: 0;
             line-height: 1;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
         }
         .modal-video .btn-eliminar-modal.show { display: flex; }
         .modal-video .btn-eliminar-modal:hover {
@@ -541,12 +570,23 @@
             transform: scale(1.08);
             box-shadow: 0 0 25px rgba(255, 51, 102, 0.5);
         }
+        .modal-video .btn-eliminar-modal .diamante {
+            font-size: 0.9rem;
+            margin-right: 1px;
+        }
+        .modal-video .btn-eliminar-modal .simbolo {
+            font-size: 0.85rem;
+        }
 
         .modal-video .video-wrapper {
             position: relative;
             width: 100%;
             height: 100vh;
             background: #000;
+            transition: height 0.2s ease;
+        }
+        .modal-video.teclado-abierto .video-wrapper {
+            height: var(--altura-teclado, 100vh);
         }
         .modal-video .video-wrapper video {
             width: 100%;
@@ -713,6 +753,11 @@
             max-height: 30vh;
             overflow-y: auto;
             z-index: 5;
+            transition: bottom 0.2s ease;
+        }
+        .modal-video.teclado-abierto .comentarios-section {
+            bottom: 0;
+            max-height: 40vh;
         }
         .modal-video .comentarios-section::-webkit-scrollbar { width: 2px; }
         .modal-video .comentarios-section::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 2px; }
@@ -749,6 +794,7 @@
             display: flex;
             gap: 6px;
             margin-top: 6px;
+            padding-bottom: env(safe-area-inset-bottom, 0);
         }
         .modal-video .comentarios-section .input-comentario input {
             flex: 1;
@@ -862,10 +908,8 @@
         }
         html.tema-dia .upload-section,
         html.tema-dia .video-card,
-        html.tema-dia .modal-video .info-video,
         html[data-tema="dia"] .upload-section,
-        html[data-tema="dia"] .video-card,
-        html[data-tema="dia"] .modal-video .info-video {
+        html[data-tema="dia"] .video-card {
             background: rgba(255, 255, 255, 0.9) !important;
             box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08) !important;
         }
@@ -900,6 +944,8 @@
             .watermark .icon { font-size: 1rem; }
             .watermark .text { font-size: 0.6rem; }
             .watermark .badge-web3 { font-size: 0.4rem; padding: 1px 6px; }
+            .modal-video .btn-control { width: 34px; height: 34px; }
+            .modal-video .btn-eliminar-modal { width: 34px; height: 34px; bottom: 80px; right: 12px; }
         }
         @media (max-width: 480px) {
             .video-card { min-height: 55vh; max-height: 55vh; }
@@ -909,7 +955,12 @@
             .watermark .icon { font-size: 0.8rem; }
             .watermark .text { font-size: 0.5rem; }
             .video-card .btn-eliminar-card { width: 34px; height: 34px; font-size: 0.95rem; top: 10px; right: 10px; }
-            .modal-video .btn-eliminar-modal { right: 58px; width: 36px; height: 36px; font-size: 0.95rem; }
+            .modal-video .btn-control { width: 32px; height: 32px; }
+            .modal-video .btn-control .diamante { font-size: 0.8rem; }
+            .modal-video .btn-control .simbolo { font-size: 0.75rem; }
+            .modal-video .btn-eliminar-modal { width: 32px; height: 32px; bottom: 75px; right: 10px; }
+            .modal-video .btn-eliminar-modal .diamante { font-size: 0.8rem; }
+            .modal-video .btn-eliminar-modal .simbolo { font-size: 0.75rem; }
         }
     </style>
 </head>
@@ -1026,9 +1077,23 @@
     </div>
 
     <div class="modal-overlay" id="videoModal">
-        <div class="modal-video">
-            <button class="btn-cerrar" onclick="cerrarModalVideo()">×</button>
-            <button class="btn-eliminar-modal" id="btnEliminarModal" onclick="eliminarVideoDesdeModal()" title="Eliminar video" aria-label="Eliminar video">🗑️</button>
+        <div class="modal-video" id="modalVideoContainer">
+
+            <div class="barra-controles">
+                <button class="btn-control" id="btnCerrarModal" onclick="cerrarModalVideo()" title="Cerrar" aria-label="Cerrar">
+                    <span class="diamante">◈</span><span class="simbolo">×</span>
+                </button>
+                <button class="btn-control" id="btnMuteModal" onclick="toggleMuteModal()" title="Silenciar" aria-label="Silenciar">
+                    <span class="diamante">◈</span><span class="simbolo" id="iconoMute">🔇</span>
+                </button>
+                <button class="btn-control" id="btnPausaModal" onclick="togglePausaModal()" title="Pausar" aria-label="Pausar">
+                    <span class="diamante">◈</span><span class="simbolo" id="iconoPausa">⏸</span>
+                </button>
+            </div>
+
+            <button class="btn-eliminar-modal" id="btnEliminarModal" onclick="eliminarVideoDesdeModal()" title="Eliminar" aria-label="Eliminar">
+                <span class="diamante">◈</span><span class="simbolo">🗑</span>
+            </button>
 
             <div class="video-wrapper">
                 <video id="modalVideoPlayer" controls autoplay playsinline></video>
@@ -1086,7 +1151,7 @@
 
     <script>
         // ================================================================
-        // VIDEOS - i18n + tema + eliminar video
+        // VIDEOS - i18n + tema + eliminar + autoplay siguiente + mute/pausa
         // ================================================================
 
         if (typeof window.supabase === 'undefined') {
@@ -1116,8 +1181,10 @@
             } catch (e) { /* silencioso */ }
         }
 
+        // ===== ESTADO =====
         var sessionUser = null;
         var videoActual = null;
+        var videosPublicados = [];        // Lista completa en memoria (para el "siguiente")
         var likeCache = new Map();
         var likeCacheOrden = [];
 
@@ -1132,6 +1199,17 @@
 
         var pollingVideoInterval = null;
         var videoEnProcesamiento = null;
+
+        // Estado de preferencias del usuario en el modal
+        var estadoMute = false;   // true = silenciado
+        var cambiandoVideo = false; // Evita dobles disparos en el 'ended'
+
+        // Cargar preferencia de mute
+        try {
+            estadoMute = localStorage.getItem('videos_muted') === '1';
+        } catch (e) {
+            estadoMute = false;
+        }
 
         function showToast(msg, type, duration) {
             var t = document.getElementById('toast');
@@ -1175,13 +1253,6 @@
             return '#';
         }
 
-        // ================================================================
-        // EXTRAER PATH DE STORAGE DESDE UNA URL PÚBLICA
-        // ================================================================
-        // Ejemplo:
-        //   https://xxx.supabase.co/storage/v1/object/public/videos/USER_ID/123.mp4
-        //   → "USER_ID/123.mp4"
-        // ================================================================
         function extraerPathStorage(url) {
             if (!url || typeof url !== 'string') return null;
             try {
@@ -1189,7 +1260,6 @@
                 var idx = url.indexOf(marcador);
                 if (idx === -1) return null;
                 var path = url.substring(idx + marcador.length);
-                // Quitar query string si la hay
                 var q = path.indexOf('?');
                 if (q !== -1) path = path.substring(0, q);
                 return path || null;
@@ -1364,6 +1434,7 @@
 
                 var container = document.getElementById('videosContainer');
                 var data = result.data || [];
+                videosPublicados = data.slice(); // Guardar copia en memoria
 
                 if (data.length === 0) {
                     container.className = '';
@@ -1386,7 +1457,6 @@
                     var videoUrl = safeAttr(v.url_video);
                     var posterUrl = v.url_miniatura ? safeAttr(v.url_miniatura) : '';
 
-                    // ¿Es del usuario actual?
                     var esMio = !!(sessionUser && v.usuario_id === sessionUser.id);
                     var botonEliminar = esMio
                         ? '<button class="btn-eliminar-card" onclick="event.stopPropagation(); eliminarMiVideo(\'' + v.id + '\')" title="' + eliminarT + '" aria-label="' + eliminarT + '">🗑️</button>'
@@ -1734,7 +1804,6 @@
                 document.getElementById('modalDescripcion').textContent = video.descripcion || tr('videos_sin_descripcion', 'Sin descripción');
                 document.getElementById('modalVistas').textContent = (video.reproducciones || 0) + 1;
 
-                // Mostrar botón eliminar solo si es del usuario
                 var esMio = !!(sessionUser && video.usuario_id === sessionUser.id);
                 if (esMio) {
                     btnEliminarModal.classList.add('show');
@@ -1757,6 +1826,25 @@
                 videoPlayer.src = safeAttr(video.url_video);
                 videoPlayer.load();
 
+                // Aplicar estado de mute
+                videoPlayer.muted = estadoMute;
+                actualizarIconoMute();
+
+                // Reset del botón pausa
+                actualizarIconoPausa(videoPlayer.paused);
+
+                // Listener para el 'ended' (una sola vez por cambio de src)
+                videoPlayer.onended = function() {
+                    if (cambiandoVideo) return;
+                    cambiandoVideo = true;
+                    setTimeout(function() { cambiandoVideo = false; }, 800);
+                    reproducirSiguienteVideo();
+                };
+
+                // Sincronizar icono pausa con el estado real del reproductor nativo
+                videoPlayer.onplay = function() { actualizarIconoPausa(false); };
+                videoPlayer.onpause = function() { actualizarIconoPausa(true); };
+
                 cargarComentariosVideo(videoId);
 
                 document.querySelectorAll('.video-card video').forEach(function(v) { v.pause(); });
@@ -1766,7 +1854,15 @@
 
                 modal.classList.add('show');
 
-                try { await videoPlayer.play(); } catch (playError) { console.log('Interacción requerida.'); }
+                try { await videoPlayer.play(); } catch (playError) {
+                    // Si el navegador bloqueó autoplay (típicamente con sonido), reintentamos en mute
+                    try {
+                        videoPlayer.muted = true;
+                        estadoMute = true;
+                        actualizarIconoMute();
+                        await videoPlayer.play();
+                    } catch (e) { console.log('Autoplay bloqueado completamente.'); }
+                }
 
             } catch (e) {
                 console.error('Error abriendo video:', e);
@@ -1776,13 +1872,62 @@
             }
         }
 
+        // ================================================================
+        // REPRODUCIR SIGUIENTE VIDEO (loop infinito)
+        // ================================================================
+        function reproducirSiguienteVideo() {
+            if (!videoActual) return;
+            if (videosPublicados.length === 0) return;
+
+            var idxActual = -1;
+            for (var i = 0; i < videosPublicados.length; i++) {
+                if (videosPublicados[i].id === videoActual.id) {
+                    idxActual = i;
+                    break;
+                }
+            }
+
+            // Si no se encuentra el actual, empezamos por el primero
+            var idxSiguiente = 0;
+            if (idxActual !== -1) {
+                idxSiguiente = idxActual + 1;
+                // Si es el último → volver al primero (loop infinito)
+                if (idxSiguiente >= videosPublicados.length) {
+                    idxSiguiente = 0;
+                    // Opcional: showToast(tr('videos_reiniciando_loop', '🔄 Reproduciendo desde el inicio'), '', 1800);
+                }
+            }
+
+            var siguiente = videosPublicados[idxSiguiente];
+            if (!siguiente || !siguiente.id) return;
+
+            // Si el siguiente es el mismo (único video), solo lo reiniciamos
+            if (siguiente.id === videoActual.id) {
+                var vp = document.getElementById('modalVideoPlayer');
+                if (vp) {
+                    vp.currentTime = 0;
+                    vp.play().catch(function() {});
+                }
+                return;
+            }
+
+            abrirVideo(siguiente.id);
+        }
+
         function cerrarModalVideo() {
             var modal = document.getElementById('videoModal');
             var videoPlayer = document.getElementById('modalVideoPlayer');
             var btnEliminarModal = document.getElementById('btnEliminarModal');
-            if (videoPlayer) { videoPlayer.pause(); videoPlayer.src = ''; }
+            if (videoPlayer) {
+                videoPlayer.pause();
+                videoPlayer.onended = null;
+                videoPlayer.onplay = null;
+                videoPlayer.onpause = null;
+                videoPlayer.src = '';
+            }
             if (modal) modal.classList.remove('show');
             if (btnEliminarModal) btnEliminarModal.classList.remove('show');
+            document.getElementById('modalVideoContainer').classList.remove('teclado-abierto');
             videoActual = null;
 
             setTimeout(function() {
@@ -1800,23 +1945,69 @@
         }
 
         // ================================================================
+        // MUTE / PAUSA
+        // ================================================================
+        function actualizarIconoMute() {
+            var icono = document.getElementById('iconoMute');
+            var btn = document.getElementById('btnMuteModal');
+            if (!icono || !btn) return;
+            if (estadoMute) {
+                icono.textContent = '🔇';
+                btn.title = tr('videos_activar_sonido', 'Activar sonido');
+                btn.setAttribute('aria-label', tr('videos_activar_sonido', 'Activar sonido'));
+            } else {
+                icono.textContent = '🔊';
+                btn.title = tr('videos_silenciar', 'Silenciar');
+                btn.setAttribute('aria-label', tr('videos_silenciar', 'Silenciar'));
+            }
+        }
+
+        function toggleMuteModal() {
+            var vp = document.getElementById('modalVideoPlayer');
+            if (!vp) return;
+            estadoMute = !estadoMute;
+            vp.muted = estadoMute;
+            try { localStorage.setItem('videos_muted', estadoMute ? '1' : '0'); } catch (e) {}
+            actualizarIconoMute();
+        }
+
+        function actualizarIconoPausa(pausado) {
+            var icono = document.getElementById('iconoPausa');
+            var btn = document.getElementById('btnPausaModal');
+            if (!icono || !btn) return;
+            if (pausado) {
+                icono.textContent = '▶';
+                btn.title = tr('videos_reproducir', 'Reproducir');
+                btn.setAttribute('aria-label', tr('videos_reproducir', 'Reproducir'));
+            } else {
+                icono.textContent = '⏸';
+                btn.title = tr('videos_pausar', 'Pausar');
+                btn.setAttribute('aria-label', tr('videos_pausar', 'Pausar'));
+            }
+        }
+
+        function togglePausaModal() {
+            var vp = document.getElementById('modalVideoPlayer');
+            if (!vp) return;
+            if (vp.paused) {
+                vp.play().catch(function() {});
+            } else {
+                vp.pause();
+            }
+        }
+
+        // ================================================================
         // ELIMINAR VIDEO
         // ================================================================
         async function eliminarMiVideo(videoId) {
             if (!videoId) return;
-
-            // Confirmación traducida
             var confirmMsg = tr('videos_confirmar_eliminar', '¿Seguro que quieres eliminar este video? Esta acción no se puede deshacer.');
             if (!confirm(confirmMsg)) return;
 
             var session = await getSession();
-            if (!session) {
-                showToast(tr('videos_sesion_requerida', 'Inicia sesión'), 'error');
-                return;
-            }
+            if (!session) { showToast(tr('videos_sesion_requerida', 'Inicia sesión'), 'error'); return; }
 
             try {
-                // 1. Recuperar datos del video para saber su URL y verificar ownership
                 var r = await window.supabase
                     .from('videos')
                     .select('id, usuario_id, url_video')
@@ -1824,53 +2015,28 @@
                     .maybeSingle();
 
                 if (r.error) throw r.error;
-                if (!r.data) {
-                    showToast(tr('videos_error_eliminar', 'Error al eliminar video'), 'error');
-                    return;
-                }
+                if (!r.data) { showToast(tr('videos_error_eliminar', 'Error al eliminar video'), 'error'); return; }
 
-                // Doble check: solo el dueño puede borrar
                 if (r.data.usuario_id !== session.user.id) {
                     console.warn('⚠️ Intento de borrar video ajeno bloqueado en frontend');
                     return;
                 }
 
-                // 2. Borrar el archivo de Storage (si podemos extraer el path)
                 var path = extraerPathStorage(r.data.url_video);
                 if (path) {
                     try {
-                        var removeResult = await window.supabase.storage
-                            .from('videos')
-                            .remove([path]);
-                        if (removeResult.error) {
-                            console.warn('⚠️ No se pudo borrar el archivo de Storage:', removeResult.error);
-                        } else {
-                            console.log('✅ Archivo de Storage borrado:', path);
-                        }
-                    } catch (storageErr) {
-                        console.warn('⚠️ Error borrando Storage:', storageErr);
-                    }
-                } else {
-                    console.warn('ℹ️ No se pudo extraer el path del Storage desde:', r.data.url_video);
+                        var removeResult = await window.supabase.storage.from('videos').remove([path]);
+                        if (removeResult.error) console.warn('⚠️ Storage:', removeResult.error);
+                        else console.log('✅ Storage borrado:', path);
+                    } catch (storageErr) { console.warn('⚠️ Error Storage:', storageErr); }
                 }
 
-                // 3. Borrar el registro (CASCADE limpia likes, comentarios, vistas, jobs)
-                var delResult = await window.supabase
-                    .from('videos')
-                    .delete()
-                    .eq('id', videoId);
-
+                var delResult = await window.supabase.from('videos').delete().eq('id', videoId);
                 if (delResult.error) throw delResult.error;
 
-                // 4. Si el video estaba abierto en el modal, cerrar
-                if (videoActual && videoActual.id === videoId) {
-                    cerrarModalVideo();
-                }
+                if (videoActual && videoActual.id === videoId) cerrarModalVideo();
 
-                // 5. Toast de éxito
                 showToast(tr('videos_eliminado', '🗑️ Video eliminado'), 'success');
-
-                // 6. Refrescar lista
                 await cargarVideos();
 
             } catch (e) {
@@ -1879,14 +2045,13 @@
             }
         }
 
-        // Wrapper para el botón del modal
         function eliminarVideoDesdeModal() {
             if (!videoActual) return;
             eliminarMiVideo(videoActual.id);
         }
 
         // ================================================================
-        // REGISTRAR VISTA
+        // VISTA / LIKE / COMENTARIOS
         // ================================================================
         async function registrarVista(videoId) {
             try {
@@ -1894,15 +2059,10 @@
                 if (!session) return;
                 var result = await window.supabase.rpc('registrar_vista_video', { p_video_id: videoId });
                 if (result.error) { console.warn('Error vista:', result.error.message); return; }
-                if (result.data && result.data.contada) {
-                    console.log('✅ Vista contada:', videoId);
-                }
+                if (result.data && result.data.contada) console.log('✅ Vista contada:', videoId);
             } catch (e) { console.warn('Error vista:', e.message); }
         }
 
-        // ================================================================
-        // LIKE
-        // ================================================================
         async function verificarLikeVideo(videoId) {
             if (!sessionUser) return false;
             var key = videoId + '_' + sessionUser.id;
@@ -1966,9 +2126,6 @@
             }
         }
 
-        // ================================================================
-        // COMENTARIOS
-        // ================================================================
         async function cargarComentariosVideo(videoId) {
             try {
                 var result = await window.supabase
@@ -2064,6 +2221,57 @@
             });
         }
 
+        // ================================================================
+        // FIX DEL TECLADO MÓVIL (Visual Viewport API)
+        // ================================================================
+        function configurarFixTeclado() {
+            var input = document.getElementById('inputComentarioVideo');
+            var modal = document.getElementById('modalVideoContainer');
+            if (!input || !modal) return;
+
+            if (window.visualViewport) {
+                var vv = window.visualViewport;
+                var ajustar = function() {
+                    var diff = window.innerHeight - vv.height;
+                    if (diff > 100) {
+                        // Teclado abierto
+                        modal.classList.add('teclado-abierto');
+                        modal.style.setProperty('--altura-teclado', vv.height + 'px');
+                        setTimeout(function() {
+                            try { input.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (e) {}
+                        }, 150);
+                    } else {
+                        modal.classList.remove('teclado-abierto');
+                        modal.style.removeProperty('--altura-teclado');
+                    }
+                };
+                vv.addEventListener('resize', ajustar);
+                vv.addEventListener('scroll', ajustar);
+
+                input.addEventListener('focus', function() {
+                    setTimeout(ajustar, 200);
+                    setTimeout(ajustar, 400);
+                });
+                input.addEventListener('blur', function() {
+                    setTimeout(function() {
+                        modal.classList.remove('teclado-abierto');
+                        modal.style.removeProperty('--altura-teclado');
+                    }, 200);
+                });
+            } else {
+                // Fallback para navegadores sin Visual Viewport
+                input.addEventListener('focus', function() {
+                    modal.classList.add('teclado-abierto');
+                    setTimeout(function() {
+                        try { input.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (e) {}
+                    }, 300);
+                });
+                input.addEventListener('blur', function() {
+                    modal.classList.remove('teclado-abierto');
+                });
+            }
+        }
+
         var inputComentario = document.getElementById('inputComentarioVideo');
         if (inputComentario) {
             inputComentario.addEventListener('keypress', function(e) {
@@ -2080,8 +2288,11 @@
         });
 
         document.addEventListener('DOMContentLoaded', function() {
-            console.log("◈ Sariel's - Videos (i18n + tema + eliminar)");
+            console.log("◈ Sariel's - Videos (i18n + tema + eliminar + autoplay siguiente + mute/pausa + fix teclado)");
             aplicarI18N();
+            actualizarIconoMute();
+            actualizarIconoPausa(true);
+            configurarFixTeclado();
             cargarUsuarioActual().then(function() {
                 cargarVideos();
                 reanudarProcesamientoPendiente();
@@ -2090,6 +2301,7 @@
                 if (typeof window.inicializarIdiomas === 'function') {
                     window.inicializarIdiomas().then(function() {
                         aplicarI18N();
+                        actualizarIconoMute();
                         if (typeof cargarVideos === 'function') cargarVideos();
                     }).catch(function(err) {
                         console.warn('Error inicializando idiomas:', err);
@@ -2120,6 +2332,9 @@
         window.eliminarMiVideo = eliminarMiVideo;
         window.eliminarVideoDesdeModal = eliminarVideoDesdeModal;
         window.extraerPathStorage = extraerPathStorage;
+        window.toggleMuteModal = toggleMuteModal;
+        window.togglePausaModal = togglePausaModal;
+        window.reproducirSiguienteVideo = reproducirSiguienteVideo;
     </script>
 
 </body>
