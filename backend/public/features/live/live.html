@@ -7,7 +7,7 @@
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 
-    <!-- ✅ APARIENCIA GLOBAL v2.0 - Se carga PRIMERO -->
+    <!-- ✅ APARIENCIA GLOBAL v2.0 -->
     <script src="/features/shared/js/apariencia-global.js"></script>
 
     <style>
@@ -192,7 +192,7 @@
         .otro-juego-row input:focus { border-color: var(--gold); }
 
         /* ============================================================ */
-        /* TEMA DÍA - COMPLETO para el live                             */
+        /* TEMA DÍA - COMPLETO                                          */
         /* ============================================================ */
         html.tema-dia,
         html[data-tema="dia"] {
@@ -314,6 +314,12 @@
             background: rgba(0, 0, 0, 0.03) !important;
             border-color: rgba(0, 0, 0, 0.1) !important;
             color: var(--text-primary) !important;
+        }
+        html.tema-dia .btn-outline,
+        html[data-tema="dia"] .btn-outline {
+            background: rgba(0, 0, 0, 0.03) !important;
+            color: var(--text-primary) !important;
+            border-color: rgba(0, 0, 0, 0.15) !important;
         }
         html.tema-dia .game-modal,
         html[data-tema="dia"] .game-modal {
@@ -517,7 +523,9 @@
     <script src="/features/shared/js/idiomas.js"></script>
 
     <script>
-// ✅ FIX CRÍTICO: Renombrado a supabaseClient para evitar colisión con window.supabase y app.js
+// ================================================================
+// CLIENTE SUPABASE
+// ================================================================
 const supabaseClient = window.supabase.createClient('https://zultnlogdoajehbswlih.supabase.co','sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu');
 window.supabaseClient = supabaseClient;
 
@@ -533,6 +541,44 @@ const PALABRAS_PROHIBIDAS = ['puta','verga','mierda','pendejo','chingar','chinga
 let currentUser = null, currentStream = null, liveKitRoom = null, isLive = false, isMuted = false, streamInterval = null, channelChat = null, espectadores = 0, localStream = null, gameScreenStream = null, gameScreenTrack = null, currentStreamId = null, transmisionParamId = null, juegoSeleccionado = null;
 let anuncioActual = null, adRefreshInterval = null, adSessionId = null, adVistaTimer = null, adCerrado = false;
 
+// ================================================================
+// ✅ FORZAR APLICACIÓN DE APARIENCIA (por si el módulo global tarda)
+// ================================================================
+(function forzarApariencia() {
+    try {
+        // Aplicar tema
+        const tema = localStorage.getItem('mostrar_tema') || 'sistema';
+        const html = document.documentElement;
+        html.classList.remove('tema-dia', 'tema-noche');
+        html.removeAttribute('data-tema');
+        
+        if (tema === 'dia') {
+            html.classList.add('tema-dia');
+            html.setAttribute('data-tema', 'dia');
+        } else if (tema === 'noche') {
+            html.classList.add('tema-noche');
+            html.setAttribute('data-tema', 'noche');
+        } else {
+            const prefiereOscuro = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            html.setAttribute('data-tema', prefiereOscuro ? 'noche' : 'dia');
+            html.classList.add(prefiereOscuro ? 'tema-noche' : 'tema-dia');
+        }
+        
+        // Aplicar color
+        const color = localStorage.getItem('mostrar_color_acento') || '#D4AF37';
+        html.style.setProperty('--gold', color);
+        
+        // Aplicar fuente
+        const fuente = parseInt(localStorage.getItem('mostrar_tamano_fuente') || 100);
+        html.style.fontSize = (16 * fuente / 100) + 'px';
+    } catch (e) {
+        console.warn('[Live] No se pudo forzar apariencia:', e);
+    }
+})();
+
+// ================================================================
+// UTILIDADES
+// ================================================================
 function showToast(msg, type = '', duration = 3500) {
     let t = document.getElementById('toast');
     if (!t) { t = document.createElement('div'); t.id = 'toast'; t.className = 'toast'; document.body.appendChild(t); }
@@ -638,20 +684,14 @@ async function iniciarTransmisionGeneral() {
         showToast('⏳ Iniciando transmisión...', '', 3000);
         const titulo = prompt('Título de tu transmisión:', 'Mi live en Sariel\'s') || 'Live en Sariel\'s';
         const categoria = prompt('Categoría (gaming, musica, educacion, comunidad, tecnologia, general):', 'general') || 'general';
-        console.log('🎬 [3] Título:', titulo, 'Categoría:', categoria);
 
-        console.log('🎬 [4] Creando transmisión (room_name generado por trigger)...');
         const { data: rpcResult, error: streamError } = await supabaseClient.rpc('crear_transmision', {
-            p_titulo: titulo,
-            p_categoria: categoria,
-            p_room_name: null,
-            p_grupo_id: null
+            p_titulo: titulo, p_categoria: categoria, p_room_name: null, p_grupo_id: null
         });
 
         if (streamError) { console.error('❌ Error en RPC:', streamError); throw new Error(streamError.message || 'Error al crear transmisión'); }
         const nuevoId = (typeof rpcResult === 'object' && rpcResult !== null) ? rpcResult.id : rpcResult;
         if (!nuevoId) throw new Error('No se pudo crear la transmisión');
-        console.log('🎬 [5] Transmisión creada con ID:', nuevoId);
 
         const { data: transmision, error: fetchError } = await supabaseClient.from('transmisiones').select('*').eq('id', nuevoId).single();
         if (fetchError || !transmision) throw new Error('No se pudo recuperar la transmisión');
@@ -659,31 +699,22 @@ async function iniciarTransmisionGeneral() {
         currentStream = transmision;
         currentStreamId = transmision.id;
         document.getElementById('liveTitle').textContent = titulo;
-        console.log('🎬 [6] RoomName generado:', transmision.room_name);
 
         try {
             showToast('🔗 Conectando a LiveKit...', '', 2000);
-            console.log('🎬 [7] Cargando LiveKit v2...');
             const { Room, Track } = await cargarLiveKit();
             liveKitRoom = new Room();
 
-            console.log('🎬 [8] Pidiendo token con room_name:', transmision.room_name);
             const token = await obtenerTokenLiveKit(transmision.room_name, currentUser.id, 'publisher');
-            console.log('🎬 [9] Token recibido');
 
             await liveKitRoom.connect(LIVEKIT_CONFIG.url, token);
-            console.log('🎬 [10] Conectado a LiveKit');
-
             await liveKitRoom.localParticipant.setCameraEnabled(true);
             await liveKitRoom.localParticipant.setMicrophoneEnabled(true);
-            console.log('🎬 [11] Cámara y micrófono activados');
 
             const localVideoTrack = liveKitRoom.localParticipant.getTrackPublication(Track.Source.Camera)?.videoTrack;
             if (localVideoTrack) {
                 localVideoTrack.attach(document.getElementById('liveVideo'));
-                console.log('🎬 [12] Video adjuntado');
             } else {
-                console.warn('⚠️ [12] setCameraEnabled(true) no lanzó error, pero no se obtuvo videoTrack');
                 throw new Error('La cámara se activó pero no se pudo obtener el video track');
             }
 
