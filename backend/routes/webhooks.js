@@ -123,6 +123,175 @@ async function procesarWebhookMembresia(payload) {
 }
 
 // ================================================================
+// PROCESAR WEBHOOK DE MURO (P2P)
+// ================================================================
+//
+// Flujo:
+// - waiting/confirming/sending/partially_paid → registrar_payment_muro()
+// - failed/refunded/expired/canceled → cancelar_venta_muro()
+// - finished/confirmed → registrar_payment_muro() + liquidar_venta_token_muro()
+//
+// No hacer UPDATE directo de muro_ventas_tokens.
+// ================================================================
+
+async function procesarWebhookMuro(payload) {
+    try {
+        const {
+            order_id,
+            payment_id,
+            payment_status,
+            pay_amount,
+            pay_currency
+        } = payload;
+
+        const ventaId = Number(String(order_id).replace('muro_', ''));
+
+        if (!Number.isInteger(ventaId) || ventaId <= 0) {
+            logger.warn('❌ order_id de Muro inválido:', order_id);
+            return { success: false, error: 'order_id de Muro inválido' };
+        }
+
+        // Solo lectura para saber en qué estado está (no modifica)
+        const { data: venta, error: ventaError } = await supabaseAdmin
+            .from('muro_ventas_tokens')
+            .select('id, estado')
+            .eq('id', ventaId)
+            .single();
+
+        if (ventaError || !venta) {
+            logger.error('Venta Muro no encontrada:', ventaId);
+            return { success: false, error: 'Venta Muro no encontrada' };
+        }
+
+        // Si ya está finalizada, no hacer nada
+        if (
+            venta.estado === 'pagado' ||
+            venta.estado === 'completado' ||
+            venta.estado === 'expirado' ||
+            venta.estado === 'expirada' ||
+            venta.estado === 'cancelado' ||
+            venta.estado === 'cancelada' ||
+            venta.estado === 'fallido'
+        ) {
+            logger.info(`Venta Muro ${ventaId} ya está en estado final (${venta.estado}). Ignorando.`);
+            return { success: true, message: 'Venta ya procesada' };
+        }
+
+        const payAmountNum = (pay_amount !== null && pay_amount !== undefined &&
+                              Number.isFinite(Number(pay_amount)))
+            ? Number(pay_amount)
+            : 0;
+
+        const payCurrencyStr = String(pay_currency || 'usdt');
+
+        // ----------------------------------------------------
+        // Pago en proceso
+        // ----------------------------------------------------
+        if (esPagoEnProceso(payment_status)) {
+
+            const { data: reg, error: regError } = await supabaseAdmin.rpc(
+                'registrar_payment_muro',
+                {
+                    p_venta_id: ventaId,
+                    p_payment_id: String(payment_id || ''),
+                    p_pay_amount: payAmountNum,
+                    p_pay_currency: payCurrencyStr,
+                    p_payment_status: String(payment_status)
+                }
+            );
+
+            if (regError) {
+                logger.error(`Error registrar_payment_muro (proceso) venta ${ventaId}: ${regError.message}`);
+                return { success: false, error: regError.message };
+            }
+
+            logger.info(`Venta Muro ${ventaId} en proceso: ${payment_status}`);
+            return { success: true, message: `Estado recibido: ${payment_status}`, data: reg };
+        }
+
+        // ----------------------------------------------------
+        // Pago cancelado / expirado / fallido
+        // ----------------------------------------------------
+        if (esPagoCancelado(payment_status)) {
+
+            const { data: cancel, error: cancelError } = await supabaseAdmin.rpc(
+                'cancelar_venta_muro',
+                {
+                    p_venta_id: ventaId,
+                    p_estado: 'cancelado',
+                    p_nowpayments_status: String(payment_status)
+                }
+            );
+
+            if (cancelError) {
+                logger.error(`Error cancelar_venta_muro venta ${ventaId}: ${cancelError.message}`);
+                return { success: false, error: cancelError.message };
+            }
+
+            logger.warn(`Venta Muro ${ventaId} cancelada: ${payment_status}`);
+            return { success: true, message: `Pago ${payment_status}`, data: cancel };
+        }
+
+        // ----------------------------------------------------
+        // Pago finalizado
+        // ----------------------------------------------------
+        if (esPagoFinalizado(payment_status)) {
+
+            // 1. Registrar payment (idempotente)
+            const { error: regError } = await supabaseAdmin.rpc(
+                'registrar_payment_muro',
+                {
+                    p_venta_id: ventaId,
+                    p_payment_id: String(payment_id || ''),
+                    p_pay_amount: payAmountNum,
+                    p_pay_currency: payCurrencyStr,
+                    p_payment_status: 'finished'
+                }
+            );
+
+            if (regError) {
+                logger.warn(`registrar_payment_muro (finished) falló venta ${ventaId}: ${regError.message}`);
+                // Continuamos: liquidar_venta_token_muro puede reconciliar igual.
+            }
+
+            // 2. Liquidar (idempotente y atómico)
+            const { data: liquidacion, error: liquidacionError } = await supabaseAdmin.rpc(
+                'liquidar_venta_token_muro',
+                { p_venta_id: ventaId }
+            );
+
+            if (liquidacionError) {
+                logger.error(`Error liquidando venta Muro ${ventaId}: ${liquidacionError.message}`);
+                return {
+                    success: false,
+                    error: 'Pago recibido pero la liquidación de tokens está pendiente'
+                };
+            }
+
+            if (liquidacion && liquidacion.success === false && liquidacion.expired === true) {
+                logger.warn(`Venta Muro ${ventaId} expiró durante la liquidación`);
+                return { success: true, message: 'Orden expirada', data: liquidacion };
+            }
+
+            if (liquidacion && liquidacion.already_processed === true) {
+                logger.info(`Venta Muro ${ventaId} ya había sido liquidada. Ignorando.`);
+                return { success: true, message: 'Venta ya liquidada', data: liquidacion };
+            }
+
+            logger.info(`✅ Venta Muro ${ventaId} liquidada correctamente`);
+            return { success: true, message: 'Pago procesado y tokens liquidados', data: liquidacion };
+        }
+
+        logger.warn(`Estado NOWPayments desconocido para venta ${ventaId}: ${payment_status}`);
+        return { success: true, message: 'Webhook recibido con estado no procesado' };
+
+    } catch (error) {
+        logger.error('❌ Error procesando webhook Muro:', error.message);
+        return { success: false, error: error.message };
+    }
+}
+
+// ================================================================
 // NOWPAYMENTS IPN
 // ================================================================
 
@@ -254,128 +423,31 @@ router.post(
             }
 
             // ====================================================
-            // MURO - VENTA DE TOKENS
+            // MURO - VENTA DE TOKENS (P2P)
             // ====================================================
 
             if (typeof ordenId === 'string' && ordenId.startsWith('muro_')) {
-                const ventaId = Number(ordenId.replace('muro_', ''));
-
-                if (!Number.isInteger(ventaId) || ventaId <= 0) {
-                    logger.warn('Order ID Muro inválido:', ordenId);
-                    return res.status(400).json({
-                        success: false,
-                        error: 'order_id de Muro inválido'
-                    });
-                }
-
-                const { data: venta, error: ventaError } = await supabaseAdmin
-                    .from('muro_ventas_tokens')
-                    .select('*')
-                    .eq('id', ventaId)
-                    .single();
-
-                if (ventaError || !venta) {
-                    logger.error('Venta Muro no encontrada:', ventaId);
-                    return res.status(404).json({
-                        success: false,
-                        error: 'Venta Muro no encontrada'
-                    });
-                }
-
-                if (venta.estado === 'pagado' || venta.estado === 'completado') {
-                    logger.info('Venta Muro', ventaId, 'ya liquidada');
-                    return res.status(200).json({
-                        success: true,
-                        message: 'Venta ya procesada'
-                    });
-                }
-
-                const datosActualizacion = {
-                    nowpayments_status: paymentStatus || null
-                };
-
-                if (paymentId) datosActualizacion.payment_id = String(paymentId);
-                if (payCurrency) datosActualizacion.moneda_pago = String(payCurrency);
-                if (payAmount !== null && Number.isFinite(Number(payAmount))) {
-                    datosActualizacion.precio_usdt = Number(payAmount);
-                }
-
-                if (paymentStatus && esPagoEnProceso(paymentStatus)) {
-                    datosActualizacion.estado = paymentStatus === 'confirming' || paymentStatus === 'sending'
-                        ? 'confirmando'
-                        : 'pagando';
-
-                    const { error: updateError } = await supabaseAdmin
-                        .from('muro_ventas_tokens')
-                        .update(datosActualizacion)
-                        .eq('id', ventaId)
-                        .neq('estado', 'pagado');
-
-                    if (updateError) throw updateError;
-
-                    logger.info('Venta Muro', ventaId, 'actualizada:', paymentStatus);
-                    return res.status(200).json({
-                        success: true,
-                        message: 'Estado recibido: ' + paymentStatus
-                    });
-                }
-
-                if (paymentStatus && esPagoCancelado(paymentStatus)) {
-                    datosActualizacion.estado = 'cancelado';
-
-                    const { error: cancelError } = await supabaseAdmin
-                        .from('muro_ventas_tokens')
-                        .update(datosActualizacion)
-                        .eq('id', ventaId)
-                        .neq('estado', 'pagado');
-
-                    if (cancelError) throw cancelError;
-
-                    logger.warn('Venta Muro', ventaId, 'cancelada:', paymentStatus);
-                    return res.status(200).json({
-                        success: true,
-                        message: 'Pago ' + paymentStatus
-                    });
-                }
-
-                if (paymentStatus && esPagoFinalizado(paymentStatus)) {
-                    const { error: updateError } = await supabaseAdmin
-                        .from('muro_ventas_tokens')
-                        .update({
-                            ...datosActualizacion,
-                            estado: 'confirmando'
-                        })
-                        .eq('id', ventaId)
-                        .neq('estado', 'pagado');
-
-                    if (updateError) throw updateError;
-
-                    const { data: resultado, error: rpcError } = await supabaseAdmin.rpc(
-                        'liquidar_venta_token_muro',
-                        { p_venta_id: ventaId }
-                    );
-
-                    if (rpcError) {
-                        logger.error('Error liquidando venta Muro', ventaId, ':', rpcError.message);
-                        return res.status(500).json({
-                            success: false,
-                            error: 'Pago recibido pero la liquidación de tokens está pendiente'
-                        });
-                    }
-
-                    logger.info('✅ Venta Muro', ventaId, 'liquidada correctamente');
-                    return res.status(200).json({
-                        success: true,
-                        message: 'Pago procesado y tokens liquidados',
-                        data: resultado
-                    });
-                }
-
-                logger.warn('Estado NOWPayments desconocido para venta', ventaId, ':', paymentStatus);
-                return res.status(200).json({
-                    success: true,
-                    message: 'Webhook recibido con estado no procesado'
+                const result = await procesarWebhookMuro({
+                    order_id: ordenId,
+                    payment_id: paymentId,
+                    payment_status: paymentStatus,
+                    pay_amount: payAmount,
+                    pay_currency: payCurrency
                 });
+
+                if (result.success) {
+                    return res.status(200).json({
+                        success: true,
+                        message: result.message || 'Procesado correctamente',
+                        data: result.data || null
+                    });
+                } else {
+                    logger.error('❌ Error procesando venta Muro:', result.error);
+                    return res.status(500).json({
+                        success: false,
+                        error: result.error || 'Error procesando venta Muro'
+                    });
+                }
             }
 
             // ====================================================
