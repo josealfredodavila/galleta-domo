@@ -1,0 +1,1244 @@
+<!-- ================================================================
+     CSARIEL'S ECOSYSTEM
+     Estado de verificación del repartidor
+     Ruta: /features/mercado/repartidor/estado-verificacion.html
+     
+     Muestra:
+     - Estado actual (pendiente, procesando, activo, revisión, rechazado)
+     - Checklist de los 7 requisitos
+     - Score de confianza
+     - Motivo de rechazo (si aplica)
+     - Botón para reintentar (si aplica)
+     - Botón al panel (si aprobado)
+     ================================================================ -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>◈ Estado de verificación · Csariel's</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+
+    <script src="/features/shared/js/apariencia-global.js"></script>
+
+    <style>
+        :root {
+            --gold: #D4AF37;
+            --gold-dark: #b8923a;
+            --gold-light: #e8c84a;
+            --green-deep: #0F2D1A;
+            --green-mid: #1a4a2a;
+            --green-bright: #2a6a3a;
+            --space: #05080f;
+            --text-primary: #f0f4f8;
+            --text-secondary: #c0d8e8;
+            --text-muted: #8aa8b8;
+            --glass-bg: rgba(15, 45, 26, 0.55);
+            --glass-border: rgba(212, 175, 55, 0.15);
+            --shadow-gold: 0 8px 32px rgba(212, 175, 55, 0.25);
+            --radius: 16px;
+            --radius-xl: 24px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --success: #00d68f;
+            --danger: #ff3366;
+            --warning: #f7d44a;
+            --cyan: #00e5ff;
+            --purple: #a855f7;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: var(--space);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            background-image: radial-gradient(ellipse at 20% 50%, rgba(26, 74, 42, 0.4) 0%, transparent 60%), radial-gradient(ellipse at 80% 50%, rgba(212, 175, 55, 0.08) 0%, transparent 60%);
+        }
+
+        .nebula { position: fixed; border-radius: 50%; filter: blur(120px); opacity: 0.12; pointer-events: none; z-index: 0; animation: nebula-drift 25s ease-in-out infinite alternate; }
+        .nebula-1 { width: 700px; height: 700px; background: var(--green-bright); top: -15%; right: -15%; }
+        .nebula-2 { width: 600px; height: 600px; background: var(--gold-light); bottom: -15%; left: -15%; animation-delay: -8s; opacity: 0.06; }
+        .nebula-3 { width: 500px; height: 500px; background: var(--purple); top: 50%; left: 50%; transform: translate(-50%, -50%); animation-delay: -15s; opacity: 0.04; }
+        @keyframes nebula-drift { 0% { transform: translate(0,0) scale(1); } 100% { transform: translate(40px,-30px) scale(1.15); } }
+
+        .app { position: relative; z-index: 1; max-width: 720px; width: 100%; margin: 0 auto; padding: 12px 16px 30px; }
+
+        .header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 0 14px; border-bottom: 1px solid var(--glass-border);
+            background: rgba(5, 8, 15, 0.92); position: sticky; top: 0; z-index: 100;
+        }
+        .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+        .logo-hex { font-size: 1.8rem; color: var(--gold); font-family: 'Orbitron', monospace; }
+        .logo-text { font-family: 'Orbitron', monospace; font-size: 1.2rem; color: var(--text-primary); letter-spacing: 2px; }
+        .logo-text span { color: var(--gold); }
+        .logo-badge { font-size: 0.45rem; background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: var(--space); padding: 2px 10px; border-radius: 20px; font-weight: 700; }
+        .token-badge { display: flex; align-items: center; gap: 6px; background: rgba(212,175,55,0.1); border: 1px solid rgba(212,175,55,0.15); padding: 4px 14px; border-radius: 20px; font-size: 0.7rem; color: var(--gold); font-family: 'Orbitron', monospace; cursor: pointer; }
+
+        .main-nav {
+            display: flex; gap: 4px; background: rgba(15,45,26,0.3); border-radius: var(--radius);
+            padding: 4px; border: 1px solid var(--glass-border); margin: 16px 0 20px; overflow-x: auto;
+        }
+        .main-nav .nav-link { padding: 8px 16px; border-radius: 12px; color: var(--text-muted); text-decoration: none; font-size: 0.7rem; white-space: nowrap; transition: var(--transition); }
+        .main-nav .nav-link:hover { color: var(--text-primary); background: rgba(212,175,55,0.05); }
+        .main-nav .nav-link.active { background: rgba(212,175,55,0.12); color: var(--gold); }
+        .main-nav .nav-link.live { color: var(--danger); }
+
+        .btn-back {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border);
+            color: var(--text-muted); padding: 8px 16px; border-radius: 30px;
+            font-size: 0.72rem; text-decoration: none; margin-bottom: 16px;
+            transition: var(--transition); cursor: pointer;
+        }
+        .btn-back:hover { border-color: var(--gold); color: var(--gold); }
+
+        /* Hero de estado */
+        .hero-estado {
+            text-align: center;
+            padding: 30px 20px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-xl);
+            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+        .hero-estado.procesando {
+            border-color: rgba(247,212,74,0.4);
+            background: linear-gradient(135deg, rgba(247,212,74,0.05), rgba(15,45,26,0.5));
+        }
+        .hero-estado.activo {
+            border-color: rgba(0,214,143,0.4);
+            background: linear-gradient(135deg, rgba(0,214,143,0.06), rgba(15,45,26,0.5));
+        }
+        .hero-estado.rechazado {
+            border-color: rgba(255,51,102,0.4);
+            background: linear-gradient(135deg, rgba(255,51,102,0.06), rgba(15,45,26,0.5));
+        }
+        .hero-estado .icono-estado {
+            font-size: 4rem;
+            display: block;
+            margin-bottom: 16px;
+            line-height: 1;
+        }
+        .hero-estado .icono-estado.pulse {
+            animation: pulseIcono 2s ease-in-out infinite;
+        }
+        @keyframes pulseIcono {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.08); }
+        }
+        .hero-estado h1 {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.3rem;
+            margin-bottom: 10px;
+        }
+        .hero-estado.procesando h1 { color: var(--warning); }
+        .hero-estado.activo h1 { color: var(--success); }
+        .hero-estado.rechazado h1 { color: var(--danger); }
+        .hero-estado p {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            max-width: 500px;
+            margin: 0 auto 16px;
+        }
+
+        /* Score circular */
+        .score-box {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            margin-top: 16px;
+            padding: 16px 24px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+        }
+        .score-box .score-num {
+            font-family: 'Orbitron', monospace;
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--gold);
+        }
+        .score-box .score-lbl {
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .score-bar {
+            width: 200px;
+            height: 6px;
+            background: rgba(0,0,0,0.5);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 6px;
+        }
+        .score-bar .fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--danger), var(--warning), var(--success));
+            border-radius: 3px;
+            transition: width 0.6s ease;
+        }
+
+        /* Sección card */
+        .seccion-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-xl);
+            padding: 20px;
+            margin-bottom: 16px;
+        }
+        .seccion-card h2 {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.9rem;
+            color: var(--gold);
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Checklist */
+        .checklist {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .checklist-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 14px;
+            background: rgba(0,0,0,0.2);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            transition: var(--transition);
+        }
+        .checklist-item.ok {
+            background: rgba(0,214,143,0.05);
+            border-color: rgba(0,214,143,0.3);
+        }
+        .checklist-item.pendiente {
+            background: rgba(247,212,74,0.04);
+            border-color: rgba(247,212,74,0.2);
+        }
+        .checklist-item.error {
+            background: rgba(255,51,102,0.05);
+            border-color: rgba(255,51,102,0.3);
+        }
+        .checklist-item .check-icono {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.95rem;
+            flex-shrink: 0;
+            background: rgba(0,0,0,0.4);
+            border: 2px solid var(--glass-border);
+        }
+        .checklist-item.ok .check-icono {
+            background: var(--success);
+            border-color: var(--success);
+            color: #fff;
+        }
+        .checklist-item.pendiente .check-icono {
+            background: rgba(247,212,74,0.15);
+            border-color: var(--warning);
+            color: var(--warning);
+        }
+        .checklist-item.error .check-icono {
+            background: rgba(255,51,102,0.15);
+            border-color: var(--danger);
+            color: var(--danger);
+        }
+        .checklist-item .check-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .checklist-item .check-info .titulo {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 2px;
+        }
+        .checklist-item .check-info .desc {
+            font-size: 0.68rem;
+            color: var(--text-muted);
+        }
+
+        /* Timeline de historial */
+        .timeline {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            position: relative;
+            padding-left: 24px;
+        }
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 8px;
+            top: 8px;
+            bottom: 8px;
+            width: 2px;
+            background: var(--glass-border);
+        }
+        .timeline-item {
+            position: relative;
+            padding: 10px 0;
+        }
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -20px;
+            top: 14px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--gold);
+            border: 2px solid var(--space);
+            z-index: 1;
+        }
+        .timeline-item.actual::before {
+            background: var(--success);
+            box-shadow: 0 0 12px var(--success);
+        }
+        .timeline-item .timeline-fecha {
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            font-family: 'Orbitron', monospace;
+            margin-bottom: 2px;
+        }
+        .timeline-item .timeline-titulo {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 2px;
+        }
+        .timeline-item .timeline-motivo {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+
+        /* Motivo de rechazo */
+        .motivo-rechazo {
+            background: rgba(255,51,102,0.08);
+            border: 1px solid rgba(255,51,102,0.3);
+            border-radius: 12px;
+            padding: 14px 16px;
+            margin-bottom: 16px;
+        }
+        .motivo-rechazo .lbl {
+            font-size: 0.6rem;
+            color: var(--danger);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+        .motivo-rechazo .txt {
+            font-size: 0.8rem;
+            color: var(--text-primary);
+            line-height: 1.5;
+        }
+
+        /* Botones */
+        .botones-accion {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+        .btn-primario {
+            flex: 1;
+            min-width: 140px;
+            padding: 14px;
+            border-radius: 30px;
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            color: var(--space);
+            border: none;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            font-size: 0.78rem;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+        .btn-primario:hover { transform: translateY(-2px); box-shadow: var(--shadow-gold); }
+        .btn-secundario {
+            flex: 1;
+            min-width: 120px;
+            padding: 14px;
+            border-radius: 30px;
+            background: transparent;
+            border: 1px solid var(--glass-border);
+            color: var(--text-secondary);
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            font-size: 0.78rem;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+        .btn-secundario:hover { border-color: var(--gold); color: var(--gold); }
+        .btn-peligro {
+            flex: 1;
+            min-width: 140px;
+            padding: 14px;
+            border-radius: 30px;
+            background: transparent;
+            border: 1px solid var(--danger);
+            color: var(--danger);
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            font-size: 0.78rem;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .btn-peligro:hover { background: rgba(255,51,102,0.1); }
+
+        /* Loading / empty */
+        .loading-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+        }
+        .loading-state .spinner {
+            width: 40px; height: 40px;
+            border: 3px solid rgba(212, 175, 55, 0.15);
+            border-top-color: var(--gold);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 12px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Toast */
+        .toast {
+            position: fixed; bottom: 30px; right: 20px;
+            background: var(--green-deep); border: 1px solid var(--gold);
+            color: var(--gold); padding: 14px 24px;
+            border-radius: 12px; font-size: 0.8rem;
+            transform: translateY(100px); opacity: 0;
+            transition: all 0.4s ease; z-index: 99999;
+            max-width: 320px; pointer-events: none;
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.error { border-color: var(--danger); color: var(--danger); }
+        .toast.warning { border-color: var(--warning); color: var(--warning); }
+        .toast.success { border-color: var(--success); color: var(--success); }
+
+        .footer {
+            margin-top: 30px; padding-top: 16px;
+            border-top: 1px solid var(--glass-border);
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 0.7rem; color: var(--text-muted);
+            flex-wrap: wrap; gap: 10px;
+        }
+        .footer .brand { color: var(--gold); font-weight: 600; }
+        .footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
+        .footer-links a { color: var(--text-muted); text-decoration: none; }
+        .footer-links a:hover { color: var(--gold); }
+
+        html.tema-dia, html[data-tema="dia"] {
+            --space: #f5f7fa;
+            --text-primary: #1a2332;
+            --text-secondary: #4a5568;
+            --text-muted: #718096;
+            --glass-bg: rgba(255, 255, 255, 0.9);
+            --glass-border: rgba(0, 0, 0, 0.1);
+        }
+        html.tema-dia body, html[data-tema="dia"] body {
+            background: #f5f7fa !important;
+            background-image: radial-gradient(ellipse at 20% 50%, rgba(212, 175, 55, 0.05) 0%, transparent 60%), radial-gradient(ellipse at 80% 50%, rgba(42, 106, 58, 0.05) 0%, transparent 60%) !important;
+            color: var(--text-primary) !important;
+        }
+        html.tema-dia .nebula, html[data-tema="dia"] .nebula { display: none !important; }
+        html.tema-dia .header, html[data-tema="dia"] .header { background: rgba(255, 255, 255, 0.95) !important; border-bottom-color: rgba(0, 0, 0, 0.1) !important; }
+        html.tema-dia .logo-text, html[data-tema="dia"] .logo-text { color: var(--text-primary) !important; }
+        html.tema-dia .main-nav, html[data-tema="dia"] .main-nav { background: rgba(255, 255, 255, 0.7) !important; border-color: rgba(0, 0, 0, 0.1) !important; }
+        html.tema-dia .main-nav .nav-link, html[data-tema="dia"] .main-nav .nav-link { color: #718096 !important; }
+        html.tema-dia .main-nav .nav-link.active, html[data-tema="dia"] .main-nav .nav-link.active { background: rgba(212, 175, 55, 0.15) !important; color: var(--gold) !important; }
+        html.tema-dia .footer, html[data-tema="dia"] .footer { color: #718096 !important; border-top-color: rgba(0, 0, 0, 0.1) !important; }
+        html.tema-dia .checklist-item, html[data-tema="dia"] .checklist-item { background: rgba(0, 0, 0, 0.03) !important; }
+
+        @media (max-width: 480px) {
+            .hero-estado h1 { font-size: 1.1rem; }
+            .hero-estado .icono-estado { font-size: 3rem; }
+            .score-num { font-size: 1.6rem !important; }
+            .btn-primario, .btn-secundario, .btn-peligro { font-size: 0.72rem; padding: 12px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="nebula nebula-1" aria-hidden="true"></div>
+    <div class="nebula nebula-2" aria-hidden="true"></div>
+    <div class="nebula nebula-3" aria-hidden="true"></div>
+
+    <div class="app">
+
+        <header class="header">
+            <a href="/" class="logo" aria-label="Ir a la página de inicio">
+                <span class="logo-hex">◈</span>
+                <span class="logo-text">Csariel<span>'s</span></span>
+                <span class="logo-badge">✦ WEB3</span>
+            </a>
+            <div class="header-actions">
+                <span class="token-badge" onclick="verTokens()">
+                    ◈ <span id="tokenBadgeCantidad">0</span> Es.stoks
+                </span>
+            </div>
+        </header>
+
+        <nav class="main-nav" aria-label="Navegación principal">
+            <a href="/" class="nav-link">⌂ Inicio</a>
+            <a href="/features/muro/muro.html" class="nav-link">◇ Muro</a>
+            <a href="/features/perfil/perfil.html" class="nav-link">◆ Perfil</a>
+            <a href="/features/mensajes/contactos.html" class="nav-link">◈ Contactos</a>
+            <a href="/features/live/live.html" class="nav-link live">◉ Live</a>
+            <a href="/features/internet/internet.html" class="nav-link">◈ Internet</a>
+            <a href="/features/videos/videos.html" class="nav-link">🎬 Videos</a>
+            <a href="/features/grupos/grupos.html" class="nav-link">👥 Grupos</a>
+            <a href="/features/mercado/index.html" class="nav-link active">🛒 Mercado</a>
+        </nav>
+
+        <a href="/features/mercado/index.html" class="btn-back">
+            ← Volver al Mercado
+        </a>
+
+        <div id="contenidoEstado">
+            <div class="loading-state">
+                <div class="spinner"></div>
+                <p>Cargando tu estado...</p>
+            </div>
+        </div>
+
+        <footer class="footer">
+            <span><span class="brand">© Csariel's</span> · Sabor al Paladar · WEB3</span>
+            <div class="footer-links">
+                <a href="/terminos">📜 Términos</a>
+                <a href="/privacidad">🔒 Privacidad</a>
+                <a href="/cookies">🍪 Cookies</a>
+                <a href="/live-terminos">📡 Términos de Live</a>
+                <span style="opacity:0.3;">⚡ Polygon</span>
+            </div>
+        </footer>
+
+    </div>
+
+    <div class="toast" id="toast" role="alert" aria-live="polite"></div>
+
+    <div id="errorBanner" style="
+        display:none; position:fixed; top:0; left:0; right:0; z-index:99999;
+        background:#ff3366; color:#fff; padding:12px 16px; font-family:monospace;
+        font-size:0.75rem; word-break:break-word; box-shadow:0 4px 20px rgba(0,0,0,0.4);
+    ">
+        <strong>⚠️ Error detectado:</strong>
+        <span id="errorBannerText"></span>
+        <button onclick="document.getElementById('errorBanner').style.display='none'"
+            style="float:right; background:none; border:1px solid #fff; color:#fff; border-radius:6px; padding:2px 10px; cursor:pointer;">
+            Cerrar
+        </button>
+    </div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="/features/shared/js/idiomas.js"></script>
+
+<script>
+// ================================================================
+// ⚙️ CONFIGURACIÓN LEGAL — Csariel's Ecosystem
+// ================================================================
+// 👉 EDITA ESTE BLOQUE cuando tengas los datos legales listos
+// ================================================================
+var CONFIG_LEGAL = {
+    nombre_comercial: 'Csariel\'s',
+    nombre_ecosistema: 'Csariel\'s Ecosystem',
+    razon_social: '',
+    rfc: '',
+    email_contacto: '',
+    sitio_web: '',
+    pais_operacion: 'México',
+    ciudad_operacion: 'Puebla'
+};
+// ================================================================
+// FIN DE CONFIGURACIÓN LEGAL
+// ================================================================
+
+// ================================================================
+// CONFIGURACIÓN
+// ================================================================
+var supabaseUrl = 'https://zultnlogdoajehbswlih.supabase.co';
+var supabaseKey = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
+var supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+window.supabaseClient = supabaseClient;
+var supabase = supabaseClient;
+
+var API_BASE = '';
+
+// ================================================================
+// ESTADO
+// ================================================================
+var sessionUser = null;
+var repartidorData = null;
+var historialCambios = [];
+
+// ================================================================
+// BANNER DE ERRORES
+// ================================================================
+function mostrarErrorEnPantalla(mensaje) {
+    var banner = document.getElementById('errorBanner');
+    var texto = document.getElementById('errorBannerText');
+    if (banner && texto) { texto.textContent = mensaje; banner.style.display = 'block'; }
+}
+window.addEventListener('error', function (event) {
+    mostrarErrorEnPantalla((event.message || 'Error desconocido') + ' — línea ' + event.lineno);
+});
+window.addEventListener('unhandledrejection', function (event) {
+    mostrarErrorEnPantalla('Promesa rechazada: ' + (event.reason && event.reason.message ? event.reason.message : event.reason));
+});
+
+// ================================================================
+// TOAST
+// ================================================================
+function showToast(mensaje, tipo) {
+    try {
+        var toastEl = document.getElementById('toast');
+        if (!toastEl) { console.warn(mensaje); return; }
+        toastEl.textContent = mensaje;
+        toastEl.className = 'toast show';
+        if (tipo === 'error') toastEl.classList.add('error');
+        else if (tipo === 'warning') toastEl.classList.add('warning');
+        else if (tipo === 'success') toastEl.classList.add('success');
+        clearTimeout(toastEl._timeout);
+        toastEl._timeout = setTimeout(function() { toastEl.classList.remove('show'); }, 3500);
+    } catch (e) { console.warn('Toast error:', e); }
+}
+
+// ================================================================
+// HELPERS
+// ================================================================
+function escapeHTML(texto) {
+    if (!texto) return '';
+    var div = document.createElement('div');
+    div.textContent = texto;
+    return div.innerHTML;
+}
+
+function formatearFecha(fecha) {
+    if (!fecha) return '—';
+    try {
+        var d = new Date(fecha);
+        return d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) +
+            ' · ' +
+            d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+    } catch (e) { return '—'; }
+}
+
+function calcularDiasRestantes(fecha) {
+    if (!fecha) return 0;
+    var diff = new Date(fecha) - new Date();
+    return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+}
+
+// ================================================================
+// CARGAR USUARIO
+// ================================================================
+async function cargarUsuarioActual() {
+    try {
+        var result = await supabase.auth.getSession();
+        var session = result.data.session;
+        if (!session) { sessionUser = null; return null; }
+        sessionUser = session.user;
+        var u = await supabase
+            .from('usuarios')
+            .select('nombre, handle, tokens')
+            .eq('id', session.user.id)
+            .single();
+        if (!u.error && u.data) {
+            var badge = document.getElementById('tokenBadgeCantidad');
+            if (badge) badge.textContent = u.data.tokens || 0;
+        }
+        return u.data || null;
+    } catch (e) { console.error('Error usuario:', e); return null; }
+}
+
+// ================================================================
+// CARGAR DATOS DEL REPARTIDOR
+// ================================================================
+async function cargarDatosRepartidor() {
+    try {
+        var result = await supabase
+            .from('mercado_repartidores')
+            .select(`
+                id,
+                usuario_id,
+                estado_verificacion,
+                score_confianza,
+                motivo_rechazo,
+                intentos_verificacion,
+                telefono_verificado,
+                email_verificado,
+                curp_valida,
+                ocr_nombre_coincide,
+                face_match_score,
+                vehiculo_verificado,
+                terminos_aceptados,
+                aprobado_en,
+                en_lista_negra,
+                created_at,
+                updated_at,
+                nombre_completo,
+                telefono,
+                email,
+                ciudad,
+                pais,
+                vehiculo
+            `)
+            .eq('usuario_id', sessionUser.id)
+            .maybeSingle();
+
+        if (result.error && result.error.code !== 'PGRST116') throw result.error;
+        repartidorData = result.data || null;
+        return repartidorData;
+    } catch (e) {
+        console.error('Error cargando repartidor:', e);
+        throw e;
+    }
+}
+
+// ================================================================
+// CARGAR HISTORIAL DE CAMBIOS
+// ================================================================
+async function cargarHistorial() {
+    if (!repartidorData || !repartidorData.id) return [];
+
+    try {
+        var result = await supabase
+            .from('mercado_repartidores_historial')
+            .select('*')
+            .eq('repartidor_id', repartidorData.id)
+            .order('created_at', { ascending: false })
+            .limit(20);
+
+        if (result.error) throw result.error;
+        historialCambios = result.data || [];
+        return historialCambios;
+    } catch (e) {
+        console.error('Error cargando historial:', e);
+        return [];
+    }
+}
+
+// ================================================================
+// RENDER: SIN REGISTRO
+// ================================================================
+function renderSinRegistro() {
+    return '' +
+        '<div class="hero-estado">' +
+            '<span class="icono-estado">📝</span>' +
+            '<h1 style="color: var(--gold);">Aún no estás registrado</h1>' +
+            '<p>No encontramos tu perfil de repartidor. Regístrate para empezar a entregar pedidos en Csariel\'s Mercado.</p>' +
+            '<a href="/features/mercado/repartidor/registro.html" class="btn-primario" style="margin-top: 16px;">' +
+                '✨ Iniciar registro' +
+            '</a>' +
+        '</div>' +
+        '<div class="seccion-card">' +
+            '<h2>ℹ️ ¿Cómo funciona?</h2>' +
+            '<div style="font-size: 0.8rem; color: var(--text-secondary); line-height: 1.7;">' +
+                '<p style="margin-bottom: 12px;"><strong style="color: var(--gold);">1. Registro:</strong> Ingresas tus datos personales, teléfono y email.</p>' +
+                '<p style="margin-bottom: 12px;"><strong style="color: var(--gold);">2. Documentos:</strong> Subes tu INE y selfie. La IA valida automáticamente.</p>' +
+                '<p style="margin-bottom: 12px;"><strong style="color: var(--gold);">3. Verificación:</strong> El sistema decide si aprobarte en segundos.</p>' +
+                '<p style="margin-bottom: 0;"><strong style="color: var(--gold);">4. ¡Listo!</strong> Empiezas a recibir pedidos en el Mercado.</p>' +
+            '</div>' +
+        '</div>' +
+        '<div class="botones-accion">' +
+            '<a href="/features/mercado/index.html" class="btn-secundario">' +
+                '🛒 Volver al Mercado' +
+            '</a>' +
+        '</div>';
+}
+
+// ================================================================
+// RENDER: ESTADO ACTIVO
+// ================================================================
+function renderActivo() {
+    var score = repartidorData.score_confianza || 100;
+    var fechaAprobacion = formatearFecha(repartidorData.aprobado_en);
+
+    return '' +
+        '<div class="hero-estado activo">' +
+            '<span class="icono-estado">✅</span>' +
+            '<h1>¡Estás verificado!</h1>' +
+            '<p>Tu identidad ha sido confirmada. Puedes empezar a entregar pedidos ahora mismo desde el Mercado.</p>' +
+            '<div class="score-box">' +
+                '<span class="score-num">' + score + '</span>' +
+                '<span class="score-lbl">Score de confianza</span>' +
+                '<div class="score-bar">' +
+                    '<div class="fill" style="width: ' + score + '%;"></div>' +
+                '</div>' +
+            '</div>' +
+        '</div>' +
+
+        '<div class="seccion-card">' +
+            '<h2>📅 Información</h2>' +
+            '<div class="checklist">' +
+                '<div class="checklist-item ok">' +
+                    '<div class="check-icono">✅</div>' +
+                    '<div class="check-info">' +
+                        '<div class="titulo">Verificado desde</div>' +
+                        '<div class="desc">' + fechaAprobacion + '</div>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="checklist-item ok">' +
+                    '<div class="check-icono">🎯</div>' +
+                    '<div class="check-info">' +
+                        '<div class="titulo">Score de confianza</div>' +
+                        '<div class="desc">' + score + ' de 100 puntos</div>' +
+                    '</div>' +
+                '</div>' +
+                (repartidorData.ciudad ? '<div class="checklist-item ok">' +
+                    '<div class="check-icono">📍</div>' +
+                    '<div class="check-info">' +
+                        '<div class="titulo">Zona de trabajo</div>' +
+                        '<div class="desc">' + escapeHTML(repartidorData.ciudad) + ', ' + escapeHTML(repartidorData.pais || 'MX') + '</div>' +
+                    '</div>' +
+                '</div>' : '') +
+                (repartidorData.vehiculo ? '<div class="checklist-item ok">' +
+                    '<div class="check-icono">🛵</div>' +
+                    '<div class="check-info">' +
+                        '<div class="titulo">Vehículo</div>' +
+                        '<div class="desc">' + escapeHTML(repartidorData.vehiculo) + '</div>' +
+                    '</div>' +
+                '</div>' : '') +
+            '</div>' +
+        '</div>' +
+
+        (historialCambios.length > 0 ? renderHistorialTimeline() : '') +
+
+        '<div class="botones-accion">' +
+            '<a href="/features/mercado/repartidor/panel.html" class="btn-primario">' +
+                '🛵 Ir a mi panel' +
+            '</a>' +
+            '<a href="/features/mercado/index.html" class="btn-secundario">' +
+                '🛒 Mercado' +
+            '</a>' +
+        '</div>';
+}
+
+// ================================================================
+// RENDER: ESTADO EN PROCESO / REVISIÓN
+// ================================================================
+function renderProcesando(estado) {
+    var esRevision = (estado === 'revision_manual');
+    var score = repartidorData.score_confianza || 0;
+
+    return '' +
+        '<div class="hero-estado procesando">' +
+            '<span class="icono-estado pulse">⏳</span>' +
+            '<h1>' + (esRevision ? 'Revisión manual' : 'Verificación en proceso') + '</h1>' +
+            '<p>' +
+                (esRevision
+                    ? 'Tu registro requiere una revisión adicional de nuestro equipo. Esto puede tomar hasta 24 horas. Te notificaremos cuando esté listo.'
+                    : 'Estamos verificando tus documentos con IA. Esto toma unos minutos. Puedes cerrar esta ventana, te avisaremos cuando termine.') +
+            '</p>' +
+            (score > 0 ? '<div class="score-box">' +
+                '<span class="score-num">' + score + '</span>' +
+                '<span class="score-lbl">Score parcial</span>' +
+                '<div class="score-bar">' +
+                    '<div class="fill" style="width: ' + score + '%;"></div>' +
+                '</div>' +
+            '</div>' : '') +
+        '</div>' +
+
+        '<div class="seccion-card">' +
+            '<h2>📋 Requisitos</h2>' +
+            renderChecklist() +
+        '</div>' +
+
+        (historialCambios.length > 0 ? renderHistorialTimeline() : '') +
+
+        '<div class="botones-accion">' +
+            '<a href="/features/mercado/index.html" class="btn-secundario">' +
+                '🛒 Volver al Mercado' +
+            '</a>' +
+            '<button class="btn-secundario" onclick="recargarEstado()">' +
+                '🔄 Actualizar estado' +
+            '</button>' +
+        '</div>';
+}
+
+// ================================================================
+// RENDER: ESTADO RECHAZADO
+// ================================================================
+function renderRechazado() {
+    var motivo = repartidorData.motivo_rechazo || 'No cumple con los requisitos';
+    var intentos = repartidorData.intentos_verificacion || 0;
+    var maxIntentos = 3;
+    var intentosRestantes = Math.max(0, maxIntentos - intentos);
+    var puedeReintentar = intentosRestantes > 0;
+    var score = repartidorData.score_confianza || 0;
+
+    return '' +
+        '<div class="hero-estado rechazado">' +
+            '<span class="icono-estado">❌</span>' +
+            '<h1>Verificación rechazada</h1>' +
+            '<p>No pudimos verificar tu identidad. Revisa el motivo y vuelve a intentarlo corrigiendo lo indicado.</p>' +
+            (score > 0 ? '<div class="score-box">' +
+                '<span class="score-num">' + score + '</span>' +
+                '<span class="score-lbl">Score obtenido</span>' +
+                '<div class="score-bar">' +
+                    '<div class="fill" style="width: ' + score + '%;"></div>' +
+                '</div>' +
+            '</div>' : '') +
+        '</div>' +
+
+        '<div class="motivo-rechazo">' +
+            '<div class="lbl">Motivo del rechazo</div>' +
+            '<div class="txt">' + escapeHTML(motivo) + '</div>' +
+        '</div>' +
+
+        '<div class="seccion-card">' +
+            '<h2>📋 Requisitos</h2>' +
+            renderChecklist() +
+        '</div>' +
+
+        '<div class="seccion-card">' +
+            '<h2>🔄 Reintentos</h2>' +
+            '<div style="font-size: 0.8rem; color: var(--text-secondary); line-height: 1.6;">' +
+                '<p style="margin-bottom: 8px;"><strong style="color: var(--text-primary);">Intentos usados:</strong> ' + intentos + ' de ' + maxIntentos + '</p>' +
+                (puedeReintentar
+                    ? '<p style="margin-bottom: 0; color: var(--success);">✓ Te quedan <strong>' + intentosRestantes + '</strong> intento' + (intentosRestantes === 1 ? '' : 's') + '</p>'
+                    : '<p style="margin-bottom: 0; color: var(--danger);">❌ Has alcanzado el máximo de intentos. Contacta a soporte.</p>') +
+            '</div>' +
+        '</div>' +
+
+        (historialCambios.length > 0 ? renderHistorialTimeline() : '') +
+
+        '<div class="botones-accion">' +
+            (puedeReintentar
+                ? '<button class="btn-peligro" onclick="reintentarRegistro()" id="btnReintentar">' +
+                    '🔄 Volver a intentar' +
+                  '</button>'
+                : '') +
+            '<a href="/features/mercado/index.html" class="btn-secundario">' +
+                '🛒 Volver al Mercado' +
+            '</a>' +
+        '</div>';
+}
+
+// ================================================================
+// RENDER: CHECKLIST DE REQUISITOS
+// ================================================================
+function renderChecklist() {
+    var items = [
+        {
+            key: 'telefono_verificado',
+            titulo: 'Teléfono verificado',
+            desc: 'Código SMS confirmado'
+        },
+        {
+            key: 'email_verificado',
+            titulo: 'Email verificado',
+            desc: 'Código enviado al correo'
+        },
+        {
+            key: 'curp_valida',
+            titulo: 'CURP válida',
+            desc: 'Validada con algoritmo oficial'
+        },
+        {
+            key: 'ocr_nombre_coincide',
+            titulo: 'Documento de identidad',
+            desc: 'Nombre coincide con el INE'
+        },
+        {
+            key: 'face_match_score',
+            titulo: 'Verificación facial',
+            desc: 'Selfie comparada con el INE',
+            custom: function (v) {
+                if (v >= 0.8) return { estado: 'ok', extra: 'Score: ' + (v * 100).toFixed(0) + '%' };
+                if (v > 0) return { estado: 'pendiente', extra: 'Score bajo: ' + (v * 100).toFixed(0) + '%' };
+                return null;
+            }
+        },
+        {
+            key: 'vehiculo_verificado',
+            titulo: 'Vehículo verificado',
+            desc: 'Foto con placas visibles'
+        },
+        {
+            key: 'terminos_aceptados',
+            titulo: 'Términos aceptados',
+            desc: 'Servicio, privacidad, conducta, ubicación'
+        }
+    ];
+
+    var html = '<div class="checklist">';
+
+    items.forEach(function (item) {
+        var valor = repartidorData[item.key];
+
+        var estado = 'pendiente';
+        var extra = item.desc;
+
+        if (item.custom) {
+            var custom = item.custom(valor);
+            if (custom) {
+                estado = custom.estado;
+                extra = custom.extra || item.desc;
+            } else {
+                estado = 'pendiente';
+            }
+        } else {
+            if (valor === true) {
+                estado = 'ok';
+                extra = item.desc;
+            } else if (valor === false) {
+                estado = 'pendiente';
+            } else if (valor === null || valor === undefined) {
+                estado = 'pendiente';
+            }
+        }
+
+        var icono = estado === 'ok' ? '✅' : '⏳';
+        var clase = estado === 'ok' ? 'ok' : 'pendiente';
+
+        html += '<div class="checklist-item ' + clase + '">' +
+            '<div class="check-icono">' + icono + '</div>' +
+            '<div class="check-info">' +
+                '<div class="titulo">' + item.titulo + '</div>' +
+                '<div class="desc">' + escapeHTML(extra) + '</div>' +
+            '</div>' +
+        '</div>';
+    });
+
+    html += '</div>';
+    return html;
+}
+
+// ================================================================
+// RENDER: TIMELINE DE HISTORIAL
+// ================================================================
+function renderHistorialTimeline() {
+    if (!historialCambios || historialCambios.length === 0) return '';
+
+    var html = '' +
+        '<div class="seccion-card">' +
+            '<h2>📜 Historial de cambios</h2>' +
+            '<div class="timeline">';
+
+    historialCambios.forEach(function (h, index) {
+        var estadoNuevo = h.estado_nuevo || 'desconocido';
+        var titulo = traducirEstado(estadoNuevo);
+
+        html += '<div class="timeline-item ' + (index === 0 ? 'actual' : '') + '">' +
+            '<div class="timeline-fecha">' + formatearFecha(h.created_at) + '</div>' +
+            '<div class="timeline-titulo">' + escapeHTML(titulo) + '</div>' +
+            (h.motivo ? '<div class="timeline-motivo">' + escapeHTML(h.motivo) + '</div>' : '') +
+        '</div>';
+    });
+
+    html += '</div></div>';
+    return html;
+}
+
+function traducirEstado(estado) {
+    var mapa = {
+        'pendiente_registro': '⏳ Pendiente de registro',
+        'procesando': '🔄 Procesando verificación',
+        'activo': '✅ Verificado y activo',
+        'revision_manual': '👀 En revisión manual',
+        'rechazado': '❌ Rechazado',
+        'suspendido': '⏸️ Suspendido'
+    };
+    return mapa[estado] || estado;
+}
+
+// ================================================================
+// RENDER PRINCIPAL
+// ================================================================
+function renderEstado() {
+    var cont = document.getElementById('contenidoEstado');
+    if (!cont) return;
+
+    if (!repartidorData) {
+        cont.innerHTML = renderSinRegistro();
+        return;
+    }
+
+    var estado = repartidorData.estado_verificacion || 'pendiente_registro';
+
+    if (estado === 'activo') {
+        cont.innerHTML = renderActivo();
+    } else if (estado === 'procesando' || estado === 'revision_manual') {
+        cont.innerHTML = renderProcesando(estado);
+    } else if (estado === 'rechazado') {
+        cont.innerHTML = renderRechazado();
+    } else if (estado === 'suspendido') {
+        cont.innerHTML = renderSuspendido();
+    } else {
+        // pendiente_registro u otro
+        cont.innerHTML = renderSinRegistro();
+    }
+
+    if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(cont);
+}
+
+function renderSuspendido() {
+    return '' +
+        '<div class="hero-estado rechazado">' +
+            '<span class="icono-estado">⏸️</span>' +
+            '<h1 style="color: var(--warning);">Cuenta suspendida</h1>' +
+            '<p>Tu cuenta como repartidor está suspendida temporalmente. Contacta a soporte para más información.</p>' +
+        '</div>' +
+        '<div class="botones-accion">' +
+            '<a href="/features/mercado/index.html" class="btn-secundario">' +
+                '🛒 Volver al Mercado' +
+            '</a>' +
+        '</div>';
+}
+
+// ================================================================
+// REINTENTAR REGISTRO
+// ================================================================
+async function reintentarRegistro() {
+    var btn = document.getElementById('btnReintentar');
+    if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Preparando...'; }
+
+    try {
+        var session = await supabase.auth.getSession();
+        var token = session.data.session ? session.data.session.access_token : null;
+
+        if (!token) throw new Error('Sin sesión activa');
+
+        var resp = await fetch(API_BASE + '/api/mercado/repartidor/reintentar', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify({})
+        });
+
+        var data = await resp.json();
+
+        if (!resp.ok) {
+            throw new Error(data.error || 'No se pudo iniciar el reintento');
+        }
+
+        showToast('✅ Puedes volver a intentar', 'success');
+
+        setTimeout(function () {
+            window.location.href = '/features/mercado/repartidor/registro.html';
+        }, 1200);
+
+    } catch (e) {
+        console.error('Error reintentando:', e);
+        showToast('❌ ' + e.message, 'error');
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '🔄 Volver a intentar';
+        }
+    }
+}
+
+// ================================================================
+// RECARGAR ESTADO
+// ================================================================
+async function recargarEstado() {
+    showToast('🔄 Actualizando...', 'success');
+    await cargarDatosRepartidor();
+    await cargarHistorial();
+    renderEstado();
+}
+
+// ================================================================
+// VER TOKENS
+// ================================================================
+function verTokens() { window.location.href = '/features/perfil/perfil.html'; }
+
+// ================================================================
+// INICIALIZACIÓN
+// ================================================================
+document.addEventListener('DOMContentLoaded', async function () {
+    await cargarUsuarioActual();
+
+    if (!sessionUser) {
+        window.location.href = '/';
+        return;
+    }
+
+    try {
+        await cargarDatosRepartidor();
+
+        if (repartidorData && repartidorData.id) {
+            await cargarHistorial();
+        }
+
+        renderEstado();
+
+        // Auto-refresh si está en proceso
+        if (repartidorData && (repartidorData.estado_verificacion === 'procesando' || repartidorData.estado_verificacion === 'revision_manual')) {
+            setInterval(async function () {
+                if (document.hidden) return;
+                await cargarDatosRepartidor();
+                if (repartidorData.estado_verificacion === 'activo') {
+                    renderEstado();
+                    showToast('🎉 ¡Ya estás verificado!', 'success');
+                }
+            }, 20000);
+        }
+
+    } catch (e) {
+        console.error('Error cargando:', e);
+        document.getElementById('contenidoEstado').innerHTML =
+            '<div class="seccion-card">' +
+                '<div style="text-align: center; padding: 40px 20px; color: var(--danger);">' +
+                    '<div style="font-size: 3rem; margin-bottom: 12px;">⚠️</div>' +
+                    '<h3 style="color: var(--danger); margin-bottom: 8px;">Error al cargar</h3>' +
+                    '<p style="font-size: 0.8rem;">' + escapeHTML(e.message) + '</p>' +
+                '</div>' +
+            '</div>';
+    }
+
+    setTimeout(async function () {
+        try {
+            if (typeof window.inicializarIdiomas === 'function') {
+                await window.inicializarIdiomas();
+            }
+        } catch (e) { /* silencioso */ }
+    }, 400);
+});
+
+// ================================================================
+// EXPOSICIÓN GLOBAL
+// ================================================================
+window.verTokens = verTokens;
+window.showToast = showToast;
+window.reintentarRegistro = reintentarRegistro;
+window.recargarEstado = recargarEstado;
+</script>
+</body>
+</html>
