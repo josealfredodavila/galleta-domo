@@ -3,9 +3,16 @@
    Webhook dedicado: NOTIFICACIONES IPN DE NOWPAYMENTS
    Ruta: /backend/routes/webhooks/nowpayments.js
    
-   Este archivo se encarga EXCLUSIVAMENTE de recibir y procesar
-   las notificaciones IPN que NOWPayments envía cuando un pago
-   cambia de estado. Cuando se confirma, activa la membresía.
+   Este archivo maneja EXCLUSIVAMENTE las notificaciones IPN
+   que NOWPayments envía cuando un pago cambia de estado.
+   
+   Esquema real:
+   - mercado_membresias_pagos (bigint id, tienda_id NOT NULL, plan_slug,
+     plan_nombre, monto_mxn, duracion_dias, estado, payment_id,
+     pay_address, pay_amount, pay_currency, nowpayments_status,
+     activa_desde, activa_hasta, pagado_en)
+   - Estados: pendiente, pagando, confirmando, pagada, cancelada, expirada, fallida
+   - Al confirmar → actualiza mercado_tiendas.nivel + activa_hasta
    ================================================================ */
 
 const express = require('express');
@@ -26,11 +33,11 @@ const supabaseAdmin = createClient(
 // ================================================================
 const NOWPAYMENTS_IPN_SECRET = process.env.NOWPAYMENTS_IPN_SECRET;
 
-// Planes válidos (duplicados aquí para evitar dependencia circular)
+// Planes válidos (duplicados aquí para evitar dependencia circular con mercado.js)
 const PLANES = {
-    basico: { id: 'basico', nombre: 'Básico', precio_mxn: 99,  duracion_dias: 30 },
-    pro:    { id: 'pro',    nombre: 'Pro',    precio_mxn: 299, duracion_dias: 30 },
-    max:    { id: 'max',    nombre: 'Max',    precio_mxn: 599, duracion_dias: 30 }
+    basico: { slug: 'basico', nombre: 'Básico', precio_mxn: 99,  duracion_dias: 30 },
+    pro:    { slug: 'pro',    nombre: 'Pro',    precio_mxn: 299, duracion_dias: 30 },
+    max:    { slug: 'max',    nombre: 'Max',    precio_mxn: 599, duracion_dias: 30 }
 };
 
 // ================================================================
@@ -49,7 +56,7 @@ function logError(...args) {
 // ================================================================
 function verificarFirma(bodyString, firmaRecibida) {
     if (!NOWPAYMENTS_IPN_SECRET) {
-        logError('Falta NOWPAYMENTS_IPN_SECRET en env — NO se puede verificar firma');
+        logError('Falta NOWPAYMENTS_IPN_SECRET en env — no se puede verificar firma');
         return false;
     }
     if (!firmaRecibida) {
@@ -76,131 +83,121 @@ function verificarFirma(bodyString, firmaRecibida) {
 
 // ================================================================
 // MAPEAR ESTADO DE NOWPAYMENTS A ESTADO INTERNO
+// (los 7 estados reales de mercado_membresias_pagos)
 // ================================================================
 function mapearEstado(npStatus) {
     const s = (npStatus || '').toLowerCase();
-    if (s === 'finished' || s === 'confirmed') return 'confirmado';
-    if (s === 'failed' || s === 'refunded' || s === 'expired') return 'fallido';
-    if (s === 'confirming' || s === 'sending' || s === 'partially_paid') return 'procesando';
-    if (s === 'waiting') return 'esperando';
-    return 'esperando';
+    if (s === 'finished' || s === 'confirmed') return 'pagada';
+    if (s === 'failed' || s === 'refunded' || s === 'expired') return 'fallida';
+    if (s === 'confirming' || s === 'sending' || s === 'partially_paid') return 'confirmando';
+    if (s === 'waiting') return 'pendiente';
+    return 'pendiente';
 }
 
 // ================================================================
 // ACTIVAR O EXTENDER MEMBRESÍA
+// Actualiza:
+// - mercado_membresias_pagos.estado = 'pagada' + fechas
+// - mercado_tiendas.nivel + activa_hasta + estado
 // ================================================================
-async function activarMembresia(usuarioId, plan, pagoId) {
+async function activarMembresia(tiendaId, pagoId, planSlug, duracionDias) {
     try {
-        const planData = PLANES[plan];
+        const planData = PLANES[planSlug];
         if (!planData) {
-            logError('Plan inválido:', plan);
-            return { ok: false, error: 'Plan inválido' };
+            logError('Plan inválido:', planSlug);
+            return { ok: false, error: 'Plan inválido: ' + planSlug };
         }
 
         const ahora = new Date();
+        const duracion = parseInt(duracionDias || planData.duracion_dias);
 
-        // Buscar membresía activa existente
-        const { data: existente, error: errBuscar } = await supabaseAdmin
-            .from('mercado_membresias')
-            .select('id, fecha_inicio, fecha_fin, plan')
-            .eq('usuario_id', usuarioId)
-            .eq('estado', 'activa')
-            .gte('fecha_fin', ahora.toISOString())
-            .order('fecha_fin', { ascending: false })
-            .limit(1)
+        // 1) Obtener tienda actual
+        const { data: tienda, error: errT } = await supabaseAdmin
+            .from('mercado_tiendas')
+            .select('id, nivel, activa_hasta')
+            .eq('id', tiendaId)
             .maybeSingle();
 
-        if (errBuscar && errBuscar.code !== 'PGRST116') {
-            logError('Error buscando membresía:', errBuscar);
-            return { ok: false, error: errBuscar.message };
+        if (errT || !tienda) {
+            logError('Tienda no encontrada:', tiendaId);
+            return { ok: false, error: 'Tienda no encontrada' };
         }
 
-        // Caso 1: Extender membresía existente
-        if (existente && existente.fecha_fin) {
-            const fechaFinAnterior = new Date(existente.fecha_fin);
-            const base = fechaFinAnterior > ahora ? fechaFinAnterior : ahora;
-            const nuevaFechaFin = new Date(base);
-            nuevaFechaFin.setDate(nuevaFechaFin.getDate() + planData.duracion_dias);
-
-            const { error: errUpd } = await supabaseAdmin
-                .from('mercado_membresias')
-                .update({
-                    plan: plan,
-                    fecha_fin: nuevaFechaFin.toISOString(),
-                    estado: 'activa',
-                    pago_id_ultimo: pagoId,
-                    updated_at: ahora.toISOString()
-                })
-                .eq('id', existente.id);
-
-            if (errUpd) {
-                logError('Error extendiendo membresía:', errUpd);
-                return { ok: false, error: errUpd.message };
+        // 2) Calcular nueva fecha de vencimiento
+        // Si ya hay una fecha futura, se extiende desde ahí
+        let fechaBase = ahora;
+        if (tienda.activa_hasta) {
+            const fechaAnterior = new Date(tienda.activa_hasta);
+            if (fechaAnterior > ahora) {
+                fechaBase = fechaAnterior;
             }
-
-            log('✅ Membresía extendida:', existente.id, '→ hasta', nuevaFechaFin.toISOString());
-            return {
-                ok: true,
-                membresia_id: existente.id,
-                extendida: true,
-                fecha_fin: nuevaFechaFin.toISOString()
-            };
         }
 
-        // Caso 2: Crear membresía nueva
-        const fechaFin = new Date(ahora);
-        fechaFin.setDate(fechaFin.getDate() + planData.duracion_dias);
+        const nuevaFechaFin = new Date(fechaBase);
+        nuevaFechaFin.setDate(nuevaFechaFin.getDate() + duracion);
 
-        const { data: nueva, error: errIns } = await supabaseAdmin
-            .from('mercado_membresias')
-            .insert({
-                usuario_id: usuarioId,
-                plan: plan,
+        // 3) Actualizar tienda
+        const { error: errUpd } = await supabaseAdmin
+            .from('mercado_tiendas')
+            .update({
+                nivel: planSlug,
+                activa_hasta: nuevaFechaFin.toISOString(),
                 estado: 'activa',
-                fecha_inicio: ahora.toISOString(),
-                fecha_fin: fechaFin.toISOString(),
-                pago_id_ultimo: pagoId,
-                created_at: ahora.toISOString(),
                 updated_at: ahora.toISOString()
             })
-            .select()
-            .single();
+            .eq('id', tiendaId);
 
-        if (errIns) {
-            logError('Error creando membresía:', errIns);
-            return { ok: false, error: errIns.message };
+        if (errUpd) {
+            logError('Error actualizando tienda:', errUpd);
+            return { ok: false, error: errUpd.message };
         }
 
-        log('✅ Membresía nueva activada:', nueva.id, '→ hasta', fechaFin.toISOString());
+        // 4) Actualizar el pago con las fechas de activación
+        const { error: errPago } = await supabaseAdmin
+            .from('mercado_membresias_pagos')
+            .update({
+                estado: 'pagada',
+                activa_desde: ahora.toISOString(),
+                activa_hasta: nuevaFechaFin.toISOString(),
+                pagado_en: ahora.toISOString(),
+                updated_at: ahora.toISOString()
+            })
+            .eq('id', pagoId);
+
+        if (errPago) {
+            logError('Error actualizando pago:', errPago);
+            // No fallamos porque la tienda ya está activada
+        }
+
+        log('✅ Membresía activada:', tiendaId, '→ nivel', planSlug, '→ hasta', nuevaFechaFin.toISOString());
+
         return {
             ok: true,
-            membresia_id: nueva.id,
-            nueva: true,
-            fecha_fin: fechaFin.toISOString()
+            tienda_id: tiendaId,
+            nivel: planSlug,
+            fecha_fin: nuevaFechaFin.toISOString(),
+            extendida: !!tienda.activa_hasta && new Date(tienda.activa_hasta) > ahora
         };
 
     } catch (e) {
-        logError('Excepción en activarMembresia:', e);
+        logError('Excepción activarMembresia:', e);
         return { ok: false, error: e.message };
     }
 }
 
 // ================================================================
-// POST /api/mercado/webhook-nowpayments
+// POST /
 // Recibe notificaciones IPN de NOWPayments
+// (NO autentica con JWT, usa firma HMAC)
 // ================================================================
 router.post('/', async (req, res) => {
     const inicio = Date.now();
-    let bodyString = '';
 
     try {
-        // ============ 1) VERIFICAR FIRMA ============
-        // Necesitamos el body SIN parsear. Si el server ya hizo express.json(),
-        // reconstruimos el string con JSON.stringify (funciona si los campos van en mismo orden).
-        // Lo ideal: configurar express.raw() para esta ruta específica.
-        bodyString = JSON.stringify(req.body);
-
+        // ============ 1) VERIFICAR FIRMA HMAC ============
         const firmaRecibida = req.headers['x-nowpayments-sig'];
+        const bodyString = req.rawBody || JSON.stringify(req.body);
+
         const firmaValida = verificarFirma(bodyString, firmaRecibida);
 
         if (!firmaValida) {
@@ -212,17 +209,14 @@ router.post('/', async (req, res) => {
 
         // ============ 2) EXTRAER DATOS ============
         const data = req.body;
-        const orderId = data.order_id;
         const paymentId = data.payment_id;
         const npStatus = data.payment_status;
         const payinHash = data.payin_hash;
         const outcomeHash = data.outcome_hash;
-        const priceAmount = data.price_amount;
         const actuallyPaid = data.actually_paid;
         const payCurrency = data.pay_currency;
 
         log('📥 IPN:', {
-            order_id: orderId,
             payment_id: paymentId,
             status: npStatus,
             pay_currency: payCurrency,
@@ -230,28 +224,28 @@ router.post('/', async (req, res) => {
         });
 
         // ============ 3) VALIDAR ============
-        if (!orderId) {
-            logError('⚠️ Sin order_id — ignorando');
-            return res.status(200).json({ ok: true, ignorado: 'sin order_id' });
+        if (!paymentId) {
+            logError('⚠️ Sin payment_id — ignorando');
+            return res.status(200).json({ ok: true, ignorado: 'sin payment_id' });
         }
 
         // ============ 4) BUSCAR PAGO EN DB ============
         const { data: pago, error: errBuscar } = await supabaseAdmin
-            .from('mercado_pagos')
+            .from('mercado_membresias_pagos')
             .select('*')
-            .eq('id', orderId)
+            .eq('payment_id', String(paymentId))
             .maybeSingle();
 
         if (errBuscar || !pago) {
-            logError('⚠️ Pago no encontrado en DB:', orderId);
+            logError('⚠️ Pago no encontrado en DB:', paymentId);
             // Devolvemos 200 para que NOWPayments no reintente infinitamente
             return res.status(200).json({ ok: true, ignorado: 'pago no encontrado' });
         }
 
         // ============ 5) EVITAR REPROCESAR ============
-        if (pago.estado === 'confirmado') {
-            log('ℹ️ Pago ya confirmado previamente — ignorando');
-            return res.status(200).json({ ok: true, ya_confirmado: true });
+        if (pago.estado === 'pagada') {
+            log('ℹ️ Pago ya procesado previamente — ignorando');
+            return res.status(200).json({ ok: true, ya_pagado: true });
         }
 
         // ============ 6) MAPEAR ESTADO ============
@@ -260,34 +254,36 @@ router.post('/', async (req, res) => {
         // ============ 7) ACTUALIZAR PAGO EN DB ============
         const updates = {
             estado: estadoFinal,
-            np_status: npStatus,
+            nowpayments_status: npStatus,
             updated_at: new Date().toISOString()
         };
 
-        if (payinHash) updates.tx_hash = payinHash;
-        else if (outcomeHash) updates.tx_hash = outcomeHash;
-
-        if (actuallyPaid) updates.monto_recibido_cripto = String(actuallyPaid);
+        if (estadoFinal === 'pagada') {
+            updates.pagado_en = new Date().toISOString();
+        }
 
         const { error: errUpd } = await supabaseAdmin
-            .from('mercado_pagos')
+            .from('mercado_membresias_pagos')
             .update(updates)
-            .eq('id', orderId);
+            .eq('id', pago.id);
 
         if (errUpd) {
             logError('Error actualizando pago:', errUpd);
-            // Seguimos adelante — la membresía es más importante
         }
 
-        log('💾 Pago actualizado:', orderId, '→', estadoFinal);
+        log('💾 Pago actualizado:', pago.id, '→', estadoFinal);
 
-        // ============ 8) ACTIVAR MEMBRESÍA SI CONFIRMADO ============
-        if (estadoFinal === 'confirmado') {
-            const resultado = await activarMembresia(pago.usuario_id, pago.plan, pago.id);
+        // ============ 8) ACTIVAR MEMBRESÍA SI PAGADA ============
+        if (estadoFinal === 'pagada') {
+            const resultado = await activarMembresia(
+                pago.tienda_id,
+                pago.id,
+                pago.plan_slug,
+                pago.duracion_dias
+            );
 
             if (!resultado.ok) {
                 logError('❌ Error activando membresía:', resultado.error);
-                // Devolvemos 200 igual para que NOWPayments no reintente
                 return res.status(200).json({
                     ok: true,
                     procesado: true,
@@ -295,9 +291,9 @@ router.post('/', async (req, res) => {
                 });
             }
 
-            log('🎉 Membresía activada exitosamente para usuario:', pago.usuario_id);
+            log('🎉 Membresía activada para tienda:', pago.tienda_id);
 
-            // Notificación opcional: insertar en algún log/notificaciones
+            // Notificación opcional (silenciosa si la tabla no existe)
             try {
                 await supabaseAdmin
                     .from('notificaciones')
@@ -305,34 +301,36 @@ router.post('/', async (req, res) => {
                         usuario_id: pago.usuario_id,
                         tipo: 'membresia_activada',
                         titulo: '🎉 Membresía activada',
-                        mensaje: 'Tu membresía del Mercado ' + pago.plan + ' está activa.',
+                        mensaje: 'Tu membresía ' + pago.plan_slug + ' está activa hasta ' + resultado.fecha_fin,
                         created_at: new Date().toISOString()
                     });
-            } catch (e) {
-                // Silencioso: si no existe la tabla de notificaciones, no pasa nada
+            } catch (eN) {
                 log('ℹ️ No se pudo insertar notificación (tabla opcional)');
             }
 
             return res.status(200).json({
                 ok: true,
                 procesado: true,
-                membresia_id: resultado.membresia_id,
+                estado: 'pagada',
+                tienda_id: pago.tienda_id,
+                fecha_fin: resultado.fecha_fin,
                 extendida: resultado.extendida || false,
-                fecha_fin: resultado.fecha_fin
+                duracion_ms: Date.now() - inicio
             });
         }
 
         // Estados no confirmados: solo actualizamos y respondemos OK
-        log('ℹ️ Pago en estado:', estadoFinal, '— sin activar membresía aún');
+        log('ℹ️ Pago en estado:', estadoFinal);
         return res.status(200).json({
             ok: true,
             procesado: true,
-            estado: estadoFinal
+            estado: estadoFinal,
+            duracion_ms: Date.now() - inicio
         });
 
     } catch (e) {
         logError('❌ Excepción procesando webhook:', e);
-        // Devolvemos 200 para evitar reintentos masivos
+        // Siempre 200 para evitar reintentos masivos
         return res.status(200).json({
             ok: true,
             error: e.message,
@@ -342,17 +340,19 @@ router.post('/', async (req, res) => {
 });
 
 // ================================================================
-// GET /api/mercado/webhook-nowpayments/test
-// Endpoint para probar que el webhook está montado
+// GET /test
+// Endpoint de prueba para verificar que el webhook está montado
 // ================================================================
 router.get('/test', (req, res) => {
     res.json({
         ok: true,
         servicio: 'Webhook NOWPayments',
         configurado: !!NOWPAYMENTS_IPN_SECRET,
+        ipn_secret_presente: !!NOWPAYMENTS_IPN_SECRET,
         url_esperada_ipn: process.env.PUBLIC_URL
             ? `${process.env.PUBLIC_URL}/api/mercado/webhook-nowpayments`
             : '(configura PUBLIC_URL en env)',
+        planes: Object.keys(PLANES),
         timestamp: new Date().toISOString()
     });
 });
