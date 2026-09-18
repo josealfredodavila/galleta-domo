@@ -4,6 +4,7 @@
      Con apariencia global + idiomas + tema día/noche COMPLETO
      + Compra parcial con enteros + Contador 30 min + Comisión 2%
      + Color de acento dinámico en TODOS los botones
+     + Enlace al Mercado en el nav
      ================================================================ -->
 <!DOCTYPE html>
 <html lang="es">
@@ -148,7 +149,6 @@
         .emoji-picker .grid button:active { transform: scale(0.9); }
         .emoji-picker .titulo { color: var(--text-muted); font-size: 0.6rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; text-align: center; font-family: 'Orbitron', monospace; }
         
-        /* ✅ CAMBIO: botón Publicar ahora usa variables de color */
         .btn-publicar { 
             background: linear-gradient(135deg, var(--gold), var(--gold-dark)) !important; 
             color: var(--space) !important; 
@@ -412,6 +412,7 @@
             <a href="/features/internet/internet.html" class="nav-link">◈ Internet</a>
             <a href="/features/videos/videos.html" class="nav-link">🎬 Videos</a>
             <a href="/features/grupos/grupos.html" class="nav-link">👥 Grupos</a>
+            <a href="/features/mercado/index.html" class="nav-link">🛒 Mercado</a>
         </nav>
 
         <div class="valor-mercado" id="valorMercado">
@@ -869,7 +870,6 @@ function renderizarPost(post) {
     if (post.cantidad_venta && post.cantidad_venta > 0 && post.precio_venta) {
         var precioPorToken = parseFloat(post.precio_venta).toFixed(2);
 
-        // El botón Comprar solo aparece si el usuario NO es el vendedor
         var esMiPropiaVenta = sessionUser && post.usuario_id === sessionUser.id;
         var botonComprar = '';
 
