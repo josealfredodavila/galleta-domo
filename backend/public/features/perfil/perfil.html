@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>◈ Perfil · Sariel's</title>
+    <title>◈ Perfil · Csariel's</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
 
@@ -273,6 +273,113 @@
         .pro-section .pro-active-badge { color: var(--success); font-weight: 700; font-family: 'Orbitron', monospace; font-size: 0.85rem; margin-bottom: 6px; }
         .pro-section .pro-active-expira { font-size: 0.7rem; color: var(--text-muted); }
 
+        /* Sección repartidor (NUEVA) */
+        .repartidor-section {
+            background: linear-gradient(135deg, rgba(168,85,247,0.06), rgba(15,45,26,0.5));
+            border: 2px solid var(--line-black);
+            border-radius: var(--radius);
+            padding: 18px;
+            margin-top: 15px;
+            box-shadow: 0 3px 16px rgba(0, 0, 0, 0.35);
+            position: relative;
+            overflow: hidden;
+        }
+        .repartidor-section::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 2px;
+            background: linear-gradient(90deg, transparent, var(--purple), transparent);
+        }
+        .repartidor-section .rep-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--line-black-soft);
+        }
+        .repartidor-section .rep-header h3 {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--purple);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .repartidor-section .rep-badge {
+            font-size: 0.55rem;
+            padding: 2px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+            text-transform: uppercase;
+            border: 1px solid var(--line-black-soft);
+            letter-spacing: 0.5px;
+            font-family: 'Orbitron', monospace;
+        }
+        .rep-badge.activo { background: rgba(0,214,143,0.12); color: var(--success); }
+        .rep-badge.pendiente { background: rgba(247,212,74,0.12); color: var(--warning); }
+        .rep-badge.rechazado { background: rgba(255,51,102,0.12); color: var(--danger); }
+        .rep-badge.no-registrado { background: rgba(138,168,184,0.12); color: var(--text-muted); }
+        .repartidor-section .rep-info {
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 14px;
+        }
+        .repartidor-section .rep-info strong {
+            color: var(--gold);
+        }
+        .repartidor-section .rep-btn {
+            width: 100%;
+            justify-content: center;
+            padding: 12px;
+            font-size: 0.8rem;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            border-radius: 30px;
+            border: 2px solid var(--line-black);
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+        .rep-btn.registrar {
+            background: linear-gradient(135deg, var(--purple), #7c3aed);
+            color: #fff;
+        }
+        .rep-btn.registrar:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(168,85,247,0.3);
+        }
+        .rep-btn.ver-estado {
+            background: linear-gradient(135deg, var(--warning), #e8a800);
+            color: var(--space);
+        }
+        .rep-btn.ver-estado:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(247,212,74,0.3);
+        }
+        .rep-btn.ir-panel {
+            background: linear-gradient(135deg, var(--success), #00a86b);
+            color: #fff;
+        }
+        .rep-btn.ir-panel:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0,214,143,0.3);
+        }
+        .rep-btn.reintentar {
+            background: linear-gradient(135deg, var(--danger), #dc2626);
+            color: #fff;
+        }
+        .rep-btn.reintentar:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(255,51,102,0.3);
+        }
+
         .activity-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line-black-soft); transition: var(--transition); }
         .activity-item:hover { background: rgba(255, 255, 255, 0.02); padding-left: 8px; border-radius: 8px; }
         .activity-item .icon { font-size: 1.2rem; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: rgba(0, 0, 0, 0.4); border: 1px solid var(--line-black); flex-shrink: 0; }
@@ -373,6 +480,7 @@
         html.tema-dia .estado-section,
         html.tema-dia .conexion-section,
         html.tema-dia .pro-section,
+        html.tema-dia .repartidor-section,
         html.tema-dia .perfil-header,
         html.tema-dia .perfil-tabs,
         html[data-tema="dia"] .panel,
@@ -380,6 +488,7 @@
         html[data-tema="dia"] .estado-section,
         html[data-tema="dia"] .conexion-section,
         html[data-tema="dia"] .pro-section,
+        html[data-tema="dia"] .repartidor-section,
         html[data-tema="dia"] .perfil-header,
         html[data-tema="dia"] .perfil-tabs {
             background: rgba(255, 255, 255, 0.9) !important;
@@ -463,7 +572,7 @@
         <header class="header">
             <a href="/" class="logo">
                 <span class="logo-hex">◈</span>
-                <span class="logo-text">Sariel<span>'s</span></span>
+                <span class="logo-text">Csariel<span>'s</span></span>
                 <span class="logo-badge">✦ WEB3</span>
             </a>
             <div class="header-actions">
@@ -471,7 +580,6 @@
             </div>
         </header>
 
-        <!-- NAV: sin data-clave. El menú principal es del layout global, no del módulo Perfil. -->
         <nav class="main-nav">
             <a href="/" class="nav-link">⌂ Inicio</a>
             <a href="/features/muro/muro.html" class="nav-link">◇ Muro</a>
@@ -499,7 +607,7 @@
                         <span class="verified" data-clave="perfil_badge_verificado">✦ VERIFICADO</span>
                     </div>
                     <div class="handle" id="perfilHandle">@explorador</div>
-                    <div class="bio" id="perfilBio" data-clave="perfil_biografia_default">Explorando el ecosistema Sariel's · WEB3 · Comunidad</div>
+                    <div class="bio" id="perfilBio" data-clave="perfil_biografia_default">Explorando el ecosistema Csariel's · WEB3 · Comunidad</div>
                     <div class="badges">
                         <span class="badge gold" data-clave="perfil_badge_miembro">✦ MIEMBRO</span>
                         <span class="badge success" data-clave="perfil_badge_activo">● ACTIVO</span>
@@ -531,6 +639,22 @@
                 </div>
             </div>
 
+            <!-- ═══════════════════════════════════════════════════════
+                 NUEVA SECCIÓN: GANA DINERO COMO REPARTIDOR
+                 ═══════════════════════════════════════════════════════ -->
+            <div class="repartidor-section" id="repartidorSection" style="display:none;">
+                <div class="rep-header">
+                    <h3>🛵 <span data-clave="perfil_gana_dinero">Gana dinero con Csariel's</span></h3>
+                    <span class="rep-badge" id="repBadge">Cargando...</span>
+                </div>
+                <div class="rep-info" id="repInfo">
+                    Cargando información...
+                </div>
+                <button class="rep-btn" id="repBtn" onclick="irARepartidorDesdePerfil()">
+                    Cargando...
+                </button>
+            </div>
+
             <div class="estado-section">
                 <div class="estado-header">
                     <div class="estado-info">
@@ -559,7 +683,7 @@
 
             <div class="pro-section" id="proSection">
                 <div class="pro-header">
-                    <h3>⟡ Sariel's Pro</h3>
+                    <h3>⟡ Csariel's Pro</h3>
                     <span class="pro-badge" data-clave="perfil_pro_membresia">MEMBRESÍA</span>
                 </div>
                 <div class="pro-body">
@@ -576,7 +700,7 @@
                     <div class="pro-upgrade" id="proUpgradeCard">
                         <div class="pro-upgrade-title">
                             <span class="pro-upgrade-icon">✦</span>
-                            <span class="pro-upgrade-name">Sariel's Pro</span>
+                            <span class="pro-upgrade-name">Csariel's Pro</span>
                         </div>
                         <div class="pro-upgrade-price">
                             <span id="proPrecio">$60 MXN</span>
@@ -613,7 +737,7 @@
                 </div>
                 <div style="font-size:0.6rem;color:var(--text-muted);margin-top:6px;">
                     <span data-clave="perfil_conexion">Conexión:</span> <span id="conexionTipo">🛜 WiFi</span>
-                    · <span data-clave="perfil_operador">Operador:</span> <span id="conexionOperador">Sariel's Net</span>
+                    · <span data-clave="perfil_operador">Operador:</span> <span id="conexionOperador">Csariel's Net</span>
                 </div>
             </div>
 
@@ -930,7 +1054,7 @@
         </div>
 
         <footer class="footer">
-            <span><span class="brand">◈ Sariel's</span> · Sabor al Paladar · WEB3</span>
+            <span><span class="brand">© Csariel's</span> · Sabor al Paladar · WEB3</span>
             <div class="footer-links">
                 <a href="/terminos" data-clave="perfil_footer_terminos">◈ Términos</a>
                 <a href="/privacidad" data-clave="perfil_footer_privacidad">◈ Privacidad</a>
@@ -999,20 +1123,158 @@
     <script src="/features/perfil/perfil.js"></script>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            setTimeout(async () => {
-                try {
-                    if (typeof window.inicializarIdiomas === 'function') {
-                        await window.inicializarIdiomas();
-                        console.log('✅ Idiomas aplicados al perfil');
-                    } else {
-                        console.warn('⚠️ idiomas.js no cargó correctamente');
-                    }
-                } catch (error) {
-                    console.error('Error inicializando idiomas en perfil:', error);
-                }
-            }, 500);
-        });
+// ================================================================
+// ⚙️ CONFIGURACIÓN LEGAL — Csariel's Ecosystem
+// ================================================================
+// 👉 EDITA ESTE BLOQUE cuando tengas los datos legales listos
+// ================================================================
+var CONFIG_LEGAL = {
+    nombre_comercial: 'Csariel\'s',
+    nombre_ecosistema: 'Csariel\'s Ecosystem',
+    slogan: 'Sabor al Paladar · Repostería Fina · Web3',
+    razon_social: '',
+    rfc: '',
+    email_contacto: '',
+    sitio_web: '',
+    pais_operacion: 'México',
+    ciudad_operacion: 'Puebla'
+};
+
+// ================================================================
+// VERIFICAR ESTADO DEL REPARTIDOR
+// ================================================================
+async function verificarEstadoRepartidorPerfil() {
+    try {
+        var section = document.getElementById('repartidorSection');
+        var badge = document.getElementById('repBadge');
+        var info = document.getElementById('repInfo');
+        var btn = document.getElementById('repBtn');
+        
+        if (!section) return;
+
+        // Obtener usuario
+        var session = await window.supabaseClient.auth.getSession();
+        if (!session.data.session) return;
+
+        var usuarioId = session.data.session.user.id;
+
+        // Consultar estado
+        var result = await window.supabaseClient
+            .from('mercado_repartidores')
+            .select('estado_verificacion, score_confianza, motivo_rechazo')
+            .eq('usuario_id', usuarioId)
+            .maybeSingle();
+
+        // Mostrar sección siempre (para invitar)
+        section.style.display = 'block';
+
+        if (result.error || !result.data) {
+            // NO registrado
+            badge.textContent = 'Sé el primero';
+            badge.className = 'rep-badge no-registrado';
+            info.innerHTML = 'Gana dinero entregando pedidos en tu ciudad. Regístrate como repartidor y empieza hoy mismo. <strong>Verificación 100% automática</strong>, sin esperas.';
+            btn.textContent = '✨ Registrarme como repartidor';
+            btn.className = 'rep-btn registrar';
+            return;
+        }
+
+        var estado = result.data.estado_verificacion;
+
+        if (estado === 'activo') {
+            badge.textContent = '✓ Verificado';
+            badge.className = 'rep-badge activo';
+            info.innerHTML = 'Eres repartidor verificado. Puedes recibir pedidos ahora mismo. <strong>Score: ' + (result.data.score_confianza || 100) + '</strong>';
+            btn.textContent = '🛵 Ir a mi panel de repartidor';
+            btn.className = 'rep-btn ir-panel';
+
+        } else if (estado === 'procesando' || estado === 'revision_manual') {
+            badge.textContent = 'En revisión';
+            badge.className = 'rep-badge pendiente';
+            info.innerHTML = 'Estamos verificando tu identidad. Te avisaremos cuando termine. <strong>Esto puede tomar hasta 24 horas.</strong>';
+            btn.textContent = '⏳ Ver estado de verificación';
+            btn.className = 'rep-btn ver-estado';
+
+        } else if (estado === 'rechazado') {
+            badge.textContent = 'Rechazado';
+            badge.className = 'rep-badge rechazado';
+            var motivo = result.data.motivo_rechazo || 'Revisa los requisitos';
+            info.innerHTML = 'Tu registro fue rechazado. <strong>Motivo:</strong> ' + motivo;
+            btn.textContent = '🔄 Volver a intentar';
+            btn.className = 'rep-btn reintentar';
+
+        } else {
+            // pendiente_registro u otro
+            badge.textContent = 'Completar';
+            badge.className = 'rep-badge pendiente';
+            info.innerHTML = 'Tienes un registro pendiente. <strong>Complétalo para empezar a ganar.</strong>';
+            btn.textContent = '📝 Completar registro';
+            btn.className = 'rep-btn registrar';
+        }
+
+    } catch (e) {
+        console.warn('Error verificando estado repartidor:', e);
+    }
+}
+
+// ================================================================
+// IR A REPARTIDOR
+// ================================================================
+async function irARepartidorDesdePerfil() {
+    try {
+        var session = await window.supabaseClient.auth.getSession();
+        if (!session.data.session) {
+            if (window.showToast) window.showToast('⚠️ Inicia sesión', 'warning');
+            return;
+        }
+
+        var usuarioId = session.data.session.user.id;
+
+        var result = await window.supabaseClient
+            .from('mercado_repartidores')
+            .select('estado_verificacion')
+            .eq('usuario_id', usuarioId)
+            .maybeSingle();
+
+        if (result.error || !result.data) {
+            window.location.href = '/features/mercado/repartidor/registro.html';
+            return;
+        }
+
+        var estado = result.data.estado_verificacion;
+
+        if (estado === 'activo') {
+            window.location.href = '/features/mercado/repartidor/panel.html';
+        } else if (estado === 'rechazado' || estado === 'procesando' || estado === 'revision_manual') {
+            window.location.href = '/features/mercado/repartidor/estado-verificacion.html';
+        } else {
+            window.location.href = '/features/mercado/repartidor/registro.html';
+        }
+
+    } catch (e) {
+        console.error('Error:', e);
+        window.location.href = '/features/mercado/repartidor/registro.html';
+    }
+}
+
+// ================================================================
+// INICIALIZACIÓN
+// ================================================================
+document.addEventListener('DOMContentLoaded', function() {
+    // Esperar a que el perfil cargue, luego verificar estado
+    setTimeout(verificarEstadoRepartidorPerfil, 1500);
+
+    // Idiomas
+    setTimeout(async () => {
+        try {
+            if (typeof window.inicializarIdiomas === 'function') {
+                await window.inicializarIdiomas();
+                console.log('✅ Idiomas aplicados al perfil');
+            }
+        } catch (error) {
+            console.error('Error inicializando idiomas en perfil:', error);
+        }
+    }, 500);
+});
     </script>
 
     <script>
@@ -1182,7 +1444,6 @@
             }
         };
 
-        // Avatar del usuario actual (para reutilizar en las publicaciones)
         function obtenerAvatarActual() {
             if (window.perfilCache && window.perfilCache.avatar_url) {
                 return '<img src="' + window.perfilCache.avatar_url + '" alt="Avatar" style="width:100%;height:100%;object-fit:cover;">';
@@ -1244,7 +1505,6 @@
                         if (p.media_type === 'video') {
                             contenidoHtml += '<video src="' + p.media_url + '" controls preload="metadata"></video>';
                         } else if (p.media_type === 'imagen') {
-                            // Cambio: cursor pointer + onclick para agrandar la foto
                             contenidoHtml += '<img src="' + p.media_url + '" alt="Imagen" loading="lazy" ' +
                                 'style="cursor:pointer;" ' +
                                 'onclick="expandirFotoPublicacion(this.src)" />';
@@ -1701,7 +1961,7 @@
                 if (bioElement) {
                     var tieneClave = bioElement.hasAttribute('data-clave');
                     var bioPersonalizada = usuario.bio && String(usuario.bio).trim() !== '';
-                    var bioDefault = "Explorando el ecosistema Sariel's · WEB3 · Comunidad";
+                    var bioDefault = "Explorando el ecosistema Csariel's · WEB3 · Comunidad";
                     if (bioPersonalizada && usuario.bio !== bioDefault) {
                         if (tieneClave) bioElement.removeAttribute('data-clave');
                         bioElement.textContent = usuario.bio;
@@ -1820,6 +2080,65 @@
 
         console.log('[Perfil] ✅ Módulo de sincronización cargado');
     })();
+    </script>
+
+    <script>
+    // ================================================================
+    // FUNCIONES FALTANTES (para evitar errores de referencia)
+    // ================================================================
+    window.showToast = window.showToast || function(mensaje, tipo, duracion) {
+        var toast = document.getElementById('toast');
+        if (!toast) { console.warn(mensaje); return; }
+        toast.textContent = mensaje;
+        toast.className = 'toast show';
+        if (tipo === 'error') toast.classList.add('error');
+        else if (tipo === 'warning') toast.classList.add('warning');
+        else if (tipo === 'success') toast.classList.add('success');
+        clearTimeout(toast._timeout);
+        toast._timeout = setTimeout(function() { toast.classList.remove('show'); }, duracion || 3000);
+    };
+
+    window.abrirSelectorArchivo = window.abrirSelectorArchivo || function() {
+        var input = document.getElementById('fileInput');
+        if (input) input.click();
+    };
+
+    window.expandirAvatar = window.expandirAvatar || function() { /* placeholder */ };
+    window.expandirFotoPublicacion = window.expandirFotoPublicacion || function(src) {
+        var overlay = document.createElement('div');
+        overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.95);display:flex;align-items:center;justify-content:center;z-index:99999;padding:20px;cursor:pointer;';
+        overlay.innerHTML = '<img src="' + src + '" style="max-width:100%;max-height:100%;border-radius:12px;border:2px solid var(--gold);">';
+        overlay.onclick = function() { overlay.remove(); };
+        document.body.appendChild(overlay);
+    };
+    window.compartirPerfil = window.compartirPerfil || function() { /* placeholder */ };
+    window.generarQRPerfil = window.generarQRPerfil || function() { /* placeholder */ };
+    window.cambiarEstado = window.cambiarEstado || function(estado) { /* placeholder */ };
+    window.cambiarTab = window.cambiarTab || function(tab) {
+        document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
+        var target = document.getElementById('tab-' + tab);
+        if (target) target.classList.add('active');
+        document.querySelectorAll('.perfil-tabs .tab-btn').forEach(function(b) { b.classList.remove('active'); });
+        event.target.classList.add('active');
+    };
+    window.cambiarConexion = window.cambiarConexion || function(tipo) { /* placeholder */ };
+    window.contratarPro = window.contratarPro || function() { /* placeholder */ };
+    window.comprarDomo = window.comprarDomo || function() { /* placeholder */ };
+    window.canjearNFT = window.canjearNFT || function() { /* placeholder */ };
+    window.comprarConCripto = window.comprarConCripto || function() { /* placeholder */ };
+    window.irAMuro = window.irAMuro || function() { window.location.href = '/features/muro/muro.html'; };
+    window.comprarESIM = window.comprarESIM || function() { /* placeholder */ };
+    window.generarQRESIM = window.generarQRESIM || function() { /* placeholder */ };
+    window.sincronizarESIM = window.sincronizarESIM || function() { /* placeholder */ };
+    window.activarESIM = window.activarESIM || function() { /* placeholder */ };
+    window.desactivarESIM = window.desactivarESIM || function() { /* placeholder */ };
+    window.escanearQR = window.escanearQR || function() { /* placeholder */ };
+    window.abrirCamaraQR = window.abrirCamaraQR || function() { /* placeholder */ };
+    window.cerrarCamaraQR = window.cerrarCamaraQR || function() { /* placeholder */ };
+    window.cerrarModalPago = window.cerrarModalPago || function() { /* placeholder */ };
+    window.copiarDireccion = window.copiarDireccion || function() { /* placeholder */ };
+    window.verificarPagoCrypto = window.verificarPagoCrypto || function() { /* placeholder */ };
+    window.subirFoto = window.subirFoto || function() { /* placeholder */ };
     </script>
 </body>
 </html>
