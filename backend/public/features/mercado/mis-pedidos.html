@@ -1,0 +1,785 @@
+<!-- ================================================================
+     MERCADO - SARIEL'S ECOSYSTEM
+     Mis pedidos (vista del comprador)
+     ================================================================ -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>◈ Mis pedidos · Sariel's</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+
+    <script src="/features/shared/js/apariencia-global.js"></script>
+
+    <style>
+        :root {
+            --gold: #D4AF37;
+            --gold-dark: #b8923a;
+            --gold-light: #e8c84a;
+            --green-deep: #0F2D1A;
+            --green-mid: #1a4a2a;
+            --green-bright: #2a6a3a;
+            --space: #05080f;
+            --text-primary: #f0f4f8;
+            --text-secondary: #c0d8e8;
+            --text-muted: #8aa8b8;
+            --glass-bg: rgba(15, 45, 26, 0.55);
+            --glass-border: rgba(212, 175, 55, 0.15);
+            --shadow-gold: 0 8px 32px rgba(212, 175, 55, 0.25);
+            --radius: 16px;
+            --radius-xl: 24px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --success: #00d68f;
+            --danger: #ff3366;
+            --warning: #f7d44a;
+            --cyan: #00e5ff;
+            --purple: #a855f7;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: var(--space);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            background-image: radial-gradient(ellipse at 20% 50%, rgba(26, 74, 42, 0.4) 0%, transparent 60%), radial-gradient(ellipse at 80% 50%, rgba(212, 175, 55, 0.08) 0%, transparent 60%);
+        }
+
+        .nebula { position: fixed; border-radius: 50%; filter: blur(120px); opacity: 0.12; pointer-events: none; z-index: 0; animation: nebula-drift 25s ease-in-out infinite alternate; }
+        .nebula-1 { width: 700px; height: 700px; background: var(--green-bright); top: -15%; right: -15%; }
+        .nebula-2 { width: 600px; height: 600px; background: var(--gold-light); bottom: -15%; left: -15%; animation-delay: -8s; opacity: 0.06; }
+        .nebula-3 { width: 500px; height: 500px; background: var(--purple); top: 50%; left: 50%; transform: translate(-50%, -50%); animation-delay: -15s; opacity: 0.04; }
+        @keyframes nebula-drift { 0% { transform: translate(0,0) scale(1); } 100% { transform: translate(40px,-30px) scale(1.15); } }
+
+        .app { position: relative; z-index: 1; max-width: 800px; width: 100%; margin: 0 auto; padding: 12px 16px 30px; }
+
+        .header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 0 14px; border-bottom: 1px solid var(--glass-border);
+            background: rgba(5, 8, 15, 0.92); position: sticky; top: 0; z-index: 100;
+        }
+        .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+        .logo-hex { font-size: 1.8rem; color: var(--gold); font-family: 'Orbitron', monospace; }
+        .logo-text { font-family: 'Orbitron', monospace; font-size: 1.2rem; color: var(--text-primary); letter-spacing: 2px; }
+        .logo-text span { color: var(--gold); }
+        .logo-badge { font-size: 0.45rem; background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: var(--space); padding: 2px 10px; border-radius: 20px; font-weight: 700; }
+        .token-badge { display: flex; align-items: center; gap: 6px; background: rgba(212,175,55,0.1); border: 1px solid rgba(212,175,55,0.15); padding: 4px 14px; border-radius: 20px; font-size: 0.7rem; color: var(--gold); font-family: 'Orbitron', monospace; cursor: pointer; }
+
+        .main-nav {
+            display: flex; gap: 4px; background: rgba(15,45,26,0.3); border-radius: var(--radius);
+            padding: 4px; border: 1px solid var(--glass-border); margin: 16px 0 20px; overflow-x: auto;
+        }
+        .main-nav .nav-link { padding: 8px 16px; border-radius: 12px; color: var(--text-muted); text-decoration: none; font-size: 0.7rem; white-space: nowrap; transition: var(--transition); }
+        .main-nav .nav-link:hover { color: var(--text-primary); background: rgba(212,175,55,0.05); }
+        .main-nav .nav-link.active { background: rgba(212,175,55,0.12); color: var(--gold); }
+        .main-nav .nav-link.live { color: var(--danger); }
+
+        .btn-back {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border);
+            color: var(--text-muted); padding: 8px 16px; border-radius: 30px;
+            font-size: 0.72rem; text-decoration: none; margin-bottom: 16px;
+            transition: var(--transition); cursor: pointer;
+        }
+        .btn-back:hover { border-color: var(--gold); color: var(--gold); }
+
+        .titulo {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .titulo h1 {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--gold);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .titulo .count {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            background: rgba(0,0,0,0.35);
+            padding: 4px 12px;
+            border-radius: 20px;
+            border: 1px solid var(--glass-border);
+        }
+
+        /* Filtros */
+        .filtros {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            overflow-x: auto;
+            padding: 4px 0;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+        .filtros::-webkit-scrollbar { display: none; }
+        .filtro-btn {
+            flex-shrink: 0;
+            padding: 8px 16px;
+            background: rgba(0,0,0,0.35);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            color: var(--text-muted);
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+        .filtro-btn:hover { border-color: var(--gold); color: var(--gold); }
+        .filtro-btn.active {
+            background: rgba(212,175,55,0.15);
+            border-color: var(--gold);
+            color: var(--gold);
+            font-weight: 600;
+        }
+
+        /* Lista de pedidos */
+        .pedidos-lista {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .pedido-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            padding: 14px 16px;
+            transition: var(--transition);
+            cursor: pointer;
+            display: block;
+            text-decoration: none;
+            color: inherit;
+            position: relative;
+            overflow: hidden;
+        }
+        .pedido-card:hover {
+            border-color: var(--gold);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-gold);
+        }
+        .pedido-card::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: var(--gold);
+        }
+        .pedido-card.pendiente::before { background: var(--warning); }
+        .pedido-card.aceptado::before,
+        .pedido-card.preparando::before { background: var(--cyan); }
+        .pedido-card.listo::before { background: var(--gold); }
+        .pedido-card.asignado::before,
+        .pedido-card.en_camino::before { background: var(--purple); }
+        .pedido-card.entregado::before { background: var(--success); }
+        .pedido-card.cancelado::before,
+        .pedido-card.rechazado::before { background: var(--danger); }
+
+        .pedido-card .header-pedido {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+        .pedido-card .header-pedido .codigo {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--gold);
+            letter-spacing: 1px;
+        }
+        .pedido-card .header-pedido .fecha {
+            font-size: 0.6rem;
+            color: var(--text-muted);
+        }
+        .pedido-card .estado-badge {
+            font-size: 0.55rem;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border: 1px solid var(--line);
+            background: rgba(0,0,0,0.3);
+            white-space: nowrap;
+        }
+        .pedido-card .estado-badge.pendiente { color: var(--warning); border-color: var(--warning); }
+        .pedido-card .estado-badge.aceptado { color: var(--cyan); border-color: var(--cyan); }
+        .pedido-card .estado-badge.preparando { color: var(--cyan); border-color: var(--cyan); }
+        .pedido-card .estado-badge.listo { color: var(--gold); border-color: var(--gold); }
+        .pedido-card .estado-badge.asignado { color: var(--purple); border-color: var(--purple); }
+        .pedido-card .estado-badge.en_camino { color: var(--purple); border-color: var(--purple); }
+        .pedido-card .estado-badge.entregado { color: var(--success); border-color: var(--success); }
+        .pedido-card .estado-badge.cancelado { color: var(--danger); border-color: var(--danger); }
+        .pedido-card .estado-badge.rechazado { color: var(--danger); border-color: var(--danger); }
+
+        .pedido-card .tienda-nombre {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .pedido-card .resumen-items {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+            display: -webkit-box;
+            -webkit-line-clamp: 1;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .pedido-card .footer-pedido {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 10px;
+            border-top: 1px solid var(--glass-border);
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .pedido-card .footer-pedido .total {
+            font-family: 'Orbitron', monospace;
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--gold);
+        }
+        .pedido-card .footer-pedido .accion {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .pedido-card .footer-pedido .accion.ver {
+            color: var(--gold);
+            font-weight: 600;
+        }
+
+        /* Loading */
+        .loading-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+        }
+        .loading-state .spinner {
+            width: 40px; height: 40px;
+            border: 3px solid rgba(212, 175, 55, 0.15);
+            border-top-color: var(--gold);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 12px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-xl);
+        }
+        .empty-state .icon {
+            font-size: 3.5rem;
+            display: block;
+            margin-bottom: 16px;
+            color: var(--gold);
+            opacity: 0.4;
+        }
+        .empty-state h3 {
+            font-family: 'Orbitron', monospace;
+            color: var(--text-secondary);
+            font-size: 1rem;
+            margin-bottom: 8px;
+        }
+        .empty-state p {
+            font-size: 0.85rem;
+            margin-bottom: 20px;
+        }
+        .empty-state .btn-ir-mercado {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 28px;
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            color: var(--space);
+            border: none;
+            border-radius: 30px;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            font-size: 0.8rem;
+            cursor: pointer;
+            text-decoration: none;
+            transition: var(--transition);
+        }
+        .empty-state .btn-ir-mercado:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-gold);
+        }
+
+        .toast {
+            position: fixed; bottom: 30px; right: 20px;
+            background: var(--green-deep); border: 1px solid var(--gold);
+            color: var(--gold); padding: 14px 24px;
+            border-radius: 12px; font-size: 0.8rem;
+            transform: translateY(100px); opacity: 0;
+            transition: all 0.4s ease; z-index: 9999;
+            max-width: 320px; pointer-events: none;
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.error { border-color: var(--danger); color: var(--danger); }
+        .toast.warning { border-color: var(--warning); color: var(--warning); }
+        .toast.success { border-color: var(--success); color: var(--success); }
+
+        .footer {
+            margin-top: 30px; padding-top: 16px;
+            border-top: 1px solid var(--glass-border);
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 0.7rem; color: var(--text-muted);
+            flex-wrap: wrap; gap: 10px;
+        }
+        .footer .brand { color: var(--gold); font-weight: 600; }
+        .footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
+        .footer-links a { color: var(--text-muted); text-decoration: none; }
+        .footer-links a:hover { color: var(--gold); }
+
+        html.tema-dia, html[data-tema="dia"] {
+            --space: #f5f7fa;
+            --text-primary: #1a2332;
+            --text-secondary: #4a5568;
+            --text-muted: #718096;
+            --glass-bg: rgba(255, 255, 255, 0.9);
+            --glass-border: rgba(0, 0, 0, 0.1);
+        }
+        html.tema-dia body, html[data-tema="dia"] body {
+            background: #f5f7fa !important;
+            background-image: radial-gradient(ellipse at 20% 50%, rgba(212, 175, 55, 0.05) 0%, transparent 60%), radial-gradient(ellipse at 80% 50%, rgba(42, 106, 58, 0.05) 0%, transparent 60%) !important;
+            color: var(--text-primary) !important;
+        }
+        html.tema-dia .nebula, html[data-tema="dia"] .nebula { display: none !important; }
+        html.tema-dia .header, html[data-tema="dia"] .header { background: rgba(255, 255, 255, 0.95) !important; border-bottom-color: rgba(0, 0, 0, 0.1) !important; }
+        html.tema-dia .logo-text, html[data-tema="dia"] .logo-text { color: var(--text-primary) !important; }
+        html.tema-dia .main-nav, html[data-tema="dia"] .main-nav { background: rgba(255, 255, 255, 0.7) !important; border-color: rgba(0, 0, 0, 0.1) !important; }
+        html.tema-dia .main-nav .nav-link, html[data-tema="dia"] .main-nav .nav-link { color: #718096 !important; }
+        html.tema-dia .main-nav .nav-link.active, html[data-tema="dia"] .main-nav .nav-link.active { background: rgba(212, 175, 55, 0.15) !important; color: var(--gold) !important; }
+        html.tema-dia .footer, html[data-tema="dia"] .footer { color: #718096 !important; border-top-color: rgba(0, 0, 0, 0.1) !important; }
+
+        @media (max-width: 480px) {
+            .titulo h1 { font-size: 1.05rem; }
+            .pedido-card { padding: 12px 14px; }
+            .pedido-card .footer-pedido .total { font-size: 0.9rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="nebula nebula-1" aria-hidden="true"></div>
+    <div class="nebula nebula-2" aria-hidden="true"></div>
+    <div class="nebula nebula-3" aria-hidden="true"></div>
+
+    <div class="app">
+
+        <header class="header">
+            <a href="/" class="logo" aria-label="Ir a la página de inicio">
+                <span class="logo-hex">◈</span>
+                <span class="logo-text">Sariel<span>'s</span></span>
+                <span class="logo-badge">✦ WEB3</span>
+            </a>
+            <div class="header-actions">
+                <span class="token-badge" onclick="verTokens()">
+                    ◈ <span id="tokenBadgeCantidad">0</span> Es.stoks
+                </span>
+            </div>
+        </header>
+
+        <nav class="main-nav" aria-label="Navegación principal">
+            <a href="/" class="nav-link">⌂ Inicio</a>
+            <a href="/features/muro/muro.html" class="nav-link">◇ Muro</a>
+            <a href="/features/perfil/perfil.html" class="nav-link">◆ Perfil</a>
+            <a href="/features/mensajes/contactos.html" class="nav-link">◈ Contactos</a>
+            <a href="/features/live/live.html" class="nav-link live">◉ Live</a>
+            <a href="/features/internet/internet.html" class="nav-link">◈ Internet</a>
+            <a href="/features/videos/videos.html" class="nav-link">🎬 Videos</a>
+            <a href="/features/grupos/grupos.html" class="nav-link">👥 Grupos</a>
+            <a href="/features/mercado/index.html" class="nav-link active">🛒 Mercado</a>
+        </nav>
+
+        <a href="/features/mercado/index.html" class="btn-back">
+            ← <span data-clave="mercado_volver">Volver al Mercado</span>
+        </a>
+
+        <div class="titulo">
+            <h1>📋 <span data-clave="mercado_mis_pedidos_titulo">Mis pedidos</span></h1>
+            <span class="count" id="contadorPedidos">0</span>
+        </div>
+
+        <div class="filtros" id="filtrosContainer">
+            <button class="filtro-btn active" data-filtro="todos" onclick="filtrarPedidos('todos', this)">
+                <span>◈</span> <span data-clave="mercado_todos">Todos</span>
+            </button>
+            <button class="filtro-btn" data-filtro="activos" onclick="filtrarPedidos('activos', this)">
+                <span>🔥</span> <span data-clave="mercado_activos">Activos</span>
+            </button>
+            <button class="filtro-btn" data-filtro="entregados" onclick="filtrarPedidos('entregados', this)">
+                <span>✅</span> <span data-clave="mercado_entregados">Entregados</span>
+            </button>
+            <button class="filtro-btn" data-filtro="cancelados" onclick="filtrarPedidos('cancelados', this)">
+                <span>❌</span> <span data-clave="mercado_cancelados">Cancelados</span>
+            </button>
+        </div>
+
+        <div id="pedidosContainer">
+            <div class="loading-state">
+                <div class="spinner"></div>
+                <p data-clave="mercado_cargando_pedidos">Cargando pedidos...</p>
+            </div>
+        </div>
+
+        <footer class="footer">
+            <span><span class="brand">◈ Sariel's</span> · <span data-clave="mercado_footer">Sabor al Paladar · WEB3</span></span>
+            <div class="footer-links">
+                <a href="/terminos" data-clave="footer_terminos">📜 Términos</a>
+                <a href="/privacidad" data-clave="footer_privacidad">🔒 Privacidad</a>
+                <a href="/cookies" data-clave="footer_cookies">🍪 Cookies</a>
+                <a href="/live-terminos" data-clave="footer_terminos_live">📡 Términos de Live</a>
+                <span style="opacity:0.3;">⚡ Polygon</span>
+            </div>
+        </footer>
+
+    </div>
+
+    <div class="toast" id="toast" role="alert" aria-live="polite"></div>
+
+    <div id="errorBanner" style="
+        display:none; position:fixed; top:0; left:0; right:0; z-index:99999;
+        background:#ff3366; color:#fff; padding:12px 16px; font-family:monospace;
+        font-size:0.75rem; word-break:break-word; box-shadow:0 4px 20px rgba(0,0,0,0.4);
+    ">
+        <strong>⚠️ Error detectado:</strong>
+        <span id="errorBannerText"></span>
+        <button onclick="document.getElementById('errorBanner').style.display='none'"
+            style="float:right; background:none; border:1px solid #fff; color:#fff; border-radius:6px; padding:2px 10px; cursor:pointer;">
+            Cerrar
+        </button>
+    </div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="/features/shared/js/idiomas.js"></script>
+
+<script>
+// ================================================================
+// CONFIGURACIÓN
+// ================================================================
+var supabaseUrl = 'https://zultnlogdoajehbswlih.supabase.co';
+var supabaseKey = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
+var supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+window.supabaseClient = supabaseClient;
+var supabase = supabaseClient;
+
+// ================================================================
+// ESTADO
+// ================================================================
+var sessionUser = null;
+var pedidosCache = [];
+var tiendasCache = {};
+var filtroActual = 'todos';
+
+// Estados considerados "activos"
+var ESTADOS_ACTIVOS = ['pendiente', 'aceptado', 'preparando', 'listo', 'asignado', 'en_camino'];
+var ESTADOS_ENTREGADOS = ['entregado'];
+var ESTADOS_CANCELADOS = ['cancelado', 'rechazado'];
+
+// ================================================================
+// BANNER DE ERRORES
+// ================================================================
+function mostrarErrorEnPantalla(mensaje) {
+    var banner = document.getElementById('errorBanner');
+    var texto = document.getElementById('errorBannerText');
+    if (banner && texto) { texto.textContent = mensaje; banner.style.display = 'block'; }
+}
+window.addEventListener('error', function (event) {
+    mostrarErrorEnPantalla((event.message || 'Error desconocido') + ' — línea ' + event.lineno);
+});
+window.addEventListener('unhandledrejection', function (event) {
+    mostrarErrorEnPantalla('Promesa rechazada: ' + (event.reason && event.reason.message ? event.reason.message : event.reason));
+});
+
+// ================================================================
+// TOAST
+// ================================================================
+function showToast(mensaje, tipo) {
+    try {
+        var toastEl = document.getElementById('toast');
+        if (!toastEl) { console.warn(mensaje); return; }
+        toastEl.textContent = mensaje;
+        toastEl.className = 'toast show';
+        if (tipo === 'error') toastEl.classList.add('error');
+        else if (tipo === 'warning') toastEl.classList.add('warning');
+        else if (tipo === 'success') toastEl.classList.add('success');
+        clearTimeout(toastEl._timeout);
+        toastEl._timeout = setTimeout(function() {
+            toastEl.classList.remove('show');
+        }, 3000);
+    } catch (e) { console.warn('Toast error:', e); }
+}
+
+// ================================================================
+// HELPERS
+// ================================================================
+function escapeHTML(texto) {
+    if (!texto) return '';
+    var div = document.createElement('div');
+    div.textContent = texto;
+    return div.innerHTML;
+}
+
+function formatearPrecio(n) {
+    return '$' + parseFloat(n || 0).toFixed(2);
+}
+
+function formatearFecha(fecha) {
+    if (!fecha) return '—';
+    try {
+        var d = new Date(fecha);
+        return d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) +
+            ' · ' +
+            d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+    } catch (e) { return '—'; }
+}
+
+function traducirEstado(estado) {
+    var mapa = {
+        'pendiente': '⏳ Pendiente',
+        'aceptado': '✓ Aceptado',
+        'preparando': '🍳 Preparando',
+        'listo': '📦 Listo',
+        'asignado': '🛵 Asignado',
+        'en_camino': '🛵 En camino',
+        'entregado': '✅ Entregado',
+        'cancelado': '❌ Cancelado',
+        'rechazado': '❌ Rechazado'
+    };
+    return mapa[estado] || estado;
+}
+
+// ================================================================
+// CARGAR USUARIO
+// ================================================================
+async function cargarUsuarioActual() {
+    try {
+        var result = await supabase.auth.getSession();
+        var session = result.data.session;
+        if (!session) { sessionUser = null; return null; }
+        sessionUser = session.user;
+        var u = await supabase
+            .from('usuarios')
+            .select('nombre, handle, avatar_url, tokens')
+            .eq('id', session.user.id)
+            .single();
+        if (!u.error && u.data) {
+            var badge = document.getElementById('tokenBadgeCantidad');
+            if (badge) badge.textContent = u.data.tokens || 0;
+        }
+        return u.data || null;
+    } catch (e) { console.error('Error cargando usuario:', e); return null; }
+}
+
+// ================================================================
+// CARGAR PEDIDOS DEL COMPRADOR
+// ================================================================
+async function cargarPedidos() {
+    var container = document.getElementById('pedidosContainer');
+    if (!container) return;
+
+    container.innerHTML = '<div class="loading-state"><div class="spinner"></div><p data-clave="mercado_cargando_pedidos">Cargando pedidos...</p></div>';
+
+    try {
+        var result = await supabase
+            .from('mercado_pedidos')
+            .select('*')
+            .eq('comprador_id', sessionUser.id)
+            .order('created_at', { ascending: false })
+            .limit(100);
+
+        if (result.error) throw result.error;
+        pedidosCache = result.data || [];
+
+        // Cargar tiendas en batch
+        var tiendaIds = [];
+        pedidosCache.forEach(function (p) {
+            if (p.tienda_id && tiendaIds.indexOf(p.tienda_id) === -1) {
+                tiendaIds.push(p.tienda_id);
+            }
+        });
+
+        if (tiendaIds.length > 0) {
+            var tiendasResult = await supabase
+                .from('mercado_tiendas')
+                .select('id, nombre_negocio, slug, logo_url')
+                .in('id', tiendaIds);
+
+            if (!tiendasResult.error && tiendasResult.data) {
+                tiendasResult.data.forEach(function (t) {
+                    tiendasCache[t.id] = t;
+                });
+            }
+        }
+
+        // Actualizar contador
+        var contador = document.getElementById('contadorPedidos');
+        if (contador) contador.textContent = pedidosCache.length;
+
+        renderizarPedidos();
+
+    } catch (e) {
+        console.error('Error cargando pedidos:', e);
+        container.innerHTML = '<div class="empty-state"><span class="icon">⚠️</span><h3>Error al cargar</h3><p>' + escapeHTML(e.message) + '</p></div>';
+        showToast('❌ Error al cargar pedidos', 'error');
+    }
+}
+
+// ================================================================
+// FILTRAR PEDIDOS
+// ================================================================
+function filtrarPedidos(filtro, btn) {
+    filtroActual = filtro;
+    document.querySelectorAll('.filtro-btn').forEach(function (b) {
+        b.classList.remove('active');
+    });
+    if (btn) btn.classList.add('active');
+    renderizarPedidos();
+}
+
+// ================================================================
+// RENDERIZAR PEDIDOS
+// ================================================================
+function renderizarPedidos() {
+    var container = document.getElementById('pedidosContainer');
+    if (!container) return;
+
+    var filtrados = pedidosCache.slice();
+
+    if (filtroActual === 'activos') {
+        filtrados = filtrados.filter(function (p) {
+            return ESTADOS_ACTIVOS.indexOf(p.estado) !== -1;
+        });
+    } else if (filtroActual === 'entregados') {
+        filtrados = filtrados.filter(function (p) {
+            return ESTADOS_ENTREGADOS.indexOf(p.estado) !== -1;
+        });
+    } else if (filtroActual === 'cancelados') {
+        filtrados = filtrados.filter(function (p) {
+            return ESTADOS_CANCELADOS.indexOf(p.estado) !== -1;
+        });
+    }
+
+    if (filtrados.length === 0) {
+        var mensajeVacio = filtroActual === 'todos'
+            ? '<h3 data-clave="mercado_sin_pedidos">Aún no tienes pedidos</h3><p data-clave="mercado_sin_pedidos_desc">Cuando hagas un pedido aparecerá aquí.</p>'
+            : '<h3 data-clave="mercado_sin_pedidos_filtro">Sin pedidos en este filtro</h3><p data-clave="mercado_sin_pedidos_filtro_desc">Prueba con otro filtro.</p>';
+
+        container.innerHTML = '<div class="empty-state">' +
+            '<span class="icon">📋</span>' +
+            mensajeVacio +
+            '<a href="/features/mercado/index.html" class="btn-ir-mercado">🛒 <span data-clave="mercado_ir_mercado">Ir al Mercado</span></a>' +
+        '</div>';
+
+        if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(container);
+        return;
+    }
+
+    var html = '<div class="pedidos-lista">';
+
+    filtrados.forEach(function (p) {
+        var estado = (p.estado || 'pendiente').toLowerCase();
+        var tienda = tiendasCache[p.tienda_id] || null;
+        var tiendaNombre = tienda ? tienda.nombre_negocio : 'Tienda';
+
+        // Armar resumen de items
+        var resumenItems = 'Pedido';
+        if (p.tipo_entrega === 'pickup') resumenItems = '🏪 Recoger en tienda';
+        else resumenItems = '🛵 Delivery';
+
+        html += '<a href="/features/mercado/pedido.html?id=' + p.id + '" class="pedido-card ' + estado + '">' +
+            '<div class="header-pedido">' +
+                '<div>' +
+                    '<div class="codigo">' + escapeHTML(p.codigo || '—') + '</div>' +
+                    '<div class="fecha">' + formatearFecha(p.created_at) + '</div>' +
+                '</div>' +
+                '<span class="estado-badge ' + estado + '">' + traducirEstado(estado) + '</span>' +
+            '</div>' +
+            '<div class="tienda-nombre">🏪 ' + escapeHTML(tiendaNombre) + '</div>' +
+            '<div class="resumen-items">' + resumenItems + ' · ' + (p.total_items || 0) + ' item(s)</div>' +
+            '<div class="footer-pedido">' +
+                '<div class="total">' + formatearPrecio(p.total_mxn) + '</div>' +
+                '<div class="accion ver">' +
+                    '<span data-clave="mercado_ver_detalle">Ver detalle</span> →' +
+                '</div>' +
+            '</div>' +
+        '</a>';
+    });
+
+    html += '</div>';
+    container.innerHTML = html;
+
+    if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(container);
+}
+
+// ================================================================
+// VER TOKENS
+// ================================================================
+function verTokens() { window.location.href = '/features/perfil/perfil.html'; }
+
+// ================================================================
+// INICIALIZACIÓN
+// ================================================================
+document.addEventListener('DOMContentLoaded', async function () {
+    await cargarUsuarioActual();
+
+    if (!sessionUser) {
+        window.location.href = '/';
+        return;
+    }
+
+    await cargarPedidos();
+
+    setTimeout(async function () {
+        try {
+            if (typeof window.inicializarIdiomas === 'function') {
+                await window.inicializarIdiomas();
+                console.log('✅ Idiomas aplicados a mis pedidos');
+            }
+        } catch (e) { console.warn('Error idiomas:', e); }
+    }, 400);
+});
+
+// ================================================================
+// EXPOSICIÓN GLOBAL
+// ================================================================
+window.filtrarPedidos = filtrarPedidos;
+window.verTokens = verTokens;
+window.showToast = showToast;
+window.cargarPedidos = cargarPedidos;
+</script>
+</body>
+</html>
