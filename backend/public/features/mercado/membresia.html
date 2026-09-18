@@ -2,6 +2,9 @@
      MERCADO - SARIEL'S ECOSYSTEM
      Membresías del Mercado · Pago con NOWPayments
      Ruta: /features/mercado/membresia.html
+     Esquema real: mercado_membresias_pagos (tienda_id NOT NULL,
+                   7 estados, plan_slug/plan_nombre libres)
+     Requiere: tener tienda creada (nivel + activa_hasta en tienda)
      ================================================================ -->
 <!DOCTYPE html>
 <html lang="es">
@@ -131,10 +134,8 @@
             flex-wrap: wrap;
             justify-content: center;
         }
-        .hero .pagos-aceptados .criptos {
-            display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;
-        }
-        .hero .pagos-aceptados .cripto-tag {
+        .hero .criptos { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+        .hero .cripto-tag {
             background: rgba(212,175,55,0.1);
             border: 1px solid rgba(212,175,55,0.2);
             color: var(--gold);
@@ -145,38 +146,51 @@
             font-size: 0.6rem;
         }
 
-        /* Membresía activa */
-        .membresia-activa-box {
-            background: linear-gradient(135deg, rgba(0,214,143,0.1), rgba(15,45,26,0.4));
-            border: 1px solid rgba(0,214,143,0.4);
+        /* Info tienda actual */
+        .tienda-actual-box {
+            background: linear-gradient(135deg, rgba(0,214,143,0.08), rgba(15,45,26,0.4));
+            border: 1px solid rgba(0,214,143,0.3);
             border-radius: var(--radius-xl);
-            padding: 20px;
+            padding: 18px;
             margin-bottom: 24px;
             display: flex;
-            justify-content: space-between;
             align-items: center;
             gap: 14px;
             flex-wrap: wrap;
         }
-        .membresia-activa-box .info-activa {
+        .tienda-actual-box .info-tienda {
             flex: 1; min-width: 200px;
         }
-        .membresia-activa-box .info-activa .titulo-activa {
+        .tienda-actual-box .info-tienda .nombre-tienda {
             display: flex; align-items: center; gap: 8px;
             font-family: 'Orbitron', monospace;
             font-size: 0.9rem;
-            color: var(--success);
+            color: var(--text-primary);
             font-weight: 700;
             margin-bottom: 4px;
         }
-        .membresia-activa-box .info-activa .detalle-activa {
-            font-size: 0.75rem;
+        .tienda-actual-box .info-tienda .detalle-tienda {
+            font-size: 0.72rem;
             color: var(--text-secondary);
+            line-height: 1.5;
         }
-        .membresia-activa-box .info-activa .detalle-activa strong {
+        .tienda-actual-box .info-tienda .detalle-tienda strong {
             color: var(--gold);
         }
-        .membresia-activa-box .btn-gestionar {
+        .badge-nivel {
+            font-size: 0.5rem;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .badge-nivel.max { background: linear-gradient(135deg, #a855f7, #7c3aed); color: #fff; }
+        .badge-nivel.pro { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); }
+        .badge-nivel.basico { background: rgba(255,255,255,0.15); color: #fff; border: 1px solid rgba(255,255,255,0.3); }
+
+        .tienda-actual-box .btn-panel {
             padding: 10px 20px;
             background: transparent;
             border: 1px solid var(--success);
@@ -190,7 +204,7 @@
             text-decoration: none;
             white-space: nowrap;
         }
-        .membresia-activa-box .btn-gestionar:hover {
+        .tienda-actual-box .btn-panel:hover {
             background: rgba(0,214,143,0.1);
             transform: translateY(-2px);
         }
@@ -242,6 +256,23 @@
         .plan-card.premium:hover {
             box-shadow: 0 8px 32px rgba(168,85,247,0.3);
             border-color: var(--purple);
+        }
+        .plan-card.actual {
+            border-color: var(--success);
+            background: linear-gradient(135deg, rgba(0,214,143,0.08), rgba(15,45,26,0.6));
+        }
+        .plan-card.actual::before {
+            content: '✓ TU PLAN';
+            position: absolute;
+            top: 14px; right: -34px;
+            background: linear-gradient(135deg, var(--success), #00a86b);
+            color: #fff;
+            font-family: 'Orbitron', monospace;
+            font-size: 0.55rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            padding: 4px 40px;
+            transform: rotate(45deg);
         }
 
         .plan-card .plan-nombre {
@@ -360,9 +391,10 @@
             background: rgba(0,214,143,0.15) !important;
             color: var(--success) !important;
             border: 1px solid var(--success);
+            opacity: 1;
         }
 
-        /* Sección FAQ */
+        /* FAQ */
         .faq-section {
             background: var(--glass-bg);
             border: 1px solid var(--glass-border);
@@ -403,7 +435,7 @@
             padding-left: 18px;
         }
 
-        /* Modal pago */
+        /* Modal */
         .modal-overlay {
             position: fixed; inset: 0;
             background: rgba(0,0,0,0.88); backdrop-filter: blur(10px);
@@ -597,6 +629,32 @@
             margin: 0 auto 12px;
         }
 
+        .empty-state {
+            text-align: center; padding: 60px 20px;
+            color: var(--text-muted); background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-xl);
+        }
+        .empty-state .icon {
+            font-size: 3.5rem; display: block; margin-bottom: 16px;
+            color: var(--gold); opacity: 0.4;
+        }
+        .empty-state h3 {
+            font-family: 'Orbitron', monospace;
+            color: var(--text-secondary); font-size: 1rem; margin-bottom: 8px;
+        }
+        .empty-state p { font-size: 0.85rem; margin-bottom: 20px; }
+        .empty-state .btn-ir {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 12px 28px;
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            color: var(--space); border: none; border-radius: 30px;
+            font-family: 'Orbitron', monospace; font-weight: 700;
+            font-size: 0.8rem; cursor: pointer; text-decoration: none;
+            transition: var(--transition);
+        }
+        .empty-state .btn-ir:hover { transform: translateY(-2px); box-shadow: var(--shadow-gold); }
+
         .toast {
             position: fixed; bottom: 30px; right: 20px;
             background: var(--green-deep); border: 1px solid var(--gold);
@@ -685,82 +743,14 @@
             <a href="/features/mercado/index.html" class="nav-link active">🛒 Mercado</a>
         </nav>
 
-        <a href="/features/mercado/index.html" class="btn-back">
-            ← <span data-clave="mercado_volver">Volver al Mercado</span>
+        <a href="/features/mercado/vendedor/panel.html" class="btn-back">
+            ← <span data-clave="vendedor_volver_panel">Volver al panel</span>
         </a>
 
-        <!-- Hero -->
-        <div class="hero">
-            <span class="etiqueta">◈ Sariel's Mercado Web3</span>
-            <h1>Haz crecer tu negocio con <span>membresía premium</span></h1>
-            <p>
-                Abre tu tienda en el Mercado, sube productos sin límites, recibe pedidos
-                y cobra con criptomonedas. Elige el plan que mejor se adapte a ti.
-            </p>
-            <div class="pagos-aceptados">
-                <span>💎 Pagos aceptados:</span>
-                <div class="criptos">
-                    <span class="cripto-tag">BTC</span>
-                    <span class="cripto-tag">ETH</span>
-                    <span class="cripto-tag">USDT</span>
-                    <span class="cripto-tag">USDC</span>
-                    <span class="cripto-tag">+50 más</span>
-                </div>
-            </div>
-        </div>
-
-        <div id="membresiaActivaBox"></div>
-
-        <!-- Grid de planes -->
-        <div class="planes-grid" id="planesGrid">
+        <div id="contenidoPrincipal">
             <div class="loading-state">
                 <div class="spinner"></div>
-                <p>Cargando planes...</p>
-            </div>
-        </div>
-
-        <!-- FAQ -->
-        <div class="faq-section">
-            <h2>❓ Preguntas frecuentes</h2>
-
-            <div class="faq-item">
-                <div class="pregunta">¿Qué métodos de pago aceptan?</div>
-                <div class="respuesta">
-                    Aceptamos pagos en más de 50 criptomonedas (BTC, ETH, USDT, USDC, BNB, MATIC, etc.)
-                    mediante NOWPayments. El pago se confirma en la red blockchain y tu membresía se activa al instante.
-                </div>
-            </div>
-
-            <div class="faq-item">
-                <div class="pregunta">¿Cuánto tarda en activarse mi membresía?</div>
-                <div class="respuesta">
-                    Normalmente entre 5 y 30 minutos, dependiendo de la confirmación de la red blockchain.
-                    Recibirás una notificación cuando esté activa.
-                </div>
-            </div>
-
-            <div class="faq-item">
-                <div class="pregunta">¿Puedo cancelar en cualquier momento?</div>
-                <div class="respuesta">
-                    Sí. Tu membresía se mantiene activa hasta la fecha de vencimiento y no se renueva
-                    automáticamente. Puedes volver a pagar cuando quieras.
-                </div>
-            </div>
-
-            <div class="faq-item">
-                <div class="pregunta">¿Qué pasa si mi membresía vence?</div>
-                <div class="respuesta">
-                    Tu tienda se pausa automáticamente y no podrás recibir nuevos pedidos hasta renovar.
-                    Tus productos y datos se mantienen guardados.
-                </div>
-            </div>
-
-            <div class="faq-item">
-                <div class="pregunta">¿Cómo cobro mis ventas?</div>
-                <div class="respuesta">
-                    El comprador paga el producto en la app y tú lo recibes en tu balance.
-                    El envío lo cobra el repartidor en efectivo directamente al cliente.
-                </div>
+                <p>Cargando...</p>
             </div>
         </div>
 
@@ -813,23 +803,23 @@ var supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 window.supabaseClient = supabaseClient;
 var supabase = supabaseClient;
 
-// URL del backend para crear pagos
-var API_BASE = ''; // mismo origen
+var API_BASE = '';
 
-// Tipo de cambio aprox USD/MXN (actualízalo o hazlo desde backend)
+// Tipo de cambio aprox
 var TIPO_CAMBIO_MXN_USD = 17.5;
 
 // ================================================================
 // ESTADO
 // ================================================================
 var sessionUser = null;
-var membresiaActiva = null;
+var tiendaActual = null;
 var planSeleccionado = null;
-var pagoActual = null; // { pago_id, pay_address, pay_amount, pay_currency, ... }
+var pagoActual = null;
 var pollingPagoTimer = null;
-var metodoPagoElegido = 'usdttrc20'; // cripto por defecto
+var metodoPagoElegido = 'usdttrc20';
+var pagoEnCurso = null;
 
-// Planes disponibles (precios en MXN)
+// Planes (deben coincidir con el backend)
 var PLANES = {
     basico: {
         id: 'basico',
@@ -889,13 +879,16 @@ var PLANES = {
     }
 };
 
-// Criptos soportadas por NOWPayments (las más populares)
+// Criptos soportadas
 var CRIPTOS = [
     { id: 'usdttrc20', nombre: 'USDT (TRC20)', emoji: '💵' },
     { id: 'usdc', nombre: 'USDC (ERC20)', emoji: '💎' },
     { id: 'btc', nombre: 'Bitcoin (BTC)', emoji: '₿' },
     { id: 'eth', nombre: 'Ethereum (ETH)', emoji: 'Ξ' }
 ];
+
+// Estados válidos de mercado_membresias_pagos
+// pendiente, pagando, confirmando, pagada, cancelada, expirada, fallida
 
 // ================================================================
 // BANNER DE ERRORES
@@ -961,6 +954,13 @@ function diasRestantes(fecha_fin) {
     return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
 }
 
+function membresiaActiva() {
+    if (!tiendaActual || !tiendaActual.activa_hasta) return false;
+    try {
+        return new Date(tiendaActual.activa_hasta) > new Date();
+    } catch (e) { return false; }
+}
+
 // ================================================================
 // CARGAR USUARIO
 // ================================================================
@@ -980,80 +980,146 @@ async function cargarUsuarioActual() {
             if (badge) badge.textContent = u.data.tokens || 0;
         }
         return u.data || null;
-    } catch (e) { console.error('Error cargando usuario:', e); return null; }
+    } catch (e) { console.error('Error usuario:', e); return null; }
 }
 
 // ================================================================
-// CARGAR MEMBRESÍA ACTIVA
+// CARGAR TIENDA DEL USUARIO
 // ================================================================
-async function cargarMembresiaActiva() {
+async function cargarTienda() {
     try {
         var result = await supabase
-            .from('mercado_membresias')
-            .select('*')
+            .from('mercado_tiendas')
+            .select('id, nombre_negocio, slug, nivel, activa_hasta, estado')
             .eq('usuario_id', sessionUser.id)
-            .eq('estado', 'activa')
-            .gte('fecha_fin', new Date().toISOString())
-            .order('fecha_fin', { ascending: false })
-            .limit(1)
             .maybeSingle();
 
         if (result.error && result.error.code !== 'PGRST116') throw result.error;
-        membresiaActiva = result.data || null;
-        return membresiaActiva;
+        tiendaActual = result.data || null;
+        return tiendaActual;
     } catch (e) {
-        console.error('Error cargando membresía:', e);
-        membresiaActiva = null;
+        console.error('Error tienda:', e);
+        tiendaActual = null;
         return null;
     }
 }
 
 // ================================================================
-// RENDER: MENSAJE DE MEMBRESÍA ACTIVA
+// CARGAR PAGO EN CURSO (si hay)
 // ================================================================
-function renderMembresiaActivaBox() {
-    var cont = document.getElementById('membresiaActivaBox');
-    if (!cont) return;
+async function cargarPagoEnCurso() {
+    try {
+        var result = await supabase
+            .from('mercado_membresias_pagos')
+            .select('*')
+            .eq('tienda_id', tiendaActual.id)
+            .in('estado', ['pendiente', 'pagando', 'confirmando'])
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
 
-    if (!membresiaActiva) {
-        cont.innerHTML = '';
-        return;
+        if (result.error && result.error.code !== 'PGRST116') throw result.error;
+
+        if (result.data) {
+            pagoEnCurso = result.data;
+            return pagoEnCurso;
+        }
+        pagoEnCurso = null;
+        return null;
+    } catch (e) {
+        console.error('Error pago en curso:', e);
+        pagoEnCurso = null;
+        return null;
     }
-
-    var plan = PLANES[membresiaActiva.plan] || PLANES.basico;
-    var dias = diasRestantes(membresiaActiva.fecha_fin);
-
-    cont.innerHTML = '<div class="membresia-activa-box">' +
-        '<div class="info-activa">' +
-            '<div class="titulo-activa">' +
-                '✅ Membresía ' + plan.nombre + ' activa' +
-            '</div>' +
-            '<div class="detalle-activa">' +
-                'Vence el <strong>' + formatearFecha(membresiaActiva.fecha_fin) + '</strong> · ' +
-                '<strong>' + dias + ' día' + (dias === 1 ? '' : 's') + '</strong> restantes' +
-            '</div>' +
-        '</div>' +
-        '<a href="/features/mercado/vendedor/panel.html" class="btn-gestionar">' +
-            '🏪 Ir a mi tienda →' +
-        '</a>' +
-    '</div>';
 }
 
 // ================================================================
-// RENDER: GRID DE PLANES
+// RENDER PRINCIPAL
 // ================================================================
-function renderPlanes() {
-    var cont = document.getElementById('planesGrid');
+function renderPrincipal() {
+    var cont = document.getElementById('contenidoPrincipal');
     if (!cont) return;
 
+    // Sin tienda → no puede comprar membresía
+    if (!tiendaActual) {
+        cont.innerHTML = '<div class="empty-state">' +
+            '<span class="icon">🏪</span>' +
+            '<h3 data-clave="membresia_sin_tienda">Primero crea tu tienda</h3>' +
+            '<p data-clave="membresia_sin_tienda_desc">Para comprar una membresía necesitas tener una tienda creada.</p>' +
+            '<a href="/features/mercado/vendedor/panel.html" class="btn-ir">' +
+                '🏪 <span data-clave="membresia_crear_tienda">Crear mi tienda</span>' +
+            '</a>' +
+        '</div>';
+        if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(cont);
+        return;
+    }
+
     var html = '';
+
+    // Hero
+    html += '<div class="hero">' +
+        '<span class="etiqueta">◈ Sariel\'s Mercado Web3</span>' +
+        '<h1>Haz crecer tu negocio con <span>membresía premium</span></h1>' +
+        '<p>Más productos, más alcance, más ventas. Elige el plan que mejor se adapte a ti.</p>' +
+        '<div class="pagos-aceptados">' +
+            '<span>💎 Pagos aceptados:</span>' +
+            '<div class="criptos">' +
+                '<span class="cripto-tag">BTC</span>' +
+                '<span class="cripto-tag">ETH</span>' +
+                '<span class="cripto-tag">USDT</span>' +
+                '<span class="cripto-tag">USDC</span>' +
+                '<span class="cripto-tag">+50 más</span>' +
+            '</div>' +
+        '</div>' +
+    '</div>';
+
+    // Info tienda actual
+    var planActual = (tiendaActual.nivel || 'basico').toLowerCase();
+    var activa = membresiaActiva();
+    var dias = diasRestantes(tiendaActual.activa_hasta);
+
+    html += '<div class="tienda-actual-box">' +
+        '<div class="info-tienda">' +
+            '<div class="nombre-tienda">' +
+                '🏪 ' + escapeHTML(tiendaActual.nombre_negocio) +
+                '<span class="badge-nivel ' + planActual + '">' + planActual.toUpperCase() + '</span>' +
+            '</div>' +
+            '<div class="detalle-tienda">' +
+                (activa
+                    ? 'Membresía activa hasta <strong>' + formatearFecha(tiendaActual.activa_hasta) + '</strong> · ' + dias + ' día' + (dias === 1 ? '' : 's') + ' restantes'
+                    : '<strong style="color:var(--danger)">Membresía vencida</strong> · Renueva para seguir vendiendo') +
+            '</div>' +
+        '</div>' +
+        '<a href="/features/mercado/vendedor/panel.html" class="btn-panel">' +
+            '🏪 Ir a mi tienda' +
+        '</a>' +
+    '</div>';
+
+    // Si hay pago en curso, mostrar aviso arriba
+    if (pagoEnCurso) {
+        html += '<div class="pago-resumen" style="background:rgba(247,212,74,0.08); border:1px solid rgba(247,212,74,0.3); margin-bottom:20px;">' +
+            '<div style="font-family:Orbitron,monospace; font-size:0.85rem; color:var(--warning); margin-bottom:8px;">⏳ Tienes un pago en curso</div>' +
+            '<div style="font-size:0.75rem; color:var(--text-secondary); margin-bottom:12px;">' +
+                'Plan: <strong style="color:var(--gold)">' + (pagoEnCurso.plan_nombre || pagoEnCurso.plan_slug) + '</strong> · ' +
+                'Estado: <strong>' + escapeHTML(pagoEnCurso.estado) + '</strong>' +
+            '</div>' +
+            '<button class="btn-primario" onclick="reanudarPago()" style="font-size:0.75rem; padding:10px;">' +
+                '🔄 Continuar con el pago' +
+            '</button>' +
+        '</div>';
+    }
+
+    // Grid planes
+    html += '<div class="planes-grid">';
     ['basico', 'pro', 'max'].forEach(function (key) {
         var plan = PLANES[key];
-        var esActual = membresiaActiva && membresiaActiva.plan === key;
+        var esActual = planActual === key && activa;
+        var esActualVencida = planActual === key && !activa;
 
         var clases = 'plan-card ' + key;
         if (plan.destacado) clases += ' destacado';
         if (plan.premium) clases += ' premium';
+        if (esActual) clases += ' actual';
 
         html += '<div class="' + clases + '">' +
             '<div class="plan-nombre">' + plan.icono + ' ' + plan.nombre + '</div>' +
@@ -1076,6 +1142,10 @@ function renderPlanes() {
 
         if (esActual) {
             html += '<button class="btn-comprar actual" disabled>✓ Plan actual</button>';
+        } else if (esActualVencida) {
+            html += '<button class="btn-comprar" onclick="abrirModalPago(\'' + key + '\')">' +
+                '🔄 Renovar ahora' +
+            '</button>';
         } else {
             html += '<button class="btn-comprar" onclick="abrirModalPago(\'' + key + '\')">' +
                 '💳 Pagar con cripto' +
@@ -1084,8 +1154,41 @@ function renderPlanes() {
 
         html += '</div>';
     });
+    html += '</div>';
+
+    // FAQ
+    html += '<div class="faq-section">' +
+        '<h2>❓ Preguntas frecuentes</h2>' +
+
+        '<div class="faq-item">' +
+            '<div class="pregunta">¿Qué métodos de pago aceptan?</div>' +
+            '<div class="respuesta">Aceptamos pagos en más de 50 criptomonedas (BTC, ETH, USDT, USDC, BNB, MATIC, etc.) mediante NOWPayments. El pago se confirma en la red blockchain y tu membresía se activa al instante.</div>' +
+        '</div>' +
+
+        '<div class="faq-item">' +
+            '<div class="pregunta">¿Cuánto tarda en activarse mi membresía?</div>' +
+            '<div class="respuesta">Normalmente entre 5 y 30 minutos, dependiendo de la confirmación de la red blockchain. Recibirás una notificación cuando esté activa.</div>' +
+        '</div>' +
+
+        '<div class="faq-item">' +
+            '<div class="pregunta">¿Puedo renovar antes de que venza?</div>' +
+            '<div class="respuesta">Sí. Si renuevas antes del vencimiento, los días nuevos se suman a partir de la fecha en que vence tu membresía actual. No pierdes días.</div>' +
+        '</div>' +
+
+        '<div class="faq-item">' +
+            '<div class="pregunta">¿Qué pasa si mi membresía vence?</div>' +
+            '<div class="respuesta">Tu tienda se pausa automáticamente y no podrás recibir nuevos pedidos hasta renovar. Tus productos y datos se mantienen guardados.</div>' +
+        '</div>' +
+
+        '<div class="faq-item">' +
+            '<div class="pregunta">¿Cómo cobro mis ventas?</div>' +
+            '<div class="respuesta">El comprador paga el producto en la app y tú lo recibes en tu balance. El envío lo cobra el repartidor en efectivo directamente al cliente (o por la app si configuraste un costo de envío).</div>' +
+        '</div>' +
+    '</div>';
 
     cont.innerHTML = html;
+
+    if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(cont);
 }
 
 // ================================================================
@@ -1097,13 +1200,17 @@ function abrirModalPago(planKey) {
         window.location.href = '/';
         return;
     }
+    if (!tiendaActual) {
+        showToast('⚠️ Primero crea tu tienda', 'warning');
+        return;
+    }
 
     planSeleccionado = PLANES[planKey];
     if (!planSeleccionado) return;
 
     metodoPagoElegido = 'usdttrc20';
+    pagoActual = null;
 
-    // Reset del modal
     document.getElementById('btnCerrarModal').style.display = 'none';
     document.getElementById('modalPago').classList.add('show');
 
@@ -1161,11 +1268,11 @@ function elegirMetodo(cripto) {
 }
 
 // ================================================================
-// CREAR PAGO EN EL BACKEND
+// CREAR PAGO
 // ================================================================
 async function crearPago() {
     var btn = document.getElementById('btnCrearPago');
-    if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Generando dirección...'; }
+    if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Generando...'; }
 
     var cont = document.getElementById('modalPagoContenido');
     cont.innerHTML = '<div class="estado-pago">' +
@@ -1185,10 +1292,12 @@ async function crearPago() {
                 'Authorization': 'Bearer ' + token
             },
             body: JSON.stringify({
-                plan: planSeleccionado.id,
-                pay_currency: metodoPagoElegido,
-                precio_mxn: planSeleccionado.precio_mxn,
-                duracion_dias: planSeleccionado.duracion_dias
+                tienda_id: tiendaActual.id,
+                plan_slug: planSeleccionado.id,
+                plan_nombre: planSeleccionado.nombre,
+                monto_mxn: planSeleccionado.precio_mxn,
+                duracion_dias: planSeleccionado.duracion_dias,
+                pay_currency: metodoPagoElegido
             })
         });
 
@@ -1215,7 +1324,7 @@ async function crearPago() {
 }
 
 // ================================================================
-// RENDER: INSTRUCCIONES DE PAGO
+// INSTRUCCIONES DE PAGO
 // ================================================================
 function renderInstruccionesPago() {
     var cont = document.getElementById('modalPagoContenido');
@@ -1262,7 +1371,7 @@ function renderInstruccionesPago() {
             '🔄 Ya pagué, verificar ahora' +
         '</button>';
 
-    // Copiar automáticamente al portapapeles
+    // Copiar automáticamente
     try {
         navigator.clipboard.writeText(pagoActual.pay_address);
         showToast('📋 Dirección copiada', 'success');
@@ -1280,7 +1389,7 @@ function copiarDireccion() {
 }
 
 // ================================================================
-// POLLING: VERIFICAR ESTADO DEL PAGO
+// POLLING
 // ================================================================
 function iniciarPollingPago() {
     detenerPollingPago();
@@ -1311,13 +1420,12 @@ async function verificarEstadoPago(pagoId, silencioso) {
 
         var estado = data.estado;
 
-        if (estado === 'confirmado' || estado === 'activa' || estado === 'finished') {
+        if (estado === 'pagada') {
             detenerPollingPago();
             renderPagoExitoso();
-            await cargarMembresiaActiva();
-            renderMembresiaActivaBox();
-            renderPlanes();
-        } else if (estado === 'fallido' || estado === 'rechazado') {
+            await cargarTienda();
+            renderPrincipal();
+        } else if (estado === 'fallida' || estado === 'cancelada' || estado === 'expirada') {
             detenerPollingPago();
             renderPagoFallido();
         } else if (!silencioso) {
@@ -1325,7 +1433,7 @@ async function verificarEstadoPago(pagoId, silencioso) {
         }
 
     } catch (e) {
-        console.error('Error verificando pago:', e);
+        console.error('Error verificando:', e);
         if (!silencioso) showToast('❌ ' + e.message, 'error');
     }
 }
@@ -1348,7 +1456,7 @@ function renderPagoExitoso() {
             '<div class="titulo-pago exito">¡Pago confirmado!</div>' +
             '<div class="detalle-pago">' +
                 'Tu membresía <strong style="color:var(--gold)">' + (planSeleccionado ? planSeleccionado.nombre : '') + '</strong> está activa.<br>' +
-                'Ya puedes empezar a vender en el Mercado.' +
+                'Ya puedes seguir vendiendo en el Mercado.' +
             '</div>' +
             '<a href="/features/mercado/vendedor/panel.html" class="btn-primario" style="text-decoration:none;display:inline-flex;width:100%;margin-bottom:10px;">' +
                 '🏪 Ir a mi tienda' +
@@ -1374,6 +1482,34 @@ function renderPagoFallido() {
 }
 
 // ================================================================
+// REANUDAR PAGO EN CURSO
+// ================================================================
+function reanudarPago() {
+    if (!pagoEnCurso) return;
+
+    var planKey = pagoEnCurso.plan_slug;
+    if (!PLANES[planKey]) {
+        showToast('⚠️ Plan no reconocido', 'warning');
+        return;
+    }
+
+    planSeleccionado = PLANES[planKey];
+    pagoActual = {
+        pago_id: String(pagoEnCurso.id),
+        nowpayments_id: pagoEnCurso.payment_id,
+        pay_address: pagoEnCurso.pay_address,
+        pay_amount: pagoEnCurso.pay_amount,
+        pay_currency: pagoEnCurso.pay_currency,
+        estado: pagoEnCurso.estado
+    };
+
+    document.getElementById('btnCerrarModal').style.display = 'block';
+    document.getElementById('modalPago').classList.add('show');
+    renderInstruccionesPago();
+    iniciarPollingPago();
+}
+
+// ================================================================
 // CERRAR MODAL
 // ================================================================
 function cerrarModalPago() {
@@ -1395,14 +1531,28 @@ document.addEventListener('DOMContentLoaded', async function () {
     await cargarUsuarioActual();
 
     if (!sessionUser) {
-        // Mostrar planes pero avisar al click
-        renderPlanes();
+        window.location.href = '/';
         return;
     }
 
-    await cargarMembresiaActiva();
-    renderMembresiaActivaBox();
-    renderPlanes();
+    await cargarTienda();
+
+    if (tiendaActual) {
+        await cargarPagoEnCurso();
+    }
+
+    renderPrincipal();
+
+    // Verificar si viene ?pago=exitoso desde NOWPayments
+    try {
+        var params = new URLSearchParams(window.location.search);
+        if (params.get('pago') === 'exitoso') {
+            setTimeout(function () {
+                cargarTienda().then(renderPrincipal);
+                showToast('✓ Verificando tu pago...', 'success');
+            }, 2000);
+        }
+    } catch (e) { /* silencioso */ }
 
     setTimeout(async function () {
         try {
@@ -1414,13 +1564,10 @@ document.addEventListener('DOMContentLoaded', async function () {
     }, 400);
 });
 
-// Cerrar modal con click fuera
+// Click fuera del modal
 document.addEventListener('click', function (e) {
     var modal = document.getElementById('modalPago');
-    if (e.target === modal) {
-        // Solo cerrar si NO está esperando pago
-        if (!pagoActual) cerrarModalPago();
-    }
+    if (e.target === modal && !pagoActual) cerrarModalPago();
 });
 
 // ================================================================
@@ -1435,6 +1582,7 @@ window.copiarDireccion = copiarDireccion;
 window.verificarPagoManual = verificarPagoManual;
 window.cerrarModalPago = cerrarModalPago;
 window.renderSeleccionMetodo = renderSeleccionMetodo;
+window.reanudarPago = reanudarPago;
 </script>
 </body>
 </html>
